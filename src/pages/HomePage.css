@@ -1,10 +1,169 @@
+
+.message-row-wrapper {
+  padding: 4px 10px !component;
+  margin: 0 !important;
+  border-bottom: 0.5px solid rgba(0,0,0,0.05) !important;
+}
+.message-avatar-container {
+  width: 32px !important;
+  height: 32px !important;
+}
+.message-body p {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+.chat-header {
+  height: 44px !important;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Allura&family=Alex+Brush&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Lobster&family=Cookie&family=Courgette&family=Sacramento&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+
+/* --- ULTRA PREMIUM COMPACT LAYOUT --- */
+:root {
+  --header-height: 50px;
+  --footer-height: 60px;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+}
+
+.homepage-container {
+  background: #f8fafc !important;
+}
+
+.chat-header {
+  height: var(--header-height) !important;
+  background: var(--accent-gradient) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 12px !important;
+}
+
+.header-title {
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+}
+
+.chat-feed {
+  top: var(--header-height) !important;
+  bottom: var(--footer-height) !important;
+  height: calc(100vh - var(--header-height) - var(--footer-height)) !important;
+  padding: 10px 0 !important;
+  background: #ffffff !important;
+}
+
+.message-row-wrapper {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+}
+
+.message-avatar-container {
+  width: 36px !important;
+  height: 36px !important;
+  flex-shrink: 0 !important;
+}
+
+.message-avatar-container img {
+  border-radius: 8px !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.message-content-main {
+  flex: 1 !important;
+}
+
+.message-header-info {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 2px !important;
+}
+
+.message-displayname {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+}
+
+.message-time {
+  font-size: 0.7rem !important;
+  color: #94a3b8 !important;
+}
+
+.message-body p {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  color: #334155 !important;
+}
+
+/* Compact Footer/Input */
+.chat-footer {
+  height: var(--footer-height) !important;
+  padding: 8px 12px !important;
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.message-input-wrapper {
+  flex: 1 !important;
+  background: #f1f5f9 !important;
+  border-radius: 20px !important;
+  padding: 0 15px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.message-input-field {
+  background: transparent !important;
+  border: none !important;
+  font-size: 0.9rem !important;
+  width: 100% !important;
+}
+
+.send-button-wrapper {
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--accent-gradient) !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+}
+
+/* Bottom Nav */
+.bottom-nav-container {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  border-top: 1px solid rgba(0,0,0,0.05) !important;
+  padding: 5px 0 !important;
+}
+
+.nav-item {
+  padding: 8px !important;
+  border-radius: 10px !important;
+}
+
+.nav-item.active {
+  background: #f1f5f9 !important;
+  color: #6366f1 !important;
+}
+
+
 /* Import Google Fonts for cursive and stylish fonts */
 
 
 
 
 
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Allura&family=Alex+Brush&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Lobster&family=Cookie&family=Courgette&family=Sacramento&display=swap');
+
 
 
 
@@ -18,7 +177,7 @@
 
 
 
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+
 
 
 
