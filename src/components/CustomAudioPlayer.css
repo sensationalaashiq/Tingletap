@@ -1,0 +1,652 @@
+/* Main Chat Audio Player - Original Purple Design */
+.compact-audio-player {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 16px;
+  padding: 12px;
+  margin: 8px 0;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.6);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  max-width: 280px;
+  min-width: 220px;
+}
+
+/* Ensure main chat audio player always has purple background */
+.message-row-wrapper .compact-audio-player,
+.message-body .compact-audio-player,
+.chat-feed .compact-audio-player {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.7) !important;
+}
+
+/* YouTube Music Player - Red Design */
+.youtube-music-player {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 12px;
+  padding: 6px;
+  width: 320px;
+  max-width: 100%;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.7);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #ef4444;
+}
+
+.compact-audio-player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  pointer-events: none;
+}
+
+/* YouTube Music Player Background Effect */
+.youtube-music-player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+  pointer-events: none;
+}
+
+.youtube-music-player::after {
+  content: '🎵 YouTube Music';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Audio Visualization */
+.audio-visualizer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 20px;
+  gap: 1px;
+  margin-bottom: 4px;
+  padding: 0 4px;
+}
+
+/* YouTube Music Visualizer */
+.youtube-music-player .audio-visualizer {
+  height: 18px;
+  gap: 1px;
+  margin-bottom: 6px;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.visualizer-bar {
+  width: 4px;
+  background: linear-gradient(to top, #fff 0%, rgba(255,255,255,0.8) 100%);
+  border-radius: 3px;
+  min-height: 6px;
+  transition: height 0.15s ease;
+  opacity: 0.9;
+}
+
+/* YouTube Music Visualizer Bars */
+.youtube-music-player .visualizer-bar {
+  width: 5px;
+  background: linear-gradient(to top, #ffffff 0%, rgba(255,255,255,0.9) 100%);
+  border-radius: 4px;
+  min-height: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress Bar */
+.compact-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.compact-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.9) 100%);
+  border-radius: 2px;
+  transition: width 0.1s ease;
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
+
+/* YouTube Music Progress Bar */
+.youtube-music-player .compact-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin-bottom: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.youtube-music-player .compact-progress-fill {
+  background: linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.95) 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(255,255,255,0.9);
+}
+
+/* Controls */
+.compact-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* YouTube Music Controls */
+.youtube-music-player .compact-controls {
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.youtube-music-player .left-controls {
+  gap: 6px;
+}
+
+.compact-btn {
+  background: rgba(255, 255, 255, 1);
+  border: 2px solid rgba(255, 255, 255, 1);
+  color: #8b5cf6 !important;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.compact-btn svg {
+  color: #8b5cf6 !important;
+  fill: #8b5cf6 !important;
+}
+
+.compact-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+}
+
+.compact-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.play-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.replay-btn, .backward-btn, .forward-btn {
+  width: 18px;
+  height: 18px;
+}
+
+/* YouTube Music Buttons */
+.youtube-music-player .play-btn {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.youtube-music-player .replay-btn, 
+.youtube-music-player .backward-btn, 
+.youtube-music-player .forward-btn {
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.youtube-music-player .play-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: scale(1.1);
+}
+
+.youtube-music-player .compact-btn svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Force ALL YouTube music player buttons and icons to be WHITE */
+.youtube-music-player .compact-btn {
+  color: #ffffff !important;
+}
+
+.youtube-music-player .compact-btn svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player .compact-btn svg * {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player .volume-section svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player .volume-section svg * {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player .time-info {
+  color: #ffffff !important;
+}
+
+.youtube-music-player .time-info span {
+  color: #ffffff !important;
+}
+
+/* Override any blue colors with white forcefully */
+.youtube-music-player * {
+  color: #ffffff !important;
+}
+
+.youtube-music-player svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Force ALL SVG paths and elements to be white */
+.youtube-music-player svg path {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg g {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg circle {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg polygon {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg rect {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg line {
+  stroke: #ffffff !important;
+}
+
+.youtube-music-player svg polyline {
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+
+.play-btn:hover {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+/* Time Info */
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #ffffff !important;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 45px;
+  justify-content: center;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.3px;
+}
+
+/* YouTube Music Time Info */
+.youtube-music-player .time-info {
+  font-size: 8px;
+  font-weight: 800;
+  min-width: 40px;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.4px;
+}
+
+.time-info span {
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.3);
+}
+
+.compact-audio-player .time-info,
+.compact-audio-player .time-info span {
+  color: #ffffff !important;
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.5);
+}
+
+/* Volume Section */
+.volume-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 50px;
+}
+
+.volume-section svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.4));
+}
+
+.compact-volume-slider {
+  width: 32px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.compact-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+}
+
+.compact-volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+}
+
+/* YouTube Music Player Volume Section Specific Styling */
+.youtube-music-player .volume-section {
+  min-width: 90px;
+}
+
+.youtube-music-player .compact-volume-slider {
+  width: 70px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.youtube-music-player .compact-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  width: 10px;
+  height: 10px;
+  background: #ffffff !important;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+}
+
+.youtube-music-player .compact-volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffffff !important;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+}
+
+.youtube-music-player .volume-section svg {
+  filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.5));
+}
+
+/* Private Message Styles - Compact White/Light Design with Purple Accents */
+.pm-conversation .compact-audio-player,
+.pm-message .compact-audio-player,
+.pm-chat-area .compact-audio-player,
+.private-message-popup .compact-audio-player {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  width: 160px !important;
+  max-width: 160px !important;
+  min-width: 140px !important;
+  padding: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.pm-conversation .audio-visualizer,
+.pm-message .audio-visualizer {
+  height: 24px;
+}
+
+.pm-conversation .visualizer-bar,
+.pm-message .visualizer-bar {
+  background: linear-gradient(to top, #8b5cf6 0%, rgba(139, 92, 246, 0.7) 100%) !important;
+}
+
+.pm-conversation .compact-progress-bar,
+.pm-message .compact-progress-bar {
+  background: rgba(139, 92, 246, 0.2) !important;
+}
+
+.pm-conversation .compact-progress-fill,
+.pm-message .compact-progress-fill {
+  background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%) !important;
+}
+
+.pm-conversation .compact-btn,
+.pm-message .compact-btn {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  color: #8b5cf6 !important;
+}
+
+.pm-conversation .compact-btn svg,
+.pm-message .compact-btn svg {
+  color: #8b5cf6 !important;
+  fill: #8b5cf6 !important;
+}
+
+/* Force purple color for timer text in private messages */
+.pm-conversation .time-info,
+.pm-message .time-info,
+.pm-conversation .time-info span,
+.pm-message .time-info span {
+  color: #8b5cf6 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+.pm-conversation .left-controls,
+.pm-message .left-controls,
+.pm-chat-area .left-controls,
+.private-message-popup .left-controls {
+  gap: 2px;
+}
+
+.pm-conversation .play-btn,
+.pm-message .play-btn,
+.pm-chat-area .play-btn,
+.private-message-popup .play-btn {
+  width: 18px;
+  height: 18px;
+}
+
+.pm-conversation .replay-btn, 
+.pm-conversation .backward-btn, 
+.pm-conversation .forward-btn,
+.pm-message .replay-btn, 
+.pm-message .backward-btn, 
+.pm-message .forward-btn,
+.pm-chat-area .replay-btn, 
+.pm-chat-area .backward-btn, 
+.pm-chat-area .forward-btn,
+.private-message-popup .replay-btn, 
+.private-message-popup .backward-btn, 
+.private-message-popup .forward-btn {
+  width: 14px;
+  height: 14px;
+}
+
+.pm-conversation .time-info,
+.pm-message .time-info,
+.pm-chat-area .time-info,
+.private-message-popup .time-info {
+  font-size: 7px;
+  min-width: 30px;
+}
+
+/* Force volume section to be visible and purple in private messages */
+.pm-conversation .volume-section,
+.pm-message .volume-section,
+.pm-chat-area .volume-section,
+.private-message-popup .volume-section {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  min-width: 35px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Purple volume slider for private messages */
+.pm-conversation .compact-volume-slider,
+.pm-message .compact-volume-slider,
+.pm-chat-area .compact-volume-slider,
+.private-message-popup .compact-volume-slider {
+  width: 25px !important;
+  height: 2px !important;
+  background: rgba(139, 92, 246, 0.3) !important;
+  border-radius: 2px !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  cursor: pointer !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.pm-conversation .compact-volume-slider::-webkit-slider-thumb,
+.pm-message .compact-volume-slider::-webkit-slider-thumb,
+.pm-chat-area .compact-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: #8b5cf6 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.4) !important;
+  border: none !important;
+}
+
+.pm-conversation .compact-volume-slider::-moz-range-thumb,
+.pm-message .compact-volume-slider::-moz-range-thumb,
+.pm-chat-area .compact-volume-slider::-moz-range-thumb {
+  width: 10px !important;
+  height: 10px !important;
+  background: #8b5cf6 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Purple volume icon for private messages */
+.pm-conversation .volume-section svg,
+.pm-message .volume-section svg,
+.pm-chat-area .volume-section svg,
+.private-message-popup .volume-section svg {
+  color: #8b5cf6 !important;
+  fill: #8b5cf6 !important;
+  width: 10px !important;
+  height: 10px !important;
+  flex-shrink: 0 !important;
+  filter: drop-shadow(0 1px 3px rgba(139, 92, 246, 0.3)) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .compact-audio-player {
+    width: 200px;
+    padding: 6px;
+  }
+
+  .audio-visualizer {
+    height: 24px;
+  }
+
+  .play-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .replay-btn, .backward-btn, .forward-btn {
+    width: 18px;
+    height: 18px;
+  }
+
+  .time-info {
+    font-size: 8px;
+    min-width: 45px;
+  }
+
+  .compact-volume-slider {
+    width: 28px;
+  }
+}
+
+/* Dark Mode Support */
+.dark-mode .compact-audio-player {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.dark-mode .visualizer-bar {
+  background: linear-gradient(to top, #64ffda 0%, rgba(100,255,218,0.7) 100%);
+}
+
+.dark-mode .compact-progress-fill {
+  background: linear-gradient(90deg, #64ffda 0%, rgba(100,255,218,0.9) 100%);
+  box-shadow: 0 0 8px rgba(100,255,218,0.5);
+}
+
+/* Input container placeholder text color */
+.input-container input::placeholder {
+  color: #000000 !important;
+}

@@ -1,0 +1,133 @@
+/* Gender Badge Component Styles */
+.gender-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 25;
+  overflow: visible;
+}
+
+/* Size variants - Full visibility at bottom right corner */
+.gender-badge-small {
+  width: 18px;
+  height: 18px;
+  bottom: 0px;
+  right: 0px;
+}
+
+.gender-badge-medium {
+  width: 22px;
+  height: 22px;
+  bottom: -3px;
+  right: -3px;
+}
+
+.gender-badge-large {
+  width: 26px;
+  height: 26px;
+  bottom: -4px;
+  right: -4px;
+}
+
+/* Icon container */
+.gender-badge-icon {
+  width: 70%;
+  height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  position: relative;
+}
+
+.gender-badge-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Hover effects */
+.gender-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gender-badge-small {
+    width: 16px;
+    height: 16px;
+  }
+
+  .gender-badge-medium {
+    width: 20px;
+    height: 20px;
+  }
+
+  .gender-badge-large {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .gender-badge {
+    background: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* Special positioning for different contexts */
+.sidebar .gender-badge {
+  bottom: 2px;
+  right: 2px;
+}
+
+.message-avatar-wrapper .gender-badge {
+  bottom: 0px;
+  right: 0px;
+  z-index: 25;
+}
+
+.profile-header .gender-badge {
+  bottom: 2px;
+  right: 2px;
+  z-index: 15;
+}
+
+/* Animation on mount */
+.gender-badge {
+  animation: genderBadgeAppear 0.5s ease-out;
+}
+
+@keyframes genderBadgeAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse effect for online users */
+.gender-badge.online {
+  animation: genderBadgeAppear 0.5s ease-out, onlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes onlinePulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(34, 197, 94, 0.3);
+  }
+}
