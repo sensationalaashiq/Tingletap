@@ -10242,3 +10242,44 @@ html body.theme-sunset .message-body p {
 .dark-mode .modern-dropdown-btn.danger {
   color: #f87171;
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+  /* Layout Fixes: Horizontal Header Alignment and Hide Footer Input */
+  .chat-header {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 0 15px !important;
+      height: 50px !important;
+  }
+
+  .header-left, .header-center, .header-right {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 8px !important;
+  }
+
+  .header-center {
+      position: absolute !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+  }
+
+  .header-right {
+      margin-left: auto !important;
+  }
+
+  .chat-footer {
+      display: none !important;
+  }
+
+  .chat-feed {
+      padding-bottom: 10px !important; /* No footer input, so reduce padding */
+      height: calc(100vh - 50px) !important;
+  }
+
+  .header-action-btn {
+      margin: 0 !important;
+  }
+  
