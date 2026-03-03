@@ -34,6 +34,29 @@ import DeviceFingerprint from '../utils/deviceFingerprint';
 import './HomePage.css';
 
 // --- SVG Icons (No changes here) ---
+
+const SendIconSVG = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const AttachmentIconSVG = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const PremiumDeleteIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const PremiumPrivateBoxIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 6l-10 7L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 const MusicIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -5741,250 +5764,18 @@ const HomePage = ({ user }) => {
                 
                     
                     <header className="chat-header">
-                        <button 
-                            className="header-action-btn settings-btn" 
-                            onClick={() => setIsSettingsSidebarOpen(true)}
-                            title="Settings"
-                        >
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-                                <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
-                            </svg>
+                        <button className="header-action-btn settings-btn" onClick={() => setIsSettingsSidebarOpen(true)} title="Settings">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
                         </button>
-                        
-                        
-                        
                         <div className="header-center">
-                            <span className="header-title">
-                                {roomName || 'Indian Chat'} 
-                                <span className="user-count">({onlineUserIds.length})</span>
-                            </span>
+                            <span className="header-title">{roomName || 'Indian Chat'} <span className="user-count">({onlineUserIds.length})</span></span>
                         </div>
                         <div className="header-right">
                             {(loggedInUserProfile?.role === 'owner' || loggedInUserProfile?.role === 'admin' || loggedInUserProfile?.role === 'moderator') && (
-                                <button 
-                                    className="header-action-btn clear-chat-btn" 
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleClearChat();
-                                    }}
-                                    title="Clear Chat"
-                                >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <linearGradient id="clearGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" stopColor="#ffffff" />
-                                                <stop offset="50%" stopColor="#f8f8f8" />
-                                                <stop offset="100%" stopColor="#e8e8e8" />
-                                            </linearGradient>
-                                            <filter id="clearShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="rgba(0,0,0,0.4)"/>
-                                            </filter>
-                                        </defs>
-                                        <path d="M6,2 L8,2 L8,1 C8,0.45 8.45,0 9,0 L15,0 C15.55,0 16,0.45 16,1 L16,2 L18,2 C18.55,2 19,2.45 19,3 C19,3.55 18.55,4 18,4 L17,4 L17,19 C17,20.1 16.1,21 15,21 L9,21 C7.9,21 7,20.1 7,19 L7,4 L6,4 C5.45,4 5,3.55 5,3 C5,2.45 5.45,2 6,2 Z" fill="url(#clearGradient)" filter="url(#clearShadow)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
-                                        <rect x="9" y="7" width="1.5" height="10" rx="0.75" fill="rgba(255,255,255,0.8)" filter="url(#clearShadow)"/>
-                                        <rect x="12" y="7" width="1.5" height="10" rx="0.75" fill="rgba(255,255,255,0.8)" filter="url(#clearShadow)"/>
-                                        <rect x="15" y="7" width="1.5" height="10" rx="0.75" fill="rgba(255,255,255,0.8)" filter="url(#clearShadow)"/>
-                                        <rect x="10" y="1.5" width="4" height="1" rx="0.5" fill="rgba(255,255,255,0.6)"/>
-                                    </svg>
-                                </button>
+                                <button className="header-action-btn clear-chat-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearChat(); }} title="Clear Chat"><PremiumDeleteIcon /></button>
                             )}
-                            {/* Private Message Header Box Button */}
-                            <button 
-                                className="header-action-btn pm-header-btn" 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setPmHeaderBoxOpen(prev => !prev);
-                                }}
-                                title="Private Messages"
-                                style={{ position: 'relative' }}
-                            >
-                                <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <linearGradient id="pmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#ffffff" />
-                                            <stop offset="50%" stopColor="#f0f0f0" />
-                                            <stop offset="100%" stopColor="#e0e0e0" />
-                                        </linearGradient>
-                                        <filter id="pmShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.3)"/>
-                                        </filter>
-                                    </defs>
-                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmGradient)" filter="url(#pmShadow)" stroke="rgba(255,255,255,0.6)" strokeWidth="0.5"/>
-                                </svg>
-                                {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0) > 0 && (
-                                    <span className="pm-notification-badge">
-                                        {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)}
-                                    </span>
-                                )}
-                            </button>
-                            
-                            {/* Friend Requests Button */}
-                            <button 
-                                className="header-action-btn friend-requests-btn" 
-                                onClick={() => setShowFriendRequestNotification(!showFriendRequestNotification)}
-                                title="Friend Requests"
-                                style={{ position: 'relative' }}
-                            >
-                                <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <linearGradient id="friendGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#ffffff" />
-                                            <stop offset="50%" stopColor="#f0f0f0" />
-                                            <stop offset="100%" stopColor="#e0e0e0" />
-                                        </linearGradient>
-                                        <filter id="friendShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.3)"/>
-                                        </filter>
-                                    </defs>
-                                    <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z" fill="url(#friendGradient)" filter="url(#friendShadow)" stroke="rgba(255,255,255,0.6)" strokeWidth="0.5"/>
-                                </svg>
-                                {friendRequests.length > 0 && (
-                                    <span className="pm-notification-badge">
-                                        {friendRequests.length}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Radio Button */}
-                            <button 
-                                className="header-action-btn radio-btn" 
-                                onClick={() => setIsRadioOpen(prev => !prev)}
-                                title="Radio"
-                            >
-                                <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <linearGradient id="radioHeaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#ffffff"/>
-                                            <stop offset="50%" stopColor="#f8f9fa"/>
-                                            <stop offset="100%" stopColor="#e9ecef"/>
-                                        </linearGradient>
-                                        <linearGradient id="radioButtonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#f8f9fa"/>
-                                            <stop offset="50%" stopColor="#e9ecef"/>
-                                            <stop offset="100%" stopColor="#dee2e6"/>
-                                        </linearGradient>
-                                        <filter id="radioHeaderShadow" x="-50%" y="-50%" width="200%" height="200%">
-                                            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(0,0,0,0.4)"/>
-                                        </filter>
-                                        <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
-                                            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.2)"/>
-                                        </filter>
-                                    </defs>
-                                    
-                                    {/* Radio Body with enhanced shadow */}
-                                    <rect x="2" y="8" width="20" height="12" rx="2.5" ry="2.5" 
-                                          fill="url(#radioHeaderGradient)" 
-                                          filter="url(#radioHeaderShadow)" 
-                                          stroke="rgba(255,255,255,0.8)" 
-                                          strokeWidth="1"/>
-                                    
-                                    {/* Antenna with better visibility */}
-                                    <line x1="6" y1="8" x2="6" y2="3.5" 
-                                          stroke="url(#radioHeaderGradient)" 
-                                          strokeWidth="2.5" 
-                                          strokeLinecap="round"
-                                          filter="url(#innerShadow)"/>
-                                    <circle cx="6" cy="2.8" r="1.2" 
-                                            fill="url(#radioHeaderGradient)"
-                                            filter="url(#innerShadow)"/>
-                                    
-                                    {/* Speaker with enhanced contrast */}
-                                    <circle cx="8" cy="14" r="2.8" 
-                                            fill="none" 
-                                            stroke="rgba(108,117,125,0.8)" 
-                                            strokeWidth="1.8"/>
-                                    <circle cx="8" cy="14" r="1.3" 
-                                            fill="rgba(248,249,250,0.95)"
-                                            stroke="rgba(108,117,125,0.3)"
-                                            strokeWidth="0.5"/>
-                                    
-                                    {/* Control Knobs with better definition */}
-                                    <circle cx="15.5" cy="11.5" r="1.8" 
-                                            fill="url(#radioButtonGradient)" 
-                                            stroke="rgba(108,117,125,0.5)" 
-                                            strokeWidth="1"
-                                            filter="url(#innerShadow)"/>
-                                    <circle cx="15.5" cy="11.5" r="0.8" 
-                                            fill="rgba(248,249,250,0.9)"
-                                            stroke="rgba(108,117,125,0.3)"
-                                            strokeWidth="0.5"/>
-                                    
-                                    <circle cx="18.5" cy="11.5" r="1.8" 
-                                            fill="url(#radioButtonGradient)" 
-                                            stroke="rgba(108,117,125,0.5)" 
-                                            strokeWidth="1"
-                                            filter="url(#innerShadow)"/>
-                                    <circle cx="18.5" cy="11.5" r="0.8" 
-                                            fill="rgba(248,249,250,0.9)"
-                                            stroke="rgba(108,117,125,0.3)"
-                                            strokeWidth="0.5"/>
-                                    
-                                    {/* Display with better contrast */}
-                                    <rect x="13" y="15.5" width="7.5" height="2.5" rx="0.8" 
-                                          fill="rgba(52,58,64,0.7)"
-                                          stroke="rgba(108,117,125,0.4)"
-                                          strokeWidth="0.5"/>
-                                    <rect x="13.5" y="16" width="6.5" height="1.5" rx="0.3" 
-                                          fill="rgba(40,167,69,0.8)"/>
-                                    
-                                    {/* Radio waves with enhanced visibility */}
-                                    <path d="M6 1.5 Q 13 1.5 13 7.5" 
-                                          fill="none" 
-                                          stroke="url(#radioHeaderGradient)" 
-                                          strokeWidth="1.5" 
-                                          strokeLinecap="round" 
-                                          opacity="0.8"
-                                          filter="url(#innerShadow)"/>
-                                    <path d="M6 2.5 Q 11 2.5 11 6.5" 
-                                          fill="none" 
-                                          stroke="url(#radioHeaderGradient)" 
-                                          strokeWidth="1.2" 
-                                          strokeLinecap="round" 
-                                          opacity="0.6"
-                                          filter="url(#innerShadow)"/>
-                                    
-                                    {/* Volume indicator lines */}
-                                    <line x1="9.5" y1="12" x2="10.5" y2="12" 
-                                          stroke="rgba(108,117,125,0.6)" 
-                                          strokeWidth="0.8"/>
-                                    <line x1="9.8" y1="13" x2="11.2" y2="13" 
-                                          stroke="rgba(108,117,125,0.6)" 
-                                          strokeWidth="0.8"/>
-                                    <line x1="9.5" y1="14" x2="10.5" y2="14" 
-                                          stroke="rgba(108,117,125,0.6)" 
-                                          strokeWidth="0.8"/>
-                                </svg>
-                            </button>
-
-                            {/* Minimized Conversations */}
-                            <MinimizedConversations 
-                                minimizedConversations={minimizedConversations}
-                                onOpenConversation={handleOpenConversation}
-                                onRemoveConversation={handleRemoveConversation}
-                                unreadCounts={unreadCounts}
-                                forceClose={!isPrivateMessageOpen}
-                            />
-                            
-                            <div 
-                                onClick={() => setSidebarOpen(true)}
-                                style={{ 
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.transform = 'scale(1.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.transform = 'scale(1)';
-                                }}
-                            >
-                                <CustomMenuIcon />
-                            </div>
+                            <button className="header-action-btn pm-header-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPmHeaderBoxOpen(prev => !prev); }} title="Private Messages" style={{ position: 'relative' }}><PremiumPrivateBoxIcon />{Object.values(unreadCounts).reduce((sum, count) => sum + count, 0) > 0 && <span className="pm-notification-badge">{Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)}</span>}</button>
                         </div>
-
-                        
                     </header>
 
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
@@ -6013,229 +5804,11 @@ const HomePage = ({ user }) => {
                     <div className="message-form-container">
                         
                         {/* Message Input Form */}
-                        <form onSubmit={handleSendMessage} className="message-form">
-                            <div className="unified-message-input" style={{ position: 'relative' }}>
-                                {/* Inline whisper chip inside input container */}
-                                {whisperTarget && (
-                                    <div className="inline-whisper-chip">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
-                                            <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 7.03 16.97 3 12 3Z" fill="currentColor" opacity="0.9"/>
-                                            <path d="M8 11h8M12 7v10" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                                        </svg>
-                                        <span className="whisper-chip-text">to {whisperTarget.displayName}</span>
-                                        <button 
-                                            type="button"
-                                            className="whisper-chip-close"
-                                            onClick={() => setWhisperTarget(null)}
-                                            title="Cancel whisper"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                )}
-
-                                {/* Main Input Container - Horizontal layout */}
-                                <div className="luxury-input-container">
-                                    {/* Attachment Button - Left side */}
-                                    <button 
-                                        type="button" 
-                                        className="attachment-btn-unified"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setIsAttachmentDropdownOpen(prev => !prev);
-                                        }}
-                                        title="Add attachment"
-                                    >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 231.8828 202.3201"
-                                          width="16"
-                                          height="16"
-                                        >
-                                          <g>
-                                            <path
-                                              fill="#5CB0FF"
-                                              d="M118.7695,98.3201c24.2617,0,44-19.7383,44-44s-19.7383-44-44-44s-44,19.7383-44,44 S94.5078,98.3201,118.7695,98.3201z M90.7695,50.3201h24v-24c0-2.209,1.7891-4,4-4s4,1.791,4,4v24h24c2.2109,0,4,1.791,4,4 s-1.7891,4-4,4h-24v24c0,2.209-1.7891,4-4,4s-4-1.791-4-4v-24h-24c-2.2109,0-4-1.791-4-4S88.5586,50.3201,90.7695,50.3201z"
-                                            />
-                                            <path
-                                              fill="#1C71DA"
-                                              d="M8,162.4509c0-17.5742,14.3086-31.8711,31.8984-31.8711h80.0859c17.5898,0,31.8984,14.2969,31.8984,31.8711 v4h8v-4c0-21.9844-17.8984-39.8711-39.8984-39.8711H39.8984c-22,0-39.8984,17.8867-39.8984,39.8711 s17.8984,39.8691,39.8984,39.8691h31.0039v-8H39.8984C22.3086,194.3201,8,180.0232,8,162.4509z"
-                                            />
-                                            <path
-                                              fill="#1C71DA"
-                                              d="M191.9844,122.5798h-31.0039v8h31.0039c17.5898,0,31.8984,14.2969,31.8984,31.8691 c0,17.5742-14.3086,31.8711-31.8984,31.8711h-80.0859C94.3086,194.3201,80,180.0232,80,162.449v-4h-8v4 c0,21.9844,17.8984,39.8711,39.8984,39.8711h80.0859c22,0,39.8984-17.8867,39.8984-39.8711S213.9844,122.5798,191.9844,122.5798z"
-                                            />
-                                            <path
-                                              fill="#1C71DA"
-                                              d="M118.7695,106.3201c28.6719,0,52-23.3262,52-52s-23.3281-52-52-52s-52,23.3262-52,52 S90.0977,106.3201,118.7695,106.3201z M118.7695,10.3201c24.2617,0,44,19.7383,44,44s-19.7383,44-44,44s-44-19.7383-44-44 S94.5078,10.3201,118.7695,10.3201z"
-                                            />
-                                            <path
-                                              fill="#FFFFFF"
-                                              d="M90.7695,58.3201h24v24c0,2.209,1.7891,4,4,4s4-1.791,4-4v-24h24c2.2109,0,4-1.791,4-4s-1.7891-4-4-4h-24 v-24c0-2.209-1.7891-4-4-4s-4,1.791-4,4v24h-24c-2.2109,0-4,1.791-4,4S88.5586,58.3201,90.7695,58.3201z"
-                                            />
-                                          </g>
-                                          <path
-                                            fill="#FF5D5D"
-                                            d="M199.0215,22.1438c-1.0234,0-2.0469-0.3906-2.8281-1.1714c-1.5625-1.5625-1.5625-4.0952,0-5.6572 l14.1426-14.1421c1.5605-1.5615,4.0938-1.5615,5.6562,0c1.5625,1.5625,1.5625,4.0952,0,5.6572l-14.1426,14.1421 C201.0693,21.7532,200.0449,22.1438,199.0215,22.1438z"
-                                          />
-                                          <path
-                                            fill="#FF5D5D"
-                                            d="M213.1641,22.1423c-1.0234,0-2.0479-0.3906-2.8281-1.1714L196.1934,6.8284 c-1.5625-1.5625-1.5625-4.0947,0-5.6572c1.5605-1.5615,4.0957-1.5615,5.6562,0l14.1426,14.1426 c1.5625,1.5625,1.5625,4.0947,0,5.6572C215.2119,21.7517,214.1875,22.1423,213.1641,22.1423z"
-                                          />
-                                          <path
-                                            fill="#00D40B"
-                                            d="M205.0215,122.1438c-7.7197,0-14-6.2803-14-14s6.2803-14,14-14s14,6.2803,14,14 S212.7412,122.1438,205.0215,122.1438z M205.0215,102.1438c-3.3086,0-6,2.6914-6,6s2.6914,6,6,6s6-2.6914,6-6 S208.3301,102.1438,205.0215,102.1438z"
-                                          />
-                                          <path
-                                            fill="#FFC504"
-                                            d="M22.3359,112.7693c-1.0234,0-2.0469-0.3906-2.8281-1.1714L8.1934,100.2844 c-0.75-0.75-1.1719-1.7676-1.1719-2.8286s0.4219-2.0786,1.1719-2.8286l11.3145-11.3135c1.5625-1.5615,4.0938-1.5615,5.6562,0 l11.3135,11.3135c1.5625,1.5625,1.5625,4.0947,0,5.6572l-11.3135,11.3135C24.3838,112.3787,23.3594,112.7693,22.3359,112.7693z M16.6787,97.4558l5.6572,5.6567l5.6562-5.6567l-5.6562-5.6567L16.6787,97.4558z"
-                                          />
-                                        </svg>
-
-                                    </button>
-                                    
-                                    {isAttachmentDropdownOpen && (
-                                        <div className="attachment-dropdown-unified">
-                                            {/* YouTube - Only for Admin, Owner, Moderator, Badge holders */}
-                                            {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role) || loggedInUserProfile?.badge) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setIsYouTubeSearchModalOpen(true);
-                                                        setIsAttachmentDropdownOpen(false);
-                                                    }}
-                                                    title="Add YouTube Video"
-                                                    className="attachment-option-unified"
-                                                >
-                                                    <YouTubeIconCustom />
-                                                </button>
-                                            )}
-
-                                            {/* Image Upload - Only for Admin, Owner, Moderator, Badge holders */}
-                                            {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role) || loggedInUserProfile?.badge) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setImagePopupOpen(true);
-                                                        setIsAttachmentDropdownOpen(false);
-                                                    }}
-                                                    title="Upload Image"
-                                                    className="attachment-option-unified"
-                                                >
-                                                    <ImageUploadIconCustom />
-                                                </button>
-                                            )}
-
-                                            {/* Font Style - Available for all users but with different features */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setShowFontPopup(true);
-                                                    setIsAttachmentDropdownOpen(false);
-                                                }}
-                                                title="Text Style"
-                                                className="attachment-option-unified"
-                                            >
-                                                <FontIconCustom />
-                                            </button>
-
-                                            {/* Audio Upload - Available for all users */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setAudioPopupOpen(true);
-                                                    setIsAttachmentDropdownOpen(false);
-                                                }}
-                                                title="Upload Audio"
-                                                className="attachment-option-unified"
-                                            >
-                                                <AudioIconCustom />
-                                            </button>
-
-                                            {/* GIFs & Stickers - Available for all users */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setGiphyStickersModalOpen(true);
-                                                    setIsAttachmentDropdownOpen(false);
-                                                }}
-                                                title="Send GIF or Sticker"
-                                                className="attachment-option-unified"
-                                            >
-                                                <GiphyIconCustom />
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Textarea - Perfectly integrated */}
-                                    <textarea
-                                        ref={textareaRef}
-                                        rows="1"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder={whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : "Type your message here..."}
-                                        className="luxury-textarea"
-                                        style={{
-                                            fontSize: fontSize || '15px',
-                                            color: fontColor || '#374151',
-                                            fontFamily: fontFamily || "'Inter', sans-serif",
-                                            fontWeight: isBold ? 'bold' : '500',
-                                            fontStyle: isItalic ? 'italic' : 'normal',
-                                            textDecoration: `${isUnderline ? 'underline ' : ''}${isStrikethrough ? 'line-through' : ''}`.trim() || 'none',
-                                            paddingLeft: whisperTarget ? '140px' : '16px',
-                                        }}
-                                    />
-
-                                    {/* Send Button - Elegantly positioned */}
-                                    <button 
-                                        type="submit" 
-                                        className="send-btn-unified" 
-                                        aria-label="Send message"
-                                        onClick={() => {
-                                            setHasUserScrolled(false);
-                                        }}
-                                    >
-                                        <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit="2" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                                            <defs>
-                                                <linearGradient id="_Linear1" gradientTransform="matrix(38 -30 17.181 21.762 16 37)" gradientUnits="userSpaceOnUse" x1="0" x2="1" y1="0" y2="0">
-                                                    <stop offset="0" stopColor="#c556ec"/>
-                                                    <stop offset="1" stopColor="#fff"/>
-                                                </linearGradient>
-                                            </defs>
-                                            <g>
-                                                <path d="m9 28.002 18.508 6.002 18.692-21.304z" fill="url(#_Linear1)"/>
-                                                <path d="m27.507 36.106c.549.17.56.228 1.082-.299l15.789-18.057c.364-.415.321-1.048-.094-1.411-.416-.363-1.048-.321-1.411.095l-15.364 17.571-18.509-6.003 39.078-16.002-10.645 40.864-6.707-13.978c-.239-.497-.837-.707-1.335-.469-.497.239-.707.837-.469 1.335 0 0 4.507 9.391 6.708 13.977.363.757 1.16 1.206 1.995 1.125.836-.08 1.532-.674 1.743-1.486 2.159-8.287 8.765-33.646 10.645-40.864.191-.733-.048-1.511-.619-2.01-.57-.498-1.373-.632-2.074-.345-6.903 2.827-31.153 12.757-39.078 16.002-.777.318-1.272 1.088-1.241 1.926.032.839.584 1.569 1.382 1.828z" fill="#413f42"/>
-                                            </g>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Scroll to Bottom Button */}
-                            {showScrollToBottomBtn && (
-                                <button 
-                                    className="scroll-to-bottom-btn"
-                                    onClick={handleScrollToBottomClick}
-                                    title="Scroll to bottom"
-                                >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                                    </svg>
-                                </button>
-                            )}
-                        </form>
+                        <form onSubmit={handleSendMessage} className="message-form"><div className="message-input-container">
+                                    <button type="button" className="footer-btn attachment-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsAttachmentDropdownOpen(prev => !prev); }} title="Add attachment"><AttachmentIconSVG /></button>
+                                    <input type="text" className="message-input-field" placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { handleSendMessage(e); } }} />
+                                    <button type="submit" className="footer-btn send-btn" disabled={!newMessage.trim()}><SendIconSVG /></button>
+                                </div></form>
                     </div>
                 </div>
 
