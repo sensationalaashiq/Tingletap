@@ -5837,13 +5837,7 @@ const HomePage = ({ user }) => {
                             />
                         ))}
                         </main>
-
-                    <div className="message-form-container">
-                        
-                        {/* Message Input Form */}
-                        
-                    </div>
-                </div>
+                    
 
                 {/* StylishImageUploadModal */}
                 <StylishImageUploadModal
