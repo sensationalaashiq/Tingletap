@@ -6427,6 +6427,44 @@ const HomePage = ({ user }) => {
                     }}
                 />
             </div>
+
+            {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
+            <div className="chat-footer">
+                <form onSubmit={handleSendMessage} className="message-form">
+                    <div className="premium-input-container">
+                        <button
+                            type="button"
+                            className="premium-footer-btn attachment-btn"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsAttachmentDropdownOpen(prev => !prev);
+                            }}
+                            title="Add attachment"
+                        >
+                            <AttachmentIconSVG />
+                        </button>
+                        <div className="premium-input-wrapper">
+                            <input
+                                type="text"
+                                className="premium-input-field"
+                                placeholder="Type a message..."
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="premium-footer-btn send-btn"
+                            disabled={!newMessage.trim()}
+                        >
+                            <SendIconSVG />
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </>
     );
 };
