@@ -6465,6 +6465,7 @@ const HomePage = ({ user }) => {
                 </form>
             </div>
 
+            </div>{/* end homepage-container */}
         </>
     );
 };
