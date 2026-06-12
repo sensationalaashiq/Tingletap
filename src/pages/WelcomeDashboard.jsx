@@ -280,6 +280,7 @@ const WelcomeDashboard = () => {
   const userEmail   = user?.email || '';
   const isVerified  = user?.emailVerified;
   const initials    = displayName.slice(0, 2).toUpperCase();
+  const userPhoto   = user?.photoURL || '';
   const maskedEmail = userEmail
     ? userEmail.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + '·'.repeat(Math.min(b.length, 5)) + c)
     : '';
@@ -328,7 +329,12 @@ const WelcomeDashboard = () => {
             {/* User chip + dropdown */}
             <div className="wd-chip-wrap" ref={dropRef}>
               <button className="wd-chip" onClick={() => setShowUserDrop(p => !p)}>
-                <span className="wd-chip-av"><span className="wd-chip-init">{initials}</span></span>
+                <span className="wd-chip-av">
+                  {userPhoto
+                    ? <img src={userPhoto} alt={initials} className="wd-chip-av-img" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    : null}
+                  <span className="wd-chip-init" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
+                </span>
                 <span className="wd-chip-name">{displayName.split(' ')[0]}</span>
                 <span className={`wd-chip-arrow${showUserDrop ? ' open' : ''}`}><ChevronDown color="#7c3aed" /></span>
               </button>
@@ -410,7 +416,12 @@ const WelcomeDashboard = () => {
             {/* Panel head — user info */}
             <div className="wd-panel-head">
               <div className="wd-panel-user">
-                <div className="wd-panel-av"><span className="wd-panel-av-i">{initials}</span></div>
+                <div className="wd-panel-av">
+                  {userPhoto
+                    ? <img src={userPhoto} alt={initials} className="wd-panel-av-img" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    : null}
+                  <span className="wd-panel-av-i" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
+                </div>
                 <div className="wd-panel-meta">
                   <span className="wd-panel-uname">{displayName}</span>
                   {maskedEmail && <span className="wd-panel-email">{maskedEmail}</span>}
