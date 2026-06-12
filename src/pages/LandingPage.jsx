@@ -505,14 +505,6 @@ const LandingPage = () => {
             </button>
           </div>
 
-          <div className="lp-footer-copyright">
-            <div className="lp-copyright-gem"><DiamondGem size={18} /></div>
-            <div className="lp-copyright-text">
-              <span className="lp-copyright-main">© 2025 TingleTap — All Rights Reserved</span>
-              <span className="lp-copyright-sub">Crafted with care for India's chat community</span>
-            </div>
-          </div>
-
         </div>
       </footer>
       <PremiumCopyright />
