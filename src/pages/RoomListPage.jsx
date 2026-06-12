@@ -267,7 +267,7 @@ const RoomListPage = () => {
     { title: 'No Spam', description: 'Avoid spamming messages, links, or promotional content in chat rooms.' },
     { title: 'Privacy Protection', description: 'Do not share personal information or request others\' private details.' },
     { title: 'No Illegal Content', description: 'Posting illegal content will result in immediate ban and legal action.' },
-    { title: 'Age Appropriate', description: 'Users must be 13+ years old. Adult content is restricted to 18+ rooms only.' },
+    { title: 'Age Appropriate', description: 'Users must be 18+ years old. Adult content is restricted to 18+ verified rooms only.' },
     { title: 'No Impersonation', description: 'Do not impersonate staff, moderators, or other users under any circumstances.' },
     { title: 'Follow Staff Instructions', description: 'Comply with moderator and admin directions promptly and respectfully.' },
     { title: 'Report Issues', description: 'Report inappropriate behaviour using the in-chat report feature immediately.' },

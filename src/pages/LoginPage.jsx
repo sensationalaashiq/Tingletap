@@ -496,8 +496,8 @@ const LoginPage = () => {
       return;
     }
 
-    if (!guestFormData.age || guestFormData.age < 13 || guestFormData.age > 100) {
-      setError('Age must be between 13 and 100');
+    if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) {
+      setError('Age must be between 18 and 100');
       return;
     }
 
@@ -586,7 +586,7 @@ const LoginPage = () => {
     <div style={{
       height: '100vh',
       width: '100vw',
-      background: 'linear-gradient(135deg, #E6E6FA 0%, #DDA0DD 50%, #E6E6FA 100%)',
+      background: 'linear-gradient(135deg, #0f0c29 0%, #1e1659 50%, #0a0820 100%)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -599,22 +599,24 @@ const LoginPage = () => {
     }}>
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
           .login-container {
-            background: rgba(15, 15, 35, 0.95);
-            border-radius: 16px;
+            background: rgba(8, 5, 28, 0.88);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 20px;
             padding: 15px;
             width: 100%;
             max-width: 340px;
             height: auto;
             max-height: 98vh;
             box-shadow: 
-              0 25px 60px rgba(0, 0, 0, 0.4),
-              0 8px 25px rgba(30, 60, 114, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1),
-              0 0 40px rgba(42, 82, 152, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+              0 30px 70px rgba(0, 0, 0, 0.55),
+              0 8px 30px rgba(91, 91, 214, 0.25),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 0 0 1px rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.2);
             position: relative;
             overflow: hidden;
             box-sizing: border-box;
@@ -630,9 +632,9 @@ const LoginPage = () => {
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, #2a5298, #1e3c72, #16213e, #1a1a2e, #2a5298);
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed, #6d28d9, #4c1d95, #8b5cf6);
             background-size: 400% 100%;
-            animation: shimmer 4s ease-in-out infinite;
+            animation: shimmer 3s ease-in-out infinite;
           }
 
           .login-container::after {
@@ -642,7 +644,7 @@ const LoginPage = () => {
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(42, 82, 152, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(91, 91, 214, 0.1) 0%, transparent 70%);
             animation: floating-glow 6s ease-in-out infinite;
             pointer-events: none;
           }
@@ -673,15 +675,18 @@ const LoginPage = () => {
           }
 
           .logo h1 {
-            font-size: 1.6rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #2a5298 100%);
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 45%, #8b5cf6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin: 0;
-            letter-spacing: -0.8px;
-            text-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+            letter-spacing: 0.02em;
+            text-shadow: none;
+            line-height: 1.1;
           }
 
           .logo p {
@@ -721,11 +726,11 @@ const LoginPage = () => {
 
           .form-input:focus {
             outline: none;
-            border-color: #4facfe;
+            border-color: #8b5cf6;
             background: rgba(255, 255, 255, 0.12);
             box-shadow: 
-              0 0 0 3px rgba(79, 172, 254, 0.2),
-              0 6px 20px rgba(79, 172, 254, 0.15);
+              0 0 0 3px rgba(139, 92, 246, 0.2),
+              0 6px 20px rgba(139, 92, 246, 0.15);
             transform: translateY(-1px);
           }
 
@@ -780,19 +785,19 @@ const LoginPage = () => {
           }
 
           .checkbox:hover {
-            border-color: #4facfe;
-            background: rgba(79, 172, 254, 0.15);
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.15);
             box-shadow: 
-              0 6px 20px rgba(79, 172, 254, 0.3),
+              0 6px 20px rgba(139, 92, 246, 0.3),
               inset 0 1px 0 rgba(255, 255, 255, 0.2);
             transform: translateY(-2px) scale(1.05);
           }
 
           .checkbox:checked {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #2a5298 100%);
-            border-color: #4facfe;
+            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 50%, #6d28d9 100%);
+            border-color: #8b5cf6;
             box-shadow: 
-              0 10px 30px rgba(79, 172, 254, 0.4),
+              0 10px 30px rgba(139, 92, 246, 0.4),
               0 3px 12px rgba(0, 242, 254, 0.3),
               inset 0 1px 0 rgba(255, 255, 255, 0.3);
             animation: premiumCheckboxPulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -802,20 +807,20 @@ const LoginPage = () => {
             0% { 
               transform: scale(1); 
               box-shadow: 
-                0 6px 20px rgba(79, 172, 254, 0.2),
+                0 6px 20px rgba(139, 92, 246, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             }
             50% { 
               transform: scale(1.15); 
               box-shadow: 
-                0 12px 35px rgba(79, 172, 254, 0.5),
+                0 12px 35px rgba(139, 92, 246, 0.5),
                 0 4px 15px rgba(0, 242, 254, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.4);
             }
             100% { 
               transform: scale(1); 
               box-shadow: 
-                0 10px 30px rgba(79, 172, 254, 0.4),
+                0 10px 30px rgba(139, 92, 246, 0.4),
                 0 3px 12px rgba(0, 242, 254, 0.3),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
             }
@@ -873,14 +878,14 @@ const LoginPage = () => {
           }
 
           .checkbox-label:hover {
-            color: #4facfe;
-            text-shadow: 0 0 6px rgba(79, 172, 254, 0.4);
+            color: #8b5cf6;
+            text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
           }
 
           .primary-btn {
             width: 100%;
             padding: 10px 16px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #2a5298 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 50%, #6d28d9 100%);
             border: none;
             border-radius: 10px;
             color: white;
@@ -893,7 +898,7 @@ const LoginPage = () => {
             -webkit-tap-highlight-color: transparent;
             overflow: hidden;
             box-shadow: 
-              0 6px 20px rgba(79, 172, 254, 0.3),
+              0 6px 20px rgba(139, 92, 246, 0.3),
               inset 0 1px 0 rgba(255, 255, 255, 0.2);
             margin-bottom: 5px;
           }
@@ -901,7 +906,7 @@ const LoginPage = () => {
           .primary-btn:hover {
             transform: translateY(-2px) scale(1.02);
             box-shadow: 
-              0 10px 30px rgba(79, 172, 254, 0.4),
+              0 10px 30px rgba(139, 92, 246, 0.4),
               0 3px 12px rgba(0, 242, 254, 0.3);
           }
 
@@ -927,11 +932,11 @@ const LoginPage = () => {
           }
 
           .secondary-btn:hover {
-            border-color: #4facfe;
-            color: #4facfe;
-            background: rgba(79, 172, 254, 0.1);
+            border-color: #8b5cf6;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
             transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.2);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
           }
 
           .divider {
@@ -971,7 +976,7 @@ const LoginPage = () => {
           .forgot-link {
             display: block;
             text-align: center;
-            color: #4facfe;
+            color: #8b5cf6;
             text-decoration: none;
             font-size: 0.75rem;
             font-weight: 600;
@@ -980,7 +985,7 @@ const LoginPage = () => {
           }
 
           .forgot-link:hover {
-            color: #00f2fe;
+            color: #c084fc;
             text-shadow: 0 0 6px rgba(0, 242, 254, 0.5);
           }
 
@@ -992,14 +997,14 @@ const LoginPage = () => {
           }
 
           .signup-link a {
-            color: #4facfe;
+            color: #8b5cf6;
             text-decoration: none;
             font-weight: 700;
             transition: all 0.3s ease;
           }
 
           .signup-link a:hover {
-            color: #00f2fe;
+            color: #c084fc;
             text-shadow: 0 0 6px rgba(0, 242, 254, 0.5);
           }
 
@@ -1265,6 +1270,25 @@ const LoginPage = () => {
               padding: 10px;
               min-height: 40px;
             }
+          }
+
+          @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            33% { transform: translate(28px, 38px) scale(1.06); opacity: 0.9; }
+            66% { transform: translate(-18px, 22px) scale(0.94); opacity: 0.6; }
+          }
+          @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+            50% { transform: translate(-32px, -38px) scale(1.1); opacity: 0.75; }
+          }
+          @keyframes orbFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+            33% { transform: translate(-22px, 28px) scale(1.08); opacity: 0.8; }
+            66% { transform: translate(18px, -18px) scale(0.92); opacity: 0.5; }
+          }
+          @keyframes orbFloat4 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(20px, -25px) scale(1.12); }
           }
 
           /* Landing Page Premium Styling */
@@ -1573,7 +1597,13 @@ const LoginPage = () => {
         `}
       </style>
 
-      <div className="login-container">
+      {/* Floating ambient orbs */}
+      <div style={{position:'absolute',width:'380px',height:'380px',borderRadius:'50%',background:'radial-gradient(circle, rgba(139,92,246,.28) 0%, transparent 70%)',top:'-140px',left:'-140px',animation:'orbFloat1 11s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
+      <div style={{position:'absolute',width:'260px',height:'260px',borderRadius:'50%',background:'radial-gradient(circle, rgba(168,85,247,.22) 0%, transparent 70%)',bottom:'-90px',right:'-90px',animation:'orbFloat2 14s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
+      <div style={{position:'absolute',width:'200px',height:'200px',borderRadius:'50%',background:'radial-gradient(circle, rgba(91,91,214,.28) 0%, transparent 70%)',top:'45%',right:'-70px',animation:'orbFloat3 17s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
+      <div style={{position:'absolute',width:'160px',height:'160px',borderRadius:'50%',background:'radial-gradient(circle, rgba(192,132,252,.18) 0%, transparent 70%)',bottom:'20%',left:'-50px',animation:'orbFloat4 9s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
+
+      <div className="login-container" style={{position:'relative',zIndex:1}}>
         <div className="logo">
           <img 
             src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" 

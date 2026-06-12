@@ -90,7 +90,7 @@ const sections = [
   { icon: 'accuracy', title: 'Content Accuracy', text: 'We do not verify the accuracy, completeness, or reliability of user-generated content. Information shared by users should not be considered professional advice, medical guidance, or factual statements.' },
   { icon: 'link', title: 'Third-Party Links', text: 'Links to external websites or services may be shared on our platform. We are not responsible for the content, privacy practices, or terms of service of any third-party websites or services.' },
   { icon: 'warranty', title: 'No Warranties', text: 'TingleTap is provided "as is" without any warranties, express or implied, including but not limited to merchantability, fitness for a particular purpose, or non-infringement of intellectual property rights.' },
-  { icon: 'age', title: 'Age Restrictions', text: 'TingleTap requires users to be at least 13 years of age. Adult content rooms require users to be 18 years or older. Misrepresentation of age will result in immediate account termination.' },
+  { icon: 'age', title: 'Age Restrictions', text: 'TingleTap requires users to be at least 18 years of age. Adult content rooms require users to be 18 years or older. Misrepresentation of age will result in immediate account termination.' },
 ];
 
 const DisclaimerPage = () => {
