@@ -780,7 +780,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
           id="ep-photo-input"
           style={{ display: 'none' }}
         />
-        <span className="wd-avatar-hint">Tap to change photo</span>
+        <span className="wd-avatar-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.55}}>
+            <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
+          </svg>
+          Tap photo to change
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.4}}>
+            <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+          </svg>
+        </span>
       </div>
 
       {/* ── Form ── */}
@@ -984,11 +992,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
                 <span>{uploading ? 'Uploading…' : 'Saving…'}</span>
               </>
             : <>
-                {/* Premium verified-badge checkmark icon */}
+                {/* Floppy disk — universal save icon, same as WelcomeDashboard */}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.46L12,21L15.4,22.46L17.29,19.29L20.9,18.47L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                  <path d="M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3M19,19H5V5H16.17L19,7.83V19M12,12C10.34,12 9,13.34 9,15C9,16.66 10.34,18 12,18C13.66,18 15,16.66 15,15C15,13.34 13.66,12 12,12M6,6H15V10H6V6Z"/>
                 </svg>
                 <span>Save Changes</span>
+                {/* Paper-plane accent */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.7}}>
+                  <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                </svg>
               </>
           }
         </button>

@@ -48,7 +48,10 @@
   opacity: 0; transition: opacity .2s; border-radius: 50%;
 }
 .wd-avatar-circle:hover .wd-avatar-overlay { opacity: 1; }
-.wd-avatar-hint { font-size: 12px; color: #6d6b99; font-weight: 500; }
+.wd-avatar-hint {
+  font-size: 12px; color: #6d6b99; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+}
 
 /* ── Fields ── */
 .wd-fields {

@@ -48,8 +48,12 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
         .epm-titles h3 {
           font-family: 'Cormorant Garamond', serif;
           font-size: 22px; font-weight: 700; color: #1e1b4b; line-height: 1.1; margin: 0;
+          display: flex; align-items: center; gap: 7px;
         }
-        .epm-titles p { font-size: 12.5px; color: #6d6b99; margin: 3px 0 0; font-weight: 500; }
+        .epm-titles p {
+          font-size: 12.5px; color: #6d6b99; margin: 4px 0 0; font-weight: 500;
+          display: flex; align-items: center; gap: 5px;
+        }
         .epm-x {
           width: 36px; height: 36px; border-radius: 50%;
           background: rgba(99,102,241,.09); border: 1.5px solid rgba(99,102,241,.18);
@@ -60,7 +64,6 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
 
         .epm-sep { height: 1px; background: rgba(99,102,241,.1); margin: 0 20px; }
 
-        /* Scrollbar */
         .epm-panel::-webkit-scrollbar { width: 4px; }
         .epm-panel::-webkit-scrollbar-track { background: transparent; }
         .epm-panel::-webkit-scrollbar-thumb { background: rgba(99,102,241,.22); border-radius: 4px; }
@@ -74,14 +77,27 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="epm-head">
           <div className="epm-title-row">
             <div className="epm-icon-wrap">
-              {/* Premium pencil-star icon */}
+              {/* Pencil edit icon */}
               <svg width="22" height="22" viewBox="0 0 24 24" fill="#6366f1">
                 <path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z"/>
               </svg>
             </div>
             <div className="epm-titles">
-              <h3>Edit Profile</h3>
-              <p>Update your avatar &amp; personal info</p>
+              <h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#6366f1" style={{opacity:.7}}>
+                  <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                </svg>
+                Edit Profile
+              </h3>
+              <p>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#a5b4fc">
+                  <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+                </svg>
+                Update your avatar &amp; personal info
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="#a5b4fc">
+                  <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+                </svg>
+              </p>
             </div>
           </div>
           <button className="epm-x" onClick={onClose}>
