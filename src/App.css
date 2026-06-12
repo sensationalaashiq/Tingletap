@@ -932,12 +932,12 @@ body {
 /* Nav logo overrides — must NOT be forced to 150px */
 .lp-logo,
 img.lp-logo {
-    width: 28px !important; height: 28px !important;
-    min-width: 28px !important; min-height: 28px !important;
-    max-width: 28px !important; max-height: 28px !important;
+    width: 40px !important; height: 40px !important;
+    min-width: 40px !important; min-height: 40px !important;
+    max-width: 40px !important; max-height: 40px !important;
     border: none !important; background: none !important;
     padding: 0 !important; box-shadow: none !important;
-    border-radius: 8px !important; object-fit: contain !important;
+    border-radius: 10px !important; object-fit: contain !important;
 }
 
 /* Role-Based Message Text Colors - Apply to wall chat messages only */
