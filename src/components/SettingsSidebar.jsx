@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import StatusModal from './StatusModal';
 import EditProfileModal from './EditProfileModal';
+import ChangeUsernameModal from './ChangeUsernameModal';
 import WarningAnnouncementModal from './WarningAnnouncementModal';
 import WarningAnnouncementManager from './WarningAnnouncementManager';
 import './SettingsSidebar.css';
@@ -36,6 +37,7 @@ const SettingsSidebar = ({
     const [friendsProfiles, setFriendsProfiles] = useState([]);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+    const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [showWarningManager, setShowWarningManager] = useState(false);
     const [settings, setSettings] = useState({
@@ -3024,6 +3026,23 @@ const SettingsSidebar = ({
                                     className="modern-nav-btn navigation"
                                     onClick={() => {
                                         try {
+                                            setShowChangeUsernameModal(true);
+                                        } catch (error) {
+                                            console.error('Modal error:', error);
+                                        }
+                                    }}
+                                    title="Change Username"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2C14.75,2 17.25,3 19.25,5C21.25,7 22.25,9.5 22.25,12C22.25,13.92 21.75,15.7 20.75,17.33L19.33,15.92C19.77,14.67 20,13.36 20,12C20,10 19.27,8.27 17.82,6.82C16.37,5.37 14.63,4.67 12.62,4.67C10.5,4.67 8.73,5.4 7.27,6.87C5.8,8.33 5.06,10.09 5.06,12.14C5.06,14.08 5.74,15.78 7.1,17.24C8.45,18.7 10.17,19.43 12.25,19.43H13V21.93H12C9.25,21.93 6.89,20.93 4.92,18.93C2.97,16.93 2,14.58 2,11.93C2,9.18 3,6.75 5,4.75C7,2.75 9.37,1.75 12,2M22,17V19H19V22H17V19H14V17H17V14H19V17H22Z"/>
+                                    </svg>
+                                    <span>CHANGE USERNAME</span>
+                                </button>
+
+                                <button 
+                                    className="modern-nav-btn navigation"
+                                    onClick={() => {
+                                        try {
                                             navigate('/rooms');
                                             onClose();
                                             toast.success('🏠 Going to Rooms!');
@@ -3787,10 +3806,20 @@ const SettingsSidebar = ({
                     onSuccess={() => {
                         setShowEditProfileModal(false);
                         toast.success('✅ Profile updated successfully!');
-                        // Optional: Refresh page to show updated data
                         setTimeout(() => {
                             window.location.reload();
                         }, 1000);
+                    }}
+                />
+            )}
+
+            {/* Change Username Modal */}
+            {showChangeUsernameModal && (
+                <ChangeUsernameModal
+                    isOpen={showChangeUsernameModal}
+                    onClose={() => setShowChangeUsernameModal(false)}
+                    onSuccess={() => {
+                        setShowChangeUsernameModal(false);
                     }}
                 />
             )}
