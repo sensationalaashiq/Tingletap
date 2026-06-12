@@ -98,8 +98,8 @@
   animation: rlFloat2 4s ease-in-out infinite;
 }
 .rl-brand-logo {
-  width: 84px; height: 84px; border-radius: 26px; object-fit: cover;
-  box-shadow: 0 8px 36px rgba(99,102,241,.45), 0 2px 0 rgba(255,255,255,.6);
+  width: 84px; height: 84px; border-radius: 26px; object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(99,102,241,.5));
   position: relative; z-index: 1;
 }
 .rl-logo-ring {
