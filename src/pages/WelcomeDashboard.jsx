@@ -607,8 +607,6 @@ const WelcomeDashboard = () => {
 
         </div>
 
-        <div className="wd-comm-pill"><SparkleIcon /> <span>Premium Community · 555+ Active Users</span></div>
-
         <PremiumCopyright />
       </main>
 
