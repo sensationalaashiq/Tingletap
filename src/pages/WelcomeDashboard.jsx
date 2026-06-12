@@ -378,7 +378,6 @@ const WelcomeDashboard = () => {
           <h2 className="wd-hero-h2">Connect with India,<br /><span className="wd-grad">one chat at a time.</span></h2>
           <p className="wd-hero-sub">
             A premium, real-time community built for meaningful connections.
-            {currentDate && ` With us since ${currentDate}.`}
           </p>
         </div>
 
@@ -396,6 +395,84 @@ const WelcomeDashboard = () => {
             <GearIcon size={18} color="#5b21b6" />
             <span>Account Settings</span>
           </button>
+        </div>
+
+        {/* ── MEMBER CARD ── */}
+        <div className="wd-member-wrap">
+
+          {/* Joining date banner */}
+          <div className="wd-ms-banner">
+            <div className="wd-ms-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="calMG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs><path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z" fill="url(#calMG)"/></svg>
+            </div>
+            <div className="wd-ms-text">
+              <span className="wd-ms-label">Member Since</span>
+              <span className="wd-ms-date">{currentDate || '—'}</span>
+            </div>
+            <div className="wd-ms-badge">
+              <svg width="13" height="13" viewBox="0 0 24 24"><defs><linearGradient id="dmG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs><path d="M12,1L9.5,8.5L2,9.27L7.45,14.14L5.82,21L12,17.27L18.18,21L16.54,14.14L22,9.27L14.5,8.5L12,1Z" fill="url(#dmG)"/></svg>
+              <span>Premium</span>
+            </div>
+          </div>
+
+          {/* Tagline */}
+          <div className="wd-ribbon-quote">
+            <svg width="18" height="18" viewBox="0 0 24 24" className="wd-quote-icon"><defs><linearGradient id="qG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a855f7"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs><path d="M4.58,12.08C5.9,10.56 7.56,9.67 9.17,9.67V6C6.2,6 3.09,7.58 1,10.42L4.58,12.08M13.42,12.08C14.73,10.56 16.39,9.67 18,9.67V6C15.03,6 11.92,7.58 9.83,10.42L13.42,12.08M4.58,19.08C5.9,17.56 7.56,16.67 9.17,16.67V13C6.2,13 3.09,14.58 1,17.42L4.58,19.08M13.42,19.08C14.73,17.56 16.39,16.67 18,16.67V13C15.03,13 11.92,14.58 9.83,17.42L13.42,19.08Z" fill="url(#qG)"/></svg>
+            <p>A premium, real-time community built for meaningful connections. The site existed before you — but your story with us begins on <strong>{currentDate || 'your first day'}</strong>.</p>
+          </div>
+
+          {/* Feature tiles */}
+          <div className="wd-feature-grid">
+
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(99,102,241,0.1)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft1G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs><path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z" fill="url(#ft1G)"/></svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Live Chat Rooms</strong>
+                <span>Real-time text, voice & video</span>
+              </div>
+            </div>
+
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(16,185,129,0.1)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft2G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,15.97 6,15.42C6.95,14.03 9.17,13 12,13C14.83,13 17.05,14.03 18,15.42C17.76,15.97 17.47,16.5 17.13,17Z" fill="url(#ft2G)"/></svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Verified & Safe</strong>
+                <span>Moderated · Encrypted · Secure</span>
+              </div>
+            </div>
+
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(236,72,153,0.1)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft3G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs><path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="url(#ft3G)"/></svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Meaningful Bonds</strong>
+                <span>Private chats · Friend system</span>
+              </div>
+            </div>
+
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(14,165,233,0.1)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft4G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0284c7"/></linearGradient></defs><path d="M16,11C17.66,11 18.99,9.66 18.99,8C18.99,6.34 17.66,5 16,5C14.34,5 13,6.34 13,8C13,9.66 14.34,11 16,11M8,11C9.66,11 10.99,9.66 10.99,8C10.99,6.34 9.66,5 8,5C6.34,5 5,6.34 5,8C5,9.66 6.34,11 8,11M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M16,13C15.71,13 15.38,13.02 15.03,13.05C16.19,13.89 17,15.02 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13Z" fill="url(#ft4G)"/></svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Active Community</strong>
+                <span>555+ members · Growing daily</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom identity strip */}
+          <div className="wd-identity-strip">
+            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="idG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c084fc"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" fill="url(#idG)"/></svg>
+            <span>You are part of something real.</span>
+            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="id2G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" fill="url(#id2G)"/></svg>
+          </div>
+
         </div>
 
         <div className="wd-comm-pill"><SparkleIcon /> <span>Premium Community · 555+ Active Users</span></div>
