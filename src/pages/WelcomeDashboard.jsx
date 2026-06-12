@@ -541,9 +541,9 @@ const WelcomeDashboard = () => {
               <span className="wd-ms-label">Member Since</span>
               <span className="wd-ms-date">{currentDate || '—'}</span>
             </div>
-            <div className="wd-ms-badge">
-              <svg width="13" height="13" viewBox="0 0 24 24"><defs><linearGradient id="dmG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs><path d="M12,1L9.5,8.5L2,9.27L7.45,14.14L5.82,21L12,17.27L18.18,21L16.54,14.14L22,9.27L14.5,8.5L12,1Z" fill="url(#dmG)"/></svg>
-              <span>Premium</span>
+            <div className={`wd-ms-badge wd-ms-badge--${userBadge ? 'badge' : (userRole || 'registered')}`}>
+              <span className="wd-ms-badge-icon">{roleConfig.icon}</span>
+              <span>{roleConfig.label}</span>
             </div>
           </div>
 
