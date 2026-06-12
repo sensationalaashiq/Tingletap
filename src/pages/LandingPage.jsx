@@ -32,17 +32,13 @@ const GoldTrophy = ({ size = 16 }) => (
   </svg>
 );
 
-const PremiumFlash = ({ size = 18 }) => (
+const LuxuryWhiteGem = ({ size = 16 }) => (
   <svg viewBox="0 0 20 20" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <defs>
-      <linearGradient id="pf-g" x1="20%" y1="0%" x2="80%" y2="100%">
-        <stop offset="0%" stopColor="#fde68a"/>
-        <stop offset="55%" stopColor="#f59e0b"/>
-        <stop offset="100%" stopColor="#d97706"/>
-      </linearGradient>
-    </defs>
-    <path d="M11.8 2L5.5 10.5H10.2L8.2 18L15.5 9.5H10.5L11.8 2Z" fill="url(#pf-g)"/>
-    <path d="M11.8 2L5.5 10.5H10.2L8.2 18L15.5 9.5H10.5L11.8 2Z" fill="white" opacity="0.22"/>
+    <path d="M10 1.2L11.9 8.1L18.8 10L11.9 11.9L10 18.8L8.1 11.9L1.2 10L8.1 8.1L10 1.2Z" fill="white"/>
+    <circle cx="10" cy="10" r="2.1" fill="white" opacity="0.55"/>
+    <path d="M10 1.2L11.9 8.1L10 10L8.1 8.1L10 1.2Z" fill="white" opacity="0.28"/>
+    <path d="M5.4 5.4L8.6 8.6" stroke="white" strokeWidth="0.6" strokeLinecap="round" opacity="0.35"/>
+    <path d="M14.6 14.6L11.4 11.4" stroke="white" strokeWidth="0.6" strokeLinecap="round" opacity="0.35"/>
   </svg>
 );
 
@@ -275,7 +271,7 @@ const LandingPage = () => {
             </button>
             <button className="lp-btn-primary" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
               <span>Get Started</span>
-              <PremiumFlash size={15} />
+              <LuxuryWhiteGem size={15} />
             </button>
           </nav>
         </div>
@@ -320,7 +316,7 @@ const LandingPage = () => {
           <div className="lp-hero-btns lp-anim-up lp-d3">
             <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
               <span>Start Chatting Now</span>
-              <PremiumFlash size={18} />
+              <LuxuryWhiteGem size={18} />
               <span className="lp-shimmer" aria-hidden="true" />
             </button>
             <button className="lp-cta-outline" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
@@ -434,7 +430,7 @@ const LandingPage = () => {
             <div className="lp-hero-btns" style={{ maxWidth: 460, margin: '0 auto' }}>
               <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
                 <span>Start Chatting Now</span>
-                <PremiumFlash size={18} />
+                <LuxuryWhiteGem size={18} />
                 <span className="lp-shimmer" aria-hidden="true" />
               </button>
               <button className="lp-cta-outline" onClick={() => navigate('/login')}>
