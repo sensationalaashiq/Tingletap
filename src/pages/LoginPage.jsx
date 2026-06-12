@@ -416,11 +416,6 @@ const LoginPage = () => {
           from { opacity: 0; transform: translateY(30px) scale(0.96); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes pulse-ring {
-          0% { box-shadow: 0 0 0 0 rgba(155,89,208,0.25); }
-          70% { box-shadow: 0 0 0 12px rgba(155,89,208,0); }
-          100% { box-shadow: 0 0 0 0 rgba(155,89,208,0); }
-        }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes shimmerSlide {
           0% { left: -100%; }
@@ -470,16 +465,19 @@ const LoginPage = () => {
           text-align: center;
           margin-bottom: 20px;
         }
+        @keyframes logoFloat {
+          0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 12px 28px rgba(139,92,246,0.35)); }
+          50% { transform: translateY(-10px) scale(1.03); filter: drop-shadow(0 22px 36px rgba(139,92,246,0.5)); }
+        }
+
         .lv-logo-img {
-          width: 58px;
-          height: 58px;
-          border-radius: 50%;
-          border: 3px solid transparent;
-          background: linear-gradient(white,white) padding-box,
-                      linear-gradient(135deg,#c084fc,#a855f7,#7c3aed) border-box;
+          width: 62px;
+          height: 62px;
+          border-radius: 22px;
+          border: none;
+          background: none;
           object-fit: contain;
-          box-shadow: 0 8px 28px rgba(139,92,246,0.3);
-          animation: pulse-ring 2.5s ease-out infinite;
+          animation: logoFloat 3.5s ease-in-out infinite;
           margin-bottom: 10px;
         }
         .lv-logo-title {
@@ -916,7 +914,15 @@ const LoginPage = () => {
             className="lv-logo-img"
           />
           <h1 className="lv-logo-title">TingleTap</h1>
-          <p className="lv-logo-sub">Welcome back! Sign in to continue ✨</p>
+          <p className="lv-logo-sub">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginRight:'5px'}}>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#c084fc" stroke="#a855f7" strokeWidth="1"/>
+            </svg>
+            Welcome back! Sign in to continue
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginLeft:'5px'}}>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#c084fc" stroke="#a855f7" strokeWidth="1"/>
+            </svg>
+          </p>
         </div>
 
         <form onSubmit={handleSubmit}>

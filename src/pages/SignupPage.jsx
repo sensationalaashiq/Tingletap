@@ -290,11 +290,6 @@ const SignupPage = () => {
         }
         @keyframes sSpin { to { transform: rotate(360deg); } }
         @keyframes sSlide { 0%{left:-100%} 100%{left:100%} }
-        @keyframes sPulseRing {
-          0% { box-shadow: 0 0 0 0 rgba(155,89,208,0.25); }
-          70% { box-shadow: 0 0 0 12px rgba(155,89,208,0); }
-          100% { box-shadow: 0 0 0 0 rgba(155,89,208,0); }
-        }
         @keyframes sStepPop {
           0% { transform: scale(0.7); opacity: 0; }
           70% { transform: scale(1.1); opacity: 1; }
@@ -335,15 +330,18 @@ const SignupPage = () => {
         }
 
         .su-logo { text-align: center; margin-bottom: 16px; }
+        @keyframes sLogoFloat {
+          0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 12px 26px rgba(139,92,246,0.35)); }
+          50% { transform: translateY(-10px) scale(1.03); filter: drop-shadow(0 22px 34px rgba(139,92,246,0.52)); }
+        }
+
         .su-logo-img {
-          width: 52px; height: 52px;
-          border-radius: 50%;
-          border: 3px solid transparent;
-          background: linear-gradient(white,white) padding-box,
-                      linear-gradient(135deg,#c084fc,#a855f7,#7c3aed) border-box;
+          width: 60px; height: 60px;
+          border-radius: 20px;
+          border: none;
+          background: none;
           object-fit: contain;
-          box-shadow: 0 8px 28px rgba(139,92,246,0.28);
-          animation: sPulseRing 2.5s ease-out infinite;
+          animation: sLogoFloat 3.5s ease-in-out infinite;
           margin-bottom: 8px;
         }
         .su-logo-title {
@@ -722,7 +720,15 @@ const SignupPage = () => {
             className="su-logo-img"
           />
           <h1 className="su-logo-title">TingleTap</h1>
-          <p className="su-logo-sub">Create your amazing profile ✨</p>
+          <p className="su-logo-sub">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginRight:'5px'}}>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#c084fc" stroke="#a855f7" strokeWidth="1"/>
+            </svg>
+            Create your amazing profile
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginLeft:'5px'}}>
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="#c084fc" stroke="#a855f7" strokeWidth="1"/>
+            </svg>
+          </p>
         </div>
 
         {/* Step Indicator */}
