@@ -1,386 +1,172 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
+import './LegalPage.css';
+
+const BackIcon = () => (
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <path d="M14 9H4M8 5l-4 4 4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const LoginIcon = () => (
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M12 5.5l4 3.5-4 3.5M16 9H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const ContactHeroIcon = () => (
+  <svg viewBox="0 0 28 28" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block'}}>
+    <defs><linearGradient id="ct-hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+    <rect x="2" y="5" width="24" height="18" rx="4" fill="url(#ct-hg)" opacity=".2" stroke="url(#ct-hg)" strokeWidth="1.8"/>
+    <path d="M2 9l12 8 12-8" stroke="url(#ct-hg)" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const MailIcon = () => (
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <rect x="2" y="4" width="14" height="10" rx="2" stroke="#a78bfa" strokeWidth="1.8"/>
+    <path d="M2 6l7 5 7-5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const ChatIcon = () => (
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <rect x="2" y="2" width="14" height="11" rx="3" stroke="#a78bfa" strokeWidth="1.8"/>
+    <path d="M2 10l3 4" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const ClockIcon = () => (
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <circle cx="9" cy="9" r="7.5" stroke="#a78bfa" strokeWidth="1.8"/>
+    <path d="M9 5v4.5l2.5 2.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const LinkIcon = () => (
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <path d="M9 4l-2-2a3.5 3.5 0 0 0-5 5l2.5 2.5M9 14l2 2a3.5 3.5 0 0 0 5-5L13.5 8.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M6 12l6-6" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const SendIcon = () => (
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <path d="M2 9l14-6.5L9.5 16 8 10.5 2 9z" fill="currentColor" opacity=".9"/>
+  </svg>
+);
+const ArrowIcon = () => (
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <path d="M3.5 9h11M10 5l4 4-4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const ContactPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = (e) => {
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
+  const handleSubmit = e => {
     e.preventDefault();
     alert('Thank you for contacting TingleTap! Our support team will respond within 2-4 hours.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setForm({ name: '', email: '', subject: '', message: '' });
   };
 
   return (
-    <div className="landing-page" style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #E6E6FA 0%, #DDA0DD 50%, #E6E6FA 100%)',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
-      {/* Ultra Compact Header */}
-      <header className="luxury-header" style={{ padding: '0.3rem 1rem' }}>
-        <div className="header-content" style={{ height: '45px' }}>
-          <div className="header-brand">
-            <div className="brand-logo">
-              <img
-                src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png"
-                alt="TingleTap"
-                className="logo-image"
-                style={{ width: '32px', height: '32px' }}
-              />
-            </div>
-            <div className="brand-text">
-              <span className="brand-name" style={{ fontSize: '1.1rem' }}>TingleTap</span>
-              <span className="brand-tagline" style={{ fontSize: '0.6rem' }}>Contact & Support</span>
+    <div className="lp-root">
+      <div className="lp-bg" aria-hidden="true">
+        <div className="lp-orb lp-orb-1"/><div className="lp-orb lp-orb-2"/><div className="lp-orb lp-orb-3"/>
+      </div>
+
+      <header className="lp-header">
+        <div className="lp-header-inner">
+          <div className="lp-brand" onClick={() => navigate('/')} style={{cursor:'pointer'}}>
+            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-logo"/>
+            <div className="lp-brand-text">
+              <span className="lp-brand-name">TingleTap</span>
+              <span className="lp-brand-sub">Contact & Support</span>
             </div>
           </div>
-
-          <nav className="header-nav">
-            <button
-              className="nav-btn login-btn"
-              onClick={() => navigate('/')}
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-            >
-              ← Home
-            </button>
-            <button
-              className="nav-btn signup-btn"
-              onClick={() => navigate('/login')}
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-            >
-              Login
-            </button>
+          <nav className="lp-nav">
+            <button className="lp-nav-ghost" onClick={() => navigate('/')}><BackIcon /><span>Back Home</span></button>
+            <button className="lp-nav-solid" onClick={() => navigate('/login')}><LoginIcon /><span>Login</span></button>
           </nav>
         </div>
       </header>
 
-      {/* Ultra Compact Content */}
-      <section style={{
-        padding: '55px 0.5rem 5px',
-        maxWidth: '1000px',
-        margin: '0 auto',
-        height: 'calc(100vh - 85px)',
-        overflow: 'hidden'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '0.8rem' }}>
-          <h1 style={{
-            fontFamily: 'Playfair Display, serif',
-            fontSize: '1.6rem',
-            fontWeight: '800',
-            color: '#ffffff',
-            marginBottom: '0.3rem'
-          }}>
-            Contact TingleTap Support
-          </h1>
-          <p style={{
-            fontSize: '0.8rem',
-            color: 'rgba(255, 255, 255, 0.8)',
-            margin: '0'
-          }}>
-            Get instant help from our expert support team
-          </p>
+      <main className="lp-main">
+        <div className="lp-hero">
+          <div className="lp-hero-icon"><ContactHeroIcon /></div>
+          <h1 className="lp-hero-title">Contact Support</h1>
+          <p className="lp-hero-sub">Get help from our expert support team. We respond within 2-4 hours and are available 24/7 for urgent issues.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.7fr', gap: '0.8rem', height: 'calc(100% - 120px)' }}>
-          {/* Contact Form */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '10px',
-            padding: '0.8rem',
-            height: '100%',
-            overflow: 'hidden'
-          }}>
-            <h3 style={{ color: '#ffffff', marginBottom: '0.8rem', fontSize: '0.9rem' }}>Send Message</h3>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '0.5rem', height: 'calc(100% - 1.5rem)' }}>
-              <input
-                type="text"
-                name="name"
-                placeholder="Your Name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '5px',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  fontSize: '0.8rem'
-                }}
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Your Email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '5px',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  fontSize: '0.8rem'
-                }}
-              />
-              <select
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                required
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '5px',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  fontSize: '0.8rem'
-                }}
-              >
-                <option value="">Select Issue Type</option>
-                <option value="technical">Technical Support</option>
-                <option value="account">Account Issues</option>
-                <option value="report">Report User/Content</option>
-                <option value="verification">Badge Verification</option>
-                <option value="billing">Premium Features</option>
-                <option value="suggestion">Feature Request</option>
-                <option value="bug">Bug Report</option>
-                <option value="general">General Inquiry</option>
-              </select>
-              <textarea
-                name="message"
-                placeholder="Describe your issue in detail..."
-                value={formData.message}
-                onChange={handleInputChange}
-                required
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '5px',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  fontSize: '0.8rem',
-                  resize: 'none',
-                  flex: 1,
-                  minHeight: '60px'
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '0.5rem',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontWeight: '600',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Send Message
+        <div className="lp-contact-grid">
+          <div className="lp-form-card">
+            <div className="lp-section-title" style={{marginBottom:'20px',fontSize:'17px'}}>Send a Message</div>
+            <form className="lp-form" onSubmit={handleSubmit}>
+              <div className="lp-form-group">
+                <label className="lp-label">Your Name</label>
+                <input className="lp-input" name="name" value={form.name} onChange={handleChange} placeholder="Enter your name" required/>
+              </div>
+              <div className="lp-form-group">
+                <label className="lp-label">Email Address</label>
+                <input className="lp-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com" required/>
+              </div>
+              <div className="lp-form-group">
+                <label className="lp-label">Issue Type</label>
+                <select className="lp-input" name="subject" value={form.subject} onChange={handleChange} required>
+                  <option value="">Select issue type…</option>
+                  <option value="technical">Technical Support</option>
+                  <option value="account">Account Issues</option>
+                  <option value="report">Report User / Content</option>
+                  <option value="verification">Badge Verification</option>
+                  <option value="billing">Premium Features</option>
+                  <option value="suggestion">Feature Request</option>
+                  <option value="bug">Bug Report</option>
+                  <option value="general">General Inquiry</option>
+                </select>
+              </div>
+              <div className="lp-form-group">
+                <label className="lp-label">Message</label>
+                <textarea className="lp-input" name="message" value={form.message} onChange={handleChange} placeholder="Describe your issue in detail…" required rows={4} style={{resize:'vertical',minHeight:'90px'}}/>
+              </div>
+              <button type="submit" className="lp-submit-btn">
+                <SendIcon /><span>Send Message</span>
               </button>
             </form>
           </div>
 
-          {/* Support Information */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '10px',
-            padding: '0.8rem',
-            height: '100%',
-            overflow: 'auto'
-          }}>
-            <h3 style={{ color: '#ffffff', marginBottom: '0.8rem', fontSize: '0.9rem' }}>Support Channels</h3>
-            <div style={{ display: 'grid', gap: '0.6rem' }}>
-              <div>
-                <h4 style={{ color: '#ffffff', marginBottom: '0.2rem', fontSize: '0.8rem' }}>📧 Email Support</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.7rem', margin: 0 }}>
-                  support@tingletap.com<br/>
-                  Response: 2-4 hours
-                </p>
+          <div className="lp-support-card">
+            <div className="lp-section-title" style={{marginBottom:'18px',fontSize:'17px'}}>Support Channels</div>
+            <div className="lp-support-items">
+              <div className="lp-support-item">
+                <div className="lp-support-header"><MailIcon /><span className="lp-support-name">Email Support</span></div>
+                <div className="lp-support-text">support@tingletap.com<br/>Response: 2–4 hours</div>
               </div>
-
-              <div>
-                <h4 style={{ color: '#ffffff', marginBottom: '0.2rem', fontSize: '0.8rem' }}>⚡ Live Chat</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.7rem', margin: 0 }}>
-                  Available in app<br/>
-                  Response: Instant
-                </p>
+              <div className="lp-support-item">
+                <div className="lp-support-header"><ChatIcon /><span className="lp-support-name">Live Chat</span></div>
+                <div className="lp-support-text">Available in-app<br/>Response: Instant</div>
               </div>
-
-              <div>
-                <h4 style={{ color: '#ffffff', marginBottom: '0.2rem', fontSize: '0.8rem' }}>🕒 Support Hours</h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.7rem', margin: 0 }}>
-                  24/7 Emergency Support<br/>
-                  Mon-Sun: 9AM-11PM IST
-                </p>
+              <div className="lp-support-item">
+                <div className="lp-support-header"><ClockIcon /><span className="lp-support-name">Support Hours</span></div>
+                <div className="lp-support-text">24/7 Emergency Support<br/>Mon–Sun: 9AM–11PM IST</div>
               </div>
-
-              <div>
-                <h4 style={{ color: '#ffffff', marginBottom: '0.2rem', fontSize: '0.8rem' }}>🚀 TingleTap Features</h4>
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.3' }}>
-                  • Voice Messages & Audio<br/>
-                  • YouTube Video Sharing<br/>
-                  • Private Encrypted Chat<br/>
-                  • Gender Verification<br/>
-                  • Font & Theme Custom<br/>
-                  • Live Radio Streaming<br/>
-                  • Stickers & GIFs<br/>
-                  • Profile Badges<br/>
-                  • Real-time Typing<br/>
-                  • Advanced Moderation
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ color: '#ffffff', marginBottom: '0.2rem', fontSize: '0.8rem' }}>🔗 Quick Actions</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <button
-                    onClick={() => navigate('/faq')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#4FC3F7',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '0.7rem',
-                      padding: 0
-                    }}
-                  >
-                    → Check FAQ
-                  </button>
-                  <button
-                    onClick={() => navigate('/privacy')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#4FC3F7',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '0.7rem',
-                      padding: 0
-                    }}
-                  >
-                    → Privacy Policy
-                  </button>
-                  <button
-                    onClick={() => navigate('/terms')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#4FC3F7',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '0.7rem',
-                      padding: 0
-                    }}
-                  >
-                    → Terms of Service
-                  </button>
+              <div className="lp-support-item">
+                <div className="lp-support-header"><LinkIcon /><span className="lp-support-name">Quick Links</span></div>
+                <div className="lp-support-links">
+                  <button className="lp-support-link" onClick={() => navigate('/faq')}><ArrowIcon /><span>Check FAQ</span></button>
+                  <button className="lp-support-link" onClick={() => navigate('/privacy')}><ArrowIcon /><span>Privacy Policy</span></button>
+                  <button className="lp-support-link" onClick={() => navigate('/terms')}><ArrowIcon /><span>Terms of Service</span></button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </main>
 
-        <div style={{ textAlign: 'center', marginTop: '0.8rem' }}>
-          <button
-            style={{
-              padding: '0.6rem 1.5rem',
-              background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              marginRight: '0.8rem',
-              boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)',
-              transform: 'translateY(0)',
-              transition: 'all 0.2s ease',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-            onClick={() => navigate('/signup')}
-            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
-            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="joinRocketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffffff" />
-                  <stop offset="50%" stopColor="#f0f8ff" />
-                  <stop offset="100%" stopColor="#e6f3ff" />
-                </linearGradient>
-                <filter id="joinRocketGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(255,255,255,0.6)"/>
-                </filter>
-              </defs>
-              <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="url(#joinRocketGradient)" filter="url(#joinRocketGlow)" />
-              <path d="M8 16L9 22L11 20L13 22L14 16" fill="url(#joinRocketGradient)" opacity="0.8" />
-              <circle cx="12" cy="9" r="2" fill="rgba(255,255,255,0.9)" />
-            </svg>
-            Join TingleTap
-          </button>
-          <button
-            className="secondary-cta"
-            onClick={() => navigate('/faq')}
-            style={{
-              padding: '0.4rem 1.2rem',
-              background: 'rgba(255, 255, 255, 0.1)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '6px',
-              fontWeight: '600',
-              fontSize: '0.8rem',
-              cursor: 'pointer'
-            }}
-          >
-            View FAQ
-          </button>
-        </div>
-      </section>
-
-      {/* Ultra Compact Footer */}
-      <footer style={{
-        background: 'rgba(0, 0, 0, 0.3)',
-        padding: '0.5rem',
-        textAlign: 'center',
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '0.8rem',
-          marginBottom: '0.3rem',
-          flexWrap: 'wrap'
-        }}>
-          <button onClick={() => navigate('/about')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>About</button>
-          <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>Privacy</button>
-          <button onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>Terms</button>
-          <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>FAQ</button>
-        </div>
+      <footer className="lp-footer">
+        <nav className="lp-footer-nav">
+          <button className="lp-footer-link" onClick={() => navigate('/about')}><span>About</span></button>
+          <button className="lp-footer-link" onClick={() => navigate('/privacy')}><span>Privacy</span></button>
+          <button className="lp-footer-link" onClick={() => navigate('/terms')}><span>Terms</span></button>
+          <button className="lp-footer-link" onClick={() => navigate('/contact')}><span>Contact</span></button>
+          <button className="lp-footer-link" onClick={() => navigate('/faq')}><span>FAQ</span></button>
+          <button className="lp-footer-link" onClick={() => navigate('/disclaimer')}><span>Disclaimer</span></button>
+        </nav>
       </footer>
       <PremiumCopyright />
     </div>

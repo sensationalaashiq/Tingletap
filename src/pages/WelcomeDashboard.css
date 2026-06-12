@@ -201,10 +201,12 @@
 .wd-eye { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; display:flex; align-items:center; padding:4px; color:#6d6b99; }
 
 /* Save btn */
-.wd-save-btn { display:flex; align-items:center; justify-content:center; gap:9px; padding:16px 24px; border-radius:16px; background:linear-gradient(135deg,#5b5bd6,#7c3aed,#a855f7); color:#fff; font-size:15.5px; font-weight:800; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:all .28s ease; box-shadow:0 6px 24px rgba(91,91,214,.38); width:100%; }
+.wd-save-btn { display:flex; align-items:center; justify-content:center; gap:9px; padding:16px 24px; border-radius:16px; background:linear-gradient(135deg,#5b5bd6,#7c3aed,#a855f7); color:#fff !important; font-size:15.5px; font-weight:800; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:all .28s ease; box-shadow:0 6px 24px rgba(91,91,214,.38); width:100%; }
+.wd-save-btn span { color:#fff !important; }
 .wd-save-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 32px rgba(91,91,214,.5); }
 .wd-save-btn:disabled { opacity:.6; cursor:not-allowed; }
-.wd-save-btn--danger { background:linear-gradient(135deg,#ef4444,#dc2626) !important; box-shadow:0 6px 24px rgba(239,68,68,.35) !important; }
+.wd-save-btn--danger { background:linear-gradient(135deg,#ef4444,#dc2626) !important; box-shadow:0 6px 24px rgba(239,68,68,.35) !important; color:#fff !important; }
+.wd-save-btn--danger span { color:#fff !important; }
 .wd-save-btn--danger:hover:not(:disabled) { box-shadow:0 10px 32px rgba(239,68,68,.5) !important; }
 
 /* Spinner */

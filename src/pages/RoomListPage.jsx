@@ -14,58 +14,32 @@ import './RoomListPage.css';
 /* ══════════════════════════════════════════════════════
    PREMIUM SVG ICONS
 ══════════════════════════════════════════════════════ */
-const Ico = ({ d, w = 24, h = 24, children, ...rest }) => (
+const Ico = ({ w = 24, h = 24, children }) => (
   <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} fill="none"
-    xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display:'block', flexShrink:0 }} {...rest}>
-    {d ? <path d={d} {...rest} /> : children}
+    xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display:'block', flexShrink:0 }}>
+    {children}
   </svg>
 );
 
 const ShieldIcon = () => (
-  <Ico w={28} h={28}>
-    <defs>
-      <linearGradient id="rl-sh" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient>
-    </defs>
-    <path d="M14 2.5L4 7v5.5C4 18.3 8.3 23.5 14 25c5.7-1.5 10-6.7 10-12.5V7L14 2.5z" fill="url(#rl-sh)" stroke="none"/>
-    <path d="M9.5 13l3 3L19 10" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-  </Ico>
-);
-
-const RoomsIcon = () => (
-  <Ico w={26} h={26}>
-    <defs>
-      <linearGradient id="rl-ri" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#5b5bd6"/><stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient>
-    </defs>
-    <path d="M3 12L13 3l10 9v10a1 1 0 0 1-1 1H15v-6h-4v6H4a1 1 0 0 1-1-1V12z" fill="url(#rl-ri)"/>
-  </Ico>
-);
-
-const ScrollIcon = () => (
-  <Ico w={24} h={24}>
-    <defs>
-      <linearGradient id="rl-sci" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/>
-      </linearGradient>
-    </defs>
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8L14 2z" fill="url(#rl-sci)"/>
-    <path d="M14 2v6h6M8 13h8M8 17h5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+  <Ico w={30} h={30}>
+    <defs><linearGradient id="rl-sh" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/></linearGradient></defs>
+    <path d="M15 2.5L4 7.5v5.5C4 19.3 8.8 24.5 15 26c6.2-1.5 11-6.7 11-13V7.5L15 2.5z" fill="url(#rl-sh)"/>
+    <path d="M10.5 14l3.5 3.5L21 10" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
 const AdminIcon = () => (
   <Ico w={18} h={18}>
-    <path d="M9 1.5L2 4.5v4C2 12.2 5 15.9 9 17c4-1.1 7-4.8 7-8.5v-4L9 1.5z" fill="white" opacity=".9"/>
-    <path d="M6 9l2 2 4-4" stroke="rgba(79,70,229,0.85)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <defs><linearGradient id="rl-adm" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+    <path d="M9 1.5L2 4.5v4C2 12.2 5 15.9 9 17c4-1.1 7-4.8 7-8.5v-4L9 1.5z" fill="url(#rl-adm)"/>
+    <path d="M6 9l2 2 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
 const SpeakerIcon = () => (
   <Ico w={16} h={16}>
-    <path d="M3 6v4h3l4 4V2L6 6H3zM14.5 8c0-1.8-1-3.3-2.5-4.1v8.2C13.5 11.3 14.5 9.8 14.5 8z" fill="white"/>
+    <path d="M3 6v4h3l4 4V2L6 6H3zM13.5 8c0-1.8-1-3.3-2.5-4v8C12.5 11.3 13.5 9.8 13.5 8z" fill="white"/>
   </Ico>
 );
 
@@ -75,144 +49,130 @@ const StopIcon = () => (
   </Ico>
 );
 
-const ArrowIcon = () => (
-  <Ico w={18} h={18}>
-    <path d="M4 9h10M10 5l4 4-4 4" stroke="#5b21b6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+const ArrowRightIcon = () => (
+  <Ico w={20} h={20}>
+    <path d="M4 10h12M12 6l4 4-4 4" stroke="#5b21b6" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
 const UsersIcon = () => (
-  <Ico w={14} h={14}>
+  <Ico w={15} h={15}>
     <circle cx="5.5" cy="5" r="2.5" fill="#5b21b6"/>
     <path d="M1 13c0-2.8 2-4.5 4.5-4.5S10 10.2 10 13" stroke="#5b21b6" strokeWidth="1.5" strokeLinecap="round"/>
-    <circle cx="10.5" cy="5" r="2" fill="#8b5cf6"/>
-    <path d="M10 13c.5-1.8 1.8-3 3-3" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="11" cy="5" r="2" fill="#8b5cf6"/>
+    <path d="M10.5 13c.5-1.8 1.8-3 2.5-3" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round"/>
   </Ico>
 );
 
 const MicIcon = () => (
-  <Ico w={13} h={13}>
-    <rect x="4" y="1" width="5" height="8" rx="2.5" fill="#5b21b6"/>
-    <path d="M2 7a5 5 0 0 0 9 0M6.5 12v1.5" stroke="#5b21b6" strokeWidth="1.4" strokeLinecap="round"/>
+  <Ico w={14} h={14}>
+    <rect x="4.5" y="1" width="5" height="8" rx="2.5" fill="#5b21b6"/>
+    <path d="M2 7.5a5 5 0 0 0 10 0M7 12.5v1.5" stroke="#5b21b6" strokeWidth="1.4" strokeLinecap="round"/>
   </Ico>
 );
 
-const MusicNoteIcon = () => (
-  <Ico w={13} h={13}>
-    <path d="M5 10V3.5l7-1.5V8" stroke="#5b21b6" strokeWidth="1.5" strokeLinecap="round"/>
+const MusicIcon = () => (
+  <Ico w={14} h={14}>
+    <path d="M5 10.5V4l7-1.5V9" stroke="#5b21b6" strokeWidth="1.5" strokeLinecap="round"/>
     <circle cx="4" cy="10.5" r="1.8" fill="#5b21b6"/>
-    <circle cx="11" cy="8.5" r="1.8" fill="#5b21b6"/>
+    <circle cx="11" cy="9" r="1.8" fill="#5b21b6"/>
   </Ico>
 );
 
 const FileIcon = () => (
-  <Ico w={13} h={13}>
-    <path d="M3 1.5h5l3 3V11.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V2.5a1 1 0 0 1 1-1z" fill="#5b21b6"/>
+  <Ico w={14} h={14}>
+    <path d="M3 1.5h5l3 3V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V2.5a1 1 0 0 1 1-1z" fill="#5b21b6"/>
     <path d="M8 1.5v3h3" stroke="white" strokeWidth="1.2"/>
   </Ico>
 );
 
-const DiamondIcon = () => (
+const ScrollIcon = () => (
+  <Ico w={22} h={22}>
+    <defs><linearGradient id="rl-sci" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs>
+    <path d="M13 2H5.5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2H17a2 2 0 0 0 2-2V7.5L13 2z" fill="url(#rl-sci)"/>
+    <path d="M13 2v5.5H18.5M7 11h8M7 15h5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+  </Ico>
+);
+
+const SparkleIcon = () => (
   <Ico w={16} h={16}>
-    <defs>
-      <linearGradient id="rl-dg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/>
-      </linearGradient>
-    </defs>
-    <path d="M8 1.5L1 6.5 8 14.5 15 6.5 8 1.5z" fill="url(#rl-dg)"/>
-    <path d="M1 6.5h14" stroke="white" strokeWidth="0.7" opacity="0.4"/>
+    <path d="M8 1l1.2 3.8L13.5 5.5 10 7.2 8 11l-2-3.8L2.5 5.5 6 3.8 8 1z" fill="#8b5cf6"/>
+    <path d="M13 10.5l.6 1.9L15.5 13l-1.9.6L13 15.5l-.6-1.9L10.5 13l1.9-.6L13 10.5z" fill="#c4b5fd" opacity=".7"/>
   </Ico>
 );
 
-const HeartIcon = () => (
-  <Ico w={13} h={13}>
-    <defs>
-      <linearGradient id="rl-hg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#8b5cf6"/>
-      </linearGradient>
-    </defs>
-    <path d="M6.5 11.5S1.5 8 1.5 4.5a3.3 3.3 0 0 1 5-2.85A3.3 3.3 0 0 1 11.5 4.5C11.5 8 6.5 11.5 6.5 11.5z" fill="url(#rl-hg)"/>
+const DiamondIcon = () => (
+  <Ico w={14} h={14}>
+    <defs><linearGradient id="rl-dg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+    <path d="M7 1.5L1 6.5 7 13.5 13 6.5 7 1.5z" fill="url(#rl-dg2)"/>
+    <path d="M1 6.5h12" stroke="white" strokeWidth="0.7" opacity=".4"/>
   </Ico>
 );
 
-/* ── Room Icons ── */
+/* ── Room-specific gradient icons ── */
 const getRoomIcon = (name) => {
   const n = name.toLowerCase();
   if (n.includes('indian') || n.includes('hindi'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-in" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ff9933"/><stop offset="50%" stopColor="#fff"/><stop offset="100%" stopColor="#138808"/>
-        </linearGradient></defs>
-        <circle cx="14" cy="14" r="12" fill="url(#ri-in)" stroke="rgba(255,255,255,.5)" strokeWidth="1.5"/>
-        <circle cx="14" cy="14" r="4" fill="#000080" opacity=".85"/>
-        <path d="M10.5 14l2 2L17.5 11" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-in" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ff9933"/><stop offset="50%" stopColor="#fff"/><stop offset="100%" stopColor="#138808"/></linearGradient></defs>
+        <circle cx="15" cy="15" r="13" fill="url(#ri-in)" stroke="rgba(255,255,255,.4)" strokeWidth="1.5"/>
+        <circle cx="15" cy="15" r="4.5" fill="#000080" opacity=".85"/>
+        <path d="M11.5 15l2.5 2.5L18.5 12" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     );
   if (n.includes('gaming') || n.includes('game'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-gm" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#ec4899"/>
-        </linearGradient></defs>
-        <rect x="3" y="9" width="22" height="11" rx="5.5" fill="url(#ri-gm)"/>
-        <circle cx="9" cy="14.5" r="2" fill="white" opacity=".9"/>
-        <rect x="12.5" y="13" width="1.5" height="3.5" rx=".75" fill="white" opacity=".9"/>
-        <rect x="11" y="14.5" width="4.5" height="1.5" rx=".75" fill="white" opacity=".9"/>
-        <circle cx="20" cy="13" r="1.2" fill="white" opacity=".9"/>
-        <circle cx="20" cy="16" r="1.2" fill="white" opacity=".9"/>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-gm" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs>
+        <rect x="3" y="9.5" width="24" height="12" rx="6" fill="url(#ri-gm)"/>
+        <circle cx="9.5" cy="15.5" r="2.2" fill="white" opacity=".9"/>
+        <rect x="13.5" y="14" width="1.5" height="3.5" rx=".75" fill="white" opacity=".9"/>
+        <rect x="12" y="15.5" width="4.5" height="1.5" rx=".75" fill="white" opacity=".9"/>
+        <circle cx="21" cy="14" r="1.3" fill="white" opacity=".9"/>
+        <circle cx="21" cy="17" r="1.3" fill="white" opacity=".9"/>
       </svg>
     );
   if (n.includes('music') || n.includes('song'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-mu" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#dc2626"/>
-        </linearGradient></defs>
-        <circle cx="14" cy="14" r="12" fill="url(#ri-mu)"/>
-        <path d="M11 8v10.5c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2h1V12l7-1.5v6c0 1.1-.9 2-2 2s-2-.9-2-2h1V8l-7 1.5z" fill="white" opacity=".9"/>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-mu" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
+        <circle cx="15" cy="15" r="13" fill="url(#ri-mu)"/>
+        <path d="M11 9v11c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2h1V13l7-1.5v6.5c0 1.1-.9 2-2 2s-2-.9-2-2h1V9l-7 1.5z" fill="white" opacity=".9"/>
       </svg>
     );
   if (n.includes('adult') || n.includes('18+'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-ad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ef4444"/><stop offset="100%" stopColor="#7c3aed"/>
-        </linearGradient></defs>
-        <circle cx="14" cy="14" r="12" fill="url(#ri-ad)"/>
-        <text x="14" y="18.5" textAnchor="middle" fill="white" fontSize="9.5" fontWeight="900" fontFamily="Inter,sans-serif">18+</text>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-ad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ef4444"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+        <circle cx="15" cy="15" r="13" fill="url(#ri-ad)"/>
+        <text x="15" y="19.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif">18+</text>
       </svg>
     );
   if (n.includes('universal') || n.includes('world'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-un" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#10b981"/><stop offset="50%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#3b82f6"/>
-        </linearGradient></defs>
-        <circle cx="14" cy="14" r="12" fill="url(#ri-un)"/>
-        <circle cx="14" cy="14" r="8" stroke="rgba(255,255,255,.6)" strokeWidth="1.5" fill="none"/>
-        <path d="M6 14h16M14 6c2.7 0 5 3.6 5 8s-2.3 8-5 8-5-3.6-5-8 2.3-8 5-8z" stroke="white" strokeWidth="1.4" fill="none"/>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-un" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#10b981"/><stop offset="50%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient></defs>
+        <circle cx="15" cy="15" r="13" fill="url(#ri-un)"/>
+        <circle cx="15" cy="15" r="9" stroke="rgba(255,255,255,.55)" strokeWidth="1.5" fill="none"/>
+        <path d="M2 15h26M15 2c3 0 5.5 5.8 5.5 13S18 28 15 28s-5.5-5.8-5.5-13S12 2 15 2z" stroke="white" strokeWidth="1.4" fill="none"/>
       </svg>
     );
   if (n.includes('staff') || n.includes('admin'))
     return (
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-        <defs><linearGradient id="ri-st" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/>
-        </linearGradient></defs>
-        <path d="M14 2l2.5 5 5.5.5-4 3.8 1.2 5.5-5.2-2.8-5.2 2.8 1.2-5.5-4-3.8 5.5-.5L14 2z" fill="url(#ri-st)" stroke="rgba(255,255,255,.3)" strokeWidth="1"/>
+      <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+        <defs><linearGradient id="ri-st" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+        <path d="M15 2l3 8.5 8.5.5-6.5 5 2.5 8-7.5-5-7.5 5 2.5-8L3.5 11l8.5-.5L15 2z" fill="url(#ri-st)" stroke="rgba(255,255,255,.3)" strokeWidth="1"/>
       </svg>
     );
   return (
-    <svg viewBox="0 0 28 28" width="26" height="26" fill="none">
-      <defs><linearGradient id="ri-df" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient></defs>
-      <rect x="2" y="4" width="20" height="16" rx="4" fill="url(#ri-df)"/>
-      <path d="M2 13l4 5" stroke="url(#ri-df)" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="8" cy="12" r="1.8" fill="white" opacity=".9"/>
-      <circle cx="14" cy="12" r="1.8" fill="white" opacity=".9"/>
-      <circle cx="20" cy="12" r="1.8" fill="white" opacity=".9"/>
+    <svg viewBox="0 0 30 30" width="28" height="28" fill="none">
+      <defs><linearGradient id="ri-df" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/></linearGradient></defs>
+      <rect x="2" y="4.5" width="22" height="17" rx="4.5" fill="url(#ri-df)"/>
+      <path d="M2 14l4.5 6" stroke="url(#ri-df)" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="8.5" cy="13" r="2" fill="white" opacity=".9"/>
+      <circle cx="15" cy="13" r="2" fill="white" opacity=".9"/>
+      <circle cx="21.5" cy="13" r="2" fill="white" opacity=".9"/>
     </svg>
   );
 };
@@ -224,13 +184,13 @@ const getRoomGradient = (name) => {
     'linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)',
     'linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)',
     'linear-gradient(135deg,#fa709a 0%,#fee140 100%)',
-    'linear-gradient(135deg,#ff9a9e 0%,#fecfef 100%)',
+    'linear-gradient(135deg,#a18cd1 0%,#fbc2eb 100%)',
     'linear-gradient(135deg,#ff6b6b 0%,#4ecdc4 100%)',
     'linear-gradient(135deg,#8360c3 0%,#2ebf91 100%)',
     'linear-gradient(135deg,#ff8a80 0%,#ea6100 100%)',
     'linear-gradient(135deg,#667db6 0%,#0082c8 100%)',
-    'linear-gradient(135deg,#d4fc79 0%,#96e6a1 100%)',
-    'linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%)',
+    'linear-gradient(135deg,#11998e 0%,#38ef7d 100%)',
+    'linear-gradient(135deg,#c94b4b 0%,#4b134f 100%)',
   ];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -265,7 +225,6 @@ const RoomListPage = () => {
   const [showBanKickModal, setShowBanKickModal] = useState(false);
   const navigate = useNavigate();
 
-  /* Live rooms */
   useEffect(() => {
     const q = query(collection(db, 'rooms'), orderBy('order'));
     return onSnapshot(q, (snap) => {
@@ -274,7 +233,6 @@ const RoomListPage = () => {
     });
   }, []);
 
-  /* Room user counts */
   useEffect(() => {
     return onValue(ref(rtdb, 'status'), (snap) => {
       const presences = snap.val() || {};
@@ -287,7 +245,6 @@ const RoomListPage = () => {
     });
   }, []);
 
-  /* User role */
   useEffect(() => {
     const cu = auth.currentUser;
     if (!cu) return;
@@ -300,30 +257,28 @@ const RoomListPage = () => {
     });
   }, []);
 
-  /* Window events */
   useEffect(() => {
     window.openStatusModal = () => setShowStatusModal(true);
     return () => { delete window.openStatusModal; };
   }, []);
 
   const enhancedRules = [
-    { title: 'Respect & Kindness', description: 'Treat everyone with respect. No harassment, hate speech, or bullying.' },
-    { title: 'No Spam', description: 'Avoid spamming messages, links, or promotional content.' },
+    { title: 'Respect & Kindness', description: 'Treat everyone with respect. No harassment, hate speech, or bullying of any kind.' },
+    { title: 'No Spam', description: 'Avoid spamming messages, links, or promotional content in chat rooms.' },
     { title: 'Privacy Protection', description: 'Do not share personal information or request others\' private details.' },
     { title: 'No Illegal Content', description: 'Posting illegal content will result in immediate ban and legal action.' },
-    { title: 'Age Appropriate', description: 'Users must be 13+ years old. Adult content restricted to 18+ rooms only.' },
-    { title: 'No Impersonation', description: 'Do not impersonate staff, moderators, or other users.' },
-    { title: 'Follow Staff Instructions', description: 'Comply with moderator and admin directions promptly.' },
-    { title: 'Report Issues', description: 'Report inappropriate behaviour using the in-chat report feature.' },
-    { title: 'Use Appropriate Language', description: 'Keep conversations civil and avoid excessive profanity.' },
-    { title: 'No Self-Promotion', description: 'Do not advertise products or services without permission.' },
+    { title: 'Age Appropriate', description: 'Users must be 13+ years old. Adult content is restricted to 18+ rooms only.' },
+    { title: 'No Impersonation', description: 'Do not impersonate staff, moderators, or other users under any circumstances.' },
+    { title: 'Follow Staff Instructions', description: 'Comply with moderator and admin directions promptly and respectfully.' },
+    { title: 'Report Issues', description: 'Report inappropriate behaviour using the in-chat report feature immediately.' },
+    { title: 'Use Appropriate Language', description: 'Keep conversations civil and avoid excessive profanity or offensive language.' },
+    { title: 'No Self-Promotion', description: 'Do not advertise products, services, or external channels without permission.' },
     { title: 'Guest Restrictions', description: 'Guests can only send messages. Private messages and friend requests require registration.' },
     { title: 'Guest Session Limits', description: 'Guest sessions are temporary. Register for full features including customisation.' },
   ];
 
   const handleReadRules = () => {
     if (isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); return; }
-    const synth = window.speechSynthesis;
     let i = 0;
     setIsSpeaking(true);
     const speakNext = () => {
@@ -331,7 +286,7 @@ const RoomListPage = () => {
       const u = new SpeechSynthesisUtterance(`Rule ${i + 1}: ${enhancedRules[i].title}. ${enhancedRules[i].description}`);
       u.lang = voiceLang; u.pitch = 1.1; u.rate = 0.85;
       u.onend = () => { setTimeout(() => { i++; speakNext(); }, 900); };
-      synth.speak(u);
+      window.speechSynthesis.speak(u);
     };
     speakNext();
   };
@@ -361,9 +316,9 @@ const RoomListPage = () => {
     const name = room.name.toLowerCase();
     if (name.includes('staff') || name.includes('admin')) {
       if (!['owner','admin','moderator'].includes(role.toLowerCase())) {
-        toast.error('🚫 Staff Room is restricted to staff only'); return;
+        toast.error('Staff Room is restricted to staff only'); return;
       }
-      toast.success(`✅ Staff Access Granted — Welcome ${role}!`);
+      toast.success(`Staff Access Granted — Welcome ${role}!`);
     }
 
     if (name.includes('adult') || name.includes('18+')) {
@@ -373,7 +328,6 @@ const RoomListPage = () => {
     }
   };
 
-  /* Loading screen */
   if (loading) return (
     <div className="rl-loading">
       <div className="rl-loader-ring" />
@@ -388,29 +342,36 @@ const RoomListPage = () => {
     <div className="rl-root">
       {/* Ambient orbs */}
       <div className="rl-bg" aria-hidden="true">
-        <div className="rl-orb rl-orb-1" /><div className="rl-orb rl-orb-2" /><div className="rl-orb rl-orb-3" />
+        <div className="rl-orb rl-orb-1"/><div className="rl-orb rl-orb-2"/><div className="rl-orb rl-orb-3"/>
       </div>
 
-      {/* ══ HEADER ══ */}
-      <header className="rl-header">
-        <div className="rl-header-inner">
-          <div className="rl-brand">
-            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="rl-logo" />
-            <div className="rl-brand-text">
-              <span className="rl-brand-name">TingleTap</span>
-              <span className="rl-brand-sub">Premium Chat Universe</span>
-            </div>
-          </div>
-          {isAdmin && (
-            <button className="rl-admin-btn" onClick={() => navigate('/admin-panel')}>
-              <AdminIcon /> Admin Console
-            </button>
-          )}
-        </div>
-      </header>
+      {/* ══ FLOATING ADMIN CONSOLE ══ */}
+      {isAdmin && (
+        <button className="rl-admin-float" onClick={() => navigate('/admin-panel')}>
+          <AdminIcon />
+          <span>Admin Console</span>
+          <span className="rl-admin-pulse" />
+        </button>
+      )}
 
       {/* ══ MAIN ══ */}
       <main className="rl-main">
+
+        {/* Floating Brand Hero */}
+        <div className="rl-brand-hero">
+          <div className="rl-brand-logo-wrap">
+            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="rl-brand-logo" />
+            <div className="rl-logo-ring" />
+          </div>
+          <div className="rl-brand-info">
+            <div className="rl-brand-name">TingleTap</div>
+            <div className="rl-brand-tagline">Premium Chat Universe</div>
+          </div>
+          <div className="rl-brand-pill">
+            <SparkleIcon />
+            <span>{totalOnline} online now</span>
+          </div>
+        </div>
 
         {/* Welcome Card */}
         <div className="rl-welcome">
@@ -422,9 +383,15 @@ const RoomListPage = () => {
               <div className="rl-stat-num">{rooms.length}</div>
               <div className="rl-stat-lbl">Chat Rooms</div>
             </div>
+            <div className="rl-stat-div" />
             <div className="rl-stat">
               <div className="rl-stat-num">{totalOnline}</div>
               <div className="rl-stat-lbl">Online Now</div>
+            </div>
+            <div className="rl-stat-div" />
+            <div className="rl-stat">
+              <div className="rl-stat-num">555+</div>
+              <div className="rl-stat-lbl">Members</div>
             </div>
           </div>
         </div>
@@ -432,8 +399,10 @@ const RoomListPage = () => {
         {/* Rooms Section */}
         <section className="rl-rooms-section">
           <div className="rl-section-head">
-            <RoomsIcon />
-            <h3 className="rl-section-title">Premium Chat Universes</h3>
+            <div className="rl-section-head-left">
+              <DiamondIcon />
+              <h3 className="rl-section-title">Premium Chat Universes</h3>
+            </div>
             <span className="rl-section-count">{rooms.length} Rooms</span>
           </div>
 
@@ -442,30 +411,36 @@ const RoomListPage = () => {
               <div
                 key={room.id}
                 className="rl-card"
-                style={{ background: getRoomGradient(room.name), animationDelay: `${idx * 0.07}s` }}
+                style={{ '--card-bg': getRoomGradient(room.name), animationDelay: `${idx * 0.07}s` }}
                 onClick={() => handleRoomClick(room)}
               >
-                <div className="rl-card-top" />
+                <div className="rl-card-shimmer" />
+                <div className="rl-card-inner">
+                  {/* Left: icon */}
+                  <div className="rl-card-icon-col">
+                    <div className="rl-card-ico">{getRoomIcon(room.name)}</div>
+                  </div>
 
-                <div className="rl-card-hrow">
-                  <div className="rl-card-ico">{getRoomIcon(room.name)}</div>
-                  <div className="rl-card-badge">
-                    <UsersIcon />
-                    {roomCounts[room.id] || 0}
+                  {/* Center: content */}
+                  <div className="rl-card-body">
+                    <div className="rl-card-name">{room.name}</div>
+                    <div className="rl-card-desc">{getRoomDesc(room.name)}</div>
+                    <div className="rl-card-features">
+                      <span className="rl-feat-tag"><MicIcon /><span>Voice</span></span>
+                      <span className="rl-feat-tag"><FileIcon /><span>Files</span></span>
+                      <span className="rl-feat-tag"><MusicIcon /><span>Music</span></span>
+                    </div>
+                  </div>
+
+                  {/* Right: count + arrow */}
+                  <div className="rl-card-right">
+                    <div className="rl-card-badge">
+                      <UsersIcon />
+                      <span>{roomCounts[room.id] || 0}</span>
+                    </div>
+                    <div className="rl-card-enter"><ArrowRightIcon /></div>
                   </div>
                 </div>
-
-                <div className="rl-card-body">
-                  <div className="rl-card-name">{room.name}</div>
-                  <div className="rl-card-desc">{getRoomDesc(room.name)}</div>
-                  <div className="rl-card-features">
-                    <span className="rl-feat-tag"><MicIcon /> Voice</span>
-                    <span className="rl-feat-tag"><FileIcon /> Files</span>
-                    <span className="rl-feat-tag"><MusicNoteIcon /> Music</span>
-                  </div>
-                </div>
-
-                <div className="rl-card-enter"><ArrowIcon /></div>
               </div>
             ))}
           </div>
@@ -482,7 +457,7 @@ const RoomListPage = () => {
               <div className="rl-rules-controls">
                 <button className="rl-audio-btn" onClick={handleReadRules}>
                   {isSpeaking ? <StopIcon /> : <SpeakerIcon />}
-                  {isSpeaking ? 'Stop' : 'Listen'}
+                  <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
                 </button>
                 <select className="rl-lang-sel" value={voiceLang} onChange={e => setVoiceLang(e.target.value)}>
                   <option value="en-IN">English</option>
@@ -508,7 +483,6 @@ const RoomListPage = () => {
 
       <PremiumCopyright />
 
-      {/* Modals */}
       {showStatusModal && <StatusModal onClose={() => setShowStatusModal(false)} />}
       {showAdultModal  && (
         <AdultRoomModal
