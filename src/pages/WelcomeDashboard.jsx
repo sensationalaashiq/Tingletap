@@ -607,8 +607,10 @@ const WelcomeDashboard = () => {
 
         </div>
 
-        <PremiumCopyright />
+        <div className="wd-copyright-spacer" />
       </main>
+
+      <PremiumCopyright />
 
       {/* ══ OVERLAY ══ */}
       <div className={`wd-overlay ${showSettingsPanel ? 'wd-overlay--on' : ''}`}
