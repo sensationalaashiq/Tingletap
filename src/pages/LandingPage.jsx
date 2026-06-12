@@ -3,175 +3,172 @@ import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
 
-/* ══════════════════════════════════════════
-   PREMIUM SVG ICON LIBRARY — NO EMOJIS
-══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   PREMIUM LUXURY SVG ICON LIBRARY
+═══════════════════════════════════════════════════════ */
 
-const SparkleIcon = ({ size = 16 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
-    <path d="M12 2l1.6 4.8L18.6 8l-5 1.6L12 15l-1.6-5L5.4 8l5-1.6L12 2z" fill="currentColor"/>
-    <path d="M19.5 14l.7 2L22 17l-1.8.7L19.5 20l-.7-2.3L17 17l1.8-.7L19.5 14z" fill="currentColor" opacity="0.55"/>
-    <path d="M5 16.5l.5 1.5 1.5.5-1.5.5L5 21l-.5-1.5L3 19l1.5-.5L5 16.5z" fill="currentColor" opacity="0.4"/>
+const CrystalSparkle = ({ size = 16 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 1L13.8 7.2L20 9L13.8 10.8L12 17L10.2 10.8L4 9L10.2 7.2L12 1Z" fill="currentColor"/>
+    <path d="M20 16L20.9 19.1L24 20L20.9 20.9L20 24L19.1 20.9L16 20L19.1 19.1L20 16Z" fill="currentColor" opacity="0.6"/>
+    <path d="M4 1L4.7 3.3L7 4L4.7 4.7L4 7L3.3 4.7L1 4L3.3 3.3L4 1Z" fill="currentColor" opacity="0.45"/>
   </svg>
 );
 
-const BoltIcon = ({ size = 16 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
-    <path d="M13 2L3.5 13.5H11L10 22l10.5-12H13.5L13 2z" fill="currentColor"/>
+const LuxuryBolt = ({ size = 16 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2L4 13H11L10 22L20.5 11H13.5L14 2Z" fill="currentColor"/>
+    <path d="M14 2L4 13H11L10 22L20.5 11H13.5L14 2Z" fill="white" opacity="0.2"/>
   </svg>
 );
 
-const TrophyIcon = ({ size = 16 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
-    <path d="M6 2h12v7a6 6 0 0 1-12 0V2z" fill="currentColor"/>
-    <path d="M3 4H1v3a5 5 0 0 0 5 5M21 4h2v3a5 5 0 0 1-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M12 15v4M9 22h6M10 19h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+const GoldTrophy = ({ size = 16 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M7 3H17V11C17 14.3 14.8 17 12 17C9.2 17 7 14.3 7 11V3Z" fill="currentColor"/>
+    <path d="M4 5H7V9C5.3 9 4 7.7 4 6V5Z" fill="currentColor" opacity="0.7"/>
+    <path d="M17 5H20V6C20 7.7 18.7 9 17 9V5Z" fill="currentColor" opacity="0.7"/>
+    <path d="M10 17V20M8 23H16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M9 20H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 
-const HeartIcon = ({ size = 18 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
+const ArrowRight = ({ size = 18 }) => (
+  <svg viewBox="0 0 20 20" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 10H17" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+    <path d="M11 4L17 10L11 16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const CheckMark = ({ size = 14 }) => (
+  <svg viewBox="0 0 16 16" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 8.5L6 12L13.5 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const CrossMark = ({ size = 12 }) => (
+  <svg viewBox="0 0 16 16" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+/* Feature card icons — jewel / glass style */
+const IconChatRooms = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="4" width="28" height="18" rx="6" fill="url(#ic1a)"/>
+    <rect x="2" y="4" width="28" height="18" rx="6" fill="url(#ic1b)" opacity="0.3"/>
+    <circle cx="10" cy="13" r="2.4" fill="white"/>
+    <circle cx="16" cy="13" r="2.4" fill="white"/>
+    <circle cx="22" cy="13" r="2.4" fill="white"/>
+    <path d="M7 22L10 19H24" stroke="url(#ic1a)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
     <defs>
-      <linearGradient id="g-heart" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ec4899"/>
-        <stop offset="50%" stopColor="#a855f7"/>
-        <stop offset="100%" stopColor="#6366f1"/>
-      </linearGradient>
+      <linearGradient id="ic1a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient>
+      <linearGradient id="ic1b" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
     </defs>
-    <path d="M12 21C12 21 3 14.5 3 8.5a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6-9 12.5-9 12.5z" fill="url(#g-heart)"/>
-    <path d="M12 21C12 21 3 14.5 3 8.5a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6-9 12.5-9 12.5z" fill="url(#g-heart)" opacity="0.3" transform="scale(0.7) translate(5.1,6)"/>
   </svg>
 );
 
-const ChatBubbleIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconVoice = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="13" fill="url(#ic2a)"/>
+    <circle cx="16" cy="16" r="13" fill="url(#ic2b)" opacity="0.25"/>
+    <rect x="12" y="7" width="8" height="12" rx="4" fill="white"/>
+    <path d="M9 17C9 20.9 12.1 24 16 24S23 20.9 23 17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M16 24V28M13 28H19" stroke="white" strokeWidth="2" strokeLinecap="round"/>
     <defs>
-      <linearGradient id="g-chat" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#6366f1"/>
-        <stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient>
+      <linearGradient id="ic2a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f43f5e"/><stop offset="100%" stopColor="#fb923c"/></linearGradient>
+      <linearGradient id="ic2b" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
     </defs>
-    <rect x="2" y="4" width="24" height="16" rx="5" fill="url(#g-chat)"/>
-    <path d="M8 22l4-2h10" stroke="url(#g-chat)" strokeWidth="2.5" strokeLinecap="round"/>
-    <circle cx="9" cy="12" r="2" fill="white" opacity="0.95"/>
-    <circle cx="14" cy="12" r="2" fill="white" opacity="0.95"/>
-    <circle cx="19" cy="12" r="2" fill="white" opacity="0.95"/>
   </svg>
 );
 
-const MicIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconPrivate = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="14" width="26" height="15" rx="5" fill="url(#ic3a)"/>
+    <rect x="3" y="14" width="26" height="15" rx="5" fill="url(#ic3b)" opacity="0.25"/>
+    <path d="M9 14V11C9 7.7 11.7 5 15 5H17C20.3 5 23 7.7 23 11V14" stroke="url(#ic3a)" strokeWidth="2.5" strokeLinecap="round"/>
+    <circle cx="16" cy="21" r="2.8" fill="white"/>
+    <path d="M16 23.8V26" stroke="white" strokeWidth="2" strokeLinecap="round"/>
     <defs>
-      <linearGradient id="g-mic" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ec4899"/>
-        <stop offset="100%" stopColor="#f97316"/>
-      </linearGradient>
+      <linearGradient id="ic3a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
+      <linearGradient id="ic3b" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
     </defs>
-    <circle cx="14" cy="14" r="12" fill="url(#g-mic)"/>
-    <rect x="11" y="6" width="6" height="10" rx="3" fill="white" opacity="0.95"/>
-    <path d="M8 14a6 6 0 0 0 12 0M14 20v3M11 23h6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
   </svg>
 );
 
-const LockIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconTools = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="16" r="8" fill="url(#ic4a)" opacity="0.9"/>
+    <circle cx="22" cy="16" r="8" fill="url(#ic4b)" opacity="0.9"/>
+    <circle cx="16" cy="16" r="5" fill="url(#ic4c)"/>
+    <path d="M10 12V20M22 12V20M8 16H12M20 16H24" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
     <defs>
-      <linearGradient id="g-lock" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#8b5cf6"/>
-        <stop offset="100%" stopColor="#6366f1"/>
-      </linearGradient>
+      <linearGradient id="ic4a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
+      <linearGradient id="ic4b" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#a855f7"/></linearGradient>
+      <linearGradient id="ic4c" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#c084fc"/></linearGradient>
     </defs>
-    <rect x="2" y="11" width="24" height="14" rx="5" fill="url(#g-lock)"/>
-    <path d="M8 11V9a6 6 0 0 1 12 0v2" stroke="url(#g-lock)" strokeWidth="2.2" fill="none"/>
-    <circle cx="14" cy="17" r="2.5" fill="white"/>
-    <path d="M14 19.5v2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
   </svg>
 );
 
-const FilterIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconPremium = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M16 3L19.5 11H28L21.5 16L23.8 24L16 19.5L8.2 24L10.5 16L4 11H12.5L16 3Z" fill="url(#ic5a)"/>
+    <path d="M16 3L19.5 11H28L21.5 16L23.8 24L16 19.5L8.2 24L10.5 16L4 11H12.5L16 3Z" fill="url(#ic5b)" opacity="0.35"/>
+    <circle cx="16" cy="14.5" r="3.5" fill="white" opacity="0.9"/>
     <defs>
-      <linearGradient id="g-fil1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#3b82f6"/>
-        <stop offset="100%" stopColor="#6366f1"/>
-      </linearGradient>
-      <linearGradient id="g-fil2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ec4899"/>
-        <stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient>
+      <linearGradient id="ic5a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="50%" stopColor="#ef4444"/><stop offset="100%" stopColor="#dc2626"/></linearGradient>
+      <linearGradient id="ic5b" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
     </defs>
-    <circle cx="10" cy="14" r="7.5" fill="url(#g-fil1)" opacity="0.88"/>
-    <circle cx="18" cy="14" r="7.5" fill="url(#g-fil2)" opacity="0.88"/>
-    <path d="M10 10v8M18 10v8M7 14h6M15 14h6" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
   </svg>
 );
 
-const StarIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconShield = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M16 3L5 8V15C5 21.6 9.8 27.7 16 29C22.2 27.7 27 21.6 27 15V8L16 3Z" fill="url(#ic6a)"/>
+    <path d="M16 3L5 8V15C5 21.6 9.8 27.7 16 29C22.2 27.7 27 21.6 27 15V8L16 3Z" fill="url(#ic6b)" opacity="0.25"/>
+    <path d="M10.5 16.5L14 20L22 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
     <defs>
-      <linearGradient id="g-star" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#f59e0b"/>
-        <stop offset="100%" stopColor="#ef4444"/>
-      </linearGradient>
+      <linearGradient id="ic6a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#10b981"/><stop offset="100%" stopColor="#059669"/></linearGradient>
+      <linearGradient id="ic6b" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
     </defs>
-    <path d="M14 3.5l2.7 5.4 6 .9-4.4 4.3 1 6-5.3-2.8-5.3 2.8 1-6L5.3 9.8l6-.9L14 3.5z" fill="url(#g-star)"/>
-    <circle cx="14" cy="12.5" r="2.8" fill="white" opacity="0.85"/>
   </svg>
 );
 
-const ShieldIcon = ({ size = 28 }) => (
-  <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+const IconCTAHeart = ({ size = 44 }) => (
+  <svg viewBox="0 0 48 48" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="g-shield" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#10b981"/>
-        <stop offset="100%" stopColor="#059669"/>
-      </linearGradient>
+      <linearGradient id="icheart" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="50%" stopColor="#a855f7"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
     </defs>
-    <path d="M14 3L4 7.5V13c0 6.2 4.5 11.5 10 13 5.5-1.5 10-6.8 10-13V7.5L14 3z" fill="url(#g-shield)"/>
-    <path d="M9 14l3.5 3.5 6.5-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M24 42C24 42 5 30 5 17C5 11.5 9.5 7 15 7C18.3 7 21.2 8.6 23 11.1C24.8 8.6 27.7 7 31 7C36.5 7 41 11.5 41 17C41 30 24 42 24 42Z" fill="url(#icheart)"/>
+    <path d="M24 42C24 42 5 30 5 17C5 11.5 9.5 7 15 7C18.3 7 21.2 8.6 23 11.1C24.8 8.6 27.7 7 31 7C36.5 7 41 11.5 41 17C41 30 24 42 24 42Z" fill="white" opacity="0.15"/>
+    <path d="M17 21L21.5 26L31.5 16" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
-
-const DiamondIcon = ({ size = 22 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
+const DiamondGem = ({ size = 22 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="g-diamond" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c4b5fd"/>
-        <stop offset="50%" stopColor="#f0abfc"/>
-        <stop offset="100%" stopColor="#818cf8"/>
-      </linearGradient>
+      <linearGradient id="igem" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="50%" stopColor="#f0abfc"/><stop offset="100%" stopColor="#818cf8"/></linearGradient>
     </defs>
-    <path d="M12 2l-8 6.5 8 13.5 8-13.5L12 2z" fill="url(#g-diamond)"/>
-    <path d="M4 8.5h16M9 2.5l-5 6M15 2.5l5 6M12 2.5l2.5 6M12 2.5L9.5 8.5" stroke="white" strokeWidth="0.7" opacity="0.5"/>
+    <path d="M12 2L4 8L12 22L20 8L12 2Z" fill="url(#igem)"/>
+    <path d="M4 8H20" stroke="white" strokeWidth="0.8" opacity="0.6"/>
+    <path d="M8 2.5L4 8L12 22L8 2.5Z" fill="white" opacity="0.15"/>
+    <path d="M16 2.5L20 8L12 22L16 2.5Z" fill="white" opacity="0.08"/>
   </svg>
 );
 
-const ArrowRightIcon = ({ size = 18 }) => (
-  <svg viewBox="0 0 20 20" width={size} height={size} fill="none">
-    <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const CheckIcon = ({ size = 14 }) => (
-  <svg viewBox="0 0 16 16" width={size} height={size} fill="none">
-    <path d="M3 8.5l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const CrossIcon = ({ size = 13 }) => (
-  <svg viewBox="0 0 16 16" width={size} height={size} fill="none">
-    <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+const StarBadge = ({ size = 13 }) => (
+  <svg viewBox="0 0 16 16" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 1.5L9.4 5.7H13.8L10.3 8.1L11.6 12.3L8 9.9L4.4 12.3L5.7 8.1L2.2 5.7H6.6L8 1.5Z" fill="currentColor"/>
   </svg>
 );
 
 
-/* ══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
-══════════════════════════════════════════ */
+═══════════════════════════════════════════════════════ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [scrolled, setScrolled]       = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [realTimeStats, setRealTimeStats] = useState({ activeUsers: 555, totalRooms: 9, onlineNow: 138 });
 
   const incrementUserCount = () => {
@@ -196,93 +193,58 @@ const LandingPage = () => {
     return () => clearInterval(iv);
   }, []);
 
-  useEffect(() => {
-    const h = (e) => {
-      if (e.key === 'currentActiveUsers') {
-        const n = parseInt(e.newValue) || 555;
-        setRealTimeStats(p => ({ ...p, activeUsers: n, onlineNow: Math.floor(n * 0.25) }));
-      }
-    };
-    window.addEventListener('storage', h);
-    return () => window.removeEventListener('storage', h);
-  }, []);
-
   const features = [
-    { Icon: ChatBubbleIcon, title: 'Real-Time Chat Rooms',    desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], color: '#6366f1' },
-    { Icon: MicIcon,        title: 'Voice & Media Sharing',   desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room.', tags: ['Voice', 'Audio Record', 'YouTube'], color: '#ec4899' },
-    { Icon: LockIcon,       title: 'Private Messaging',       desc: '1-on-1 private conversations with file sharing, voice messages and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], color: '#8b5cf6' },
-    { Icon: FilterIcon,     title: 'Advanced User Tools',     desc: 'Gender-based filtering, friend requests, user blocking, whisper messages and full user profiles.', tags: ['Filters', 'Friends', 'Block'], color: '#3b82f6' },
-    { Icon: StarIcon,       title: 'Premium Customization',   desc: 'Badge holders unlock gradient text effects, glowing animations, username FX and exclusive profile styling.', tags: ['Gradient', 'Animations', 'Badges'], color: '#f59e0b' },
-    { Icon: ShieldIcon,     title: 'Security & Moderation',   desc: 'VPN detection, device fingerprinting, auto-moderation, kick/ban/mute systems and reporting tools.', tags: ['VPN Shield', 'Auto-Mod', 'Reports'], color: '#10b981' },
+    { Icon: IconChatRooms, title: 'Real-Time Chat Rooms',  desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
+    { Icon: IconVoice,     title: 'Voice & Media Sharing', desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room.', tags: ['Voice', 'Audio Record', 'YouTube'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
+    { Icon: IconPrivate,   title: 'Private Messaging',     desc: '1-on-1 private conversations with file sharing, voice messages and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], bg: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08))', color: '#7c3aed' },
+    { Icon: IconTools,     title: 'Advanced User Tools',   desc: 'Gender-based filtering, friend requests, user blocking, whisper messages and full user profiles.', tags: ['Filters', 'Friends', 'Block'], bg: 'linear-gradient(135deg,rgba(59,130,246,0.12),rgba(99,102,241,0.08))', color: '#3b82f6' },
+    { Icon: IconPremium,   title: 'Premium Customization', desc: 'Badge holders unlock gradient text effects, glowing animations, username FX and exclusive profile styling.', tags: ['Gradient', 'Animations', 'Badges'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))', color: '#f59e0b' },
+    { Icon: IconShield,    title: 'Security & Moderation', desc: 'VPN detection, device fingerprinting, auto-moderation, kick/ban/mute systems and reporting tools.', tags: ['VPN Shield', 'Auto-Mod', 'Reports'], bg: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', color: '#10b981' },
   ];
 
   const tiers = [
     {
-      name: 'Free User',
-      price: '₹0',
-      sub: 'Always Free',
-      color: '#3b82f6',
-      border: 'rgba(59,130,246,0.3)',
-      glow: 'rgba(59,130,246,0.08)',
+      name: 'Free User', price: '₹0', sub: 'Always Free',
+      color: '#3b82f6', border: 'rgba(59,130,246,0.25)', glow: 'rgba(59,130,246,0.08)',
+      btnStyle: { background: 'transparent', color: '#3b82f6', borderColor: 'rgba(59,130,246,0.35)' },
       items: [
-        ['All public chat rooms access', true],
-        ['Basic text messaging', true],
-        ['Voice message sending', true],
-        ['Private messaging (1-on-1)', true],
-        ['Friend requests system', true],
-        ['Gender filter browsing', true],
-        ['YouTube video sharing', false],
-        ['Image & media uploads', false],
-        ['Advanced text styling', false],
-        ['Premium badges', false],
+        ['All public chat rooms access', true], ['Basic text messaging', true],
+        ['Voice message sending', true], ['Private messaging (1-on-1)', true],
+        ['Friend requests system', true], ['Gender filter browsing', true],
+        ['YouTube video sharing', false], ['Image & media uploads', false],
+        ['Advanced text styling', false], ['Premium badges', false],
       ],
     },
     {
-      name: 'Badge Holder',
-      price: 'Premium',
-      sub: 'Most Popular',
-      color: '#7c3aed',
-      border: 'rgba(124,58,237,0.4)',
-      glow: 'rgba(124,58,237,0.12)',
+      name: 'Badge Holder', price: 'Premium', sub: 'Most Popular',
+      color: '#7c3aed', border: 'rgba(124,58,237,0.4)', glow: 'rgba(124,58,237,0.12)',
       featured: true,
+      btnStyle: { background: 'linear-gradient(135deg,#5b5bd6,#7c3aed,#a855f7)', color: '#fff', borderColor: 'transparent' },
       items: [
-        ['Everything in Free User', true],
-        ['YouTube video sharing', true],
-        ['Image & media uploads', true],
-        ['Advanced text styling', true],
-        ['Gradient & glow effects', true],
-        ['Username customization', true],
-        ['Text animations', true],
-        ['Premium badges display', true],
-        ['Priority support access', true],
-        ['Exclusive features first', true],
+        ['Everything in Free User', true], ['YouTube video sharing', true],
+        ['Image & media uploads', true], ['Advanced text styling', true],
+        ['Gradient & glow effects', true], ['Username customization', true],
+        ['Text animations', true], ['Premium badges display', true],
+        ['Priority support access', true], ['Exclusive features first', true],
       ],
     },
     {
-      name: 'Staff Access',
-      price: 'Invite Only',
-      sub: 'Elite Tier',
-      color: '#b45309',
-      border: 'rgba(180,83,9,0.3)',
-      glow: 'rgba(251,191,36,0.08)',
+      name: 'Staff Access', price: 'Invite Only', sub: 'Elite Tier',
+      color: '#b45309', border: 'rgba(180,83,9,0.28)', glow: 'rgba(251,191,36,0.07)',
+      btnStyle: { background: 'transparent', color: '#b45309', borderColor: 'rgba(180,83,9,0.32)' },
       items: [
-        ['Everything in Badge Holder', true],
-        ['Staff room access', true],
-        ['Kick / Ban / Mute powers', true],
-        ['Full moderation panel', true],
-        ['Advanced reporting tools', true],
-        ['Real-time user monitoring', true],
-        ['Admin panel access', true],
-        ['Special role badges', true],
-        ['All features — forever', true],
-        ['Priority in all features', true],
+        ['Everything in Badge Holder', true], ['Staff room access', true],
+        ['Kick / Ban / Mute powers', true], ['Full moderation panel', true],
+        ['Advanced reporting tools', true], ['Real-time user monitoring', true],
+        ['Admin panel access', true], ['Special role badges', true],
+        ['All features — forever', true], ['Priority in all features', true],
       ],
     },
   ];
 
   return (
     <div className="lp-root">
-      {/* Ambient Orbs */}
+      {/* Ambient Background */}
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1" />
         <div className="lp-orb lp-orb-2" />
@@ -290,7 +252,7 @@ const LandingPage = () => {
       </div>
 
       {/* ══ HEADER ══ */}
-      <header className={`lp-header ${scrolled ? 'lp-header--scrolled' : ''}`}>
+      <header className={`lp-header${scrolled ? ' lp-header--scrolled' : ''}`}>
         <div className="lp-header-inner">
           <div className="lp-brand">
             <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-logo" />
@@ -300,9 +262,12 @@ const LandingPage = () => {
             </div>
           </div>
           <nav className="lp-nav">
-            <button className="lp-btn-ghost" onClick={() => navigate('/login')}>Sign In</button>
+            <button className="lp-btn-ghost" onClick={() => navigate('/login')}>
+              Sign In
+            </button>
             <button className="lp-btn-primary" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
-              Get Started <ArrowRightIcon size={16} />
+              <span>Get Started</span>
+              <ArrowRight size={16} />
             </button>
           </nav>
         </div>
@@ -311,73 +276,74 @@ const LandingPage = () => {
       {/* ══ HERO ══ */}
       <section className="lp-hero">
         <div className="lp-hero-inner">
-          {/* Left */}
-          <div className="lp-hero-left">
-            <div className="lp-badge lp-anim-fade">
-              <SparkleIcon size={14} /> India's Premier Chat Platform
-            </div>
-            <h1 className="lp-hero-h1 lp-anim-up">
-              Connect with India's<br />
-              <span className="lp-grad">Most Vibrant</span><br />
-              Chat Community
-            </h1>
-            <p className="lp-hero-p lp-anim-up lp-d1">
-              Real-time conversations with voice messages, private chats,
-              gender filters and premium customization — beautifully crafted for real connections.
-            </p>
+          <div className="lp-badge lp-anim-fade">
+            <CrystalSparkle size={14} />
+            <span>India's Premier Chat Platform</span>
+          </div>
 
-            {/* Stats */}
-            <div className="lp-stats lp-anim-up lp-d2">
-              <div className="lp-stat">
-                <span className="lp-stat-n">{realTimeStats.activeUsers.toLocaleString()}+</span>
-                <span className="lp-stat-l">Active Users</span>
-              </div>
-              <div className="lp-stat-sep" />
-              <div className="lp-stat">
-                <span className="lp-stat-n">{realTimeStats.onlineNow}</span>
-                <span className="lp-stat-l">Online Now</span>
-              </div>
-              <div className="lp-stat-sep" />
-              <div className="lp-stat">
-                <span className="lp-stat-n">{realTimeStats.totalRooms}+</span>
-                <span className="lp-stat-l">Chat Rooms</span>
-              </div>
-            </div>
+          <h1 className="lp-hero-h1 lp-anim-up">
+            Connect with India's<br />
+            <span className="lp-grad">Most Vibrant</span><br />
+            Chat Community
+          </h1>
 
-            <div className="lp-hero-btns lp-anim-up lp-d3">
-              <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
-                <span>Start Chatting Now</span>
-                <ArrowRightIcon size={17} />
-                <span className="lp-shimmer" />
-              </button>
-              <button className="lp-cta-outline" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
-                Create Free Account
-              </button>
+          <p className="lp-hero-p lp-anim-up lp-d1">
+            Real-time conversations with voice messages, private chats,
+            gender filters and premium customization — beautifully crafted for real connections.
+          </p>
+
+          <div className="lp-stats lp-anim-up lp-d2">
+            <div className="lp-stat">
+              <span className="lp-stat-n">{realTimeStats.activeUsers.toLocaleString()}+</span>
+              <span className="lp-stat-l">Active Users</span>
+            </div>
+            <div className="lp-stat-sep" />
+            <div className="lp-stat">
+              <span className="lp-stat-n">{realTimeStats.onlineNow}</span>
+              <span className="lp-stat-l">Online Now</span>
+            </div>
+            <div className="lp-stat-sep" />
+            <div className="lp-stat">
+              <span className="lp-stat-n">{realTimeStats.totalRooms}+</span>
+              <span className="lp-stat-l">Chat Rooms</span>
             </div>
           </div>
 
+          <div className="lp-hero-btns lp-anim-up lp-d3">
+            <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
+              <span>Start Chatting Now</span>
+              <ArrowRight size={18} />
+              <span className="lp-shimmer" aria-hidden="true" />
+            </button>
+            <button className="lp-cta-outline" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
+              <span>Create Free Account</span>
+            </button>
+          </div>
         </div>
       </section>
 
       {/* ══ FEATURES ══ */}
       <section className="lp-section lp-features-section">
         <div className="lp-container">
-          <div className="lp-sec-head">
-            <div className="lp-badge"><BoltIcon size={14} /> Features</div>
+          <div className="lp-sec-head lp-anim-up">
+            <div className="lp-badge">
+              <LuxuryBolt size={14} />
+              <span>Features</span>
+            </div>
             <h2 className="lp-sec-h2">Everything You Need to <span className="lp-grad">Chat Like a Pro</span></h2>
             <p className="lp-sec-sub">India's most feature-rich platform — built for real, meaningful connections</p>
           </div>
           <div className="lp-features-grid">
-            {features.map(({ Icon, title, desc, tags, color }, i) => (
-              <div key={i} className="lp-feat-card" style={{ '--c': color }}>
-                <div className="lp-feat-icon" style={{ background: `${color}18` }}>
-                  <Icon size={28} />
+            {features.map(({ Icon, title, desc, tags, bg, color }, i) => (
+              <div key={i} className="lp-feat-card lp-anim-up" style={{ animationDelay: `${i * 0.07}s` }}>
+                <div className="lp-feat-icon-wrap" style={{ background: bg }}>
+                  <Icon size={30} />
                 </div>
                 <h3 className="lp-feat-title">{title}</h3>
                 <p className="lp-feat-desc">{desc}</p>
                 <div className="lp-feat-tags">
                   {tags.map((t, j) => (
-                    <span key={j} className="lp-tag" style={{ color, background: `${color}12`, borderColor: `${color}35` }}>{t}</span>
+                    <span key={j} className="lp-tag" style={{ color, background: `${color}14`, borderColor: `${color}38` }}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -386,11 +352,14 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ══ TIERS ══ */}
+      {/* ══ PLANS ══ */}
       <section className="lp-section lp-tiers-section">
         <div className="lp-container">
-          <div className="lp-sec-head">
-            <div className="lp-badge"><TrophyIcon size={14} /> Plans</div>
+          <div className="lp-sec-head lp-anim-up">
+            <div className="lp-badge">
+              <GoldTrophy size={14} />
+              <span>Plans</span>
+            </div>
             <h2 className="lp-sec-h2">Choose Your <span className="lp-grad">Experience Level</span></h2>
             <p className="lp-sec-sub">From free users to premium badge holders — find your perfect tier</p>
           </div>
@@ -398,12 +367,13 @@ const LandingPage = () => {
             {tiers.map((t, i) => (
               <div
                 key={i}
-                className={`lp-tier ${t.featured ? 'lp-tier-featured' : ''}`}
-                style={{ '--tc': t.color, '--tb': t.border, '--tg': t.glow }}
+                className={`lp-tier${t.featured ? ' lp-tier-featured' : ''} lp-anim-up`}
+                style={{ '--tb': t.border, '--tg': t.glow, animationDelay: `${i * 0.1}s` }}
               >
                 {t.featured && (
                   <div className="lp-tier-badge">
-                    <StarIcon size={13} /> Most Popular
+                    <StarBadge size={13} />
+                    <span>Most Popular</span>
                   </div>
                 )}
                 <div className="lp-tier-head">
@@ -411,23 +381,20 @@ const LandingPage = () => {
                   <div className="lp-tier-price">{t.price}</div>
                   <div className="lp-tier-sub">{t.sub}</div>
                 </div>
-                <div className="lp-tier-line" style={{ background: t.color }} />
+                <div className="lp-tier-line" style={{ background: `linear-gradient(90deg, ${t.color}, transparent)` }} />
                 <ul className="lp-tier-list">
                   {t.items.map(([label, ok], j) => (
-                    <li key={j} className={`lp-tier-item ${ok ? 'ok' : 'no'}`}>
+                    <li key={j} className={`lp-tier-item${ok ? '' : ' lp-no'}`}>
                       <span className="lp-tier-ic" style={{ color: ok ? t.color : '#94a3b8', background: ok ? `${t.color}14` : 'rgba(148,163,184,0.1)' }}>
-                        {ok ? <CheckIcon size={13} /> : <CrossIcon size={12} />}
+                        {ok ? <CheckMark size={13} /> : <CrossMark size={11} />}
                       </span>
-                      {label}
+                      <span>{label}</span>
                     </li>
                   ))}
                 </ul>
                 <button
                   className="lp-tier-btn"
-                  style={t.featured
-                    ? { background: `linear-gradient(135deg, ${t.color}, #6366f1)`, color: '#fff', border: 'none' }
-                    : { background: 'transparent', color: t.color, borderColor: t.border }
-                  }
+                  style={t.btnStyle}
                   onClick={() => { incrementUserCount(); navigate(t.name === 'Free User' ? '/rooms' : t.name === 'Badge Holder' ? '/signup' : '/'); }}
                 >
                   {t.name === 'Free User' ? 'Start For Free' : t.name === 'Badge Holder' ? 'Get Badge Access' : 'Learn More'}
@@ -441,9 +408,9 @@ const LandingPage = () => {
       {/* ══ CTA BANNER ══ */}
       <section className="lp-cta-section">
         <div className="lp-container">
-          <div className="lp-cta-inner">
+          <div className="lp-cta-inner lp-anim-up">
             <div className="lp-cta-icon-wrap">
-              <ChatBubbleIcon size={42} />
+              <IconCTAHeart size={52} />
             </div>
             <h2 className="lp-cta-h2">
               Ready to Join India's Best<br />
@@ -453,14 +420,14 @@ const LandingPage = () => {
               Thousands of users are chatting right now.<br />
               Your conversation starts here — join free today.
             </p>
-            <div className="lp-cta-btns">
+            <div className="lp-hero-btns" style={{ maxWidth: 500, margin: '0 auto' }}>
               <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
                 <span>Start Chatting Now</span>
-                <ArrowRightIcon size={17} />
-                <span className="lp-shimmer" />
+                <ArrowRight size={18} />
+                <span className="lp-shimmer" aria-hidden="true" />
               </button>
               <button className="lp-cta-outline" onClick={() => navigate('/login')}>
-                Sign In to Account
+                <span>Sign In to Account</span>
               </button>
             </div>
           </div>
@@ -478,7 +445,7 @@ const LandingPage = () => {
         <div className="lp-footer-inner">
           <div className="lp-footer-main">
 
-            {/* Brand Column */}
+            {/* Brand */}
             <div className="lp-footer-brand-col">
               <div className="lp-footer-brand">
                 <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-footer-logo" />
@@ -509,41 +476,8 @@ const LandingPage = () => {
               </div>
             </div>
 
-            {/* Link Columns */}
+            {/* Support & Legal only */}
             <div className="lp-footer-links">
-              <div className="lp-footer-col">
-                <h4 className="lp-footer-col-title">Chat Features</h4>
-                <ul>
-                  <li><button onClick={() => navigate('/rooms')}>Public Chat Rooms</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Private Messaging</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Voice Messages</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Gender Filters</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Friend System</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>User Profiles</button></li>
-                </ul>
-              </div>
-              <div className="lp-footer-col">
-                <h4 className="lp-footer-col-title">Premium Features</h4>
-                <ul>
-                  <li><button onClick={() => navigate('/signup')}>YouTube Sharing</button></li>
-                  <li><button onClick={() => navigate('/signup')}>Image Uploads</button></li>
-                  <li><button onClick={() => navigate('/signup')}>Text Styling</button></li>
-                  <li><button onClick={() => navigate('/signup')}>Gradient Effects</button></li>
-                  <li><button onClick={() => navigate('/signup')}>Animations</button></li>
-                  <li><button onClick={() => navigate('/signup')}>Premium Badges</button></li>
-                </ul>
-              </div>
-              <div className="lp-footer-col">
-                <h4 className="lp-footer-col-title">Chat Rooms</h4>
-                <ul>
-                  <li><button onClick={() => navigate('/rooms')}>Indian Chat</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>International</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Gaming Zone</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Music Lounge</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>General Discussion</button></li>
-                  <li><button onClick={() => navigate('/rooms')}>Staff Room</button></li>
-                </ul>
-              </div>
               <div className="lp-footer-col">
                 <h4 className="lp-footer-col-title">Support & Legal</h4>
                 <ul>
@@ -556,19 +490,29 @@ const LandingPage = () => {
                 </ul>
               </div>
             </div>
+
           </div>
 
-          {/* Divider */}
           <div className="lp-footer-divider" />
 
-          {/* Footer CTA */}
-          <div className="lp-footer-cta-center">
+          <div className="lp-footer-cta-row">
             <button className="lp-footer-cta-btn" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
               <span>Join TingleTap Now</span>
-              <ArrowRightIcon size={15} />
+              <ArrowRight size={16} />
             </button>
-            <button className="lp-footer-login-btn" onClick={() => navigate('/login')}>Sign In</button>
+            <button className="lp-footer-login-btn" onClick={() => navigate('/login')}>
+              Sign In
+            </button>
           </div>
+
+          <div className="lp-footer-copyright">
+            <div className="lp-copyright-gem"><DiamondGem size={18} /></div>
+            <div className="lp-copyright-text">
+              <span className="lp-copyright-main">© 2025 TingleTap — All Rights Reserved</span>
+              <span className="lp-copyright-sub">Crafted with care for India's chat community</span>
+            </div>
+          </div>
+
         </div>
       </footer>
       <PremiumCopyright />
