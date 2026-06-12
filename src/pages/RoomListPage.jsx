@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db, rtdb } from '../firebase/config';
 import { doc, setDoc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
@@ -505,16 +506,7 @@ const RoomListPage = () => {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="rl-footer">
-        <div className="rl-footer-inner">
-          <div className="rl-footer-brand">TingleTap™</div>
-          <div className="rl-footer-copy">© 2026 · All rights reserved</div>
-          <div className="rl-footer-craft">
-            Crafted with <HeartIcon /> by <strong>Adrashtra Inc.</strong>
-          </div>
-        </div>
-      </footer>
+      <PremiumCopyright />
 
       {/* Modals */}
       {showStatusModal && <StatusModal onClose={() => setShowStatusModal(false)} />}

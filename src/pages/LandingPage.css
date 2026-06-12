@@ -433,6 +433,12 @@
   gap: 24px; flex-wrap: wrap;
 }
 
+/* Centered footer CTA row (replaces left/right split) */
+.lp-footer-cta-center {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; flex-wrap: wrap; padding: 28px 0 36px;
+}
+
 /* Copyright block */
 .lp-copyright-block { display: flex; align-items: center; gap: 16px; }
 

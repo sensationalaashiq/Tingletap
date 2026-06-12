@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
+import PremiumCopyright from '../components/PremiumCopyright';
 
 const ContactPage = () => {
   const navigate = useNavigate();
@@ -380,10 +381,8 @@ const ContactPage = () => {
           <button onClick={() => navigate('/terms')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>Terms</button>
           <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.75rem' }}>FAQ</button>
         </div>
-        <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.7rem', margin: 0 }}>
-          © 2024 TingleTap™. All rights reserved. Made in India 🇮🇳
-        </p>
       </footer>
+      <PremiumCopyright />
     </div>
   );
 };

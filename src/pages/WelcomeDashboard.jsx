@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import {
@@ -394,14 +395,7 @@ const WelcomeDashboard = () => {
 
         <div className="wd-comm-pill"><SparkleIcon /> <span>Premium Community · 555+ Active Users</span></div>
 
-        <div className="wd-copyright">
-          <DiamondIcon />
-          <div className="wd-copy-row">
-            <span className="wd-copy-yr">© 2026</span>
-            <span className="wd-copy-brand">TingleTap™</span>
-          </div>
-          <div className="wd-copy-craft">Crafted with <HeartIcon /> by <strong>Adrashtra Inc.</strong></div>
-        </div>
+        <PremiumCopyright />
       </main>
 
       {/* ══ OVERLAY ══ */}

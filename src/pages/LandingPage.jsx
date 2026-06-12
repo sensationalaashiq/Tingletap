@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
+import PremiumCopyright from '../components/PremiumCopyright';
 
 /* ══════════════════════════════════════════
    PREMIUM SVG ICON LIBRARY — NO EMOJIS
@@ -683,45 +684,17 @@ const LandingPage = () => {
           {/* Divider */}
           <div className="lp-footer-divider" />
 
-          {/* Copyright Bottom */}
-          <div className="lp-footer-bottom">
-            <div className="lp-footer-bottom-inner">
-
-              {/* Left — Copyright block */}
-              <div className="lp-copyright-block">
-                <div className="lp-copyright-diamond">
-                  <DiamondIcon size={20} />
-                </div>
-                <div className="lp-copyright-text">
-                  <div className="lp-copy-row-1">
-                    <span className="lp-copy-year">© 2026</span>
-                    <span className="lp-copy-brand-name">TingleTap™</span>
-                    <span className="lp-copy-sep">—</span>
-                    <span className="lp-copy-rights">All Rights Reserved</span>
-                  </div>
-                  <div className="lp-copy-row-2">
-                    <span className="lp-crafted-by">
-                      Crafted with
-                      <span className="lp-heart-icon"><HeartIcon size={15} /></span>
-                      by
-                      <span className="lp-adrashtra-name">Adrashtra Inc.</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right — CTA buttons */}
-              <div className="lp-footer-actions">
-                <button className="lp-footer-cta-btn" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
-                  <span>Join TingleTap Now</span>
-                  <ArrowRightIcon size={15} />
-                </button>
-                <button className="lp-footer-login-btn" onClick={() => navigate('/login')}>Sign In</button>
-              </div>
-            </div>
+          {/* Footer CTA */}
+          <div className="lp-footer-cta-center">
+            <button className="lp-footer-cta-btn" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
+              <span>Join TingleTap Now</span>
+              <ArrowRightIcon size={15} />
+            </button>
+            <button className="lp-footer-login-btn" onClick={() => navigate('/login')}>Sign In</button>
           </div>
         </div>
       </footer>
+      <PremiumCopyright />
     </div>
   );
 };

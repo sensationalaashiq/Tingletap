@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 
 const ForgotPasswordPage = () => {
@@ -229,10 +230,8 @@ const ForgotPasswordPage = () => {
           <button onClick={() => navigate('/contact')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.85rem' }}>Contact</button>
           <button onClick={() => navigate('/faq')} style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer', fontSize: '0.85rem' }}>FAQ</button>
         </div>
-        <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.8rem', margin: 0 }}>
-          © 2024 TingleTap™. All rights reserved. Made in India 🇮🇳
-        </p>
       </footer>
+      <PremiumCopyright />
     </div>
   );
 };

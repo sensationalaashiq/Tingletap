@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+.pco-root {
+  width: 100%;
+  background: linear-gradient(135deg, #1e1b4b 0%, #3b1560 55%, #1e1b4b 100%);
+  padding: 18px 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pco-root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 120% at 50% 0%, rgba(139,92,246,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.pco-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pco-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pco-year {
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(196, 181, 253, 0.55);
+  letter-spacing: 0.04em;
+}
+
+.pco-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.pco-sep {
+  font-size: 12px;
+  color: rgba(196, 181, 253, 0.25);
+  font-weight: 300;
+}
+
+.pco-rights {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(196, 181, 253, 0.4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pco-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.pco-craft-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(196, 181, 253, 0.45);
+}
+
+.pco-adrashtra {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 700;
+  font-style: italic;
+  background: linear-gradient(135deg, #f9a8d4 0%, #c4b5fd 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .pco-brand { font-size: 17px; }
+  .pco-top-row { gap: 6px; }
+}
