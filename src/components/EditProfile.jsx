@@ -278,7 +278,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
         
         setProfilePicPreview(previewUrl);
         
-        const fileInput = document.getElementById('profileImageInput');
+        const fileInput = document.getElementById('ep-photo-input');
         if (fileInput) {
           fileInput.value = '';
         }
@@ -439,9 +439,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
   if (loading) {
     return (
-      <div className="modern-edit-loading">
-        <div className="elegant-spinner"></div>
-        <p>Loading your profile...</p>
+      <div className="ep-wd-loading">
+        <div className="ep-wd-spin" />
+        <p>Loading profile…</p>
       </div>
     );
   }
@@ -755,494 +755,243 @@ const EditProfile = ({ onClose, onSuccess }) => {
   }
 
   return (
-    <div className="modern-edit-profile">
-      <style jsx>{`
-        .modern-edit-profile {
-          width: 100%;
-          max-width: 480px;
-          margin: 0 auto;
-          background: linear-gradient(145deg, #ffffff, #f8fafc);
-          border-radius: 24px;
-          overflow: hidden;
-          box-shadow: 
-            0 25px 50px rgba(0, 0, 0, 0.15),
-            0 0 0 1px rgba(255, 255, 255, 0.2);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        }
+    <div className="ep-wd-container">
 
-        .profile-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          padding: 24px;
-          text-align: center;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .profile-header::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-          pointer-events: none;
-        }
-
-        .header-title {
-          color: white;
-          font-size: 24px;
-          font-weight: 700;
-          margin: 0;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          position: relative;
-          z-index: 1;
-        }
-
-        .avatar-section {
-          padding: 32px 24px;
-          display: flex;
-          justify-content: center;
-          background: linear-gradient(145deg, #f8fafc, #ffffff);
-        }
-
-        .avatar-container {
-          position: relative;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .avatar-container:hover {
-          transform: scale(1.05) translateY(-4px);
-        }
-
-        .profile-avatar {
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 4px solid #667eea;
-          background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-          box-shadow: 
-            0 8px 32px rgba(102, 126, 234, 0.3),
-            0 0 0 4px rgba(255, 255, 255, 0.8);
-          transition: all 0.3s ease;
-        }
-
-        .avatar-container:hover .profile-avatar {
-          box-shadow: 
-            0 12px 40px rgba(102, 126, 234, 0.4),
-            0 0 0 4px rgba(255, 255, 255, 1);
-        }
-
-        .upload-overlay {
-          position: absolute;
-          bottom: 8px;
-          right: 8px;
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          border: 3px solid white;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-          transition: all 0.3s ease;
-        }
-
-        .upload-overlay:hover {
-          transform: scale(1.1) rotate(5deg);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .upload-overlay svg {
-          width: 20px;
-          height: 20px;
-          color: white;
-          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-        }
-
-        .hidden-file-input {
-          display: none;
-        }
-
-        .form-container {
-          padding: 24px;
-          background: linear-gradient(145deg, #f8fafc, #ffffff);
-        }
-
-        .input-grid {
-          display: grid;
-          gap: 20px;
-        }
-
-        .input-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .input-row.full-width {
-          grid-template-columns: 1fr;
-        }
-
-        .modern-input, .modern-select, .modern-textarea {
-          width: 100%;
-          padding: 16px 20px;
-          border: 2px solid #e2e8f0;
-          border-radius: 16px;
-          font-size: 15px;
-          font-weight: 500;
-          background: rgba(255, 255, 255, 0.9);
-          color: #1e293b;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-          box-sizing: border-box;
-        }
-
-        .modern-input:focus, .modern-select:focus, .modern-textarea:focus {
-          outline: none;
-          border-color: #667eea;
-          background: rgba(255, 255, 255, 1);
-          box-shadow: 
-            0 0 0 4px rgba(102, 126, 234, 0.1),
-            0 4px 16px rgba(0, 0, 0, 0.08);
-          transform: translateY(-1px);
-        }
-
-        .modern-input::placeholder, .modern-select::placeholder, .modern-textarea::placeholder {
-          color: #94a3b8;
-          font-weight: 400;
-        }
-
-        .modern-select {
-          cursor: pointer;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-          background-position: right 16px center;
-          background-repeat: no-repeat;
-          background-size: 16px;
-          padding-right: 48px;
-        }
-
-        .modern-textarea {
-          resize: vertical;
-          min-height: 80px;
-          font-family: inherit;
-        }
-
-        .action-section {
-          padding: 24px;
-          background: linear-gradient(145deg, #f8fafc, #ffffff);
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .button-group {
-          display: flex;
-          gap: 16px;
-        }
-
-        .primary-btn {
-          flex: 1;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          padding: 16px 24px;
-          border-radius: 16px;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .primary-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-          background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        }
-
-        .primary-btn:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .primary-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .secondary-btn {
-          flex: 1;
-          background: rgba(255, 255, 255, 0.9);
-          color: #667eea;
-          border: 2px solid rgba(102, 126, 234, 0.3);
-          padding: 16px 24px;
-          border-radius: 16px;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .secondary-btn:hover {
-          background: rgba(102, 126, 234, 0.1);
-          border-color: #667eea;
-          color: #5a67d8;
-          transform: translateY(-1px);
-        }
-
-        .modern-edit-loading {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 400px;
-          background: linear-gradient(145deg, #ffffff, #f8fafc);
-          border-radius: 24px;
-          gap: 20px;
-          color: #475569;
-        }
-
-        .elegant-spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #e2e8f0;
-          border-top: 4px solid #667eea;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .modern-edit-loading p {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        @media (max-width: 480px) {
-          .modern-edit-profile {
-            max-width: 360px;
-            margin: 10px;
+      {/* ── Avatar ── */}
+      <div className="wd-avatar-row">
+        <div
+          className="wd-avatar-circle"
+          onClick={() => document.getElementById('ep-photo-input').click()}
+        >
+          {profilePicPreview
+            ? <img src={profilePicPreview} alt="Profile" className="wd-avatar-img" />
+            : <span className="wd-avatar-init">{(formData.displayName || 'U').slice(0, 2).toUpperCase()}</span>
           }
-          
-          .input-row {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-          
-          .profile-avatar {
-            width: 100px;
-            height: 100px;
-          }
-
-          .upload-overlay {
-            width: 36px;
-            height: 36px;
-            bottom: 6px;
-            right: 6px;
-          }
-
-          .upload-overlay svg {
-            width: 18px;
-            height: 18px;
-          }
-
-          .modern-input,
-          .modern-select,
-          .modern-textarea {
-            padding: 14px 18px;
-            font-size: 14px;
-          }
-
-          .primary-btn,
-          .secondary-btn {
-            padding: 14px 20px;
-            font-size: 14px;
-          }
-
-          .button-group {
-            flex-direction: column;
-          }
-        }
-      `}</style>
-
-      <div className="profile-header">
-        <h2 className="header-title">Edit Profile</h2>
-      </div>
-
-      <div className="avatar-section">
-        <div className="avatar-container" onClick={() => document.getElementById('profileImageInput').click()}>
-          <img src={profilePicPreview} alt="Profile" className="profile-avatar" />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleProfilePicChange}
-            id="profileImageInput"
-            className="hidden-file-input"
-          />
-          <div className="upload-overlay">
-            <svg viewBox="0 0 24 24" fill="currentColor">
+          <div className="wd-avatar-overlay">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
               <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
             </svg>
           </div>
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleProfilePicChange}
+          id="ep-photo-input"
+          style={{ display: 'none' }}
+        />
+        <span className="wd-avatar-hint">Tap to change photo</span>
       </div>
 
+      {/* ── Form ── */}
       <form onSubmit={handleSubmit}>
-        <div className="form-container">
-          <div className="input-grid">
-            <div className="input-row full-width">
-              <input
-                type="text"
-                name="displayName"
-                value={formData.displayName}
-                onChange={handleInputChange}
-                className="modern-input"
-                placeholder="👤 Full Name"
-                required
-              />
-            </div>
+        <div className="wd-fields">
 
-            <div className="input-row">
+          {/* Display Name */}
+          <div className="wd-field-group">
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+              </svg>
+              Display Name *
+            </label>
+            <input
+              className="wd-input"
+              type="text"
+              name="displayName"
+              value={formData.displayName}
+              onChange={handleInputChange}
+              placeholder="Your name"
+              required
+            />
+          </div>
+
+          {/* Age + Gender */}
+          <div className="wd-field-row">
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z"/>
+                </svg>
+                Age
+              </label>
               <input
+                className="wd-input"
                 type="number"
                 name="age"
                 value={formData.age}
                 onChange={handleInputChange}
-                className="modern-input"
-                placeholder="🎂 Age"
+                placeholder="Age"
                 min="13"
                 max="120"
               />
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleInputChange}
-                className="modern-select"
-              >
-                <option value="">⚧️ Gender</option>
-                <option value="male">♂️ Male</option>
-                <option value="female">♀️ Female</option>
-                <option value="other">⚧️ Other</option>
+            </div>
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9,9H7V7H9V9M17,7H15V9H17V7M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z"/>
+                </svg>
+                Gender
+              </label>
+              <select className="wd-input" name="gender" value={formData.gender} onChange={handleInputChange}>
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
               </select>
             </div>
+          </div>
 
-            <div className="input-row">
+          {/* Country + Profession */}
+          <div className="wd-field-row">
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+                </svg>
+                Country
+              </label>
               <input
+                className="wd-input"
                 type="text"
                 name="country"
                 value={formData.country}
                 onChange={handleInputChange}
-                className="modern-input"
-                placeholder="🌍 Country"
+                placeholder="Country"
               />
+            </div>
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20,6H16V4A2,2 0 0,0 14,2H10A2,2 0 0,0 8,4V6H4A2,2 0 0,0 2,8V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V8A2,2 0 0,0 20,6M10,4H14V6H10V4M20,20H4V8H20V20Z"/>
+                </svg>
+                Profession
+              </label>
               <input
+                className="wd-input"
                 type="text"
                 name="profession"
                 value={formData.profession}
                 onChange={handleInputChange}
-                className="modern-input"
-                placeholder="💼 Profession"
+                placeholder="Profession"
               />
             </div>
+          </div>
 
-            <div className="input-row">
-              <select
-                name="relationship"
-                value={formData.relationship}
-                onChange={handleInputChange}
-                className="modern-select"
-              >
-                <option value="">💝 Relationship</option>
+          {/* Relationship + Languages */}
+          <div className="wd-field-row">
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
+                </svg>
+                Relationship
+              </label>
+              <select className="wd-input" name="relationship" value={formData.relationship} onChange={handleInputChange}>
+                <option value="">Select</option>
                 <option value="single">Single</option>
-                <option value="taken">In a Relationship</option>
+                <option value="taken">Taken</option>
                 <option value="married">Married</option>
-                <option value="complicated">It's Complicated</option>
+                <option value="complicated">Complicated</option>
                 <option value="not_saying">Prefer not to say</option>
               </select>
+            </div>
+            <div className="wd-field-group">
+              <label className="wd-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/>
+                </svg>
+                Languages
+              </label>
               <input
+                className="wd-input"
                 type="text"
                 name="languages"
                 value={formData.languages}
                 onChange={handleInputChange}
-                className="modern-input"
-                placeholder="🗣️ Languages"
-              />
-            </div>
-
-            <div className="input-row full-width">
-              <input
-                type="text"
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="modern-input"
-                placeholder="📝 Status Message"
-              />
-            </div>
-
-            <div className="input-row full-width">
-              <input
-                type="text"
-                name="interests"
-                value={formData.interests}
-                onChange={handleInputChange}
-                className="modern-input"
-                placeholder="🎯 Interests & Hobbies"
-              />
-            </div>
-
-            <div className="input-row full-width">
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                className="modern-textarea"
-                placeholder="📖 Tell us about yourself..."
-                rows="3"
+                placeholder="English, Hindi…"
               />
             </div>
           </div>
-        </div>
 
-        <div className="action-section">
-          <div className="button-group">
-            <button
-              type="submit"
-              disabled={loading || uploading}
-              className="primary-btn"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
+          {/* Status */}
+          <div className="wd-field-group">
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z"/>
               </svg>
-              {loading ? 'Saving...' : uploading ? 'Uploading...' : 'Save Changes'}
-            </button>
-
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="secondary-btn"
-              >
-                Cancel
-              </button>
-            )}
+              Status
+            </label>
+            <input
+              className="wd-input"
+              type="text"
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              placeholder="e.g. Feeling great today"
+              maxLength={80}
+            />
           </div>
+
+          {/* Interests */}
+          <div className="wd-field-group">
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+              </svg>
+              Interests
+            </label>
+            <input
+              className="wd-input"
+              type="text"
+              name="interests"
+              value={formData.interests}
+              onChange={handleInputChange}
+              placeholder="Music, Travel, Sports…"
+            />
+          </div>
+
+          {/* Bio */}
+          <div className="wd-field-group">
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z"/>
+              </svg>
+              Bio
+            </label>
+            <textarea
+              className="wd-input wd-textarea"
+              name="bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              placeholder="Tell us about yourself…"
+              rows={3}
+              maxLength={200}
+            />
+          </div>
+
         </div>
+
+        {/* ── Save Button ── */}
+        <button
+          type="submit"
+          className="wd-save-btn ep-save-btn"
+          disabled={loading || uploading}
+        >
+          {(loading || uploading)
+            ? <>
+                <span className="wd-spin" />
+                <span>{uploading ? 'Uploading…' : 'Saving…'}</span>
+              </>
+            : <>
+                {/* Premium verified-badge checkmark icon */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.46L12,21L15.4,22.46L17.29,19.29L20.9,18.47L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                </svg>
+                <span>Save Changes</span>
+              </>
+          }
+        </button>
       </form>
     </div>
   );
