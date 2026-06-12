@@ -207,23 +207,21 @@
 }
 .luxury-nav-tabs::-webkit-scrollbar { display: none; }
 .luxury-nav-tab {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 20px; border-radius: 13px; border: none;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 16px; border-radius: 13px; border: none;
   background: transparent; cursor: pointer;
-  font-size: 13.5px; font-weight: 600; color: #7c3aed; opacity: .6;
+  font-size: 13px; font-weight: 700; color: #374151;
   transition: all 0.2s ease; white-space: nowrap; flex-shrink: 0;
   font-family: 'Inter', sans-serif;
 }
-.luxury-nav-tab:hover { opacity: 1; background: rgba(139,92,246,0.07); }
+.luxury-nav-tab:hover { background: rgba(139,92,246,0.07); color: #3b0764; }
 .luxury-nav-tab.active {
   background: linear-gradient(135deg, #7c3aed, #a855f7);
-  color: #fff; opacity: 1;
-  box-shadow: 0 4px 16px rgba(124,58,237,0.30);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(124,58,237,0.32);
 }
+.luxury-nav-tab.active .luxury-tab-label { color: #fff; }
 .luxury-tab-icon { display: flex; align-items: center; }
-.luxury-tab-icon svg { width: 17px; height: 17px; }
-.luxury-nav-tab:not(.active) .luxury-tab-icon svg { color: #7c3aed; }
-.luxury-nav-tab.active .luxury-tab-icon svg { color: #fff; }
 
 /* ═══════════════════════════════════════════════════
    MAIN CONTENT
@@ -417,22 +415,30 @@
   flex-direction: column; align-items: flex-start; gap: 5px;
 }
 .luxury-device-details, .luxury-location-details {
-  display: flex; flex-direction: column; gap: 5px; width: 100%;
+  display: flex; flex-direction: column; gap: 6px; width: 100%;
 }
 .luxury-device-item, .luxury-location-item {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11.5px; color: #4b5563;
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; color: #374151; font-weight: 500;
 }
 .luxury-device-item svg, .luxury-location-item svg {
-  width: 13px; height: 13px; color: #a78bfa; flex-shrink: 0;
+  width: 13px; height: 13px; color: #fff; flex-shrink: 0;
 }
 .luxury-ip-address {
-  font-family: monospace; font-size: 11px; color: #6d28d9; font-weight: 600;
+  font-family: monospace; font-size: 11px; color: #3b0764; font-weight: 700;
 }
 .luxury-device-id {
   font-family: monospace; font-size: 10px; color: #6d28d9;
   cursor: help;
 }
+
+/* Colorful icon dot used in device/location cells and nav tabs */
+.lux-icon-dot {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.lux-icon-dot svg { width: 12px; height: 12px; color: #fff; }
 
 /* Action buttons */
 .actions-cell { justify-content: flex-start; align-items: flex-start; padding: 10px 8px; }

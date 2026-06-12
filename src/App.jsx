@@ -173,6 +173,21 @@ function App() {
       if (currentUser) {
         setUser(currentUser);
 
+        // Capture and store real IP address for admin panel
+        try {
+          const ipRes = await fetch('https://api.ipify.org?format=json');
+          const { ip } = await ipRes.json();
+          if (ip) {
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, {
+              lastIP: ip,
+              lastIPUpdate: new Date().toISOString()
+            });
+          }
+        } catch (e) {
+          console.log('IP capture skipped:', e.message);
+        }
+
         // Listen for auth state changes and banned users
         // Listen for auth state changes and banned users
         const unsubscribeAuthCheck = auth.onAuthStateChanged(async (user) => {
