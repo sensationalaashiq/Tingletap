@@ -932,9 +932,9 @@ body {
 /* Nav logo overrides — must NOT be forced to 150px */
 .lp-logo,
 img.lp-logo {
-    width: 48px !important; height: 48px !important;
-    min-width: 48px !important; min-height: 48px !important;
-    max-width: 48px !important; max-height: 48px !important;
+    width: 56px !important; height: 56px !important;
+    min-width: 56px !important; min-height: 56px !important;
+    max-width: 56px !important; max-height: 56px !important;
     border: none !important; background: none !important;
     padding: 0 !important; box-shadow: none !important;
     border-radius: 12px !important; object-fit: contain !important;
