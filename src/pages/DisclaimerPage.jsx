@@ -35,40 +35,51 @@ const LockIcon = () => (
 
 const icons = {
   service: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="4" width="18" height="14" rx="3" stroke="#fbbf24" strokeWidth="1.8"/>
-      <path d="M7 11h8M7 15h4" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+      <rect x="2" y="5" width="22" height="16" rx="4" fill="url(#dc-ic1)" opacity=".88"/>
+      <rect x="2" y="5" width="22" height="16" rx="4" fill="white" opacity=".1"/>
+      <path d="M7 13h12M7 17h8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   ),
   user: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="7" r="4" stroke="#fbbf24" strokeWidth="1.8"/>
-      <path d="M3 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fb923c"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs>
+      <circle cx="13" cy="9" r="5.5" fill="url(#dc-ic2)" opacity=".9"/>
+      <circle cx="13" cy="9" r="2.8" fill="white" opacity=".55"/>
+      <path d="M3.5 25c0-5.2 4.3-9.5 9.5-9.5s9.5 4.3 9.5 9.5" stroke="url(#dc-ic2)" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
   accuracy: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="9" stroke="#fbbf24" strokeWidth="1.8"/>
-      <path d="M11 7v4.5l3 3" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs>
+      <circle cx="13" cy="13" r="11" fill="url(#dc-ic3)" opacity=".88"/>
+      <circle cx="13" cy="13" r="11" fill="white" opacity=".1"/>
+      <path d="M13 7v6.5l4 4" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
   link: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M9 13a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 0 0-5.66-5.66L10.5 5.83" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M13 9a4 4 0 0 0-5.66 0L4.51 11.83a4 4 0 0 0 5.66 5.66L11.5 16.17" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+      <circle cx="13" cy="13" r="11" fill="url(#dc-ic4)" opacity=".15"/>
+      <path d="M11 15a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 0 0-7.07-7.07L13.06 5.87" stroke="url(#dc-ic4)" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M15 11a5 5 0 0 0-7.07 0L4.39 14.54a5 5 0 0 0 7.07 7.07L12.94 20.13" stroke="url(#dc-ic4)" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
   warranty: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M11 1.5L2 5.5v5C2 15.4 5.9 20.1 11 21.5c5.1-1.4 9-6.1 9-11V5.5L11 1.5z" stroke="#fbbf24" strokeWidth="1.8"/>
-      <path d="M11 8v4" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="11" cy="15" r="1.2" fill="#fbbf24"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+      <path d="M13 2L3 6.5v5C3 18 7 23.2 13 24.5c6-1.3 10-6.5 10-13v-5L13 2z" fill="url(#dc-ic5)" opacity=".88"/>
+      <path d="M13 9v5.5" stroke="white" strokeWidth="2.4" strokeLinecap="round"/>
+      <circle cx="13" cy="18" r="1.6" fill="white"/>
     </svg>
   ),
   age: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="9" stroke="#fbbf24" strokeWidth="1.8"/>
-      <path d="M8 11h6M11 8v6" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dc-ic6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c084fc"/><stop offset="100%" stopColor="#9333ea"/></linearGradient></defs>
+      <circle cx="13" cy="13" r="11" fill="url(#dc-ic6)" opacity=".88"/>
+      <circle cx="13" cy="13" r="11" fill="white" opacity=".1"/>
+      <path d="M9 13h8M13 9v8" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
 };

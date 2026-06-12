@@ -36,40 +36,51 @@ const QuestionIcon = () => (
 
 const icons = {
   accept: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M11 1.5L2 5.5v5C2 15.4 5.9 20.1 11 21.5c5.1-1.4 9-6.1 9-11V5.5L11 1.5z" stroke="#a78bfa" strokeWidth="1.8"/>
-      <path d="M7.5 11l2.5 2.5L15 8" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
+      <path d="M13 2L3 7v6C3 19.4 7.3 24.6 13 26c5.7-1.4 10-6.6 10-13V7L13 2z" fill="url(#tm-ic1)" opacity=".9"/>
+      <path d="M13 2L3 7v6C3 19.4 7.3 24.6 13 26c5.7-1.4 10-6.6 10-13V7L13 2z" fill="white" opacity=".1"/>
+      <path d="M8.5 13l3 3L18 9" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
   conduct: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="7" r="4" stroke="#a78bfa" strokeWidth="1.8"/>
-      <path d="M3 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+      <circle cx="13" cy="9" r="5.5" fill="url(#tm-ic2)" opacity=".9"/>
+      <circle cx="13" cy="9" r="2.8" fill="white" opacity=".55"/>
+      <path d="M3.5 25c0-5.2 4.3-9.5 9.5-9.5s9.5 4.3 9.5 9.5" stroke="url(#tm-ic2)" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
   content: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="2" width="16" height="18" rx="2.5" stroke="#a78bfa" strokeWidth="1.8"/>
-      <path d="M7 8h8M7 12h8M7 16h5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+      <path d="M5 2h12l5 5v18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="url(#tm-ic3)" opacity=".88"/>
+      <path d="M17 2v5h5" stroke="rgba(255,255,255,.4)" strokeWidth="1.5"/>
+      <path d="M8 13h10M8 17h10M8 21h6" stroke="white" strokeWidth="1.9" strokeLinecap="round" opacity=".88"/>
     </svg>
   ),
   service: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="11" cy="11" r="9" stroke="#a78bfa" strokeWidth="1.8"/>
-      <path d="M11 6v5.5l3.5 3.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+      <circle cx="13" cy="13" r="11" fill="url(#tm-ic4)" opacity=".88"/>
+      <circle cx="13" cy="13" r="11" fill="white" opacity=".1"/>
+      <path d="M13 7v6.5l4 4" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
     </svg>
   ),
   liability: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M11 2L2 6v4.5C2 15.8 5.9 20.6 11 22c5.1-1.4 9-6.2 9-11.5V6L11 2z" stroke="#a78bfa" strokeWidth="1.8"/>
-      <path d="M11 8v4" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="11" cy="15" r="1.2" fill="#a78bfa"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#ef4444"/></linearGradient></defs>
+      <path d="M13 2L3 6.5v5C3 18 7 23.2 13 24.5c6-1.3 10-6.5 10-13v-5L13 2z" fill="url(#tm-ic5)" opacity=".9"/>
+      <path d="M13 9v5" stroke="white" strokeWidth="2.4" strokeLinecap="round"/>
+      <circle cx="13" cy="17.5" r="1.6" fill="white"/>
     </svg>
   ),
   changes: () => (
-    <svg viewBox="0 0 22 22" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M4 11A7 7 0 0 1 17.5 6.5M18 11a7 7 0 0 1-13.5 4.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M17.5 2.5v4h4M4.5 19.5v-4h-4" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg viewBox="0 0 26 26" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tm-ic6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fb923c"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+      <circle cx="13" cy="13" r="11" fill="url(#tm-ic6)" opacity=".15"/>
+      <path d="M5 13A8 8 0 0 1 20 8M21 13a8 8 0 0 1-15 5" stroke="url(#tm-ic6)" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M20 4v4h4M6 22v-4H2" stroke="url(#tm-ic6)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
 };

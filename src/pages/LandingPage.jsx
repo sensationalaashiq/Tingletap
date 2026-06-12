@@ -410,17 +410,16 @@ const LandingPage = () => {
         <div className="lp-container">
           <div className="lp-cta-inner lp-anim-up">
             <div className="lp-cta-icon-wrap">
-              <IconCTAHeart size={52} />
+              <IconCTAHeart size={48} />
             </div>
             <h2 className="lp-cta-h2">
               Ready to Join India's Best<br />
               <span className="lp-grad">Chat Community?</span>
             </h2>
             <p className="lp-cta-p">
-              Thousands of users are chatting right now.<br />
-              Your conversation starts here — join free today.
+              Thousands of users are chatting right now — join free today.
             </p>
-            <div className="lp-hero-btns" style={{ maxWidth: 500, margin: '0 auto' }}>
+            <div className="lp-hero-btns" style={{ maxWidth: 460, margin: '0 auto' }}>
               <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
                 <span>Start Chatting Now</span>
                 <ArrowRight size={18} />
@@ -494,16 +493,6 @@ const LandingPage = () => {
           </div>
 
           <div className="lp-footer-divider" />
-
-          <div className="lp-footer-cta-row">
-            <button className="lp-footer-cta-btn" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
-              <span>Join TingleTap Now</span>
-              <ArrowRight size={16} />
-            </button>
-            <button className="lp-footer-login-btn" onClick={() => navigate('/login')}>
-              Sign In
-            </button>
-          </div>
 
         </div>
       </footer>

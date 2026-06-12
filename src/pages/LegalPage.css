@@ -74,17 +74,19 @@
 .lp-nav-solid span { color: #fff !important; }
 
 /* ── Main ── */
-.lp-main { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 96px 20px 60px; }
+.lp-root .lp-main { display: block; position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 96px 20px 60px; }
 
 /* Hero */
-.lp-hero { text-align: center; margin-bottom: 40px; animation: lpFadeUp .7s ease both; }
+.lp-root .lp-hero { display: block; text-align: center; margin-bottom: 40px; animation: lpFadeUp .7s ease both; }
+.lp-root .lp-hero-title { display: block; }
+.lp-root .lp-hero-sub { display: block; }
 .lp-hero-icon {
-  width: 68px; height: 68px; border-radius: 22px;
-  background: rgba(255,255,255,.85);
-  border: 1.5px solid rgba(99,102,241,.22);
+  width: 80px; height: 80px; border-radius: 24px;
+  background: linear-gradient(135deg, rgba(238,235,255,0.95), rgba(255,255,255,0.98));
+  border: 1.5px solid rgba(99,102,241,.2);
   display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 22px;
-  box-shadow: 0 8px 28px rgba(99,102,241,.14);
+  margin: 0 auto 24px;
+  box-shadow: 0 10px 36px rgba(99,102,241,.16), 0 1px 0 rgba(255,255,255,1) inset;
 }
 .lp-hero-title {
   font-family: 'Cormorant Garamond', serif;
@@ -94,7 +96,8 @@
 .lp-hero-sub { font-size: 15.5px; color: #3b2d6e; opacity: .65; line-height: 1.75; max-width: 560px; margin: 0 auto; }
 
 /* Content card */
-.lp-card {
+.lp-root .lp-card {
+  display: block;
   background: rgba(255,255,255,.82);
   border: 1.5px solid rgba(99,102,241,.12);
   border-radius: 24px; padding: 36px;
@@ -104,36 +107,48 @@
 }
 
 /* Section inside card */
-.lp-section { display: flex; flex-direction: column; gap: 0; }
-.lp-section-item { display: flex; gap: 16px; padding: 22px 0; border-bottom: 1px solid rgba(99,102,241,.08); }
+.lp-root .lp-section { display: flex; flex-direction: column; gap: 0; }
+.lp-section-item { display: flex; gap: 18px; padding: 24px 0; border-bottom: 1px solid rgba(99,102,241,.07); }
 .lp-section-item:first-child { padding-top: 0; }
 .lp-section-item:last-child { border-bottom: none; padding-bottom: 0; }
 .lp-section-icon {
-  width: 46px; height: 46px; border-radius: 14px;
-  background: rgba(255,255,255,.9);
-  border: 1px solid rgba(99,102,241,.18);
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(238,235,255,0.9), rgba(255,255,255,0.95));
+  border: 1.5px solid rgba(99,102,241,.16);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(99,102,241,.1);
+  box-shadow: 0 4px 14px rgba(99,102,241,.11), 0 1px 0 rgba(255,255,255,1) inset;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-.lp-section-content { flex: 1; }
-.lp-section-title { font-size: 16px; font-weight: 800; color: #1e1b4b; margin-bottom: 8px; }
-.lp-section-text { font-size: 14.5px; color: #3b2d6e; opacity: .75; line-height: 1.75; }
+.lp-section-item:hover .lp-section-icon {
+  transform: scale(1.06);
+  box-shadow: 0 8px 22px rgba(99,102,241,.18);
+}
+.lp-section-content { display: block; flex: 1; }
+.lp-section-title { display: block; font-size: 16.5px; font-weight: 800; color: #1e1b4b; margin-bottom: 8px; }
+.lp-section-text { display: block; font-size: 14.5px; color: #3b2d6e; opacity: .75; line-height: 1.78; }
 
 /* Grid cards (About) */
 .lp-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 28px; animation: lpFadeUp .7s ease .1s both; }
 .lp-grid-card {
-  background: rgba(255,255,255,.82); border: 1.5px solid rgba(99,102,241,.12);
-  border-radius: 20px; padding: 26px 22px;
-  text-align: center; transition: all .3s ease;
-  box-shadow: 0 4px 18px rgba(99,102,241,.07);
+  background: rgba(255,255,255,.88); border: 1.5px solid rgba(99,102,241,.12);
+  border-radius: 22px; padding: 30px 24px;
+  text-align: center; transition: all .3s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 4px 18px rgba(99,102,241,.07), 0 1px 0 rgba(255,255,255,1) inset;
 }
-.lp-grid-card:hover { background: rgba(255,255,255,.96); border-color: rgba(99,102,241,.25); transform: translateY(-3px); box-shadow: 0 12px 36px rgba(99,102,241,.12); }
-.lp-grid-card-icon { margin-bottom: 16px; display: flex; justify-content: center; align-items: center; }
+.lp-grid-card:hover { background: rgba(255,255,255,.99); border-color: rgba(99,102,241,.28); transform: translateY(-5px); box-shadow: 0 18px 44px rgba(99,102,241,.14); }
+.lp-grid-card-icon {
+  margin: 0 auto 18px;
+  width: 66px; height: 66px; border-radius: 20px;
+  background: linear-gradient(135deg, rgba(238,235,255,0.9), rgba(255,255,255,0.95));
+  border: 1.5px solid rgba(99,102,241,.14);
+  display: flex; justify-content: center; align-items: center;
+  box-shadow: 0 4px 16px rgba(99,102,241,.1);
+}
 .lp-grid-card-title { font-size: 17px; font-weight: 800; color: #1e1b4b; margin-bottom: 10px; }
-.lp-grid-card-text { font-size: 14px; color: #3b2d6e; opacity: .72; line-height: 1.75; }
+.lp-grid-card-text { font-size: 14px; color: #3b2d6e; opacity: .72; line-height: 1.78; }
 
 /* CTA row */
-.lp-cta-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; animation: lpFadeUp .7s ease .2s both; }
+.lp-root .lp-cta-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; animation: lpFadeUp .7s ease .2s both; }
 .lp-btn-primary {
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   padding: 15px 30px; border-radius: 14px;
@@ -166,8 +181,8 @@
 .lp-btn-secondary:hover { background: rgba(99,102,241,.07); border-color: rgba(99,102,241,.44); color: #1e1b4b !important; transform: translateY(-2px); }
 
 /* Footer nav */
-.lp-footer { position: relative; z-index: 1; padding: 16px 20px 0; }
-.lp-footer-nav { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; max-width: 600px; margin: 0 auto 0; }
+.lp-root .lp-footer { display: block; position: relative; z-index: 1; padding: 16px 20px 0; }
+.lp-root .lp-footer-nav { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; max-width: 600px; margin: 0 auto 0; }
 .lp-footer-link {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 7px 14px; border-radius: 10px;
