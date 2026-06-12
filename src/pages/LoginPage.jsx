@@ -10,50 +10,71 @@ import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import './LandingPage.css';
 
-// GLOBAL ALERT BLOCKING - Block immediately when file loads
-
-// Store original functions
 const originalAlert = window.alert;
 const originalConfirm = window.confirm;
 const originalPrompt = window.prompt;
 
-// AGGRESSIVELY block ALL browser dialogs
-window.alert = function(...args) {
-  return undefined;
-};
-
-window.confirm = function(...args) {
-  return false;
-};
-
-window.prompt = function(...args) {
-  return null;
-};
-
-// Also block common variations
+window.alert = function(...args) { return undefined; };
+window.confirm = function(...args) { return false; };
+window.prompt = function(...args) { return null; };
 window.showAlert = window.alert;
 window.showModalDialog = () => null;
 
-// Block document methods that could show alerts
 if (typeof document !== 'undefined') {
-  const originalWrite = document.write;
-  document.write = function(...args) {
-    return undefined;
-  };
+  document.write = function(...args) { return undefined; };
 }
 
+const EyeOpenSVG = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="eyeGradOpen" cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stopColor="#c084fc"/>
+        <stop offset="60%" stopColor="#9b59d0"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </radialGradient>
+      <radialGradient id="pupilGrad" cx="35%" cy="35%" r="60%">
+        <stop offset="0%" stopColor="#5b21b6"/>
+        <stop offset="100%" stopColor="#3b0764"/>
+      </radialGradient>
+      <filter id="eyeGlow">
+        <feGaussianBlur stdDeviation="0.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <path d="M2 12C2 12 5.5 5 12 5C18.5 5 22 12 22 12C22 12 18.5 19 12 19C5.5 19 2 12 2 12Z"
+      fill="url(#eyeGradOpen)" stroke="#9b59d0" strokeWidth="0.5" filter="url(#eyeGlow)"/>
+    <ellipse cx="12" cy="12" rx="4.5" ry="4.5" fill="url(#pupilGrad)"/>
+    <ellipse cx="12" cy="12" rx="2.2" ry="2.2" fill="#1e0a3c"/>
+    <ellipse cx="10.5" cy="10.8" rx="0.9" ry="0.9" fill="rgba(255,255,255,0.7)"/>
+    <ellipse cx="13.2" cy="11.4" rx="0.45" ry="0.45" fill="rgba(255,255,255,0.4)"/>
+    <path d="M4 8.5C5.5 7 7.5 5.5 12 5C16.5 4.5 19.5 7 21 9" stroke="rgba(192,132,252,0.3)" strokeWidth="1" fill="none" strokeLinecap="round"/>
+    <path d="M4 15.5C5.5 17 7.5 18.5 12 19C16.5 19.5 19.5 17 21 15" stroke="rgba(192,132,252,0.3)" strokeWidth="1" fill="none" strokeLinecap="round"/>
+  </svg>
+);
+
+const EyeClosedSVG = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="eyeGradClosed" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#c084fc"/>
+        <stop offset="100%" stopColor="#9b59d0"/>
+      </linearGradient>
+    </defs>
+    <path d="M2 12C2 12 5.5 5 12 5C18.5 5 22 12 22 12" stroke="url(#eyeGradClosed)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <path d="M3 16L5.5 13.5" stroke="url(#eyeGradClosed)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M8 18.5L9 15.5" stroke="url(#eyeGradClosed)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M12 19V16" stroke="url(#eyeGradClosed)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M16 18.5L15 15.5" stroke="url(#eyeGradClosed)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M21 16L18.5 13.5" stroke="url(#eyeGradClosed)" strokeWidth="1.8" strokeLinecap="round"/>
+    <line x1="4" y1="4" x2="20" y2="20" stroke="url(#eyeGradClosed)" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
+  </svg>
+);
+
 const LoginPage = () => {
-  // IMMEDIATELY block ALL browser alerts at component initialization
   useState(() => {
-    window.alert = () => {
-      return undefined;
-    };
-    window.confirm = () => {
-      return false;
-    };
-    window.prompt = () => {
-      return null;
-    };
+    window.alert = () => undefined;
+    window.confirm = () => false;
+    window.prompt = () => null;
   });
 
   const [identifier, setIdentifier] = useState('');
@@ -63,51 +84,32 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
-  const [guestFormData, setGuestFormData] = useState({
-    displayName: '',
-    age: '',
-    gender: ''
-  });
+  const [guestFormData, setGuestFormData] = useState({ displayName: '', age: '', gender: '' });
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaError, setCaptchaError] = useState('');
   const [showBanModal, setShowBanModal] = useState(false);
   const [banModalData, setBanModalData] = useState(null);
-
-  // IP Ban states
   const [showIPBanModal, setShowIPBanModal] = useState(false);
   const [ipBanData, setIPBanData] = useState(null);
   const [ipCheckPerformed, setIPCheckPerformed] = useState(false);
 
   const navigate = useNavigate();
 
-  // Check for IP ban and user ban immediately on LoginPage load
   useEffect(() => {
     const checkBansOnLoad = async () => {
-      // First, check for IP ban (highest priority)
       if (!ipCheckPerformed) {
         try {
-          console.log('🔍 IP Ban System: Checking user access on LoginPage...');
           const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
-
           setIPCheckPerformed(true);
-
           if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
-            console.log('🚫 IP Ban System: IP is banned, blocking access', accessResult.ip);
             setIPBanData(accessResult.banInfo);
             setShowIPBanModal(true);
-
-            // Immediate IP ban lockdown (but preserve modal interactions)
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
-            // Don't disable pointer events globally - let modal handle its own interactions
-
-            // Continuous IP ban modal enforcement
             const ipBanInterval = setInterval(() => {
               setShowIPBanModal(true);
               setIPBanData(accessResult.banInfo);
-
-              // Force IP ban modal visibility
               const ipModalElement = document.querySelector('.ip-ban-overlay');
               if (ipModalElement) {
                 ipModalElement.style.zIndex = '2147483647';
@@ -117,46 +119,30 @@ const LoginPage = () => {
                 ipModalElement.style.pointerEvents = 'all';
               }
             }, 50);
-
             window.ipBanInterval = ipBanInterval;
-            return; // Don't check user ban if IP is banned
+            return;
           }
-
-          console.log('✅ IP Ban System: IP access allowed', accessResult.ip);
         } catch (error) {
-          console.error('❌ IP Ban System: Error checking IP ban', error);
-          setIPCheckPerformed(true); // Allow continuation on error
+          setIPCheckPerformed(true);
         }
       }
 
-      // Then check for user ban (if IP is allowed)
       const isBannedUser = localStorage.getItem('isBannedUser');
       if (isBannedUser === 'true') {
-
         const storedBanData = localStorage.getItem('userBanStatus');
         if (storedBanData) {
           try {
             const banData = JSON.parse(storedBanData);
-            // Convert stored ISO string back to Date object
-            if (banData.bannedAt) {
-              banData.bannedAt = new Date(banData.bannedAt);
-            }
-
+            if (banData.bannedAt) banData.bannedAt = new Date(banData.bannedAt);
             setBanModalData(banData);
             setShowBanModal(true);
-
-            // Immediate lockdown
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
             document.body.style.pointerEvents = 'none';
-
-            // Continuous modal enforcement
             const loginBanInterval = setInterval(() => {
               setShowBanModal(true);
               setBanModalData(banData);
-
-              // Force modal visibility
               const modalElement = document.querySelector('.ban-kick-modal-overlay');
               if (modalElement) {
                 modalElement.style.zIndex = '2147483647';
@@ -166,11 +152,8 @@ const LoginPage = () => {
                 modalElement.style.pointerEvents = 'all';
               }
             }, 50);
-
             window.loginBanInterval = loginBanInterval;
-
-          } catch (error) {
-          }
+          } catch (error) {}
         }
       }
     };
@@ -179,47 +162,32 @@ const LoginPage = () => {
     setTimeout(checkBansOnLoad, 100);
   }, []);
 
-  // Listen for auth state changes and banned users
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userDocRef);
-
           if (userSnap.exists()) {
             const userData = userSnap.data();
-
             if (userData.isBanned === true) {
-
-              // Set ban modal data FIRST
               const banData = {
                 reason: userData.banReason || "Account suspended due to policy violations",
-                bannedBy: userData.bannedBy || "System Administrator", 
+                bannedBy: userData.bannedBy || "System Administrator",
                 bannedAt: userData.bannedAt ? userData.bannedAt.toDate() : new Date(),
                 type: "account_banned",
                 userId: user.uid,
                 email: user.email
               };
-
               setBanModalData(banData);
-
-              // IMMEDIATELY force modal display WITHOUT ANY DELAY
               setShowBanModal(true);
               setError('');
               setLoading(false);
-
-              // Force sign out the banned user immediately
               await auth.signOut();
-
-              // ULTRA-AGGRESSIVE modal forcing - multiple immediate attempts
               for (let i = 0; i < 10; i++) {
                 setTimeout(() => {
                   setShowBanModal(true);
                   setBanModalData(banData);
-
-                  // Also force DOM manipulation
                   const modalElement = document.querySelector('.ban-kick-modal-overlay');
                   if (modalElement) {
                     modalElement.style.display = 'flex';
@@ -228,33 +196,19 @@ const LoginPage = () => {
                     modalElement.style.opacity = '1';
                     modalElement.style.visibility = 'visible';
                   }
-                }, i * 10); // Staggered attempts every 10ms
+                }, i * 10);
               }
-
-              // Lock the page completely
               document.body.style.overflow = 'hidden';
               document.body.style.position = 'fixed';
               document.body.style.width = '100%';
               document.body.style.height = '100%';
               document.body.style.top = '0';
               document.body.style.left = '0';
-
-              // Prevent navigation
-              window.onbeforeunload = (e) => {
-                e.preventDefault();
-                e.returnValue = 'Account is suspended';
-                return 'Account is suspended';
-              };
-
-              // Force URL to stay on login
+              window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = 'Account is suspended'; return 'Account is suspended'; };
               window.history.pushState(null, null, '/login');
-
-              // ULTRA-CONTINUOUS modal forcing every 20ms for banned users
               const banModalInterval = setInterval(() => {
                 setShowBanModal(true);
                 setBanModalData(banData);
-
-                // Lock page completely
                 document.body.style.overflow = 'hidden';
                 document.body.style.position = 'fixed';
                 document.body.style.width = '100%';
@@ -263,8 +217,6 @@ const LoginPage = () => {
                 document.body.style.left = '0';
                 document.body.style.userSelect = 'none';
                 document.body.style.pointerEvents = 'none';
-
-                // Force modal styling
                 const modalElement = document.querySelector('.ban-kick-modal-overlay');
                 if (modalElement) {
                   modalElement.style.zIndex = '2147483647';
@@ -279,269 +231,117 @@ const LoginPage = () => {
                   modalElement.style.pointerEvents = 'all';
                   modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
                 }
-
-                // Keep URL on login and block navigation
-                if (window.location.pathname !== '/login') {
-                  window.history.replaceState(null, null, '/login');
-                }
-              }, 20); // Much more frequent - every 20ms
-
-              // Store interval globally
+                if (window.location.pathname !== '/login') window.history.replaceState(null, null, '/login');
+              }, 20);
               window.banModalForceInterval = banModalInterval;
-
-              return; // Don't proceed with normal login flow
-            } else {
-              // User is not banned, allow normal flow
+              return;
             }
-          } else {
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Password strength calculation
   const getPasswordStrength = (password) => {
     if (!password) return { level: 'none', text: '', score: 0 };
-
     let score = 0;
-    let feedback = [];
-
-    // Length check
     if (password.length >= 8) score += 25;
-    else feedback.push('8+ characters');
-
-    // Uppercase check
     if (/[A-Z]/.test(password)) score += 25;
-    else feedback.push('uppercase letter');
-
-    // Lowercase check
     if (/[a-z]/.test(password)) score += 25;
-    else feedback.push('lowercase letter');
-
-    // Number check
     if (/\d/.test(password)) score += 25;
-    else feedback.push('number');
-
-    // Special character check
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 15;
-    else feedback.push('special character');
-
-    // Length bonus
     if (password.length >= 12) score += 10;
-
     if (score >= 85) return { level: 'strong', text: 'Strong Password', score };
     if (score >= 60) return { level: 'medium', text: 'Medium Strength', score };
     if (score >= 30) return { level: 'weak', text: 'Weak Password', score };
     return { level: 'very-weak', text: 'Very Weak', score };
   };
 
-  // Handle form submission with proper error messages
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    // Client-side validation
-    if (!identifier.trim()) {
-      setError('Please enter your email address');
-      setLoading(false);
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Please enter your password');
-      setLoading(false);
-      return;
-    }
-
-    // Email format validation
+    if (!identifier.trim()) { setError('Please enter your email address'); setLoading(false); return; }
+    if (!password.trim()) { setError('Please enter your password'); setLoading(false); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(identifier)) {
-      setError('Please enter a valid email address');
-      setLoading(false);
-      return;
-    }
-
+    if (!emailRegex.test(identifier)) { setError('Please enter a valid email address'); setLoading(false); return; }
     try {
-      if (rememberMe) {
-        await setPersistence(auth, browserLocalPersistence);
-      }
-
+      if (rememberMe) await setPersistence(auth, browserLocalPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
       const user = userCredential.user;
-
-
-      // Check if user is banned immediately after login
       const userDocRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userDocRef);
-
       let isBanned = false;
       let userData = null;
-
-      if (userSnap.exists()) {
-        userData = userSnap.data();
-        isBanned = userData.isBanned === true;
-      }
-
+      if (userSnap.exists()) { userData = userSnap.data(); isBanned = userData.isBanned === true; }
       if (isBanned) {
-
-        // Force sign out the banned user
         await auth.signOut();
-
-        // Set ban modal data immediately
         const banData = {
           reason: userData.banReason || "Account suspended due to policy violations",
           bannedBy: userData.bannedBy || "System Administrator",
           bannedAt: userData.bannedAt ? userData.bannedAt.toDate() : new Date(),
-          type: "account_banned",
-          userId: user.uid,
-          email: user.email
+          type: "account_banned", userId: user.uid, email: user.email
         };
-
         setBanModalData(banData);
         setShowBanModal(true);
         setError('');
         setLoading(false);
-
-        // Force modal visibility
-        setTimeout(() => {
-          setShowBanModal(true);
-          setBanModalData(banData);
-        }, 50);
-
-        // Lock the page
+        setTimeout(() => { setShowBanModal(true); setBanModalData(banData); }, 50);
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
-
-        return; // Don't navigate away
+        return;
       } else {
-        // Store user IP for future IP banning capabilities
-        try {
-          console.log('💾 IP Ban System: Storing IP for successful login');
-          await IPBanSystem.storeUserIP(user.uid, userData);
-          console.log('✅ IP Ban System: IP stored successfully for user', user.uid);
-        } catch (ipError) {
-          console.warn('⚠️ IP Ban System: Failed to store IP for user', user.uid, ipError);
-          // Don't block login if IP storage fails
-        }
-
+        try { await IPBanSystem.storeUserIP(user.uid, userData); } catch (ipError) {}
         navigate('/welcome');
       }
     } catch (err) {
-
-      // Block alerts during error handling
-      window.alert = () => {
-        return undefined;
-      };
-
-      // Custom error messages instead of Firebase errors
+      window.alert = () => undefined;
       let errorMessage = 'Login failed. Please try again.';
-
-      if (err.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address';
-      } else if (err.code === 'auth/wrong-password') {
-        errorMessage = 'Invalid email or password';
-      } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address';
-      } else if (err.code === 'auth/user-disabled') {
-
-        // Set ban modal data for disabled user
-        setBanModalData({
-          reason: "Account has been disabled by administration",
-          bannedBy: "System Administrator",
-          bannedAt: new Date(),
-          type: "account_disabled",
-          userId: identifier,
-          email: identifier
-        });
-
-        // Clear error and show modal
+      if (err.code === 'auth/user-not-found') errorMessage = 'No account found with this email address';
+      else if (err.code === 'auth/wrong-password') errorMessage = 'Invalid email or password';
+      else if (err.code === 'auth/invalid-email') errorMessage = 'Please enter a valid email address';
+      else if (err.code === 'auth/user-disabled') {
+        setBanModalData({ reason: "Account has been disabled by administration", bannedBy: "System Administrator", bannedAt: new Date(), type: "account_disabled", userId: identifier, email: identifier });
         setError('');
         setLoading(false);
         setShowBanModal(true);
-
-        // Lock page for disabled user
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
-
         return;
-      } else if (err.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later';
-      } else if (err.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your connection';
-      } else if (err.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email or password';
-      }
-
+      } else if (err.code === 'auth/too-many-requests') errorMessage = 'Too many failed attempts. Please try again later';
+      else if (err.code === 'auth/network-request-failed') errorMessage = 'Network error. Please check your connection';
+      else if (err.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle guest login
-  const handleAnonymousLogin = () => {
-    setShowGuestModal(true);
-  };
+  const handleAnonymousLogin = () => setShowGuestModal(true);
 
   const handleGuestFormSubmit = async (e) => {
     e.preventDefault();
-
-    if (!guestFormData.displayName.trim()) {
-      setError('Please enter your display name');
-      return;
-    }
-
-    if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) {
-      setError('Age must be between 18 and 100');
-      return;
-    }
-
-    if (!guestFormData.gender) {
-      setError('Please select your gender');
-      return;
-    }
-
-    if (!captchaToken) {
-      setError('Please complete the captcha verification');
-      return;
-    }
-
+    if (!guestFormData.displayName.trim()) { setError('Please enter your display name'); return; }
+    if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) { setError('Age must be between 18 and 100'); return; }
+    if (!guestFormData.gender) { setError('Please select your gender'); return; }
+    if (!captchaToken) { setError('Please complete the captcha verification'); return; }
     setLoading(true);
     try {
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
-
       const guestUserData = {
-        uid: user.uid,
-        email: null,
-        displayName: guestFormData.displayName,
-        age: parseInt(guestFormData.age),
-        gender: guestFormData.gender,
-        role: 'guest',
-        isAnonymous: true,
-        isGuest: true,
+        uid: user.uid, email: null, displayName: guestFormData.displayName,
+        age: parseInt(guestFormData.age), gender: guestFormData.gender,
+        role: 'guest', isAnonymous: true, isGuest: true,
         photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestFormData.displayName}&sex=${guestFormData.gender.toLowerCase()}`,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString()
+        createdAt: new Date().toISOString(), lastLogin: new Date().toISOString()
       };
-
       await setDoc(doc(db, 'users', user.uid), guestUserData);
-
-      // Store guest data in localStorage
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');
-
-      console.log('✅ Guest user created successfully:', guestUserData);
-
-      // Navigate to welcome page
       navigate('/welcome');
     } catch (err) {
-      console.error('❌ Guest login error:', err);
       setError('Guest login failed. Please try again.');
     } finally {
       setLoading(false);
@@ -551,29 +351,13 @@ const LoginPage = () => {
 
   const handleGuestInputChange = (e) => {
     const { name, value } = e.target;
-    setGuestFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setGuestFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // hCaptcha handlers
-  const onCaptchaVerify = (token) => {
-    setCaptchaToken(token);
-    setCaptchaError('');
-  };
+  const onCaptchaVerify = (token) => { setCaptchaToken(token); setCaptchaError(''); };
+  const onCaptchaExpire = () => { setCaptchaToken(null); setCaptchaError('Captcha expired, please verify again'); };
+  const onCaptchaError = (err) => { setCaptchaToken(null); setCaptchaError('Captcha error, please try again'); };
 
-  const onCaptchaExpire = () => {
-    setCaptchaToken(null);
-    setCaptchaError('Captcha expired, please verify again');
-  };
-
-  const onCaptchaError = (err) => {
-    setCaptchaToken(null);
-    setCaptchaError('Captcha error, please try again');
-  };
-
-  // Reset guest modal state
   const resetGuestModal = () => {
     setShowGuestModal(false);
     setGuestFormData({ displayName: '', age: '', gender: '' });
@@ -584,9 +368,9 @@ const LoginPage = () => {
 
   return (
     <div style={{
-      height: '100vh',
+      minHeight: '100vh',
       width: '100vw',
-      background: 'linear-gradient(135deg, #0f0c29 0%, #1e1659 50%, #0a0820 100%)',
+      background: 'linear-gradient(145deg, #f8f0ff 0%, #ede4fb 25%, #f3e8ff 50%, #e8d8fa 75%, #f0e6ff 100%)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -597,1089 +381,599 @@ const LoginPage = () => {
       left: 0,
       boxSizing: 'border-box'
     }}>
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-          .login-container {
-            background: rgba(8, 5, 28, 0.88);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border-radius: 20px;
-            padding: 15px;
-            width: 100%;
-            max-width: 340px;
-            height: auto;
-            max-height: 98vh;
-            box-shadow: 
-              0 30px 70px rgba(0, 0, 0, 0.55),
-              0 8px 30px rgba(91, 91, 214, 0.25),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08),
-              0 0 0 1px rgba(139, 92, 246, 0.15);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            position: relative;
-            overflow: hidden;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-          }
-
-          .login-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #8b5cf6, #7c3aed, #6d28d9, #4c1d95, #8b5cf6);
-            background-size: 400% 100%;
-            animation: shimmer 3s ease-in-out infinite;
-          }
-
-          .login-container::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(91, 91, 214, 0.1) 0%, transparent 70%);
-            animation: floating-glow 6s ease-in-out infinite;
-            pointer-events: none;
-          }
-
-          @keyframes shimmer {
-            0%, 100% { background-position: 400% 0; }
-            50% { background-position: -400% 0; }
-          }
-
-          @keyframes floating-glow {
-            0%, 100% { 
-              transform: rotate(0deg) scale(1);
-              opacity: 0.5;
-            }
-            33% { 
-              transform: rotate(120deg) scale(1.1);
-              opacity: 0.7;
-            }
-            66% { 
-              transform: rotate(240deg) scale(0.9);
-              opacity: 0.6;
-            }
-          }
-
-          .logo {
-            text-align: center;
-            margin-bottom: 6px;
-          }
-
-          .logo h1 {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-style: italic;
-            font-size: 1.9rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #c084fc 0%, #a855f7 45%, #8b5cf6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0;
-            letter-spacing: 0.02em;
-            text-shadow: none;
-            line-height: 1.1;
-          }
-
-          .logo p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.75rem;
-            margin: 3px 0 0 0;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-          }
-
-          .form-group {
-            margin-bottom: 6px;
-            position: relative;
-          }
-
-          .form-label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.8rem;
-            letter-spacing: 0.2px;
-          }
-
-          .form-input {
-            width: 100%;
-            padding: 10px 14px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            font-size: 0.85rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.95);
-            box-sizing: border-box;
-            height: 40px;
-          }
-
-          .form-input:focus {
-            outline: none;
-            border-color: #8b5cf6;
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 
-              0 0 0 3px rgba(139, 92, 246, 0.2),
-              0 6px 20px rgba(139, 92, 246, 0.15);
-            transform: translateY(-1px);
-          }
-
-          .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-          }
-
-          .password-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #6b7280;
-            transition: color 0.2s ease;
-            min-width: 40px;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          .password-toggle:hover {
-            color: #374151;
-          }
-
-          .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 6px 0;
-            position: relative;
-          }
-
-          .checkbox {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            appearance: none;
-            -webkit-appearance: none;
-            outline: none;
-            box-shadow: 
-              0 3px 12px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-          }
-
-          .checkbox:hover {
-            border-color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.15);
-            box-shadow: 
-              0 6px 20px rgba(139, 92, 246, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px) scale(1.05);
-          }
-
-          .checkbox:checked {
-            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 50%, #6d28d9 100%);
-            border-color: #8b5cf6;
-            box-shadow: 
-              0 10px 30px rgba(139, 92, 246, 0.4),
-              0 3px 12px rgba(0, 242, 254, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            animation: premiumCheckboxPulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-
-          @keyframes premiumCheckboxPulse {
-            0% { 
-              transform: scale(1); 
-              box-shadow: 
-                0 6px 20px rgba(139, 92, 246, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            }
-            50% { 
-              transform: scale(1.15); 
-              box-shadow: 
-                0 12px 35px rgba(139, 92, 246, 0.5),
-                0 4px 15px rgba(0, 242, 254, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.4);
-            }
-            100% { 
-              transform: scale(1); 
-              box-shadow: 
-                0 10px 30px rgba(139, 92, 246, 0.4),
-                0 3px 12px rgba(0, 242, 254, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            }
-          }
-
-          .checkbox:checked::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.2), transparent);
-            border-radius: 4px;
-          }
-
-          .checkbox:checked::after {
-            content: '✓';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 14px;
-            font-weight: 900;
-            text-shadow: 
-              0 2px 4px rgba(0, 0, 0, 0.3),
-              0 0 6px rgba(255, 255, 255, 0.5);
-            animation: premiumCheckmarkAppear 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
-          }
-
-          @keyframes premiumCheckmarkAppear {
-            0% {
-              opacity: 0;
-              transform: translate(-50%, -50%) scale(0.2) rotate(-45deg);
-            }
-            60% {
-              opacity: 1;
-              transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
-            }
-            100% {
-              opacity: 1;
-              transform: translate(-50%, -50%) scale(1) rotate(0deg);
-            }
-          }
-
-          .checkbox-label {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-          }
-
-          .checkbox-label:hover {
-            color: #8b5cf6;
-            text-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
-          }
-
-          .primary-btn {
-            width: 100%;
-            padding: 10px 16px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 50%, #6d28d9 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            min-height: 38px;
-            -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
-            box-shadow: 
-              0 6px 20px rgba(139, 92, 246, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            margin-bottom: 5px;
-          }
-
-          .primary-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 
-              0 10px 30px rgba(139, 92, 246, 0.4),
-              0 3px 12px rgba(0, 242, 254, 0.3);
-          }
-
-          .primary-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-          }
-
-          .secondary-btn {
-            width: 100%;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 4px;
-            min-height: 38px;
-          }
-
-          .secondary-btn:hover {
-            border-color: #8b5cf6;
-            color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
-          }
-
-          .divider {
-            display: flex;
-            align-items: center;
-            margin: 8px 0;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.75rem;
-          }
-
-          .divider::before,
-          .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.2);
-          }
-
-          .divider span {
-            padding: 0 12px;
-            font-weight: 500;
-          }
-
-          .error-message {
-            background: rgba(255, 100, 100, 0.1);
-            border: 1px solid rgba(255, 100, 100, 0.3);
-            color: #ff6464;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-
-          .forgot-link {
-            display: block;
-            text-align: center;
-            color: #8b5cf6;
-            text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin: 6px 0 4px 0;
-            transition: all 0.3s ease;
-          }
-
-          .forgot-link:hover {
-            color: #c084fc;
-            text-shadow: 0 0 6px rgba(0, 242, 254, 0.5);
-          }
-
-          .signup-link {
-            text-align: center;
-            margin-top: 6px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-          }
-
-          .signup-link a {
-            color: #8b5cf6;
-            text-decoration: none;
-            font-weight: 700;
-            transition: all 0.3s ease;
-          }
-
-          .signup-link a:hover {
-            color: #c084fc;
-            text-shadow: 0 0 6px rgba(0, 242, 254, 0.5);
-          }
-
-          .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-          }
-
-          .modal {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            width: 100%;
-            max-width: 350px;
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            max-height: 90vh;
-            overflow-y: auto;
-          }
-
-          .modal-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: none;
-            border: none;
-            font-size: 1.3rem;
-            cursor: pointer;
-            color: #6b7280;
-            padding: 4px;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-          }
-
-          .modal-close:hover {
-            background: #f3f4f6;
-            color: #374151;
-          }
-
-          .modal-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #374151;
-            text-align: center;
-            margin-bottom: 20px;
-          }
-
-          .password-strength-indicator {
-            margin-top: 6px;
-            opacity: 0;
-            animation: fadeInUp 0.3s ease-out forwards;
-          }
-
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(8px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          .strength-bar {
-            height: 4px;
-            background: #e5e7eb;
-            border-radius: 2px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 6px;
-          }
-
-          .strength-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-          }
-
-          .strength-bar.strength-very-weak .strength-fill {
-            width: 25%;
-            background: linear-gradient(90deg, #ef4444, #dc2626);
-          }
-
-          .strength-bar.strength-weak .strength-fill {
-            width: 50%;
-            background: linear-gradient(90deg, #f59e0b, #d97706);
-          }
-
-          .strength-bar.strength-medium .strength-fill {
-            width: 75%;
-            background: linear-gradient(90deg, #eab308, #ca8a04);
-          }
-
-          .strength-bar.strength-strong .strength-fill {
-            width: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
-            position: relative;
-          }
-
-          .strength-bar.strength-strong .strength-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            animation: shimmer 2s infinite;
-          }
-
-          @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-          }
-
-          .strength-text {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          }
-
-          .strength-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            transition: color 0.3s ease;
-          }
-
-          .strength-label.strength-very-weak {
-            color: #dc2626;
-          }
-
-          .strength-label.strength-weak {
-            color: #d97706;
-          }
-
-          .strength-label.strength-medium {
-            color: #ca8a04;
-          }
-
-          .strength-label.strength-strong {
-            color: #059669;
-          }
-
-          .strength-icon {
-            animation: checkmark 0.5s ease-out;
-          }
-
-          @keyframes checkmark {
-            0% {
-              transform: scale(0) rotate(45deg);
-              opacity: 0;
-            }
-            50% {
-              transform: scale(1.2) rotate(45deg);
-              opacity: 1;
-            }
-            100% {
-              transform: scale(1) rotate(0deg);
-              opacity: 1;
-            }
-          }
-
-          @media (max-width: 768px) {
-            .login-container {
-              max-width: 340px;
-              padding: 18px;
-              max-height: 98vh;
-            }
-
-            .logo h1 {
-              font-size: 1.6rem;
-            }
-
-            .logo p {
-              font-size: 0.75rem;
-            }
-
-            .form-input {
-              padding: 10px 14px;
-              font-size: 16px;
-              height: 42px;
-            }
-
-            .primary-btn, .secondary-btn {
-              padding: 12px;
-              font-size: 0.9rem;
-              min-height: 42px;
-            }
-          }
-
-          @media (max-width: 480px) {
-            .login-container {
-              max-width: 320px;
-              padding: 16px;
-            }
-
-            .logo h1 {
-              font-size: 1.5rem;
-            }
-
-            .form-group {
-              margin-bottom: 6px;
-            }
-
-            .checkbox-group {
-              margin: 8px 0;
-            }
-          }
-
-          @media (max-height: 700px) {
-            .login-container {
-              max-height: 98vh;
-              padding: 15px;
-            }
-
-            .logo {
-              margin-bottom: 8px;
-            }
-
-            .form-group {
-              margin-bottom: 6px;
-            }
-
-            .checkbox-group {
-              margin: 8px 0;
-            }
-
-            .divider {
-              margin: 10px 0;
-            }
-          }
-
-          @media (max-height: 600px) {
-            .login-container {
-              padding: 12px;
-            }
-
-            .logo h1 {
-              font-size: 1.4rem;
-            }
-
-            .logo p {
-              font-size: 0.7rem;
-            }
-
-            .form-group {
-              margin-bottom: 5px;
-            }
-
-            .primary-btn, .secondary-btn {
-              padding: 10px;
-              min-height: 40px;
-            }
-          }
-
-          @keyframes orbFloat1 {
-            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-            33% { transform: translate(28px, 38px) scale(1.06); opacity: 0.9; }
-            66% { transform: translate(-18px, 22px) scale(0.94); opacity: 0.6; }
-          }
-          @keyframes orbFloat2 {
-            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
-            50% { transform: translate(-32px, -38px) scale(1.1); opacity: 0.75; }
-          }
-          @keyframes orbFloat3 {
-            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-            33% { transform: translate(-22px, 28px) scale(1.08); opacity: 0.8; }
-            66% { transform: translate(18px, -18px) scale(0.92); opacity: 0.5; }
-          }
-          @keyframes orbFloat4 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(20px, -25px) scale(1.12); }
-          }
-
-          /* Landing Page Premium Styling */
-          .page-container {
-            min-height: 100vh;
-            max-width: 100vw;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #2c2c54 50%, #3d3d73 75%, #1a1a2e 100%);
-            overflow-x: hidden;
-            overflow-y: auto;
-            box-sizing: border-box;
-          }
-
-          .login-container svg {
-            color: #8b5cf6 !important;
-            fill: #8b5cf6 !important;
-            filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.4));
-          }
-
-          .primary-btn svg,
-          .secondary-btn svg {
-            color: #ffffff !important;
-            fill: #ffffff !important;
-          }
-
-          /* Guest Modal Styling - Matching RoomListPage */
-          .guest-modal-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: rgba(0, 0, 0, 0.85) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 999999999 !important;
-            padding: 20px !important;
-            animation: fadeIn 0.3s ease !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: all !important;
-          }
-
-          .guest-modal-content {
-            background: linear-gradient(135deg, #E6E6FA 0%, #DDA0DD 50%, #E6E6FA 100%) !important;
-            border-radius: 24px !important;
-            padding: 32px !important;
-            width: 100% !important;
-            max-width: 480px !important;
-            max-height: 90vh !important;
-            overflow-y: auto !important;
-            position: relative !important;
-            box-shadow: 
-              0 25px 60px rgba(0, 0, 0, 0.4),
-              0 8px 25px rgba(139, 92, 246, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-            border: 2px solid rgba(255, 255, 255, 0.5) !important;
-            animation: slideUp 0.4s ease !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: all !important;
-            z-index: 999999999 !important;
-          }
-
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-
-          @keyframes slideUp {
-            from { 
-              opacity: 0;
-              transform: translateY(40px) scale(0.95);
-            }
-            to { 
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-
-          .guest-modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid rgba(139, 92, 246, 0.3);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 24px;
-            color: #8b5cf6;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-          }
-
-          .guest-modal-close:hover {
-            background: rgba(139, 92, 246, 0.9);
-            color: white;
-            transform: scale(1.1) rotate(90deg);
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
-          }
-
-          .guest-modal-header {
-            text-align: center;
-            margin-bottom: 28px;
-          }
-
-          .guest-modal-logo {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            margin-bottom: 16px;
-            border: 3px solid white;
-            box-shadow: 
-              0 8px 24px rgba(139, 92, 246, 0.3),
-              inset 0 2px 4px rgba(255, 255, 255, 0.5);
-          }
-
-          .guest-modal-title {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #8A2BE2 0%, #BA55D3 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0 0 8px 0;
-            font-family: 'Playfair Display', serif;
-          }
-
-          .guest-modal-subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin: 0;
-            font-weight: 500;
-          }
-
-          .guest-modal-form {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-          }
-
-          .guest-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-          }
-
-          .guest-form-label {
-            font-size: 14px;
-            font-weight: 700;
-            color: #2d3748;
-            letter-spacing: 0.3px;
-          }
-
-          .guest-form-input {
-            padding: 14px 16px;
-            border: 2px solid rgba(139, 92, 246, 0.2);
-            border-radius: 12px;
-            font-size: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #1f2937;
-            transition: all 0.3s ease;
-            font-family: inherit;
-          }
-
-          .guest-form-input:focus {
-            outline: none;
-            border-color: #8b5cf6;
-            background: white;
-            box-shadow: 
-              0 0 0 4px rgba(139, 92, 246, 0.1),
-              0 4px 12px rgba(139, 92, 246, 0.2);
-            transform: translateY(-1px);
-          }
-
-          .guest-form-input::placeholder {
-            color: #9ca3af;
-          }
-
-          .guest-captcha-wrapper {
-            display: flex;
-            justify-content: center;
-            margin: 8px 0;
-          }
-
-          .guest-captcha-error {
-            color: #dc2626;
-            font-size: 13px;
-            text-align: center;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgba(220, 38, 38, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(220, 38, 38, 0.2);
-          }
-
-          .guest-error-message {
-            background: rgba(239, 68, 68, 0.15);
-            border: 2px solid rgba(239, 68, 68, 0.3);
-            color: #dc2626;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-          }
-
-          .guest-error-message svg {
-            flex-shrink: 0;
-          }
-
-          .guest-submit-btn {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 
-              0 8px 24px rgba(139, 92, 246, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
-          }
-
-          .guest-submit-btn:hover:not(:disabled) {
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-            transform: translateY(-2px);
-            box-shadow: 
-              0 12px 32px rgba(139, 92, 246, 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
-          }
-
-          .guest-submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          .guest-btn-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-          }
-
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-
-          .guest-info-note {
-            background: rgba(139, 92, 246, 0.08);
-            border: 1.5px solid rgba(139, 92, 246, 0.2);
-            border-radius: 12px;
-            padding: 14px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-top: 8px;
-          }
-
-          .guest-info-note svg {
-            flex-shrink: 0;
-          }
-
-          .guest-info-note p {
-            margin: 0;
-            font-size: 13px;
-            color: #4b5563;
-            line-height: 1.5;
-          }
-
-          @media (max-width: 480px) {
-            .guest-modal-content {
-              padding: 24px;
-              max-width: 95%;
-            }
-
-            .guest-modal-logo {
-              width: 56px;
-              height: 56px;
-            }
-
-            .guest-modal-title {
-              font-size: 24px;
-            }
-
-            .guest-form-input {
-              padding: 12px 14px;
-              font-size: 16px;
-            }
-          }
-        `}
-      </style>
-
-      {/* Floating ambient orbs */}
-      <div style={{position:'absolute',width:'380px',height:'380px',borderRadius:'50%',background:'radial-gradient(circle, rgba(139,92,246,.28) 0%, transparent 70%)',top:'-140px',left:'-140px',animation:'orbFloat1 11s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
-      <div style={{position:'absolute',width:'260px',height:'260px',borderRadius:'50%',background:'radial-gradient(circle, rgba(168,85,247,.22) 0%, transparent 70%)',bottom:'-90px',right:'-90px',animation:'orbFloat2 14s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
-      <div style={{position:'absolute',width:'200px',height:'200px',borderRadius:'50%',background:'radial-gradient(circle, rgba(91,91,214,.28) 0%, transparent 70%)',top:'45%',right:'-70px',animation:'orbFloat3 17s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
-      <div style={{position:'absolute',width:'160px',height:'160px',borderRadius:'50%',background:'radial-gradient(circle, rgba(192,132,252,.18) 0%, transparent 70%)',bottom:'20%',left:'-50px',animation:'orbFloat4 9s ease-in-out infinite',pointerEvents:'none',zIndex:0}} />
-
-      <div className="login-container" style={{position:'relative',zIndex:1}}>
-        <div className="logo">
-          <img 
-            src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" 
-            alt="TingleTap Logo" 
-            style={{
-              width: '35px',
-              height: '35px',
-              borderRadius: '50%',
-              marginBottom: '4px',
-              border: '2px solid transparent',
-              background: 'white, linear-gradient(45deg, #ff0080, #ff1493, #ff4081, #e91e63, #9c27b0, #8a2be2, #673ab7, #3f51b5, #2196f3, #00bcd4, #20b2aa, #009688, #4caf50, #32cd32, #8bc34a, #cddc39, #ffeb3b, #ffd700, #ffc107, #ff9800, #ff8c00, #ff5722, #f44336, #dc143c, #ff0080)',
-              backgroundClip: 'padding-box, border-box',
-              objectFit: 'contain',
-              padding: '2px',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-            }}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
+
+        * { box-sizing: border-box; }
+
+        @keyframes floatOrb1 {
+          0%,100% { transform: translate(0,0) scale(1); opacity: 0.55; }
+          33% { transform: translate(30px,40px) scale(1.08); opacity: 0.75; }
+          66% { transform: translate(-20px,20px) scale(0.93); opacity: 0.5; }
+        }
+        @keyframes floatOrb2 {
+          0%,100% { transform: translate(0,0) scale(1); opacity: 0.45; }
+          50% { transform: translate(-35px,-40px) scale(1.12); opacity: 0.65; }
+        }
+        @keyframes floatOrb3 {
+          0%,100% { transform: translate(0,0) scale(1); opacity: 0.5; }
+          33% { transform: translate(-25px,30px) scale(1.1); opacity: 0.7; }
+          66% { transform: translate(20px,-20px) scale(0.9); opacity: 0.4; }
+        }
+        @keyframes floatOrb4 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50% { transform: translate(22px,-28px) scale(1.15); }
+        }
+        @keyframes shimmerBorder {
+          0%,100% { background-position: 400% 0; }
+          50% { background-position: -400% 0; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardEntrance {
+          from { opacity: 0; transform: translateY(30px) scale(0.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes pulse-ring {
+          0% { box-shadow: 0 0 0 0 rgba(155,89,208,0.25); }
+          70% { box-shadow: 0 0 0 12px rgba(155,89,208,0); }
+          100% { box-shadow: 0 0 0 0 rgba(155,89,208,0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shimmerSlide {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        @keyframes checkPop {
+          0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+          60% { transform: scale(1.25) rotate(5deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .lv-card {
+          background: rgba(255,255,255,0.78);
+          backdrop-filter: blur(32px);
+          -webkit-backdrop-filter: blur(32px);
+          border-radius: 28px;
+          padding: 32px 28px 24px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 98vh;
+          overflow-y: auto;
+          overflow-x: hidden;
+          box-shadow:
+            0 32px 80px rgba(139,92,246,0.18),
+            0 8px 32px rgba(155,89,208,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.9),
+            0 0 0 1.5px rgba(192,132,252,0.3);
+          border: 1.5px solid rgba(192,132,252,0.25);
+          position: relative;
+          animation: cardEntrance 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+          scrollbar-width: none;
+        }
+        .lv-card::-webkit-scrollbar { display: none; }
+
+        .lv-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3.5px;
+          background: linear-gradient(90deg, #c084fc, #a855f7, #9333ea, #7c3aed, #c084fc);
+          background-size: 400% 100%;
+          animation: shimmerBorder 4s ease-in-out infinite;
+          border-radius: 28px 28px 0 0;
+        }
+
+        .lv-logo-wrap {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .lv-logo-img {
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          border: 3px solid transparent;
+          background: linear-gradient(white,white) padding-box,
+                      linear-gradient(135deg,#c084fc,#a855f7,#7c3aed) border-box;
+          object-fit: contain;
+          box-shadow: 0 8px 28px rgba(139,92,246,0.3);
+          animation: pulse-ring 2.5s ease-out infinite;
+          margin-bottom: 10px;
+        }
+        .lv-logo-title {
+          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-style: italic;
+          font-size: 2.1rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin: 0 0 4px;
+          letter-spacing: 0.02em;
+        }
+        .lv-logo-sub {
+          color: #7e6ca8;
+          font-size: 0.82rem;
+          margin: 0;
+          font-weight: 500;
+          letter-spacing: 0.2px;
+        }
+
+        .lv-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 7px;
+          font-weight: 600;
+          color: #4c366b;
+          font-size: 0.84rem;
+          letter-spacing: 0.15px;
+        }
+        .lv-label svg { flex-shrink: 0; }
+
+        .lv-group {
+          margin-bottom: 14px;
+          position: relative;
+        }
+
+        .lv-input {
+          width: 100%;
+          padding: 13px 16px;
+          border: 2px solid rgba(192,132,252,0.25);
+          border-radius: 14px;
+          font-size: 0.93rem;
+          font-family: inherit;
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          background: rgba(255,255,255,0.85);
+          color: #2d1b4e;
+          box-sizing: border-box;
+          height: 48px;
+          outline: none;
+        }
+        .lv-input:focus {
+          border-color: #a855f7;
+          background: rgba(255,255,255,0.98);
+          box-shadow: 0 0 0 4px rgba(168,85,247,0.12), 0 4px 16px rgba(168,85,247,0.1);
+          transform: translateY(-1px);
+        }
+        .lv-input::placeholder { color: #b09dcc; }
+        .lv-input::-webkit-calendar-picker-indicator { filter: invert(40%) sepia(50%) saturate(500%) hue-rotate(240deg); }
+
+        .lv-pw-wrap { position: relative; }
+        .lv-pw-toggle {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .lv-pw-toggle:hover { background: rgba(168,85,247,0.1); transform: translateY(-50%) scale(1.1); }
+
+        .lv-strength-bar {
+          height: 5px;
+          background: rgba(192,132,252,0.15);
+          border-radius: 3px;
+          overflow: hidden;
+          margin: 8px 0 4px;
+        }
+        .lv-strength-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+          position: relative;
+          overflow: hidden;
+        }
+        .lv-strength-fill::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 100%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+          animation: shimmerSlide 1.8s infinite;
+        }
+        .lv-s-very-weak .lv-strength-fill { width: 20%; background: linear-gradient(90deg,#f87171,#ef4444); }
+        .lv-s-weak .lv-strength-fill { width: 45%; background: linear-gradient(90deg,#fb923c,#f97316); }
+        .lv-s-medium .lv-strength-fill { width: 72%; background: linear-gradient(90deg,#facc15,#eab308); }
+        .lv-s-strong .lv-strength-fill { width: 100%; background: linear-gradient(90deg,#4ade80,#22c55e); }
+        .lv-strength-text {
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 0.74rem; font-weight: 600;
+        }
+        .lv-st-very-weak { color: #ef4444; }
+        .lv-st-weak { color: #f97316; }
+        .lv-st-medium { color: #eab308; }
+        .lv-st-strong { color: #22c55e; }
+
+        .lv-check-row {
+          display: flex; align-items: center; gap: 8px;
+          margin: 12px 0;
+        }
+        .lv-checkbox {
+          width: 18px; height: 18px;
+          accent-color: #a855f7;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .lv-check-label {
+          font-size: 0.83rem; color: #5c4480; font-weight: 500; cursor: pointer;
+        }
+
+        .lv-error {
+          background: rgba(239,68,68,0.08);
+          border: 1.5px solid rgba(239,68,68,0.25);
+          color: #dc2626;
+          padding: 11px 14px;
+          border-radius: 12px;
+          font-size: 0.83rem;
+          margin-bottom: 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          animation: fadeInUp 0.3s ease forwards;
+          font-weight: 500;
+        }
+
+        .lv-btn-primary {
+          width: 100%;
+          padding: 14px 20px;
+          background: linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #c084fc 100%);
+          border: none;
+          border-radius: 14px;
+          color: white;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          position: relative;
+          overflow: hidden;
+          min-height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 8px 24px rgba(147,51,234,0.3), inset 0 1px 0 rgba(255,255,255,0.25);
+          letter-spacing: 0.3px;
+          -webkit-tap-highlight-color: transparent;
+          margin-bottom: 10px;
+        }
+        .lv-btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 100%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          transition: left 0.5s ease;
+        }
+        .lv-btn-primary:hover::before { left: 100%; }
+        .lv-btn-primary:hover {
+          transform: translateY(-2px) scale(1.01);
+          box-shadow: 0 14px 36px rgba(147,51,234,0.38), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .lv-btn-primary:active { transform: translateY(0) scale(0.99); }
+        .lv-btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+        .lv-btn-secondary {
+          width: 100%;
+          padding: 13px 20px;
+          background: rgba(255,255,255,0.6);
+          border: 2px solid rgba(192,132,252,0.35);
+          border-radius: 14px;
+          color: #7c3aed;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          letter-spacing: 0.2px;
+          -webkit-tap-highlight-color: transparent;
+          backdrop-filter: blur(10px);
+        }
+        .lv-btn-secondary:hover {
+          background: rgba(168,85,247,0.1);
+          border-color: #a855f7;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(168,85,247,0.18);
+          color: #6d28d9;
+        }
+        .lv-btn-secondary:active { transform: translateY(0); }
+
+        .lv-btn-guest {
+          width: 100%;
+          padding: 13px 20px;
+          background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(245,235,255,0.8));
+          border: 2px solid rgba(192,132,252,0.3);
+          border-radius: 14px;
+          color: #6d28d9;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 10px;
+          -webkit-tap-highlight-color: transparent;
+          backdrop-filter: blur(10px);
+        }
+        .lv-btn-guest:hover {
+          background: linear-gradient(135deg, rgba(192,132,252,0.15), rgba(168,85,247,0.2));
+          border-color: #c084fc;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(192,132,252,0.2);
+        }
+
+        .lv-divider {
+          display: flex; align-items: center; gap: 12px;
+          margin: 16px 0;
+          color: #a99cc4;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+        .lv-divider::before, .lv-divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(192,132,252,0.35), transparent);
+        }
+
+        .lv-footer {
+          text-align: center;
+          margin-top: 18px;
+          color: #7e6ca8;
+          font-size: 0.84rem;
+        }
+        .lv-footer a {
+          color: #9333ea;
+          text-decoration: none;
+          font-weight: 700;
+          transition: all 0.2s ease;
+        }
+        .lv-footer a:hover { color: #a855f7; text-decoration: underline; }
+
+        .lv-spinner {
+          width: 18px; height: 18px;
+          border: 2.5px solid rgba(255,255,255,0.35);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+
+        /* Guest Modal */
+        .lv-modal-overlay {
+          position: fixed !important;
+          top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+          background: rgba(60,20,100,0.55) !important;
+          backdrop-filter: blur(12px) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 999999999 !important;
+          padding: 20px !important;
+          animation: fadeInUp 0.3s ease !important;
+        }
+        .lv-modal {
+          background: linear-gradient(145deg, #fdf8ff, #f5eaff, #fdf4ff) !important;
+          border-radius: 28px !important;
+          padding: 32px 28px !important;
+          width: 100% !important;
+          max-width: 440px !important;
+          max-height: 90vh !important;
+          overflow-y: auto !important;
+          position: relative !important;
+          box-shadow:
+            0 32px 80px rgba(139,92,246,0.28),
+            0 8px 32px rgba(168,85,247,0.2),
+            inset 0 1px 0 rgba(255,255,255,0.95) !important;
+          border: 2px solid rgba(192,132,252,0.35) !important;
+          animation: cardEntrance 0.45s cubic-bezier(0.34,1.56,0.64,1) !important;
+          scrollbar-width: none !important;
+        }
+        .lv-modal::-webkit-scrollbar { display: none; }
+        .lv-modal-close {
+          position: absolute;
+          top: 16px; right: 16px;
+          background: rgba(255,255,255,0.9);
+          border: 2px solid rgba(192,132,252,0.3);
+          border-radius: 50%;
+          width: 38px; height: 38px;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          color: #9333ea;
+          font-size: 18px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(139,92,246,0.15);
+        }
+        .lv-modal-close:hover {
+          background: rgba(147,51,234,0.9);
+          color: white;
+          transform: scale(1.1) rotate(90deg);
+        }
+        .lv-modal-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.6rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-align: center;
+          margin: 0 0 6px;
+        }
+        .lv-modal-sub {
+          text-align: center;
+          color: #7e6ca8;
+          font-size: 0.85rem;
+          margin: 0 0 22px;
+        }
+        .lv-modal-label {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 0.85rem; font-weight: 700;
+          color: #4c366b;
+          margin-bottom: 7px;
+        }
+        .lv-modal-input {
+          width: 100%;
+          padding: 13px 16px;
+          border: 2px solid rgba(192,132,252,0.25);
+          border-radius: 12px;
+          font-size: 0.92rem;
+          font-family: inherit;
+          background: rgba(255,255,255,0.9);
+          color: #2d1b4e;
+          transition: all 0.3s ease;
+          outline: none;
+          box-sizing: border-box;
+        }
+        .lv-modal-input:focus {
+          border-color: #a855f7;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(168,85,247,0.1);
+        }
+        .lv-modal-input::placeholder { color: #b09dcc; }
+        .lv-modal-group { margin-bottom: 14px; }
+
+        .lv-captcha-wrap { display: flex; justify-content: center; margin: 10px 0; }
+        .lv-guest-info {
+          background: rgba(168,85,247,0.07);
+          border: 1.5px solid rgba(168,85,247,0.2);
+          border-radius: 12px;
+          padding: 12px 14px;
+          display: flex; align-items: flex-start; gap: 10px;
+          margin-top: 10px;
+          font-size: 0.8rem;
+          color: #5c4480;
+          line-height: 1.5;
+        }
+
+        /* Strength indicator check pop */
+        .check-pop { animation: checkPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        /* Match indicator */
+        .lv-match-ok { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #22c55e; font-weight: 600; margin-top: 5px; }
+        .lv-match-err { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #ef4444; font-weight: 600; margin-top: 5px; }
+
+        @media (max-width: 480px) {
+          .lv-card { padding: 24px 18px 18px; border-radius: 22px; max-width: 98vw; }
+          .lv-logo-title { font-size: 1.8rem; }
+          .lv-logo-img { width: 50px; height: 50px; }
+          .lv-input { height: 46px; font-size: 16px; }
+          .lv-btn-primary, .lv-btn-secondary, .lv-btn-guest { min-height: 46px; font-size: 0.88rem; }
+          .lv-modal { padding: 24px 18px; border-radius: 22px; }
+        }
+        @media (max-height: 700px) {
+          .lv-card { padding: 18px 20px 14px; }
+          .lv-group { margin-bottom: 10px; }
+          .lv-logo-wrap { margin-bottom: 14px; }
+        }
+      `}</style>
+
+      {/* Floating lavender orbs */}
+      <div style={{position:'absolute',width:'420px',height:'420px',borderRadius:'50%',background:'radial-gradient(circle,rgba(192,132,252,.25) 0%,transparent 70%)',top:'-160px',left:'-160px',animation:'floatOrb1 12s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',width:'300px',height:'300px',borderRadius:'50%',background:'radial-gradient(circle,rgba(216,180,254,.22) 0%,transparent 70%)',bottom:'-100px',right:'-100px',animation:'floatOrb2 15s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',width:'220px',height:'220px',borderRadius:'50%',background:'radial-gradient(circle,rgba(168,85,247,.2) 0%,transparent 70%)',top:'40%',right:'-80px',animation:'floatOrb3 18s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',width:'180px',height:'180px',borderRadius:'50%',background:'radial-gradient(circle,rgba(233,213,255,.3) 0%,transparent 70%)',bottom:'15%',left:'-60px',animation:'floatOrb4 10s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
+      <div style={{position:'absolute',width:'140px',height:'140px',borderRadius:'50%',background:'radial-gradient(circle,rgba(192,132,252,.18) 0%,transparent 70%)',top:'15%',right:'8%',animation:'floatOrb1 9s ease-in-out infinite reverse',pointerEvents:'none',zIndex:0}}/>
+
+      {showBanModal && banModalData && (
+        <BanKickModal
+          isOpen={showBanModal}
+          banInfo={banModalData}
+          onClose={() => {}}
+        />
+      )}
+      {showIPBanModal && (
+        <IPBanModal
+          isOpen={showIPBanModal}
+          banInfo={ipBanData}
+          onClose={() => {}}
+        />
+      )}
+
+      <div className="lv-card" style={{position:'relative',zIndex:1}}>
+        {/* Logo */}
+        <div className="lv-logo-wrap">
+          <img
+            src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png"
+            alt="TingleTap Logo"
+            className="lv-logo-img"
           />
-          <h1>TingleTap</h1>
-          <p>Welcome back! Sign in to continue</p>
+          <h1 className="lv-logo-title">TingleTap</h1>
+          <p className="lv-logo-sub">Welcome back! Sign in to continue ✨</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
+          {/* Email */}
+          <div className="lv-group">
+            <label className="lv-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="#a855f7" strokeWidth="2"/>
+                <path d="M2 8l10 7 10-7" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Email Address
+            </label>
             <input
               type="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Enter your email"
-              className="form-input"
+              placeholder="your@email.com"
+              className="lv-input"
               required
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div style={{ position: 'relative' }}>
+          {/* Password */}
+          <div className="lv-group">
+            <label className="lv-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="#a855f7" strokeWidth="2"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="16" r="1.5" fill="#a855f7"/>
+              </svg>
+              Password
+            </label>
+            <div className="lv-pw-wrap">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="form-input"
-                style={{ paddingRight: '45px' }}
+                className="lv-input"
+                style={{paddingRight:'52px'}}
                 required
               />
-              <div
-                onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle"
-              >
-                {showPassword ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </div>
+              <button type="button" className="lv-pw-toggle" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                {showPassword ? <EyeOpenSVG/> : <EyeClosedSVG/>}
+              </button>
             </div>
             {password && (
-              <div className="password-strength-indicator">
-                <div className={`strength-bar strength-${getPasswordStrength(password).level}`}>
-                  <div className="strength-fill"></div>
+              <div style={{animation:'fadeInUp 0.3s ease forwards'}}>
+                <div className={`lv-strength-bar lv-s-${getPasswordStrength(password).level}`}>
+                  <div className="lv-strength-fill"/>
                 </div>
-                <div className="strength-text">
-                  <span className={`strength-label strength-${getPasswordStrength(password).level}`}>
-                    {getPasswordStrength(password).text}
-                  </span>
+                <div className="lv-strength-text">
+                  <span className={`lv-st-${getPasswordStrength(password).level}`}>{getPasswordStrength(password).text}</span>
                   {getPasswordStrength(password).level === 'strong' && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="strength-icon">
-                      <path d="M9 12l2 2 4-4" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="#10b981" strokeWidth="2"/>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="check-pop">
+                      <circle cx="12" cy="12" r="10" fill="#22c55e"/>
+                      <path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   )}
                 </div>
@@ -1687,261 +981,203 @@ const LoginPage = () => {
             )}
           </div>
 
-          <div className="checkbox-group">
+          {/* Remember me */}
+          <div className="lv-check-row">
             <input
               type="checkbox"
               id="rememberMe"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="checkbox"
+              className="lv-checkbox"
             />
-            <label htmlFor="rememberMe" className="checkbox-label">
-              Remember me
-            </label>
+            <label htmlFor="rememberMe" className="lv-check-label">Remember me on this device</label>
           </div>
 
           {error && (
-            <div className="error-message">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L2 22h20L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 9v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <div className="lv-error">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+                <circle cx="12" cy="12" r="10" fill="rgba(239,68,68,0.15)" stroke="#ef4444" strokeWidth="2"/>
+                <path d="M12 7v5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="16" r="1" fill="#ef4444"/>
               </svg>
               {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="primary-btn"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/signup')}
-            className="primary-btn"
-            style={{ marginTop: '3px' }}
-          >
-            Create New Account
-          </button>
-
-          <Link to="/forgot-password" className="forgot-link">
-            Forgot your password?
-          </Link>
-
-          <div className="divider">
-            <span>OR</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleAnonymousLogin}
-            className="secondary-btn"
-          >
-            Continue as Guest
+          <button type="submit" className="lv-btn-primary" disabled={loading}>
+            {loading ? (
+              <><div className="lv-spinner"/><span>Signing In...</span></>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <polyline points="10 17 15 12 10 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="15" y1="12" x2="3" y2="12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Sign In to TingleTap
+              </>
+            )}
           </button>
         </form>
 
-        <div className="signup-link">
-          Don't have an account? <Link to="/signup">Sign up here</Link>
+        <div className="lv-divider">or</div>
+
+        {/* Guest Login */}
+        <button className="lv-btn-guest" onClick={handleAnonymousLogin}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" fill="none" stroke="#7c3aed" strokeWidth="2"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="19" cy="8" r="2.5" fill="rgba(168,85,247,0.2)" stroke="#a855f7" strokeWidth="1.5"/>
+            <path d="M19 7v2" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M18 8h2" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          Continue as Guest
+        </button>
+
+        <div className="lv-footer">
+          Don't have an account?{' '}
+          <Link to="/signup">Create one free</Link>
         </div>
       </div>
 
       {/* Guest Modal */}
       {showGuestModal && (
-        <div className="guest-modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 999999999,
-          display: 'flex',
-          visibility: 'visible',
-          opacity: 1,
-          pointerEvents: 'all'
-        }}>
-          <div className="guest-modal-content" style={{
-            position: 'relative',
-            zIndex: 999999999,
-            visibility: 'visible',
-            opacity: 1,
-            pointerEvents: 'all'
-          }}>
-            <button
-              onClick={resetGuestModal}
-              className="guest-modal-close"
-            >
-              ×
+        <div className="lv-modal-overlay">
+          <div className="lv-modal">
+            <button className="lv-modal-close" onClick={resetGuestModal}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
             </button>
 
-            <div className="guest-modal-header">
-              <img 
-                src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" 
-                alt="TingleTap Logo" 
-                className="guest-modal-logo"
-              />
-              <h2 className="guest-modal-title">TingleTap Guest</h2>
-              <p className="guest-modal-subtitle">Please provide your details to continue</p>
+            <div style={{textAlign:'center',marginBottom:'8px'}}>
+              <div style={{
+                width:'60px',height:'60px',borderRadius:'50%',
+                background:'linear-gradient(135deg,#e9d5ff,#c084fc)',
+                margin:'0 auto 12px',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                boxShadow:'0 8px 24px rgba(168,85,247,0.3)'
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="4" fill="none" stroke="white" strokeWidth="2"/>
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <h2 className="lv-modal-title">Guest Access</h2>
+              <p className="lv-modal-sub">Fill in your details to explore TingleTap</p>
             </div>
 
-            <form onSubmit={handleGuestFormSubmit} className="guest-modal-form">
-              <div className="guest-form-group">
-                <label className="guest-form-label">Display Name</label>
+            <form onSubmit={handleGuestFormSubmit}>
+              <div className="lv-modal-group">
+                <label className="lv-modal-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="#a855f7" strokeWidth="2"/>
+                  </svg>
+                  Display Name
+                </label>
                 <input
                   type="text"
                   name="displayName"
                   value={guestFormData.displayName}
                   onChange={handleGuestInputChange}
-                  placeholder="Enter your display name"
-                  className="guest-form-input"
+                  placeholder="How should we call you?"
+                  className="lv-modal-input"
                   required
                 />
               </div>
 
-              <div className="guest-form-group">
-                <label className="guest-form-label">Age</label>
+              <div className="lv-modal-group">
+                <label className="lv-modal-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="#a855f7" strokeWidth="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="#a855f7" strokeWidth="2"/>
+                  </svg>
+                  Age (18+)
+                </label>
                 <input
                   type="number"
                   name="age"
                   value={guestFormData.age}
                   onChange={handleGuestInputChange}
-                  placeholder="Enter your age"
-                  min="13"
-                  max="100"
-                  className="guest-form-input"
+                  placeholder="Your age"
+                  className="lv-modal-input"
+                  min="18" max="100"
                   required
                 />
               </div>
 
-              <div className="guest-form-group">
-                <label className="guest-form-label">Gender</label>
+              <div className="lv-modal-group">
+                <label className="lv-modal-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#a855f7" strokeWidth="2"/>
+                    <path d="M12 8v4l3 3" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Gender
+                </label>
                 <select
                   name="gender"
                   value={guestFormData.gender}
                   onChange={handleGuestInputChange}
-                  className="guest-form-input"
+                  className="lv-modal-input"
                   required
                 >
                   <option value="">Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 
-              <div className="guest-form-group">
-                <label className="guest-form-label">Security Verification</label>
-                <div className="guest-captcha-wrapper">
-                  <HCaptcha
-                    sitekey="56aae798-c886-4ab0-a71e-987a23f26f12"
-                    onVerify={onCaptchaVerify}
-                    onExpire={onCaptchaExpire}
-                    onError={onCaptchaError}
-                    theme="light"
-                  />
-                </div>
-                {captchaError && (
-                  <div className="guest-captcha-error">{captchaError}</div>
-                )}
-              </div>
-
               {error && (
-                <div className="guest-error-message">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 22h20L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 9v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <div className="lv-error" style={{marginBottom:'12px'}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+                    <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
+                    <path d="M12 7v5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="12" cy="16" r="1" fill="#ef4444"/>
                   </svg>
                   {error}
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading || !captchaToken}
-                className="guest-submit-btn"
-              >
+              <div className="lv-captcha-wrap">
+                <HCaptcha
+                  sitekey="50b2fe65-b00b-4b9e-ad62-3ba471098be2"
+                  onVerify={onCaptchaVerify}
+                  onExpire={onCaptchaExpire}
+                  onError={onCaptchaError}
+                />
+              </div>
+              {captchaError && (
+                <div style={{color:'#dc2626',fontSize:'0.8rem',textAlign:'center',marginBottom:'8px'}}>{captchaError}</div>
+              )}
+
+              <button type="submit" className="lv-btn-primary" disabled={loading || !captchaToken}>
                 {loading ? (
-                  <div className="guest-btn-spinner"></div>
+                  <><div className="lv-spinner"/><span>Joining...</span></>
                 ) : (
-                  'Continue as Guest'
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="white"/>
+                    </svg>
+                    Enter as Guest
+                  </>
                 )}
               </button>
             </form>
-            <div className="guest-info-note">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10-4.477-10-10-10zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" fill="currentColor"/>
-                <path d="M12 7a1 1 0 100 2 1 1 0 000-2zM12 13a1 1 0 00-1 1v3a1 1 0 002 0v-3a1 1 0 00-1-1z" fill="currentColor"/>
+
+            <div className="lv-guest-info">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,marginTop:'2px'}}>
+                <circle cx="12" cy="12" r="10" fill="rgba(168,85,247,0.15)" stroke="#a855f7" strokeWidth="2"/>
+                <path d="M12 7v5" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="16" r="1" fill="#a855f7"/>
               </svg>
-              <p>Your guest account is temporary. For a full experience, consider creating a permanent account.</p>
+              <span>Guest accounts are temporary. Some features may be limited. Create a full account for the complete TingleTap experience.</span>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Ban/Kick Modal - Force show for banned users */}
-      {showBanModal && (
-        <BanKickModal 
-          isVisible={true}
-          banInfo={banModalData}
-          onClose={() => {
-
-            // For banned users, prevent closing the modal completely
-            if (banModalData && (banModalData.type === "account_banned" || banModalData.type === "login_blocked")) {
-
-              // Force modal to stay open immediately
-              setShowBanModal(true);
-
-              // Keep page locked
-              document.body.style.overflow = 'hidden';
-              document.body.style.position = 'fixed';
-
-              // Prevent any navigation
-              window.history.pushState(null, null, '/login');
-
-              return false; // Don't allow close
-            }
-
-            // For non-banned users (kicks, etc), allow normal close
-            setShowBanModal(false);
-            setBanModalData(null);
-          }}
-        />
-      )}
-
-      {/* IP Ban Modal - Force show for banned IPs */}
-      {showIPBanModal && (
-        <IPBanModal 
-          banInfo={ipBanData}
-          onRetry={async () => {
-            console.log('🔄 IP Ban System: Retrying access check...');
-            try {
-              const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
-              if (accessResult.allowed) {
-                console.log('✅ IP Ban System: Access restored');
-                setShowIPBanModal(false);
-                setIPBanData(null);
-                // Restore page functionality
-                document.body.style.overflow = '';
-                document.body.style.position = '';
-                document.body.style.userSelect = '';
-                document.body.style.pointerEvents = '';
-                if (window.ipBanInterval) {
-                  clearInterval(window.ipBanInterval);
-                }
-              } else {
-                console.log('🚫 IP Ban System: Access still denied');
-                toast.error('Your IP address is still banned from accessing this platform.');
-              }
-            } catch (error) {
-              console.error('❌ IP Ban System: Error retrying access', error);
-              toast.error('Error checking access. Please try again later.');
-            }
-          }}
-        />
       )}
     </div>
   );
