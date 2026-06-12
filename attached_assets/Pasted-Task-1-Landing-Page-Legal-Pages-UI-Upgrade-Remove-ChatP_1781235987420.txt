@@ -1,0 +1,65 @@
+Task 1 – Landing Page & Legal Pages UI Upgrade
+
+- Remove ChatPreview section completely from Landing Page.
+
+- Redesign Landing Page with a Premium Luxury Light Lavender Theme (same as RoomListPage).
+
+- Fix all CSS issues and improve spacing, alignment, responsiveness, shadows, borders, hover effects, and visual hierarchy.
+
+- Make the entire website fully mobile-friendly and compact.
+
+- Upgrade typography with premium modern fonts and better font weights.
+
+- Ensure every text remains clearly visible on all backgrounds, cards, buttons, and sections.
+
+- Redesign all buttons with luxury styling, premium gradients, smooth hover animations, and proper contrast.
+
+- Replace all existing icons with premium SVG icons throughout the website.
+
+- Ensure SVG icons are visible on every button, card, background color, and theme state.
+
+- Improve all cards with premium borders, soft shadows, glassmorphism effects, and luxury spacing.
+
+- Apply the same Light Lavender design system across:
+  
+  - Landing Page
+  - Terms & Conditions
+  - Privacy Policy
+  - About Us
+  - Contact Us
+  - Safety Page
+  - Community Guidelines
+  - All other Legal Pages
+
+- Upgrade Legal Pages:
+  
+  - Premium hero sections
+  - Better typography
+  - Luxury SVG icons
+  - Better card layouts
+  - Improved readability
+  - Visible text on every background
+  - Consistent branding and styling
+
+Task 2 – Welcome Dashboard Upgrade
+
+- Apply the same Light Lavender Theme used in RoomListPage.
+- Redesign Edit Profile section with premium luxury UI.
+- Redesign Edit Username section with premium luxury UI.
+- Replace all icons with premium SVG icons.
+- Ensure icons remain visible on every button, background, and theme state.
+- Improve button design, card design, typography, spacing, shadows, and responsiveness.
+- Maintain complete design consistency with the rest of the website.
+- Make all dashboard components modern, luxurious, compact, and mobile-first.
+
+Overall Requirements
+
+- Premium luxury appearance similar to top-tier modern applications.
+- Consistent Light Lavender Theme across the entire website.
+- Better accessibility and contrast.
+- Better responsiveness for all screen sizes.
+- Smooth animations and transitions.
+- Clean, modern, elegant, and professional UI/UX.
+- No text visibility issues anywhere.
+- No icon visibility issues anywhere.
+- Every page should feel premium, polished, and production-ready.

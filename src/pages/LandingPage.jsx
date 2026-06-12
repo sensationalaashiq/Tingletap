@@ -132,28 +132,6 @@ const ShieldIcon = ({ size = 28 }) => (
   </svg>
 );
 
-const CrownIcon = ({ size = 13 }) => (
-  <svg viewBox="0 0 16 16" width={size} height={size} fill="none">
-    <path d="M2 12.5h12M2 12.5L4 6l4 3.5L12 4l2 5-12 3.5z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15"/>
-    <circle cx="8" cy="3" r="1.4" fill="currentColor"/>
-    <circle cx="2.5" cy="7" r="1" fill="currentColor"/>
-    <circle cx="13.5" cy="7" r="1" fill="currentColor"/>
-  </svg>
-);
-
-const MaleIcon = ({ size = 11 }) => (
-  <svg viewBox="0 0 12 12" width={size} height={size} fill="none">
-    <circle cx="5" cy="7" r="3.2" stroke="currentColor" strokeWidth="1.4"/>
-    <path d="M8 4l2-2M8.5 2H10.5v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const FemaleIcon = ({ size = 11 }) => (
-  <svg viewBox="0 0 12 12" width={size} height={size} fill="none">
-    <circle cx="6" cy="5" r="3.2" stroke="currentColor" strokeWidth="1.4"/>
-    <path d="M6 8.5V11M4.5 9.8h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-  </svg>
-);
 
 const DiamondIcon = ({ size = 22 }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none">
@@ -187,42 +165,6 @@ const CrossIcon = ({ size = 13 }) => (
   </svg>
 );
 
-const SendIcon = () => (
-  <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-    <path d="M2 18L19 10 2 2v5.5l12 2.5-12 2.5V18z" fill="white"/>
-  </svg>
-);
-
-const AttachIcon = () => (
-  <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-    <path d="M13.5 5v8a3.5 3.5 0 0 1-7 0V4a2 2 0 0 1 4 0v9a.5.5 0 0 1-1 0V5" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round"/>
-  </svg>
-);
-
-const YouTubeIconSVG = () => (
-  <svg viewBox="0 0 20 14" width="18" height="13" fill="none">
-    <rect width="20" height="14" rx="3" fill="#dc2626"/>
-    <path d="M8.5 4.5l5.5 2.5-5.5 2.5V4.5z" fill="white"/>
-  </svg>
-);
-
-const ImageIconSVG = () => (
-  <svg viewBox="0 0 20 18" width="17" height="15" fill="none">
-    <rect x="1" y="1" width="18" height="16" rx="3" stroke="#7c3aed" strokeWidth="1.5"/>
-    <circle cx="6.5" cy="6.5" r="1.5" fill="#7c3aed"/>
-    <path d="M1 12l5-5 4 4 3-3 5 4" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const IndiaFlagIcon = () => (
-  <svg viewBox="0 0 20 14" width="20" height="14">
-    <rect width="20" height="14" rx="2.5" fill="#FF9933"/>
-    <rect y="4.67" width="20" height="4.66" fill="white"/>
-    <rect y="9.33" width="20" height="4.67" fill="#138808"/>
-    <circle cx="10" cy="7" r="2" fill="none" stroke="#000080" strokeWidth="0.9"/>
-    <path d="M10 5.2v3.6M8.2 7h3.6" stroke="#000080" strokeWidth="0.5"/>
-  </svg>
-);
 
 /* ══════════════════════════════════════════
    MAIN COMPONENT
@@ -230,7 +172,6 @@ const IndiaFlagIcon = () => (
 const LandingPage = () => {
   const navigate = useNavigate();
   const [scrolled, setScrolled]       = useState(false);
-  const [activeMsg, setActiveMsg]     = useState(0);
   const [realTimeStats, setRealTimeStats] = useState({ activeUsers: 555, totalRooms: 9, onlineNow: 138 });
 
   const incrementUserCount = () => {
@@ -243,11 +184,6 @@ const LandingPage = () => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  useEffect(() => {
-    const iv = setInterval(() => setActiveMsg(p => (p + 1) % 5), 2800);
-    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
@@ -270,14 +206,6 @@ const LandingPage = () => {
     window.addEventListener('storage', h);
     return () => window.removeEventListener('storage', h);
   }, []);
-
-  const liveMessages = [
-    { name: 'Riya Sharma',  color: '#7c3aed', gender: 'female', seed: 'riya&sex=female',  text: 'Hello everyone! Great vibes here!' },
-    { name: 'Arjun Singh',  color: '#2563eb', gender: 'male',   seed: 'arjun&sex=male',   text: 'Any music recommendations tonight?' },
-    { name: 'Priya Gupta',  color: '#db2777', gender: 'female', seed: 'priya&sex=female',  text: 'This platform is absolutely stunning!' },
-    { name: 'Rohan Mehta',  color: '#059669', gender: 'male',   seed: 'rohan&sex=male',   text: 'Gaming session at 9 PM, who\'s in?' },
-    { name: 'Neha Patel',   color: '#d97706', gender: 'female', seed: 'neha&sex=female',  text: 'Good morning beautiful people!' },
-  ];
 
   const features = [
     { Icon: ChatBubbleIcon, title: 'Real-Time Chat Rooms',    desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], color: '#6366f1' },
@@ -428,57 +356,6 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Right — Live Chat Preview */}
-          <div className="lp-hero-right lp-anim-fade lp-d2">
-            <div className="lp-preview">
-              {/* Window bar */}
-              <div className="lp-preview-bar">
-                <div className="lp-dots">
-                  <span className="lp-dot lp-dot-r" />
-                  <span className="lp-dot lp-dot-y" />
-                  <span className="lp-dot lp-dot-g" />
-                </div>
-                <div className="lp-preview-title">
-                  <IndiaFlagIcon /> Indian Chat
-                </div>
-                <div className="lp-live-badge">
-                  <span className="lp-live-dot" /> LIVE
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="lp-msgs">
-                {liveMessages.map((m, i) => (
-                  <div key={i} className={`lp-msg ${i === activeMsg ? 'lp-msg-active' : ''}`}>
-                    <div className="lp-msg-av-wrap">
-                      <img src={`https://api.dicebear.com/8.x/adventurer/svg?seed=${m.seed}`} alt={m.name} className="lp-msg-av" />
-                      <span className="lp-msg-gender" style={{ color: m.gender === 'female' ? '#db2777' : '#2563eb' }}>
-                        {m.gender === 'female' ? <FemaleIcon size={10} /> : <MaleIcon size={10} />}
-                      </span>
-                    </div>
-                    <div className="lp-msg-body">
-                      <div className="lp-msg-meta">
-                        <span className="lp-msg-name" style={{ color: m.color }}>{m.name}</span>
-                        <span className="lp-msg-crown" style={{ color: '#f59e0b' }}><CrownIcon size={12} /></span>
-                      </div>
-                      <p className="lp-msg-text">{m.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input bar */}
-              <div className="lp-preview-input">
-                <span className="lp-attach-icon"><AttachIcon /></span>
-                <span className="lp-input-ph">Type a message here...</span>
-                <div className="lp-preview-icons">
-                  <span className="lp-icon-btn"><YouTubeIconSVG /></span>
-                  <span className="lp-icon-btn"><ImageIconSVG /></span>
-                </div>
-                <div className="lp-send-btn"><SendIcon /></div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
