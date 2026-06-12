@@ -4,54 +4,56 @@ import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 
 const BackIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M14 9H4M8 5l-4 4 4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M13 9H5M9 5.5l-4 3.5 4 3.5" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const LoginIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M12 5.5l4 3.5-4 3.5M16 9H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M11 5.5l4 3.5-4 3.5M15 9H7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7.5 3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity=".7"/>
   </svg>
 );
 const ContactHeroIcon = () => (
-  <svg viewBox="0 0 28 28" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block'}}>
-    <defs><linearGradient id="ct-hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
-    <rect x="2" y="5" width="24" height="18" rx="4" fill="url(#ct-hg)" opacity=".2" stroke="url(#ct-hg)" strokeWidth="1.8"/>
-    <path d="M2 9l12 8 12-8" stroke="url(#ct-hg)" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 30 30" width="30" height="30" fill="none" style={{display:'block'}}>
+    <rect x="2" y="6" width="26" height="18" rx="3.5" stroke="white" strokeWidth="2.2"/>
+    <path d="M2 10.5l13 8.5 13-8.5" stroke="white" strokeWidth="2" strokeLinecap="round" opacity=".8"/>
   </svg>
 );
 const MailIcon = () => (
-  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <rect x="2" y="4" width="14" height="10" rx="2" stroke="#a78bfa" strokeWidth="1.8"/>
-    <path d="M2 6l7 5 7-5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" style={{display:'block',flexShrink:0}}>
+    <rect x="2" y="4" width="14" height="10" rx="2" stroke="#8b5cf6" strokeWidth="1.9"/>
+    <path d="M2.5 6l6.5 4.5L15.5 6" stroke="#8b5cf6" strokeWidth="1.9" strokeLinecap="round"/>
   </svg>
 );
 const ChatIcon = () => (
-  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <rect x="2" y="2" width="14" height="11" rx="3" stroke="#a78bfa" strokeWidth="1.8"/>
-    <path d="M2 10l3 4" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" style={{display:'block',flexShrink:0}}>
+    <rect x="2" y="2" width="14" height="11" rx="3" stroke="#8b5cf6" strokeWidth="1.9"/>
+    <path d="M5.5 8h7M5.5 11h4" stroke="#8b5cf6" strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M4 13l-1.5 3" stroke="#8b5cf6" strokeWidth="1.7" strokeLinecap="round"/>
   </svg>
 );
 const ClockIcon = () => (
-  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <circle cx="9" cy="9" r="7.5" stroke="#a78bfa" strokeWidth="1.8"/>
-    <path d="M9 5v4.5l2.5 2.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" style={{display:'block',flexShrink:0}}>
+    <circle cx="9" cy="9" r="7.5" stroke="#8b5cf6" strokeWidth="1.9"/>
+    <path d="M9 5v4.5l3 2.5" stroke="#8b5cf6" strokeWidth="1.9" strokeLinecap="round"/>
   </svg>
 );
 const LinkIcon = () => (
-  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M9 4l-2-2a3.5 3.5 0 0 0-5 5l2.5 2.5M9 14l2 2a3.5 3.5 0 0 0 5-5L13.5 8.5" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
-    <path d="M6 12l6-6" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round"/>
+  <svg viewBox="0 0 18 18" width="17" height="17" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M7 10a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 0 0-5.66-5.66L8.5 2.84" stroke="#8b5cf6" strokeWidth="1.9" strokeLinecap="round"/>
+    <path d="M11 8a4 4 0 0 0-5.66 0L2.51 10.83a4 4 0 0 0 5.66 5.66L9.5 15.16" stroke="#8b5cf6" strokeWidth="1.9" strokeLinecap="round"/>
   </svg>
 );
 const SendIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M2 9l14-6.5L9.5 16 8 10.5 2 9z" fill="currentColor" opacity=".9"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M2.5 9l13-6L10 16.5l-2-6-5.5-1.5z" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 10.5l7.5-7.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity=".6"/>
   </svg>
 );
 const ArrowIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M3.5 9h11M10 5l4 4-4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M4 9h10M10.5 5.5L14 9l-3.5 3.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 

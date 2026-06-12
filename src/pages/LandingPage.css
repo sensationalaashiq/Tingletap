@@ -705,19 +705,20 @@
 .lp-lpage .lp-nav-ghost {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 16px; border-radius: 12px;
-  background: rgba(255,255,255,.85);
-  border: 1.5px solid rgba(99,102,241,.26);
-  color: #3730a3; font-size: 13px; font-weight: 700;
+  background: rgba(22, 18, 68, 0.74);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.92); font-size: 13px; font-weight: 700;
   cursor: pointer; font-family: 'Inter', sans-serif;
-  transition: all .22s ease;
-  box-shadow: 0 2px 10px rgba(99,102,241,.1), 0 1px 0 rgba(255,255,255,.9) inset;
+  transition: all .24s ease;
+  box-shadow: 0 4px 22px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.08) inset;
   white-space: nowrap; flex-shrink: 0;
 }
-.lp-lpage .lp-nav-ghost svg { color: #4f46e5; flex-shrink: 0; }
+.lp-lpage .lp-nav-ghost svg { color: rgba(255,255,255,.95); flex-shrink: 0; }
 .lp-lpage .lp-nav-ghost span { color: inherit; font-family: inherit; }
 .lp-lpage .lp-nav-ghost:hover {
-  background: rgba(255,255,255,.98); border-color: rgba(99,102,241,.44);
-  transform: translateX(-2px); box-shadow: 0 5px 18px rgba(99,102,241,.14);
+  background: rgba(22, 18, 68, 0.92); border-color: rgba(255,255,255,.30);
+  transform: translateX(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.28);
 }
 .lp-lpage .lp-nav-solid {
   display: inline-flex; align-items: center; gap: 6px;
@@ -808,11 +809,11 @@
   display: flex; flex-direction: column; gap: 0;
 }
 .lp-lpage .lp-section-item {
-  display: flex; gap: 18px; padding: 24px 0;
+  display: flex; gap: 16px; padding: 13px 0;
   border-bottom: 1px solid rgba(99,102,241,.07);
 }
-.lp-lpage .lp-section-item:first-child { padding-top: 0; }
-.lp-lpage .lp-section-item:last-child { border-bottom: none; padding-bottom: 0; }
+.lp-lpage .lp-section-item:first-child { padding-top: 4px; }
+.lp-lpage .lp-section-item:last-child { border-bottom: none; padding-bottom: 4px; }
 .lp-lpage .lp-section-icon {
   width: 54px; height: 54px; border-radius: 18px;
   background: linear-gradient(135deg, rgba(238,235,255,.95), rgba(255,255,255,1));
@@ -841,13 +842,13 @@
 .lp-lpage .lp-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px; margin-bottom: 28px;
+  gap: 14px; margin-bottom: 18px;
   animation: lpFadeUp .7s ease .1s both;
 }
 .lp-lpage .lp-grid-card {
   background: rgba(255,255,255,.88);
   border: 1.5px solid rgba(99,102,241,.12);
-  border-radius: 22px; padding: 30px 24px;
+  border-radius: 22px; padding: 22px 18px;
   text-align: center;
   transition: all .3s cubic-bezier(.22,1,.36,1);
   box-shadow: 0 4px 18px rgba(99,102,241,.07), 0 1px 0 #fff inset;

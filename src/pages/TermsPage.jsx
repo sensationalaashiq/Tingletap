@@ -4,33 +4,33 @@ import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 
 const BackIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M14 9H4M8 5l-4 4 4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M13 9H5M9 5.5l-4 3.5 4 3.5" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const LoginIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M12 5.5l4 3.5-4 3.5M16 9H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M11 5.5l4 3.5-4 3.5M15 9H7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7.5 3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity=".7"/>
   </svg>
 );
 const TermsHeroIcon = () => (
-  <svg viewBox="0 0 28 28" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block'}}>
-    <defs><linearGradient id="tm-hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
-    <path d="M5 2.5h14l5 5V25.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" fill="url(#tm-hg)"/>
-    <path d="M19 2.5v5h5" stroke="rgba(255,255,255,.5)" strokeWidth="1.5"/>
-    <path d="M8 13h12M8 17h12M8 21h7" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity=".85"/>
+  <svg viewBox="0 0 30 30" width="30" height="30" fill="none" style={{display:'block'}}>
+    <path d="M6 2.5h14l6 6V27a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M20 2.5v6h6" stroke="white" strokeWidth="1.6" strokeLinejoin="round" opacity=".6"/>
+    <path d="M9 14h12M9 18h12M9 22h7" stroke="white" strokeWidth="1.9" strokeLinecap="round" opacity=".82"/>
   </svg>
 );
 const ArrowRightIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <path d="M3.5 9h11M10 5l4 4-4 4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <path d="M4 9h10M10.5 5.5L14 9l-3.5 3.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const QuestionIcon = () => (
-  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
-    <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.8"/>
-    <path d="M6.5 7a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-    <circle cx="9" cy="14" r="1" fill="currentColor"/>
+  <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
+    <circle cx="9" cy="9" r="7.5" stroke="#4f46e5" strokeWidth="1.9"/>
+    <path d="M6.5 7a2.5 2.5 0 0 1 5 .5c0 1.6-2.5 2.2-2.5 3.8" stroke="#4f46e5" strokeWidth="1.9" strokeLinecap="round"/>
+    <circle cx="9" cy="14" r="1.1" fill="#4f46e5"/>
   </svg>
 );
 
