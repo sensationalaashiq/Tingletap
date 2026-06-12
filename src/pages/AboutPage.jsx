@@ -85,7 +85,7 @@ const AboutPage = () => {
             <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-logo"/>
             <div className="lp-brand-text">
               <span className="lp-brand-name">TingleTap</span>
-              <span className="lp-brand-sub">About Us</span>
+              <span className="lp-brand-sub">About</span>
             </div>
           </div>
           <nav className="lp-nav">
