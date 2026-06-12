@@ -285,7 +285,10 @@ const WelcomeDashboard = () => {
 
   /* ── Role chip config ── */
   const getRoleConfig = () => {
-    const effectiveRole = userBadge ? 'badge_holder' : userRole;
+    const staffRoles = ['owner', 'admin', 'moderator'];
+    const effectiveRole = staffRoles.includes(userRole)
+      ? userRole
+      : (userBadge ? 'badge_holder' : userRole);
     switch (effectiveRole) {
       case 'owner': return {
         label: 'Owner',
