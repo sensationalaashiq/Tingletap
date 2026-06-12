@@ -32,10 +32,17 @@ const GoldTrophy = ({ size = 16 }) => (
   </svg>
 );
 
-const ArrowRight = ({ size = 18 }) => (
-  <svg viewBox="0 0 20 20" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 10H17" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-    <path d="M11 4L17 10L11 16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+const PremiumFlash = ({ size = 18 }) => (
+  <svg viewBox="0 0 20 20" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block',flexShrink:0}}>
+    <defs>
+      <linearGradient id="pf-g" x1="20%" y1="0%" x2="80%" y2="100%">
+        <stop offset="0%" stopColor="#fde68a"/>
+        <stop offset="55%" stopColor="#f59e0b"/>
+        <stop offset="100%" stopColor="#d97706"/>
+      </linearGradient>
+    </defs>
+    <path d="M11.8 2L5.5 10.5H10.2L8.2 18L15.5 9.5H10.5L11.8 2Z" fill="url(#pf-g)"/>
+    <path d="M11.8 2L5.5 10.5H10.2L8.2 18L15.5 9.5H10.5L11.8 2Z" fill="white" opacity="0.22"/>
   </svg>
 );
 
@@ -169,6 +176,7 @@ const StarBadge = ({ size = 13 }) => (
 const LandingPage = () => {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
   const [realTimeStats, setRealTimeStats] = useState({ activeUsers: 555, totalRooms: 9, onlineNow: 138 });
 
   const incrementUserCount = () => {
@@ -194,7 +202,7 @@ const LandingPage = () => {
   }, []);
 
   const features = [
-    { Icon: IconChatRooms, title: 'Real-Time Chat Rooms',  desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
+    { Icon: IconChatRooms, title: 'Real-Time Chat Rooms',  desc: '9+ themed rooms covering Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
     { Icon: IconVoice,     title: 'Voice & Media Sharing', desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room.', tags: ['Voice', 'Audio Record', 'YouTube'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
     { Icon: IconPrivate,   title: 'Private Messaging',     desc: '1-on-1 private conversations with file sharing, voice messages and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], bg: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08))', color: '#7c3aed' },
     { Icon: IconTools,     title: 'Advanced User Tools',   desc: 'Gender-based filtering, friend requests, user blocking, whisper messages and full user profiles.', tags: ['Filters', 'Friends', 'Block'], bg: 'linear-gradient(135deg,rgba(59,130,246,0.12),rgba(99,102,241,0.08))', color: '#3b82f6' },
@@ -267,7 +275,7 @@ const LandingPage = () => {
             </button>
             <button className="lp-btn-primary" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
               <span>Get Started</span>
-              <ArrowRight size={16} />
+              <PremiumFlash size={15} />
             </button>
           </nav>
         </div>
@@ -289,7 +297,7 @@ const LandingPage = () => {
 
           <p className="lp-hero-p lp-anim-up lp-d1">
             Real-time conversations with voice messages, private chats,
-            gender filters and premium customization — beautifully crafted for real connections.
+            gender filters and premium customization. Beautifully crafted for real connections.
           </p>
 
           <div className="lp-stats lp-anim-up lp-d2">
@@ -312,7 +320,7 @@ const LandingPage = () => {
           <div className="lp-hero-btns lp-anim-up lp-d3">
             <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
               <span>Start Chatting Now</span>
-              <ArrowRight size={18} />
+              <PremiumFlash size={18} />
               <span className="lp-shimmer" aria-hidden="true" />
             </button>
             <button className="lp-cta-outline" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
@@ -331,7 +339,7 @@ const LandingPage = () => {
               <span>Features</span>
             </div>
             <h2 className="lp-sec-h2">Everything You Need to <span className="lp-grad">Chat Like a Pro</span></h2>
-            <p className="lp-sec-sub">India's most feature-rich platform — built for real, meaningful connections</p>
+            <p className="lp-sec-sub">India's most feature-rich platform, built for real meaningful connections</p>
           </div>
           <div className="lp-features-grid">
             {features.map(({ Icon, title, desc, tags, bg, color }, i) => (
@@ -395,7 +403,11 @@ const LandingPage = () => {
                 <button
                   className="lp-tier-btn"
                   style={t.btnStyle}
-                  onClick={() => { incrementUserCount(); navigate(t.name === 'Free User' ? '/rooms' : t.name === 'Badge Holder' ? '/signup' : '/'); }}
+                  onClick={() => {
+                    if (t.name === 'Staff Access') { setShowStaffModal(true); return; }
+                    incrementUserCount();
+                    navigate(t.name === 'Free User' ? '/rooms' : '/signup');
+                  }}
                 >
                   {t.name === 'Free User' ? 'Start For Free' : t.name === 'Badge Holder' ? 'Get Badge Access' : 'Learn More'}
                 </button>
@@ -417,12 +429,12 @@ const LandingPage = () => {
               <span className="lp-grad">Chat Community?</span>
             </h2>
             <p className="lp-cta-p">
-              Thousands of users are chatting right now — join free today.
+              Thousands of users are chatting right now. Join free today.
             </p>
             <div className="lp-hero-btns" style={{ maxWidth: 460, margin: '0 auto' }}>
               <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
                 <span>Start Chatting Now</span>
-                <ArrowRight size={18} />
+                <PremiumFlash size={18} />
                 <span className="lp-shimmer" aria-hidden="true" />
               </button>
               <button className="lp-cta-outline" onClick={() => navigate('/login')}>
@@ -497,6 +509,88 @@ const LandingPage = () => {
         </div>
       </footer>
       <PremiumCopyright />
+
+      {/* ══ STAFF ACCESS MODAL ══ */}
+      {showStaffModal && (
+        <div className="lp-staff-overlay" onClick={() => setShowStaffModal(false)}>
+          <div className="lp-staff-modal" onClick={e => e.stopPropagation()}>
+            <button className="lp-staff-modal-close" onClick={() => setShowStaffModal(false)}>✕</button>
+
+            <div style={{ textAlign: 'center' }}>
+              <div className="lp-staff-modal-icon">
+                <svg viewBox="0 0 40 40" width="38" height="38" fill="none">
+                  <defs>
+                    <linearGradient id="sc-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fbbf24"/>
+                      <stop offset="100%" stopColor="#d97706"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M6 32L10 16L20 24L30 10L36 20L32 32H8Z" fill="url(#sc-g)" opacity="0.15"/>
+                  <path d="M8 28L13 14L20 22L28 12L34 20L30 28H10Z" fill="url(#sc-g)"/>
+                  <circle cx="8" cy="14" r="3" fill="#fbbf24"/>
+                  <circle cx="20" cy="8" r="3.5" fill="#f59e0b"/>
+                  <circle cx="32" cy="14" r="3" fill="#fbbf24"/>
+                  <path d="M13 28H27V32H13Z" fill="#d97706" opacity="0.5"/>
+                  <path d="M11 32H29" stroke="#b45309" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="lp-staff-modal-elite">Staff Access · Invite Only · Elite Tier</div>
+              <span className="lp-staff-modal-title">Staff Access</span>
+              <span className="lp-staff-modal-sub">
+                Our Staff members are the backbone of TingleTap. They are handpicked by the core team for their dedication, positive attitude and the trust they have built within the community. This is not a role you apply for. It is one you earn.
+              </span>
+            </div>
+
+            <div className="lp-staff-modal-divider" />
+
+            <span className="lp-staff-section-label">What Staff Members Get</span>
+            <ul className="lp-staff-perk-list">
+              {[
+                ['Everything in Badge Holder, plus a lot more', '★'],
+                ['Access to private Staff-only rooms', '🔒'],
+                ['Kick, Ban and Mute capabilities on users', '🛡'],
+                ['Full moderation and admin panel access', '⚙'],
+                ['Real-time user activity monitoring', '👁'],
+                ['Special Staff role badge shown to everyone', '🏅'],
+                ['Priority access to all new features', '⚡'],
+                ['Your Staff role stays for as long as you are active', '∞'],
+              ].map(([text, icon]) => (
+                <li key={text} className="lp-staff-perk-item">
+                  <span className="lp-staff-perk-dot">{icon}</span>
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="lp-staff-modal-divider" />
+
+            <span className="lp-staff-section-label">How to Become Staff</span>
+            <div className="lp-staff-steps">
+              {[
+                ['Be genuinely active in TingleTap for a good period of time', '1'],
+                ['Be helpful to other users and contribute positively to the community', '2'],
+                ['Keep a clean record — no bans, no serious warnings', '3'],
+                ['If you are a good fit, our core team will reach out to you directly', '4'],
+              ].map(([text, num]) => (
+                <div key={num} className="lp-staff-step">
+                  <span className="lp-staff-step-num">{num}</span>
+                  <span className="lp-staff-step-text">{text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="lp-staff-contact-box">
+              Staff spots are limited and very rarely open up. We do not accept direct applications. If you feel you are the right fit, just keep being a great community member and we will notice.
+              <br /><br />
+              <strong>Have a question?</strong> Reach us through the <strong>Contact Support</strong> page.
+            </div>
+
+            <button className="lp-staff-cta-btn" onClick={() => { setShowStaffModal(false); navigate('/contact'); }}>
+              Contact Support
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
