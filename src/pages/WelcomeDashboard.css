@@ -86,6 +86,35 @@
 .wd-hero-h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(36px,8vw,58px); font-weight:700; line-height:1.1; color:#1e1b4b; letter-spacing:-.02em; margin-bottom:16px; }
 .wd-hero-sub { font-size:15px; line-height:1.75; color:#3b2d6e; opacity:.65; max-width:480px; }
 
+/* ── Role chip ── */
+.wd-role-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px 4px 7px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.04em; vertical-align:middle; margin-left:8px; position:relative; top:-1px; transition:transform .2s ease, box-shadow .2s ease; }
+.wd-role-chip:hover { transform:translateY(-1px); }
+.wd-role-label { line-height:1; }
+
+/* Owner — gold */
+.wd-role--owner { background:linear-gradient(135deg,rgba(254,243,199,.95),rgba(252,211,77,.85)); border:1.5px solid rgba(245,158,11,.45); color:#92400e; box-shadow:0 2px 12px rgba(245,158,11,.28),inset 0 1px 0 rgba(255,255,255,.6); }
+.wd-role--owner:hover { box-shadow:0 4px 18px rgba(245,158,11,.42); }
+
+/* Admin — red */
+.wd-role--admin { background:linear-gradient(135deg,rgba(254,226,226,.95),rgba(252,165,165,.85)); border:1.5px solid rgba(239,68,68,.38); color:#991b1b; box-shadow:0 2px 12px rgba(239,68,68,.2),inset 0 1px 0 rgba(255,255,255,.55); }
+.wd-role--admin:hover { box-shadow:0 4px 18px rgba(239,68,68,.32); }
+
+/* Moderator — green */
+.wd-role--mod { background:linear-gradient(135deg,rgba(209,250,229,.95),rgba(110,231,183,.85)); border:1.5px solid rgba(16,185,129,.38); color:#065f46; box-shadow:0 2px 12px rgba(16,185,129,.2),inset 0 1px 0 rgba(255,255,255,.55); }
+.wd-role--mod:hover { box-shadow:0 4px 18px rgba(16,185,129,.32); }
+
+/* Badge Holder — purple */
+.wd-role--badge { background:linear-gradient(135deg,rgba(237,233,254,.95),rgba(196,181,253,.85)); border:1.5px solid rgba(139,92,246,.38); color:#5b21b6; box-shadow:0 2px 12px rgba(139,92,246,.2),inset 0 1px 0 rgba(255,255,255,.55); }
+.wd-role--badge:hover { box-shadow:0 4px 18px rgba(139,92,246,.32); }
+
+/* Registered — indigo */
+.wd-role--registered { background:linear-gradient(135deg,rgba(224,231,255,.95),rgba(165,180,252,.85)); border:1.5px solid rgba(99,102,241,.35); color:#3730a3; box-shadow:0 2px 12px rgba(99,102,241,.18),inset 0 1px 0 rgba(255,255,255,.55); }
+.wd-role--registered:hover { box-shadow:0 4px 18px rgba(99,102,241,.3); }
+
+/* Guest — slate */
+.wd-role--guest { background:linear-gradient(135deg,rgba(241,245,249,.95),rgba(203,213,225,.85)); border:1.5px solid rgba(148,163,184,.38); color:#475569; box-shadow:0 2px 10px rgba(148,163,184,.18),inset 0 1px 0 rgba(255,255,255,.5); }
+.wd-role--guest:hover { box-shadow:0 4px 16px rgba(148,163,184,.28); }
+
 /* CTA buttons */
 .wd-cta-stack { display:flex; flex-direction:column; gap:13px; max-width:420px; animation:wdFadeUp .7s ease .13s both; }
 

@@ -226,6 +226,8 @@ const WelcomeDashboard = () => {
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showUserDrop, setShowUserDrop]   = useState(false);
   const [activeSubPanel, setActiveSubPanel] = useState(null);
+  const [userRole, setUserRole]       = useState('registered');
+  const [userBadge, setUserBadge]     = useState(null);
 
   /* scroll effect */
   useEffect(() => {
@@ -256,12 +258,17 @@ const WelcomeDashboard = () => {
             if (dt?.toDate) dt = dt.toDate();
             else if (typeof dt === 'string') dt = new Date(dt);
             setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+            setUserRole(d.role || 'registered');
+            setUserBadge(d.badge || null);
           }
         } catch { setCurrentDate(''); }
       })();
     } else {
       const gd = localStorage.getItem('guestUser');
-      if (localStorage.getItem('isGuest') === 'true' && gd) setGuestUser(JSON.parse(gd));
+      if (localStorage.getItem('isGuest') === 'true' && gd) {
+        setGuestUser(JSON.parse(gd));
+        setUserRole('guest');
+      }
     }
   }, []);
 
@@ -275,6 +282,122 @@ const WelcomeDashboard = () => {
   };
 
   const openPanel = () => { setActiveSubPanel(null); setShowSettingsPanel(true); };
+
+  /* ── Role chip config ── */
+  const getRoleConfig = () => {
+    const effectiveRole = userBadge ? 'badge_holder' : userRole;
+    switch (effectiveRole) {
+      case 'owner': return {
+        label: 'Owner',
+        cls: 'wd-role--owner',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-owner" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fde68a"/>
+                <stop offset="50%" stopColor="#f59e0b"/>
+                <stop offset="100%" stopColor="#d97706"/>
+              </linearGradient>
+              <filter id="rc-owner-glow"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path d="M2 14h16l-2-7-4 4-2-7-2 7-4-4-2 7z" fill="url(#rc-owner)" filter="url(#rc-owner-glow)"/>
+            <path d="M1 14h18" stroke="#f59e0b" strokeWidth="1.4" strokeLinecap="round"/>
+            <circle cx="10" cy="7" r="1.3" fill="#fde68a"/>
+            <circle cx="3.5" cy="9" r="1" fill="#fbbf24"/>
+            <circle cx="16.5" cy="9" r="1" fill="#fbbf24"/>
+          </svg>
+        ),
+      };
+      case 'admin': return {
+        label: 'Admin',
+        cls: 'wd-role--admin',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-admin" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fca5a5"/>
+                <stop offset="50%" stopColor="#ef4444"/>
+                <stop offset="100%" stopColor="#b91c1c"/>
+              </linearGradient>
+            </defs>
+            <path d="M10 2L4 5v5c0 3.7 2.6 7.1 6 8 3.4-.9 6-4.3 6-8V5l-6-3z" fill="url(#rc-admin)" opacity="0.9"/>
+            <path d="M7 10l2 2 4-4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        ),
+      };
+      case 'moderator': return {
+        label: 'Moderator',
+        cls: 'wd-role--mod',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-mod" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#6ee7b7"/>
+                <stop offset="50%" stopColor="#10b981"/>
+                <stop offset="100%" stopColor="#047857"/>
+              </linearGradient>
+            </defs>
+            <path d="M10 1.5l2.2 4.5 5 .7-3.6 3.5.85 5-4.45-2.34L5.56 15.2l.85-5L2.8 6.7l5-.7L10 1.5z" fill="url(#rc-mod)"/>
+            <path d="M7.5 9.8l1.8 1.9 3.2-3.4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        ),
+      };
+      case 'badge_holder': return {
+        label: 'Badge Holder',
+        cls: 'wd-role--badge',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-badge" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#e9d5ff"/>
+                <stop offset="50%" stopColor="#a855f7"/>
+                <stop offset="100%" stopColor="#7c3aed"/>
+              </linearGradient>
+              <filter id="rc-badge-glow"><feGaussianBlur stdDeviation="1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path d="M10 1.5L2 7l8 11.5L18 7 10 1.5z" fill="url(#rc-badge)" filter="url(#rc-badge-glow)"/>
+            <path d="M2 7h16" stroke="rgba(255,255,255,0.45)" strokeWidth="0.8"/>
+            <path d="M6 2.5L2 7l8 11.5L6 2.5z" fill="white" opacity="0.15"/>
+          </svg>
+        ),
+      };
+      case 'guest': return {
+        label: 'Guest',
+        cls: 'wd-role--guest',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-guest" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#cbd5e1"/>
+                <stop offset="100%" stopColor="#94a3b8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="10" cy="7" r="4" fill="url(#rc-guest)"/>
+            <path d="M2 18c0-4 3.6-7 8-7s8 3 8 7" stroke="url(#rc-guest)" strokeWidth="1.6" strokeLinecap="round"/>
+            <circle cx="10" cy="7" r="1.8" fill="white" opacity="0.5"/>
+          </svg>
+        ),
+      };
+      default: return {
+        label: 'Registered',
+        cls: 'wd-role--registered',
+        icon: (
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+            <defs>
+              <linearGradient id="rc-reg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#a5b4fc"/>
+                <stop offset="50%" stopColor="#6366f1"/>
+                <stop offset="100%" stopColor="#4338ca"/>
+              </linearGradient>
+            </defs>
+            <circle cx="10" cy="10" r="8.2" fill="url(#rc-reg)" opacity="0.9"/>
+            <path d="M6.5 10.2l2.3 2.5 4.7-5.1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        ),
+      };
+    }
+  };
+  const roleConfig = getRoleConfig();
 
   const displayName = user?.displayName || guestUser?.displayName || 'User';
   const userEmail   = user?.email || '';
@@ -374,7 +497,13 @@ const WelcomeDashboard = () => {
         <div className="wd-version-pill"><ShieldOkIcon /> <span>Stable Release · TingleTap</span></div>
 
         <div className="wd-hero-text">
-          <h1 className="wd-hero-h1">Welcome back,<span className="wd-hero-name"> {displayName.split(' ')[0]}.</span></h1>
+          <h1 className="wd-hero-h1">
+            Welcome back,<span className="wd-hero-name"> {displayName.split(' ')[0]}</span>
+            <span className={`wd-role-chip ${roleConfig.cls}`}>
+              {roleConfig.icon}
+              <span className="wd-role-label">({roleConfig.label})</span>
+            </span>
+          </h1>
           <h2 className="wd-hero-h2">Connect with India,<br /><span className="wd-grad">one chat at a time.</span></h2>
           <p className="wd-hero-sub">
             A premium, real-time community built for meaningful connections.
