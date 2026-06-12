@@ -185,10 +185,9 @@ const WarnIcon = () => (
 );
 
 const SaveIcon = ({ color = '#fff' }) => (
-  <Ico w={17} h={17}>
-    <path d="M14 14H3V3h8l3 3v8z" fill={color} opacity="0.9"/>
-    <path d="M6 3v4h5V3" fill={color === '#fff' ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.5)'}/>
-    <rect x="5" y="9" width="7" height="4" rx="1" fill={color === '#fff' ? 'rgba(99,102,241,0.7)' : 'rgba(255,255,255,0.5)'}/>
+  <Ico w={18} h={18}>
+    <circle cx="9" cy="9" r="7.8" fill={color} opacity="0.15" stroke={color} strokeWidth="1.4"/>
+    <path d="M5.5 9.3l2.3 2.5 4.7-5.1" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
   </Ico>
 );
 
@@ -553,17 +552,27 @@ const EditProfilePanel = ({ user, onDone }) => {
           <div className="wd-avatar-overlay"><CameraIcon color="#fff" /></div>
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} hidden />
-        <div className="wd-avatar-hint">Tap to change photo</div>
+        <div className="wd-avatar-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#6d6b99" opacity="0.7"><path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/></svg>
+          Tap to change photo
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#a5b4fc"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>
+        </div>
       </div>
 
       <div className="wd-fields">
         <div className="wd-field-group">
-          <label className="wd-label">Display Name *</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+            Display Name *
+          </label>
           <input className="wd-input" value={form.displayName} onChange={e => setForm(p => ({ ...p, displayName: e.target.value }))} placeholder="Your name" />
         </div>
         <div className="wd-field-row">
           <div className="wd-field-group">
-            <label className="wd-label">Gender</label>
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9,9H7V7H9V9M17,7H15V9H17V7M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z"/></svg>
+              Gender
+            </label>
             <select className="wd-input" value={form.gender} onChange={e => setForm(p => ({ ...p, gender: e.target.value }))}>
               <option value="">Select</option>
               <option value="male">Male</option>
@@ -572,24 +581,39 @@ const EditProfilePanel = ({ user, onDone }) => {
             </select>
           </div>
           <div className="wd-field-group">
-            <label className="wd-label">Age</label>
+            <label className="wd-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z"/></svg>
+              Age
+            </label>
             <input className="wd-input" type="number" value={form.age} onChange={e => setForm(p => ({ ...p, age: e.target.value }))} placeholder="Age" />
           </div>
         </div>
         <div className="wd-field-group">
-          <label className="wd-label">Country</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+            Country
+          </label>
           <input className="wd-input" value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} placeholder="India" />
         </div>
         <div className="wd-field-group">
-          <label className="wd-label">Status</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z"/></svg>
+            Status
+          </label>
           <input className="wd-input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} placeholder="e.g. Feeling good ✨" maxLength={80} />
         </div>
         <div className="wd-field-group">
-          <label className="wd-label">Bio</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z"/></svg>
+            Bio
+          </label>
           <textarea className="wd-input wd-textarea" rows={3} value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Tell people about yourself..." maxLength={200} />
         </div>
         <div className="wd-field-group">
-          <label className="wd-label">Relationship</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/></svg>
+            Relationship
+          </label>
           <select className="wd-input" value={form.relationship} onChange={e => setForm(p => ({ ...p, relationship: e.target.value }))}>
             <option value="">Select</option>
             <option value="single">Single</option>
@@ -633,10 +657,19 @@ const ChangeUsernamePanel = ({ user, onDone }) => {
   return (
     <div className="wd-form-panel">
       <div className="wd-form-title"><AtIcon color="#a855f7" /> Change Username</div>
-      <p className="wd-form-desc">Choose a unique display name that others will see in chat.</p>
+      <p className="wd-form-desc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#a855f7" style={{flexShrink:0,marginTop:'1px'}}>
+          <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+        </svg>
+        Choose a unique display name that others will see in chat.
+      </p>
       <div className="wd-fields">
         <div className="wd-field-group">
-          <label className="wd-label">New Username</label>
+          <label className="wd-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,14.21 19.12,16.21 17.65,17.65C16.21,19.12 14.21,20 12,20Z"/></svg>
+            New Username
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.5}}><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>
+          </label>
           <input className="wd-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="Your new username" maxLength={30} />
           <span className="wd-char-count">{username.length}/30</span>
         </div>

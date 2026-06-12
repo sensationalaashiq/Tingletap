@@ -172,7 +172,8 @@
 .wd-form-panel { display:flex; flex-direction:column; gap:18px; padding-bottom:8px; }
 
 .wd-form-title { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; color:#1e1b4b; }
-.wd-form-desc { font-size:13.5px; color:#6d6b99; line-height:1.6; margin-top:-8px; }
+.wd-form-desc { font-size:13.5px; color:#6d6b99; line-height:1.6; margin-top:-8px; display:flex; align-items:flex-start; gap:6px; }
+.wd-form-desc svg { flex-shrink:0; margin-top:2px; }
 
 /* Avatar row */
 .wd-avatar-row { display:flex; flex-direction:column; align-items:center; gap:10px; padding:4px 0; }
@@ -181,13 +182,15 @@
 .wd-avatar-init { font-size:24px; font-weight:900; color:#fff; }
 .wd-avatar-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s; border-radius:50%; }
 .wd-avatar-circle:hover .wd-avatar-overlay { opacity:1; }
-.wd-avatar-hint { font-size:12px; color:#6d6b99; font-weight:500; }
+.wd-avatar-hint { font-size:12px; color:#6d6b99; font-weight:500; display:flex; align-items:center; gap:5px; }
+.wd-avatar-hint svg { flex-shrink:0; }
 
 /* Fields */
 .wd-fields { display:flex; flex-direction:column; gap:13px; }
 .wd-field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .wd-field-group { display:flex; flex-direction:column; gap:5px; }
-.wd-label { font-size:12px; font-weight:700; color:#4f46e5; opacity:.8; letter-spacing:.04em; text-transform:uppercase; }
+.wd-label { font-size:11.5px; font-weight:800; color:#4f46e5; opacity:.85; letter-spacing:.05em; text-transform:uppercase; display:flex; align-items:center; gap:5px; }
+.wd-label svg { flex-shrink:0; }
 .wd-input { padding:12px 14px; border-radius:13px; background:rgba(255,255,255,.9); border:1.5px solid rgba(99,102,241,.18); font-size:14.5px; font-family:'Inter',sans-serif; color:#1e1b4b; outline:none; transition:border-color .2s, box-shadow .2s; width:100%; }
 .wd-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
 .wd-input--danger:focus { border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.12); }
