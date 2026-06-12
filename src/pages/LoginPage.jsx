@@ -471,9 +471,9 @@ const LoginPage = () => {
         }
 
         .lv-logo-img {
-          width: 62px;
-          height: 62px;
-          border-radius: 22px;
+          width: 100px;
+          height: 100px;
+          border-radius: 26px;
           border: none;
           background: none;
           object-fit: contain;
@@ -871,7 +871,7 @@ const LoginPage = () => {
         @media (max-width: 480px) {
           .lv-card { padding: 24px 18px 18px; border-radius: 22px; max-width: 98vw; }
           .lv-logo-title { font-size: 1.8rem; }
-          .lv-logo-img { width: 50px; height: 50px; }
+          .lv-logo-img { width: 80px; height: 80px; border-radius: 22px; }
           .lv-input { height: 46px; font-size: 16px; }
           .lv-btn-primary, .lv-btn-secondary, .lv-btn-guest { min-height: 46px; font-size: 0.88rem; }
           .lv-modal { padding: 24px 18px; border-radius: 22px; }

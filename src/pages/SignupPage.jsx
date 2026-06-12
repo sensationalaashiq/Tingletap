@@ -336,8 +336,8 @@ const SignupPage = () => {
         }
 
         .su-logo-img {
-          width: 60px; height: 60px;
-          border-radius: 20px;
+          width: 100px; height: 100px;
+          border-radius: 26px;
           border: none;
           background: none;
           object-fit: contain;
