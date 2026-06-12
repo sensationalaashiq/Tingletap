@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, where, limit, startAfter, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-toastify';
@@ -47,6 +47,13 @@ const AdminPanelPage = () => {
   const [userPage, setUserPage] = useState(1);
   const [totalUserPages, setTotalUserPages] = useState(1);
   const USERS_PER_PAGE = 15;
+
+  // Create Room modal
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [creatingRoom, setCreatingRoom] = useState(false);
+  const [createRoomData, setCreateRoomData] = useState({
+    name: '', description: '', type: 'public', maxUsers: 50
+  });
 
   // Check admin permissions
   useEffect(() => {
@@ -231,6 +238,75 @@ const AdminPanelPage = () => {
     } catch (error) {
       console.error('Profile deletion error:', error);
       toast.error('Failed to delete profile. Please try again.');
+    }
+  };
+
+  const handleDeviceBan = async (targetUser) => {
+    const deviceId = targetUser.lastDeviceId || targetUser.deviceId;
+    if (!deviceId || deviceId === 'Unknown') {
+      toast.error('No device fingerprint available for this user.');
+      return;
+    }
+    try {
+      await DeviceBanSystem.banDevice(deviceId, {
+        userId: targetUser.uid,
+        displayName: targetUser.displayName,
+        email: targetUser.email,
+        reason: 'Device banned by administrator',
+        bannedBy: currentUserProfile?.displayName || 'Admin',
+        bannedAt: new Date().toISOString()
+      });
+      const userRef = doc(db, 'users', targetUser.uid);
+      await updateDoc(userRef, {
+        isDeviceBanned: true,
+        deviceBanInfo: {
+          bannedAt: new Date().toISOString(),
+          bannedBy: currentUserProfile?.displayName || 'Admin',
+          deviceId: deviceId
+        }
+      });
+      toast.success(`📱 ${targetUser.displayName}'s device has been banned.`);
+    } catch (error) {
+      console.error('Device ban error:', error);
+      toast.error('Device ban failed. Please try again.');
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    if (!createRoomData.name.trim()) {
+      toast.error('Room name is required.');
+      return;
+    }
+    setCreatingRoom(true);
+    try {
+      await addDoc(collection(db, 'rooms'), {
+        name: createRoomData.name.trim(),
+        description: createRoomData.description.trim(),
+        type: createRoomData.type,
+        maxUsers: parseInt(createRoomData.maxUsers) || 50,
+        isActive: true,
+        createdAt: serverTimestamp(),
+        createdBy: currentUserProfile?.displayName || 'Admin',
+        createdByUid: user?.uid
+      });
+      toast.success(`✅ Room "${createRoomData.name}" created successfully!`);
+      setCreateRoomData({ name: '', description: '', type: 'public', maxUsers: 50 });
+      setShowCreateRoom(false);
+    } catch (error) {
+      console.error('Create room error:', error);
+      toast.error('Failed to create room. Please try again.');
+    } finally {
+      setCreatingRoom(false);
+    }
+  };
+
+  const handleDeleteRoom = async (room) => {
+    if (!window.confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db, 'rooms', room.id));
+      toast.success(`Room "${room.name}" deleted.`);
+    } catch (error) {
+      toast.error('Failed to delete room.');
     }
   };
 
@@ -844,6 +920,7 @@ const AdminPanelPage = () => {
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                       <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
                                     </svg>
+                                    <span>Ban</span>
                                   </button>
                                 ) : (
                                   <button 
@@ -854,6 +931,7 @@ const AdminPanelPage = () => {
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                       <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
                                     </svg>
+                                    <span>Unban</span>
                                   </button>
                                 )}
                                 
@@ -866,6 +944,7 @@ const AdminPanelPage = () => {
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                       <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M16.5,12C16.78,12 17,12.22 17,12.5V13.5C17,13.78 16.78,14 16.5,14H15.5C15.22,14 15,13.78 15,13.5V12.5C15,12.22 15.22,12 15.5,12H16.5Z"/>
                                     </svg>
+                                    <span>Mute</span>
                                   </button>
                                 ) : (
                                   <button 
@@ -876,17 +955,31 @@ const AdminPanelPage = () => {
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                       <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
                                     </svg>
+                                    <span>Unmute</span>
                                   </button>
                                 )}
                                 
                                 <button 
                                   className="luxury-action-btn kick-btn"
                                   onClick={() => handleModerateUser(user, 'kick')}
-                                  title="Kick User"
+                                  title="Kick from Room"
                                 >
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17,12C17,14.42 16.28,16.58 14.9,18.9L12,22L9.1,18.9C7.72,16.58 7,14.42 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/>
+                                    <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V9H7V7M7,11H17V13H7V11M7,15H14V17H7V15Z"/>
                                   </svg>
+                                  <span>Kick</span>
+                                </button>
+
+                                <button 
+                                  className="luxury-action-btn device-ban-btn"
+                                  onClick={() => handleDeviceBan(user)}
+                                  title="Ban Device"
+                                  disabled={!user.lastDeviceId && !user.deviceId}
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12.2,6L7,11.2L8.4,12.6L12.2,8.8L15.6,12.2L17,10.8M8.4,16L7,14.6L12.2,9.4L13.6,10.8L8.4,16Z"/>
+                                  </svg>
+                                  <span>Dev-Ban</span>
                                 </button>
                                 
                                 <button 
@@ -897,6 +990,7 @@ const AdminPanelPage = () => {
                                   <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
                                   </svg>
+                                  <span>Delete</span>
                                 </button>
                               </div>
                             </div>
@@ -912,57 +1006,218 @@ const AdminPanelPage = () => {
 
           {activeTab === 'rooms' && (
             <div className="luxury-rooms-section">
-              <div className="luxury-section-header">
-                <h2>
+              <div className="luxury-section-header luxury-section-header-flex">
+                <div>
+                  <h2>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                    </svg>
+                    Room Management
+                  </h2>
+                  <p>Monitor and control all chat rooms</p>
+                </div>
+                <button className="luxury-btn-primary" onClick={() => setShowCreateRoom(true)}>
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                  </svg>
+                  Create Room
+                </button>
+              </div>
+
+              {rooms.length === 0 && (
+                <div className="luxury-empty-state">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
                   </svg>
-                  Room Management
-                </h2>
-                <p>Monitor and control all chat rooms</p>
-              </div>
+                  <p>No rooms yet. Create your first room!</p>
+                </div>
+              )}
               
               <div className="luxury-rooms-grid">
-                {rooms.map(room => (
-                  <div key={room.id} className="luxury-room-card">
-                    <div className="luxury-room-header">
-                      <div className="luxury-room-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
-                        </svg>
+                {rooms.map((room, idx) => {
+                  const activeInRoom = Object.values(onlineStatuses).filter(s => s.currentRoomId === room.id).length;
+                  const roomColors = [
+                    { from: '#7c3aed', to: '#a855f7' },
+                    { from: '#3b82f6', to: '#6366f1' },
+                    { from: '#10b981', to: '#059669' },
+                    { from: '#f59e0b', to: '#d97706' },
+                    { from: '#ec4899', to: '#db2777' },
+                    { from: '#14b8a6', to: '#0d9488' },
+                  ];
+                  const col = roomColors[idx % roomColors.length];
+                  return (
+                    <div key={room.id} className="luxury-room-card">
+                      <div className="luxury-room-header">
+                        <div className="luxury-room-icon" style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}>
+                          <svg viewBox="0 0 24 24" fill="currentColor" style={{ color: '#fff' }}>
+                            <path d="M17,12C17,12 21,16 21,18.5C21,20.43 19.43,22 17.5,22C16.3,22 15.24,21.36 14.65,20.4C14.3,21.36 13.24,22 12,22C10.76,22 9.7,21.36 9.35,20.4C8.76,21.36 7.7,22 6.5,22C4.57,22 3,20.43 3,18.5C3,16 7,12 7,12C7,12 7,12 7,9.5C7,8.12 8.12,7 9.5,7H14.5C15.88,7 17,8.12 17,9.5V12M10,9.5V12.5L12,14.5L14,12.5V9.5H10Z"/>
+                          </svg>
+                        </div>
+                        <div className="luxury-room-info">
+                          <h3 className="luxury-room-name">{room.name}</h3>
+                          <p className="luxury-room-description">{room.description || 'No description'}</p>
+                        </div>
+                        <span className={`luxury-room-type-badge ${room.type || 'public'}`}>
+                          {room.type === 'private' ? '🔒 Private' : '🌐 Public'}
+                        </span>
                       </div>
-                      <div className="luxury-room-info">
-                        <h3 className="luxury-room-name">{room.name}</h3>
-                        <p className="luxury-room-description">{room.description || 'No description'}</p>
+                      
+                      <div className="luxury-room-stats">
+                        <div className="luxury-room-stat">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
+                          </svg>
+                          <span style={{ color: activeInRoom > 0 ? '#059669' : '#9ca3af', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
+                            {activeInRoom} online
+                          </span>
+                        </div>
+                        <div className="luxury-room-stat">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                          </svg>
+                          <span>{room.isActive !== false ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        {room.maxUsers && (
+                          <div className="luxury-room-stat">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
+                            </svg>
+                            <span>Max: {room.maxUsers}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="luxury-room-actions">
+                        <button
+                          className="luxury-action-btn delete-btn"
+                          style={{ flex: 1, justifyContent: 'center' }}
+                          onClick={() => handleDeleteRoom(room)}
+                          title="Delete Room"
+                        >
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                          </svg>
+                          <span>Delete Room</span>
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="luxury-room-stats">
-                      <div className="luxury-room-stat">
+                  );
+                })}
+              </div>
+
+              {/* Create Room Modal */}
+              {showCreateRoom && (
+                <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreateRoom(false); }}>
+                  <div className="luxury-modal-card">
+                    <div className="luxury-modal-header">
+                      <div className="luxury-modal-icon">
                         <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M16,4C16.88,4 17.67,4.38 18.18,5C18.69,4.38 19.48,4 20.36,4C21.8,4 23,5.2 23,6.64C23,8.09 21.8,9.29 20.36,9.29C19.48,9.29 18.69,8.91 18.18,8.29C17.67,8.91 16.88,9.29 16,9.29C14.56,9.29 13.36,8.09 13.36,6.64C13.36,5.2 14.56,4 16,4M12.93,9.39C13.19,9.93 13.59,10.4 14.09,10.75C13.66,11.03 13.32,11.46 13.16,11.97C12.71,11.96 12.32,12.35 12.32,12.8C12.32,13.25 12.71,13.64 13.16,13.63C13.32,14.14 13.66,14.57 14.09,14.85C13.59,15.2 13.19,15.67 12.93,16.21C11.76,15.35 11,14.04 11,12.6C11,11.16 11.76,9.85 12.93,9.39M16,17C14.56,17 13.36,15.8 13.36,14.36C13.36,12.91 14.56,11.71 16,11.71C17.44,11.71 18.64,12.91 18.64,14.36C18.64,15.8 17.44,17 16,17M9,12C10.11,12 11,11.11 11,10C11,8.89 10.11,8 9,8C7.89,8 7,8.89 7,10C7,11.11 7.89,12 9,12M9,13C6.67,13 2,14.17 2,16.5V19H16V16.5C16,14.17 11.33,13 9,13Z"/>
+                          <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
                         </svg>
-                        <span>{Object.values(onlineStatuses).filter(s => s.currentRoomId === room.id).length} users</span>
                       </div>
-                      <div className="luxury-room-stat">
+                      <div>
+                        <h3>Create New Room</h3>
+                        <p>Set up a new chat room for your community</p>
+                      </div>
+                      <button className="luxury-modal-close" onClick={() => setShowCreateRoom(false)}>
                         <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/>
+                          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
                         </svg>
-                        <span>Active</span>
+                      </button>
+                    </div>
+
+                    <div className="luxury-modal-body">
+                      <div className="luxury-form-group">
+                        <label className="luxury-form-label">
+                          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5,4V7H10.5V19H13.5V7H19V4H5Z"/></svg>
+                          Room Name *
+                        </label>
+                        <input
+                          className="luxury-form-input"
+                          type="text"
+                          placeholder="e.g. General Chat, Gaming, Music..."
+                          value={createRoomData.name}
+                          onChange={(e) => setCreateRoomData(p => ({ ...p, name: e.target.value }))}
+                          maxLength={40}
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="luxury-form-group">
+                        <label className="luxury-form-label">
+                          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
+                          Description
+                        </label>
+                        <input
+                          className="luxury-form-input"
+                          type="text"
+                          placeholder="Short description of this room..."
+                          value={createRoomData.description}
+                          onChange={(e) => setCreateRoomData(p => ({ ...p, description: e.target.value }))}
+                          maxLength={100}
+                        />
+                      </div>
+
+                      <div className="luxury-form-row">
+                        <div className="luxury-form-group">
+                          <label className="luxury-form-label">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>
+                            Room Type
+                          </label>
+                          <select
+                            className="luxury-form-input"
+                            value={createRoomData.type}
+                            onChange={(e) => setCreateRoomData(p => ({ ...p, type: e.target.value }))}
+                          >
+                            <option value="public">🌐 Public</option>
+                            <option value="private">🔒 Private</option>
+                          </select>
+                        </div>
+
+                        <div className="luxury-form-group">
+                          <label className="luxury-form-label">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/></svg>
+                            Max Users
+                          </label>
+                          <input
+                            className="luxury-form-input"
+                            type="number"
+                            min="2"
+                            max="500"
+                            value={createRoomData.maxUsers}
+                            onChange={(e) => setCreateRoomData(p => ({ ...p, maxUsers: e.target.value }))}
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="luxury-room-actions">
-                      <button className="luxury-btn-secondary">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
-                        </svg>
-                        Manage
+
+                    <div className="luxury-modal-footer">
+                      <button className="luxury-btn-secondary" onClick={() => setShowCreateRoom(false)}>
+                        Cancel
+                      </button>
+                      <button
+                        className="luxury-btn-primary"
+                        onClick={handleCreateRoom}
+                        disabled={creatingRoom || !createRoomData.name.trim()}
+                      >
+                        {creatingRoom ? (
+                          <>
+                            <div className="luxury-loading-spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div>
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                            </svg>
+                            Create Room
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
