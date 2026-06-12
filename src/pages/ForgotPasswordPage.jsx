@@ -41,7 +41,7 @@ const ForgotPasswordPage = () => {
           <div className="header-brand">
             <div className="brand-logo">
               <img 
-                src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" 
+                src="/tingletap-logo.jpg" 
                 alt="TingleTap" 
                 className="logo-image"
                 style={{ width: '35px', height: '35px' }}

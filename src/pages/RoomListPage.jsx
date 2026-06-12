@@ -360,7 +360,7 @@ const RoomListPage = () => {
         {/* Floating Brand Hero */}
         <div className="rl-brand-hero">
           <div className="rl-brand-logo-wrap">
-            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="rl-brand-logo" />
+            <img src="/tingletap-logo.jpg" alt="TingleTap" className="rl-brand-logo" />
             <div className="rl-logo-ring" />
           </div>
           <div className="rl-brand-info">

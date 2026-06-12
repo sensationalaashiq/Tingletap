@@ -909,7 +909,7 @@ const LoginPage = () => {
         {/* Logo */}
         <div className="lv-logo-wrap">
           <img
-            src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png"
+            src="/tingletap-logo.jpg"
             alt="TingleTap Logo"
             className="lv-logo-img"
           />

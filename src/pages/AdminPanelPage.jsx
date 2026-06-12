@@ -460,7 +460,7 @@ const AdminPanelPage = () => {
           <div className="luxury-header-content">
             <div className="luxury-brand" onClick={() => navigate('/')}>
               <div className="luxury-logo">
-                <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" />
+                <img src="/tingletap-logo.jpg" alt="TingleTap" />
               </div>
               <div className="luxury-brand-text">
                 <span className="luxury-brand-name">TingleTap</span>

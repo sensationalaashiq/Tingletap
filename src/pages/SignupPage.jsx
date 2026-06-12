@@ -715,7 +715,7 @@ const SignupPage = () => {
         {/* Logo */}
         <div className="su-logo">
           <img
-            src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png"
+            src="/tingletap-logo.jpg"
             alt="TingleTap Logo"
             className="su-logo-img"
           />

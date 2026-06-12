@@ -318,7 +318,7 @@ const WelcomeDashboard = () => {
       <header className={`wd-header ${isScrolled ? 'wd-header--shadow' : ''}`}>
         <div className="wd-header-inner">
           <div className="wd-brand">
-            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="wd-brand-logo" />
+            <img src="/tingletap-logo.jpg" alt="TingleTap" className="wd-brand-logo" />
             <div className="wd-brand-text">
               <span className="wd-brand-name">TingleTap</span>
               <span className="wd-brand-ver">v1.0 · Premium</span>

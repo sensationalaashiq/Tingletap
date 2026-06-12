@@ -259,7 +259,7 @@ const LandingPage = () => {
       <header className={`lp-header${scrolled ? ' lp-header--scrolled' : ''}`}>
         <div className="lp-header-inner">
           <div className="lp-brand">
-            <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-logo" />
+            <img src="/tingletap-logo.jpg" alt="TingleTap" className="lp-logo" />
             <div className="lp-brand-text">
               <span className="lp-brand-name">TingleTap</span>
               <span className="lp-brand-tag">Premium Chat Experience</span>
@@ -455,7 +455,7 @@ const LandingPage = () => {
             {/* Brand */}
             <div className="lp-footer-brand-col">
               <div className="lp-footer-brand">
-                <img src="https://i.ibb.co/4ZPtbZPP/IMG-20250705-044659-583.png" alt="TingleTap" className="lp-footer-logo" />
+                <img src="/tingletap-logo.jpg" alt="TingleTap" className="lp-footer-logo" />
                 <div>
                   <h3 className="lp-footer-brand-name">TingleTap</h3>
                   <p className="lp-footer-brand-tag">India's Premium Chat Experience</p>
