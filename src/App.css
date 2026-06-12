@@ -920,24 +920,24 @@ body {
     --chat-message-text: var(--text-primary);
 }
 
-/* Global square logo styling with colorful gradient border */
-img[alt*="logo" i],
-img[alt*="Logo" i],
-img[src*="logo" i],
-img[src*="Logo" i],
-.logo img,
+/* Global square logo styling — size is left to each component */
 .main-logo,
 .footer-logo,
 .header-logo {
     border-radius: 20px !important;
-    border: 12px solid transparent !important;
-    background: white, linear-gradient(45deg, #ff0080, #ff1493, #ff4081, #e91e63, #9c27b0, #8a2be2, #673ab7, #3f51b5, #2196f3, #00bcd4, #20b2aa, #009688, #4caf50, #32cd32, #8bc34a, #cddc39, #ffeb3b, #ffd700, #ffc107, #ff9800, #ff8c00, #ff5722, #f44336, #dc143c, #ff0080) !important;
-    background-clip: padding-box, border-box !important;
     object-fit: contain !important;
-    min-width: 150px !important;
-    min-height: 150px !important;
-    padding: 10px !important;
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Nav logo overrides — must NOT be forced to 150px */
+.lp-logo,
+img.lp-logo {
+    width: 28px !important; height: 28px !important;
+    min-width: 28px !important; min-height: 28px !important;
+    max-width: 28px !important; max-height: 28px !important;
+    border: none !important; background: none !important;
+    padding: 0 !important; box-shadow: none !important;
+    border-radius: 8px !important; object-fit: contain !important;
 }
 
 /* Role-Based Message Text Colors - Apply to wall chat messages only */

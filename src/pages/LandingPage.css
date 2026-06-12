@@ -158,10 +158,15 @@
 }
 .lp-brand { display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink: 0; min-width: 0; }
 .lp-logo {
-  width: 28px; height: 28px; min-width: 28px; border-radius: 8px; object-fit: contain; display: block;
+  width: 28px !important; height: 28px !important;
+  min-width: 28px !important; min-height: 28px !important;
+  max-width: 28px !important; max-height: 28px !important;
+  border-radius: 8px !important; object-fit: contain !important;
+  display: block !important; flex-shrink: 0 !important;
+  border: none !important; background: none !important;
+  padding: 0 !important; box-shadow: none !important;
   filter: drop-shadow(0 3px 8px rgba(99,102,241,0.35));
   animation: lpLogoFloat 3.2s ease-in-out infinite;
-  flex-shrink: 0;
 }
 .lp-brand-text { display:flex; flex-direction:column; gap:0px; min-width: 0; }
 .lp-brand-name {
@@ -186,7 +191,7 @@
     border-radius: 16px;
   }
   .lp-header-inner { padding: 8px 12px; gap: 6px; }
-  .lp-logo { width: 24px; height: 24px; min-width: 24px; border-radius: 7px; }
+  .lp-logo { width: 24px !important; height: 24px !important; min-width: 24px !important; min-height: 24px !important; max-width: 24px !important; max-height: 24px !important; border-radius: 7px !important; padding: 0 !important; }
   .lp-brand { gap: 7px; }
   .lp-brand-name { font-size: 14px; }
   .lp-brand-tag { display: none; }
