@@ -80,7 +80,7 @@
 .rl-main {
   position: relative; z-index: 2;
   max-width: 680px; margin: 0 auto;
-  padding: 40px 18px 60px;
+  padding: 40px 18px 110px;
   display: flex; flex-direction: column; gap: 28px;
 }
 
@@ -302,7 +302,7 @@
    RESPONSIVE
 ══════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .rl-main { padding: 28px 14px 48px; gap: 22px; }
+  .rl-main { padding: 28px 14px 120px; gap: 22px; }
   .rl-brand-logo { width: 72px; height: 72px; border-radius: 22px; }
   .rl-brand-name { font-size: 36px; }
   .rl-admin-float { top: 14px; right: 14px; padding: 9px 14px; font-size: 12.5px; }

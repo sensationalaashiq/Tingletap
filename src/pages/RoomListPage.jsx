@@ -373,29 +373,6 @@ const RoomListPage = () => {
           </div>
         </div>
 
-        {/* Welcome Card */}
-        <div className="rl-welcome">
-          <div className="rl-welcome-icon"><ShieldIcon /></div>
-          <h2 className="rl-welcome-title">Welcome to TingleTap</h2>
-          <p className="rl-welcome-desc">Experience premium real-time conversations in our curated chat universes</p>
-          <div className="rl-stats">
-            <div className="rl-stat">
-              <div className="rl-stat-num">{rooms.length}</div>
-              <div className="rl-stat-lbl">Chat Rooms</div>
-            </div>
-            <div className="rl-stat-div" />
-            <div className="rl-stat">
-              <div className="rl-stat-num">{totalOnline}</div>
-              <div className="rl-stat-lbl">Online Now</div>
-            </div>
-            <div className="rl-stat-div" />
-            <div className="rl-stat">
-              <div className="rl-stat-num">555+</div>
-              <div className="rl-stat-lbl">Members</div>
-            </div>
-          </div>
-        </div>
-
         {/* Rooms Section */}
         <section className="rl-rooms-section">
           <div className="rl-section-head">
