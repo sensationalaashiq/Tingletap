@@ -762,8 +762,10 @@
 /* Hero */
 .lp-lpage .lp-hero {
   display: block; text-align: center;
-  margin-bottom: 22px;
-  animation: lpFadeUp .7s ease both;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 20px;
+  animation: lpFadeUp .6s ease both;
 }
 .lp-lpage .lp-hero-icon {
   width: 76px; height: 76px; border-radius: 22px;
