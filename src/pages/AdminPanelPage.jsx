@@ -513,6 +513,48 @@ const AdminPanelPage = () => {
       deviceType = 'Mobile';
     }
     
+    // Parse specific device model name from user agent
+    let deviceModel = '';
+    if (userAgent !== 'Unknown') {
+      if (/iPhone/i.test(userAgent)) {
+        const osMatch = userAgent.match(/CPU iPhone OS ([\d_]+)/);
+        deviceModel = osMatch ? `iPhone (iOS ${osMatch[1].replace(/_/g,'.')})` : 'Apple iPhone';
+      } else if (/iPad/i.test(userAgent)) {
+        const osMatch = userAgent.match(/CPU OS ([\d_]+)/);
+        deviceModel = osMatch ? `iPad (iPadOS ${osMatch[1].replace(/_/g,'.')})` : 'Apple iPad';
+      } else if (/SM-([A-Z0-9]+)/i.test(userAgent)) {
+        const m = userAgent.match(/SM-([A-Z0-9]+)/i);
+        deviceModel = m ? `Samsung SM-${m[1]}` : 'Samsung Galaxy';
+      } else if (/HUAWEI|HWI-|ELE-|CLT-|JSN-/i.test(userAgent)) {
+        const m = userAgent.match(/(?:HUAWEI|HWI-|ELE-|CLT-|JSN-)([A-Z0-9\-]+)/i);
+        deviceModel = m ? `Huawei ${m[1]}` : 'Huawei Device';
+      } else if (/Xiaomi|Redmi|POCO/i.test(userAgent)) {
+        deviceModel = 'Xiaomi / Redmi';
+      } else if (/OnePlus/i.test(userAgent)) {
+        const m = userAgent.match(/OnePlus([A-Z0-9 ]+)/i);
+        deviceModel = m ? `OnePlus ${m[1].trim()}` : 'OnePlus';
+      } else if (/Android/i.test(userAgent)) {
+        const m = userAgent.match(/Android [^;]+; ([^)]+)\)/);
+        const raw = m ? m[1].trim() : '';
+        deviceModel = raw ? raw.split(' Build')[0].split(';')[0].trim() : 'Android Device';
+      } else if (/Windows NT 10\.0/i.test(userAgent)) {
+        deviceModel = 'Windows 10 / 11 PC';
+      } else if (/Windows NT 6\.3/i.test(userAgent)) {
+        deviceModel = 'Windows 8.1 PC';
+      } else if (/Windows/i.test(userAgent)) {
+        deviceModel = 'Windows PC';
+      } else if (/Macintosh|Mac OS X/i.test(userAgent)) {
+        deviceModel = 'Apple Mac / MacBook';
+      } else if (/CrOS/i.test(userAgent)) {
+        deviceModel = 'Chromebook';
+      } else if (/Linux/i.test(userAgent)) {
+        deviceModel = 'Linux PC';
+      } else {
+        deviceModel = deviceType !== 'Unknown' ? deviceType : 'Unknown Device';
+      }
+    }
+    if (!deviceModel) deviceModel = `${deviceType} Device`;
+
     // Get last seen info
     const lastSeen = status?.lastSeen || user.lastLoginAt || user.lastSeenAt || status?.connectedAt || 'Unknown';
     
@@ -521,6 +563,8 @@ const AdminPanelPage = () => {
       ip: lastIP,
       location: location,
       device: deviceType,
+      deviceModel: deviceModel,
+      macAddress: 'N/A',
       browser: browser,
       os: os,
       lastSeen: lastSeen,
@@ -570,7 +614,10 @@ const AdminPanelPage = () => {
             <div className="luxury-admin-info">
               <div className="luxury-admin-badge">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                  {currentUserProfile?.role === 'owner' && <path d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                  {currentUserProfile?.role === 'admin' && <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                  {currentUserProfile?.role === 'moderator' && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                  {!currentUserProfile?.role && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                 </svg>
                 {currentUserProfile?.role?.toUpperCase()}
               </div>
@@ -606,7 +653,7 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card success">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2M7.5,13A2.5,2.5 0 0,0 5,15.5A2.5,2.5 0 0,0 7.5,18A2.5,2.5 0 0,0 10,15.5A2.5,2.5 0 0,0 7.5,13M16.5,13A2.5,2.5 0 0,0 14,15.5A2.5,2.5 0 0,0 16.5,18A2.5,2.5 0 0,0 19,15.5A2.5,2.5 0 0,0 16.5,13Z"/>
+                  <path d="M1,9L3,11C7.97,6.03 16.03,6.03 21,11L23,9C16.93,2.93 7.08,2.93 1,9M9,17L12,20L15,17C13.35,15.36 10.66,15.36 9,17M5,13L7,15C9.76,12.24 14.24,12.24 17,15L19,13C15.14,9.14 8.87,9.14 5,13Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -618,7 +665,7 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card warning">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M16.5,12C16.78,12 17,12.22 17,12.5V13.5C17,13.78 16.78,14 16.5,14H15.5C15.22,14 15,13.78 15,13.5V12.5C15,12.22 15.22,12 15.5,12H16.5Z"/>
+                  <path d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.28,11.73 17.28,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.73C6.73,14 9.43,16.1 12,16.1C12.62,16.1 13.22,15.97 13.77,15.74L11.91,13.88C11.94,13.88 11.97,14 12,14A3,3 0 0,1 9,11V10.27L4.27,5.54L3,4.27L4.27,3Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -642,7 +689,7 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card info">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                  <path d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16M7,9H9V11H7V9M11,9H13V11H11V9M15,9H17V11H15V9Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -654,7 +701,7 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card security">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.11,7 14,7.89 14,9C14,10.11 13.11,11 12,11C10.89,11 10,10.11 10,9C10,7.89 10.89,7 12,7M17,18H7V16.5C7,15.12 9.24,14 12,14C14.76,14 17,15.12 17,16.5V18Z"/>
+                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M11,7H13V9H11V7M11,11H13V17H11V11Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -669,10 +716,10 @@ const AdminPanelPage = () => {
         <div className="luxury-nav-section">
           <div className="luxury-nav-tabs">
             {[
-              { id: 'dashboard', label: 'Dashboard', iconColor: '#7c3aed', path: 'M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z' },
-              { id: 'users', label: 'Users', iconColor: '#3b82f6', path: 'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
-              { id: 'rooms', label: 'Rooms', iconColor: '#10b981', path: 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z' },
-              { id: 'security', label: 'Security', iconColor: '#ef4444', path: 'M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.11,7 14,7.89 14,9C14,10.11 13.11,11 12,11C10.89,11 10,10.11 10,9C10,7.89 10.89,7 12,7M17,18H7V16.5C7,15.12 9.24,14 12,14C14.76,14 17,15.12 17,16.5V18Z' }
+              { id: 'dashboard', label: 'Dashboard', iconColor: '#7c3aed', path: 'M3,3H11V11H3V3M3,13H11V21H3V13M13,3H21V11H13V3M18,16H16V13H13V11H16V8H18V11H21V13H18V16Z' },
+              { id: 'users', label: 'Users', iconColor: '#3b82f6', path: 'M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z' },
+              { id: 'rooms', label: 'Rooms', iconColor: '#10b981', path: 'M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16M7,9H9V11H7V9M11,9H13V11H11V9M15,9H17V11H15V9Z' },
+              { id: 'security', label: 'Security', iconColor: '#ef4444', path: 'M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z' }
             ].map(tab => {
               const isActive = activeTab === tab.id;
               return (
@@ -854,8 +901,8 @@ const AdminPanelPage = () => {
                                 </div>
                                 {currentRoom && (
                                   <div className="luxury-current-room">
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#7c3aed'}}>
+                                      <path d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16Z"/>
                                     </svg>
                                     {currentRoom}
                                   </div>
@@ -865,7 +912,10 @@ const AdminPanelPage = () => {
                               <div className="luxury-role-section">
                                 <span className={`luxury-role-badge role-${user.role || 'user'}`}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                    {user.role === 'owner' && <path d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                                    {user.role === 'admin' && <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                                    {user.role === 'moderator' && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                                    {(!user.role || user.role === 'user') && <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
                                   </svg>
                                   {user.role?.toUpperCase() || 'USER'}
                                 </span>
@@ -894,16 +944,34 @@ const AdminPanelPage = () => {
                             <div className="luxury-td device-info-cell">
                               <div className="luxury-device-details">
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#3b82f6',width:16,height:16,flexShrink:0}}><path d="M4,6H20V16H4M20,18A2,2 0 0,0 22,16V6C22,4.89 21.1,4 20,4H4C2.89,4 2,4.89 2,6V16A2,2 0 0,0 4,18H0V20H24V18H20Z"/></svg>
-                                  <span>{deviceInfo.device}</span>
+                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',flexShrink:0,boxShadow:'0 2px 6px #6366f155'}}>
+                                    {deviceInfo.device === 'Mobile' ? (
+                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12,20.5A1.5,1.5 0 0,1 10.5,19A1.5,1.5 0 0,1 12,17.5A1.5,1.5 0 0,1 13.5,19A1.5,1.5 0 0,1 12,20.5Z"/></svg>
+                                    ) : deviceInfo.device === 'Tablet' ? (
+                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/></svg>
+                                    ) : (
+                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
+                                    )}
+                                  </span>
+                                  <span style={{fontWeight:800,color:'#4f46e5',fontSize:11}}>{deviceInfo.deviceModel}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#f97316',width:16,height:16,flexShrink:0}}><path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
-                                  <span>{deviceInfo.browser}</span>
+                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#f97316,#ef4444)',flexShrink:0,boxShadow:'0 2px 6px #f9731655'}}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                                  </span>
+                                  <span style={{fontSize:11,color:'#c2410c',fontWeight:700}}>{deviceInfo.browser}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#10b981',width:16,height:16,flexShrink:0}}><path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2M7.5,13A2.5,2.5 0 0,0 5,15.5A2.5,2.5 0 0,0 7.5,18A2.5,2.5 0 0,0 10,15.5A2.5,2.5 0 0,0 7.5,13M16.5,13A2.5,2.5 0 0,0 14,15.5A2.5,2.5 0 0,0 16.5,18A2.5,2.5 0 0,0 19,15.5A2.5,2.5 0 0,0 16.5,13Z"/></svg>
-                                  <span>{deviceInfo.os}</span>
+                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#10b981,#059669)',flexShrink:0,boxShadow:'0 2px 6px #10b98155'}}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M12,3C7.58,3 4,4.79 4,7V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V7C20,4.79 16.42,3 12,3M12,5C15.87,5 18,6.5 18,7C18,7.5 15.87,9 12,9C8.13,9 6,7.5 6,7C6,6.5 8.13,5 12,5M18,17C18,17.5 15.87,19 12,19C8.13,19 6,17.5 6,17V14.77C7.61,15.55 9.72,16 12,16C14.28,16 16.39,15.55 18,14.77V17M18,12.45C16.7,13.4 14.42,14 12,14C9.58,14 7.3,13.4 6,12.45V9.64C7.47,10.47 9.61,11 12,11C14.39,11 16.53,10.47 18,9.64V12.45Z"/></svg>
+                                  </span>
+                                  <span style={{fontSize:11,color:'#065f46',fontWeight:700}}>{deviceInfo.os}</span>
+                                </div>
+                                <div className="luxury-device-item">
+                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#ec4899,#db2777)',flexShrink:0,boxShadow:'0 2px 6px #ec489955'}}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>
+                                  </span>
+                                  <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}} title="MAC addresses cannot be accessed by browsers due to security restrictions">MAC: N/A (Private)</span>
                                 </div>
                               </div>
                             </div>
@@ -996,7 +1064,7 @@ const AdminPanelPage = () => {
                                   title="Kick from Room"
                                 >
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V9H7V7M7,11H17V13H7V11M7,15H14V17H7V15Z"/>
+                                    <path d="M14.08,15.59L16.67,13H7V11H16.67L14.08,8.41L15.5,7L20.5,12L15.5,17L14.08,15.59M19,3A2,2 0 0,1 21,5V9.67L19,7.67V5H5V19H19V16.33L21,14.33V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H19Z"/>
                                   </svg>
                                   <span>Kick</span>
                                 </button>
@@ -1095,25 +1163,31 @@ const AdminPanelPage = () => {
                       
                       <div className="luxury-room-stats">
                         <div className="luxury-room-stat">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
-                          </svg>
+                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background: activeInRoom > 0 ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#d1d5db,#9ca3af)',flexShrink:0}}>
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
+                              <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
+                            </svg>
+                          </span>
                           <span style={{ color: activeInRoom > 0 ? '#059669' : '#9ca3af', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
                             {activeInRoom} online
                           </span>
                         </div>
                         <div className="luxury-room-stat">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
-                          </svg>
-                          <span>{room.isActive !== false ? 'Active' : 'Inactive'}</span>
+                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background: room.isActive !== false ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'linear-gradient(135deg,#ef4444,#dc2626)',flexShrink:0}}>
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
+                              {room.isActive !== false ? <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/> : <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>}
+                            </svg>
+                          </span>
+                          <span style={{fontWeight:700,color: room.isActive !== false ? '#4f46e5' : '#dc2626'}}>{room.isActive !== false ? 'Active' : 'Inactive'}</span>
                         </div>
                         {room.maxUsers && (
                           <div className="luxury-room-stat">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
-                            </svg>
-                            <span>Max: {room.maxUsers}</span>
+                            <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background:'linear-gradient(135deg,#f59e0b,#d97706)',flexShrink:0}}>
+                              <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
+                                <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
+                              </svg>
+                            </span>
+                            <span style={{fontWeight:700,color:'#b45309'}}>Max: {room.maxUsers}</span>
                           </div>
                         )}
                       </div>
