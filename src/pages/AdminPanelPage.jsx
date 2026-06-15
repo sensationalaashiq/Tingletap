@@ -728,11 +728,9 @@ const AdminPanelPage = () => {
                   className={`luxury-nav-tab ${isActive ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <div className="luxury-tab-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 20, height: 20, color: isActive ? '#fff' : tab.iconColor, filter: isActive ? 'none' : `drop-shadow(0 0 3px ${tab.iconColor}88)` }}>
-                      <path d={tab.path}/>
-                    </svg>
-                  </div>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 21, height: 21, color: isActive ? '#fff' : tab.iconColor, filter: isActive ? 'drop-shadow(0 1px 4px rgba(0,0,0,0.35))' : `drop-shadow(0 0 7px ${tab.iconColor}99) drop-shadow(0 1px 3px ${tab.iconColor}55)`, flexShrink: 0 }}>
+                    <path d={tab.path}/>
+                  </svg>
                   <span className="luxury-tab-label">{tab.label}</span>
                 </button>
               );
@@ -746,7 +744,7 @@ const AdminPanelPage = () => {
             <div className="luxury-dashboard-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:26,height:26,color:'#7c3aed',flexShrink:0,filter:'drop-shadow(0 2px 6px #7c3aed88)'}}>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:27,height:27,color:'#7c3aed',filter:'drop-shadow(0 0 10px #9333ea99) drop-shadow(0 2px 6px #7c3aed55)',flexShrink:0}}>
                     <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
                   </svg>
                   System Overview
@@ -798,7 +796,7 @@ const AdminPanelPage = () => {
             <div className="luxury-users-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:26,height:26,color:'#3b82f6',flexShrink:0,filter:'drop-shadow(0 2px 6px #3b82f688)'}}>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:27,height:27,color:'#3b82f6',filter:'drop-shadow(0 0 10px #60a5fa99) drop-shadow(0 2px 6px #3b82f655)',flexShrink:0}}>
                     <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
                   </svg>
                   User Management
@@ -944,33 +942,25 @@ const AdminPanelPage = () => {
                             <div className="luxury-td device-info-cell">
                               <div className="luxury-device-details">
                                 <div className="luxury-device-item">
-                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',flexShrink:0,boxShadow:'0 2px 6px #6366f155'}}>
-                                    {deviceInfo.device === 'Mobile' ? (
-                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12,20.5A1.5,1.5 0 0,1 10.5,19A1.5,1.5 0 0,1 12,17.5A1.5,1.5 0 0,1 13.5,19A1.5,1.5 0 0,1 12,20.5Z"/></svg>
-                                    ) : deviceInfo.device === 'Tablet' ? (
-                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/></svg>
-                                    ) : (
-                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
-                                    )}
-                                  </span>
+                                  {deviceInfo.device === 'Mobile' ? (
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#6366f1',filter:'drop-shadow(0 0 5px #8b5cf688)',flexShrink:0}}><path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12,20.5A1.5,1.5 0 0,1 10.5,19A1.5,1.5 0 0,1 12,17.5A1.5,1.5 0 0,1 13.5,19A1.5,1.5 0 0,1 12,20.5Z"/></svg>
+                                  ) : deviceInfo.device === 'Tablet' ? (
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#6366f1',filter:'drop-shadow(0 0 5px #8b5cf688)',flexShrink:0}}><path d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/></svg>
+                                  ) : (
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#6366f1',filter:'drop-shadow(0 0 5px #8b5cf688)',flexShrink:0}}><path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
+                                  )}
                                   <span style={{fontWeight:800,color:'#4f46e5',fontSize:11}}>{deviceInfo.deviceModel}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#f97316,#ef4444)',flexShrink:0,boxShadow:'0 2px 6px #f9731655'}}>
-                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
-                                  </span>
+                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#f97316',filter:'drop-shadow(0 0 5px #fb923c88)',flexShrink:0}}><path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
                                   <span style={{fontSize:11,color:'#c2410c',fontWeight:700}}>{deviceInfo.browser}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#10b981,#059669)',flexShrink:0,boxShadow:'0 2px 6px #10b98155'}}>
-                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M12,3C7.58,3 4,4.79 4,7V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V7C20,4.79 16.42,3 12,3M12,5C15.87,5 18,6.5 18,7C18,7.5 15.87,9 12,9C8.13,9 6,7.5 6,7C6,6.5 8.13,5 12,5M18,17C18,17.5 15.87,19 12,19C8.13,19 6,17.5 6,17V14.77C7.61,15.55 9.72,16 12,16C14.28,16 16.39,15.55 18,14.77V17M18,12.45C16.7,13.4 14.42,14 12,14C9.58,14 7.3,13.4 6,12.45V9.64C7.47,10.47 9.61,11 12,11C14.39,11 16.53,10.47 18,9.64V12.45Z"/></svg>
-                                  </span>
+                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#10b981',filter:'drop-shadow(0 0 5px #34d39988)',flexShrink:0}}><path d="M12,3C7.58,3 4,4.79 4,7V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V7C20,4.79 16.42,3 12,3M12,5C15.87,5 18,6.5 18,7C18,7.5 15.87,9 12,9C8.13,9 6,7.5 6,7C6,6.5 8.13,5 12,5M18,17C18,17.5 15.87,19 12,19C8.13,19 6,17.5 6,17V14.77C7.61,15.55 9.72,16 12,16C14.28,16 16.39,15.55 18,14.77V17M18,12.45C16.7,13.4 14.42,14 12,14C9.58,14 7.3,13.4 6,12.45V9.64C7.47,10.47 9.61,11 12,11C14.39,11 16.53,10.47 18,9.64V12.45Z"/></svg>
                                   <span style={{fontSize:11,color:'#065f46',fontWeight:700}}>{deviceInfo.os}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:6,background:'linear-gradient(135deg,#ec4899,#db2777)',flexShrink:0,boxShadow:'0 2px 6px #ec489955'}}>
-                                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:12,height:12,color:'#fff'}}><path d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>
-                                  </span>
+                                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:15,height:15,color:'#ec4899',filter:'drop-shadow(0 0 5px #f472b688)',flexShrink:0}}><path d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>
                                   <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}} title="MAC addresses cannot be accessed by browsers due to security restrictions">MAC: N/A (Private)</span>
                                 </div>
                               </div>
@@ -984,21 +974,21 @@ const AdminPanelPage = () => {
                                 return (
                                   <div className="luxury-location-details">
                                     <div className="luxury-location-item">
-                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#8b5cf6',width:15,height:15,flexShrink:0}}><path d="M17,12C17,14.42 16.28,16.58 14.9,18.9L12,22L9.1,18.9C7.72,16.58 7,14.42 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
-                                      <span style={{fontFamily:'monospace',fontSize:11,color:'#6d28d9',fontWeight:800}}>
+                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:16,height:16,color:'#8b5cf6',filter:'drop-shadow(0 0 5px #9333ea88)',flexShrink:0}}><path d="M15,12C15,13.66 13.66,15 12,15C10.34,15 9,13.66 9,12C9,10.34 10.34,9 12,9C13.66,9 15,10.34 15,12M21,12C21,16.97 16.97,21 12,21C7.03,21 3,16.97 3,12C3,7.03 7.03,3 12,3C16.97,3 21,7.03 21,12M19,12C19,8.13 15.87,5 12,5C8.13,5 5,8.13 5,12C5,15.87 8.13,19 12,19C15.87,19 19,15.87 19,12Z"/></svg>
+                                      <span style={{fontFamily:'monospace',fontSize:11,color:'#5b21b6',fontWeight:900,letterSpacing:'0.03em'}}>
                                         {ip && ip !== 'Unknown' ? ip : 'No IP yet'}
                                       </span>
                                     </div>
                                     <div className="luxury-location-item">
-                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#ef4444',width:15,height:15,flexShrink:0}}><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"/></svg>
-                                      <span style={{fontSize:11,color:'#374151',fontWeight:600}}>
-                                        {geo ? `${geo.city || ''}, ${geo.country || ''}`.replace(/^, |, $/, '') : (deviceInfo.location !== 'Unknown' ? deviceInfo.location : '—')}
+                                      <svg viewBox="0 0 24 24" fill="currentColor" style={{width:16,height:16,color:'#ef4444',filter:'drop-shadow(0 0 5px #f8717188)',flexShrink:0}}><path d="M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5C10.62,11.5 9.5,10.38 9.5,9C9.5,7.62 10.62,6.5 12,6.5C13.38,6.5 14.5,7.62 14.5,9C14.5,10.38 13.38,11.5 12,11.5Z"/></svg>
+                                      <span style={{fontSize:11,color:'#1f2937',fontWeight:700}}>
+                                        {geo ? `${geo.city || ''}, ${geo.country || ''}`.replace(/^, |, $/, '') || '—' : (deviceInfo.location !== 'Unknown' ? deviceInfo.location : '—')}
                                       </span>
                                     </div>
                                     {geo && geo.lat && (
                                       <div className="luxury-location-item">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" style={{color:'#14b8a6',width:15,height:15,flexShrink:0}}><path d="M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5C10.62,11.5 9.5,10.38 9.5,9C9.5,7.62 10.62,6.5 12,6.5C13.38,6.5 14.5,7.62 14.5,9C14.5,10.38 13.38,11.5 12,11.5Z"/></svg>
-                                        <span style={{fontFamily:'monospace',fontSize:10,color:'#0d9488',fontWeight:700}}>
+                                        <svg viewBox="0 0 24 24" fill="currentColor" style={{width:16,height:16,color:'#14b8a6',filter:'drop-shadow(0 0 5px #14b8a688)',flexShrink:0}}><path d="M12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5M12,2A7,7 0 0,1 19,9C19,14.25 12,22 12,22C12,22 5,14.25 5,9A7,7 0 0,1 12,2Z"/></svg>
+                                        <span style={{fontFamily:'monospace',fontSize:10,color:'#0f766e',fontWeight:800}}>
                                           {geo.lat.toFixed(4)}°, {geo.lon.toFixed(4)}°
                                         </span>
                                       </div>
@@ -1017,7 +1007,7 @@ const AdminPanelPage = () => {
                                     title="Ban User"
                                   >
                                     <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+                                      <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/>
                                     </svg>
                                     <span>Ban</span>
                                   </button>
@@ -1028,7 +1018,7 @@ const AdminPanelPage = () => {
                                     title="Unban User"
                                   >
                                     <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                                      <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
                                     </svg>
                                     <span>Unban</span>
                                   </button>
@@ -1041,7 +1031,7 @@ const AdminPanelPage = () => {
                                     title="Mute User"
                                   >
                                     <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M16.5,12C16.78,12 17,12.22 17,12.5V13.5C17,13.78 16.78,14 16.5,14H15.5C15.22,14 15,13.78 15,13.5V12.5C15,12.22 15.22,12 15.5,12H16.5Z"/>
+                                      <path d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.28,11.73 17.28,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.73C6.73,14 9.43,16.1 12,16.1C12.62,16.1 13.22,15.97 13.77,15.74L11.91,13.88C11.94,13.88 11.97,14 12,14A3,3 0 0,1 9,11V10.27L4.27,5.54L3,4.27L4.27,3Z"/>
                                     </svg>
                                     <span>Mute</span>
                                   </button>
@@ -1064,7 +1054,7 @@ const AdminPanelPage = () => {
                                   title="Kick from Room"
                                 >
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M14.08,15.59L16.67,13H7V11H16.67L14.08,8.41L15.5,7L20.5,12L15.5,17L14.08,15.59M19,3A2,2 0 0,1 21,5V9.67L19,7.67V5H5V19H19V16.33L21,14.33V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H19Z"/>
+                                    <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
                                   </svg>
                                   <span>Kick</span>
                                 </button>
@@ -1076,7 +1066,7 @@ const AdminPanelPage = () => {
                                   disabled={!user.lastDeviceId && !user.deviceId}
                                 >
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12.2,6L7,11.2L8.4,12.6L12.2,8.8L15.6,12.2L17,10.8M8.4,16L7,14.6L12.2,9.4L13.6,10.8L8.4,16Z"/>
+                                    <path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
                                   </svg>
                                   <span>Dev-Ban</span>
                                 </button>
@@ -1087,7 +1077,7 @@ const AdminPanelPage = () => {
                                   title="Delete Profile"
                                 >
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                                    <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
                                   </svg>
                                   <span>Delete</span>
                                 </button>
@@ -1108,8 +1098,8 @@ const AdminPanelPage = () => {
               <div className="luxury-section-header luxury-section-header-flex">
                 <div>
                   <h2>
-                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:26,height:26,color:'#10b981',flexShrink:0,filter:'drop-shadow(0 2px 6px #10b98188)'}}>
-                      <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:27,height:27,color:'#10b981',filter:'drop-shadow(0 0 10px #34d39999) drop-shadow(0 2px 6px #05996955)',flexShrink:0}}>
+                      <path d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16Z"/>
                     </svg>
                     Room Management
                   </h2>
@@ -1117,7 +1107,7 @@ const AdminPanelPage = () => {
                 </div>
                 <button className="luxury-btn-primary" onClick={() => setShowCreateRoom(true)}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                    <path d="M17,12H13V16H11V12H7V10H11V6H13V10H17M20,2H4C2.89,2 2,2.89 2,4V16C2,17.11 2.89,18 4,18H8L12,22L16,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
                   </svg>
                   Create Room
                 </button>
@@ -1163,30 +1153,24 @@ const AdminPanelPage = () => {
                       
                       <div className="luxury-room-stats">
                         <div className="luxury-room-stat">
-                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background: activeInRoom > 0 ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#d1d5db,#9ca3af)',flexShrink:0}}>
-                            <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
-                              <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
-                            </svg>
-                          </span>
+                          <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color: activeInRoom > 0 ? '#10b981' : '#9ca3af',filter: activeInRoom > 0 ? 'drop-shadow(0 0 4px #10b98188)' : 'none',flexShrink:0}}>
+                            <path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
+                          </svg>
                           <span style={{ color: activeInRoom > 0 ? '#059669' : '#9ca3af', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
                             {activeInRoom} online
                           </span>
                         </div>
                         <div className="luxury-room-stat">
-                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background: room.isActive !== false ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'linear-gradient(135deg,#ef4444,#dc2626)',flexShrink:0}}>
-                            <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
-                              {room.isActive !== false ? <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/> : <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>}
-                            </svg>
-                          </span>
+                          <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color: room.isActive !== false ? '#6366f1' : '#ef4444',filter: room.isActive !== false ? 'drop-shadow(0 0 4px #8b5cf688)' : 'drop-shadow(0 0 4px #ef444488)',flexShrink:0}}>
+                            {room.isActive !== false ? <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/> : <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>}
+                          </svg>
                           <span style={{fontWeight:700,color: room.isActive !== false ? '#4f46e5' : '#dc2626'}}>{room.isActive !== false ? 'Active' : 'Inactive'}</span>
                         </div>
                         {room.maxUsers && (
                           <div className="luxury-room-stat">
-                            <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:5,background:'linear-gradient(135deg,#f59e0b,#d97706)',flexShrink:0}}>
-                              <svg viewBox="0 0 24 24" fill="currentColor" style={{width:11,height:11,color:'#fff'}}>
-                                <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
-                              </svg>
-                            </span>
+                            <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color:'#f59e0b',filter:'drop-shadow(0 0 4px #fbbf2488)',flexShrink:0}}>
+                              <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
+                            </svg>
                             <span style={{fontWeight:700,color:'#b45309'}}>Max: {room.maxUsers}</span>
                           </div>
                         )}
@@ -1330,8 +1314,8 @@ const AdminPanelPage = () => {
             <div className="luxury-security-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:26,height:26,color:'#ef4444',flexShrink:0,filter:'drop-shadow(0 2px 6px #ef444488)'}}>
-                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.11,7 14,7.89 14,9C14,10.11 13.11,11 12,11C10.89,11 10,10.11 10,9C10,7.89 10.89,7 12,7M17,18H7V16.5C7,15.12 9.24,14 12,14C14.76,14 17,15.12 17,16.5V18Z"/>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:27,height:27,color:'#ef4444',filter:'drop-shadow(0 0 10px #f8717199) drop-shadow(0 2px 6px #dc262655)',flexShrink:0}}>
+                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M11,15H13V17H11V15M11,7H13V13H11V7Z"/>
                   </svg>
                   Security Center
                 </h2>
@@ -1340,7 +1324,10 @@ const AdminPanelPage = () => {
               
               <div className="luxury-security-grid">
                 <div className="luxury-security-card">
-                  <h3>Banned IP Addresses</h3>
+                  <h3>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:20,height:20,color:'#ef4444',filter:'drop-shadow(0 0 7px #f8717199)',flexShrink:0}}><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18L6,6.7C7.5,5 9.6,4 12,4M12,20A8,8 0 0,1 4,12C4,9.6 5,7.5 6.7,6L18,17.3C16.5,19 14.4,20 12,20Z"/></svg>
+                    Banned IP Addresses
+                  </h3>
                   <div className="luxury-banned-ips-list">
                     {bannedIPs.slice(0, 10).map(ipBan => (
                       <div key={ipBan.id} className="luxury-banned-ip-item">
@@ -1360,19 +1347,31 @@ const AdminPanelPage = () => {
                 </div>
                 
                 <div className="luxury-security-card">
-                  <h3>Security Metrics</h3>
+                  <h3>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style={{width:20,height:20,color:'#7c3aed',filter:'drop-shadow(0 0 7px #9333ea88)',flexShrink:0}}><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>
+                    Security Metrics
+                  </h3>
                   <div className="luxury-security-metrics">
                     <div className="luxury-security-metric">
-                      <span className="luxury-metric-label">Blocked Attempts</span>
+                      <span className="luxury-metric-label">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color:'#ef4444',filter:'drop-shadow(0 0 4px #f8717188)',flexShrink:0,marginRight:5}}><path d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z"/></svg>
+                        Blocked Attempts
+                      </span>
                       <span className="luxury-metric-value">{bannedIPs.length}</span>
                     </div>
                     <div className="luxury-security-metric">
-                      <span className="luxury-metric-label">Active Bans</span>
+                      <span className="luxury-metric-label">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color:'#ef4444',filter:'drop-shadow(0 0 4px #f8717188)',flexShrink:0,marginRight:5}}><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/></svg>
+                        Active Bans
+                      </span>
                       <span className="luxury-metric-value">{stats.bannedUsers}</span>
                     </div>
                     <div className="luxury-security-metric">
-                      <span className="luxury-metric-label">Threat Level</span>
-                      <span className="luxury-metric-value status-low">Low</span>
+                      <span className="luxury-metric-label">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14,color:'#10b981',filter:'drop-shadow(0 0 4px #34d39988)',flexShrink:0,marginRight:5}}><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>
+                        Threat Level
+                      </span>
+                      <span className="luxury-metric-value status-low">🟢 Low</span>
                     </div>
                   </div>
                 </div>
