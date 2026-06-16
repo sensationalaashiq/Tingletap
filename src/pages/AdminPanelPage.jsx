@@ -640,11 +640,11 @@ const AdminPanelPage = () => {
           <div className="luxury-stats-grid">
             <div className="luxury-stat-card primary">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statFloat 3s ease-in-out infinite',overflow:'visible'}}>
-                  <path d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>
-                  <circle cx="8.5" cy="22" r="1.1" opacity="0.45"/>
-                  <circle cx="12" cy="22" r="1.1" opacity="0.45"/>
-                  <circle cx="15.5" cy="22" r="1.1" opacity="0.45"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statFloat 3s ease-in-out infinite',overflow:'visible'}}>
+                  <path fill="#9333ea" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19C19,19.55 18.55,20 18,20H6C5.45,20 5,19.55 5,19V18H19V19Z"/>
+                  <circle fill="#c084fc" cx="8.5" cy="22" r="1.2"/>
+                  <circle fill="#9333ea" cx="12" cy="22" r="1.2"/>
+                  <circle fill="#c084fc" cx="15.5" cy="22" r="1.2"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -655,12 +655,12 @@ const AdminPanelPage = () => {
             
             <div className="luxury-stat-card success">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statPulse 2s ease-in-out infinite'}}>
-                  <path opacity="0.25" d="M4.93,4.93C3.12,6.74 2,9.24 2,12C2,14.76 3.12,17.26 4.93,19.07L6.34,17.66C4.9,16.22 4,14.22 4,12C4,9.79 4.9,7.78 6.34,6.34L4.93,4.93Z"/>
-                  <path opacity="0.25" d="M19.07,4.93L17.66,6.34C19.1,7.78 20,9.79 20,12C20,14.22 19.1,16.22 17.66,17.66L19.07,19.07C20.88,17.26 22,14.76 22,12C22,9.24 20.88,6.74 19.07,4.93Z"/>
-                  <path opacity="0.6" d="M7.76,7.76C6.67,8.85 6,10.35 6,12C6,13.65 6.67,15.15 7.76,16.24L9.17,14.83C8.45,14.11 8,13.11 8,12C8,10.89 8.45,9.89 9.17,9.17L7.76,7.76Z"/>
-                  <path opacity="0.6" d="M16.24,7.76L14.83,9.17C15.55,9.89 16,10.89 16,12C16,13.11 15.55,14.11 14.83,14.83L16.24,16.24C17.33,15.15 18,13.65 18,12C18,10.35 17.33,8.85 16.24,7.76Z"/>
-                  <circle cx="12" cy="12" r="2.4"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statPulse 2s ease-in-out infinite'}}>
+                  <path fill="#22c55e" d="M4.93,4.93C3.12,6.74 2,9.24 2,12C2,14.76 3.12,17.26 4.93,19.07L6.34,17.66C4.9,16.22 4,14.22 4,12C4,9.79 4.9,7.78 6.34,6.34L4.93,4.93Z"/>
+                  <path fill="#22c55e" d="M19.07,4.93L17.66,6.34C19.1,7.78 20,9.79 20,12C20,14.22 19.1,16.22 17.66,17.66L19.07,19.07C20.88,17.26 22,14.76 22,12C22,9.24 20.88,6.74 19.07,4.93Z"/>
+                  <path fill="#4ade80" d="M7.76,7.76C6.67,8.85 6,10.35 6,12C6,13.65 6.67,15.15 7.76,16.24L9.17,14.83C8.45,14.11 8,13.11 8,12C8,10.89 8.45,9.89 9.17,9.17L7.76,7.76Z"/>
+                  <path fill="#4ade80" d="M16.24,7.76L14.83,9.17C15.55,9.89 16,10.89 16,12C16,13.11 15.55,14.11 14.83,14.83L16.24,16.24C17.33,15.15 18,13.65 18,12C18,10.35 17.33,8.85 16.24,7.76Z"/>
+                  <circle fill="#22c55e" cx="12" cy="12" r="2.8"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -671,8 +671,8 @@ const AdminPanelPage = () => {
             
             <div className="luxury-stat-card warning">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statShake 4s ease-in-out infinite'}}>
-                  <path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.45 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L4.27,3M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.01,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statShake 4s ease-in-out infinite'}}>
+                  <path fill="#f97316" d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.45 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L4.27,3M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.01,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -683,9 +683,9 @@ const AdminPanelPage = () => {
             
             <div className="luxury-stat-card danger">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statGavel 3s ease-in-out infinite'}}>
-                  <path opacity="0.35" d="M12,8.5L10,6.5L4.5,12L6.5,14L12,8.5Z"/>
-                  <path d="M2.5,19H21.5V21H2.5V19M7.18,14.5L11,10.84L8.6,8.44L4.78,12.09C4,12.86 4,14.09 4.78,14.86C5.56,15.64 6.4,15.27 7.18,14.5M11.85,4.58C11.07,3.8 9.84,3.8 9.07,4.58L7.89,5.76L12.72,10.59L13.9,9.41C14.68,8.63 14.68,7.4 13.9,6.62L11.85,4.58M20.71,14.04L12.5,5.93L11.09,7.34L19.3,15.45C19.5,15.65 19.77,15.76 20.04,15.76C20.32,15.76 20.58,15.65 20.78,15.45C21.18,15.04 21.18,14.44 20.71,14.04Z"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statGavel 3s ease-in-out infinite'}}>
+                  <path fill="#ef4444" d="M2.5,19H21.5V21H2.5V19M7.18,14.5L11,10.84L8.6,8.44L4.78,12.09C4,12.86 4,14.09 4.78,14.86C5.56,15.64 6.4,15.27 7.18,14.5M11.85,4.58C11.07,3.8 9.84,3.8 9.07,4.58L7.89,5.76L12.72,10.59L13.9,9.41C14.68,8.63 14.68,7.4 13.9,6.62L11.85,4.58M20.71,14.04L12.5,5.93L11.09,7.34L19.3,15.45C19.5,15.65 19.77,15.76 20.04,15.76C20.32,15.76 20.58,15.65 20.78,15.45C21.18,15.04 21.18,14.44 20.71,14.04Z"/>
+                  <path fill="#fca5a5" d="M12,8.5L10,6.5L4.5,12L6.5,14L12,8.5Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -696,8 +696,8 @@ const AdminPanelPage = () => {
             
             <div className="luxury-stat-card info">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statFloat 4s ease-in-out infinite',animationDelay:'0.5s'}}>
-                  <path d="M5.41,21L6.12,17H2.12L2.47,15H6.47L7.53,9H3.53L3.88,7H7.88L8.59,3H10.59L9.88,7H13.88L14.59,3H16.59L15.88,7H19.88L19.53,9H15.53L14.47,15H18.47L18.12,17H14.12L13.41,21H11.41L12.12,17H8.12L7.41,21H5.41M9.53,9L8.47,15H12.47L13.53,9H9.53Z"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statFloat 4s ease-in-out infinite',animationDelay:'0.5s'}}>
+                  <path fill="#3b82f6" d="M5.41,21L6.12,17H2.12L2.47,15H6.47L7.53,9H3.53L3.88,7H7.88L8.59,3H10.59L9.88,7H13.88L14.59,3H16.59L15.88,7H19.88L19.53,9H15.53L14.47,15H18.47L18.12,17H14.12L13.41,21H11.41L12.12,17H8.12L7.41,21H5.41M9.53,9L8.47,15H12.47L13.53,9H9.53Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -708,9 +708,9 @@ const AdminPanelPage = () => {
             
             <div className="luxury-stat-card security">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{animation:'statPulse 2.5s ease-in-out infinite',animationDelay:'0.3s'}}>
-                  <path opacity="0.5" d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-                  <path d="M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17Z"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statPulse 2.5s ease-in-out infinite',animationDelay:'0.3s'}}>
+                  <path fill="#ec4899" d="M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17Z"/>
+                  <path fill="#f9a8d4" d="M10,15A2,2 0 0,0 12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -726,52 +726,48 @@ const AdminPanelPage = () => {
           <div className="luxury-nav-tabs">
             {[
               {
-                id: 'dashboard', label: 'Dashboard', iconColor: '#7c3aed',
-                icon: (
+                id: 'dashboard', label: 'Dashboard', iconColor: '#9333ea',
+                renderIcon: (c) => (
                   <>
-                    <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
-                    <path opacity="0.35" d="M6,10H10V8H6V10M12,6H16V4H12V6M18,14H22V12H18V14Z"/>
+                    <path fill={c} d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/>
                   </>
                 )
               },
               {
                 id: 'users', label: 'Users', iconColor: '#3b82f6',
-                icon: (
+                renderIcon: (c) => (
                   <>
-                    <path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"/>
-                    <circle cx="19" cy="8" r="3" opacity="0.4"/>
-                    <circle cx="5" cy="8" r="2.4" opacity="0.4"/>
+                    <path fill={c} d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"/>
                   </>
                 )
               },
               {
                 id: 'rooms', label: 'Rooms', iconColor: '#10b981',
-                icon: (
+                renderIcon: (c) => (
                   <>
-                    <path d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z"/>
-                    <path opacity="0.4" d="M6,7H13V9H6V7M6,10H11V12H6V10Z"/>
+                    <path fill={c} d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z"/>
                   </>
                 )
               },
               {
                 id: 'security', label: 'Security', iconColor: '#ef4444',
-                icon: (
+                renderIcon: (c) => (
                   <>
-                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z" opacity="0.3"/>
-                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7A2,2 0 0,1 14,9V10H15V15H9V10H10V9A2,2 0 0,1 12,7M12,8.9C11.5,8.9 11,9.4 11,10H13C13,9.4 12.5,8.9 12,8.9Z"/>
+                    <path fill={c} d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7A2,2 0 0,1 14,9V10H15V15H9V10H10V9A2,2 0 0,1 12,7M12,8.9C11.5,8.9 11,9.4 11,10H13C13,9.4 12.5,8.9 12,8.9Z"/>
                   </>
                 )
               }
             ].map(tab => {
               const isActive = activeTab === tab.id;
+              const iconFill = isActive ? '#ffffff' : tab.iconColor;
               return (
                 <button
                   key={tab.id}
                   className={`luxury-nav-tab ${isActive ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 21, height: 21, color: isActive ? '#fff' : tab.iconColor, filter: isActive ? 'drop-shadow(0 1px 4px rgba(0,0,0,0.35))' : `drop-shadow(0 0 7px ${tab.iconColor}99) drop-shadow(0 1px 3px ${tab.iconColor}55)`, flexShrink: 0 }}>
-                    {tab.icon}
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22, flexShrink: 0, filter: isActive ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' : `drop-shadow(0 0 6px ${tab.iconColor}cc)` }}>
+                    {tab.renderIcon(iconFill)}
                   </svg>
                   <span className="luxury-tab-label">{tab.label}</span>
                 </button>
@@ -786,10 +782,10 @@ const AdminPanelPage = () => {
             <div className="luxury-dashboard-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="currentColor" style={{width:27,height:27,color:'#7c3aed',filter:'drop-shadow(0 0 12px #9333eaaa) drop-shadow(0 2px 8px #7c3aed66)',flexShrink:0,animation:'statFloat 3.5s ease-in-out infinite'}}>
-                    <path d="M21,3H3C1.89,3 1,3.89 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,0 23,17V5C23,3.89 22.1,3 21,3M21,17H3V5H21V17Z" opacity="0.85"/>
-                    <path d="M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14Z"/>
-                    <path d="M5.5,7.5L4,9L7,12L4,15L5.5,16.5L10,12L5.5,7.5Z" opacity="0.5"/>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0,filter:'drop-shadow(0 0 8px #9333eacc)',animation:'statFloat 3.5s ease-in-out infinite'}}>
+                    <path fill="#9333ea" d="M21,3H3C1.89,3 1,3.89 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,0 23,17V5C23,3.89 22.1,3 21,3M21,17H3V5H21V17Z"/>
+                    <path fill="#a855f7" d="M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14Z"/>
+                    <path fill="#c084fc" d="M5.5,7.5L4,9L7,12L4,15L5.5,16.5L10,12L5.5,7.5Z"/>
                   </svg>
                   System Overview
                 </h2>
