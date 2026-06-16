@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db } from '../firebase/config';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import {
   signOut, updateProfile, updatePassword,
   deleteUser, EmailAuthProvider, reauthenticateWithCredential
@@ -283,6 +283,47 @@ const WarnIcon = () => (
     <path d="M10 2L1.5 17h17L10 2z" fill="#ef4444" opacity="0.15" stroke="#ef4444" strokeWidth="1.5" strokeLinejoin="round"/>
     <path d="M10 8v4.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
     <circle cx="10" cy="15" r="1.2" fill="#ef4444"/>
+  </Ico>
+);
+
+const UndoIcon = ({ size = 20 }) => (
+  <Ico w={size} h={size}>
+    <defs>
+      <linearGradient id="undoG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#34d399"/>
+        <stop offset="100%" stopColor="#059669"/>
+      </linearGradient>
+    </defs>
+    <path d="M3.5 9.5A6.5 6.5 0 1 0 5 5.5" stroke="url(#undoG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    <path d="M3 5.5v4h4" stroke="url(#undoG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </Ico>
+);
+
+const HourglassIcon = ({ size = 22 }) => (
+  <Ico w={size} h={size}>
+    <defs>
+      <linearGradient id="hgG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbbf24"/>
+        <stop offset="100%" stopColor="#f59e0b"/>
+      </linearGradient>
+    </defs>
+    <path d="M4 2h14M4 20h14" stroke="url(#hgG)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M5 2l3.5 6.5L11 11M5 20l3.5-6.5L11 11M19 2l-3.5 6.5L13 11M19 20l-3.5-6.5L13 11" stroke="url(#hgG)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8.5 8.5h5" stroke="url(#hgG)" strokeWidth="1.4" strokeLinecap="round" opacity="0.6"/>
+    <path d="M10 14.5h2" stroke="url(#hgG)" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
+  </Ico>
+);
+
+const CheckCircleIcon = ({ size = 20 }) => (
+  <Ico w={size} h={size}>
+    <defs>
+      <linearGradient id="ccG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#34d399"/>
+        <stop offset="100%" stopColor="#059669"/>
+      </linearGradient>
+    </defs>
+    <circle cx="10" cy="10" r="8" fill="url(#ccG)" opacity="0.15" stroke="url(#ccG)" strokeWidth="1.5"/>
+    <path d="M6.5 10l2.3 2.5 4.7-5" stroke="url(#ccG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
@@ -1141,28 +1182,162 @@ const ChangePasswordPanel = ({ user, onDone }) => {
    DELETE ACCOUNT PANEL
 ═══════════════════════════════════════════════════════ */
 const DeleteAccountPanel = ({ user, onDone }) => {
-  const [password, setPassword]     = useState('');
-  const [showPw, setShowPw]         = useState(false);
-  const [confirmed, setConfirmed]   = useState(false);
-  const [deleting, setDeleting]     = useState(false);
+  const [step, setStep]           = useState('loading');
+  const [password, setPassword]   = useState('');
+  const [showPw, setShowPw]       = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy]           = useState(false);
+  const [schedAt, setSchedAt]     = useState(null);
+  const [timeLeft, setTimeLeft]   = useState({ h: 72, m: 0, s: 0, total: 72 * 3600000 });
 
-  const handleDelete = async () => {
+  const execDelete = async () => {
+    try {
+      await deleteDoc(doc(db, 'users', user.uid));
+      await deleteUser(user);
+      toast.success('Account permanently deleted.');
+      onDone();
+    } catch (e) {
+      toast.error('Auto-deletion failed: ' + e.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) { setStep('verify'); return; }
+    getDoc(doc(db, 'users', user.uid)).then(snap => {
+      const data = snap.exists() ? snap.data() : {};
+      if (data.deletionPending && data.scheduledDeleteAt) {
+        const at = data.scheduledDeleteAt;
+        if (Date.now() >= at) {
+          setStep('executing');
+          execDelete();
+        } else {
+          setSchedAt(at);
+          setStep('scheduled');
+        }
+      } else {
+        setStep('verify');
+      }
+    }).catch(() => setStep('verify'));
+  }, [user]);
+
+  useEffect(() => {
+    if (step !== 'scheduled' || !schedAt) return;
+    const tick = () => {
+      const diff = schedAt - Date.now();
+      if (diff <= 0) { setStep('executing'); execDelete(); return; }
+      setTimeLeft({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        total: diff
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [step, schedAt]);
+
+  const handleSchedule = async () => {
     if (!confirmed) { toast.error('Please confirm you understand'); return; }
-    if (!password) { toast.error('Enter your password to confirm'); return; }
-    setDeleting(true);
+    if (!password)  { toast.error('Enter your current password'); return; }
+    setBusy(true);
     try {
       const cred = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(user, cred);
-      await deleteDoc(doc(db, 'users', user.uid));
-      await deleteUser(user);
-      toast.success('Account deleted');
-      onDone();
+      const deleteAt = Date.now() + 72 * 60 * 60 * 1000;
+      await setDoc(doc(db, 'users', user.uid), {
+        deletionPending: true,
+        scheduledDeleteAt: deleteAt,
+        deletionScheduledOn: new Date().toISOString()
+      }, { merge: true });
+      setSchedAt(deleteAt);
+      setStep('scheduled');
+      toast.success('Deletion scheduled — you have 72 hours to revert');
     } catch (e) {
       if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Incorrect password');
       else toast.error(e.message);
-    }
-    finally { setDeleting(false); }
+    } finally { setBusy(false); }
   };
+
+  const handleRevert = async () => {
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        deletionPending: false,
+        scheduledDeleteAt: null,
+        deletionScheduledOn: null
+      });
+      toast.success('🎉 Account deletion cancelled! Your account is safe.');
+      onDone();
+    } catch (e) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const pct = schedAt ? Math.max(0, Math.min(100, (timeLeft.total / (72 * 3600000)) * 100)) : 100;
+  const deletionDate = schedAt ? new Date(schedAt).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+
+  if (step === 'loading' || step === 'executing') return (
+    <div className="wd-form-panel" style={{ alignItems: 'center', justifyContent: 'center', minHeight: 180 }}>
+      <span className="wd-spin" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(99,102,241,.2)', borderTopColor: '#6366f1' }} />
+      <p style={{ color: '#6d6b99', fontSize: 13.5, marginTop: 10 }}>{step === 'executing' ? 'Deleting account…' : 'Loading…'}</p>
+    </div>
+  );
+
+  if (step === 'scheduled') return (
+    <div className="wd-form-panel">
+      <div className="wd-form-title" style={{ color: '#d97706' }}>
+        <HourglassIcon size={22} />
+        Deletion Scheduled
+      </div>
+
+      <div className="wd-sched-card">
+        <div className="wd-sched-card__header">
+          <div className="wd-sched-card__dot" />
+          <span>Auto-deletes on <strong>{deletionDate}</strong></span>
+        </div>
+
+        <div className="wd-countdown-wrap">
+          <div className="wd-countdown-block">
+            <span className="wd-countdown-digits">{pad(timeLeft.h)}</span>
+            <span className="wd-countdown-label">Hours</span>
+          </div>
+          <span className="wd-countdown-sep">:</span>
+          <div className="wd-countdown-block">
+            <span className="wd-countdown-digits">{pad(timeLeft.m)}</span>
+            <span className="wd-countdown-label">Minutes</span>
+          </div>
+          <span className="wd-countdown-sep">:</span>
+          <div className="wd-countdown-block">
+            <span className="wd-countdown-digits">{pad(timeLeft.s)}</span>
+            <span className="wd-countdown-label">Seconds</span>
+          </div>
+        </div>
+
+        <div className="wd-sched-bar-wrap">
+          <div className="wd-sched-bar">
+            <div className="wd-sched-bar__fill" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="wd-sched-bar__label">{Math.round(pct)}% time remaining</span>
+        </div>
+      </div>
+
+      <div className="wd-sched-info">
+        <WarnIcon />
+        <p>If you do not revert before the timer ends, your account, messages, friends and all data will be <strong>permanently erased</strong> and cannot be recovered.</p>
+      </div>
+
+      <button className="wd-revert-btn" onClick={handleRevert} disabled={busy}>
+        {busy ? <span className="wd-spin" /> : <UndoIcon size={20} />}
+        <span>{busy ? 'Reverting…' : 'Cancel & Keep My Account'}</span>
+      </button>
+
+      <p className="wd-sched-note">
+        <CheckCircleIcon size={14} />
+        Clicking above will immediately cancel the deletion and restore your account.
+      </p>
+    </div>
+  );
 
   return (
     <div className="wd-form-panel">
@@ -1174,17 +1349,26 @@ const DeleteAccountPanel = ({ user, onDone }) => {
       <div className="wd-danger-box">
         <WarnIcon />
         <div>
-          <p className="wd-danger-title">This action is permanent</p>
-          <p className="wd-danger-sub">All your data, messages, friends, and profile will be erased forever. This cannot be undone.</p>
+          <p className="wd-danger-title">You get a 72-hour safety window</p>
+          <p className="wd-danger-sub">After confirming, your account will be <strong>scheduled</strong> for deletion — not deleted immediately. You can revert within 72 hours. After that, everything is gone forever.</p>
         </div>
       </div>
 
       <div className="wd-fields">
         <div className="wd-field-group">
-          <label className="wd-label">Confirm Password</label>
+          <label className="wd-label">
+            <KeyIcon animated />
+            Current Password
+          </label>
           <div className="wd-pw-wrap">
-            <input className="wd-input wd-input--danger" type={showPw ? 'text' : 'password'} value={password}
-              onChange={e => setPassword(e.target.value)} placeholder="Enter your password" />
+            <input
+              className="wd-input wd-input--danger"
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter your current password"
+              onKeyDown={e => e.key === 'Enter' && handleSchedule()}
+            />
             <button className="wd-eye" type="button" onClick={() => setShowPw(p => !p)}>
               {showPw ? <EyeOffIcon animated /> : <EyeIcon animated />}
             </button>
@@ -1193,17 +1377,17 @@ const DeleteAccountPanel = ({ user, onDone }) => {
 
         <label className="wd-confirm-chk">
           <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
-          <span>I understand this action is <strong>permanent and irreversible</strong></span>
+          <span>I understand my account will be <strong>permanently deleted</strong> after 72 hours if I don't revert</span>
         </label>
       </div>
 
       <button
         className="wd-save-btn wd-save-btn--danger"
-        onClick={handleDelete}
-        disabled={deleting || !confirmed}
+        onClick={handleSchedule}
+        disabled={busy || !confirmed || !password}
       >
-        {deleting ? <span className="wd-spin" /> : <TrashIcon color="#fff" animated />}
-        <span>{deleting ? 'Deleting…' : 'Delete My Account'}</span>
+        {busy ? <span className="wd-spin" /> : <HourglassIcon size={18} />}
+        <span>{busy ? 'Scheduling…' : 'Schedule Deletion (72h to Revert)'}</span>
       </button>
     </div>
   );

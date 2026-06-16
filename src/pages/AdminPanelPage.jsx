@@ -1713,17 +1713,27 @@ const AdminPanelPage = () => {
 
               <div className="rpt-sub-tabs">
                 {[
-                  { id: 'all', label: 'All Reports', color: '#6366f1', icon: <path fill="currentColor" d="M3,3H21V5H3V3M3,7H15V9H3V7M3,11H21V13H3V11M3,15H15V17H3V15M3,19H21V21H3V19Z"/> },
-                  { id: 'users', label: 'User Reports', color: '#ef4444', icon: <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/> },
-                  { id: 'messages', label: 'Message Reports', color: '#3b82f6', icon: <path fill="currentColor" d="M20,2H4C2.89,2 2,2.89 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/> },
-                  { id: 'appeals', label: 'Ban Appeals', color: '#10b981', icon: <><path fill="currentColor" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></> },
-                  { id: 'pending', label: `Pending (${stats.pendingReports})`, color: '#f59e0b', icon: <path fill="currentColor" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/> }
-                ].map(st => (
-                  <button key={st.id} className={`rpt-sub-tab ${reportSubTab === st.id ? 'active' : ''}`} style={{'--rpt-color': st.color}} onClick={() => setReportSubTab(st.id)}>
-                    <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0,color: reportSubTab === st.id ? '#fff' : st.color}}>{st.icon}</svg>
-                    {st.label}
-                  </button>
-                ))}
+                  { id: 'all', label: 'All Reports', color: '#6366f1',
+                    renderIcon: (c) => <><path fill={c} d="M3,3H21V5H3V3M3,7H15V9H3V7M3,11H21V13H3V11M3,15H15V17H3V15M3,19H21V21H3V19Z"/></> },
+                  { id: 'users', label: 'User Reports', color: '#ef4444',
+                    renderIcon: (c) => <><path fill={c} d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></> },
+                  { id: 'messages', label: 'Message Reports', color: '#3b82f6',
+                    renderIcon: (c) => <><path fill={c} d="M20,2H4C2.89,2 2,2.89 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></> },
+                  { id: 'appeals', label: 'Ban Appeals', color: '#10b981',
+                    renderIcon: (c) => <><path fill={c} d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></> },
+                  { id: 'pending', label: `Pending (${stats.pendingReports})`, color: '#f59e0b',
+                    renderIcon: (c) => <><path fill={c} d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></> }
+                ].map(st => {
+                  const isAct = reportSubTab === st.id;
+                  return (
+                    <button key={st.id} className={`rpt-sub-tab ${isAct ? 'active' : ''}`} style={{'--rpt-color': st.color}} onClick={() => setReportSubTab(st.id)}>
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}>
+                        {st.renderIcon(isAct ? '#ffffff' : st.color)}
+                      </svg>
+                      {st.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {(() => {
