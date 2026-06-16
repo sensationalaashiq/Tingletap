@@ -52,31 +52,13 @@ export class DeviceFingerprint {
       }
     }
 
-    // Audio context fingerprint
+    // Audio fingerprint (passive only — no AudioContext to avoid browser notifications)
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        const context = new AudioContext();
-        const oscillator = context.createOscillator();
-        const analyser = context.createAnalyser();
-        const gainNode = context.createGain();
-        const scriptProcessor = context.createScriptProcessor(4096, 1, 1);
-
-        gainNode.gain.value = 0;
-        oscillator.connect(analyser);
-        analyser.connect(scriptProcessor);
-        scriptProcessor.connect(gainNode);
-        gainNode.connect(context.destination);
-
-        oscillator.start(0);
-        const audioFingerprint = analyser.frequencyBinCount.toString();
-        components.push(audioFingerprint);
-        
-        oscillator.stop();
-        context.close();
-      }
+      components.push(navigator.cookieEnabled ? 'cookies-on' : 'cookies-off');
+      components.push(window.indexedDB ? 'idb-on' : 'idb-off');
+      components.push(window.localStorage ? 'ls-on' : 'ls-off');
     } catch (e) {
-      components.push('audio-error');
+      components.push('storage-error');
     }
 
     // Generate hash
