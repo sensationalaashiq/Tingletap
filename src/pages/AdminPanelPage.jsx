@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
+import { Badges } from '../data/Badges.jsx';
 import './AdminPanelPage.css';
 
 const AdminPanelPage = () => {
@@ -65,6 +66,11 @@ const AdminPanelPage = () => {
   const [editRoomTarget, setEditRoomTarget] = useState(null);
   const [editRoomData, setEditRoomData] = useState({ name: '', description: '', type: 'public', maxUsers: 50 });
   const [savingRoom, setSavingRoom] = useState(false);
+
+  // Assign Badge modal
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [badgeTarget, setBadgeTarget] = useState(null);
+  const [assigningBadge, setAssigningBadge] = useState(false);
   
   // Pagination
   const [userPage, setUserPage] = useState(1);
@@ -130,25 +136,16 @@ const AdminPanelPage = () => {
         ...doc.data()
       }));
       setUsers(usersData);
-      
-      // Calculate stats
-      const onlineCount = Object.keys(onlineStatuses).filter(uid => 
-        onlineStatuses[uid]?.state === 'online'
-      ).length;
-      
       setStats(prev => ({
         ...prev,
         totalUsers: usersData.length,
-        onlineUsers: onlineCount,
-        bannedUsers: usersData.filter(user => user.isBanned).length,
-        mutedUsers: usersData.filter(user => user.mutedInfo?.isMuted).length
+        bannedUsers: usersData.filter(u => u.isBanned).length,
+        mutedUsers: usersData.filter(u => u.mutedInfo?.isMuted).length
       }));
-      
       setLoading(false);
     });
-    
     return () => unsubscribe();
-  }, [onlineStatuses]);
+  }, []);
 
   // Real-time user status from RTDB
   useEffect(() => {
@@ -161,11 +158,14 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // Dedicated effect to keep online users count accurate
+  // Dedicated effect — only count UIDs that exist in Firestore users (removes stale RTDB entries)
   useEffect(() => {
-    const onlineCount = Object.values(onlineStatuses).filter(s => s?.state === 'online').length;
+    const knownUids = new Set(users.map(u => u.id));
+    const onlineCount = Object.entries(onlineStatuses).filter(
+      ([uid, s]) => s?.state === 'online' && knownUids.has(uid)
+    ).length;
     setStats(prev => ({ ...prev, onlineUsers: onlineCount }));
-  }, [onlineStatuses]);
+  }, [onlineStatuses, users]);
 
   // Real-time rooms data
   useEffect(() => {
@@ -312,6 +312,40 @@ const AdminPanelPage = () => {
       toast.error(`Device ban failed: ${error.message}`);
     } finally {
       setDevBanning(false);
+    }
+  };
+
+  const handleAssignBadge = (targetUser) => {
+    const myRole = currentUserProfile?.role;
+    if (!['owner', 'admin'].includes(myRole)) {
+      toast.error('Only Owner and Admin can assign badges.');
+      return;
+    }
+    if (myRole === 'admin' && targetUser.role === 'owner') {
+      toast.error("Admins cannot modify the Owner's profile.");
+      return;
+    }
+    setBadgeTarget(targetUser);
+    setShowBadgeModal(true);
+  };
+
+  const confirmAssignBadge = async (badgeKey) => {
+    if (!badgeTarget) return;
+    setAssigningBadge(true);
+    try {
+      const userRef = doc(db, 'users', badgeTarget.id);
+      await updateDoc(userRef, { badge: badgeKey || null });
+      if (badgeKey) {
+        toast.success(`🏅 Badge "${Badges[badgeKey]?.name}" assigned to ${badgeTarget.displayName}!`);
+      } else {
+        toast.success(`Badge removed from ${badgeTarget.displayName}.`);
+      }
+      setShowBadgeModal(false);
+      setBadgeTarget(null);
+    } catch (error) {
+      toast.error('Failed to assign badge: ' + error.message);
+    } finally {
+      setAssigningBadge(false);
     }
   };
 
@@ -1191,6 +1225,21 @@ const AdminPanelPage = () => {
                                   <span>Dev-Ban</span>
                                 </button>
                                 
+                                {['owner', 'admin'].includes(currentUserProfile?.role) &&
+                                  !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
+                                  <button
+                                    className="luxury-action-btn"
+                                    style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}
+                                    onClick={() => handleAssignBadge(user)}
+                                    title="Assign Badge"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                      <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17L6.5,12.5L7.91,11.09L11,14.17L16.09,9.08L17.5,10.5L11,17Z"/>
+                                    </svg>
+                                    <span>Badge</span>
+                                  </button>
+                                )}
+
                                 <button 
                                   className="luxury-action-btn delete-btn"
                                   onClick={() => handleDeleteProfile(user)}
@@ -1829,6 +1878,86 @@ const AdminPanelPage = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Badge Modal */}
+      {showBadgeModal && badgeTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowBadgeModal(false); setBadgeTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 560 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#7c3aed' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17L6.5,12.5L7.91,11.09L11,14.17L16.09,9.08L17.5,10.5L11,17Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Assign Badge</h3>
+                <p style={{ margin: 0, fontSize: 11.5, color: '#7c3aed', opacity: 0.8 }}>
+                  To: <strong>{badgeTarget.displayName}</strong>
+                  {badgeTarget.badge && <span style={{ marginLeft: 8, background: 'rgba(124,58,237,0.1)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#6d28d9' }}>Current: {Badges[badgeTarget.badge]?.name || badgeTarget.badge}</span>}
+                </p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowBadgeModal(false); setBadgeTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ fontSize: 12, color: '#6d28d9', fontWeight: 700, marginBottom: 10, letterSpacing: 0.4, textTransform: 'uppercase' }}>Choose a Badge</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {Object.entries(Badges).map(([key, badge]) => (
+                  <button
+                    key={key}
+                    onClick={() => confirmAssignBadge(key)}
+                    disabled={assigningBadge}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+                      padding: '12px 8px', borderRadius: 14, cursor: 'pointer',
+                      border: badgeTarget.badge === key ? '2px solid #7c3aed' : '1.5px solid rgba(124,58,237,0.18)',
+                      background: badgeTarget.badge === key ? 'rgba(124,58,237,0.1)' : 'rgba(249,247,255,0.9)',
+                      boxShadow: badgeTarget.badge === key ? '0 0 0 3px rgba(124,58,237,0.12)' : '0 1px 4px rgba(124,58,237,0.06)',
+                      transition: 'all .15s', opacity: assigningBadge ? 0.6 : 1
+                    }}
+                    onMouseEnter={e => { if (!assigningBadge) e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = badgeTarget.badge === key ? 'rgba(124,58,237,0.1)' : 'rgba(249,247,255,0.9)'; }}
+                  >
+                    <div style={{ width: 42, height: 42, flexShrink: 0 }}
+                      dangerouslySetInnerHTML={{ __html: badge.svg.replace(/\{\.\.\.props\}/g, '') }}
+                    />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: badgeTarget.badge === key ? '#6d28d9' : '#4c1d95', textAlign: 'center', lineHeight: 1.3 }}>{badge.name}</span>
+                    {badgeTarget.badge === key && (
+                      <span style={{ fontSize: 9.5, background: '#7c3aed', color: 'white', borderRadius: 5, padding: '1px 6px', fontWeight: 700 }}>Active</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {badgeTarget.badge && (
+                <button
+                  onClick={() => confirmAssignBadge(null)}
+                  disabled={assigningBadge}
+                  style={{
+                    marginTop: 12, width: '100%', padding: '9px 14px', borderRadius: 10,
+                    border: '1.5px dashed #d1d5db', background: 'rgba(255,255,255,0.7)',
+                    color: '#9ca3af', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}><path fill="#9ca3af" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+                  Remove Badge
+                </button>
+              )}
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowBadgeModal(false); setBadgeTarget(null); }} disabled={assigningBadge}>
+                Cancel
+              </button>
+              {assigningBadge && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 13, fontWeight: 600 }}>
+                  <div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: '#7c3aed' }}></div>
+                  Assigning…
+                </div>
+              )}
             </div>
           </div>
         </div>

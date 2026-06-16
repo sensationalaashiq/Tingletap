@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db, rtdb } from '../firebase/config';
-import { doc, setDoc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { ref, onValue } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -255,6 +256,20 @@ const RoomListPage = () => {
         if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
       }
     });
+    // Save device fingerprint so Admin Panel can use it for device bans
+    DeviceFingerprint.generateFingerprint().then(deviceId => {
+      if (!deviceId) return;
+      const deviceInfo = {
+        browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other',
+        os: navigator.platform || 'Unknown',
+        userAgent: navigator.userAgent,
+        lastSeen: new Date().toISOString()
+      };
+      updateDoc(doc(db, 'users', cu.uid), {
+        lastDeviceId: deviceId,
+        lastDeviceInfo: deviceInfo
+      }).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
