@@ -218,15 +218,15 @@
 .wd-identity-strip span { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; font-style:italic; color:#4f46e5; letter-spacing:.01em; }
 
 /* ══════════════════════════════════════════════════════
-   OVERLAY
+   OVERLAY  — above copyright (z 900) so panel covers it
 ══════════════════════════════════════════════════════ */
-.wd-overlay { position:fixed; inset:0; z-index:490; background:rgba(14,10,40,0); backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); pointer-events:none; transition:all .35s ease; }
+.wd-overlay { position:fixed; inset:0; z-index:920; background:rgba(14,10,40,0); backdrop-filter:blur(0); -webkit-backdrop-filter:blur(0); pointer-events:none; transition:all .35s ease; }
 .wd-overlay--on { background:rgba(14,10,40,.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); pointer-events:all; }
 
 /* ══════════════════════════════════════════════════════
-   SETTINGS PANEL
+   SETTINGS PANEL  — z 960 sits above copyright bar (900)
 ══════════════════════════════════════════════════════ */
-.wd-panel { position:fixed; left:0; right:0; bottom:0; z-index:500; background:#f8f6ff; border-radius:28px 28px 0 0; border-top:1.5px solid rgba(99,102,241,.15); box-shadow:0 -16px 60px rgba(99,102,241,.2); transform:translateY(100%); transition:transform .38s cubic-bezier(.32,.72,0,1); max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.wd-panel { position:fixed; left:0; right:0; bottom:0; z-index:960; background:#f8f6ff; border-radius:28px 28px 0 0; border-top:1.5px solid rgba(99,102,241,.15); box-shadow:0 -16px 60px rgba(99,102,241,.2); transform:translateY(100%); transition:transform .38s cubic-bezier(.32,.72,0,1); max-height:92vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .wd-panel--open { transform:translateY(0); }
 .wd-handle { width:44px; height:5px; border-radius:999px; background:rgba(99,102,241,.2); margin:12px auto 0; }
 
