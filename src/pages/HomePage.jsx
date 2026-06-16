@@ -5,7 +5,7 @@ import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
 } from 'firebase/firestore';
-import { ref, set, remove, onValue, get } from 'firebase/database';
+import { ref, set, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
