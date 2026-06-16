@@ -54,6 +54,17 @@ const AdminPanelPage = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Delete Room modal
+  const [showDeleteRoomModal, setShowDeleteRoomModal] = useState(false);
+  const [deleteRoomTarget, setDeleteRoomTarget] = useState(null);
+  const [deletingRoom, setDeletingRoom] = useState(false);
+
+  // Edit Room modal
+  const [showEditRoom, setShowEditRoom] = useState(false);
+  const [editRoomTarget, setEditRoomTarget] = useState(null);
+  const [editRoomData, setEditRoomData] = useState({ name: '', description: '', type: 'public', maxUsers: 50 });
+  const [savingRoom, setSavingRoom] = useState(false);
   
   // Pagination
   const [userPage, setUserPage] = useState(1);
@@ -149,6 +160,12 @@ const AdminPanelPage = () => {
     
     return () => unsubscribe();
   }, []);
+
+  // Dedicated effect to keep online users count accurate
+  useEffect(() => {
+    const onlineCount = Object.values(onlineStatuses).filter(s => s?.state === 'online').length;
+    setStats(prev => ({ ...prev, onlineUsers: onlineCount }));
+  }, [onlineStatuses]);
 
   // Real-time rooms data
   useEffect(() => {
@@ -326,13 +343,61 @@ const AdminPanelPage = () => {
     }
   };
 
-  const handleDeleteRoom = async (room) => {
-    if (!window.confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+  const handleDeleteRoom = (room) => {
+    setDeleteRoomTarget(room);
+    setShowDeleteRoomModal(true);
+  };
+
+  const confirmDeleteRoom = async () => {
+    if (!deleteRoomTarget) return;
+    setDeletingRoom(true);
     try {
-      await deleteDoc(doc(db, 'rooms', room.id));
-      toast.success(`Room "${room.name}" deleted.`);
+      await deleteDoc(doc(db, 'rooms', deleteRoomTarget.id));
+      toast.success(`Room "${deleteRoomTarget.name}" deleted successfully.`);
+      setShowDeleteRoomModal(false);
+      setDeleteRoomTarget(null);
     } catch (error) {
-      toast.error('Failed to delete room.');
+      console.error('Delete room error:', error);
+      toast.error('Failed to delete room. Please try again.');
+    } finally {
+      setDeletingRoom(false);
+    }
+  };
+
+  const handleEditRoom = (room) => {
+    setEditRoomTarget(room);
+    setEditRoomData({
+      name: room.name || '',
+      description: room.description || '',
+      type: room.type || 'public',
+      maxUsers: room.maxUsers || 50
+    });
+    setShowEditRoom(true);
+  };
+
+  const confirmEditRoom = async () => {
+    if (!editRoomTarget || !editRoomData.name.trim()) {
+      toast.error('Room name is required.');
+      return;
+    }
+    setSavingRoom(true);
+    try {
+      await updateDoc(doc(db, 'rooms', editRoomTarget.id), {
+        name: editRoomData.name.trim(),
+        description: editRoomData.description.trim(),
+        type: editRoomData.type,
+        maxUsers: parseInt(editRoomData.maxUsers) || 50,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUserProfile?.displayName || 'Admin'
+      });
+      toast.success(`Room "${editRoomData.name}" updated successfully!`);
+      setShowEditRoom(false);
+      setEditRoomTarget(null);
+    } catch (error) {
+      console.error('Edit room error:', error);
+      toast.error('Failed to update room. Please try again.');
+    } finally {
+      setSavingRoom(false);
     }
   };
 
@@ -1004,7 +1069,12 @@ const AdminPanelPage = () => {
                                 <div className="luxury-device-item">
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#ec4899" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
                                   <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}}>
-                                    {user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : (user.createdAt ? 'New user' : '—')}
+                                    {(() => {
+                                      const ls = deviceInfo.lastSeen;
+                                      if (!ls || ls === 'Unknown') return user.createdAt ? 'New user' : '—';
+                                      const d = new Date(ls);
+                                      return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+                                    })()}
                                   </span>
                                 </div>
                                 {(user.lastDeviceId || user.deviceId) && (
@@ -1114,7 +1184,6 @@ const AdminPanelPage = () => {
                                   className="luxury-action-btn device-ban-btn"
                                   onClick={() => handleDeviceBan(user)}
                                   title="Ban Device"
-                                  disabled={!user.lastDeviceId && !user.deviceId}
                                 >
                                   <svg viewBox="0 0 24 24" fill="none">
                                     <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
@@ -1232,9 +1301,9 @@ const AdminPanelPage = () => {
                       <div className="luxury-room-stats">
                         <div className="luxury-room-stat">
                           <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
-                            <path fill={activeInRoom > 0 ? '#10b981' : '#9ca3af'} d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
+                            <path fill={activeInRoom > 0 ? '#10b981' : '#818cf8'} d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
                           </svg>
-                          <span style={{ color: activeInRoom > 0 ? '#059669' : '#9ca3af', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
+                          <span style={{ color: activeInRoom > 0 ? '#059669' : '#6366f1', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
                             {activeInRoom} online
                           </span>
                         </div>
@@ -1256,6 +1325,17 @@ const AdminPanelPage = () => {
                       
                       <div className="luxury-room-actions">
                         <button
+                          className="luxury-action-btn"
+                          style={{ flex: 1, justifyContent: 'center', background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}
+                          onClick={() => handleEditRoom(room)}
+                          title="Edit Room"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none">
+                            <path fill="#ffffff" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                          </svg>
+                          <span>Edit</span>
+                        </button>
+                        <button
                           className="luxury-action-btn delete-btn"
                           style={{ flex: 1, justifyContent: 'center' }}
                           onClick={() => handleDeleteRoom(room)}
@@ -1264,7 +1344,7 @@ const AdminPanelPage = () => {
                           <svg viewBox="0 0 24 24" fill="none">
                             <path fill="#ffffff" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
                           </svg>
-                          <span>Delete Room</span>
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
@@ -1576,6 +1656,177 @@ const AdminPanelPage = () => {
                   <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Deleting…</>
                 ) : (
                   <><svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}><path fill="#ffffff" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/></svg> Delete Permanently</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Room Modal */}
+      {showDeleteRoomModal && deleteRoomTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDeleteRoomModal(false); setDeleteRoomTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 430 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#ef4444' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#dc2626,#f97316)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M20,2H4C2.9,2 2,2.9 2,4V22L6,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M9,13H7V11H9V13M9,10H7V8H9V10M13,13H11V11H13V13M13,10H11V8H13V10M17,13H15V11H17V13M17,10H15V8H17V10Z"/>
+                  <path fill="rgba(255,255,255,0.6)" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9Z" opacity="0.4"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Delete Room</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#ef4444', opacity: 0.8 }}>This cannot be undone</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowDeleteRoomModal(false); setDeleteRoomTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: '#fff1f1', border: '1.5px solid #fecaca', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22, flexShrink: 0, marginTop: 1 }}>
+                  <path fill="#dc2626" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#b91c1c' }}>Permanently deleting: &ldquo;{deleteRoomTarget.name}&rdquo;</div>
+                  <div style={{ fontSize: 11.5, color: '#7f1d1d', marginTop: 4, lineHeight: 1.5 }}>
+                    All messages and data in this room will be permanently removed. Users currently in this room will be disconnected.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowDeleteRoomModal(false); setDeleteRoomTarget(null); }} disabled={deletingRoom}>
+                Cancel
+              </button>
+              <button
+                className="luxury-btn-primary"
+                style={{ background: 'linear-gradient(135deg,#dc2626,#f97316)' }}
+                onClick={confirmDeleteRoom}
+                disabled={deletingRoom}
+              >
+                {deletingRoom ? (
+                  <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Deleting…</>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}>
+                      <path fill="#ffffff" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                    </svg>
+                    Delete Room
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Room Modal */}
+      {showEditRoom && editRoomTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowEditRoom(false); setEditRoomTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 520 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#6366f1' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 16, color: '#1e1b4b', fontWeight: 800 }}>Edit Room</h3>
+                <p style={{ margin: 0, fontSize: 11.5, color: '#6366f1', opacity: 0.75 }}>Changes reflect on Room List page instantly</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowEditRoom(false); setEditRoomTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div className="luxury-form-group">
+                <label className="luxury-form-label">
+                  <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M5,4V7H10.5V19H13.5V7H19V4H5Z"/></svg>
+                  Room Name *
+                </label>
+                <input
+                  className="luxury-form-input"
+                  type="text"
+                  placeholder="e.g. Indian Chat, Gaming Lounge…"
+                  value={editRoomData.name}
+                  onChange={(e) => setEditRoomData(p => ({ ...p, name: e.target.value }))}
+                  maxLength={40}
+                  autoFocus
+                />
+              </div>
+              <div className="luxury-form-group">
+                <label className="luxury-form-label">
+                  <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
+                  Description
+                </label>
+                <input
+                  className="luxury-form-input"
+                  type="text"
+                  placeholder="Short description of this room…"
+                  value={editRoomData.description}
+                  onChange={(e) => setEditRoomData(p => ({ ...p, description: e.target.value }))}
+                  maxLength={100}
+                />
+              </div>
+              <div className="luxury-form-row">
+                <div className="luxury-form-group">
+                  <label className="luxury-form-label">
+                    <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>
+                    Room Type
+                  </label>
+                  <select
+                    className="luxury-form-input"
+                    value={editRoomData.type}
+                    onChange={(e) => setEditRoomData(p => ({ ...p, type: e.target.value }))}
+                  >
+                    <option value="public">🌐 Public</option>
+                    <option value="private">🔒 Private</option>
+                  </select>
+                </div>
+                <div className="luxury-form-group">
+                  <label className="luxury-form-label">
+                    <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/></svg>
+                    Max Users
+                  </label>
+                  <input
+                    className="luxury-form-input"
+                    type="number"
+                    min="2"
+                    max="500"
+                    value={editRoomData.maxUsers}
+                    onChange={(e) => setEditRoomData(p => ({ ...p, maxUsers: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div style={{ background: 'rgba(99,102,241,0.06)', border: '1.5px solid rgba(99,102,241,0.18)', borderRadius: 11, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 9 }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16, flexShrink: 0 }}>
+                  <path fill="#6366f1" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+                </svg>
+                <span style={{ fontSize: 11.5, color: '#4338ca', fontWeight: 600 }}>
+                  Changes are saved to Firestore and reflected in real-time on the Room List page for all users.
+                </span>
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowEditRoom(false); setEditRoomTarget(null); }} disabled={savingRoom}>
+                Cancel
+              </button>
+              <button
+                className="luxury-btn-primary"
+                style={{ background: editRoomData.name.trim() ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : '#d1d5db', cursor: editRoomData.name.trim() ? 'pointer' : 'not-allowed' }}
+                onClick={confirmEditRoom}
+                disabled={savingRoom || !editRoomData.name.trim()}
+              >
+                {savingRoom ? (
+                  <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Saving…</>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}>
+                      <path fill="#ffffff" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
+                    </svg>
+                    Save Changes
+                  </>
                 )}
               </button>
             </div>
