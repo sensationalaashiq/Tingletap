@@ -9485,88 +9485,254 @@ html body.theme-sunset .message-body p {
    polished, luxurious look across the entire homepage.
    ============================================================ */
 
-/* --- Premium Chat Header --- */
+/* --- Light Lavender Chat Header --- */
 .homepage-container .chat-header {
-  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #7c3aed 100%) !important;
-  box-shadow:
-    0 4px 24px rgba(109, 40, 217, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.12) inset !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #e9d5ff 100%) !important;
+  box-shadow: 0 2px 12px rgba(109, 40, 217, 0.12), 0 1px 0 rgba(255,255,255,0.6) inset !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.18) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 6px !important;
+  gap: 4px !important;
+}
+
+/* Fix header sections to use flex flow instead of absolute positioning */
+.homepage-container .header-left {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.homepage-container .header-center {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 4px !important;
+  gap: 5px !important;
+}
+
+.homepage-container .header-right {
+  position: static !important;
+  right: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  flex-shrink: 0 !important;
+  flex-wrap: nowrap !important;
+  padding-right: 2px !important;
+}
+
+/* Settings button — override absolute positioning inside homepage */
+.homepage-container .header-action-btn.settings-btn {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  top: auto !important;
+  flex-shrink: 0 !important;
 }
 
 .dark-mode .homepage-container .chat-header {
   background: linear-gradient(135deg, #1e1040 0%, #2d1b69 50%, #1a0f3a 100%) !important;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(139, 92, 246, 0.2) inset !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(139, 92, 246, 0.2) inset !important;
+  border-bottom-color: rgba(139, 92, 246, 0.25) !important;
 }
 
-/* --- Premium Header Buttons --- */
+/* --- Header Buttons (light lavender theme) --- */
 .homepage-container .header-action-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  background: rgba(109, 40, 217, 0.1) !important;
+  border: 1px solid rgba(109, 40, 217, 0.2) !important;
   border-radius: 50% !important;
-  backdrop-filter: blur(8px) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 1px 4px rgba(109, 40, 217, 0.08) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  flex-shrink: 0 !important;
 }
 
 .homepage-container .header-action-btn:hover {
-  background: rgba(255, 255, 255, 0.28) !important;
+  background: rgba(109, 40, 217, 0.2) !important;
   transform: scale(1.08) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.22) !important;
 }
 
 .homepage-container .header-action-btn svg {
-  color: white !important;
-  fill: white !important;
-  width: 18px !important;
-  height: 18px !important;
+  color: #5b21b6 !important;
+  fill: #5b21b6 !important;
+  width: 15px !important;
+  height: 15px !important;
 }
 
-/* Keep special button colors */
+/* Dark mode button overrides */
+.dark-mode .homepage-container .header-action-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.dark-mode .homepage-container .header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+.dark-mode .homepage-container .header-action-btn svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Special button accent colors — light mode */
 .homepage-container .clear-chat-btn {
-  background: rgba(239, 68, 68, 0.35) !important;
-  border-color: rgba(239, 68, 68, 0.5) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.28) !important;
 }
 .homepage-container .clear-chat-btn:hover {
-  background: rgba(239, 68, 68, 0.55) !important;
+  background: rgba(239, 68, 68, 0.22) !important;
 }
-.homepage-container .pm-header-btn {
-  background: rgba(59, 130, 246, 0.35) !important;
-  border-color: rgba(59, 130, 246, 0.5) !important;
-}
-.homepage-container .pm-header-btn:hover {
-  background: rgba(59, 130, 246, 0.55) !important;
+.homepage-container .clear-chat-btn svg {
+  color: #dc2626 !important;
+  fill: #dc2626 !important;
 }
 
-/* --- Premium Header Title & User Count --- */
-.homepage-container .header-title {
+.homepage-container .friend-request-btn {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.homepage-container .friend-request-btn:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+}
+.homepage-container .friend-request-btn svg {
+  color: #047857 !important;
+  fill: #047857 !important;
+}
+
+.homepage-container .radio-header-btn {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.homepage-container .radio-header-btn:hover {
+  background: rgba(245, 158, 11, 0.22) !important;
+}
+.homepage-container .radio-header-btn svg {
+  color: #b45309 !important;
+  fill: #b45309 !important;
+}
+
+.homepage-container .pm-header-btn {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+.homepage-container .pm-header-btn:hover {
+  background: rgba(59, 130, 246, 0.22) !important;
+}
+.homepage-container .pm-header-btn svg {
+  color: #1d4ed8 !important;
+  fill: #1d4ed8 !important;
+}
+
+/* Dark mode — all special buttons use white icons */
+.dark-mode .homepage-container .clear-chat-btn svg,
+.dark-mode .homepage-container .friend-request-btn svg,
+.dark-mode .homepage-container .radio-header-btn svg,
+.dark-mode .homepage-container .pm-header-btn svg {
   color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  fill: #ffffff !important;
+}
+
+/* --- Header Title & User Count --- */
+.homepage-container .header-title {
+  color: #3b0764 !important;
+  text-shadow: none !important;
   font-weight: 700 !important;
   letter-spacing: 0.2px !important;
+  font-size: 0.88rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.dark-mode .homepage-container .header-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
 }
 
 .homepage-container .user-count {
-  background: rgba(255, 255, 255, 0.18) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(109, 40, 217, 0.1) !important;
+  color: #5b21b6 !important;
+  border: 1px solid rgba(109, 40, 217, 0.2) !important;
   font-weight: 700 !important;
   border-radius: 20px !important;
-  padding: 4px 12px !important;
-  font-size: 0.72rem !important;
+  padding: 2px 7px !important;
+  font-size: 0.67rem !important;
   letter-spacing: 0.3px !important;
-  backdrop-filter: blur(6px) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+.dark-mode .homepage-container .user-count {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Mobile: smaller buttons so everything fits in viewport */
+@media (max-width: 480px) {
+  .homepage-container .chat-header {
+    padding: 0 3px !important;
+    gap: 2px !important;
+  }
+  .homepage-container .header-action-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
+  }
+  .homepage-container .header-action-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  .homepage-container .header-right {
+    gap: 2px !important;
+  }
+  .homepage-container .header-title {
+    font-size: 0.78rem !important;
+  }
+  .homepage-container .user-count {
+    padding: 2px 5px !important;
+    font-size: 0.6rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .homepage-container .header-action-btn {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+  }
+  .homepage-container .header-action-btn svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+  .homepage-container .header-title {
+    font-size: 0.72rem !important;
+  }
 }
 
 /* --- Premium Chat Background --- */

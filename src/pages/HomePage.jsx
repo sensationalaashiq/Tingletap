@@ -70,37 +70,8 @@ const MusicIcon = () => (
 );
 
 const CustomMenuIcon = () => (
-  <svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" width="34px" height="34px">
-    <defs>
-      <linearGradient id="modern_menu_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="50%" stopColor="#f0f0f0" />
-        <stop offset="100%" stopColor="#e0e0e0" />
-      </linearGradient>
-      <filter id="menu_shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(0,0,0,0.3)"/>
-      </filter>
-    </defs>
-    
-    {/* Main background group/container */}
-    <rect x="3" y="20.8" width="16.8" height="1.12" rx="0.96" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    
-    {/* Center person (main figure) */}
-    <circle cx="14" cy="6.16" r="2.8" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    <path d="M8.4 16.8h11.2c0-1.68-2.24-3.08-6.72-3.08-1.4 0-2.52.28-3.36.84-1.4 1.12-1.12 2.24-1.12 2.24z" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    
-    {/* Left person (smaller) */}
-    <circle cx="6.72" cy="8.96" r="2.24" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    <path d="M2.8 16.8h7.84c0-.84-1.12-1.68-3.92-1.68s-3.92.84-3.92 1.68z" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    
-    {/* Right person (smaller) */}
-    <circle cx="21.28" cy="8.96" r="2.24" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    <path d="M17.36 16.8h7.84c0-.84-1.12-1.68-3.92-1.68s-3.92.84-3.92 1.68z" fill="url(#modern_menu_gradient)" filter="url(#menu_shadow)" />
-    
-    {/* Additional decorative shadow elements for depth */}
-    <circle cx="14" cy="6.16" r="2.24" fill="rgba(255,255,255,0.8)" />
-    <circle cx="6.72" cy="8.96" r="1.68" fill="rgba(255,255,255,0.8)" />
-    <circle cx="21.28" cy="8.96" r="1.68" fill="rgba(255,255,255,0.8)" />
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" fill="currentColor">
+    <path d="M16,11C16,9.34 14.66,8 13,8H11C9.34,8 8,9.34 8,11C8,12.66 9.34,14 11,14H13C14.66,14 16,12.66 16,11M14,11C14,11.55 13.55,12 13,12H11C10.45,12 10,11.55 10,11C10,10.45 10.45,10 11,10H13C13.55,10 14,10.45 14,11M9,16C6.24,16 4,17.79 4,20H6C6,18.9 7.34,18 9,18H15C16.66,18 18,18.9 18,20H20C20,17.79 17.76,16 15,16H9M20,5H4V7H20V5M20,9H4V11H7.08C7.03,10.67 7,10.34 7,10H4V12H7.41C7.96,13.19 9.05,14 10.32,14H13.68C14.95,14 16.04,13.19 16.59,12H20V10H17C17,10.34 16.97,10.67 16.92,11H20V9Z"/>
   </svg>
 );
 const MaleIconSVG = () => (
@@ -5755,11 +5726,33 @@ const HomePage = ({ user }) => {
                                   <button 
                                       className="header-action-btn clear-chat-btn" 
                                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearChat(); }}
-                                      title="Clear Chat"
+                                      title="Delete All Chats"
                                   >
                                       <PremiumDeleteIcon />
                                   </button>
                               )}
+                              <button
+                                  className="header-action-btn friend-request-btn"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowFriendRequestNotification(prev => !prev); }}
+                                  title="Friend Requests"
+                                  style={{ position: 'relative' }}
+                              >
+                                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                      <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
+                                  </svg>
+                                  {friendRequests.length > 0 && (
+                                      <span className="pm-notification-badge">{friendRequests.length}</span>
+                                  )}
+                              </button>
+                              <button
+                                  className="header-action-btn radio-header-btn"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRadioOpen(prev => !prev); }}
+                                  title="Radio"
+                              >
+                                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                      <path d="M20,6H10.83L7.83,3L6.42,4.41L8.83,6.83V7H3A2,2 0 0,0 1,9V19A2,2 0 0,0 3,21H20A2,2 0 0,0 22,19V8A2,2 0 0,0 20,6M13.5,17A2.5,2.5 0 0,1 11,14.5A2.5,2.5 0 0,1 13.5,12A2.5,2.5 0 0,1 16,14.5A2.5,2.5 0 0,1 13.5,17M18,11H3V9H18V11Z"/>
+                                  </svg>
+                              </button>
                               <button 
                                   className="header-action-btn pm-header-btn" 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPmHeaderBoxOpen(prev => !prev); }}
@@ -5776,6 +5769,7 @@ const HomePage = ({ user }) => {
                               <div 
                                   className="header-action-btn menu-trigger"
                                   onClick={() => setSidebarOpen(true)}
+                                  title="Menu"
                               >
                                   <CustomMenuIcon />
                               </div>
