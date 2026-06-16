@@ -1,0 +1,11 @@
+# Home
+/ /index.html 200
+
+# SPA (React/Vue/Vite)
+/* /index.html 200
+
+# Redirect old page to new page
+/old-page /new-page 301
+
+# Redirect to external site
+/blog https://example.com/blog 301

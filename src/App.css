@@ -299,28 +299,23 @@ html, body {
     }
 }
 
-/* Universal SVG and Icon Theming - instant switching */
+/* Universal SVG theming — only set `color` globally so SVGs using fill="currentColor" inherit it.
+   Do NOT force fill/stroke globally with !important — that kills custom gradient SVGs. */
 svg {
-    color: var(--icon-color) !important;
-    fill: var(--svg-fill) !important;
-    stroke: var(--svg-stroke) !important;
+    color: var(--icon-color);
     transition: none !important;
 }
 
 svg:hover {
-    color: var(--icon-hover) !important;
-    fill: var(--icon-hover) !important;
-    stroke: var(--icon-hover) !important;
+    color: var(--icon-hover);
 }
 
-/* Apply theme colors to all icons and buttons */
+/* Apply theme color to plain icon buttons only (no fill override so gradients survive) */
 button svg,
 .action-btn svg,
 .send-btn svg,
 .actions-btn svg {
     color: var(--icon-color) !important;
-    fill: var(--icon-color) !important;
-    stroke: var(--icon-color) !important;
 }
 
 button:hover svg,
@@ -328,8 +323,6 @@ button:hover svg,
 .send-btn:hover svg,
 .actions-btn:hover svg {
     color: var(--icon-hover) !important;
-    fill: var(--icon-hover) !important;
-    stroke: var(--icon-hover) !important;
 }
 
 .header-action-btn:hover svg {

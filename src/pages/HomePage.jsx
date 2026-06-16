@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
 } from 'firebase/firestore';
-import { ref, set, remove, onValue, onDisconnect, get } from 'firebase/database';
+import { ref, set, remove, onValue, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
@@ -2617,37 +2617,6 @@ const HomePage = ({ user }) => {
             document.removeEventListener("keydown", handleEscapeKey);
         };
     }, [isActionsOpen, isAttachmentDropdownOpen]);
-
-    // Load font preferences and initialize username styling on component mount
-    React.useEffect(() => {
-        const loadSavedFontPreferences = () => {
-            try {
-                const fallbackPrefs = {
-                    fontSize: localStorage.getItem('chatFontSize') || '14px',
-                    fontColor: localStorage.getItem('chatFontColor') || '#333333',
-                    fontFamily: localStorage.getItem('chatFontFamily') || 'inherit',
-                    isBold: localStorage.getItem('chatIsBold') === 'true',
-                    isItalic: localStorage.getItem('chatIsItalic') === 'true',
-                    isUnderline: localStorage.getItem('chatIsUnderline') === 'true',
-                    isStrikethrough: localStorage.getItem('chatIsStrikethrough') === 'true'
-                };
-                
-                setFontSize(fallbackPrefs.fontSize);
-                setFontColor(fallbackPrefs.fontColor);
-                setFontFamily(fallbackPrefs.fontFamily);
-                setIsBold(fallbackPrefs.isBold);
-                setIsItalic(fallbackPrefs.isItalic);
-                setIsUnderline(fallbackPrefs.isUnderline);
-                setIsStrikethrough(fallbackPrefs.isStrikethrough);
-                
-                window.chatFontPreferences = fallbackPrefs;
-                
-            } catch (error) {
-            }
-        };
-        
-        loadSavedFontPreferences();
-    }, []);
 
     // Handle font application from StylishFontPopup - MESSAGE TEXT ONLY
     const handleApplyFont = async (preferences) => {
