@@ -640,11 +640,9 @@ const AdminPanelPage = () => {
           <div className="luxury-stats-grid">
             <div className="luxury-stat-card primary">
               <div className="luxury-stat-icon">
-                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statFloat 3s ease-in-out infinite',overflow:'visible'}}>
-                  <path fill="#9333ea" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19C19,19.55 18.55,20 18,20H6C5.45,20 5,19.55 5,19V18H19V19Z"/>
-                  <circle fill="#c084fc" cx="8.5" cy="22" r="1.2"/>
-                  <circle fill="#9333ea" cx="12" cy="22" r="1.2"/>
-                  <circle fill="#c084fc" cx="15.5" cy="22" r="1.2"/>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statFloat 3s ease-in-out infinite'}}>
+                  <path fill="#9333ea" d="M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M8,13C5.33,13 0,14.34 0,17V19H16V17C16,14.34 10.67,13 8,13M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H24V17C24,14.34 18.67,13 16,13Z"/>
+                  <path fill="#c084fc" d="M12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6Z" opacity="0.5"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -697,8 +695,8 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card info">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statFloat 4s ease-in-out infinite',animationDelay:'0.5s'}}>
-                  <path fill="#3b82f6" d="M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M7,7V9H9V7H7M11,7V9H13V7H11M15,7V9H17V7H15M7,11V13H9V11H7M11,11V13H13V11H11M15,11V13H17V11H15M7,15V17H9V15H7M11,15V17H13V15H11M15,15V17H17V15H15Z"/>
-                  <path fill="#93c5fd" d="M10,19H14V21H10V19Z"/>
+                  <path fill="#3b82f6" d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12Z"/>
+                  <path fill="#93c5fd" d="M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -710,8 +708,8 @@ const AdminPanelPage = () => {
             <div className="luxury-stat-card security">
               <div className="luxury-stat-icon">
                 <svg viewBox="0 0 24 24" fill="none" style={{width:34,height:34,animation:'statPulse 2.5s ease-in-out infinite',animationDelay:'0.3s'}}>
-                  <path fill="#ec4899" d="M1,5H7V11H1V5M8,5H14V11H8V5M15,5H21V11H15V5M1,12H7V18H1V12M8,12H14V18H8V12M15,12H21V18H15V12Z"/>
-                  <path fill="#f9a8d4" d="M1,19H23V21H1V19Z"/>
+                  <path fill="#ec4899" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/>
+                  <path fill="#ffffff" d="M15,15L13.5,16.5L12,15L10.5,16.5L9,15L10.5,13.5L9,12L10.5,10.5L12,12L13.5,10.5L15,12L13.5,13.5L15,15Z"/>
                 </svg>
               </div>
               <div className="luxury-stat-content">
@@ -1047,8 +1045,8 @@ const AdminPanelPage = () => {
                                     onClick={() => handleModerateUser(user, 'ban')}
                                     title="Ban User"
                                   >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/>
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/>
                                     </svg>
                                     <span>Ban</span>
                                   </button>
@@ -1058,8 +1056,8 @@ const AdminPanelPage = () => {
                                     onClick={() => handleModerateUser(user, 'unban')}
                                     title="Unban User"
                                   >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
                                     </svg>
                                     <span>Unban</span>
                                   </button>
@@ -1071,8 +1069,8 @@ const AdminPanelPage = () => {
                                     onClick={() => handleModerateUser(user, 'mute')}
                                     title="Mute User"
                                   >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.28,11.73 17.28,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.73C6.73,14 9.43,16.1 12,16.1C12.62,16.1 13.22,15.97 13.77,15.74L11.91,13.88C11.94,13.88 11.97,14 12,14A3,3 0 0,1 9,11V10.27L4.27,5.54L3,4.27L4.27,3Z"/>
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.28,11.73 17.28,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.73C6.73,14 9.43,16.1 12,16.1C12.62,16.1 13.22,15.97 13.77,15.74L11.91,13.88C11.94,13.88 11.97,14 12,14A3,3 0 0,1 9,11V10.27L4.27,5.54L3,4.27L4.27,3Z"/>
                                     </svg>
                                     <span>Mute</span>
                                   </button>
@@ -1082,8 +1080,8 @@ const AdminPanelPage = () => {
                                     onClick={() => handleModerateUser(user, 'unmute')}
                                     title="Unmute User"
                                   >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
                                     </svg>
                                     <span>Unmute</span>
                                   </button>
@@ -1094,8 +1092,8 @@ const AdminPanelPage = () => {
                                   onClick={() => handleModerateUser(user, 'kick')}
                                   title="Kick from Room"
                                 >
-                                  <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
+                                  <svg viewBox="0 0 24 24" fill="none">
+                                    <path fill="#ffffff" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
                                   </svg>
                                   <span>Kick</span>
                                 </button>
@@ -1106,8 +1104,8 @@ const AdminPanelPage = () => {
                                   title="Ban Device"
                                   disabled={!user.lastDeviceId && !user.deviceId}
                                 >
-                                  <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
+                                  <svg viewBox="0 0 24 24" fill="none">
+                                    <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
                                   </svg>
                                   <span>Dev-Ban</span>
                                 </button>
@@ -1117,8 +1115,8 @@ const AdminPanelPage = () => {
                                   onClick={() => handleDeleteProfile(user)}
                                   title="Delete Profile"
                                 >
-                                  <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+                                  <svg viewBox="0 0 24 24" fill="none">
+                                    <path fill="#ffffff" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
                                   </svg>
                                   <span>Delete</span>
                                 </button>
@@ -1147,8 +1145,8 @@ const AdminPanelPage = () => {
                   <p>Monitor and control all chat rooms</p>
                 </div>
                 <button className="luxury-btn-primary" onClick={() => setShowCreateRoom(true)}>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17,12H13V16H11V12H7V10H11V6H13V10H17M20,2H4C2.89,2 2,2.89 2,4V16C2,17.11 2.89,18 4,18H8L12,22L16,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path fill="#ffffff" d="M17,12H13V16H11V12H7V10H11V6H13V10H17M20,2H4C2.89,2 2,2.89 2,4V16C2,17.11 2.89,18 4,18H8L12,22L16,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
                   </svg>
                   Create Room
                 </button>
@@ -1224,8 +1222,8 @@ const AdminPanelPage = () => {
                           onClick={() => handleDeleteRoom(room)}
                           title="Delete Room"
                         >
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                          <svg viewBox="0 0 24 24" fill="none">
+                            <path fill="#ffffff" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
                           </svg>
                           <span>Delete Room</span>
                         </button>
@@ -1337,8 +1335,8 @@ const AdminPanelPage = () => {
                           </>
                         ) : (
                           <>
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                            <svg viewBox="0 0 24 24" fill="none">
+                              <path fill="#ffffff" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
                             </svg>
                             Create Room
                           </>
@@ -1366,7 +1364,7 @@ const AdminPanelPage = () => {
               <div className="luxury-security-grid">
                 <div className="luxury-security-card">
                   <h3>
-                    <svg viewBox="0 0 24 24" fill="none" style={{width:20,height:20,filter:'drop-shadow(0 0 6px #ef4444cc)',flexShrink:0}}><path fill="#ef4444" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18L6,6.7C7.5,5 9.6,4 12,4M12,20A8,8 0 0,1 4,12C4,9.6 5,7.5 6.7,6L18,17.3C16.5,19 14.4,20 12,20Z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:20,height:20,flexShrink:0}}><path fill="#ef4444" d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
                     Banned IP Addresses
                   </h3>
                   <div className="luxury-banned-ips-list">
@@ -1389,27 +1387,27 @@ const AdminPanelPage = () => {
                 
                 <div className="luxury-security-card">
                   <h3>
-                    <svg viewBox="0 0 24 24" fill="none" style={{width:20,height:20,filter:'drop-shadow(0 0 6px #7c3aedcc)',flexShrink:0}}><path fill="#7c3aed" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:20,height:20,flexShrink:0}}><path fill="#7c3aed" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17V13H8L12,7L16,13H14V17H10Z"/></svg>
                     Security Metrics
                   </h3>
                   <div className="luxury-security-metrics">
                     <div className="luxury-security-metric">
                       <span className="luxury-metric-label">
-                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter:'drop-shadow(0 0 4px #ef4444cc)',flexShrink:0,marginRight:5}}><path fill="#ef4444" d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0,marginRight:5}}><path fill="#ef4444" d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/></svg>
                         Blocked Attempts
                       </span>
                       <span className="luxury-metric-value">{bannedIPs.length}</span>
                     </div>
                     <div className="luxury-security-metric">
                       <span className="luxury-metric-label">
-                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter:'drop-shadow(0 0 4px #ef4444cc)',flexShrink:0,marginRight:5}}><path fill="#ef4444" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0,marginRight:5}}><path fill="#ef4444" d="M18,8H17V6A5,5 0 0,0 12,1A5,5 0 0,0 7,6V8H6A2,2 0 0,0 4,10V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V10A2,2 0 0,0 18,8M12,17A2,2 0 0,1 10,15A2,2 0 0,1 12,13A2,2 0 0,1 14,15A2,2 0 0,1 12,17M15.1,8H8.9V6A3.1,3.1 0 0,1 12,2.9A3.1,3.1 0 0,1 15.1,6V8Z"/></svg>
                         Active Bans
                       </span>
                       <span className="luxury-metric-value">{stats.bannedUsers}</span>
                     </div>
                     <div className="luxury-security-metric">
                       <span className="luxury-metric-label">
-                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter:'drop-shadow(0 0 4px #10b981cc)',flexShrink:0,marginRight:5}}><path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0,marginRight:5}}><path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>
                         Threat Level
                       </span>
                       <span className="luxury-metric-value status-low">🟢 Low</span>
