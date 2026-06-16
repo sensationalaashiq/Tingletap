@@ -13,35 +13,53 @@ import '../components/BanKickModal.css';
 import './WelcomeDashboard.css';
 
 /* ═══════════════════════════════════════════════════════
-   PREMIUM SVG ICON LIBRARY
+   PREMIUM ANIMATED SVG ICON LIBRARY
 ═══════════════════════════════════════════════════════ */
-const Ico = ({ children, w = 20, h = 20 }) => (
+const Ico = ({ children, w = 20, h = 20, className = '', style = {} }) => (
   <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} fill="none"
-    xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display: 'block', flexShrink: 0 }}>
+    xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+    className={className}
+    style={{ display: 'block', flexShrink: 0, ...style }}>
     {children}
   </svg>
 );
 
-const GearIcon = ({ size = 20, color = 'currentColor' }) => (
-  <Ico w={size} h={size}>
-    <path d="M10 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill={color} opacity="0.9"/>
-    <path d="M16.5 10a6.5 6.5 0 0 0-.06-.87l1.8-1.4-1.74-3.02-2.1.85A6.47 6.47 0 0 0 12.9 4.4L12.5 2.2h-3l-.4 2.2a6.47 6.47 0 0 0-1.5 1.16l-2.1-.85L3.76 7.73l1.8 1.4A6.5 6.5 0 0 0 5.5 10c0 .3.02.59.06.87l-1.8 1.4 1.74 3.02 2.1-.85c.46.44.96.81 1.5 1.16l.4 2.2h3l.4-2.2a6.47 6.47 0 0 0 1.5-1.16l2.1.85 1.74-3.02-1.8-1.4c.04-.28.06-.57.06-.87z"
-      stroke={color} strokeWidth="1.3" fill="none"/>
+/* ── Gear — spins on hover via CSS ── */
+const GearIcon = ({ size = 20, animated = false }) => (
+  <Ico w={size} h={size} className={animated ? 'wd-ico-spin-hover' : ''}>
+    <defs>
+      <linearGradient id="gearG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </linearGradient>
+    </defs>
+    <circle cx="10" cy="10" r="3.2" fill="url(#gearG)" opacity="0.9"/>
+    <path d="M10 1.5v2M10 16.5v2M1.5 10h2M16.5 10h2M3.7 3.7l1.4 1.4M14.9 14.9l1.4 1.4M3.7 16.3l1.4-1.4M14.9 5.1l1.4-1.4"
+      stroke="url(#gearG)" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M10 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z" stroke="url(#gearG)" strokeWidth="1.6" fill="none"/>
   </Ico>
 );
 
-const ChatIcon = ({ color = '#fff' }) => (
+/* ── Chat — animated typing dots ── */
+const ChatIcon = ({ color = '#fff', animated = false }) => (
   <Ico w={22} h={22}>
-    <rect x="2" y="3" width="16" height="12" rx="4" fill={color} opacity="0.95"/>
+    <defs>
+      <linearGradient id="chatG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor={color === '#fff' ? '#818cf8' : color}/>
+        <stop offset="100%" stopColor={color === '#fff' ? '#a855f7' : color}/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="3" width="16" height="12" rx="4" fill={color === '#fff' ? color : 'url(#chatG)'} opacity="0.95"/>
     <path d="M2 12.5l3.5 4.5" stroke={color} strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="7" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.7)'}/>
-    <circle cx="11" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.7)'}/>
-    <circle cx="15" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.7)'}/>
+    <circle cx="7" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.85)' : 'rgba(255,255,255,0.75)'} className={animated ? 'wd-dot-1' : ''}/>
+    <circle cx="11" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.85)' : 'rgba(255,255,255,0.75)'} className={animated ? 'wd-dot-2' : ''}/>
+    <circle cx="15" cy="9" r="1.5" fill={color === '#fff' ? 'rgba(99,102,241,0.85)' : 'rgba(255,255,255,0.75)'} className={animated ? 'wd-dot-3' : ''}/>
   </Ico>
 );
 
+/* ── Arrow — slides right on button hover ── */
 const ArrowIcon = ({ color = '#fff' }) => (
-  <Ico w={18} h={18}>
+  <Ico w={18} h={18} className="wd-ico-arrow">
     <path d="M3.5 9h11M10 4l5 5-5 5" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
@@ -70,41 +88,80 @@ const CloseIcon = ({ color = '#6366f1' }) => (
   </Ico>
 );
 
-const EditIcon = ({ color = '#6366f1' }) => (
-  <Ico w={18} h={18}>
-    <path d="M13 3.5l1.5 1.5L5.5 14H4v-1.5L13 3.5z" fill={color} opacity="0.9"/>
-    <path d="M11.5 2l2.5 2.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M3 16h12" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+/* ── Edit — animated pencil ── */
+const EditIcon = ({ color = '#6366f1', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-float' : ''}>
+    <defs>
+      <linearGradient id="editG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#6366f1"/>
+      </linearGradient>
+    </defs>
+    <path d="M13 3.5l1.5 1.5L5.5 14H4v-1.5L13 3.5z" fill={animated ? "url(#editG)" : color} opacity="0.9"/>
+    <path d="M11.5 2l2.5 2.5" stroke={animated ? "url(#editG)" : color} strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M3 16h12" stroke={animated ? "url(#editG)" : color} strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
   </Ico>
 );
 
-const LockIcon = ({ color = '#8b5cf6' }) => (
-  <Ico w={18} h={18}>
-    <rect x="3" y="8.5" width="12" height="8" rx="2.5" fill={color} opacity="0.9"/>
-    <path d="M6 8.5V7a3 3 0 0 1 6 0v1.5" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
-    <circle cx="9" cy="13" r="1.5" fill="white"/>
-    <path d="M9 14.5v1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+/* ── Lock — glowing keyhole ── */
+const LockIcon = ({ color = '#8b5cf6', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-lock' : ''}>
+    <defs>
+      <linearGradient id="lockG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a78bfa"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </linearGradient>
+      <radialGradient id="lockRG" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#fff" stopOpacity="1"/>
+        <stop offset="100%" stopColor="#c4b5fd" stopOpacity="0.8"/>
+      </radialGradient>
+    </defs>
+    <rect x="3" y="8.5" width="12" height="8" rx="2.5" fill="url(#lockG)" opacity="0.92"/>
+    <path d="M6 8.5V7a3 3 0 0 1 6 0v1.5" stroke="url(#lockG)" strokeWidth="1.8" strokeLinecap="round"/>
+    <circle cx="9" cy="13" r="1.8" fill="url(#lockRG)"/>
+    <path d="M9 14.8v.8" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
   </Ico>
 );
 
-const AtIcon = ({ color = '#a855f7' }) => (
-  <Ico w={18} h={18}>
-    <circle cx="9" cy="9" r="3.2" stroke={color} strokeWidth="1.8"/>
-    <path d="M12.2 9v1.8a3 3 0 0 0 3-3A6.2 6.2 0 1 0 10.4 14.7" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+/* ── At — rotating ring ── */
+const AtIcon = ({ color = '#a855f7', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-rotate' : ''}>
+    <defs>
+      <linearGradient id="atG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#c084fc"/>
+        <stop offset="100%" stopColor="#9333ea"/>
+      </linearGradient>
+    </defs>
+    <circle cx="9" cy="9" r="3.2" stroke="url(#atG)" strokeWidth="1.8"/>
+    <path d="M12.2 9v1.8a3 3 0 0 0 3-3A6.2 6.2 0 1 0 10.4 14.7" stroke="url(#atG)" strokeWidth="1.8" strokeLinecap="round"/>
   </Ico>
 );
 
-const SignOutIcon = ({ color = '#f97316' }) => (
-  <Ico w={18} h={18}>
-    <path d="M12 5.5l4 3.5-4 3.5M16 9H7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M9.5 3H4.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+/* ── Sign Out ── */
+const SignOutIcon = ({ color = '#f97316', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-slide' : ''}>
+    <defs>
+      <linearGradient id="soG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fb923c"/>
+        <stop offset="100%" stopColor="#ea580c"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 5.5l4 3.5-4 3.5M16 9H7" stroke="url(#soG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9.5 3H4.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h5" stroke="url(#soG)" strokeWidth="1.8" strokeLinecap="round"/>
   </Ico>
 );
 
-const TrashIcon = ({ color = '#ef4444' }) => (
-  <Ico w={18} h={18}>
-    <path d="M2.5 5h13M6 5V3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5V5M14 5l-1 10H5L4 5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M7 8v4M11 8v4" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+/* ── Trash ── */
+const TrashIcon = ({ color = '#ef4444', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-shake' : ''}>
+    <defs>
+      <linearGradient id="trashG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f87171"/>
+        <stop offset="100%" stopColor="#dc2626"/>
+      </linearGradient>
+    </defs>
+    <path d="M2.5 5h13M6 5V3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5V5M14 5l-1 10H5L4 5" stroke="url(#trashG)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7 8v4M11 8v4" stroke="url(#trashG)" strokeWidth="1.5" strokeLinecap="round"/>
   </Ico>
 );
 
@@ -147,32 +204,77 @@ const HeartIcon = () => (
   </Ico>
 );
 
+/* ── Camera ── */
 const CameraIcon = ({ color = '#6366f1' }) => (
   <Ico w={18} h={18}>
-    <path d="M2 5.5h14v10H2V5.5z" fill={color} opacity="0.85" rx="2"/>
+    <defs>
+      <linearGradient id="camIcoG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#6366f1"/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="5.5" width="14" height="10" rx="2" fill="url(#camIcoG)" opacity="0.85"/>
     <circle cx="9" cy="10" r="2.5" fill="white"/>
-    <path d="M6 5.5l1.5-2h3L12 5.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 5.5l1.5-2h3L12 5.5" stroke="url(#camIcoG)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
-const KeyIcon = ({ color = '#8b5cf6' }) => (
-  <Ico w={18} h={18}>
-    <circle cx="6.5" cy="9" r="3.5" stroke={color} strokeWidth="1.8"/>
-    <path d="M9.5 9h5.5M12 7v4" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+/* ── Key — animated premium ── */
+const KeyIcon = ({ color = '#8b5cf6', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-key' : ''}>
+    <defs>
+      <linearGradient id="keyG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#c084fc"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </linearGradient>
+      <radialGradient id="keyRG" cx="40%" cy="40%" r="60%">
+        <stop offset="0%" stopColor="#f5f3ff"/>
+        <stop offset="100%" stopColor="#a78bfa"/>
+      </radialGradient>
+    </defs>
+    <circle cx="6.5" cy="9" r="3.5" fill="url(#keyRG)" stroke="url(#keyG)" strokeWidth="1.5"/>
+    <path d="M9.5 9h5.5" stroke="url(#keyG)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M12.5 7.5v3M15 7.5v3" stroke="url(#keyG)" strokeWidth="1.5" strokeLinecap="round"/>
   </Ico>
 );
 
-const EyeIcon = ({ color = '#6d6b99' }) => (
-  <Ico w={18} h={18}>
-    <path d="M1 9S4 3.5 9 3.5 17 9 17 9s-3 5.5-8 5.5S1 9 1 9z" stroke={color} strokeWidth="1.6"/>
-    <circle cx="9" cy="9" r="2.5" fill={color} opacity="0.8"/>
+/* ── EYE — premium animated gradient ── */
+const EyeIcon = ({ animated = false }) => (
+  <Ico w={20} h={20} className={animated ? 'wd-ico-eye' : ''}>
+    <defs>
+      <linearGradient id="eyeG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#a855f7"/>
+      </linearGradient>
+      <radialGradient id="pupilG" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#c4b5fd"/>
+        <stop offset="60%" stopColor="#7c3aed"/>
+        <stop offset="100%" stopColor="#4c1d95"/>
+      </radialGradient>
+    </defs>
+    <path d="M1.5 10S4.5 3.5 10 3.5 18.5 10 18.5 10s-3 6.5-8.5 6.5S1.5 10 1.5 10z"
+      fill="none" stroke="url(#eyeG)" strokeWidth="1.6" strokeLinejoin="round"/>
+    <circle cx="10" cy="10" r="3" fill="url(#pupilG)"/>
+    <circle cx="8.8" cy="8.8" r="1" fill="white" opacity="0.6"/>
+    <circle cx="10" cy="10" r="1.2" fill="#1e1b4b" opacity="0.7"/>
   </Ico>
 );
 
-const EyeOffIcon = ({ color = '#6d6b99' }) => (
-  <Ico w={18} h={18}>
-    <path d="M2 2l14 14M6.5 5.5C7.3 4.2 8.1 3.5 9 3.5c5 0 8 5.5 8 5.5s-.8 1.5-2.3 3M10.5 13.3A8.7 8.7 0 0 1 9 14.5C4 14.5 1 9 1 9s.8-1.5 2.3-3" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-    <circle cx="9" cy="9" r="2.5" fill={color} opacity="0.4"/>
+/* ── EYE OFF — premium animated gradient ── */
+const EyeOffIcon = ({ animated = false }) => (
+  <Ico w={20} h={20} className={animated ? 'wd-ico-eye' : ''}>
+    <defs>
+      <linearGradient id="eyeOffG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#a855f7"/>
+      </linearGradient>
+    </defs>
+    <path d="M2 2l16 16" stroke="url(#eyeOffG)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M6.8 5.8C7.8 4.5 8.9 3.5 10 3.5c5.5 0 8.5 6.5 8.5 6.5s-.9 1.7-2.5 3.3"
+      stroke="url(#eyeOffG)" strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M11.5 14.2A8.5 8.5 0 0 1 10 16.5C4.5 16.5 1.5 10 1.5 10S2.5 8 4.5 6.5"
+      stroke="url(#eyeOffG)" strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M7.5 7.5A3 3 0 0 0 10 13" stroke="url(#eyeOffG)" strokeWidth="1.4" strokeLinecap="round"/>
   </Ico>
 );
 
@@ -184,8 +286,9 @@ const WarnIcon = () => (
   </Ico>
 );
 
-const SaveIcon = ({ color = '#fff' }) => (
-  <Ico w={18} h={18}>
+/* ── Save / Check ── */
+const SaveIcon = ({ color = '#fff', animated = false }) => (
+  <Ico w={18} h={18} className={animated ? 'wd-ico-check' : ''}>
     <circle cx="9" cy="9" r="7.8" fill={color} opacity="0.15" stroke={color} strokeWidth="1.4"/>
     <path d="M5.5 9.3l2.3 2.5 4.7-5.1" stroke={color} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
   </Ico>
@@ -195,6 +298,20 @@ const UserIcon = ({ color = '#6366f1' }) => (
   <Ico w={18} h={18}>
     <circle cx="9" cy="6.5" r="3.5" fill={color} opacity="0.85"/>
     <path d="M1.5 17.5c0-4 3.4-7 7.5-7s7.5 3 7.5 7" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+  </Ico>
+);
+
+/* ── Clock / Restriction ── */
+const ClockIcon = ({ color = '#f59e0b' }) => (
+  <Ico w={18} h={18}>
+    <defs>
+      <linearGradient id="clockG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbbf24"/>
+        <stop offset="100%" stopColor="#f59e0b"/>
+      </linearGradient>
+    </defs>
+    <circle cx="9" cy="9" r="7.5" stroke="url(#clockG)" strokeWidth="1.6" fill="rgba(251,191,36,0.08)"/>
+    <path d="M9 5v4l2.5 2.5" stroke="url(#clockG)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </Ico>
 );
 
@@ -229,21 +346,18 @@ const WelcomeDashboard = () => {
   const [userRole, setUserRole]       = useState('registered');
   const [userBadge, setUserBadge]     = useState(null);
 
-  /* scroll effect */
   useEffect(() => {
     const fn = () => setIsScrolled(window.scrollY > 8);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  /* close dropdown outside click */
   useEffect(() => {
     const fn = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowUserDrop(false); };
     document.addEventListener('mousedown', fn);
     return () => document.removeEventListener('mousedown', fn);
   }, []);
 
-  /* auth + ban check */
   useEffect(() => {
     const cu = auth.currentUser;
     if (cu) {
@@ -295,108 +409,43 @@ const WelcomeDashboard = () => {
         cls: 'wd-role--owner',
         icon: (
           <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-owner" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fde68a"/>
-                <stop offset="50%" stopColor="#f59e0b"/>
-                <stop offset="100%" stopColor="#d97706"/>
-              </linearGradient>
-              <filter id="rc-owner-glow"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            </defs>
-            <path d="M2 14h16l-2-7-4 4-2-7-2 7-4-4-2 7z" fill="url(#rc-owner)" filter="url(#rc-owner-glow)"/>
-            <path d="M1 14h18" stroke="#f59e0b" strokeWidth="1.4" strokeLinecap="round"/>
-            <circle cx="10" cy="7" r="1.3" fill="#fde68a"/>
-            <circle cx="3.5" cy="9" r="1" fill="#fbbf24"/>
-            <circle cx="16.5" cy="9" r="1" fill="#fbbf24"/>
+            <defs><linearGradient id="rc-owner" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+            <path d="M10 2.5L3 7l2 8h10l2-8L10 2.5z" fill="url(#rc-owner)"/>
+            <circle cx="10" cy="7" r="1.8" fill="white" opacity="0.8"/>
           </svg>
-        ),
+        )
       };
       case 'admin': return {
         label: 'Admin',
         cls: 'wd-role--admin',
         icon: (
           <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-admin" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fca5a5"/>
-                <stop offset="50%" stopColor="#ef4444"/>
-                <stop offset="100%" stopColor="#b91c1c"/>
-              </linearGradient>
-            </defs>
-            <path d="M10 2L4 5v5c0 3.7 2.6 7.1 6 8 3.4-.9 6-4.3 6-8V5l-6-3z" fill="url(#rc-admin)" opacity="0.9"/>
+            <defs><linearGradient id="rc-admin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#ef4444"/></linearGradient></defs>
+            <path d="M10 2L4 5v5c0 4 2.7 7.5 6 9 3.3-1.5 6-5 6-9V5L10 2z" fill="url(#rc-admin)" opacity="0.9"/>
             <path d="M7 10l2 2 4-4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-        ),
+        )
       };
       case 'moderator': return {
         label: 'Moderator',
         cls: 'wd-role--mod',
         icon: (
           <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-mod" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#6ee7b7"/>
-                <stop offset="50%" stopColor="#10b981"/>
-                <stop offset="100%" stopColor="#047857"/>
-              </linearGradient>
-            </defs>
-            <path d="M10 1.5l2.2 4.5 5 .7-3.6 3.5.85 5-4.45-2.34L5.56 15.2l.85-5L2.8 6.7l5-.7L10 1.5z" fill="url(#rc-mod)"/>
-            <path d="M7.5 9.8l1.8 1.9 3.2-3.4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            <defs><linearGradient id="rc-mod" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs>
+            <path d="M10 2L4 5v5c0 4 2.7 7.5 6 9 3.3-1.5 6-5 6-9V5L10 2z" fill="url(#rc-mod)" opacity="0.9"/>
+            <path d="M7 10l2 2 4-4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-        ),
+        )
       };
       case 'badge_holder': return {
-        label: 'Badge Holder',
+        label: userBadge,
         cls: 'wd-role--badge',
-        icon: (
-          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-badge" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#e9d5ff"/>
-                <stop offset="50%" stopColor="#a855f7"/>
-                <stop offset="100%" stopColor="#7c3aed"/>
-              </linearGradient>
-              <filter id="rc-badge-glow"><feGaussianBlur stdDeviation="1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            </defs>
-            <path d="M10 1.5L2 7l8 11.5L18 7 10 1.5z" fill="url(#rc-badge)" filter="url(#rc-badge-glow)"/>
-            <path d="M2 7h16" stroke="rgba(255,255,255,0.45)" strokeWidth="0.8"/>
-            <path d="M6 2.5L2 7l8 11.5L6 2.5z" fill="white" opacity="0.15"/>
-          </svg>
-        ),
-      };
-      case 'guest': return {
-        label: 'Guest',
-        cls: 'wd-role--guest',
-        icon: (
-          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-guest" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#cbd5e1"/>
-                <stop offset="100%" stopColor="#94a3b8"/>
-              </linearGradient>
-            </defs>
-            <circle cx="10" cy="7" r="4" fill="url(#rc-guest)"/>
-            <path d="M2 18c0-4 3.6-7 8-7s8 3 8 7" stroke="url(#rc-guest)" strokeWidth="1.6" strokeLinecap="round"/>
-            <circle cx="10" cy="7" r="1.8" fill="white" opacity="0.5"/>
-          </svg>
-        ),
+        icon: <SparkleIcon />
       };
       default: return {
-        label: 'Registered',
-        cls: 'wd-role--registered',
-        icon: (
-          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs>
-              <linearGradient id="rc-reg" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#a5b4fc"/>
-                <stop offset="50%" stopColor="#6366f1"/>
-                <stop offset="100%" stopColor="#4338ca"/>
-              </linearGradient>
-            </defs>
-            <circle cx="10" cy="10" r="8.2" fill="url(#rc-reg)" opacity="0.9"/>
-            <path d="M6.5 10.2l2.3 2.5 4.7-5.1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        ),
+        label: userRole === 'guest' ? 'Guest' : 'Member',
+        cls: userRole === 'guest' ? 'wd-role--guest' : 'wd-role--registered',
+        icon: <DiamondIcon />
       };
     }
   };
@@ -414,13 +463,13 @@ const WelcomeDashboard = () => {
   /* ── settings rows ── */
   const settingsRows = [
     { section: 'Profile', items: [
-      { label: 'Edit Profile',    sub: 'Update avatar & info',       IconEl: <EditIcon   />, color: '#6366f1', bg: 'rgba(99,102,241,0.13)',  sub_id: 'edit-profile'   },
-      { label: 'Change Username', sub: 'Edit your display name',     IconEl: <AtIcon     />, color: '#a855f7', bg: 'rgba(168,85,247,0.13)', sub_id: 'change-username' },
-      { label: 'Change Password', sub: 'Update your password',       IconEl: <LockIcon   />, color: '#8b5cf6', bg: 'rgba(139,92,246,0.13)', sub_id: 'change-password' },
+      { label: 'Edit Profile',    sub: 'Update avatar & info',       IconEl: <EditIcon animated />, color: '#6366f1', bg: 'rgba(99,102,241,0.13)',  sub_id: 'edit-profile'   },
+      { label: 'Change Username', sub: 'Edit your display name',     IconEl: <AtIcon animated />,   color: '#a855f7', bg: 'rgba(168,85,247,0.13)', sub_id: 'change-username' },
+      { label: 'Change Password', sub: 'Update your password',       IconEl: <KeyIcon animated />,  color: '#8b5cf6', bg: 'rgba(139,92,246,0.13)', sub_id: 'change-password' },
     ]},
     { section: 'Session', items: [
-      { label: 'Sign Out',       sub: 'End current session',          IconEl: <SignOutIcon />, color: '#f97316', bg: 'rgba(249,115,22,0.1)',  action: handleLogout,     danger: false },
-      { label: 'Delete Account', sub: 'Permanently remove account',   IconEl: <TrashIcon  />, color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   sub_id: 'delete-account', danger: true  },
+      { label: 'Sign Out',       sub: 'End current session',          IconEl: <SignOutIcon animated />, color: '#f97316', bg: 'rgba(249,115,22,0.1)',  action: handleLogout,     danger: false },
+      { label: 'Delete Account', sub: 'Permanently remove account',   IconEl: <TrashIcon animated />,  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   sub_id: 'delete-account', danger: true  },
     ]},
   ];
 
@@ -477,7 +526,7 @@ const WelcomeDashboard = () => {
                     <span className="wd-drop-ic"><ChatIcon color="#6366f1" /></span> Open Chat
                   </button>
                   <button className="wd-drop-item" onClick={() => { setShowUserDrop(false); openPanel(); }}>
-                    <span className="wd-drop-ic"><GearIcon size={18} color="#8b5cf6" /></span> Account Settings
+                    <span className="wd-drop-ic"><GearIcon size={18} /></span> Account Settings
                   </button>
                   <div className="wd-drop-sep" />
                   <button className="wd-drop-item wd-drop-danger" onClick={() => { setShowUserDrop(false); handleLogout(); }}>
@@ -489,7 +538,7 @@ const WelcomeDashboard = () => {
 
             {/* Gear button */}
             <button className="wd-gear-btn" onClick={openPanel} title="Account Settings">
-              <GearIcon size={20} color="#6366f1" />
+              <GearIcon size={20} animated />
             </button>
           </div>
         </div>
@@ -514,17 +563,17 @@ const WelcomeDashboard = () => {
         </div>
 
         <div className="wd-cta-stack">
-          {/* Launch Chat — purple gradient button */}
+          {/* Launch Chat */}
           <button className="wd-launch-btn" onClick={() => navigate('/rooms')}>
-            <ChatIcon color="#fff" />
+            <span className="wd-launch-ico-wrap"><ChatIcon color="#fff" animated /></span>
             <span>Launch Chat</span>
             <ArrowIcon color="#fff" />
             <span className="wd-shimmer" />
           </button>
 
-          {/* Account Settings — ghost button */}
+          {/* Account Settings */}
           <button className="wd-settings-btn" onClick={openPanel}>
-            <GearIcon size={18} color="#5b21b6" />
+            <GearIcon size={18} animated />
             <span>Account Settings</span>
           </button>
         </div>
@@ -555,7 +604,6 @@ const WelcomeDashboard = () => {
 
           {/* Feature tiles */}
           <div className="wd-feature-grid">
-
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(99,102,241,0.1)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft1G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs><path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z" fill="url(#ft1G)"/></svg>
@@ -565,7 +613,6 @@ const WelcomeDashboard = () => {
                 <span>Real-time text, voice & video</span>
               </div>
             </div>
-
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(16,185,129,0.1)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft2G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,15.97 6,15.42C6.95,14.03 9.17,13 12,13C14.83,13 17.05,14.03 18,15.42C17.76,15.97 17.47,16.5 17.13,17Z" fill="url(#ft2G)"/></svg>
@@ -575,7 +622,6 @@ const WelcomeDashboard = () => {
                 <span>Moderated · Encrypted · Secure</span>
               </div>
             </div>
-
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(236,72,153,0.1)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft3G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs><path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="url(#ft3G)"/></svg>
@@ -585,7 +631,6 @@ const WelcomeDashboard = () => {
                 <span>Private chats · Friend system</span>
               </div>
             </div>
-
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(14,165,233,0.1)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft4G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0284c7"/></linearGradient></defs><path d="M16,11C17.66,11 18.99,9.66 18.99,8C18.99,6.34 17.66,5 16,5C14.34,5 13,6.34 13,8C13,9.66 14.34,11 16,11M8,11C9.66,11 10.99,9.66 10.99,8C10.99,6.34 9.66,5 8,5C6.34,5 5,6.34 5,8C5,9.66 6.34,11 8,11M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M16,13C15.71,13 15.38,13.02 15.03,13.05C16.19,13.89 17,15.02 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13Z" fill="url(#ft4G)"/></svg>
@@ -595,7 +640,6 @@ const WelcomeDashboard = () => {
                 <span>555+ members · Growing daily</span>
               </div>
             </div>
-
           </div>
 
           {/* Bottom identity strip */}
@@ -655,7 +699,7 @@ const WelcomeDashboard = () => {
                           className={`wd-row${danger ? ' wd-row--danger' : ''}`}
                           onClick={() => handleRowClick({ label, sub, IconEl, color, bg, danger, sub_id, action })}
                         >
-                          <span className="wd-row-ic" style={{ background: bg, color }}>{IconEl}</span>
+                          <span className="wd-row-ic" style={{ background: bg }}>{IconEl}</span>
                           <span className="wd-row-txt">
                             <span className="wd-row-lbl" style={danger ? { color: '#ef4444' } : {}}>{label}</span>
                             <span className="wd-row-sub">{sub}</span>
@@ -699,7 +743,10 @@ const WelcomeDashboard = () => {
 const SubPanelWrapper = ({ children, onBack, onClose }) => (
   <div className="wd-sub">
     <div className="wd-sub-head">
-      <button className="wd-sub-back" onClick={onBack}><ChevronLeft color="#6366f1" /></button>
+      <button className="wd-sub-back" onClick={onBack}>
+        <ChevronLeft color="#6366f1" />
+        <span>Back</span>
+      </button>
       <button className="wd-panel-x" onClick={onClose}><CloseIcon color="#6366f1" /></button>
     </div>
     <div className="wd-sub-body">{children}</div>
@@ -760,7 +807,10 @@ const EditProfilePanel = ({ user, onDone }) => {
 
   return (
     <div className="wd-form-panel">
-      <div className="wd-form-title"><EditIcon color="#6366f1" /> Edit Profile</div>
+      <div className="wd-form-title">
+        <EditIcon color="#6366f1" animated />
+        Edit Profile
+      </div>
 
       {/* Avatar */}
       <div className="wd-avatar-row">
@@ -845,7 +895,7 @@ const EditProfilePanel = ({ user, onDone }) => {
       </div>
 
       <button className="wd-save-btn" onClick={handleSave} disabled={saving}>
-        {saving ? <span className="wd-spin" /> : <SaveIcon color="#fff" />}
+        {saving ? <span className="wd-spin" /> : <SaveIcon color="#fff" animated />}
         <span>{saving ? 'Saving…' : 'Save Changes'}</span>
       </button>
     </div>
@@ -853,50 +903,129 @@ const EditProfilePanel = ({ user, onDone }) => {
 };
 
 /* ═══════════════════════════════════════════════════════
-   CHANGE USERNAME PANEL
+   CHANGE USERNAME PANEL  (90-day restriction)
 ═══════════════════════════════════════════════════════ */
 const ChangeUsernamePanel = ({ user, onDone }) => {
-  const [username, setUsername] = useState(user?.displayName || '');
-  const [saving, setSaving] = useState(false);
+  const [username, setUsername]       = useState(user?.displayName || '');
+  const [saving, setSaving]           = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [lastChanged, setLastChanged] = useState(null);   // ISO string or null
+  const DAYS_90 = 90 * 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) {
+          const d = snap.data();
+          setLastChanged(d.usernameChangedAt || null);
+        }
+      } catch { /* ignore */ }
+      setLoading(false);
+    })();
+  }, [user]);
+
+  /* ── restriction logic ── */
+  const now = Date.now();
+  const lastMs = lastChanged ? new Date(lastChanged).getTime() : 0;
+  const elapsed = now - lastMs;
+  const isRestricted = lastChanged && elapsed < DAYS_90;
+  const daysLeft = isRestricted ? Math.ceil((DAYS_90 - elapsed) / (24 * 60 * 60 * 1000)) : 0;
+  const nextDate = isRestricted
+    ? new Date(lastMs + DAYS_90).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
 
   const handleSave = async () => {
+    if (isRestricted) { toast.error(`You can change username after ${daysLeft} more day(s)`); return; }
     const val = username.trim();
     if (!val) { toast.error('Username cannot be empty'); return; }
     if (val.length < 2) { toast.error('Minimum 2 characters'); return; }
     if (val.length > 30) { toast.error('Maximum 30 characters'); return; }
+    if (val === user.displayName) { toast.info('Username is already the same'); return; }
     setSaving(true);
     try {
+      const changedAt = new Date().toISOString();
       await updateProfile(user, { displayName: val });
-      await setDoc(doc(db, 'users', user.uid), { displayName: val, updatedAt: new Date().toISOString() }, { merge: true });
-      toast.success('Username updated!');
+      await setDoc(doc(db, 'users', user.uid), {
+        displayName: val,
+        usernameChangedAt: changedAt,
+        updatedAt: changedAt
+      }, { merge: true });
+      toast.success('Username updated! You can change it again in 90 days.');
       onDone();
     } catch (e) { toast.error(e.message); }
     finally { setSaving(false); }
   };
 
+  if (loading) return (
+    <div className="wd-form-panel">
+      <div style={{ display:'flex', justifyContent:'center', padding:'30px 0' }}>
+        <span className="wd-spin" style={{ borderColor:'rgba(168,85,247,.3)', borderTopColor:'#a855f7' }} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="wd-form-panel">
-      <div className="wd-form-title"><AtIcon color="#a855f7" /> Change Username</div>
-      <p className="wd-form-desc">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#a855f7" style={{flexShrink:0,marginTop:'1px'}}>
-          <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-        </svg>
-        Choose a unique display name that others will see in chat.
-      </p>
+      <div className="wd-form-title">
+        <AtIcon color="#a855f7" animated />
+        Change Username
+      </div>
+
+      {/* 90-day restriction banner */}
+      {isRestricted ? (
+        <div className="wd-restrict-box">
+          <div className="wd-restrict-icon"><ClockIcon /></div>
+          <div className="wd-restrict-body">
+            <p className="wd-restrict-title">Username locked for {daysLeft} more day{daysLeft !== 1 ? 's' : ''}</p>
+            <p className="wd-restrict-sub">You can change your username again on <strong>{nextDate}</strong>.</p>
+            <p className="wd-restrict-note">Usernames can only be changed once every 90 days to protect community identity.</p>
+          </div>
+        </div>
+      ) : (
+        <p className="wd-form-desc">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#a855f7" style={{flexShrink:0,marginTop:'1px'}}>
+            <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+          </svg>
+          Choose a unique display name. You can only change it once every 90 days.
+        </p>
+      )}
+
       <div className="wd-fields">
         <div className="wd-field-group">
           <label className="wd-label">
             <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="unG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c084fc"/><stop offset="100%" stopColor="#a855f7"/></linearGradient></defs><path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,14.21 19.12,16.21 17.65,17.65C16.21,19.12 14.21,20 12,20Z" fill="url(#unG)"/></svg>
             New Username
-            <svg width="12" height="12" viewBox="0 0 24 24"><defs><linearGradient id="unStG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" fill="url(#unStG)"/></svg>
           </label>
-          <input className="wd-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="Your new username" maxLength={30} />
+          <input
+            className="wd-input"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="Your new username"
+            maxLength={30}
+            disabled={isRestricted}
+            style={isRestricted ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+          />
           <span className="wd-char-count">{username.length}/30</span>
         </div>
       </div>
-      <button className="wd-save-btn" style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)' }} onClick={handleSave} disabled={saving}>
-        {saving ? <span className="wd-spin" /> : <SaveIcon color="#fff" />}
-        <span>{saving ? 'Saving…' : 'Update Username'}</span>
+
+      {lastChanged && !isRestricted && (
+        <p className="wd-form-note">
+          <ClockIcon color="#a855f7" />
+          Last changed: {new Date(lastChanged).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' })}
+        </p>
+      )}
+
+      <button
+        className="wd-save-btn"
+        style={{ background: isRestricted ? 'linear-gradient(135deg,#9ca3af,#6b7280)' : 'linear-gradient(135deg,#a855f7,#7c3aed)' }}
+        onClick={handleSave}
+        disabled={saving || isRestricted}
+      >
+        {saving ? <span className="wd-spin" /> : <SaveIcon color="#fff" animated />}
+        <span>{saving ? 'Saving…' : isRestricted ? `Locked · ${daysLeft} days left` : 'Update Username'}</span>
       </button>
     </div>
   );
@@ -914,28 +1043,49 @@ const ChangePasswordPanel = ({ user, onDone }) => {
     if (!form.current) { toast.error('Enter current password'); return; }
     if (form.newPw.length < 6) { toast.error('New password must be at least 6 characters'); return; }
     if (form.newPw !== form.confirm) { toast.error('Passwords do not match'); return; }
+    if (form.newPw === form.current) { toast.error('New password must be different from current'); return; }
     setSaving(true);
     try {
       const cred = EmailAuthProvider.credential(user.email, form.current);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, form.newPw);
+      await setDoc(doc(db, 'users', user.uid), { passwordChangedAt: new Date().toISOString() }, { merge: true });
       toast.success('Password updated successfully!');
       onDone();
     } catch (e) {
-      if (e.code === 'auth/wrong-password') toast.error('Current password is incorrect');
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Current password is incorrect');
       else toast.error(e.message);
     }
     finally { setSaving(false); }
   };
 
-  const pw = (field, label) => (
+  const pwStrength = (pw) => {
+    if (!pw) return null;
+    if (pw.length < 6) return { label: 'Too short', color: '#ef4444', w: '20%' };
+    if (pw.length < 8) return { label: 'Weak', color: '#f97316', w: '40%' };
+    if (/[A-Z]/.test(pw) && /[0-9]/.test(pw) && pw.length >= 10) return { label: 'Strong', color: '#10b981', w: '100%' };
+    if (pw.length >= 8) return { label: 'Good', color: '#a855f7', w: '70%' };
+    return { label: 'Fair', color: '#f59e0b', w: '55%' };
+  };
+  const strength = pwStrength(form.newPw);
+
+  const pwField = (field, label, placeholder) => (
     <div className="wd-field-group">
-      <label className="wd-label">{label}</label>
+      <label className="wd-label">
+        <KeyIcon animated />
+        {label}
+      </label>
       <div className="wd-pw-wrap">
-        <input className="wd-input" type={show[field] ? 'text' : 'password'} value={form[field]}
-          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} placeholder="••••••••" />
-        <button className="wd-eye" onClick={() => setShow(p => ({ ...p, [field]: !p[field] }))}>
-          {show[field] ? <EyeOffIcon /> : <EyeIcon />}
+        <input
+          className="wd-input"
+          type={show[field] ? 'text' : 'password'}
+          value={form[field]}
+          onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
+          placeholder={placeholder || '••••••••'}
+          autoComplete={field === 'current' ? 'current-password' : 'new-password'}
+        />
+        <button className="wd-eye" type="button" onClick={() => setShow(p => ({ ...p, [field]: !p[field] }))}>
+          {show[field] ? <EyeOffIcon animated /> : <EyeIcon animated />}
         </button>
       </div>
     </div>
@@ -943,18 +1093,44 @@ const ChangePasswordPanel = ({ user, onDone }) => {
 
   return (
     <div className="wd-form-panel">
-      <div className="wd-form-title"><KeyIcon color="#8b5cf6" /> Change Password</div>
-      <p className="wd-form-desc">Re-authenticate with your current password to set a new one.</p>
+      <div className="wd-form-title">
+        <KeyIcon animated />
+        Change Password
+      </div>
+      <p className="wd-form-desc">
+        <LockIcon color="#8b5cf6" animated />
+        Re-authenticate with your current password, then set a new secure one.
+      </p>
       <div className="wd-fields">
-        {pw('current', 'Current Password')}
-        {pw('newPw', 'New Password')}
-        {pw('confirm', 'Confirm New Password')}
+        {pwField('current', 'Current Password', 'Enter current password')}
+        {pwField('newPw', 'New Password', 'Min. 6 characters')}
+
+        {/* Password strength bar */}
+        {form.newPw && (
+          <div className="wd-strength-wrap">
+            <div className="wd-strength-bar">
+              <div className="wd-strength-fill" style={{ width: strength?.w, background: strength?.color }} />
+            </div>
+            <span className="wd-strength-lbl" style={{ color: strength?.color }}>{strength?.label}</span>
+          </div>
+        )}
+
+        {pwField('confirm', 'Confirm New Password', 'Re-enter new password')}
+
         {form.newPw && form.confirm && form.newPw !== form.confirm && (
-          <p className="wd-err-msg">Passwords don't match</p>
+          <p className="wd-err-msg">⚠ Passwords don't match</p>
+        )}
+        {form.newPw && form.confirm && form.newPw === form.confirm && form.newPw.length >= 6 && (
+          <p className="wd-ok-msg">✓ Passwords match</p>
         )}
       </div>
-      <button className="wd-save-btn" style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }} onClick={handleSave} disabled={saving}>
-        {saving ? <span className="wd-spin" /> : <LockIcon color="#fff" />}
+      <button
+        className="wd-save-btn"
+        style={{ background: 'linear-gradient(135deg,#7c3aed,#5b21b6)' }}
+        onClick={handleSave}
+        disabled={saving}
+      >
+        {saving ? <span className="wd-spin" /> : <LockIcon color="#fff" animated />}
         <span>{saving ? 'Updating…' : 'Update Password'}</span>
       </button>
     </div>
@@ -965,10 +1141,10 @@ const ChangePasswordPanel = ({ user, onDone }) => {
    DELETE ACCOUNT PANEL
 ═══════════════════════════════════════════════════════ */
 const DeleteAccountPanel = ({ user, onDone }) => {
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [deleting, setDeleting]   = useState(false);
+  const [password, setPassword]     = useState('');
+  const [showPw, setShowPw]         = useState(false);
+  const [confirmed, setConfirmed]   = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   const handleDelete = async () => {
     if (!confirmed) { toast.error('Please confirm you understand'); return; }
@@ -982,7 +1158,7 @@ const DeleteAccountPanel = ({ user, onDone }) => {
       toast.success('Account deleted');
       onDone();
     } catch (e) {
-      if (e.code === 'auth/wrong-password') toast.error('Incorrect password');
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Incorrect password');
       else toast.error(e.message);
     }
     finally { setDeleting(false); }
@@ -990,7 +1166,10 @@ const DeleteAccountPanel = ({ user, onDone }) => {
 
   return (
     <div className="wd-form-panel">
-      <div className="wd-form-title" style={{ color: '#ef4444' }}><TrashIcon color="#ef4444" /> Delete Account</div>
+      <div className="wd-form-title" style={{ color: '#ef4444' }}>
+        <TrashIcon color="#ef4444" animated />
+        Delete Account
+      </div>
 
       <div className="wd-danger-box">
         <WarnIcon />
@@ -1006,8 +1185,8 @@ const DeleteAccountPanel = ({ user, onDone }) => {
           <div className="wd-pw-wrap">
             <input className="wd-input wd-input--danger" type={showPw ? 'text' : 'password'} value={password}
               onChange={e => setPassword(e.target.value)} placeholder="Enter your password" />
-            <button className="wd-eye" onClick={() => setShowPw(p => !p)}>
-              {showPw ? <EyeOffIcon /> : <EyeIcon />}
+            <button className="wd-eye" type="button" onClick={() => setShowPw(p => !p)}>
+              {showPw ? <EyeOffIcon animated /> : <EyeIcon animated />}
             </button>
           </div>
         </div>
@@ -1023,7 +1202,7 @@ const DeleteAccountPanel = ({ user, onDone }) => {
         onClick={handleDelete}
         disabled={deleting || !confirmed}
       >
-        {deleting ? <span className="wd-spin" /> : <TrashIcon color="#fff" />}
+        {deleting ? <span className="wd-spin" /> : <TrashIcon color="#fff" animated />}
         <span>{deleting ? 'Deleting…' : 'Delete My Account'}</span>
       </button>
     </div>
