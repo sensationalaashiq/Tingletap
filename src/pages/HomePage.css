@@ -9761,3 +9761,53 @@ html body.theme-sunset .message-body p {
 .dark-mode .homepage-container .whisper-content {
   background: linear-gradient(90deg, rgba(139, 92, 246, 0.12), transparent) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM LAVENDER CHAT STRIPS — alternating white / soft lavender
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Even rows → white */
+.homepage-container .message-row.row-even,
+.homepage-container .message-row-wrapper:nth-child(even) .message-row {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(196, 181, 253, 0.18) !important;
+}
+
+/* Odd rows → soft lavender */
+.homepage-container .message-row.row-odd,
+.homepage-container .message-row-wrapper:nth-child(odd) .message-row {
+  background: #f5f1ff !important;
+  border-bottom: 1px solid rgba(196, 181, 253, 0.18) !important;
+}
+
+/* Hover brightens slightly */
+.homepage-container .message-row.row-even:hover {
+  background: #faf8ff !important;
+}
+.homepage-container .message-row.row-odd:hover {
+  background: #ede9ff !important;
+}
+
+/* Own messages — lavender tint accent */
+.homepage-container .message-row.my-message.row-even {
+  background: #f0ebff !important;
+}
+.homepage-container .message-row.my-message.row-odd {
+  background: #e9e2ff !important;
+}
+
+/* Chat feed background */
+.homepage-container .chat-feed {
+  background: #f8f6ff !important;
+}
+
+/* Remove compact-mode font shrinking that causes unreadable text */
+.homepage-container .compact-mode *,
+.compact-mode .message-row,
+.compact-mode .message-body,
+.compact-mode .message-displayname,
+.compact-mode .message-text {
+  font-size: inherit !important;
+  padding: inherit !important;
+  line-height: inherit !important;
+}

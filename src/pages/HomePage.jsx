@@ -10,8 +10,6 @@ import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
 import Sidebar from '../components/Sidebar';
-import ViewProfileModal from '../components/ViewProfileModal';
-
 import SettingsSidebar from '../components/SettingsSidebar';
 import CustomAudioPlayer from '../components/CustomAudioPlayer';
 import RadioPlayer from '../components/RadioPlayer';
@@ -5853,16 +5851,7 @@ const HomePage = ({ user }) => {
                     stopRecording={stopRecording}
                 />
 
-                {/* New ViewProfileModal */}
-                {profileUser && (
-                    <ViewProfileModal 
-                        user={profileUser}
-                        onClose={() => setProfileUser(null)}
-                        onOpenProfile={(user) => {
-                            setProfileUser(user);
-                        }}
-                    />
-                )}
+                {/* ViewProfileModal removed — using inline Ultra Modern modal below */}
 
                 {/* Report Modal */}
                 <StylishReportModal

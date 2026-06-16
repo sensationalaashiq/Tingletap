@@ -167,7 +167,7 @@ function App() {
       return isDarkTheme;
     };
 
-    applyTheme(savedTheme);
+    applyTheme('light');
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {

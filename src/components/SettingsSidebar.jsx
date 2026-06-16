@@ -690,150 +690,6 @@ const SettingsSidebar = ({
 
                             </div>
 
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16M12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z"/>
-                                </svg>
-                                THEME SELECTION
-                            </h4>
-
-                            <div className="modern-setting-item theme-selector">
-                                <div className="modern-setting-info">
-                                    <span>App Theme</span>
-                                    <small>Choose your preferred visual theme for the application</small>
-                                </div>
-                                <div className="theme-options">
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'light' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'light');
-                                        }}
-                                        title="Light Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z"/>
-                                        </svg>
-                                        <span>Light</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'dark' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'dark');
-                                        }}
-                                        title="Dark Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.4 6.35,17.41C9.37,20.43 14,20.54 17.33,17.97Z"/>
-                                        </svg>
-                                        <span>Dark</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'nord' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'nord');
-                                        }}
-                                        title="Nord Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/>
-                                        </svg>
-                                        <span>Nord</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'tokyo' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'tokyo');
-                                        }}
-                                        title="Tokyo Night Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M21,10.12H14.22L16.96,7.38C14.23,4.65 9.81,4.65 7.08,7.38C4.35,10.11 4.35,14.53 7.08,17.26C9.81,19.99 14.23,19.99 16.96,17.26C17.73,16.49 18.24,15.58 18.5,14.61L21,12.84C21,15.07 20.21,17.24 18.79,18.95C15.23,23.13 8.77,23.13 5.21,18.95C1.65,14.77 1.65,8.23 5.21,4.05C8.77,-0.13 15.23,-0.13 18.79,4.05C12,8V12.25L16,14.33L15.28,15.54L11,13V8H12.5Z"/>
-                                        </svg>
-                                        <span>Tokyo</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'monokai' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'monokai');
-                                        }}
-                                        title="Monokai Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L14,12L12,18L10,12"/>
-                                        </svg>
-                                        <span>Monokai</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'dracula' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'dracula');
-                                        }}
-                                        title="Dracula Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,3L14,6H18L16,8L17,11L12,9L7,11L8,8L6,6H10L12,3M12,10L15,8H21L18,12L19,16L12,14L5,16L6,12L3,8H9L12,10Z"/>
-                                        </svg>
-                                        <span>Dracula</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'cyberpunk' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'cyberpunk');
-                                        }}
-                                        title="Cyberpunk Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,2C17.5,2 22,6.5 22,12C22,17.5 17.5,22 12,22C6.5,22 2,17.5 2,12C2,6.5 6.5,2 12,2M12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C16.42,20 20,16.42 20,12C20,7.58 16.42,4 12,4M12,6L14,10H18L15,13L16,17L12,15L8,17L9,13L6,10H10L12,6Z"/>
-                                        </svg>
-                                        <span>Cyber</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'ocean' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'ocean');
-                                        }}
-                                        title="Ocean Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M4,12C4,7.58 7.58,4 12,4C16.42,4 20,7.58 20,12C20,16.42 16.42,20 12,20C7.58,20 4,16.42 4,12M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5L16,12L10,7.5V16.5Z"/>
-                                        </svg>
-                                        <span>Ocean</span>
-                                    </button>
-
-                                    <button 
-                                        className={`theme-btn ${settings.selectedTheme === 'sunset' ? 'active' : ''}`}
-                                        onClick={() => {
-                                            handleSettingChange('selectedTheme', 'sunset');
-                                        }}
-                                        title="Sunset Theme"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                            <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M17,7L12,12L7,7M7,17L12,12L17,17"/>
-                                        </svg>
-                                        <span>Sunset</span>
-                                    </button>
-                                </div>
-                                <div style={{
-                                    marginTop: '12px',
-                                    padding: '8px',
-                                    background: 'rgba(59, 130, 246, 0.1)',
-                                    borderRadius: '6px',
-                                    fontSize: '11px',
-                                    color: '#3b82f6',
-                                    textAlign: 'center'
-                                }}>
-                                    Click any theme to apply instantly
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 );
 
@@ -3699,61 +3555,67 @@ const SettingsSidebar = ({
                         <button 
                             className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
                             onClick={() => setActiveTab('general')}
+                            title="General"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#f97316" d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
                             </svg>
-                            General
+                            <span>General</span>
                         </button>
 
                         <button 
                             className={`settings-tab ${activeTab === 'notifications' ? 'active' : ''}`}
                             onClick={() => setActiveTab('notifications')}
+                            title="Notifications"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#eab308" d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"/>
                             </svg>
-                            Notifications
+                            <span>Alerts</span>
                         </button>
 
                         <button 
                             className={`settings-tab ${activeTab === 'privacy' ? 'active' : ''}`}
                             onClick={() => setActiveTab('privacy')}
+                            title="Privacy"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#22c55e" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
                             </svg>
-                            Privacy
+                            <span>Privacy</span>
                         </button>
 
                         <button 
                             className={`settings-tab ${activeTab === 'blocked' ? 'active' : ''}`}
                             onClick={() => setActiveTab('blocked')}
+                            title="Blocked Users"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M12,19C8.13,19 5,15.87 5,12C5,8.13 8.13,5 12,5C15.87,5 19,8.13 19,12C19,15.87 15.87,19 12,19M7.5,12C7.5,15.04 9.96,17.5 13,17.5V6.5C9.96,6.5 7.5,8.96 7.5,12Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#ef4444" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.22 19.25,16.28 17.97,17.9L6.1,6.03C7.72,4.75 9.78,4 12,4M12,20A8,8 0 0,1 4,12C4,9.78 4.75,7.72 6.03,6.1L17.9,17.97C16.28,19.25 14.22,20 12,20Z"/>
                             </svg>
-                            Blocked Users
+                            <span>Blocked</span>
                         </button>
 
                         <button 
                             className={`settings-tab ${activeTab === 'audio' ? 'active' : ''}`}
                             onClick={() => setActiveTab('audio')}
+                            title="Audio"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#3b82f6" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
                             </svg>
-                            Audio
+                            <span>Audio</span>
                         </button>
 
                         <button 
                             className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
                             onClick={() => setActiveTab('friends')}
+                            title="Friends"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,13C18.67,13 22,14.34 22,17V20H10V17C10,14.34 13.33,13 16,13M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,13C10.67,13 14,14.34 14,17V20H2V17C2,14.34 5.33,13 8,13Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#ec4899" d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,13C18.67,13 22,14.34 22,17V20H10V17C10,14.34 13.33,13 16,13M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,13C10.67,13 14,14.34 14,17V20H2V17C2,14.34 5.33,13 8,13Z"/>
                             </svg>
-                            Friends
+                            <span>Friends</span>
                         </button>
 
                         {(() => {
@@ -3767,11 +3629,12 @@ const SettingsSidebar = ({
                                 <button 
                                     className={`settings-tab ${activeTab === 'username-font' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('username-font')}
+                                    title="Username Style"
                                 >
-                                    <svg viewBox="0 0 24 24" width="18" height="18">
-                                        <path d="M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.5,17.5H14V19H10V17.5H10.5C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20">
+                                        <path fill="#8b5cf6" d="M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.5,17.5H14V19H10V17.5H10.5C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z"/>
                                     </svg>
-                                    Username Font
+                                    <span>Style</span>
                                 </button>
                             );
                         })()}
@@ -3779,11 +3642,12 @@ const SettingsSidebar = ({
                         <button 
                             className={`settings-tab ${activeTab === 'account' ? 'active' : ''}`}
                             onClick={() => setActiveTab('account')}
+                            title="Account"
                         >
-                            <svg viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="#6366f1" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
                             </svg>
-                            Account
+                            <span>Account</span>
                         </button>
                     </div>
 
