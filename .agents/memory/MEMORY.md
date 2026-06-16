@@ -1,0 +1,1 @@
+- [Admin panel last-seen & reports](admin-panel-fixes.md) — lastSeen must use status.lastChanged from RTDB (not lastLoginAt); reports tab reads `reports` Firestore collection

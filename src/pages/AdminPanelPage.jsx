@@ -34,7 +34,8 @@ const AdminPanelPage = () => {
     totalRooms: 0,
     activeRooms: 0,
     bannedIPs: 0,
-    bannedDevices: 0
+    bannedDevices: 0,
+    pendingReports: 0
   });
   
   // Moderation states  
@@ -86,6 +87,11 @@ const AdminPanelPage = () => {
 
   // IP Geolocation cache
   const [ipGeoCache, setIpGeoCache] = useState({});
+
+  // Reports & Appeals
+  const [reports, setReports] = useState([]);
+  const [reportSubTab, setReportSubTab] = useState('all');
+  const [reportActionLoading, setReportActionLoading] = useState({});
 
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
@@ -203,6 +209,20 @@ const AdminPanelPage = () => {
       }));
     });
     
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time reports data
+  useEffect(() => {
+    const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
+      const reportsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setReports(reportsData);
+      setStats(prev => ({
+        ...prev,
+        pendingReports: reportsData.filter(r => r.status === 'pending').length
+      }));
+    });
     return () => unsubscribe();
   }, []);
 
@@ -346,6 +366,69 @@ const AdminPanelPage = () => {
       toast.error('Failed to assign badge: ' + error.message);
     } finally {
       setAssigningBadge(false);
+    }
+  };
+
+  const handleReportAction = async (reportId, action, reportData) => {
+    const key = reportId + action;
+    setReportActionLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const reportRef = doc(db, 'reports', reportId);
+      if (action === 'dismiss') {
+        await updateDoc(reportRef, { status: 'dismissed', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+        toast.success('Report dismissed.');
+      } else if (action === 'resolve') {
+        await updateDoc(reportRef, { status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+        toast.success('Report resolved.');
+      } else if (action === 'ban') {
+        const uid = reportData.reportedUser?.uid;
+        const target = users.find(u => u.uid === uid || u.id === uid);
+        if (target) {
+          await updateDoc(reportRef, { status: 'action_taken' });
+          setSelectedUser(target);
+          setActionType('ban');
+          setIsModalVisible(true);
+        } else {
+          toast.error('User not found.');
+        }
+      } else if (action === 'mute') {
+        const uid = reportData.reportedUser?.uid;
+        const target = users.find(u => u.uid === uid || u.id === uid);
+        if (target) {
+          await updateDoc(reportRef, { status: 'action_taken' });
+          setSelectedUser(target);
+          setActionType('mute');
+          setIsModalVisible(true);
+        } else {
+          toast.error('User not found.');
+        }
+      } else if (action === 'kick') {
+        const uid = reportData.reportedUser?.uid;
+        const target = users.find(u => u.uid === uid || u.id === uid);
+        const statusEntry = onlineStatuses[uid];
+        if (target && statusEntry?.currentRoomId) {
+          remove(ref(rtdb, `status/${uid}/currentRoomId`));
+          await updateDoc(reportRef, { status: 'action_taken' });
+          toast.success(`${target.displayName} kicked from room.`);
+        } else {
+          toast.warning('User is not in any room right now.');
+        }
+      } else if (action === 'appeal_accept') {
+        const uid = reportData.reportedUser?.uid || reportData.uid;
+        if (uid) {
+          const userRef = doc(db, 'users', uid);
+          await updateDoc(userRef, { isBanned: false, banInfo: null });
+          await updateDoc(reportRef, { status: 'appeal_accepted', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+          toast.success('Appeal accepted — user unbanned.');
+        }
+      } else if (action === 'appeal_reject') {
+        await updateDoc(reportRef, { status: 'appeal_rejected', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+        toast.info('Appeal rejected.');
+      }
+    } catch (err) {
+      toast.error('Action failed: ' + err.message);
+    } finally {
+      setReportActionLoading(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -554,9 +637,9 @@ const AdminPanelPage = () => {
     const isOnline = status?.state === 'online';
     
     // Get IP - prefer current status for online users, last known for offline
-    const lastIP = isOnline 
-      ? (status?.ip || user.lastIP || 'Unknown')
-      : (user.lastIP || status?.ip || 'Unknown');
+    const lastIP = isOnline
+      ? (status?.ip || status?.ipAddress || user.lastIP || user.ipAddress || user.ip || 'Unknown')
+      : (user.lastIP || user.ipAddress || user.ip || status?.ip || status?.ipAddress || 'Unknown');
     
     // Get device fingerprint data
     const deviceId = user.lastDeviceId || user.deviceId || 'Unknown';
@@ -657,8 +740,14 @@ const AdminPanelPage = () => {
     }
     if (!deviceModel) deviceModel = `${deviceType} Device`;
 
-    // Get last seen info
-    const lastSeen = status?.lastSeen || user.lastLoginAt || user.lastSeenAt || status?.connectedAt || 'Unknown';
+    // Get last seen — if online show marker, else use most accurate timestamp available
+    let lastSeen;
+    if (isOnline) {
+      lastSeen = 'Online';
+    } else {
+      const ts = status?.lastChanged || status?.lastSeen || user.lastSeenAt || user.lastActivityAt || user.lastLoginAt || status?.connectedAt;
+      lastSeen = ts || 'Unknown';
+    }
     
     return {
       deviceId: deviceId,
@@ -855,6 +944,14 @@ const AdminPanelPage = () => {
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7A2,2 0 0,1 14,9V10H15V15H9V10H10V9A2,2 0 0,1 12,7M12,8.9C11.5,8.9 11,9.4 11,10H13C13,9.4 12.5,8.9 12,8.9Z"/>
+                  </>
+                )
+              },
+              {
+                id: 'reports', label: `Reports${stats.pendingReports > 0 ? ` (${stats.pendingReports})` : ''}`, iconColor: '#f59e0b',
+                renderIcon: (c) => (
+                  <>
+                    <path fill={c} d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
                   </>
                 )
               }
@@ -1102,12 +1199,23 @@ const AdminPanelPage = () => {
                                 </div>
                                 <div className="luxury-device-item">
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#ec4899" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
-                                  <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}}>
+                                  <span style={{fontFamily:'monospace',fontSize:10,color: deviceInfo.lastSeen === 'Online' ? '#059669' : '#9f1239',fontWeight:700}}>
                                     {(() => {
                                       const ls = deviceInfo.lastSeen;
-                                      if (!ls || ls === 'Unknown') return user.createdAt ? 'New user' : '—';
-                                      const d = new Date(ls);
-                                      return isNaN(d.getTime()) ? '—' : d.toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+                                      if (ls === 'Online') return '🟢 Online Now';
+                                      if (!ls || ls === 'Unknown') return '—';
+                                      const d = new Date(typeof ls === 'number' ? ls : ls);
+                                      if (isNaN(d.getTime())) return '—';
+                                      const now = Date.now();
+                                      const diff = now - d.getTime();
+                                      const mins = Math.floor(diff / 60000);
+                                      const hrs = Math.floor(diff / 3600000);
+                                      const days = Math.floor(diff / 86400000);
+                                      if (mins < 2) return 'Just now';
+                                      if (mins < 60) return `${mins}m ago`;
+                                      if (hrs < 24) return `${hrs}h ago`;
+                                      if (days < 7) return `${days}d ago`;
+                                      return d.toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
                                     })()}
                                   </span>
                                 </div>
@@ -1583,6 +1691,197 @@ const AdminPanelPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'reports' && (
+            <div className="rpt-section">
+              <div className="luxury-section-header">
+                <h2>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                    <path fill="#f59e0b" d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
+                  </svg>
+                  Reports &amp; Ban Appeals
+                </h2>
+                <p>Manage user-submitted reports, flagged messages, and ban appeal requests</p>
+              </div>
+
+              <div className="rpt-sub-tabs">
+                {[
+                  { id: 'all', label: 'All Reports', color: '#6366f1', icon: <path fill="currentColor" d="M3,3H21V5H3V3M3,7H15V9H3V7M3,11H21V13H3V11M3,15H15V17H3V15M3,19H21V21H3V19Z"/> },
+                  { id: 'users', label: 'User Reports', color: '#ef4444', icon: <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/> },
+                  { id: 'messages', label: 'Message Reports', color: '#3b82f6', icon: <path fill="currentColor" d="M20,2H4C2.89,2 2,2.89 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/> },
+                  { id: 'appeals', label: 'Ban Appeals', color: '#10b981', icon: <><path fill="currentColor" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></> },
+                  { id: 'pending', label: `Pending (${stats.pendingReports})`, color: '#f59e0b', icon: <path fill="currentColor" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/> }
+                ].map(st => (
+                  <button key={st.id} className={`rpt-sub-tab ${reportSubTab === st.id ? 'active' : ''}`} style={{'--rpt-color': st.color}} onClick={() => setReportSubTab(st.id)}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0,color: reportSubTab === st.id ? '#fff' : st.color}}>{st.icon}</svg>
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const filtered = reports.filter(r => {
+                  if (reportSubTab === 'users') return r.reportType === 'User';
+                  if (reportSubTab === 'messages') return r.reportType === 'Message' || !r.reportType;
+                  if (reportSubTab === 'appeals') return r.status === 'appeal' || r.status === 'appeal_pending';
+                  if (reportSubTab === 'pending') return r.status === 'pending';
+                  return true;
+                });
+
+                const statusColors = { pending: '#f59e0b', resolved: '#10b981', dismissed: '#9ca3af', action_taken: '#6366f1', appeal_accepted: '#059669', appeal_rejected: '#ef4444', appeal_pending: '#f97316' };
+                const categoryColors = { Spam: '#ef4444', Harassment: '#dc2626', 'Hate Speech': '#b91c1c', Incest: '#7f1d1d', 'Inappropriate Content': '#f97316', 'Personal Info': '#a855f7', Other: '#6b7280' };
+
+                const fmtTime = (ts) => {
+                  if (!ts) return '—';
+                  const d = ts?.toDate ? ts.toDate() : new Date(ts);
+                  if (isNaN(d.getTime())) return '—';
+                  const diff = Date.now() - d.getTime();
+                  const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), dy = Math.floor(diff / 86400000);
+                  if (m < 2) return 'Just now';
+                  if (m < 60) return `${m}m ago`;
+                  if (h < 24) return `${h}h ago`;
+                  if (dy < 7) return `${dy}d ago`;
+                  return d.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+                };
+
+                if (filtered.length === 0) return (
+                  <div className="rpt-empty">
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:52,height:52,opacity:.25}}>
+                      <path fill="#6366f1" d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
+                    </svg>
+                    <p>No reports found in this category</p>
+                  </div>
+                );
+
+                return (
+                  <div className="rpt-list">
+                    {filtered.map(r => {
+                      const isAppeal = r.status === 'appeal' || r.status === 'appeal_pending';
+                      const sc = statusColors[r.status] || '#9ca3af';
+                      const cc = categoryColors[r.category] || '#6b7280';
+                      const load = (a) => reportActionLoading[r.id + a];
+
+                      return (
+                        <div key={r.id} className={`rpt-card ${r.status === 'pending' ? 'rpt-card--pending' : ''}`}>
+                          <div className="rpt-card-header">
+                            <div className="rpt-type-badge" style={{background: r.reportType === 'User' ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#3b82f6,#2563eb)'}}>
+                              {r.reportType === 'User' ? (
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#fff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+                              ) : (
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#fff" d="M20,2H4C2.89,2 2,2.89 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></svg>
+                              )}
+                              {r.reportType || 'Message'}
+                            </div>
+                            <div className="rpt-category-badge" style={{background: cc + '22', color: cc, border: `1px solid ${cc}44`}}>
+                              {r.category || 'Other'}
+                            </div>
+                            <div className="rpt-status-badge" style={{background: sc + '22', color: sc, border: `1px solid ${sc}44`}}>
+                              {r.status?.replace(/_/g,' ') || 'pending'}
+                            </div>
+                            <div className="rpt-time">
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12}}><path fill="#9ca3af" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
+                              {fmtTime(r.timestamp)}
+                            </div>
+                          </div>
+
+                          <div className="rpt-card-body">
+                            <div className="rpt-parties">
+                              <div className="rpt-party">
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}>
+                                  <path fill="#f59e0b" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                                </svg>
+                                <div>
+                                  <span className="rpt-party-label">Reported By</span>
+                                  <span className="rpt-party-name">{r.reportedBy?.name || r.reportedBy?.displayName || 'Anonymous'}</span>
+                                </div>
+                              </div>
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18,flexShrink:0,opacity:.4}}><path fill="#6b7280" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"/></svg>
+                              <div className="rpt-party">
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}>
+                                  <path fill="#ef4444" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+                                </svg>
+                                <div>
+                                  <span className="rpt-party-label">Reported User</span>
+                                  <span className="rpt-party-name">{r.reportedUser?.name || r.reportedUser?.displayName || '—'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {r.messageText && (
+                              <div className="rpt-msg-box">
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                  <path fill="#3b82f6" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
+                                </svg>
+                                <span className="rpt-msg-text">&ldquo;{r.messageText}&rdquo;</span>
+                              </div>
+                            )}
+
+                            {r.reason && (
+                              <div className="rpt-reason-box">
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                  <path fill="#a855f7" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+                                </svg>
+                                <span className="rpt-reason-text">{r.reason}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="rpt-card-actions">
+                            {isAppeal ? (
+                              <>
+                                <button className="rpt-btn rpt-btn--green" disabled={load('appeal_accept')} onClick={() => handleReportAction(r.id, 'appeal_accept', r)}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                                  {load('appeal_accept') ? '…' : 'Accept Appeal'}
+                                </button>
+                                <button className="rpt-btn rpt-btn--red" disabled={load('appeal_reject')} onClick={() => handleReportAction(r.id, 'appeal_reject', r)}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+                                  {load('appeal_reject') ? '…' : 'Reject Appeal'}
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="rpt-btn rpt-btn--red" disabled={load('ban') || r.status === 'action_taken'} onClick={() => handleReportAction(r.id, 'ban', r)}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.57,15.55 5.53,16.97L16.97,5.53C15.55,4.57 13.85,4 12,4M12,20A8,8 0 0,0 20,12C20,10.15 19.43,8.45 18.47,7.03L7.03,18.47C8.45,19.43 10.15,20 12,20Z"/></svg>
+                                  {load('ban') ? '…' : 'Ban'}
+                                </button>
+                                <button className="rpt-btn rpt-btn--orange" disabled={load('kick')} onClick={() => handleReportAction(r.id, 'kick', r)}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M13.5,5.5C14.59,5.5 15.5,4.58 15.5,3.5C15.5,2.38 14.59,1.5 13.5,1.5C12.39,1.5 11.5,2.38 11.5,3.5C11.5,4.58 12.39,5.5 13.5,5.5M9.89,19.38L10.89,15L13,17V23H15V15.5L12.89,13.5L13.5,10.5C14.79,12 16.79,13 19,13V11C17.09,11 15.5,10 14.69,8.58L13.69,7C13.29,6.38 12.69,6 12,6C11.69,6 11.5,6.08 11.19,6.08L6,8.28V13H8V9.58L9.79,8.88L8.19,17L3.29,16L2.89,18L9.89,19.38Z"/></svg>
+                                  {load('kick') ? '…' : 'Kick'}
+                                </button>
+                                <button className="rpt-btn rpt-btn--purple" disabled={load('mute')} onClick={() => handleReportAction(r.id, 'mute', r)}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M16.5,12C16.78,12 17,12.22 17,12.5V13.5C17,13.78 16.78,14 16.5,14H15.5C15.22,14 15,13.78 15,13.5V12.5C15,12.22 15.22,12 15.5,12H16.5Z"/></svg>
+                                  {load('mute') ? '…' : 'Mute'}
+                                </button>
+                                {r.status === 'pending' && (
+                                  <>
+                                    <button className="rpt-btn rpt-btn--green" disabled={load('resolve')} onClick={() => handleReportAction(r.id, 'resolve', r)}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                                      {load('resolve') ? '…' : 'Resolve'}
+                                    </button>
+                                    <button className="rpt-btn rpt-btn--gray" disabled={load('dismiss')} onClick={() => handleReportAction(r.id, 'dismiss', r)}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+                                      {load('dismiss') ? '…' : 'Dismiss'}
+                                    </button>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          {r.resolvedAt && (
+                            <div className="rpt-resolved-by">
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12}}><path fill="#6b7280" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4Z"/></svg>
+                              Handled by <strong>{r.resolvedBy || 'Admin'}</strong> · {fmtTime(r.resolvedAt)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
