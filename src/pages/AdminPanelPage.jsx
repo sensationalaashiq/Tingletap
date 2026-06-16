@@ -42,6 +42,18 @@ const AdminPanelPage = () => {
   const [actionType, setActionType] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
+
+  // DevBan modal
+  const [showDevBanModal, setShowDevBanModal] = useState(false);
+  const [devBanTarget, setDevBanTarget] = useState(null);
+  const [devBanReason, setDevBanReason] = useState('');
+  const [devBanning, setDevBanning] = useState(false);
+
+  // Delete User modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   
   // Pagination
   const [userPage, setUserPage] = useState(1);
@@ -203,23 +215,21 @@ const AdminPanelPage = () => {
     setIsModalVisible(true);
   };
 
-  const handleDeleteProfile = async (targetUser) => {
-    const confirmed = window.confirm(
-      `⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE ${targetUser.displayName}'s profile?\n\nThis action CANNOT be undone and will:\n- Remove all user data\n- Delete all messages\n- Ban their IP address\n\nType "DELETE" to confirm this irreversible action.`
-    );
-    
-    if (!confirmed) return;
-    
-    const confirmText = prompt('Type "DELETE" to confirm permanent deletion:');
-    if (confirmText !== 'DELETE') {
-      toast.error('Profile deletion cancelled - incorrect confirmation.');
+  const handleDeleteProfile = (targetUser) => {
+    setDeleteTarget(targetUser);
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteProfile = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      toast.error('Type DELETE to confirm.');
       return;
     }
-
+    setDeleting(true);
     try {
-      // First ban the user and their IP
-      const userRef = doc(db, 'users', targetUser.uid);
-      await updateDoc(userRef, { 
+      const userRef = doc(db, 'users', deleteTarget.uid);
+      await updateDoc(userRef, {
         isBanned: true,
         banInfo: {
           reason: 'Profile deleted by administrator',
@@ -228,70 +238,63 @@ const AdminPanelPage = () => {
           deletedProfile: true
         }
       });
-
-      // Ban their IP
       try {
         await IPBanSystem.banUserWithIP(
-          targetUser.uid,
-          {
-            displayName: targetUser.displayName,
-            email: targetUser.email
-          },
-          {
-            reason: 'Profile deleted by administrator',
-            bannedBy: currentUserProfile?.displayName || 'Admin',
-            location: 'Admin Panel - Profile Deletion'
-          }
+          deleteTarget.uid,
+          { displayName: deleteTarget.displayName, email: deleteTarget.email },
+          { reason: 'Profile deleted by administrator', bannedBy: currentUserProfile?.displayName || 'Admin', location: 'Admin Panel' }
         );
       } catch (ipError) {
         console.error('IP ban failed during profile deletion:', ipError);
       }
-
-      // Remove from online status
-      remove(ref(rtdb, `status/${targetUser.uid}`));
-
-      // Delete the user document
+      remove(ref(rtdb, `status/${deleteTarget.uid}`));
       await deleteDoc(userRef);
-      
-      toast.success(`🗑️ ${targetUser.displayName}'s profile has been permanently deleted.`);
+      toast.success(`${deleteTarget.displayName}'s profile permanently deleted.`);
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
     } catch (error) {
       console.error('Profile deletion error:', error);
       toast.error('Failed to delete profile. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleDeviceBan = async (targetUser) => {
+  const handleDeviceBan = (targetUser) => {
     const deviceId = targetUser.lastDeviceId || targetUser.deviceId;
     if (!deviceId || deviceId === 'Unknown') {
-      toast.warning(`No device fingerprint found for ${targetUser.displayName}. They must log in at least once for fingerprint to register.`);
+      toast.warning(`No device fingerprint for ${targetUser.displayName}. They must log in once for fingerprint to register.`);
       return;
     }
-    const confirmed = window.confirm(`Ban ${targetUser.displayName}'s device?\n\nDevice ID: ${deviceId.substring(0, 16)}...\n\nThis will block this device even if they change IP or create a new account.`);
-    if (!confirmed) return;
+    setDevBanTarget(targetUser);
+    setDevBanReason('');
+    setShowDevBanModal(true);
+  };
+
+  const confirmDeviceBan = async () => {
+    if (!devBanTarget) return;
+    const deviceId = devBanTarget.lastDeviceId || devBanTarget.deviceId;
+    setDevBanning(true);
     try {
       await DeviceBanSystem.banDevice(deviceId, {
-        reason: 'Device banned by administrator',
+        reason: devBanReason.trim() || 'Device banned by administrator',
         bannedBy: currentUserProfile?.displayName || 'Admin',
-        userInfo: {
-          uid: targetUser.uid,
-          displayName: targetUser.displayName,
-          email: targetUser.email
-        },
-        associatedUIDs: [targetUser.uid]
+        userInfo: { uid: devBanTarget.uid, displayName: devBanTarget.displayName, email: devBanTarget.email },
+        associatedUIDs: [devBanTarget.uid]
       });
-      const userRef = doc(db, 'users', targetUser.uid);
+      const userRef = doc(db, 'users', devBanTarget.uid);
       await updateDoc(userRef, {
         isDeviceBanned: true,
-        deviceBanInfo: {
-          bannedAt: new Date().toISOString(),
-          bannedBy: currentUserProfile?.displayName || 'Admin',
-          deviceId: deviceId
-        }
+        deviceBanInfo: { bannedAt: new Date().toISOString(), bannedBy: currentUserProfile?.displayName || 'Admin', deviceId }
       });
-      toast.success(`📱 ${targetUser.displayName}'s device has been banned successfully!`);
+      toast.success(`${devBanTarget.displayName}'s device banned successfully!`);
+      setShowDevBanModal(false);
+      setDevBanTarget(null);
     } catch (error) {
       console.error('Device ban error:', error);
       toast.error(`Device ban failed: ${error.message}`);
+    } finally {
+      setDevBanning(false);
     }
   };
 
@@ -1004,6 +1007,14 @@ const AdminPanelPage = () => {
                                     {user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : (user.createdAt ? 'New user' : '—')}
                                   </span>
                                 </div>
+                                {(user.lastDeviceId || user.deviceId) && (
+                                  <div className="luxury-device-item" title={`Full Device ID: ${user.lastDeviceId || user.deviceId}`}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#8b5cf6" d="M6.5,2C5.12,2 4,3.12 4,4.5V18.5C4,19.88 5.12,21 6.5,21H17.5C18.88,21 20,19.88 20,18.5V4.5C20,3.12 18.88,2 17.5,2H6.5M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M8,10H16V12H8V10M8,14H14V16H8V14Z"/></svg>
+                                    <span style={{fontFamily:'monospace',fontSize:10,color:'#5b21b6',fontWeight:800,letterSpacing:'0.04em'}}>
+                                      {(user.lastDeviceId || user.deviceId).substring(0, 10)}…
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
@@ -1173,16 +1184,34 @@ const AdminPanelPage = () => {
                     { from: '#ec4899', to: '#db2777' },
                     { from: '#14b8a6', to: '#0d9488' },
                   ];
-                  const roomIconPaths = [
-                    "M20,2H4C2.9,2 2,2.9 2,4V22L6,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H5.17L4,17.17V4H20V16Z",
-                    "M7,6H17A6,6 0 0,1 23,12A6,6 0 0,1 17,18C15.22,18 13.63,17.23 12.53,16H11.47C10.37,17.23 8.78,18 7,18A6,6 0 0,1 1,12A6,6 0 0,1 7,6M6,9V11H4V13H6V15H8V13H10V11H8V9H6M15.5,12A1.5,1.5 0 0,0 14,13.5A1.5,1.5 0 0,0 15.5,15A1.5,1.5 0 0,0 17,13.5A1.5,1.5 0 0,0 15.5,12M18.5,9A1.5,1.5 0 0,0 17,10.5A1.5,1.5 0 0,0 18.5,12A1.5,1.5 0 0,0 20,10.5A1.5,1.5 0 0,0 18.5,9Z",
-                    "M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z",
-                    "M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z",
-                    "M18,14H6V12H18V14M18,10H6V8H18V10M18,18H6V16H18V18M3,3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3H3Z",
-                    "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z",
-                  ];
+                  const getRoomIconPath = (name) => {
+                    const n = (name || '').toLowerCase();
+                    if (n.includes('india') || n.includes('indian') || n.includes('bharat') || n.includes('hindi') || n.includes('desi'))
+                      return "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4C15.86,4 19.12,6.36 20.5,9.75H3.5C4.88,6.36 8.14,4 12,4M3.06,11.75H20.94C20.98,11.83 21,11.91 21,12C21,12.09 20.98,12.17 20.94,12.25H3.06C3.02,12.17 3,12.09 3,12C3,11.91 3.02,11.83 3.06,11.75M3.5,14.25H20.5C19.12,17.64 15.86,20 12,20C8.14,20 4.88,17.64 3.5,14.25Z";
+                    if (n.includes('game') || n.includes('gaming') || n.includes('gamer') || n.includes('play') || n.includes('esport'))
+                      return "M7,6H17A6,6 0 0,1 23,12A6,6 0 0,1 17,18C15.22,18 13.63,17.23 12.53,16H11.47C10.37,17.23 8.78,18 7,18A6,6 0 0,1 1,12A6,6 0 0,1 7,6M6,9V11H4V13H6V15H8V13H10V11H8V9H6M15.5,12A1.5,1.5 0 0,0 14,13.5A1.5,1.5 0 0,0 15.5,15A1.5,1.5 0 0,0 17,13.5A1.5,1.5 0 0,0 15.5,12M18.5,9A1.5,1.5 0 0,0 17,10.5A1.5,1.5 0 0,0 18.5,12A1.5,1.5 0 0,0 20,10.5A1.5,1.5 0 0,0 18.5,9Z";
+                    if (n.includes('staff') || n.includes('mod') || n.includes('admin') || n.includes('team') || n.includes('crew') || n.includes('olympian'))
+                      return "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z";
+                    if (n.includes('music') || n.includes('song') || n.includes('beat') || n.includes('audio') || n.includes('vibe'))
+                      return "M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z";
+                    if (n.includes('video') || n.includes('movie') || n.includes('film') || n.includes('watch') || n.includes('stream'))
+                      return "M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z";
+                    if (n.includes('news') || n.includes('announce') || n.includes('update') || n.includes('notice'))
+                      return "M18,14H6V12H18V14M18,10H6V8H18V10M18,18H6V16H18V18M3,3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3H3Z";
+                    if (n.includes('love') || n.includes('romance') || n.includes('dating') || n.includes('date') || n.includes('heart'))
+                      return "M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z";
+                    if (n.includes('sport') || n.includes('cricket') || n.includes('football') || n.includes('soccer') || n.includes('fitness'))
+                      return "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M9.58,16.57C8.33,15.5 7.5,14 7.5,12.25L12,7.25L16.5,12.25C16.5,14 15.67,15.5 14.42,16.57L12,14.25L9.58,16.57M17.25,14.75C17.72,13.97 18,13.1 18,12.25C18,10.07 16.57,8.2 14.75,7.33L12,4.25L9.25,7.33C7.43,8.2 6,10.07 6,12.25C6,13.1 6.28,13.97 6.75,14.75L12,20L17.25,14.75Z";
+                    if (n.includes('tech') || n.includes('code') || n.includes('program') || n.includes('dev') || n.includes('hack'))
+                      return "M8,3A2,2 0 0,0 6,5V9A2,2 0 0,0 4,11H3V13H4A2,2 0 0,0 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,1 20,11H21V13H20A2,2 0 0,1 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z";
+                    if (n.includes('art') || n.includes('draw') || n.includes('design') || n.includes('creative'))
+                      return "M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A1.5,1.5 0 0,0 13.5,19.5C13.5,19.11 13.35,18.76 13.11,18.5C12.88,18.23 12.73,17.88 12.73,17.5A1.5,1.5 0 0,1 14.23,16H16A5,5 0 0,0 21,11C21,6.58 16.97,3 12,3Z";
+                    if (n.includes('global') || n.includes('world') || n.includes('international') || n.includes('english'))
+                      return "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+                    return "M20,2H4C2.9,2 2,2.9 2,4V22L6,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H5.17L4,17.17V4H20V16Z";
+                  };
                   const col = roomColors[idx % roomColors.length];
-                  const iconPath = roomIconPaths[idx % roomIconPaths.length];
+                  const iconPath = getRoomIconPath(room.name);
                   return (
                     <div key={room.id} className="luxury-room-card">
                       <div className="luxury-room-header">
@@ -1249,8 +1278,8 @@ const AdminPanelPage = () => {
                   <div className="luxury-modal-card">
                     <div className="luxury-modal-header">
                       <div className="luxury-modal-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path fill="#ffffff" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
                         </svg>
                       </div>
                       <div>
@@ -1258,8 +1287,8 @@ const AdminPanelPage = () => {
                         <p>Set up a new chat room for your community</p>
                       </div>
                       <button className="luxury-modal-close" onClick={() => setShowCreateRoom(false)}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
                         </svg>
                       </button>
                     </div>
@@ -1267,7 +1296,7 @@ const AdminPanelPage = () => {
                     <div className="luxury-modal-body">
                       <div className="luxury-form-group">
                         <label className="luxury-form-label">
-                          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5,4V7H10.5V19H13.5V7H19V4H5Z"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M5,4V7H10.5V19H13.5V7H19V4H5Z"/></svg>
                           Room Name *
                         </label>
                         <input
@@ -1283,7 +1312,7 @@ const AdminPanelPage = () => {
 
                       <div className="luxury-form-group">
                         <label className="luxury-form-label">
-                          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
                           Description
                         </label>
                         <input
@@ -1299,7 +1328,7 @@ const AdminPanelPage = () => {
                       <div className="luxury-form-row">
                         <div className="luxury-form-group">
                           <label className="luxury-form-label">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>
                             Room Type
                           </label>
                           <select
@@ -1314,7 +1343,7 @@ const AdminPanelPage = () => {
 
                         <div className="luxury-form-group">
                           <label className="luxury-form-label">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/></svg>
                             Max Users
                           </label>
                           <input
@@ -1429,6 +1458,130 @@ const AdminPanelPage = () => {
           )}
         </div>
       </div>
+
+      {/* Device Ban Modal */}
+      {showDevBanModal && devBanTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDevBanModal(false); setDevBanTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#8b5cf6' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 700 }}>Ban Device</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#7c3aed', opacity: 0.7 }}>{devBanTarget.displayName}</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowDevBanModal(false); setDevBanTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: '#faf5ff', border: '1.5px solid #e9d5ff', borderRadius: 10, padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ fontSize: 11, color: '#5b21b6', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>Device Fingerprint</div>
+                <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#4c1d95', fontWeight: 800, letterSpacing: '0.05em', wordBreak: 'break-all' }}>
+                  {(devBanTarget.lastDeviceId || devBanTarget.deviceId || '').substring(0, 32)}…
+                </div>
+                <div style={{ fontSize: 10.5, color: '#7c3aed', opacity: 0.7 }}>This device will be blocked even if they change IP or create a new account.</div>
+              </div>
+              <div className="luxury-form-group">
+                <label className="luxury-form-label">
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}><path fill="#7c3aed" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
+                  Reason (optional)
+                </label>
+                <input
+                  className="luxury-form-input"
+                  type="text"
+                  placeholder="Reason for device ban…"
+                  value={devBanReason}
+                  onChange={(e) => setDevBanReason(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowDevBanModal(false); setDevBanTarget(null); }} disabled={devBanning}>
+                Cancel
+              </button>
+              <button
+                className="luxury-btn-primary"
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)' }}
+                onClick={confirmDeviceBan}
+                disabled={devBanning}
+              >
+                {devBanning ? (
+                  <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Banning…</>
+                ) : (
+                  <><svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}><path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/></svg> Ban Device</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Modal */}
+      {showDeleteModal && deleteTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDeleteModal(false); setDeleteTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#ef4444' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#dc2626,#f97316)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 700 }}>Delete Profile</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#ef4444', opacity: 0.8 }}>This is irreversible</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowDeleteModal(false); setDeleteTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: '#fff1f1', border: '1.5px solid #fecaca', borderRadius: 10, padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: '#b91c1c' }}>⚠️ Permanent deletion of: {deleteTarget.displayName}</div>
+                <div style={{ fontSize: 11, color: '#7f1d1d', lineHeight: 1.5 }}>
+                  This will permanently remove their profile, ban their IP, and cannot be undone.
+                </div>
+              </div>
+              <div className="luxury-form-group">
+                <label className="luxury-form-label">
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}><path fill="#ef4444" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                  Type <strong style={{ color: '#b91c1c', fontFamily: 'monospace' }}>DELETE</strong> to confirm
+                </label>
+                <input
+                  className="luxury-form-input"
+                  type="text"
+                  placeholder="Type DELETE here…"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  style={{ borderColor: deleteConfirmText === 'DELETE' ? '#10b981' : undefined }}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowDeleteModal(false); setDeleteTarget(null); }} disabled={deleting}>
+                Cancel
+              </button>
+              <button
+                className="luxury-btn-primary"
+                style={{ background: deleteConfirmText === 'DELETE' ? 'linear-gradient(135deg,#dc2626,#f97316)' : '#d1d5db', cursor: deleteConfirmText === 'DELETE' ? 'pointer' : 'not-allowed' }}
+                onClick={confirmDeleteProfile}
+                disabled={deleting || deleteConfirmText !== 'DELETE'}
+              >
+                {deleting ? (
+                  <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Deleting…</>
+                ) : (
+                  <><svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}><path fill="#ffffff" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/></svg> Delete Permanently</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Admin Modal */}
       <AdminBanKickModal
