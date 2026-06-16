@@ -697,7 +697,7 @@ const Sidebar = ({
                   {(() => {
                     const userRole = loggedInUserProfile?.role?.toLowerCase();
                     const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                    const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                    const hasAccess = hasBadge || ['superowner', 'admin', 'owner', 'moderator'].includes(userRole);
 
                     return hasAccess ? (
                       <button className="modern-dropdown-btn" onClick={(e) => { 
@@ -857,7 +857,7 @@ const Sidebar = ({
 
                 // Check if this is a staff room
                 const isStaffRoom = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
-                const hasStaffAccess = loggedInUserProfile && ['owner', 'admin', 'moderator'].includes(loggedInUserProfile.role?.toLowerCase());
+                const hasStaffAccess = loggedInUserProfile && ['superowner', 'owner', 'admin', 'moderator'].includes(loggedInUserProfile.role?.toLowerCase());
 
                 return (
                   <div
@@ -1112,9 +1112,9 @@ const Sidebar = ({
                           {(() => {
                             const viewerRole = loggedInUserProfile.role;
                             const targetRole = userItem.role;
-                            const canMute = (viewerRole === 'owner') || (viewerRole === 'admin' && !['owner', 'admin'].includes(targetRole)) || (viewerRole === 'moderator' && !['owner', 'admin', 'moderator'].includes(targetRole));
-                            const canKick = (viewerRole === 'owner') || (viewerRole === 'admin' && !['owner', 'admin'].includes(targetRole));
-                            const canBan = (viewerRole === 'owner') || (viewerRole === 'admin' && !['owner', 'admin'].includes(targetRole));
+                            const canMute = (viewerRole === 'superowner') || (viewerRole === 'owner') || (viewerRole === 'admin' && !['superowner','owner', 'admin'].includes(targetRole)) || (viewerRole === 'moderator' && !['superowner','owner', 'admin', 'moderator'].includes(targetRole));
+                            const canKick = (viewerRole === 'superowner') || (viewerRole === 'owner') || (viewerRole === 'admin' && !['superowner','owner', 'admin'].includes(targetRole));
+                            const canBan = (viewerRole === 'superowner') || (viewerRole === 'owner') || (viewerRole === 'admin' && !['superowner','owner', 'admin'].includes(targetRole));
                             return (
                               <>
                                 {canMute && (

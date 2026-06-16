@@ -80,7 +80,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
     const [showFullImage, setShowFullImage] = useState(false);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user?.uid) return;
 
         // Close any other profile modals that might be open
         const existingModals = document.querySelectorAll('.ultra-modern-profile-overlay, .profile-modal, .profile-modal-overlay');
@@ -101,8 +101,10 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
         applyFontPreferences();
 
         // Set up real-time listener for immediate updates
+        let unsubscribe = () => {};
+        try {
         const userDocRef = doc(db, 'users', user.uid);
-        const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const updatedData = docSnap.data();
 
@@ -171,6 +173,9 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
         }, (error) => {
             console.error('Error in real-time user updates:', error);
         });
+        } catch (snapshotError) {
+            console.error('Failed to set up profile listener:', snapshotError);
+        }
 
         return () => {
             unsubscribe();
@@ -669,8 +674,11 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
     };
 
     const getAvatarUrl = () => {
+        if (!realTimeUser?.uid) return `https://api.dicebear.com/8.x/adventurer/svg?seed=default&backgroundColor=b6e3f4`;
         // Check cache for most recent user data
-        const cachedUser = window.userProfilesCache?.get(realTimeUser.uid);
+        const cachedUser = (window.userProfilesCache instanceof Map)
+            ? window.userProfilesCache.get(realTimeUser.uid)
+            : window.userProfilesCache?.[realTimeUser.uid];
         const latestPhotoURL = cachedUser?.photoURL || realTimeUser.photoURL;
 
         if (latestPhotoURL) {
@@ -849,7 +857,8 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
         return statusMap[status] || status;
     };
 
-    if (!user) return null;
+    if (!user?.uid) return null;
+    if (!realTimeUser) return null;
 
     return (
         <div className="modern-profile-overlay" onClick={onClose}>
