@@ -5,11 +5,20 @@ import './AdultRoomModal.css';
 const AdultRoomModal = ({ isOpen, onConfirm, onCancel, roomName }) => {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [understandingConfirmed, setUnderstandingConfirmed] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    if (ageConfirmed && understandingConfirmed) onConfirm();
+    if (ageConfirmed && understandingConfirmed) {
+      if (rememberMe) {
+        localStorage.setItem('ageVerified', JSON.stringify({
+          verified: true,
+          expiry: Date.now() + 30 * 24 * 60 * 60 * 1000
+        }));
+      }
+      onConfirm();
+    }
   };
 
   const canProceed = ageConfirmed && understandingConfirmed;
@@ -75,6 +84,27 @@ const AdultRoomModal = ({ isOpen, onConfirm, onCancel, roomName }) => {
               )}
             </span>
             <span className="arm-check-text">I accept the <strong>content warnings</strong> above</span>
+          </label>
+        </div>
+
+        {/* Remember me */}
+        <div className="arm-remember">
+          <label className={`arm-remember-row ${rememberMe ? 'checked' : ''}`}>
+            <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}/>
+            <span className="arm-checkmark arm-remember-mark">
+              {rememberMe && (
+                <svg viewBox="0 0 12 12" width="10" height="10" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
+            <span className="arm-remember-text">
+              <svg viewBox="0 0 14 14" width="11" height="11" fill="none" style={{flexShrink:0}}>
+                <path d="M7 1L1.5 3.5v4.2c0 3.3 2.3 6.4 5.5 7.3 3.2-0.9 5.5-4 5.5-7.3V3.5L7 1z" stroke="#a78bfa" strokeWidth="1.2" fill="none"/>
+                <path d="M4.5 7l1.8 1.8L9.5 5" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Remember me for <strong>30 days</strong>
+            </span>
           </label>
         </div>
 

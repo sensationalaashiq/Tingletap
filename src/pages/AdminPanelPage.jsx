@@ -683,8 +683,8 @@ const AdminPanelPage = () => {
     
     // Get location - prefer current for online, last known for offline
     const location = isOnline
-      ? (status?.country || user.country || user.lastLocation || status?.location || 'Unknown')
-      : (user.country || user.lastLocation || status?.country || status?.location || 'Unknown');
+      ? (status?.country || user.lastCountry || user.country || user.lastLocation || status?.location || 'Unknown')
+      : (user.lastCountry || user.country || user.lastLocation || status?.country || status?.location || 'Unknown');
     
     // Determine device type
     let deviceType = 'Desktop';
@@ -760,7 +760,11 @@ const AdminPanelPage = () => {
       os: os,
       lastSeen: lastSeen,
       userAgent: userAgent,
-      isOnline: isOnline
+      isOnline: isOnline,
+      lat: user.lastLat ?? null,
+      lon: user.lastLon ?? null,
+      city: user.lastCity || '',
+      country: user.lastCountry || ''
     };
   };
 
@@ -1238,27 +1242,32 @@ const AdminPanelPage = () => {
                             <div className="luxury-td location-ip-cell">
                               {(() => {
                                 const ip = deviceInfo.ip;
-                                if (ip && ip !== 'Unknown') fetchIPGeo(ip);
-                                const geo = ipGeoCache[ip];
-                                const cityCountry = geo ? `${geo.city || ''}${geo.city && geo.country ? ', ' : ''}${geo.country || ''}` : '';
+                                const storedLat = deviceInfo.lat;
+                                const storedLon = deviceInfo.lon;
+                                const storedCity = deviceInfo.city;
+                                const storedCountry = deviceInfo.country;
+                                const cityCountry = storedCity || storedCountry
+                                  ? [storedCity, storedCountry].filter(Boolean).join(', ')
+                                  : (deviceInfo.location && deviceInfo.location !== 'Unknown' ? deviceInfo.location : '');
+                                const hasCoords = storedLat !== null && storedLat !== undefined && storedLon !== null && storedLon !== undefined;
                                 return (
                                   <div className="luxury-location-details">
                                     <div className="luxury-location-item">
                                       <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#8b5cf6" d="M15,12C15,13.66 13.66,15 12,15C10.34,15 9,13.66 9,12C9,10.34 10.34,9 12,9C13.66,9 15,10.34 15,12M21,12C21,16.97 16.97,21 12,21C7.03,21 3,16.97 3,12C3,7.03 7.03,3 12,3C16.97,3 21,7.03 21,12M19,12C19,8.13 15.87,5 12,5C8.13,5 5,8.13 5,12C5,15.87 8.13,19 12,19C15.87,19 19,15.87 19,12Z"/></svg>
                                       <span style={{fontFamily:'monospace',fontSize:11,color:'#5b21b6',fontWeight:900,letterSpacing:'0.03em'}}>
-                                        {ip && ip !== 'Unknown' ? ip : 'Fetching…'}
+                                        {ip && ip !== 'Unknown' ? ip : '—'}
                                       </span>
                                     </div>
                                     <div className="luxury-location-item">
                                       <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#ef4444" d="M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5C10.62,11.5 9.5,10.38 9.5,9C9.5,7.62 10.62,6.5 12,6.5C13.38,6.5 14.5,7.62 14.5,9C14.5,10.38 13.38,11.5 12,11.5Z"/></svg>
                                       <span style={{fontSize:11,color:'#1f2937',fontWeight:700}}>
-                                        {cityCountry || (deviceInfo.location && deviceInfo.location !== 'Unknown' ? deviceInfo.location : (geo === null ? 'Loading…' : '—'))}
+                                        {cityCountry || '—'}
                                       </span>
                                     </div>
                                     <div className="luxury-location-item">
                                       <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#14b8a6" d="M12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5M12,2A7,7 0 0,1 19,9C19,14.25 12,22 12,22C12,22 5,14.25 5,9A7,7 0 0,1 12,2Z"/></svg>
                                       <span style={{fontFamily:'monospace',fontSize:10,color:'#0f766e',fontWeight:800}}>
-                                        {geo && geo.lat ? `${geo.lat.toFixed(4)}°, ${geo.lon.toFixed(4)}°` : (geo === null ? 'Loading…' : '—')}
+                                        {hasCoords ? `${Number(storedLat).toFixed(4)}°, ${Number(storedLon).toFixed(4)}°` : '—'}
                                       </span>
                                     </div>
                                   </div>

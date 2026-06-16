@@ -270,6 +270,22 @@ const RoomListPage = () => {
         lastDeviceInfo: deviceInfo
       }).catch(() => {});
     }).catch(() => {});
+
+    // Fetch real IP + geolocation and store for Admin Panel
+    fetch('https://ipwho.is/')
+      .then(r => r.json())
+      .then(geo => {
+        if (geo && geo.success && geo.ip) {
+          updateDoc(doc(db, 'users', cu.uid), {
+            lastIP: geo.ip,
+            lastLat: geo.latitude ?? null,
+            lastLon: geo.longitude ?? null,
+            lastCity: geo.city || '',
+            lastCountry: geo.country || '',
+            lastLocation: [geo.city, geo.country].filter(Boolean).join(', ') || 'Unknown'
+          }).catch(() => {});
+        }
+      }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -337,6 +353,14 @@ const RoomListPage = () => {
     }
 
     if (name.includes('adult') || name.includes('18+')) {
+      const stored = localStorage.getItem('ageVerified');
+      if (stored) {
+        try {
+          const { expiry } = JSON.parse(stored);
+          if (Date.now() < expiry) { navigate(`/room/${room.id}`); return; }
+          else localStorage.removeItem('ageVerified');
+        } catch { localStorage.removeItem('ageVerified'); }
+      }
       setPendingAdultRoom(room); setShowAdultModal(true);
     } else {
       navigate(`/room/${room.id}`);
