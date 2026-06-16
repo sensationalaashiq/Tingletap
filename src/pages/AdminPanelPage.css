@@ -149,42 +149,42 @@
 .luxury-stat-card.primary { border-color: rgba(124,58,237,0.18); }
 .luxury-stat-card.primary::after { background: #7c3aed; opacity: 0.08; }
 .luxury-stat-card.primary .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.primary .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #9333eacc); }
+.luxury-stat-card.primary .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.primary .luxury-stat-number { color: #5b21b6; }
 .luxury-stat-card.primary .luxury-stat-label { color: #7c3aed; }
 
 .luxury-stat-card.success { border-color: rgba(16,185,129,0.18); }
 .luxury-stat-card.success::after { background: #10b981; opacity: 0.08; }
 .luxury-stat-card.success .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.success .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #22c55ecc); }
+.luxury-stat-card.success .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.success .luxury-stat-number { color: #065f46; }
 .luxury-stat-card.success .luxury-stat-label { color: #10b981; }
 
 .luxury-stat-card.warning { border-color: rgba(245,158,11,0.18); }
 .luxury-stat-card.warning::after { background: #f59e0b; opacity: 0.08; }
 .luxury-stat-card.warning .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.warning .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #f97316cc); }
+.luxury-stat-card.warning .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.warning .luxury-stat-number { color: #92400e; }
 .luxury-stat-card.warning .luxury-stat-label { color: #d97706; }
 
 .luxury-stat-card.danger { border-color: rgba(239,68,68,0.18); }
 .luxury-stat-card.danger::after { background: #ef4444; opacity: 0.08; }
 .luxury-stat-card.danger .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.danger .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #ef4444cc); }
+.luxury-stat-card.danger .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.danger .luxury-stat-number { color: #7f1d1d; }
 .luxury-stat-card.danger .luxury-stat-label { color: #ef4444; }
 
 .luxury-stat-card.info { border-color: rgba(59,130,246,0.18); }
 .luxury-stat-card.info::after { background: #3b82f6; opacity: 0.08; }
 .luxury-stat-card.info .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.info .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #3b82f6cc); }
+.luxury-stat-card.info .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.info .luxury-stat-number { color: #1e3a8a; }
 .luxury-stat-card.info .luxury-stat-label { color: #2563eb; }
 
 .luxury-stat-card.security { border-color: rgba(236,72,153,0.18); }
 .luxury-stat-card.security::after { background: #ec4899; opacity: 0.08; }
 .luxury-stat-card.security .luxury-stat-icon { background: transparent; box-shadow: none; }
-.luxury-stat-card.security .luxury-stat-icon svg { filter: drop-shadow(0 0 8px #ec4899cc); }
+.luxury-stat-card.security .luxury-stat-icon svg { filter: none; }
 .luxury-stat-card.security .luxury-stat-number { color: #831843; }
 .luxury-stat-card.security .luxury-stat-label { color: #db2777; }
 

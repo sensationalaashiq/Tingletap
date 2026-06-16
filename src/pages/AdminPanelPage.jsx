@@ -613,11 +613,11 @@ const AdminPanelPage = () => {
             
             <div className="luxury-admin-info">
               <div className="luxury-admin-badge">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  {currentUserProfile?.role === 'owner' && <path d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
-                  {currentUserProfile?.role === 'admin' && <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
-                  {currentUserProfile?.role === 'moderator' && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
-                  {!currentUserProfile?.role && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                <svg viewBox="0 0 24 24" fill="none">
+                  {currentUserProfile?.role === 'owner' && <path fill="#ffffff" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                  {currentUserProfile?.role === 'admin' && <path fill="#ffffff" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                  {currentUserProfile?.role === 'moderator' && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                  {!currentUserProfile?.role && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                 </svg>
                 {currentUserProfile?.role?.toUpperCase()}
               </div>
@@ -626,8 +626,8 @@ const AdminPanelPage = () => {
                 <span className="luxury-admin-email">{currentUserProfile?.email}</span>
               </div>
               <button className="luxury-btn-secondary" onClick={() => navigate('/')}>
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path fill="#7c3aed" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
                 </svg>
                 Exit Panel
               </button>
@@ -765,7 +765,7 @@ const AdminPanelPage = () => {
                   className={`luxury-nav-tab ${isActive ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22, flexShrink: 0, filter: isActive ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' : `drop-shadow(0 0 6px ${tab.iconColor}cc)` }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22, flexShrink: 0 }}>
                     {tab.renderIcon(iconFill)}
                   </svg>
                   <span className="luxury-tab-label">{tab.label}</span>
@@ -781,7 +781,7 @@ const AdminPanelPage = () => {
             <div className="luxury-dashboard-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0,filter:'drop-shadow(0 0 8px #9333eacc)',animation:'statFloat 3.5s ease-in-out infinite'}}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0,animation:'statFloat 3.5s ease-in-out infinite'}}>
                     <path fill="#9333ea" d="M21,3H3C1.89,3 1,3.89 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,0 23,17V5C23,3.89 22.1,3 21,3M21,17H3V5H21V17Z"/>
                     <path fill="#a855f7" d="M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8M12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14Z"/>
                     <path fill="#c084fc" d="M5.5,7.5L4,9L7,12L4,15L5.5,16.5L10,12L5.5,7.5Z"/>
@@ -835,7 +835,7 @@ const AdminPanelPage = () => {
             <div className="luxury-users-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,filter:'drop-shadow(0 0 8px #3b82f6cc)',flexShrink:0}}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,flexShrink:0}}>
                     <path fill="#3b82f6" d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
                   </svg>
                   User Management
@@ -938,7 +938,7 @@ const AdminPanelPage = () => {
                                 </div>
                                 {currentRoom && (
                                   <div className="luxury-current-room">
-                                    <svg viewBox="0 0 24 24" fill="none" style={{filter:'drop-shadow(0 0 5px #7c3aedcc)'}}>
+                                    <svg viewBox="0 0 24 24" fill="none">
                                       <path fill="#7c3aed" d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16Z"/>
                                     </svg>
                                     {currentRoom}
@@ -948,11 +948,11 @@ const AdminPanelPage = () => {
                               
                               <div className="luxury-role-section">
                                 <span className={`luxury-role-badge role-${user.role || 'user'}`}>
-                                  <svg viewBox="0 0 24 24" fill="currentColor">
-                                    {user.role === 'owner' && <path d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
-                                    {user.role === 'admin' && <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
-                                    {user.role === 'moderator' && <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
-                                    {(!user.role || user.role === 'user') && <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
+                                  <svg viewBox="0 0 24 24" fill="none">
+                                    {user.role === 'owner' && <path fill="#7c3aed" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                                    {user.role === 'admin' && <path fill="#3b82f6" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                                    {user.role === 'moderator' && <path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                                    {(!user.role || user.role === 'user') && <path fill="#3b82f6" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
                                   </svg>
                                   {user.role?.toUpperCase() || 'USER'}
                                 </span>
@@ -982,25 +982,27 @@ const AdminPanelPage = () => {
                               <div className="luxury-device-details">
                                 <div className="luxury-device-item">
                                   {deviceInfo.device === 'Mobile' ? (
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #6366f1cc)',flexShrink:0}}><path fill="#6366f1" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12,20.5A1.5,1.5 0 0,1 10.5,19A1.5,1.5 0 0,1 12,17.5A1.5,1.5 0 0,1 13.5,19A1.5,1.5 0 0,1 12,20.5Z"/></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#6366f1" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M12,20.5A1.5,1.5 0 0,1 10.5,19A1.5,1.5 0 0,1 12,17.5A1.5,1.5 0 0,1 13.5,19A1.5,1.5 0 0,1 12,20.5Z"/></svg>
                                   ) : deviceInfo.device === 'Tablet' ? (
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #6366f1cc)',flexShrink:0}}><path fill="#6366f1" d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#6366f1" d="M19,18H5V6H19M21,4H3C1.89,4 1,4.89 1,6V18A2,2 0 0,0 3,20H21A2,2 0 0,0 23,18V6C23,4.89 22.1,4 21,4Z"/></svg>
                                   ) : (
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #6366f1cc)',flexShrink:0}}><path fill="#6366f1" d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#6366f1" d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
                                   )}
                                   <span style={{fontWeight:800,color:'#4f46e5',fontSize:11}}>{deviceInfo.deviceModel}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #f97316cc)',flexShrink:0}}><path fill="#f97316" d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#f97316" d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
                                   <span style={{fontSize:11,color:'#c2410c',fontWeight:700}}>{deviceInfo.browser}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #10b981cc)',flexShrink:0}}><path fill="#10b981" d="M12,3C7.58,3 4,4.79 4,7V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V7C20,4.79 16.42,3 12,3M12,5C15.87,5 18,6.5 18,7C18,7.5 15.87,9 12,9C8.13,9 6,7.5 6,7C6,6.5 8.13,5 12,5M18,17C18,17.5 15.87,19 12,19C8.13,19 6,17.5 6,17V14.77C7.61,15.55 9.72,16 12,16C14.28,16 16.39,15.55 18,14.77V17M18,12.45C16.7,13.4 14.42,14 12,14C9.58,14 7.3,13.4 6,12.45V9.64C7.47,10.47 9.61,11 12,11C14.39,11 16.53,10.47 18,9.64V12.45Z"/></svg>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#10b981" d="M12,3C7.58,3 4,4.79 4,7V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V7C20,4.79 16.42,3 12,3M12,5C15.87,5 18,6.5 18,7C18,7.5 15.87,9 12,9C8.13,9 6,7.5 6,7C6,6.5 8.13,5 12,5M18,17C18,17.5 15.87,19 12,19C8.13,19 6,17.5 6,17V14.77C7.61,15.55 9.72,16 12,16C14.28,16 16.39,15.55 18,14.77V17M18,12.45C16.7,13.4 14.42,14 12,14C9.58,14 7.3,13.4 6,12.45V9.64C7.47,10.47 9.61,11 12,11C14.39,11 16.53,10.47 18,9.64V12.45Z"/></svg>
                                   <span style={{fontSize:11,color:'#065f46',fontWeight:700}}>{deviceInfo.os}</span>
                                 </div>
                                 <div className="luxury-device-item">
-                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,filter:'drop-shadow(0 0 5px #ec4899cc)',flexShrink:0}}><path fill="#ec4899" d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>
-                                  <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}} title="MAC addresses cannot be accessed by browsers due to security restrictions">MAC: N/A (Private)</span>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#ec4899" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
+                                  <span style={{fontFamily:'monospace',fontSize:10,color:'#9f1239',fontWeight:700}}>
+                                    {user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : (user.createdAt ? 'New user' : '—')}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -1010,28 +1012,27 @@ const AdminPanelPage = () => {
                                 const ip = deviceInfo.ip;
                                 if (ip && ip !== 'Unknown') fetchIPGeo(ip);
                                 const geo = ipGeoCache[ip];
+                                const cityCountry = geo ? `${geo.city || ''}${geo.city && geo.country ? ', ' : ''}${geo.country || ''}` : '';
                                 return (
                                   <div className="luxury-location-details">
                                     <div className="luxury-location-item">
-                                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,filter:'drop-shadow(0 0 5px #8b5cf6cc)',flexShrink:0}}><path fill="#8b5cf6" d="M15,12C15,13.66 13.66,15 12,15C10.34,15 9,13.66 9,12C9,10.34 10.34,9 12,9C13.66,9 15,10.34 15,12M21,12C21,16.97 16.97,21 12,21C7.03,21 3,16.97 3,12C3,7.03 7.03,3 12,3C16.97,3 21,7.03 21,12M19,12C19,8.13 15.87,5 12,5C8.13,5 5,8.13 5,12C5,15.87 8.13,19 12,19C15.87,19 19,15.87 19,12Z"/></svg>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#8b5cf6" d="M15,12C15,13.66 13.66,15 12,15C10.34,15 9,13.66 9,12C9,10.34 10.34,9 12,9C13.66,9 15,10.34 15,12M21,12C21,16.97 16.97,21 12,21C7.03,21 3,16.97 3,12C3,7.03 7.03,3 12,3C16.97,3 21,7.03 21,12M19,12C19,8.13 15.87,5 12,5C8.13,5 5,8.13 5,12C5,15.87 8.13,19 12,19C15.87,19 19,15.87 19,12Z"/></svg>
                                       <span style={{fontFamily:'monospace',fontSize:11,color:'#5b21b6',fontWeight:900,letterSpacing:'0.03em'}}>
-                                        {ip && ip !== 'Unknown' ? ip : 'No IP yet'}
+                                        {ip && ip !== 'Unknown' ? ip : 'Fetching…'}
                                       </span>
                                     </div>
                                     <div className="luxury-location-item">
-                                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,filter:'drop-shadow(0 0 5px #ef4444cc)',flexShrink:0}}><path fill="#ef4444" d="M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5C10.62,11.5 9.5,10.38 9.5,9C9.5,7.62 10.62,6.5 12,6.5C13.38,6.5 14.5,7.62 14.5,9C14.5,10.38 13.38,11.5 12,11.5Z"/></svg>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#ef4444" d="M12,2C8.13,2 5,5.13 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9C19,5.13 15.87,2 12,2M12,11.5C10.62,11.5 9.5,10.38 9.5,9C9.5,7.62 10.62,6.5 12,6.5C13.38,6.5 14.5,7.62 14.5,9C14.5,10.38 13.38,11.5 12,11.5Z"/></svg>
                                       <span style={{fontSize:11,color:'#1f2937',fontWeight:700}}>
-                                        {geo ? `${geo.city || ''}, ${geo.country || ''}`.replace(/^, |, $/, '') || '—' : (deviceInfo.location !== 'Unknown' ? deviceInfo.location : '—')}
+                                        {cityCountry || (deviceInfo.location && deviceInfo.location !== 'Unknown' ? deviceInfo.location : (geo === null ? 'Loading…' : '—'))}
                                       </span>
                                     </div>
-                                    {geo && geo.lat && (
-                                      <div className="luxury-location-item">
-                                        <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,filter:'drop-shadow(0 0 5px #14b8a6cc)',flexShrink:0}}><path fill="#14b8a6" d="M12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5M12,2A7,7 0 0,1 19,9C19,14.25 12,22 12,22C12,22 5,14.25 5,9A7,7 0 0,1 12,2Z"/></svg>
-                                        <span style={{fontFamily:'monospace',fontSize:10,color:'#0f766e',fontWeight:800}}>
-                                          {geo.lat.toFixed(4)}°, {geo.lon.toFixed(4)}°
-                                        </span>
-                                      </div>
-                                    )}
+                                    <div className="luxury-location-item">
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}><path fill="#14b8a6" d="M12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5M12,2A7,7 0 0,1 19,9C19,14.25 12,22 12,22C12,22 5,14.25 5,9A7,7 0 0,1 12,2Z"/></svg>
+                                      <span style={{fontFamily:'monospace',fontSize:10,color:'#0f766e',fontWeight:800}}>
+                                        {geo && geo.lat ? `${geo.lat.toFixed(4)}°, ${geo.lon.toFixed(4)}°` : (geo === null ? 'Loading…' : '—')}
+                                      </span>
+                                    </div>
                                   </div>
                                 );
                               })()}
@@ -1137,7 +1138,7 @@ const AdminPanelPage = () => {
               <div className="luxury-section-header luxury-section-header-flex">
                 <div>
                   <h2>
-                    <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,filter:'drop-shadow(0 0 8px #10b981cc)',flexShrink:0}}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,flexShrink:0}}>
                       <path fill="#10b981" d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H15.17L12,19.17L8.83,16H4V4H20V16Z"/>
                     </svg>
                     Room Management
@@ -1172,13 +1173,22 @@ const AdminPanelPage = () => {
                     { from: '#ec4899', to: '#db2777' },
                     { from: '#14b8a6', to: '#0d9488' },
                   ];
+                  const roomIconPaths = [
+                    "M20,2H4C2.9,2 2,2.9 2,4V22L6,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2M20,16H5.17L4,17.17V4H20V16Z",
+                    "M7,6H17A6,6 0 0,1 23,12A6,6 0 0,1 17,18C15.22,18 13.63,17.23 12.53,16H11.47C10.37,17.23 8.78,18 7,18A6,6 0 0,1 1,12A6,6 0 0,1 7,6M6,9V11H4V13H6V15H8V13H10V11H8V9H6M15.5,12A1.5,1.5 0 0,0 14,13.5A1.5,1.5 0 0,0 15.5,15A1.5,1.5 0 0,0 17,13.5A1.5,1.5 0 0,0 15.5,12M18.5,9A1.5,1.5 0 0,0 17,10.5A1.5,1.5 0 0,0 18.5,12A1.5,1.5 0 0,0 20,10.5A1.5,1.5 0 0,0 18.5,9Z",
+                    "M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z",
+                    "M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z",
+                    "M18,14H6V12H18V14M18,10H6V8H18V10M18,18H6V16H18V18M3,3A2,2 0 0,0 1,5V19A2,2 0 0,0 3,21H21A2,2 0 0,0 23,19V5A2,2 0 0,0 21,3H3Z",
+                    "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z",
+                  ];
                   const col = roomColors[idx % roomColors.length];
+                  const iconPath = roomIconPaths[idx % roomIconPaths.length];
                   return (
                     <div key={room.id} className="luxury-room-card">
                       <div className="luxury-room-header">
                         <div className="luxury-room-icon" style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}>
                           <svg viewBox="0 0 24 24" fill="none">
-                            <path fill="#ffffff" d="M17,12C17,12 21,16 21,18.5C21,20.43 19.43,22 17.5,22C16.3,22 15.24,21.36 14.65,20.4C14.3,21.36 13.24,22 12,22C10.76,22 9.7,21.36 9.35,20.4C8.76,21.36 7.7,22 6.5,22C4.57,22 3,20.43 3,18.5C3,16 7,12 7,12C7,12 7,12 7,9.5C7,8.12 8.12,7 9.5,7H14.5C15.88,7 17,8.12 17,9.5V12M10,9.5V12.5L12,14.5L14,12.5V9.5H10Z"/>
+                            <path fill="#ffffff" d={iconPath}/>
                           </svg>
                         </div>
                         <div className="luxury-room-info">
@@ -1192,7 +1202,7 @@ const AdminPanelPage = () => {
                       
                       <div className="luxury-room-stats">
                         <div className="luxury-room-stat">
-                          <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter: activeInRoom > 0 ? 'drop-shadow(0 0 4px #10b981cc)' : 'none',flexShrink:0}}>
+                          <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
                             <path fill={activeInRoom > 0 ? '#10b981' : '#9ca3af'} d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
                           </svg>
                           <span style={{ color: activeInRoom > 0 ? '#059669' : '#9ca3af', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
@@ -1200,14 +1210,14 @@ const AdminPanelPage = () => {
                           </span>
                         </div>
                         <div className="luxury-room-stat">
-                          <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter: room.isActive !== false ? 'drop-shadow(0 0 4px #6366f1cc)' : 'drop-shadow(0 0 4px #ef4444cc)',flexShrink:0}}>
+                          <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
                             {room.isActive !== false ? <path fill="#6366f1" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/> : <path fill="#ef4444" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>}
                           </svg>
                           <span style={{fontWeight:700,color: room.isActive !== false ? '#4f46e5' : '#dc2626'}}>{room.isActive !== false ? 'Active' : 'Inactive'}</span>
                         </div>
                         {room.maxUsers && (
                           <div className="luxury-room-stat">
-                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,filter:'drop-shadow(0 0 4px #f59e0bcc)',flexShrink:0}}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
                               <path fill="#f59e0b" d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7H14A7,7 0 0,1 21,14H22A1,1 0 0,1 23,15V18A1,1 0 0,1 22,19H21V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V19H2A1,1 0 0,1 1,18V15A1,1 0 0,1 2,14H3A7,7 0 0,1 10,7H11V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2Z"/>
                             </svg>
                             <span style={{fontWeight:700,color:'#b45309'}}>Max: {room.maxUsers}</span>
@@ -1353,7 +1363,7 @@ const AdminPanelPage = () => {
             <div className="luxury-security-section">
               <div className="luxury-section-header">
                 <h2>
-                  <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,filter:'drop-shadow(0 0 8px #ef4444cc)',flexShrink:0}}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:27,height:27,flexShrink:0}}>
                     <path fill="#ef4444" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M11,15H13V17H11V15M11,7H13V13H11V7Z"/>
                   </svg>
                   Security Center
