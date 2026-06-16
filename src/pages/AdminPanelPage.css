@@ -498,6 +498,28 @@
   70%  { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
   100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
 }
+@keyframes statFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-4px) scale(1.04); }
+}
+@keyframes statPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.82; }
+}
+@keyframes statShake {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(-12deg); }
+  20% { transform: rotate(12deg); }
+  30% { transform: rotate(-8deg); }
+  40% { transform: rotate(8deg); }
+  50% { transform: rotate(-4deg); }
+}
+@keyframes statGavel {
+  0%, 40%, 100% { transform: rotate(0deg) translateY(0); }
+  10% { transform: rotate(-25deg) translateY(-3px); }
+  20% { transform: rotate(0deg) translateY(2px); }
+  25% { transform: rotate(0deg) translateY(0); }
+}
 .luxury-table-row { animation: lux-fadeInUp 0.25s ease both; }
 .luxury-stat-card { animation: lux-fadeInUp 0.3s ease both; }
 .luxury-room-card { animation: lux-fadeInUp 0.3s ease both; }
