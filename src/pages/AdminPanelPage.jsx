@@ -948,7 +948,7 @@ const AdminPanelPage = () => {
                 )
               },
               {
-                id: 'reports', label: `Reports${stats.pendingReports > 0 ? ` (${stats.pendingReports})` : ''}`, iconColor: '#f59e0b',
+                id: 'reports', label: 'Reports', badge: stats.pendingReports, iconColor: '#a855f7',
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
@@ -968,6 +968,11 @@ const AdminPanelPage = () => {
                     {tab.renderIcon(iconFill)}
                   </svg>
                   <span className="luxury-tab-label">{tab.label}</span>
+                  {tab.badge > 0 && (
+                    <span className={`lav-notif-badge ${isActive ? 'lav-notif-badge--active' : ''}`}>
+                      {tab.badge > 99 ? '99+' : tab.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

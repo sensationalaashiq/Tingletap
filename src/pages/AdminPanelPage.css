@@ -923,27 +923,87 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   LAVENDER NOTIFICATION BADGE (Reports tab in nav)
+═══════════════════════════════════════════════════════════ */
+.lav-notif-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 99px; font-size: 10.5px; font-weight: 800;
+  letter-spacing: 0.03em; line-height: 1;
+  background: linear-gradient(135deg, #c084fc, #a855f7, #7c3aed);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px rgba(232,226,255,0.9),
+    0 0 0 4px rgba(168,85,247,0.18),
+    0 4px 14px rgba(124,58,237,0.38);
+  animation: lavBadgePop .3s cubic-bezier(.34,1.56,.64,1) both,
+             lavBadgePulse 2.4s ease-in-out 0.3s infinite;
+  flex-shrink: 0;
+}
+.lav-notif-badge--active {
+  background: rgba(255,255,255,0.28);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.5),
+    0 0 0 4px rgba(255,255,255,0.15),
+    0 4px 14px rgba(0,0,0,0.12);
+  animation: lavBadgePop .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+@keyframes lavBadgePop {
+  0%   { transform: scale(0); opacity: 0; }
+  80%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes lavBadgePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(232,226,255,0.9),
+      0 0 0 4px rgba(168,85,247,0.18),
+      0 4px 14px rgba(124,58,237,0.38);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(232,226,255,0.95),
+      0 0 0 7px rgba(168,85,247,0.12),
+      0 4px 22px rgba(124,58,237,0.52),
+      0 0 30px rgba(192,132,252,0.25);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    REPORTS & BAN APPEALS SECTION
 ═══════════════════════════════════════════════════════════ */
 .rpt-section { display: flex; flex-direction: column; gap: 20px; }
 
 .rpt-sub-tabs {
   display: flex; gap: 8px; flex-wrap: wrap;
-  padding: 14px 18px; background: rgba(255,255,255,0.8);
-  border: 1.5px solid rgba(99,102,241,0.12); border-radius: 18px;
-  backdrop-filter: blur(8px);
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.75);
+  border: 1.5px solid rgba(167,139,250,0.18);
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 2px 18px rgba(124,58,237,0.07);
 }
 .rpt-sub-tab {
   display: flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 99px; border: 1.5px solid var(--rpt-color, #6366f1);
-  background: transparent; color: var(--rpt-color, #6366f1);
+  padding: 8px 16px; border-radius: 99px;
+  border: 1.5px solid rgba(167,139,250,0.35);
+  background: rgba(248,245,255,0.7);
+  color: #7c3aed;
   font-size: 12.5px; font-weight: 700; cursor: pointer;
   transition: all .2s ease; letter-spacing: 0.01em;
 }
-.rpt-sub-tab:hover { background: color-mix(in srgb, var(--rpt-color, #6366f1) 12%, transparent); }
+.rpt-sub-tab:hover {
+  background: rgba(237,233,254,0.9);
+  border-color: rgba(139,92,246,0.45);
+  color: #5b21b6;
+}
 .rpt-sub-tab.active {
-  background: var(--rpt-color, #6366f1); color: #fff;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--rpt-color, #6366f1) 35%, transparent);
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.32);
 }
 
 .rpt-list { display: flex; flex-direction: column; gap: 14px; }
