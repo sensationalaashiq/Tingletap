@@ -91,11 +91,6 @@ const AdminPanelPage = () => {
   const [changePwdTarget, setChangePwdTarget] = useState(null);
   const [changePwdLoading, setChangePwdLoading] = useState(false);
 
-  // Grant Superowner modal
-  const [showSuperownerModal, setShowSuperownerModal] = useState(false);
-  const [superownerTarget, setSuperownerTarget] = useState(null);
-  const [superownerLoading, setSuperownerLoading] = useState(false);
-
   // IP Geolocation cache
   const [ipGeoCache, setIpGeoCache] = useState({});
 
@@ -386,24 +381,6 @@ const AdminPanelPage = () => {
       toast.error(`Failed to send reset email: ${error.message}`);
     } finally {
       setChangePwdLoading(false);
-    }
-  };
-
-  // ---- Superowner: grant/revoke superowner role ----
-  const handleGrantSuperowner = async () => {
-    if (!superownerTarget) return;
-    setSuperownerLoading(true);
-    try {
-      const newRole = superownerTarget.role === 'superowner' ? 'owner' : 'superowner';
-      await updateDoc(doc(db, 'users', superownerTarget.uid || superownerTarget.id), { role: newRole });
-      toast.success(`${superownerTarget.displayName} is now ${newRole === 'superowner' ? '⭐ SuperOwner' : 'Owner'}.`);
-      setShowSuperownerModal(false);
-      setSuperownerTarget(null);
-    } catch (error) {
-      console.error('Superowner grant error:', error);
-      toast.error(`Failed to update role: ${error.message}`);
-    } finally {
-      setSuperownerLoading(false);
     }
   };
 
@@ -1451,20 +1428,6 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
 
-                                {currentUserProfile?.role === 'superowner' && user.uid !== currentUserProfile?.uid && (
-                                  <button
-                                    className="luxury-action-btn"
-                                    style={{ background: user.role === 'superowner' ? 'linear-gradient(135deg,#dc2626,#f87171)' : 'linear-gradient(135deg,#b45309,#fbbf24)' }}
-                                    onClick={() => { setSuperownerTarget(user); setShowSuperownerModal(true); }}
-                                    title={user.role === 'superowner' ? 'Remove SuperOwner' : 'Grant SuperOwner'}
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
-                                      <path fill="#ffffff" d="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z"/>
-                                    </svg>
-                                    <span>{user.role === 'superowner' ? 'Revoke SO' : 'Grant SO'}</span>
-                                  </button>
-                                )}
-
                                 <button 
                                   className="luxury-action-btn delete-btn"
                                   onClick={() => handleDeleteProfile(user)}
@@ -2428,57 +2391,6 @@ const AdminPanelPage = () => {
                   style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#0369a1,#38bdf8)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changePwdLoading ? 'not-allowed' : 'pointer', opacity: changePwdLoading ? 0.7 : 1 }}
                 >
                   {changePwdLoading ? 'Sending...' : '📧 Send Reset Email'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Grant / Revoke SuperOwner Modal */}
-      {showSuperownerModal && superownerTarget && (
-        <div className="luxury-modal-overlay" onClick={() => { setShowSuperownerModal(false); setSuperownerTarget(null); }}>
-          <div className="luxury-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-            <div className="luxury-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: superownerTarget.role === 'superowner' ? 'linear-gradient(135deg,#dc2626,#f87171)' : 'linear-gradient(135deg,#b45309,#fbbf24)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
-                    <path fill="#ffffff" d="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z"/>
-                  </svg>
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>
-                    {superownerTarget.role === 'superowner' ? 'Revoke SuperOwner' : 'Grant SuperOwner'}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: 12, color: '#7c3aed' }}>
-                    User: <strong>{superownerTarget.displayName}</strong>
-                  </p>
-                </div>
-              </div>
-              <button className="luxury-modal-close" onClick={() => { setShowSuperownerModal(false); setSuperownerTarget(null); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-              </button>
-            </div>
-            <div className="luxury-modal-body">
-              <div style={{ background: superownerTarget.role === 'superowner' ? 'rgba(220,38,38,0.08)' : 'rgba(180,83,9,0.08)', border: `1px solid ${superownerTarget.role === 'superowner' ? 'rgba(220,38,38,0.2)' : 'rgba(180,83,9,0.2)'}`, borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
-                <p style={{ margin: 0, fontSize: 13, color: '#1e1b4b', lineHeight: 1.6 }}>
-                  {superownerTarget.role === 'superowner'
-                    ? <>Are you sure you want to <strong>revoke SuperOwner</strong> from <strong>{superownerTarget.displayName}</strong>? They will become Owner.</>
-                    : <>Are you sure you want to <strong>grant SuperOwner</strong> to <strong>{superownerTarget.displayName}</strong>? SuperOwner has all site permissions.</>
-                  }
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => { setShowSuperownerModal(false); setSuperownerTarget(null); }}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                >Cancel</button>
-                <button
-                  onClick={handleGrantSuperowner}
-                  disabled={superownerLoading}
-                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: superownerTarget.role === 'superowner' ? 'linear-gradient(135deg,#dc2626,#f87171)' : 'linear-gradient(135deg,#b45309,#fbbf24)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: superownerLoading ? 'not-allowed' : 'pointer', opacity: superownerLoading ? 0.7 : 1 }}
-                >
-                  {superownerLoading ? 'Processing...' : (superownerTarget.role === 'superowner' ? '🚫 Revoke SuperOwner' : '⭐ Grant SuperOwner')}
                 </button>
               </div>
             </div>
