@@ -1515,48 +1515,42 @@ const SettingsSidebar = ({
                     return (
                         <div className="settings-tab-content">
                             <div style={{
-                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '12px',
-                                padding: '32px',
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.06))',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                borderRadius: '10px',
+                                padding: '14px',
                                 textAlign: 'center',
                                 color: '#dc2626',
-                                margin: '20px 0'
+                                margin: '8px 0'
                             }}>
-                                <svg viewBox="0 0 24 24" width="64" height="64" fill="currentColor" style={{ marginBottom: '16px' }}>
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ marginBottom: '8px' }}>
                                     <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
                                 </svg>
-                                <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: '700' }}>Premium Feature Restricted</h3>
-                                <p style={{ margin: '0 0 16px 0', fontSize: '16px', lineHeight: '1.5', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
-                                    Username Font customization is a premium feature restricted to <strong>Badge Holders</strong>, <strong>Admins</strong>, <strong>Owners</strong>, and <strong>Moderators</strong> only.
-                                </p>
-                                <p style={{ margin: '0 0 24px 0', fontSize: '14px', opacity: '0.8' }}>
-                                    This feature allows users to customize their username appearance with fonts, colors, gradients, animations, and effects that are visible to ALL users in the chat.
+                                <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '700' }}>Premium — Restricted</h3>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '11px', lineHeight: '1.4' }}>
+                                    For <strong>Badge Holders</strong>, <strong>Admins</strong>, <strong>Owners</strong> &amp; <strong>Mods</strong> only.
                                 </p>
                                 <div style={{
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '8px',
-                                    padding: '16px',
-                                    marginTop: '20px'
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    borderRadius: '6px',
+                                    padding: '8px',
+                                    marginTop: '8px',
+                                    textAlign: 'left'
                                 }}>
-                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>🎨 Premium Features Include:</h4>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '10px', fontWeight: '700' }}>🎨 Includes:</p>
                                     <ul style={{ 
-                                        textAlign: 'left', 
                                         margin: '0', 
-                                        padding: '0 0 0 20px',
-                                        fontSize: '14px',
-                                        lineHeight: '1.6'
+                                        padding: '0 0 0 14px',
+                                        fontSize: '10px',
+                                        lineHeight: '1.5'
                                     }}>
-                                        <li>Custom font families & sizes</li>
-                                        <li>Gradient text effects</li>
-                                        <li>Text shadows & outlines</li>
-                                        <li>Animation effects</li>
-                                        <li>Real-time preview</li>
-                                        <li>Visible to ALL users</li>
+                                        <li>Custom fonts & sizes</li>
+                                        <li>Gradient & shadow effects</li>
+                                        <li>Animations — visible to all</li>
                                     </ul>
                                 </div>
-                                <p style={{ margin: '20px 0 0 0', fontSize: '12px', fontStyle: 'italic' }}>
-                                    Contact an admin to get access to premium features or earn a badge through community participation.
+                                <p style={{ margin: '8px 0 0 0', fontSize: '10px', fontStyle: 'italic', opacity: '0.8' }}>
+                                    Contact an admin to get access.
                                 </p>
                             </div>
                         </div>
