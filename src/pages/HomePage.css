@@ -10499,8 +10499,11 @@ html body.theme-sunset .message-body p {
   background: rgba(10, 5, 28, 0.97);
 }
 
-/* Chat-feed — leave room for 58px bar */
+/* Chat-feed — leave room for 58px bar; override height so bottom:58px actually works */
 .homepage-container .chat-feed {
   bottom: 58px !important;
-  padding-bottom: 2px !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  padding-bottom: 4px !important;
 }

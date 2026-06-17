@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
@@ -401,6 +402,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     }
     const [showActions, setShowActions] = useState(false);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const avatarRef = useRef(null);
     
     const currentUser = auth.currentUser;
@@ -473,29 +475,32 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             if (!isBot && !isMyMessage) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log('🟦 AVATAR CLICKED EVENT TRIGGERED!');
-                                console.log('🟦 User:', displayName, 'UID:', uid);
-                                console.log('🟦 Current openDropdownId:', openDropdownId, 'Message ID:', id);
-                                console.log('🟦 Available functions:', { toggleDropdown: !!toggleDropdown, setOpenDropdownId: !!setOpenDropdownId, windowSetOpenDropdownId: !!window.setOpenDropdownId });
                                 
-                                // Toggle dropdown for this message
                                 if (openDropdownId === id) {
-                                    console.log('🔒 CLOSING dropdown - dropdown is already open for this message');
                                     closeAllDropdowns();
                                 } else {
-                                    console.log('🔓 OPENING dropdown for message ID:', id);
-                                    // Use the toggleDropdown function passed as prop
+                                    const rect = avatarRef.current?.getBoundingClientRect();
+                                    if (rect) {
+                                        const dropdownHeight = 280;
+                                        const dropdownWidth = 230;
+                                        const vh = window.innerHeight;
+                                        const vw = window.innerWidth;
+                                        let top = rect.bottom + 8;
+                                        if (top + dropdownHeight > vh - 20) {
+                                            top = Math.max(20, rect.top - dropdownHeight - 8);
+                                        }
+                                        let left = rect.left;
+                                        if (left + dropdownWidth > vw - 10) {
+                                            left = vw - dropdownWidth - 10;
+                                        }
+                                        setDropdownPos({ top, left });
+                                    }
                                     if (toggleDropdown) {
-                                        console.log('🔓 Using toggleDropdown prop function');
                                         toggleDropdown(id);
                                     } else if (setOpenDropdownId) {
-                                        console.log('🔓 Using setOpenDropdownId prop function');
                                         setOpenDropdownId(id);
                                     } else if (window.setOpenDropdownId) {
-                                        console.log('🔓 Using window.setOpenDropdownId function');
                                         window.setOpenDropdownId(id);
-                                    } else {
-                                        console.log('❌ NO DROPDOWN FUNCTION AVAILABLE!');
                                     }
                                 }
                             }
@@ -516,16 +521,16 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                     )}
                     
                     
-                {/* Avatar Click Dropdown - Fixed positioning */}
-                    {!isBot && !isMyMessage && isDropdownOpen && (
+                {/* Avatar Click Dropdown - Portal with fixed positioning to avoid scroll container clipping */}
+                    {!isBot && !isMyMessage && isDropdownOpen && createPortal(
                         <>
                             <div className="sidebar-dropdown-backdrop" onClick={closeAllDropdowns}></div>
                             <div className="user-dropdown" style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: '0',
+                                position: 'fixed',
+                                top: `${dropdownPos.top}px`,
+                                left: `${dropdownPos.left}px`,
                                 zIndex: 999999999,
-                                marginTop: '8px'
+                                marginTop: 0
                             }}>
                                 <div className="dropdown-header">
                                     <div className="dropdown-user-info">
@@ -602,7 +607,8 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                     <span>Block User</span>
                                 </button>
                             </div>
-                        </>
+                        </>,
+                        document.body
                     )}
                 </div>
                 <div className="message-content-container">
