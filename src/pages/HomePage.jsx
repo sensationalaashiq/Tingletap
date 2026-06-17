@@ -43,10 +43,8 @@ const SendIconSVG = () => (
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="3" width="18" height="18" rx="4" ry="4" stroke="currentColor" strokeWidth="1.8"/>
-    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-    <path d="M21 15L16 10L11 15M14 18H5a2 2 0 01-2-2V8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59723 21.9983 8.005 21.9983C6.41277 21.9983 4.88584 21.3658 3.76 20.24C2.63416 19.1142 2.00166 17.5872 2.00166 15.995C2.00166 14.4028 2.63416 12.8758 3.76 11.75L12.95 2.56C13.7006 1.80944 14.7185 1.38778 15.78 1.38778C16.8415 1.38778 17.8594 1.80944 18.61 2.56C19.3606 3.31056 19.7822 4.32855 19.7822 5.39C19.7822 6.45145 19.3606 7.46944 18.61 8.22L9.41 17.41C9.03494 17.7851 8.52626 17.9958 7.995 17.9958C7.46374 17.9958 6.95506 17.7851 6.58 17.41C6.20494 17.0349 5.99421 16.5263 5.99421 15.995C5.99421 15.4637 6.20494 14.9551 6.58 14.58L15.07 6.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const PremiumDeleteIcon = () => (

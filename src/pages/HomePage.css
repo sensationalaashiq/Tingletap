@@ -10111,8 +10111,8 @@ html body.theme-sunset .message-body p {
 
 /* Adjust chat-feed bottom to match sticky bar — last strip kisses the bar */
 .homepage-container .chat-feed {
-  bottom: 58px !important;
-  padding-bottom: 4px !important;
+  bottom: 70px !important;
+  padding-bottom: 2px !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -10162,11 +10162,11 @@ html body.theme-sunset .message-body p {
   box-shadow: none !important;
 }
 
-/* ── GIRLS → circular DP with pink border ───────────────────────── */
+/* ── GIRLS → perfect circle DP with ultra-thin pink border ─────── */
 .homepage-container .avatar-wrapper.female-border {
-  border: 2.5px solid #ff5fa0 !important;
+  border: 1px solid rgba(244, 114, 182, 0.75) !important;
   border-radius: 50% !important;
-  box-shadow: 0 0 0 1px rgba(255, 95, 160, 0.18), 0 2px 8px rgba(255, 95, 160, 0.22) !important;
+  box-shadow: none !important;
   background: transparent !important;
   padding: 0 !important;
 }
@@ -10177,17 +10177,17 @@ html body.theme-sunset .message-body p {
   border: none !important;
 }
 
-/* ── BOYS → square DP with blue background ──────────────────────── */
+/* ── BOYS → perfect square DP with ultra-thin blue border ────────── */
 .homepage-container .avatar-wrapper.male-border {
-  border-radius: 7px !important;
-  border: none !important;
-  background: linear-gradient(135deg, #1565e0 0%, #42a5f5 100%) !important;
-  box-shadow: 0 2px 8px rgba(21, 101, 224, 0.35) !important;
-  padding: 2px !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(59, 130, 246, 0.75) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .homepage-container .avatar-wrapper.male-border .message-avatar {
-  border-radius: 5px !important;
+  border-radius: 4px !important;
   clip-path: none !important;
   border: none !important;
 }
@@ -10203,122 +10203,164 @@ html body.theme-sunset .message-body p {
 /* Compact username */
 .homepage-container .message-displayname {
   font-size: 13px !important;
-  line-height: 1.2 !important;
-  margin-bottom: 1px !important;
+  line-height: 1.15 !important;
+  margin-bottom: 0px !important;
 }
 
 /* Tighter content column */
 .homepage-container .message-content-container {
-  padding: 1px 0 !important;
-  gap: 1px !important;
+  padding: 0px 0 !important;
+  gap: 0px !important;
 }
 
 /* Message body density */
 .homepage-container .message-body p {
-  line-height: 1.38 !important;
-  margin: 1px 0 !important;
+  line-height: 1.35 !important;
+  margin: 0px 0 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    PREMIUM INPUT BAR UPGRADES — lavender send, premium container
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Frosted glass bar with stronger lavender tint */
+/* Frosted glass bar — full-width, stuck to bottom edge, no gap below */
 .homepage-container .chat-footer {
-  background: rgba(248, 245, 255, 0.97) !important;
-  border-top: 1.5px solid rgba(167, 139, 250, 0.3) !important;
-  box-shadow: 0 -6px 32px rgba(109, 40, 217, 0.12), 0 -1px 0 rgba(167, 139, 250, 0.2) !important;
-  padding: 9px 14px !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  transform: none !important;
+  border-radius: 22px 22px 0 0 !important;
+  height: auto !important;
+  min-height: 62px !important;
+  background: rgba(246, 242, 255, 0.98) !important;
+  border: none !important;
+  border-top: 1.5px solid rgba(167, 139, 250, 0.35) !important;
+  box-shadow: 0 -6px 32px rgba(109, 40, 217, 0.13), 0 -1px 0 rgba(167, 139, 250, 0.25) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  padding: 9px 16px 14px 16px !important;
+}
+
+.homepage-container .chat-footer:focus-within {
+  width: 100% !important;
+  transform: none !important;
+  background: rgba(246, 242, 255, 0.99) !important;
+  box-shadow: 0 -8px 36px rgba(109, 40, 217, 0.18), 0 -1px 0 rgba(167, 139, 250, 0.3) !important;
 }
 
 .dark-mode .homepage-container .chat-footer {
-  background: rgba(10, 7, 28, 0.97) !important;
-  border-top-color: rgba(139, 92, 246, 0.3) !important;
+  background: rgba(8, 5, 24, 0.98) !important;
+  border-top-color: rgba(139, 92, 246, 0.32) !important;
+  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(139, 92, 246, 0.2) !important;
 }
 
-/* Input pill — richer lavender tint */
+/* Input pill — luxurious frosted lavender */
 .homepage-container .premium-input-wrapper {
-  background: rgba(237, 233, 254, 0.7) !important;
-  border: 1.5px solid rgba(167, 139, 250, 0.35) !important;
-  border-radius: 22px !important;
+  background: rgba(245, 240, 255, 0.82) !important;
+  border: 1.5px solid rgba(196, 181, 253, 0.45) !important;
+  border-radius: 26px !important;
   height: 44px !important;
-  box-shadow: inset 0 1px 3px rgba(109, 40, 217, 0.07) !important;
+  box-shadow: inset 0 1px 4px rgba(109, 40, 217, 0.08), 0 1px 6px rgba(167, 139, 250, 0.1) !important;
+  transition: all 0.25s ease !important;
 }
 
 .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(237, 233, 254, 0.92) !important;
-  border-color: rgba(139, 92, 246, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18), inset 0 1px 3px rgba(109, 40, 217, 0.06) !important;
+  background: rgba(245, 240, 255, 0.97) !important;
+  border-color: rgba(167, 139, 250, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.22), inset 0 1px 4px rgba(109, 40, 217, 0.07) !important;
 }
 
 .dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(30, 16, 60, 0.75) !important;
-  border-color: rgba(139, 92, 246, 0.32) !important;
+  background: rgba(22, 10, 52, 0.82) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* Input text */
 .homepage-container .premium-input-field {
   font-size: 14.5px !important;
-  color: #2e1065 !important;
-  letter-spacing: 0.01em !important;
+  color: #3b1075 !important;
+  letter-spacing: 0.015em !important;
+  font-weight: 500 !important;
+}
+
+.homepage-container .premium-input-field::placeholder {
+  color: rgba(139, 92, 246, 0.5) !important;
+  font-weight: 400 !important;
 }
 
 .dark-mode .homepage-container .premium-input-field {
   color: #e9d5ff !important;
 }
 
-/* Attachment button — image-gallery icon, teal-violet color */
+/* Attachment button — premium with light lavender SVG */
 .homepage-container .premium-footer-btn.attachment-btn,
 .homepage-container .attachment-btn {
-  width: 40px !important;
-  height: 40px !important;
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.18) 0%, rgba(99, 102, 241, 0.1) 100%) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.22) !important;
-  border-radius: 12px !important;
-  color: #7c3aed !important;
-  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.1) !important;
+  width: 42px !important;
+  height: 42px !important;
+  background: rgba(237, 233, 254, 0.6) !important;
+  border: 1.5px solid rgba(196, 181, 253, 0.4) !important;
+  border-radius: 14px !important;
+  color: #c4b5fd !important;
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.12) !important;
+  flex-shrink: 0 !important;
 }
 
 .homepage-container .attachment-btn:hover {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.32) 0%, rgba(99, 102, 241, 0.2) 100%) !important;
-  transform: scale(1.06) !important;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
+  background: rgba(237, 233, 254, 0.9) !important;
+  transform: rotate(10deg) scale(1.06) !important;
+  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.25) !important;
+  color: #a78bfa !important;
+}
+
+.homepage-container .attachment-btn svg {
+  color: #c4b5fd !important;
+  stroke: #c4b5fd !important;
 }
 
 .dark-mode .homepage-container .attachment-btn {
-  background: rgba(60, 30, 100, 0.55) !important;
-  border-color: rgba(139, 92, 246, 0.3) !important;
+  background: rgba(40, 18, 80, 0.6) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
   color: #c4b5fd !important;
 }
 
-/* Send button — beautiful light lavender gradient */
+/* Send button — glowing lavender gem */
 .homepage-container .premium-footer-btn.send-btn,
 .homepage-container .send-btn {
   width: 44px !important;
   height: 44px !important;
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 100%) !important;
-  border: 1.5px solid rgba(167, 139, 250, 0.5) !important;
+  background: linear-gradient(145deg, #ddd6fe 0%, #c4b5fd 35%, #a78bfa 70%, #8b5cf6 100%) !important;
+  border: 1px solid rgba(196, 181, 253, 0.6) !important;
   border-radius: 14px !important;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.38), 0 1px 4px rgba(196, 181, 253, 0.5) !important;
-  color: #fff !important;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: 0 4px 18px rgba(167, 139, 250, 0.5), 0 1px 4px rgba(196, 181, 253, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  color: #f5f0ff !important;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  flex-shrink: 0 !important;
 }
 
 .homepage-container .premium-footer-btn.send-btn:hover:not(:disabled),
 .homepage-container .send-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%) !important;
-  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.55), 0 2px 8px rgba(167, 139, 250, 0.4) !important;
+  background: linear-gradient(145deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 75%, #7c3aed 100%) !important;
+  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6), 0 2px 10px rgba(167, 139, 250, 0.45), inset 0 1px 0 rgba(255,255,255,0.3) !important;
   transform: scale(1.08) translateY(-1px) !important;
 }
 
 .homepage-container .send-btn:disabled {
-  background: linear-gradient(135deg, #e9e3ff 0%, #ddd6fe 100%) !important;
+  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%) !important;
   box-shadow: none !important;
-  opacity: 0.6 !important;
+  opacity: 0.55 !important;
   transform: none !important;
 }
 
-.homepage-container .send-btn svg {
-  color: white !important;
-  fill: white !important;
+/* Send button SVG — light lavender icon via currentColor */
+.homepage-container .send-btn svg,
+.homepage-container .premium-footer-btn.send-btn svg {
+  color: #f5f0ff !important;
+}
+
+/* Attachment button SVG — light lavender icon via currentColor */
+.homepage-container .attachment-btn svg path {
+  stroke: #c4b5fd !important;
 }
