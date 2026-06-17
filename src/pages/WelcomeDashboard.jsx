@@ -441,22 +441,29 @@ const WelcomeDashboard = () => {
 
   /* ── Role chip config ── */
   const getRoleConfig = () => {
-    const staffRoles = ['owner', 'superowner', 'admin', 'moderator'];
+    const staffRoles = ['owner', 'admin', 'moderator'];
     const effectiveRole = staffRoles.includes(userRole)
-      ? (userRole === 'superowner' ? 'owner' : userRole)
+      ? userRole
       : (userBadge ? 'badge_holder' : userRole);
     switch (effectiveRole) {
-      case 'owner': return {
-        label: 'Owner',
-        cls: 'wd-role--owner',
-        icon: (
-          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-            <defs><linearGradient id="rc-owner" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
-            <path d="M10 2.5L3 7l2 8h10l2-8L10 2.5z" fill="url(#rc-owner)"/>
-            <circle cx="10" cy="7" r="1.8" fill="white" opacity="0.8"/>
-          </svg>
-        )
-      };
+      case 'owner': {
+        const ownerBadgeKey = userBadge || 'the_olympian';
+        const ownerBadgeData = Badges[ownerBadgeKey];
+        const ownerBadgeHtml = ownerBadgeData?.svg?.replace(/\{\.\.\.props\}/g, '') || '';
+        return {
+          label: ownerBadgeData?.name || 'Owner',
+          cls: 'wd-role--owner',
+          icon: ownerBadgeHtml
+            ? <span style={{width:16,height:16,display:'inline-block',verticalAlign:'middle',flexShrink:0}} dangerouslySetInnerHTML={{__html: ownerBadgeHtml}} />
+            : (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs><linearGradient id="rc-owner" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
+                <path d="M10 2.5L3 7l2 8h10l2-8L10 2.5z" fill="url(#rc-owner)"/>
+                <circle cx="10" cy="7" r="1.8" fill="white" opacity="0.8"/>
+              </svg>
+            )
+        };
+      }
       case 'admin': return {
         label: 'Admin',
         cls: 'wd-role--admin',

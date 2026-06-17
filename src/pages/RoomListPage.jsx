@@ -253,7 +253,7 @@ const RoomListPage = () => {
       if (snap.exists()) {
         const role = snap.data().role || 'user';
         setUserRole(role);
-        if (['admin', 'owner', 'superowner', 'moderator'].includes(role)) setIsAdmin(true);
+        if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
       }
     });
     // Save device fingerprint so Admin Panel can use it for device bans
@@ -346,7 +346,7 @@ const RoomListPage = () => {
 
     const name = room.name.toLowerCase();
     if (name.includes('staff') || name.includes('admin')) {
-      if (!['owner','superowner','admin','moderator'].includes(role.toLowerCase())) {
+      if (!['owner','admin','moderator'].includes(role.toLowerCase())) {
         toast.error('Staff Room is restricted to staff only'); return;
       }
       toast.success(`Staff Access Granted — Welcome ${role}!`);

@@ -141,12 +141,11 @@ const AdminPanelPage = () => {
 
   // Real-time users data
   useEffect(() => {
-    const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
+    const usersQuery = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const usersData = snapshot.docs
+        .map(doc => ({ id: doc.id, uid: doc.data().uid || doc.id, ...doc.data() }))
+        .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
       setUsers(usersData);
       setStats(prev => ({
         ...prev,
@@ -386,7 +385,7 @@ const AdminPanelPage = () => {
 
   const handleAssignBadge = (targetUser) => {
     const myRole = currentUserProfile?.role;
-    if (!['owner', 'superowner', 'admin'].includes(myRole)) {
+    if (!['owner', 'admin'].includes(myRole)) {
       toast.error('Only Owner and Admin can assign badges.');
       return;
     }
@@ -1397,8 +1396,8 @@ const AdminPanelPage = () => {
                                   <span>Dev-Ban</span>
                                 </button>
                                 
-                                {['owner', 'superowner', 'admin'].includes(currentUserProfile?.role) &&
-                                  !(currentUserProfile?.role === 'admin' && ['owner','superowner'].includes(user.role)) && (
+                                {['owner', 'admin'].includes(currentUserProfile?.role) &&
+                                  !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
                                   <button
                                     className="luxury-action-btn"
                                     style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}
@@ -1412,7 +1411,7 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
 
-                                {['owner','superowner'].includes(currentUserProfile?.role) && user.uid !== currentUserProfile?.uid && (
+                                {currentUserProfile?.role === 'owner' && user.uid !== currentUserProfile?.uid && (
                                   <button
                                     className="luxury-action-btn"
                                     style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}
