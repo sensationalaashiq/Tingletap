@@ -462,7 +462,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         ref={avatarRef}
                         src={avatarUrl} 
                         alt="avatar" 
-                        className="message-avatar" 
+                        className={`message-avatar avatar-gender-${avatarGender}`}
                         onClick={(e) => {
                             if (!isBot && !isMyMessage) {
                                 e.preventDefault();
@@ -813,6 +813,25 @@ const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
         </div>
     </div>
 );
+
+const getGenderBorderClass = (userOrGender) => {
+    let gender = 'male';
+    let role = 'user';
+    let badge = null;
+    if (typeof userOrGender === 'string') {
+        gender = userOrGender;
+    } else if (userOrGender && typeof userOrGender === 'object') {
+        gender = userOrGender.gender?.toLowerCase() === 'female' ? 'female' : 'male';
+        role = userOrGender.role || 'user';
+        badge = userOrGender.badge;
+    }
+    const genderClass = gender === 'female' ? 'female-border' : 'male-border';
+    if (role === 'owner') return `owner-border ${genderClass}`;
+    if (role === 'admin') return `admin-border ${genderClass}`;
+    if (role === 'moderator') return `moderator-border ${genderClass}`;
+    if (role === 'badge_holder' || badge) return `badge-holder-border ${genderClass}`;
+    return `user-border ${genderClass}`;
+};
 
 const HomePage = ({ user }) => {
     const { roomId } = useParams();
@@ -6051,7 +6070,7 @@ const HomePage = ({ user }) => {
                                                 onClick={() => handleOpenConversation(conversation)}
                                                 data-conversation-user={conversation.otherUserId}
                                             >
-                                                <div className={`pm-conversation-avatar ${getBorderClass({ gender: 'male' })}`}>
+                                                <div className={`pm-conversation-avatar ${getGenderBorderClass({ gender: conversation.otherUserGender || 'male' })}`}>
                                                     <img 
                                                         src={(() => {
                                                             const cachedUser = window.userProfilesCache?.get(conversation.otherUserId);
@@ -6205,7 +6224,7 @@ const HomePage = ({ user }) => {
                                 {/* Profile Main Info - Horizontal Layout */}
                                 <div className="ultra-profile-main">
                                     {/* Avatar */}
-                                    <div className={`ultra-avatar-container ${getBorderClass(profileUser)}`}>
+                                    <div className={`ultra-avatar-container ${getGenderBorderClass(profileUser)}`}>
                                         <img 
                                             src={profileUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${profileUser.uid}`}
                                             alt="Profile"
@@ -6350,7 +6369,7 @@ const HomePage = ({ user }) => {
                                             <div className="ultra-friends-list">
                                                 {friendsProfiles.map((friend) => (
                                                     <div key={friend.uid} className="ultra-friend-item">
-                                                        <div className={`ultra-friend-avatar ${getBorderClass(friend)}`}>
+                                                        <div className={`ultra-friend-avatar ${getGenderBorderClass(friend)}`}>
                                                             <img 
                                                                 src={friend.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${friend.uid}&sex=${friend.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
                                                                 alt="Friend avatar"

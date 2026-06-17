@@ -10164,31 +10164,39 @@ html body.theme-sunset .message-body p {
 
 /* ── GIRLS → perfect circle DP with ultra-thin pink border ─────── */
 .homepage-container .avatar-wrapper.female-border {
-  border: 1px solid rgba(244, 114, 182, 0.75) !important;
+  border: 1px solid rgba(244, 114, 182, 0.8) !important;
   border-radius: 50% !important;
   box-shadow: none !important;
   background: transparent !important;
   padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
+/* Female avatar img — force perfect circle via class on img element */
+.homepage-container .avatar-gender-female,
 .homepage-container .avatar-wrapper.female-border .message-avatar {
   border-radius: 50% !important;
   clip-path: circle(50% at 50% 50%) !important;
   border: none !important;
 }
 
-/* ── BOYS → perfect square DP with ultra-thin blue border ────────── */
+/* ── BOYS → PERFECT SQUARE DP with ultra-thin blue border ────────── */
 .homepage-container .avatar-wrapper.male-border {
   border-radius: 5px !important;
-  border: 1px solid rgba(59, 130, 246, 0.75) !important;
+  border: 1px solid rgba(59, 130, 246, 0.8) !important;
   background: transparent !important;
   box-shadow: none !important;
   padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
+/* Male avatar img — override global circle clip-path to square via class on img */
+.homepage-container .avatar-gender-male,
 .homepage-container .avatar-wrapper.male-border .message-avatar {
   border-radius: 4px !important;
-  clip-path: none !important;
+  clip-path: inset(0 round 4px) !important;
   border: none !important;
 }
 
@@ -10363,4 +10371,64 @@ html body.theme-sunset .message-body p {
 /* Attachment button SVG — light lavender icon via currentColor */
 .homepage-container .attachment-btn svg path {
   stroke: #c4b5fd !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FINAL OVERRIDES — username/message gap & bottom fill
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Zero the header-row bottom margin inside homepage */
+.homepage-container .message-header-row {
+  margin-bottom: 0 !important;
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Zero any gap/padding on the content container */
+.homepage-container .message-content-container {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+/* message-body itself — no top margin/padding */
+.homepage-container .message-body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Zero p margin inside message body */
+.homepage-container .message-body p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.3 !important;
+}
+
+/* Compact the overall row vertical padding a bit more */
+.homepage-container .message-row {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+/* ── Fill the area below the fixed input bar permanently ────────── */
+/* The chat-footer is fixed at bottom:0. Ensure the page body behind it
+   carries the same lavender/white background so nothing "peeks through". */
+.homepage-container::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: rgba(246, 242, 255, 0.98);
+  z-index: 1999;
+  pointer-events: none;
+}
+
+.dark-mode .homepage-container::after {
+  background: rgba(8, 5, 24, 0.98);
+}
+
+/* The chat-footer sits above the ::after pseudo-element */
+.homepage-container .chat-footer {
+  z-index: 2000 !important;
 }
