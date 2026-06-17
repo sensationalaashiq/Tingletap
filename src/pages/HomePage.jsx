@@ -38,14 +38,14 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.18"/>
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.6"/>
-    <path d="M12 7.5v9M7.5 12h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21.44 11.05L12.25 20.24C10.15 22.34 6.78 22.34 4.68 20.24C2.58 18.14 2.58 14.77 4.68 12.67L13.86 3.49C15.28 2.07 17.59 2.07 19.01 3.49C20.43 4.91 20.43 7.22 19.01 8.64L9.83 17.82C9.12 18.53 7.97 18.53 7.26 17.82C6.55 17.11 6.55 15.96 7.26 15.25L15.25 7.26" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const PremiumDeleteIcon = () => (
@@ -525,85 +525,33 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                     {!isBot && !isMyMessage && isDropdownOpen && createPortal(
                         <>
                             <div className="sidebar-dropdown-backdrop" onClick={closeAllDropdowns}></div>
-                            <div className="user-dropdown" style={{
-                                position: 'fixed',
+                            <div className="avatar-portal-dropdown" style={{
                                 top: `${dropdownPos.top}px`,
                                 left: `${dropdownPos.left}px`,
-                                zIndex: 999999999,
-                                marginTop: 0
                             }}>
-                                <div className="dropdown-header">
-                                    <div className="dropdown-user-info">
-                                        <img src={avatarUrl} alt="avatar" className="dropdown-avatar" />
-                                        <div className="dropdown-user-details">
-                                            <span 
-                                                className="dropdown-username"
-                                                data-user-uid={uid}
-                                                data-user-id={uid}
-                                                data-profile-uid={uid}
-                                                data-username={displayName}
-                                                data-role={badge ? 'badge_holder' : (role || 'user')}
-                                                data-badge={badge ? 'true' : 'false'}
-                                                data-gender={gender || 'male'}
-                                                data-is-bot="false"
-                                            >
-                                                {displayName}
-                                            </span>
-                                            <span className="dropdown-user-role">{role || 'User'}</span>
-                                        </div>
+                                <div className="apd-header">
+                                    <img src={avatarUrl} alt="avatar" className="apd-avatar" />
+                                    <div className="apd-user-info">
+                                        <span className="apd-name">{displayName}</span>
+                                        <span className="apd-role">{role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Member'}</span>
                                     </div>
                                 </div>
-                                <div className="dropdown-divider"></div>
-
-                                <button className="modern-dropdown-btn primary" onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onViewProfile(message);
-                                    closeAllDropdowns();
-                                }}>
-                                    <div className="btn-icon">
-                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                            <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
-                                        </svg>
-                                    </div>
-                                    <span>View Profile</span>
-                                </button>
-
-                                <button className="modern-dropdown-btn" onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onPrivateMessage(message);
-                                    closeAllDropdowns();
-                                }}>
-                                    <div className="btn-icon">
-                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                        </svg>
-                                    </div>
-                                    <span>Send Message</span>
-                                </button>
-
-                                <button className="modern-dropdown-btn" onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onAddFriend(message);
-                                    closeAllDropdowns();
-                                }}>
-                                    <div className="btn-icon">
-                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                            <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
-                                        </svg>
-                                    </div>
+                                <div className="apd-divider"></div>
+                                <button className="apd-btn" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/></svg>
                                     <span>Add Friend</span>
                                 </button>
-
-                                <button className="modern-dropdown-btn danger" onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onBlock(message);
-                                    closeAllDropdowns();
-                                }}>
-                                    <div className="btn-icon">
-                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                            <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
-                                        </svg>
-                                    </div>
+                                <button className="apd-btn" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"/></svg>
+                                    <span>Send Message</span>
+                                </button>
+                                <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h.01M12 12h.01M16 12h.01" strokeWidth="2.5"/></svg>
+                                    <span>Whisper</span>
+                                </button>
+                                <div className="apd-divider"></div>
+                                <button className="apd-btn apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/></svg>
                                     <span>Block User</span>
                                 </button>
                             </div>
@@ -2523,12 +2471,11 @@ const HomePage = ({ user }) => {
     // Effect to handle click outside dropdown closure
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Close dropdown if clicking outside user dropdown
-            const userDropdown = event.target.closest('.user-dropdown');
+            const portalDropdown = event.target.closest('.avatar-portal-dropdown');
             const messageAvatar = event.target.closest('.message-avatar');
             const messageDisplayname = event.target.closest('.message-displayname');
             
-            if (!userDropdown && !messageAvatar && !messageDisplayname) {
+            if (!portalDropdown && !messageAvatar && !messageDisplayname) {
                 setOpenDropdownId(null);
             }
         };

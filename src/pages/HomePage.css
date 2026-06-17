@@ -10272,20 +10272,23 @@ html body.theme-sunset .message-body p {
   width: 100% !important;
   max-width: 100% !important;
   transform: none !important;
-  border-radius: 18px 18px 0 0 !important;
-  height: auto !important;
-  min-height: 58px !important;
+  border-radius: 14px 14px 0 0 !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
   background: rgba(248, 245, 255, 0.97) !important;
   border: none !important;
   border-top: 1px solid rgba(196, 181, 253, 0.3) !important;
-  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.1) !important;
+  box-shadow: 0 -3px 18px rgba(109, 40, 217, 0.09) !important;
   backdrop-filter: blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  padding: 8px 10px 10px 10px !important;
+  padding: 0 10px !important;
   z-index: 2000 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
+  justify-content: center !important;
+  overflow: visible !important;
 }
 
 .homepage-container .chat-footer:focus-within {
@@ -10303,21 +10306,24 @@ html body.theme-sunset .message-body p {
 .homepage-container .message-form {
   width: 100% !important;
   margin: 0 !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* Input row: attachment + pill + send, all in one line */
 .homepage-container .premium-input-container {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 7px !important;
   width: 100% !important;
-  height: auto !important;
+  height: 38px !important;
 }
 
 /* Input pill */
 .homepage-container .premium-input-wrapper {
   flex: 1 !important;
-  height: 40px !important;
+  height: 38px !important;
   background: rgba(237, 233, 254, 0.5) !important;
   border: 1px solid rgba(196, 181, 253, 0.4) !important;
   border-radius: 20px !important;
@@ -10356,9 +10362,9 @@ html body.theme-sunset .message-body p {
 /* Attachment button — circular, lavender tint */
 .homepage-container .premium-footer-btn.attachment-btn,
 .homepage-container .attachment-btn {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
   background: rgba(237, 233, 254, 0.55) !important;
   border: 1px solid rgba(196, 181, 253, 0.35) !important;
   border-radius: 50% !important;
@@ -10387,9 +10393,9 @@ html body.theme-sunset .message-body p {
 /* Send button — circular, filled lavender */
 .homepage-container .premium-footer-btn.send-btn,
 .homepage-container .send-btn {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
   background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%) !important;
   border: none !important;
   border-radius: 50% !important;
@@ -10425,6 +10431,10 @@ html body.theme-sunset .message-body p {
    ATTACHMENT DROPDOWN — floats above the bar
    ═══════════════════════════════════════════════════════════════════ */
 .homepage-container .attachment-dropdown {
+  position: absolute !important;
+  bottom: calc(100% + 8px) !important;
+  left: 10px !important;
+  right: 10px !important;
   display: flex !important;
   flex-direction: row !important;
   gap: 8px !important;
@@ -10433,9 +10443,10 @@ html body.theme-sunset .message-body p {
   border: 1px solid rgba(196, 181, 253, 0.35) !important;
   border-radius: 16px !important;
   box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.12), 0 2px 12px rgba(0, 0, 0, 0.06) !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 0 !important;
   backdrop-filter: blur(16px) !important;
   animation: dropdown-slide-up 0.18s ease !important;
+  z-index: 2001 !important;
 }
 @keyframes dropdown-slide-up {
   from { opacity: 0; transform: translateY(8px); }
@@ -10490,7 +10501,7 @@ html body.theme-sunset .message-body p {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 58px;
+  height: 48px;
   background: rgba(248, 245, 255, 0.97);
   z-index: 1998;
   pointer-events: none;
@@ -10499,11 +10510,143 @@ html body.theme-sunset .message-body p {
   background: rgba(10, 5, 28, 0.97);
 }
 
-/* Chat-feed — leave room for 58px bar; override height so bottom:58px actually works */
+/* Chat-feed — leave room for 48px bar */
 .homepage-container .chat-feed {
-  bottom: 58px !important;
+  bottom: 48px !important;
   height: auto !important;
   min-height: auto !important;
   max-height: none !important;
   padding-bottom: 4px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   AVATAR PORTAL DROPDOWN — fixed-position, premium frosted glass
+   ═══════════════════════════════════════════════════════════════════ */
+.avatar-portal-dropdown {
+  position: fixed !important;
+  background: rgba(255, 253, 255, 0.97);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(196, 181, 253, 0.4);
+  border-radius: 18px;
+  box-shadow:
+    0 12px 40px rgba(109, 40, 217, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  padding: 6px;
+  min-width: 200px;
+  max-width: 220px;
+  z-index: 999999999;
+  overflow: hidden;
+  animation: apdSlideIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes apdSlideIn {
+  from { opacity: 0; transform: scale(0.88) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.apd-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 6px;
+}
+.apd-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(196, 181, 253, 0.55);
+  flex-shrink: 0;
+}
+.apd-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.apd-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #3b0764;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.apd-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b5cf6;
+  text-transform: capitalize;
+}
+.apd-divider {
+  height: 1px;
+  background: rgba(196, 181, 253, 0.28);
+  margin: 4px 2px;
+}
+.apd-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b0764;
+  text-align: left;
+  transition: background 0.14s ease, transform 0.14s ease;
+  box-sizing: border-box;
+}
+.apd-btn:hover {
+  background: rgba(237, 233, 254, 0.75);
+  transform: translateX(2px);
+}
+.apd-btn svg {
+  flex-shrink: 0;
+  color: #7c3aed;
+  opacity: 0.85;
+}
+.apd-btn.apd-whisper svg {
+  color: #06b6d4;
+}
+.apd-btn.apd-whisper {
+  color: #0e7490;
+}
+.apd-btn.apd-whisper:hover {
+  background: rgba(207, 250, 254, 0.5);
+}
+.apd-btn.apd-danger {
+  color: #be123c;
+}
+.apd-btn.apd-danger svg {
+  color: #e11d48;
+}
+.apd-btn.apd-danger:hover {
+  background: rgba(255, 228, 230, 0.65);
+  transform: translateX(2px);
+}
+
+/* Dark mode */
+.dark-mode .avatar-portal-dropdown {
+  background: rgba(16, 8, 42, 0.97);
+  border-color: rgba(139, 92, 246, 0.32);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 4px 16px rgba(109, 40, 217, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+.dark-mode .apd-name { color: #ede9fe; }
+.dark-mode .apd-role { color: #a78bfa; }
+.dark-mode .apd-divider { background: rgba(139, 92, 246, 0.22); }
+.dark-mode .apd-btn { color: #e9d5ff; }
+.dark-mode .apd-btn:hover { background: rgba(139, 92, 246, 0.18); }
+.dark-mode .apd-btn svg { color: #a78bfa; }
+.dark-mode .apd-btn.apd-whisper { color: #67e8f9; }
+.dark-mode .apd-btn.apd-whisper svg { color: #22d3ee; }
+.dark-mode .apd-btn.apd-whisper:hover { background: rgba(8, 145, 178, 0.18); }
+.dark-mode .apd-btn.apd-danger { color: #fca5a5; }
+.dark-mode .apd-btn.apd-danger svg { color: #f87171; }
+.dark-mode .apd-btn.apd-danger:hover { background: rgba(127, 29, 29, 0.3); }
