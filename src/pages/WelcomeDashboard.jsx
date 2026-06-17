@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
+import { Badges } from '../data/Badges';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -478,16 +479,58 @@ const WelcomeDashboard = () => {
           </svg>
         )
       };
-      case 'badge_holder': return {
-        label: userBadge,
-        cls: 'wd-role--badge',
-        icon: <SparkleIcon />
-      };
-      default: return {
-        label: userRole === 'guest' ? 'Guest' : 'Member',
-        cls: userRole === 'guest' ? 'wd-role--guest' : 'wd-role--registered',
-        icon: <DiamondIcon />
-      };
+      case 'badge_holder': {
+        const badgeData = Badges[userBadge];
+        const badgeHtml = badgeData?.svg?.replace(/\{\.\.\.props\}/g, '') || '';
+        return {
+          label: badgeData?.name || userBadge,
+          cls: 'wd-role--badge',
+          icon: badgeHtml
+            ? <span style={{width:15,height:15,display:'inline-block',verticalAlign:'middle'}} dangerouslySetInnerHTML={{__html: badgeHtml}} />
+            : <SparkleIcon />
+        };
+      }
+      default: {
+        if (userRole === 'guest') {
+          const gender = guestUser?.gender;
+          if (gender === 'male') return {
+            label: 'Purush',
+            cls: 'wd-role--guest-male',
+            icon: (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+                <circle cx="10" cy="7" r="4.5" stroke="#3b82f6" strokeWidth="1.8"/>
+                <path d="M5 18c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            )
+          };
+          if (gender === 'female') return {
+            label: 'Mahila',
+            cls: 'wd-role--guest-female',
+            icon: (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+                <circle cx="10" cy="7" r="4.5" stroke="#ec4899" strokeWidth="1.8"/>
+                <path d="M10 12v6M7.5 16h5" stroke="#ec4899" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            )
+          };
+          if (gender === 'transgender') return {
+            label: 'Purush/Mahila',
+            cls: 'wd-role--guest-transgender',
+            icon: (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.8" stroke="#8b5cf6" strokeWidth="1.8"/>
+                <path d="M9 13v5M6.5 16h5M13 3l3-3M16 3h-3M16 3v3" stroke="#8b5cf6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )
+          };
+          return { label: 'Guest', cls: 'wd-role--guest', icon: <DiamondIcon /> };
+        }
+        return {
+          label: 'Member',
+          cls: 'wd-role--registered',
+          icon: <DiamondIcon />
+        };
+      }
     }
   };
   const roleConfig = getRoleConfig();

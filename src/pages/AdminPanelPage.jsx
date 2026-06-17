@@ -127,7 +127,7 @@ const AdminPanelPage = () => {
       if (doc.exists()) {
         const userData = doc.data();
         setCurrentUserProfile(userData);
-        if (!['superowner', 'owner', 'admin', 'moderator'].includes(userData.role)) {
+        if (!['owner', 'admin', 'moderator'].includes(userData.role)) {
           toast.error('Access denied. Admin privileges required.');
           navigate('/');
         }
@@ -232,26 +232,26 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // One-time: auto-promote perplexityai.03@gmail.com to superowner
+  // One-time: ensure perplexityai.03@gmail.com is Owner
   useEffect(() => {
-    const initSuperowner = async () => {
+    const initOwner = async () => {
       try {
-        const SUPEROWNER_EMAIL = 'perplexityai.03@gmail.com';
+        const OWNER_EMAIL = 'perplexityai.03@gmail.com';
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('email', '==', SUPEROWNER_EMAIL));
+        const q = query(usersRef, where('email', '==', OWNER_EMAIL));
         const snap = await getDocs(q);
         if (!snap.empty) {
           const userDoc = snap.docs[0];
-          if (userDoc.data().role !== 'superowner') {
-            await updateDoc(doc(db, 'users', userDoc.id), { role: 'superowner' });
-            console.log('✅ SuperOwner role granted to:', SUPEROWNER_EMAIL);
+          if (userDoc.data().role !== 'owner') {
+            await updateDoc(doc(db, 'users', userDoc.id), { role: 'owner' });
+            console.log('✅ Owner role granted to:', OWNER_EMAIL);
           }
         }
       } catch (e) {
-        console.log('SuperOwner init skipped:', e.message);
+        console.log('Owner init skipped:', e.message);
       }
     };
-    initSuperowner();
+    initOwner();
   }, []);
 
   // Real-time banned devices data
@@ -371,7 +371,7 @@ const AdminPanelPage = () => {
       await sendPasswordResetEmail(auth, changePwdTarget.email);
       await updateDoc(doc(db, 'users', changePwdTarget.uid || changePwdTarget.id), {
         passwordResetRequestedAt: new Date().toISOString(),
-        passwordResetRequestedBy: currentUserProfile?.displayName || 'SuperOwner'
+        passwordResetRequestedBy: currentUserProfile?.displayName || 'Owner'
       });
       toast.success(`Password reset email sent to ${changePwdTarget.email}. User will receive a link to set a new password.`);
       setShowChangePwdModal(false);
@@ -386,8 +386,8 @@ const AdminPanelPage = () => {
 
   const handleAssignBadge = (targetUser) => {
     const myRole = currentUserProfile?.role;
-    if (!['superowner', 'owner', 'admin'].includes(myRole)) {
-      toast.error('Only SuperOwner, Owner and Admin can assign badges.');
+    if (!['owner', 'admin'].includes(myRole)) {
+      toast.error('Only Owner and Admin can assign badges.');
       return;
     }
     if (myRole === 'admin' && targetUser.role === 'owner') {
@@ -494,6 +494,7 @@ const AdminPanelPage = () => {
         type: createRoomData.type,
         maxUsers: parseInt(createRoomData.maxUsers) || 50,
         isActive: true,
+        order: Date.now(),
         createdAt: serverTimestamp(),
         createdBy: currentUserProfile?.displayName || 'Admin',
         createdByUid: user?.uid
@@ -817,7 +818,7 @@ const AdminPanelPage = () => {
     };
   };
 
-  if (!currentUserProfile || !['superowner', 'owner', 'admin', 'moderator'].includes(currentUserProfile.role)) {
+  if (!currentUserProfile || !['owner', 'admin', 'moderator'].includes(currentUserProfile.role)) {
     return (
       <div className="luxury-admin-container">
         <div className="luxury-access-denied">
@@ -858,8 +859,7 @@ const AdminPanelPage = () => {
             <div className="luxury-admin-info">
               <div className="luxury-admin-badge">
                 <svg viewBox="0 0 24 24" fill="none">
-                  {currentUserProfile?.role === 'superowner' && <path fill="#FFD700" d="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z"/>}
-                  {currentUserProfile?.role === 'owner' && <path fill="#ffffff" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                  {currentUserProfile?.role === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
                   {currentUserProfile?.role === 'admin' && <path fill="#ffffff" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
                   {currentUserProfile?.role === 'moderator' && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                   {!currentUserProfile?.role && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
@@ -1125,8 +1125,7 @@ const AdminPanelPage = () => {
                     className="luxury-filter-select"
                   >
                     <option value="all">All Roles</option>
-                    <option value="superowner">⭐ SuperOwner</option>
-                    <option value="owner">Owner</option>
+                    <option value="owner">⭐ Owner</option>
                     <option value="admin">Admin</option>
                     <option value="moderator">Moderator</option>
                     <option value="user">User</option>
@@ -1208,8 +1207,7 @@ const AdminPanelPage = () => {
                               <div className="luxury-role-section">
                                 <span className={`luxury-role-badge role-${user.role || 'user'}`}>
                                   <svg viewBox="0 0 24 24" fill="none">
-                                    {user.role === 'superowner' && <path fill="#FFD700" d="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z"/>}
-                                    {user.role === 'owner' && <path fill="#7c3aed" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                                    {user.role === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
                                     {user.role === 'admin' && <path fill="#3b82f6" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
                                     {user.role === 'moderator' && <path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                                     {(!user.role || user.role === 'user') && <path fill="#3b82f6" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
@@ -1399,7 +1397,7 @@ const AdminPanelPage = () => {
                                   <span>Dev-Ban</span>
                                 </button>
                                 
-                                {['superowner', 'owner', 'admin'].includes(currentUserProfile?.role) &&
+                                {['owner', 'admin'].includes(currentUserProfile?.role) &&
                                   !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
                                   <button
                                     className="luxury-action-btn"
@@ -1414,7 +1412,7 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
 
-                                {currentUserProfile?.role === 'superowner' && user.uid !== currentUserProfile?.uid && (
+                                {currentUserProfile?.role === 'owner' && user.uid !== currentUserProfile?.uid && (
                                   <button
                                     className="luxury-action-btn"
                                     style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}
@@ -2352,7 +2350,7 @@ const AdminPanelPage = () => {
         </div>
       )}
 
-      {/* Change Password Modal (SuperOwner only) */}
+      {/* Change Password Modal (Owner only) */}
       {showChangePwdModal && changePwdTarget && (
         <div className="luxury-modal-overlay" onClick={() => { setShowChangePwdModal(false); setChangePwdTarget(null); }}>
           <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
