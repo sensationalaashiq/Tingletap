@@ -441,10 +441,11 @@ const WelcomeDashboard = () => {
 
   /* ── Role chip config ── */
   const getRoleConfig = () => {
+    const normalizedRole = userRole === 'superowner' ? 'owner' : userRole;
     const staffRoles = ['owner', 'admin', 'moderator'];
-    const effectiveRole = staffRoles.includes(userRole)
-      ? userRole
-      : (userBadge ? 'badge_holder' : userRole);
+    const effectiveRole = staffRoles.includes(normalizedRole)
+      ? normalizedRole
+      : (userBadge ? 'badge_holder' : normalizedRole);
     switch (effectiveRole) {
       case 'owner': {
         const ownerBadgeKey = userBadge || 'the_olympian';
@@ -465,7 +466,7 @@ const WelcomeDashboard = () => {
         };
       }
       case 'admin': return {
-        label: 'Admin',
+        label: 'High Council',
         cls: 'wd-role--admin',
         icon: (
           <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>
@@ -476,7 +477,7 @@ const WelcomeDashboard = () => {
         )
       };
       case 'moderator': return {
-        label: 'Moderator',
+        label: 'Guardian',
         cls: 'wd-role--mod',
         icon: (
           <svg viewBox="0 0 20 20" width="15" height="15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{display:'block',flexShrink:0}}>

@@ -251,7 +251,12 @@ const RoomListPage = () => {
     if (!cu) return;
     getDoc(doc(db, 'users', cu.uid)).then(snap => {
       if (snap.exists()) {
-        const role = snap.data().role || 'user';
+        let role = snap.data().role || 'user';
+        // One-time migration: superowner → owner
+        if (role === 'superowner') {
+          updateDoc(doc(db, 'users', cu.uid), { role: 'owner' }).catch(() => {});
+          role = 'owner';
+        }
         setUserRole(role);
         if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
       }

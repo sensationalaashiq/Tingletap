@@ -358,7 +358,7 @@ const Sidebar = ({
     // Check if user is guest
     if (user.isGuest) return `user-border ${gender}`;
 
-    if (user.role === 'owner') return `owner-border ${gender}`;
+    if (user.role === 'owner' || user.role === 'superowner') return `owner-border ${gender}`;
     if (user.role === 'admin') return `admin-border ${gender}`;
     if (user.role === 'moderator') return `moderator-border ${gender}`;
     if (user.role === 'badge_holder' || user.badge) return `badge-holder-border ${gender}`;
@@ -656,7 +656,9 @@ const Sidebar = ({
                         >
                           {loggedInUserProfile.displayName}
                         </span>
-                        <span className="dropdown-user-role">{loggedInUserProfile.role || 'User'}</span>
+                        <span className="dropdown-user-role">{
+                          ({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[loggedInUserProfile.role]) || 'Member'
+                        }</span>
                       </div>
                     </div>
                   </div>
@@ -1045,7 +1047,9 @@ const Sidebar = ({
                               >
                                 {userItem.displayName}
                               </span>
-                              <span className="dropdown-user-role">{userItem.role || 'User'}</span>
+                              <span className="dropdown-user-role">{
+                                ({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[userItem.role]) || 'Member'
+                              }</span>
                             </div>
                           </div>
                         </div>
