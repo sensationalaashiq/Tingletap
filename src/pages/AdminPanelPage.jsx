@@ -2093,11 +2093,11 @@ const AdminPanelPage = () => {
 
                 {/* Rank Distribution */}
                 <div style={{
-                  background: 'linear-gradient(145deg,#1a1028,#0d0820)',
+                  background: 'linear-gradient(145deg,#f5f0ff,#ede9fe)',
                   borderRadius: 18, padding: '20px 22px', marginBottom: 24,
-                  border: '1px solid rgba(255,255,255,0.08)'
+                  border: '1.5px solid rgba(124,58,237,0.15)'
                 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'1.2px', marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform:'uppercase', letterSpacing:'1.2px', marginBottom: 16 }}>
                     ✦ Rank Distribution
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -2109,7 +2109,7 @@ const AdminPanelPage = () => {
                             <span>{rank.emoji}</span>
                             <span style={{ fontSize:11 }}>{rank.name}</span>
                           </div>
-                          <div style={{ flex:1, height:8, background:'rgba(255,255,255,0.08)', borderRadius:4, overflow:'hidden' }}>
+                          <div style={{ flex:1, height:8, background:'rgba(124,58,237,0.12)', borderRadius:4, overflow:'hidden' }}>
                             <div style={{
                               height:'100%', width:`${pct}%`, borderRadius:4,
                               background: rank.gradient,
@@ -2118,8 +2118,8 @@ const AdminPanelPage = () => {
                             }}/>
                           </div>
                           <div style={{ width: 60, display:'flex', justifyContent:'flex-end', gap:6, flexShrink:0 }}>
-                            <span style={{ fontSize:12, fontWeight:800, color:'#fff' }}>{rank.count}</span>
-                            <span style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>({pct}%)</span>
+                            <span style={{ fontSize:12, fontWeight:800, color:'#3b0764' }}>{rank.count}</span>
+                            <span style={{ fontSize:10, color:'#7c3aed', opacity:0.6 }}>({pct}%)</span>
                           </div>
                         </div>
                       );

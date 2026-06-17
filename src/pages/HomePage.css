@@ -9495,8 +9495,8 @@ html body.theme-sunset .message-body p {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 6px !important;
-  gap: 4px !important;
+  padding: 0 10px !important;
+  gap: 8px !important;
 }
 
 /* Fix header sections to use flex flow instead of absolute positioning */
@@ -9518,8 +9518,8 @@ html body.theme-sunset .message-body p {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 4px !important;
-  gap: 5px !important;
+  padding: 0 6px !important;
+  gap: 8px !important;
 }
 
 .homepage-container .header-right {
@@ -9527,10 +9527,10 @@ html body.theme-sunset .message-body p {
   right: auto !important;
   display: flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: 6px !important;
   flex-shrink: 0 !important;
   flex-wrap: nowrap !important;
-  padding-right: 2px !important;
+  padding-right: 4px !important;
 }
 
 /* Settings button — override absolute positioning inside homepage */
@@ -9550,32 +9550,43 @@ html body.theme-sunset .message-body p {
 
 /* --- Header Buttons (light lavender theme) --- */
 .homepage-container .header-action-btn {
-  width: 30px !important;
-  height: 30px !important;
-  min-width: 30px !important;
-  min-height: 30px !important;
-  max-width: 30px !important;
-  max-height: 30px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
   background: rgba(109, 40, 217, 0.1) !important;
-  border: 1px solid rgba(109, 40, 217, 0.2) !important;
+  border: 1.5px solid rgba(109, 40, 217, 0.22) !important;
   border-radius: 50% !important;
   backdrop-filter: none !important;
-  box-shadow: 0 1px 4px rgba(109, 40, 217, 0.08) !important;
+  box-shadow: 0 1px 6px rgba(109, 40, 217, 0.1) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .homepage-container .header-action-btn:hover {
   background: rgba(109, 40, 217, 0.2) !important;
   transform: scale(1.08) !important;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.22) !important;
+  box-shadow: 0 3px 10px rgba(109, 40, 217, 0.25) !important;
 }
 
 .homepage-container .header-action-btn svg {
   color: #5b21b6 !important;
   fill: #5b21b6 !important;
-  width: 15px !important;
-  height: 15px !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Settings gear icon — ensure icon is always visible */
+.homepage-container .header-action-btn.settings-btn svg,
+.homepage-container .header-action-btn.settings-btn svg path {
+  fill: #5b21b6 !important;
+  color: #5b21b6 !important;
 }
 
 /* Dark mode button overrides */
@@ -9687,51 +9698,61 @@ html body.theme-sunset .message-body p {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* Mobile: smaller buttons so everything fits in viewport */
+/* Mobile: slightly smaller but still comfortable */
 @media (max-width: 480px) {
   .homepage-container .chat-header {
-    padding: 0 3px !important;
-    gap: 2px !important;
+    padding: 0 6px !important;
+    gap: 4px !important;
   }
   .homepage-container .header-action-btn {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
-    min-height: 26px !important;
-    max-width: 26px !important;
-    max-height: 26px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 13px !important;
-    height: 13px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
   .homepage-container .header-right {
-    gap: 2px !important;
+    gap: 4px !important;
+  }
+  .homepage-container .header-center {
+    gap: 6px !important;
   }
   .homepage-container .header-title {
-    font-size: 0.78rem !important;
+    font-size: 0.82rem !important;
   }
   .homepage-container .user-count {
-    padding: 2px 5px !important;
-    font-size: 0.6rem !important;
+    padding: 2px 6px !important;
+    font-size: 0.65rem !important;
   }
 }
 
 @media (max-width: 360px) {
+  .homepage-container .chat-header {
+    padding: 0 4px !important;
+    gap: 3px !important;
+  }
   .homepage-container .header-action-btn {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 11px !important;
-    height: 11px !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+  .homepage-container .header-right {
+    gap: 3px !important;
   }
   .homepage-container .header-title {
-    font-size: 0.72rem !important;
+    font-size: 0.76rem !important;
   }
 }
 
