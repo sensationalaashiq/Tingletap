@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously } from "firebase/auth";
 import { auth, db } from '../firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
@@ -262,13 +262,40 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    if (!identifier.trim()) { setError('Please enter your email address'); setLoading(false); return; }
+    if (!identifier.trim()) { setError('Please enter your email or username'); setLoading(false); return; }
     if (!password.trim()) { setError('Please enter your password'); setLoading(false); return; }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(identifier)) { setError('Please enter a valid email address'); setLoading(false); return; }
+    let loginEmail = identifier.trim();
+
+    if (!emailRegex.test(loginEmail)) {
+      try {
+        const usernameRef = doc(db, 'usernames', loginEmail.toLowerCase());
+        const usernameSnap = await getDoc(usernameRef);
+        if (!usernameSnap.exists()) {
+          setError('No account found with this username. Try using your email instead.');
+          setLoading(false);
+          return;
+        }
+        const uid = usernameSnap.data().uid;
+        const userRef = doc(db, 'users', uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          setError('Account not found. Please try again.');
+          setLoading(false);
+          return;
+        }
+        loginEmail = userSnap.data().email;
+      } catch (err) {
+        setError('Error looking up account. Please try again.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       if (rememberMe) await setPersistence(auth, browserLocalPersistence);
-      const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
       const user = userCredential.user;
       const userDocRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userDocRef);
@@ -926,21 +953,24 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Email */}
+          {/* Email or Username */}
           <div className="lv-group">
             <label className="lv-label">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="#a855f7" strokeWidth="2"/>
-                <path d="M2 8l10 7 10-7" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="8" r="4" stroke="#a855f7" strokeWidth="2" fill="none"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                <rect x="14" y="3" width="8" height="5.5" rx="1.5" fill="rgba(168,85,247,0.15)" stroke="#a855f7" strokeWidth="1.2"/>
+                <path d="M15 5.5l1.5 1.5 2.5-2" stroke="#a855f7" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Email Address
+              Email Address or Username
             </label>
             <input
-              type="email"
+              type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="your@email.com"
+              placeholder="your@email.com or @username"
               className="lv-input"
+              autoComplete="username"
               required
             />
           </div>
@@ -987,18 +1017,34 @@ const LoginPage = () => {
             )}
           </div>
 
-          {/* Remember me */}
-          <div className="lv-check-row">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="lv-checkbox"
-            />
-            <label htmlFor="rememberMe" className="lv-check-label">Remember me on this device</label>
+          {/* Remember me + Forgot Password */}
+          <div className="lv-check-row" style={{justifyContent:'space-between'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="lv-checkbox"
+              />
+              <label htmlFor="rememberMe" className="lv-check-label">Remember me</label>
+            </div>
+            <Link to="/forgot-password" style={{
+              fontSize:'0.82rem',color:'#9333ea',fontWeight:600,
+              textDecoration:'none',display:'flex',alignItems:'center',gap:'4px',
+              transition:'color 0.2s ease'
+            }}
+            onMouseEnter={e=>e.currentTarget.style.color='#a855f7'}
+            onMouseLeave={e=>e.currentTarget.style.color='#9333ea'}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#9333ea" strokeWidth="2"/>
+                <path d="M9.1 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" stroke="#9333ea" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="17" r="1" fill="#9333ea"/>
+              </svg>
+              Forgot password?
+            </Link>
           </div>
-
           {error && (
             <div className="lv-error">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>

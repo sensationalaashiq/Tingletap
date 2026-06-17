@@ -145,6 +145,7 @@ export const createUserProfile = async (userData) => {
             photoURL: userData.photoURL || '',
 
             // Profile fields from signup
+            username: userData.username || '',
             gender: userData.gender || 'Not specified',
             country: userData.country || 'Unknown',
             status: userData.status || "I'm new here!",

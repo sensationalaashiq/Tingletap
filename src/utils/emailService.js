@@ -25,36 +25,42 @@ export const generateOTP = () => {
 // Send OTP verification email
 export const sendOTPEmail = async (email, otp) => {
   try {
+    initializeEmailJS();
+
     const templateParams = {
+      to_email: email,
       user_email: email,
+      email: email,
       user_name: email.split('@')[0],
       otp_code: otp,
+      otp: otp,
+      code: otp,
       app_name: 'TingleTap',
-      from_name: 'TingleTap Team'
+      from_name: 'TingleTap Team',
+      message: `Your TingleTap verification code is: ${otp}. It expires in 5 minutes.`
     };
 
     const result = await emailjs.send(
       EMAILJS_CONFIG.serviceId,
-      'template_5yk012w', // OTP verification template
+      'template_5yk012w',
       templateParams,
       EMAILJS_CONFIG.publicKey
     );
 
     console.log('OTP email sent:', result);
-    
-    // Store OTP temporarily with expiration
+
     localStorage.setItem(`otp_${email}`, JSON.stringify({
       otp: otp,
       timestamp: Date.now(),
-      expires: Date.now() + (5 * 60 * 1000) // 5 minutes
+      expires: Date.now() + (10 * 60 * 1000)
     }));
 
     return { success: true, message: 'OTP sent successfully!' };
   } catch (error) {
     console.error('Error sending OTP email:', error);
-    return { 
-      success: false, 
-      error: 'Failed to send OTP. Please try again.' 
+    return {
+      success: false,
+      error: 'Failed to send OTP. Please check your email address and try again.'
     };
   }
 };

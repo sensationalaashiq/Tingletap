@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, createUserProfile } from '../firebase/config';
+import { auth, createUserProfile, checkUsernameAvailability, reserveUsername } from '../firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP, initializeEmailJS } from '../utils/emailService';
@@ -55,7 +55,7 @@ const EyeClosedSVG = () => (
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
-    email: '', password: '', confirmPassword: '', fullName: '',
+    email: '', password: '', confirmPassword: '', username: '', fullName: '',
     dateOfBirth: '', gender: '', country: '', profession: '', bio: '', status: '', profilePic: null
   });
   const [error, setError] = useState('');
@@ -70,6 +70,9 @@ const SignupPage = () => {
   const [showIPBanModal, setShowIPBanModal] = useState(false);
   const [ipBanData, setIPBanData] = useState(null);
   const [ipCheckPerformed, setIPCheckPerformed] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState(null);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const usernameDebounceRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -110,12 +113,31 @@ const SignupPage = () => {
     checkIPBanOnLoad();
   }, [ipCheckPerformed]);
 
+  const handleUsernameChange = (value) => {
+    const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+    setFormData(prev => ({ ...prev, username: cleaned }));
+    setUsernameStatus(null);
+    if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current);
+    if (cleaned.length < 3) { setUsernameChecking(false); return; }
+    setUsernameChecking(true);
+    usernameDebounceRef.current = setTimeout(async () => {
+      const available = await checkUsernameAvailability(cleaned);
+      setUsernameStatus(available ? 'available' : 'taken');
+      setUsernameChecking(false);
+    }, 600);
+  };
+
   const sendOTP = async () => {
     setOtpLoading(true);
-    const otpCode = generateOTP();
-    const result = await sendOTPEmail(formData.email, otpCode);
-    if (result.success) { setOtpSent(true); toast.success('OTP sent to your email!'); }
-    else { toast.error(result.error); }
+    try {
+      initializeEmailJS();
+      const otpCode = generateOTP();
+      const result = await sendOTPEmail(formData.email, otpCode);
+      if (result.success) { setOtpSent(true); toast.success('OTP sent to your email! Check inbox and spam folder.'); }
+      else { toast.error(result.error || 'Failed to send OTP. Please try again.'); }
+    } catch (err) {
+      toast.error('Failed to send OTP. Please try again.');
+    }
     setOtpLoading(false);
   };
 
@@ -173,12 +195,18 @@ const SignupPage = () => {
   const nextStep = async () => {
     if (currentStep === 1) {
       setError('');
+      if (!formData.username.trim()) { setError('Please choose a username'); return; }
+      if (formData.username.length < 3) { setError('Username must be at least 3 characters'); return; }
+      if (usernameStatus === 'taken') { setError('This username is already taken. Please choose another.'); return; }
+      if (usernameChecking) { setError('Please wait while we check username availability...'); return; }
       if (!formData.email.trim()) { setError('Please enter your email address'); return; }
       if (!formData.password.trim()) { setError('Please enter a password'); return; }
       if (formData.password.length < 6) { setError('Password must be at least 6 characters long'); return; }
       if (!formData.confirmPassword.trim()) { setError('Please confirm your password'); return; }
       if (!validateEmail(formData.email)) { setError('Please use a valid email from Gmail, Hotmail, Outlook, or Yahoo'); return; }
       if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
+      const usernameAvail = await checkUsernameAvailability(formData.username.toLowerCase());
+      if (!usernameAvail) { setError('This username was just taken. Please choose another.'); return; }
       setCurrentStep(2);
       if (!otpSent) await sendOTP();
     }
@@ -216,6 +244,7 @@ const SignupPage = () => {
         : `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
       const userProfileData = {
         uid: user.uid, email: formData.email, displayName: formData.fullName,
+        username: formData.username.toLowerCase(),
         gender: formData.gender || 'Not specified', country: formData.country || 'Unknown',
         status: formData.status || "I'm new here!", bio: formData.bio || '',
         profession: formData.profession || '', photoURL: profilePicURL || defaultAvatar,
@@ -223,6 +252,9 @@ const SignupPage = () => {
       };
       await new Promise(resolve => setTimeout(resolve, 2000));
       const result = await createUserProfile(userProfileData);
+      if (result.success && formData.username) {
+        await reserveUsername(formData.username.toLowerCase(), user.uid);
+      }
       if (!result.success) {
         try { await user.delete(); } catch (deleteError) {}
         throw new Error('Failed to create user profile. Please try again.');
@@ -763,6 +795,67 @@ const SignupPage = () => {
               Setup Your Credentials
             </h3>
             <form onSubmit={(e) => { e.preventDefault(); nextStep(); }}>
+
+              {/* Username Field */}
+              <div className="su-group">
+                <label className="su-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" stroke="#a855f7" strokeWidth="2" fill="none"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  </svg>
+                  Username <span style={{color:'#ef4444',marginLeft:'2px'}}>*</span>
+                  <span style={{marginLeft:'auto',fontSize:'0.72rem',color:'#a99cc4',fontWeight:400}}>letters, numbers, _ only</span>
+                </label>
+                <div style={{position:'relative'}}>
+                  <span style={{
+                    position:'absolute',left:'14px',top:'50%',transform:'translateY(-50%)',
+                    color:'#a855f7',fontWeight:700,fontSize:'1rem',pointerEvents:'none',userSelect:'none'
+                  }}>@</span>
+                  <input
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => handleUsernameChange(e.target.value)}
+                    placeholder="choose_username"
+                    className="su-input"
+                    style={{paddingLeft:'30px', paddingRight: usernameChecking || usernameStatus ? '38px' : '16px'}}
+                    maxLength={20}
+                    required
+                  />
+                  <div style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)'}}>
+                    {usernameChecking && (
+                      <div style={{width:'14px',height:'14px',border:'2px solid rgba(168,85,247,0.3)',borderTopColor:'#a855f7',borderRadius:'50%',animation:'sSpin 0.7s linear infinite'}}/>
+                    )}
+                    {!usernameChecking && usernameStatus === 'available' && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#22c55e"/>
+                        <path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                    {!usernameChecking && usernameStatus === 'taken' && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#ef4444"/>
+                        <path d="M8 8l8 8M16 8l-8 8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                {formData.username.length >= 3 && !usernameChecking && usernameStatus === 'available' && (
+                  <div style={{color:'#22c55e',fontSize:'0.74rem',fontWeight:600,marginTop:'4px',display:'flex',alignItems:'center',gap:'4px'}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#22c55e"/><path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    @{formData.username} is available!
+                  </div>
+                )}
+                {formData.username.length >= 3 && !usernameChecking && usernameStatus === 'taken' && (
+                  <div style={{color:'#ef4444',fontSize:'0.74rem',fontWeight:600,marginTop:'4px',display:'flex',alignItems:'center',gap:'4px'}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#ef4444"/><path d="M8 8l8 8M16 8l-8 8" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                    Username taken. Try another one.
+                  </div>
+                )}
+                {formData.username.length > 0 && formData.username.length < 3 && (
+                  <div style={{color:'#f97316',fontSize:'0.74rem',fontWeight:500,marginTop:'4px'}}>Minimum 3 characters required</div>
+                )}
+              </div>
+
               <div className="su-group">
                 <label className="su-label">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
