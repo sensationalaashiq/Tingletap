@@ -3,7 +3,9 @@ import { auth, db } from '../firebase/config';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { Badges as badges } from '../data/Badges';
+import RoyalTrustBadge from './RoyalTrustBadge';
 import './ViewProfileModal.css';
+import './RoyalTrustBadge.css';
 
 // Helper function to convert YouTube URL to embed format
 const convertToYouTubeEmbedURL = (url) => {
@@ -1071,6 +1073,46 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Royal Trust Badge Section — always show for registered users */}
+                {!realTimeUser.isGuest && (
+                    <div className="profile-trust-section">
+                        <div className="profile-trust-header">
+                            <span className="profile-trust-title">Royal Trust Rank</span>
+                        </div>
+                        <div className="profile-trust-badge-wrap">
+                            <RoyalTrustBadge
+                                trustScore={realTimeUser.trustScore ?? 10}
+                                trustRank={realTimeUser.trustRank}
+                                size="lg"
+                                showLabel={true}
+                                showTooltip={true}
+                            />
+                            <div className="profile-trust-bar-section">
+                                <div className="profile-trust-bar-bg">
+                                    <div
+                                        className="profile-trust-bar-fill"
+                                        style={{
+                                            width: `${realTimeUser.trustScore ?? 10}%`,
+                                            background: (() => {
+                                                const s = realTimeUser.trustScore ?? 10;
+                                                if (s <= 20) return 'linear-gradient(90deg,#C4A882,#8B7355)';
+                                                if (s <= 40) return 'linear-gradient(90deg,#E8E8E8,#A8A8A8)';
+                                                if (s <= 60) return 'linear-gradient(90deg,#FFD700,#FFA500)';
+                                                if (s <= 80) return 'linear-gradient(90deg,#9B59B6,#667eea)';
+                                                return 'linear-gradient(90deg,#00D4FF,#7B2FBE,#FFD700)';
+                                            })()
+                                        }}
+                                    />
+                                </div>
+                                <div className="profile-trust-bar-label">
+                                    <span>Trust Score</span>
+                                    <span>{realTimeUser.trustScore ?? 10}/100</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Tab Navigation */}
                 <div className="tab-navigation">

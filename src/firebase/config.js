@@ -175,7 +175,23 @@ export const createUserProfile = async (userData) => {
             },
 
             // Add friends array for social features
-            friends: []
+            friends: [],
+
+            // Royal Trust System
+            trustScore: 10,
+            trustRank: 'squire',
+            trustData: {
+                messagesCount: 0,
+                violationsCount: 0,
+                warningsCount: 0,
+                muteCount: 0,
+                spamCount: 0,
+                abuseCount: 0,
+                lastViolation: null,
+                createdAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                lastCleanCheck: new Date().toISOString()
+            }
         };
 
         console.log('Attempting to create user profile document...');

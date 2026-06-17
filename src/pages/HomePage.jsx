@@ -5,6 +5,9 @@ import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
 } from 'firebase/firestore';
+import { checkSpam } from '../utils/antiSpamSystem';
+import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
+import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust } from '../utils/trustSystem';
 import { ref, set, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
@@ -1356,6 +1359,16 @@ const HomePage = ({ user }) => {
             const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const userData = docSnap.data();
+                    
+                    // Initialize trust score for existing users who don't have it yet
+                    if (userData.trustScore === undefined) {
+                        initializeUserTrust(user.uid);
+                    }
+
+                    // Apply daily account-age trust bonus (no-op if called too soon)
+                    if (userData.createdAt) {
+                        applyAccountAgeTrustBonus(user.uid, userData.createdAt).catch(() => {});
+                    }
                     
                     // Set profile
                     setLoggedInUserProfile(userData);
@@ -2864,6 +2877,43 @@ const HomePage = ({ user }) => {
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
             }
+
+            // ── Anti-Spam & Abuse Detection ──────────────────────────────
+            if (!isGuest && uid) {
+                // Spam check
+                const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
+                if (spamResult.isSpam) {
+                    toast.warn(spamResult.message || 'Slow down! Anti-spam protection activated.', {
+                        toastId: 'spam-warn',
+                        autoClose: 4000,
+                        icon: '🛡️'
+                    });
+                    return;
+                }
+
+                // Abuse / toxicity check
+                const abuseResult = detectAbuse(newMessage.trim());
+                if (abuseResult.isAbusive) {
+                    // Send the message first so we have the doc ref, then delete it
+                    const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
+                    setNewMessage('');
+                    const modResult = await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult);
+                    if (modResult.userMessage) {
+                        toast.error(modResult.userMessage, {
+                            toastId: 'abuse-warn',
+                            autoClose: 6000,
+                            icon: '⚠️'
+                        });
+                    }
+                    setWhisperTarget(null);
+                    setTimeout(() => scrollToBottom(true), 100);
+                    return;
+                }
+
+                // Reward clean message with a tiny trust bump (throttled inside trustSystem)
+                updateTrustScore(uid, 'MESSAGE_SENT');
+            }
+            // ────────────────────────────────────────────────────────────
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             setNewMessage('');
