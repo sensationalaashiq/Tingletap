@@ -2,32 +2,519 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read of usernames collection for login username lookup
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    function isOwner() {
+      return request.auth != null && getUserRole(request.auth.uid) == 'owner';
+    }
+
+    function isAdmin() {
+      return request.auth != null && getUserRole(request.auth.uid) == 'admin';
+    }
+
+    function isModerator() {
+      return request.auth != null && getUserRole(request.auth.uid) == 'moderator';
+    }
+
+    function isStaff() {
+      return request.auth != null && getUserRole(request.auth.uid) in ['owner', 'admin', 'moderator'];
+    }
+
+    function isGuest() {
+      return request.auth != null && getUserRole(request.auth.uid) == 'guest';
+    }
+
+    function isAuthenticatedGuest() {
+      return request.auth != null && request.auth.uid != null && getUserRole(request.auth.uid) == 'guest';
+    }
+
+    function getUserRole(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) ?
+             get(/databases/$(database)/documents/users/$(uid)).data.role :
+             'user';
+    }
+
+    function isUserBanned(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) &&
+             get(/databases/$(database)/documents/users/$(uid)).data.isBanned == true;
+    }
+
+    function isUserMuted(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) &&
+             get(/databases/$(database)/documents/users/$(uid)).data.mutedInfo.isMuted == true;
+    }
+
+    function isUserKickedFromRoom(uid, roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)/kickedUsers/$(uid));
+    }
+
+    function isUserBlocked(blockerId, blockedId) {
+      return exists(/databases/$(database)/documents/users/$(blockerId)) &&
+             get(/databases/$(database)/documents/users/$(blockerId)).data.blockedUsers != null &&
+             blockedId in get(/databases/$(database)/documents/users/$(blockerId)).data.blockedUsers;
+    }
+
+    function canStaffCommunicate() {
+      return isOwner() || isAdmin();
+    }
+
+    function canSendMessageToUser(targetUid) {
+      return isStaff() ||
+             (!isGuest() && !isUserBanned(request.auth.uid) && !isUserBanned(targetUid)) ||
+             (isGuest() && getUserRole(targetUid) == 'guest');
+    }
+
+    function canSendFriendRequest(targetUid) {
+      return isStaff() ||
+             (!isGuest() && !isUserBanned(request.auth.uid) && !isUserBanned(targetUid)) ||
+             (isGuest() && getUserRole(targetUid) == 'guest');
+    }
+
+    function canDeleteMessage(messageData) {
+      return isStaff() || messageData.uid == request.auth.uid;
+    }
+
+    function validateFriendRequest() {
+      return request.resource.data.keys().hasAll(['senderId', 'receiverId', 'senderName', 'status', 'createdAt']) &&
+             request.resource.data.senderId == request.auth.uid &&
+             request.resource.data.status == 'pending' &&
+             request.resource.data.senderId != request.resource.data.receiverId;
+    }
+
+    function validateFriendRequestUpdate() {
+      return request.resource.data.status in ['accepted', 'rejected'] &&
+             request.auth.uid == resource.data.receiverId &&
+             resource.data.status == 'pending';
+    }
+
+    function onlyUpdatingAllowedFields() {
+      let allowedFields = ['friends', 'lastLogin', 'isOnline', 'fontPreferences', 'darkMode',
+                          'selectedTheme', 'displayName', 'photoURL', 'gender', 'country',
+                          'status', 'bio', 'profession', 'blockedUsers', 'settings', 'lastSeen',
+                          'preferences', 'avatar', 'username', 'email', 'createdAt', 'updatedAt'];
+      let staffOnlyFields = ['role', 'isBanned', 'mutedInfo', 'badge'];
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly(allowedFields) ||
+             (isStaff() && changedFields.hasOnly(allowedFields.concat(staffOnlyFields)));
+    }
+
+    function validateBasicMessageContent() {
+      let requiredFields = ['text', 'uid', 'displayName', 'createdAt'];
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+
+    // ============================================
+    // USERNAMES COLLECTION
+    // Public read allows username→email lookup for login without pre-auth
+    // Anonymous auth (used as bridge in login page) also satisfies write rules
+    // ============================================
     match /usernames/{username} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update: if request.auth != null && (request.auth.uid == resource.data.uid || isStaff());
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.uid || isStaff());
     }
 
-    // Allow public read of users collection for username/displayName login lookup
+    // ============================================
+    // USERS COLLECTION
+    // Read: any authenticated user (incl. anonymous — used for username/displayName login lookup)
+    // Write: own profile only, staff can update others
+    // ============================================
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Broad read: authenticated users + anonymous auth bridge for username login lookup
+      allow read: if request.auth != null &&
+        (request.auth.uid == userId ||
+         !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+         !isUserBanned(request.auth.uid) ||
+         isGuest() ||
+         isStaff());
+
+      allow create: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.email is string;
+
+      // User updating their own profile
+      allow update: if request.auth != null &&
+        request.auth.uid == userId &&
+        exists(/databases/$(database)/documents/users/$(userId)) &&
+        onlyUpdatingAllowedFields() &&
+        !isUserBanned(request.auth.uid);
+
+      // Staff updating any user (with hierarchy: owner > admin > moderator)
+      allow update: if isStaff() &&
+        exists(/databases/$(database)/documents/users/$(userId)) &&
+        (isOwner() ||
+         (isAdmin() && getUserRole(userId) != 'owner') ||
+         (isModerator() && getUserRole(userId) != 'owner' && getUserRole(userId) != 'admin'));
+
+      allow delete: if isOwner();
     }
 
-    // Friend requests - authenticated users only
+    // ============================================
+    // FRIEND REQUESTS COLLECTION
+    // ============================================
     match /friendRequests/{requestId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null &&
+        (resource.data.senderId == request.auth.uid ||
+         resource.data.receiverId == request.auth.uid);
+
+      allow create: if request.auth != null &&
+        validateFriendRequest() &&
+        canSendFriendRequest(request.resource.data.receiverId);
+
+      allow update: if request.auth != null &&
+        validateFriendRequestUpdate() &&
+        !isUserBanned(request.auth.uid);
+
+      allow delete: if request.auth != null &&
+        (resource.data.senderId == request.auth.uid ||
+         resource.data.receiverId == request.auth.uid ||
+         isStaff());
     }
 
-    // Reports - authenticated users only
-    match /reports/{reportId} {
+    // ============================================
+    // ROOMS COLLECTION
+    // Chat is open to ALL authenticated users (registered, badge, owner, moderator, etc.)
+    // Only bans/mutes/kicks restrict non-staff. Staff bypass all restrictions.
+    // ============================================
+    match /rooms/{roomId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow create: if isStaff();
+      allow update: if isStaff();
+      allow delete: if isOwner() || isAdmin();
+
+      match /messages/{messageId} {
+        // Staff can always read; others need to not be banned/kicked
+        allow read: if isStaff() || (request.auth != null &&
+          !isUserBanned(request.auth.uid) &&
+          !isUserKickedFromRoom(request.auth.uid, roomId));
+
+        // Staff (owner/admin/moderator) can always send — no bans/mutes apply
+        // All other authenticated users can send unless banned/muted/kicked
+        allow create: if request.auth != null && (
+          request.auth.uid == "tinglebot_system" ||
+          isStaff() || (
+            request.resource.data.uid == request.auth.uid &&
+            !isUserBanned(request.auth.uid) &&
+            !isUserMuted(request.auth.uid) &&
+            !isUserKickedFromRoom(request.auth.uid, roomId) &&
+            validateBasicMessageContent()
+          )
+        );
+
+        allow update: if isStaff() || (request.auth != null &&
+          resource.data.uid == request.auth.uid &&
+          !isUserBanned(request.auth.uid));
+
+        allow delete: if isStaff() || (request.auth != null &&
+          canDeleteMessage(resource.data));
+      }
+
+      match /kickedUsers/{kickedUserId} {
+        allow read, write: if isStaff();
+      }
     }
 
-    // All other collections - authenticated users only
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // ============================================
+    // PRIVATE MESSAGES COLLECTION
+    // Admin & Owner can message any user (canStaffCommunicate)
+    // ============================================
+    match /privateMessages/{messageId} {
+      allow read: if isStaff() || (request.auth != null &&
+        request.auth.uid in resource.data.participants &&
+        !isUserBanned(request.auth.uid));
+
+      allow create: if isStaff() || (request.auth != null &&
+        request.auth.uid in request.resource.data.participants &&
+        request.resource.data.senderId == request.auth.uid &&
+        !isUserBanned(request.auth.uid) &&
+        !isUserBanned(request.resource.data.receiverId) &&
+        !isUserBlocked(request.resource.data.receiverId, request.auth.uid) &&
+        (
+          (!isGuest() && canSendMessageToUser(request.resource.data.receiverId)) ||
+          (isGuest() && getUserRole(request.resource.data.receiverId) == 'guest')
+        ));
+
+      allow update: if isStaff() || (request.auth != null &&
+        request.auth.uid in resource.data.participants &&
+        !isUserBanned(request.auth.uid));
+
+      allow delete: if isStaff() || (request.auth != null &&
+        resource.data.senderId == request.auth.uid);
     }
+
+    // ============================================
+    // REPORTS COLLECTION
+    // ============================================
+    match /reports/{reportId} {
+      allow create: if request.auth != null &&
+        request.resource.data.reportedBy.uid == request.auth.uid &&
+        !isUserBanned(request.auth.uid);
+
+      allow read: if request.auth != null &&
+        (resource.data.reportedBy.uid == request.auth.uid || isStaff());
+
+      allow update, delete: if isStaff();
+    }
+
+    // ============================================
+    // CALLS COLLECTION
+    // ============================================
+    match /calls/{callId} {
+      allow read, write: if canStaffCommunicate() || (request.auth != null &&
+        (request.auth.uid == resource.data.callerId ||
+         request.auth.uid == resource.data.recipientId) &&
+        !isUserBanned(request.auth.uid));
+
+      allow create: if request.auth != null &&
+        request.resource.data.callerId == request.auth.uid &&
+        !isUserBanned(request.auth.uid) &&
+        canSendMessageToUser(request.resource.data.recipientId);
+
+      match /offerCandidates/{docId} {
+        allow read, write: if request.auth != null && !isUserBanned(request.auth.uid);
+      }
+
+      match /answerCandidates/{docId} {
+        allow read, write: if request.auth != null && !isUserBanned(request.auth.uid);
+      }
+    }
+
+    // ============================================
+    // WHISPERS COLLECTION
+    // ============================================
+    match /whispers/{whisperId} {
+      allow read: if isStaff() || (request.auth != null &&
+        (resource.data.senderId == request.auth.uid ||
+         resource.data.receiverId == request.auth.uid));
+
+      allow create: if isStaff() || (request.auth != null &&
+        request.resource.data.senderId == request.auth.uid &&
+        !isUserBanned(request.auth.uid) &&
+        !isUserBlocked(request.resource.data.receiverId, request.auth.uid) &&
+        canSendMessageToUser(request.resource.data.receiverId));
+
+      allow update: if isStaff() || (request.auth != null &&
+        resource.data.senderId == request.auth.uid &&
+        !isUserBanned(request.auth.uid));
+
+      allow delete: if isStaff();
+    }
+
+    // ============================================
+    // NOTIFICATIONS COLLECTION
+    // ============================================
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if request.auth != null && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff());
+    }
+
+    // ============================================
+    // CONVERSATIONS COLLECTION
+    // ============================================
+    match /conversations/{conversationId} {
+      allow read, write: if isStaff() || (request.auth != null &&
+        request.auth.uid in resource.data.participants &&
+        !isUserBanned(request.auth.uid));
+
+      allow create: if request.auth != null &&
+        request.auth.uid in request.resource.data.participants &&
+        !isUserBanned(request.auth.uid) &&
+        (
+          (!isGuest()) ||
+          (isGuest() && exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.size() == 2)
+        );
+
+      match /messages/{messageId} {
+        allow read, write: if isStaff() || (request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          !isUserBanned(request.auth.uid));
+
+        allow create: if isStaff() || (request.auth != null &&
+          request.resource.data.senderId == request.auth.uid &&
+          !isUserBanned(request.auth.uid) &&
+          (
+            (!isGuest()) ||
+            (isGuest() && getUserRole(request.resource.data.receiverId) == 'guest')
+          ));
+      }
+    }
+
+    // ============================================
+    // BLOCKS COLLECTION
+    // Owner, Admin, AND Moderator cannot be blocked by anyone
+    // ============================================
+    match /blocks/{blockId} {
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.blockerId &&
+        !isUserBanned(request.auth.uid) &&
+        getUserRole(request.resource.data.blockedId) != 'owner' &&
+        getUserRole(request.resource.data.blockedId) != 'admin' &&
+        getUserRole(request.resource.data.blockedId) != 'moderator';
+
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.blockerId || isStaff());
+      allow read: if request.auth != null && (request.auth.uid == resource.data.blockerId || isStaff());
+    }
+
+    // ============================================
+    // PRESENCE COLLECTION
+    // ============================================
+    match /presence/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isStaff());
+    }
+
+    // ============================================
+    // RADIO STATIONS
+    // ============================================
+    match /radioStations/{stationId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    // ============================================
+    // GAMES
+    // ============================================
+    match /games/{gameId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+
+      match /participants/{participantId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == participantId && !isUserBanned(request.auth.uid);
+        allow update: if request.auth != null && (request.auth.uid == participantId || isStaff());
+        allow delete: if request.auth != null && (request.auth.uid == participantId || isStaff());
+      }
+    }
+
+    // ============================================
+    // LEADERBOARDS
+    // ============================================
+    match /leaderboards/{leaderboardId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    // ============================================
+    // ACHIEVEMENTS
+    // ============================================
+    match /achievements/{achievementId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if isStaff();
+    }
+
+    // ============================================
+    // ADMIN-ONLY COLLECTIONS
+    // ============================================
+    match /settings/{document=**} {
+      allow read, write: if isOwner() || isAdmin();
+    }
+
+    match /admin/{document=**} {
+      allow read, write: if isOwner() || isAdmin();
+    }
+
+    match /guestSessions/{document=**} {
+      allow read, write: if isOwner() || isAdmin();
+    }
+
+    match /statistics/{document=**} {
+      allow read: if isStaff();
+      allow write: if isOwner() || isAdmin();
+    }
+
+    match /bannedWords/{document=**} {
+      allow read: if isStaff();
+      allow write: if isOwner() || isAdmin();
+    }
+
+    // ============================================
+    // STAFF-ONLY COLLECTIONS
+    // ============================================
+    match /systemLogs/{document=**} {
+      allow read, write: if isStaff();
+    }
+
+    match /analytics/{document=**} {
+      allow read, write: if isStaff();
+    }
+
+    match /moderationLogs/{document=**} {
+      allow read, write: if isStaff();
+    }
+
+    // ============================================
+    // BADGES
+    // ============================================
+    match /badges/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isOwner() || isAdmin();
+    }
+
+    // ============================================
+    // UPLOADS
+    // ============================================
+    match /uploads/{uploadId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.uploadedBy == request.auth.uid &&
+        !isUserBanned(request.auth.uid);
+      allow update: if request.auth != null && (resource.data.uploadedBy == request.auth.uid || isStaff());
+      allow delete: if request.auth != null && (resource.data.uploadedBy == request.auth.uid || isStaff());
+    }
+
+    // ============================================
+    // FEEDBACK
+    // ============================================
+    match /feedback/{feedbackId} {
+      allow create: if request.auth != null &&
+        request.resource.data.submittedBy == request.auth.uid &&
+        !isUserBanned(request.auth.uid);
+      allow read: if request.auth != null && (resource.data.submittedBy == request.auth.uid || isStaff());
+      allow update, delete: if isStaff();
+    }
+
+    // ============================================
+    // MEDIA / COSMETICS
+    // ============================================
+    match /emojis/{emojiId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    match /stickers/{stickerId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    match /themes/{themeId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    // ============================================
+    // USER PREFERENCES
+    // ============================================
+    match /userPreferences/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isStaff());
+    }
+
+    // ============================================
+    // CATCH-ALL FALLBACK
+    // Owner & Admin can read/write anything not matched above
+    // ============================================
+    match /{document=**} {
+      allow read, write: if isOwner() || isAdmin();
+    }
+
   }
 }
