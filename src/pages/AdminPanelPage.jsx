@@ -11,6 +11,9 @@ import AdminBanKickModal from '../components/AdminBanKickModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
 import { Badges } from '../data/Badges.jsx';
+import RoyalTrustBadge from '../components/RoyalTrustBadge';
+import { TRUST_RANKS, getRankFromScore, updateTrustScore } from '../utils/trustSystem';
+import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
 
 const AdminPanelPage = () => {
@@ -99,6 +102,13 @@ const AdminPanelPage = () => {
   const [reports, setReports] = useState([]);
   const [reportSubTab, setReportSubTab] = useState('all');
   const [reportActionLoading, setReportActionLoading] = useState({});
+
+  // Trust Leaderboard
+  const [trustSearch, setTrustSearch] = useState('');
+  const [trustAdjustTarget, setTrustAdjustTarget] = useState(null);
+  const [trustAdjustDelta, setTrustAdjustDelta] = useState('');
+  const [trustAdjusting, setTrustAdjusting] = useState(false);
+  const [trustSortBy, setTrustSortBy] = useState('score_desc');
 
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
@@ -1020,6 +1030,14 @@ const AdminPanelPage = () => {
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
+                  </>
+                )
+              },
+              {
+                id: 'trust', label: 'Trust', iconColor: '#FFD700',
+                renderIcon: (c) => (
+                  <>
+                    <path fill={c} d="M12,1L9.5,8H2L7.72,12.27L5.82,19.27L12,15.27L18.18,19.27L16.28,12.27L22,8H14.5L12,1Z"/>
                   </>
                 )
               }
@@ -1986,6 +2004,360 @@ const AdminPanelPage = () => {
               })()}
             </div>
           )}
+
+          {/* ═══════════════════════════════════════════════════════
+              TRUST LEADERBOARD TAB
+          ═══════════════════════════════════════════════════════ */}
+          {activeTab === 'trust' && (() => {
+            const RANK_ORDER = ['squire','noble','regent','monarch','eternal_crown'];
+            const rankDist = RANK_ORDER.map(id => ({
+              ...TRUST_RANKS[id],
+              count: users.filter(u => (u.trustRank || 'squire') === id).length
+            }));
+            const avgScore = users.length
+              ? Math.round(users.reduce((s, u) => s + (u.trustScore ?? 10), 0) / users.length)
+              : 0;
+            const totalViolations = users.reduce((s, u) => s + ((u.trustData?.violationsCount) || 0), 0);
+            const totalSpam = users.reduce((s, u) => s + ((u.trustData?.spamCount) || 0), 0);
+            const totalAbuse = users.reduce((s, u) => s + ((u.trustData?.abuseCount) || 0), 0);
+
+            const filtered = users
+              .filter(u => !u.isGuest && (
+                !trustSearch || u.displayName?.toLowerCase().includes(trustSearch.toLowerCase())
+              ))
+              .sort((a, b) => {
+                if (trustSortBy === 'score_desc') return (b.trustScore ?? 10) - (a.trustScore ?? 10);
+                if (trustSortBy === 'score_asc') return (a.trustScore ?? 10) - (b.trustScore ?? 10);
+                if (trustSortBy === 'violations') return ((b.trustData?.violationsCount) || 0) - ((a.trustData?.violationsCount) || 0);
+                if (trustSortBy === 'name') return (a.displayName || '').localeCompare(b.displayName || '');
+                return 0;
+              });
+
+            const handleTrustAdjust = async (targetUid, delta, targetName) => {
+              if (!delta || isNaN(delta)) { toast.error('Enter a valid number'); return; }
+              const d = parseFloat(delta);
+              if (d === 0) return;
+              setTrustAdjusting(true);
+              try {
+                const result = await updateTrustScore(targetUid, 'MESSAGE_SENT', d);
+                toast.success(`Trust score for ${targetName} ${d > 0 ? '+' : ''}${d} → ${result?.newScore ?? '?'}`);
+                setTrustAdjustTarget(null);
+                setTrustAdjustDelta('');
+              } catch (err) {
+                toast.error('Failed to update trust score');
+              } finally {
+                setTrustAdjusting(false);
+              }
+            };
+
+            return (
+              <div style={{ padding: '0 0 40px 0' }}>
+                {/* Header */}
+                <div className="luxury-section-header">
+                  <h2 style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                      <path fill="#FFD700" d="M12,1L9.5,8H2L7.72,12.27L5.82,19.27L12,15.27L18.18,19.27L16.28,12.27L22,8H14.5L12,1Z"/>
+                    </svg>
+                    Royal Trust Leaderboard
+                  </h2>
+                  <p>Live rank distribution, trust scores, and moderation intelligence</p>
+                </div>
+
+                {/* Summary Stats Row */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))', gap:12, margin:'0 0 24px' }}>
+                  {[
+                    { label:'Avg Trust Score', value:avgScore, suffix:'/100', color:'#7c3aed', icon:'M12,1L9.5,8H2L7.72,12.27L5.82,19.27L12,15.27L18.18,19.27L16.28,12.27L22,8H14.5Z' },
+                    { label:'Total Violations', value:totalViolations, suffix:'', color:'#ef4444', icon:'M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z' },
+                    { label:'Spam Events', value:totalSpam, suffix:'', color:'#f97316', icon:'M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z' },
+                    { label:'Abuse Events', value:totalAbuse, suffix:'', color:'#dc2626', icon:'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z' },
+                    { label:'Tracked Users', value:users.filter(u=>!u.isGuest).length, suffix:'', color:'#3b82f6', icon:'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
+                  ].map(stat => (
+                    <div key={stat.label} style={{
+                      background: '#fff', borderRadius: 14, padding: '14px 16px',
+                      border: '1.5px solid rgba(0,0,0,0.06)',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                      display: 'flex', flexDirection: 'column', gap: 6
+                    }}>
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18}}>
+                        <path fill={stat.color} d={stat.icon}/>
+                      </svg>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: stat.color, lineHeight: 1 }}>
+                        {stat.value}{stat.suffix}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Rank Distribution */}
+                <div style={{
+                  background: 'linear-gradient(145deg,#1a1028,#0d0820)',
+                  borderRadius: 18, padding: '20px 22px', marginBottom: 24,
+                  border: '1px solid rgba(255,255,255,0.08)'
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'1.2px', marginBottom: 16 }}>
+                    ✦ Rank Distribution
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    {rankDist.map(rank => {
+                      const pct = users.length ? Math.round((rank.count / users.length) * 100) : 0;
+                      return (
+                        <div key={rank.id} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                          <div style={{ width: 90, fontSize: 12, fontWeight: 700, color: rank.color, flexShrink:0, display:'flex', alignItems:'center', gap:5 }}>
+                            <span>{rank.emoji}</span>
+                            <span style={{ fontSize:11 }}>{rank.name}</span>
+                          </div>
+                          <div style={{ flex:1, height:8, background:'rgba(255,255,255,0.08)', borderRadius:4, overflow:'hidden' }}>
+                            <div style={{
+                              height:'100%', width:`${pct}%`, borderRadius:4,
+                              background: rank.gradient,
+                              transition:'width 1s cubic-bezier(0.34,1.56,0.64,1)',
+                              minWidth: rank.count > 0 ? 4 : 0
+                            }}/>
+                          </div>
+                          <div style={{ width: 60, display:'flex', justifyContent:'flex-end', gap:6, flexShrink:0 }}>
+                            <span style={{ fontSize:12, fontWeight:800, color:'#fff' }}>{rank.count}</span>
+                            <span style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>({pct}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Controls */}
+                <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap', alignItems:'center' }}>
+                  <div style={{
+                    display:'flex', alignItems:'center', gap:8, flex:1, minWidth:200,
+                    background:'#fff', border:'1.5px solid rgba(0,0,0,0.1)',
+                    borderRadius:10, padding:'0 12px', height:40
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,flexShrink:0}}>
+                      <path fill="#9ca3af" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search users…"
+                      value={trustSearch}
+                      onChange={e => setTrustSearch(e.target.value)}
+                      style={{ border:'none', outline:'none', flex:1, fontSize:13, color:'#1e1b4b', background:'transparent' }}
+                    />
+                  </div>
+                  <select
+                    value={trustSortBy}
+                    onChange={e => setTrustSortBy(e.target.value)}
+                    style={{
+                      padding:'8px 12px', borderRadius:10, border:'1.5px solid rgba(0,0,0,0.1)',
+                      background:'#fff', fontSize:13, color:'#374151', cursor:'pointer', height:40
+                    }}
+                  >
+                    <option value="score_desc">↓ Highest Score</option>
+                    <option value="score_asc">↑ Lowest Score</option>
+                    <option value="violations">⚠ Most Violations</option>
+                    <option value="name">A–Z Name</option>
+                  </select>
+                </div>
+
+                {/* Leaderboard Table */}
+                <div style={{
+                  background:'#fff', borderRadius:16, border:'1.5px solid rgba(0,0,0,0.07)',
+                  boxShadow:'0 4px 24px rgba(0,0,0,0.07)', overflow:'hidden'
+                }}>
+                  {/* Table Header */}
+                  <div style={{
+                    display:'grid', gridTemplateColumns:'40px 1fr 160px 100px 90px 90px 110px',
+                    padding:'10px 16px', background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',
+                    borderBottom:'1.5px solid rgba(124,58,237,0.1)', gap:8
+                  }}>
+                    {['#','User','Royal Rank','Score','Msgs','Violations','Actions'].map(h => (
+                      <div key={h} style={{ fontSize:10, fontWeight:800, color:'#7c3aed', textTransform:'uppercase', letterSpacing:'0.08em', display:'flex', alignItems:'center' }}>{h}</div>
+                    ))}
+                  </div>
+
+                  {/* Table Rows */}
+                  <div style={{ maxHeight: 480, overflowY:'auto' }}>
+                    {filtered.length === 0 ? (
+                      <div style={{ textAlign:'center', padding:'40px 20px', color:'#9ca3af', fontSize:14 }}>
+                        No users found
+                      </div>
+                    ) : filtered.map((u, idx) => {
+                      const score = u.trustScore ?? 10;
+                      const rank = getRankFromScore(score);
+                      const violations = u.trustData?.violationsCount || 0;
+                      const msgs = u.trustData?.messagesCount || 0;
+                      const isTop3 = idx < 3;
+                      const medalColors = ['#FFD700','#C0C0C0','#CD7F32'];
+                      const isAdjusting = trustAdjustTarget === u.uid;
+
+                      return (
+                        <div key={u.uid} style={{
+                          display:'grid', gridTemplateColumns:'40px 1fr 160px 100px 90px 90px 110px',
+                          padding:'10px 16px', gap:8, alignItems:'center',
+                          borderBottom:'1px solid rgba(0,0,0,0.04)',
+                          background: isTop3 ? `rgba(255,215,0,${0.04 - idx*0.01})` : (violations > 3 ? 'rgba(239,68,68,0.02)' : '#fff'),
+                          transition:'background 0.2s'
+                        }}>
+                          {/* Rank # */}
+                          <div style={{ fontSize:13, fontWeight:800, color: isTop3 ? medalColors[idx] : '#9ca3af', textAlign:'center' }}>
+                            {isTop3 ? ['🥇','🥈','🥉'][idx] : idx+1}
+                          </div>
+
+                          {/* User */}
+                          <div style={{ display:'flex', alignItems:'center', gap:9, minWidth:0 }}>
+                            <img
+                              src={u.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${u.uid}`}
+                              style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, border:`2px solid ${rank.color}`, objectFit:'cover' }}
+                              alt=""
+                            />
+                            <div style={{ minWidth:0 }}>
+                              <div style={{ fontSize:12, fontWeight:700, color:'#1e1b4b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                {u.displayName || 'Unknown'}
+                              </div>
+                              <div style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                {u.email || '—'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Royal Rank Badge */}
+                          <div>
+                            <RoyalTrustBadge trustScore={score} trustRank={u.trustRank} size="sm" showLabel={true} showTooltip={false} />
+                          </div>
+
+                          {/* Score bar */}
+                          <div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <div style={{ flex:1, height:5, background:'rgba(0,0,0,0.06)', borderRadius:3, overflow:'hidden' }}>
+                                <div style={{
+                                  height:'100%', width:`${score}%`,
+                                  background: rank.gradient, borderRadius:3,
+                                  transition:'width 0.6s ease'
+                                }}/>
+                              </div>
+                              <span style={{ fontSize:11, fontWeight:800, color:rank.color, flexShrink:0 }}>{score}</span>
+                            </div>
+                          </div>
+
+                          {/* Messages */}
+                          <div style={{ fontSize:12, color:'#6b7280', fontWeight:600 }}>
+                            {msgs.toLocaleString()}
+                          </div>
+
+                          {/* Violations */}
+                          <div>
+                            <span style={{
+                              display:'inline-flex', alignItems:'center', gap:3,
+                              padding:'2px 7px', borderRadius:20, fontSize:11, fontWeight:700,
+                              background: violations === 0 ? 'rgba(16,185,129,0.12)' : violations > 5 ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+                              color: violations === 0 ? '#065f46' : violations > 5 ? '#b91c1c' : '#92400e'
+                            }}>
+                              {violations === 0 ? '✓ Clean' : `⚠ ${violations}`}
+                            </span>
+                          </div>
+
+                          {/* Actions */}
+                          <div>
+                            {isAdjusting ? (
+                              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                                <input
+                                  type="number"
+                                  value={trustAdjustDelta}
+                                  onChange={e => setTrustAdjustDelta(e.target.value)}
+                                  placeholder="±pts"
+                                  style={{
+                                    width:48, padding:'3px 6px', borderRadius:6,
+                                    border:'1.5px solid #7c3aed', fontSize:12,
+                                    textAlign:'center', outline:'none', color:'#1e1b4b'
+                                  }}
+                                  autoFocus
+                                  onKeyDown={e => { if(e.key==='Enter') handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName); if(e.key==='Escape'){setTrustAdjustTarget(null);setTrustAdjustDelta('');} }}
+                                />
+                                <button
+                                  onClick={() => handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName)}
+                                  disabled={trustAdjusting}
+                                  style={{
+                                    padding:'3px 7px', borderRadius:6, border:'none', cursor:'pointer',
+                                    background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', fontSize:11, fontWeight:700
+                                  }}
+                                >{trustAdjusting ? '…' : '✓'}</button>
+                                <button
+                                  onClick={() => { setTrustAdjustTarget(null); setTrustAdjustDelta(''); }}
+                                  style={{ padding:'3px 6px', borderRadius:6, border:'1px solid #e5e7eb', cursor:'pointer', background:'#f9fafb', color:'#6b7280', fontSize:11 }}
+                                >✕</button>
+                              </div>
+                            ) : (
+                              <div style={{ display:'flex', gap:4 }}>
+                                <button
+                                  onClick={() => { setTrustAdjustTarget(u.uid); setTrustAdjustDelta(''); }}
+                                  title="Adjust trust score"
+                                  style={{
+                                    padding:'3px 8px', borderRadius:7, border:'1.5px solid rgba(124,58,237,0.2)',
+                                    background:'rgba(124,58,237,0.06)', color:'#7c3aed', fontSize:11,
+                                    fontWeight:700, cursor:'pointer', whiteSpace:'nowrap'
+                                  }}
+                                >⚖ Adjust</button>
+                                <button
+                                  onClick={() => handleTrustAdjust(u.uid, '-5', u.displayName)}
+                                  title="Quick -5 penalty"
+                                  style={{
+                                    padding:'3px 7px', borderRadius:7, border:'1.5px solid rgba(239,68,68,0.2)',
+                                    background:'rgba(239,68,68,0.06)', color:'#ef4444', fontSize:11,
+                                    fontWeight:700, cursor:'pointer'
+                                  }}
+                                >−5</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{
+                    padding:'10px 16px', background:'#faf9ff',
+                    borderTop:'1px solid rgba(124,58,237,0.08)',
+                    fontSize:11, color:'#9ca3af', textAlign:'center'
+                  }}>
+                    Showing {filtered.length} of {users.filter(u=>!u.isGuest).length} registered users
+                    {trustSearch && ` matching "${trustSearch}"`}
+                  </div>
+                </div>
+
+                {/* Rank Legend */}
+                <div style={{ marginTop:20, padding:'16px 20px', background:'linear-gradient(145deg,#faf5ff,#ede9fe)', borderRadius:14, border:'1px solid rgba(124,58,237,0.1)' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#7c3aed', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12 }}>
+                    ✦ Rank Guide &amp; Score Thresholds
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+                    {RANK_ORDER.map(id => {
+                      const r = TRUST_RANKS[id];
+                      return (
+                        <div key={id} style={{
+                          display:'flex', alignItems:'center', gap:8,
+                          padding:'6px 12px', borderRadius:20,
+                          background:'rgba(255,255,255,0.7)',
+                          border:`1.5px solid ${r.color}30`
+                        }}>
+                          <span style={{fontSize:16}}>{r.emoji}</span>
+                          <div>
+                            <div style={{ fontSize:11, fontWeight:800, color:r.color }}>{r.name}</div>
+                            <div style={{ fontSize:10, color:'#9ca3af' }}>{r.minScore}–{r.maxScore} pts</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop:12, fontSize:11, color:'#7c3aed', opacity:0.7, lineHeight:1.6 }}>
+                    💡 Scores increase daily with clean activity. Spam violations −3 pts · Warnings −5 pts · Mutes −8 pts · Bans −30 pts. Use the ⚖ Adjust button for manual corrections.
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </div>
 
