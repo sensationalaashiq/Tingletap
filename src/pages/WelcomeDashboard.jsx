@@ -441,9 +441,9 @@ const WelcomeDashboard = () => {
 
   /* ── Role chip config ── */
   const getRoleConfig = () => {
-    const staffRoles = ['owner', 'admin', 'moderator'];
+    const staffRoles = ['owner', 'superowner', 'admin', 'moderator'];
     const effectiveRole = staffRoles.includes(userRole)
-      ? userRole
+      ? (userRole === 'superowner' ? 'owner' : userRole)
       : (userBadge ? 'badge_holder' : userRole);
     switch (effectiveRole) {
       case 'owner': return {
