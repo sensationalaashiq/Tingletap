@@ -22,47 +22,120 @@ export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
 };
 
-// Send OTP verification email
+// Send OTP verification email using direct REST API (more reliable than SDK)
 export const sendOTPEmail = async (email, otp) => {
+  // Store OTP in localStorage first (so it works even if email has delay)
+  localStorage.setItem(`otp_${email}`, JSON.stringify({
+    otp: otp,
+    timestamp: Date.now(),
+    expires: Date.now() + (10 * 60 * 1000) // 10 minutes
+  }));
+
+  const templateParams = {
+    to_email: email,
+    user_email: email,
+    email: email,
+    user_name: email.split('@')[0],
+    otp_code: otp,
+    otp: otp,
+    code: otp,
+    app_name: 'TingleTap',
+    from_name: 'TingleTap Team',
+    message: `Your TingleTap verification code is: ${otp}. It expires in 10 minutes.`
+  };
+
+  // Method 1: Direct REST API (no SDK initialization required)
+  try {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS_CONFIG.serviceId,
+        template_id: 'template_5yk012w',
+        user_id: EMAILJS_CONFIG.publicKey,
+        template_params: templateParams
+      })
+    });
+
+    if (response.ok) {
+      console.log('OTP email sent via REST API');
+      return { success: true, message: 'OTP sent successfully!' };
+    }
+
+    const errText = await response.text();
+    console.warn('REST API attempt failed:', response.status, errText);
+  } catch (fetchErr) {
+    console.warn('REST API fetch error:', fetchErr);
+  }
+
+  // Method 2: SDK with OTP template
   try {
     initializeEmailJS();
-
-    const templateParams = {
-      to_email: email,
-      user_email: email,
-      email: email,
-      user_name: email.split('@')[0],
-      otp_code: otp,
-      otp: otp,
-      code: otp,
-      app_name: 'TingleTap',
-      from_name: 'TingleTap Team',
-      message: `Your TingleTap verification code is: ${otp}. It expires in 5 minutes.`
-    };
-
     const result = await emailjs.send(
       EMAILJS_CONFIG.serviceId,
       'template_5yk012w',
       templateParams,
       EMAILJS_CONFIG.publicKey
     );
-
-    console.log('OTP email sent:', result);
-
-    localStorage.setItem(`otp_${email}`, JSON.stringify({
-      otp: otp,
-      timestamp: Date.now(),
-      expires: Date.now() + (10 * 60 * 1000)
-    }));
-
+    console.log('OTP email sent via SDK (OTP template):', result);
     return { success: true, message: 'OTP sent successfully!' };
-  } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return {
-      success: false,
-      error: 'Failed to send OTP. Please check your email address and try again.'
-    };
+  } catch (sdkErr) {
+    console.warn('SDK OTP template failed:', sdkErr);
   }
+
+  // Method 3: REST API with original working template (template_rynlsk5) as fallback
+  try {
+    const fallbackParams = {
+      ...templateParams,
+      user_email: email,
+      reset_link: `Your OTP code is: ${otp} (expires in 10 minutes)`,
+      message: `Your TingleTap verification code is: ${otp}. It expires in 10 minutes.`
+    };
+    const response2 = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS_CONFIG.serviceId,
+        template_id: EMAILJS_CONFIG.templateId,
+        user_id: EMAILJS_CONFIG.publicKey,
+        template_params: fallbackParams
+      })
+    });
+    if (response2.ok) {
+      console.log('OTP email sent via REST API (fallback template)');
+      return { success: true, message: 'OTP sent successfully!' };
+    }
+    const errText2 = await response2.text();
+    console.warn('Fallback template also failed:', response2.status, errText2);
+  } catch (fallbackErr) {
+    console.warn('Fallback REST API error:', fallbackErr);
+  }
+
+  // Method 4: SDK with original template
+  try {
+    initializeEmailJS();
+    const fallbackParams = {
+      ...templateParams,
+      reset_link: `Your OTP code is: ${otp} (expires in 10 minutes)`
+    };
+    const result = await emailjs.send(
+      EMAILJS_CONFIG.serviceId,
+      EMAILJS_CONFIG.templateId,
+      fallbackParams,
+      EMAILJS_CONFIG.publicKey
+    );
+    console.log('OTP email sent via SDK (fallback template):', result);
+    return { success: true, message: 'OTP sent successfully!' };
+  } catch (finalErr) {
+    console.error('All email sending methods failed:', finalErr);
+  }
+
+  // All methods failed — OTP is still in localStorage, return error so user knows
+  console.error('⚠️ All email methods failed. OTP for debugging:', otp);
+  return {
+    success: false,
+    error: 'Could not send OTP email. Please check your EmailJS template settings or try again.'
+  };
 };
 
 // Verify OTP

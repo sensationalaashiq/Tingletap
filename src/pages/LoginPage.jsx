@@ -269,28 +269,92 @@ const LoginPage = () => {
     let loginEmail = identifier.trim();
 
     if (!emailRegex.test(loginEmail)) {
+      // Strip leading @ if user typed @username
+      const usernameToLookup = loginEmail.startsWith('@') ? loginEmail.slice(1) : loginEmail;
+      let foundEmail = null;
+      let anonUser = null;
+
+      // Use anonymous auth as a bridge so Firestore rules (request.auth != null) are satisfied
       try {
-        const usernameRef = doc(db, 'usernames', loginEmail.toLowerCase());
+        const anonCredential = await signInAnonymously(auth);
+        anonUser = anonCredential.user;
+      } catch (anonErr) {
+        console.warn('Anonymous auth failed:', anonErr.code);
+      }
+
+      // Strategy 1: Check usernames collection (has email stored directly)
+      try {
+        const usernameRef = doc(db, 'usernames', usernameToLookup.toLowerCase());
         const usernameSnap = await getDoc(usernameRef);
-        if (!usernameSnap.exists()) {
-          setError('No account found with this username. Try using your email instead.');
-          setLoading(false);
-          return;
+        if (usernameSnap.exists()) {
+          const data = usernameSnap.data();
+          if (data.email) {
+            foundEmail = data.email;
+          } else if (data.uid) {
+            // email not in username doc — fetch from users doc
+            try {
+              const userRef = doc(db, 'users', data.uid);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists() && userSnap.data().email) {
+                foundEmail = userSnap.data().email;
+              }
+            } catch (_) {}
+          }
         }
-        const uid = usernameSnap.data().uid;
-        const userRef = doc(db, 'users', uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          setError('Account not found. Please try again.');
-          setLoading(false);
-          return;
-        }
-        loginEmail = userSnap.data().email;
       } catch (err) {
-        setError('Error looking up account. Please try again.');
+        console.warn('usernames collection lookup failed:', err.code || err.message);
+      }
+
+      // Strategy 2: Query users collection by username field
+      if (!foundEmail) {
+        try {
+          const usersQ = query(collection(db, 'users'), where('username', '==', usernameToLookup.toLowerCase()));
+          const usersSnap = await getDocs(usersQ);
+          if (!usersSnap.empty) {
+            foundEmail = usersSnap.docs[0].data().email;
+          }
+        } catch (err) {
+          console.warn('users username query failed:', err.code || err.message);
+        }
+      }
+
+      // Strategy 3: Query users by displayName (for older accounts without username field)
+      if (!foundEmail) {
+        try {
+          const displayQ = query(collection(db, 'users'), where('displayName', '==', usernameToLookup));
+          const displaySnap = await getDocs(displayQ);
+          if (!displaySnap.empty) {
+            foundEmail = displaySnap.docs[0].data().email;
+          }
+        } catch (err) {
+          console.warn('users displayName query failed:', err.code || err.message);
+        }
+      }
+
+      // Strategy 4: Case-insensitive displayName match (covers Vyom vs vyom etc.)
+      if (!foundEmail) {
+        try {
+          const displayQLower = query(collection(db, 'users'), where('displayName', '==', usernameToLookup.toLowerCase()));
+          const displaySnapLower = await getDocs(displayQLower);
+          if (!displaySnapLower.empty) {
+            foundEmail = displaySnapLower.docs[0].data().email;
+          }
+        } catch (err) {
+          console.warn('users displayName lowercase query failed:', err.code || err.message);
+        }
+      }
+
+      // Sign out the anonymous session before real login
+      if (anonUser) {
+        try { await auth.signOut(); } catch (_) {}
+      }
+
+      if (!foundEmail) {
+        setError('No account found with this username. Please check the spelling or use your email address instead.');
         setLoading(false);
         return;
       }
+      loginEmail = foundEmail;
     }
 
     try {
@@ -320,6 +384,31 @@ const LoginPage = () => {
         return;
       } else {
         try { await IPBanSystem.storeUserIP(user.uid, userData); } catch (ipError) {}
+
+        // Auto-register username in usernames collection for future username logins
+        // (especially important for older accounts that predate the username system)
+        if (userData) {
+          const usernameToRegister = userData.username || userData.displayName;
+          if (usernameToRegister && usernameToRegister.trim()) {
+            try {
+              const unameKey = usernameToRegister.toLowerCase().replace(/\s+/g, '_');
+              const usernameDocRef = doc(db, 'usernames', unameKey);
+              const existing = await getDoc(usernameDocRef);
+              // Only write if: doc doesn't exist OR doc belongs to this user
+              if (!existing.exists() || existing.data().uid === user.uid) {
+                await setDoc(usernameDocRef, {
+                  uid: user.uid,
+                  email: user.email,
+                  reserved: true,
+                  createdAt: existing.exists() ? existing.data().createdAt : new Date().toISOString()
+                });
+              }
+            } catch (unameErr) {
+              console.warn('Auto-register username failed (non-critical):', unameErr.code);
+            }
+          }
+        }
+
         navigate('/welcome');
       }
     } catch (err) {

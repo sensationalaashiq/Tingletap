@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow public read of usernames collection for login username lookup
+    match /usernames/{username} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Allow public read of users collection for username/displayName login lookup
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Friend requests - authenticated users only
+    match /friendRequests/{requestId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Reports - authenticated users only
+    match /reports/{reportId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // All other collections - authenticated users only
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

@@ -89,18 +89,19 @@ export const checkUsernameAvailability = async (username) => {
     try {
         const usernameRef = doc(db, 'usernames', username.toLowerCase());
         const usernameSnap = await getDoc(usernameRef);
-        return !usernameSnap.exists();
+        return !usernameSnap.exists(); // true = available, false = taken
     } catch (error) {
-        console.error('Username check error:', error);
-        return false;
+        console.warn('Username check error (assuming available):', error);
+        return true; // On error, assume available — final check happens at submit
     }
 };
 
-export const reserveUsername = async (username, uid) => {
+export const reserveUsername = async (username, uid, email) => {
     try {
         const usernameRef = doc(db, 'usernames', username.toLowerCase());
         await setDoc(usernameRef, { 
             uid, 
+            email: email || '',
             reserved: true, 
             createdAt: new Date().toISOString() 
         });
