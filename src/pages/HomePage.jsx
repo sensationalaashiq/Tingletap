@@ -463,8 +463,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
              data-sender-badge={badge ? 'true' : 'false'}
              data-sender-gender={avatarGender}
              data-sender-is-bot={isBot ? 'true' : 'false'}
-             onMouseEnter={() => setShowActions(true)}
-             onMouseLeave={() => { if (!actionsLocked) setShowActions(false); }}>
+>
             <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}>
                 <div className={`avatar-wrapper ${getBorderClass()}`} style={{ position: 'relative' }}>
                     <img 
@@ -563,7 +562,6 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                 <div className="message-content-container" onClick={(e) => {
                     if (!e.target.closest('.message-action-btn') && !e.target.closest('.message-displayname') && !e.target.closest('.user-dropdown')) {
                         setActionsLocked(prev => !prev);
-                        setShowActions(al => !al);
                     }
                 }} style={{ cursor: 'pointer' }}>
                     <div className="message-header-row">

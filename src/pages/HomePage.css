@@ -10655,233 +10655,232 @@ html body.theme-sunset .message-body p {
    CRISP VIVID COLOR OVERHAUL — All elements more colourful
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Footer: taller (56px) + brighter ───────────────────────────── */
+/* ── Footer: taller (64px) + brighter ───────────────────────────── */
 .homepage-container .chat-footer {
-  height: 56px !important;
-  min-height: 56px !important;
-  max-height: 56px !important;
-  background: rgba(245, 240, 255, 0.98) !important;
-  border-top: 2px solid rgba(124, 58, 237, 0.28) !important;
-  box-shadow: 0 -4px 22px rgba(109, 40, 217, 0.13) !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  background: rgba(243, 236, 255, 0.99) !important;
+  border-top: 2px solid rgba(124, 58, 237, 0.35) !important;
+  box-shadow: 0 -4px 22px rgba(109, 40, 217, 0.15) !important;
 }
 .dark-mode .homepage-container .chat-footer {
-  background: rgba(14, 6, 36, 0.98) !important;
-  border-top-color: rgba(139, 92, 246, 0.35) !important;
+  background: rgba(14, 6, 36, 0.99) !important;
+  border-top-color: rgba(139, 92, 246, 0.4) !important;
 }
 .homepage-container .message-form {
-  height: 44px !important;
+  height: 52px !important;
 }
 .homepage-container .premium-input-container {
-  height: 44px !important;
+  height: 52px !important;
+  gap: 8px !important;
 }
 .homepage-container .premium-input-wrapper {
-  height: 44px !important;
-  background: rgba(230, 220, 255, 0.65) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.45) !important;
-  border-radius: 22px !important;
+  height: 52px !important;
+  background: rgba(226, 212, 255, 0.72) !important;
+  border: 2px solid rgba(124, 58, 237, 0.42) !important;
+  border-radius: 26px !important;
 }
 .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(230, 220, 255, 0.9) !important;
-  border-color: #7c3aed !important;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18) !important;
+  background: rgba(226, 212, 255, 0.92) !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 0 0 3.5px rgba(109, 40, 217, 0.2) !important;
 }
 .dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(40, 16, 90, 0.75) !important;
-  border-color: rgba(139, 92, 246, 0.45) !important;
+  background: rgba(44, 18, 96, 0.8) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
 }
 .homepage-container .premium-input-field {
   color: #2e1065 !important;
-  font-size: 14.5px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
 }
 .homepage-container .premium-input-field::placeholder {
-  color: rgba(109, 40, 217, 0.5) !important;
+  color: rgba(109, 40, 217, 0.48) !important;
 }
+/* Attachment + Send button sizes match new 52px wrapper */
 .homepage-container .premium-footer-btn.attachment-btn,
 .homepage-container .attachment-btn {
-  background: rgba(216, 200, 255, 0.7) !important;
-  border-color: rgba(124, 58, 237, 0.45) !important;
-  color: #6d28d9 !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  background: rgba(210, 190, 255, 0.75) !important;
+  border: 2px solid rgba(109, 40, 217, 0.4) !important;
+  color: #5b21b6 !important;
 }
 .homepage-container .premium-footer-btn.send-btn,
 .homepage-container .send-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%) !important;
-  box-shadow: 0 3px 16px rgba(91, 33, 182, 0.5) !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%) !important;
+  box-shadow: 0 4px 18px rgba(91, 33, 182, 0.55) !important;
 }
 
-/* Sync ::after + chat-feed with new footer height */
-.homepage-container::after { height: 56px !important; }
-.homepage-container .chat-feed { bottom: 56px !important; }
+/* Sync ::after + chat-feed with 64px footer */
+.homepage-container::after { height: 64px !important; }
+.homepage-container .chat-feed { bottom: 64px !important; }
 
 /* ── Usernames: vivid role-based colours ─────────────────────────── */
-.homepage-container .message-displayname[data-role="owner"],
-.homepage-container .message-displayname[data-sender-role="owner"] {
-  color: #b45309 !important;
-  font-weight: 800 !important;
-  text-shadow: 0 0 8px rgba(251, 191, 36, 0.4) !important;
+.homepage-container .message-displayname[data-role="owner"] {
+  color: #92400e !important; font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.45) !important;
 }
-.homepage-container .message-displayname[data-role="admin"],
-.homepage-container .message-displayname[data-sender-role="admin"] {
-  color: #dc2626 !important;
-  font-weight: 800 !important;
+.homepage-container .message-displayname[data-role="admin"] {
+  color: #b91c1c !important; font-weight: 800 !important;
 }
-.homepage-container .message-displayname[data-role="moderator"],
-.homepage-container .message-displayname[data-sender-role="moderator"] {
-  color: #059669 !important;
-  font-weight: 700 !important;
+.homepage-container .message-displayname[data-role="moderator"] {
+  color: #047857 !important; font-weight: 700 !important;
 }
 .homepage-container .message-displayname[data-badge="true"] {
-  color: #7c3aed !important;
-  font-weight: 700 !important;
+  color: #6d28d9 !important; font-weight: 700 !important;
 }
 .homepage-container .message-displayname[data-badge="false"] {
-  color: #4338ca !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
+  color: #3730a3 !important; font-weight: 600 !important; font-size: 12.5px !important;
 }
 
-/* ── Message text: richer, not washed out ────────────────────────── */
+/* ── Message text: deep rich indigo, not washed out ─────────────── */
 .homepage-container .message-body p {
   color: #1e1b4b !important;
   font-size: 13.5px !important;
   line-height: 1.45 !important;
-}
-/* Preserve custom colors set by users */
-.homepage-container .message-body p[style*="color"] {
-  color: var(--custom-color, #1e1b4b) !important;
+  font-weight: 450 !important;
 }
 
-/* ── Message action buttons: bigger + vivid ──────────────────────── */
+/* ── Tighten message content: closer to DP ──────────────────────── */
+.homepage-container .message-row {
+  gap: 2px !important;
+  padding: 5px 8px 5px 6px !important;
+}
+.homepage-container .message-content-container {
+  padding-left: 1px !important;
+}
+
+/* ── Action buttons: NO background, just vivid icon ─────────────── */
 .homepage-container .message-action-btn {
   width: 22px !important;
   height: 22px !important;
   min-width: 22px !important;
   min-height: 22px !important;
-  border-radius: 6px !important;
-  background: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(196, 181, 253, 0.4) !important;
-  margin: 0 2px !important;
-  box-shadow: 0 1px 4px rgba(109, 40, 217, 0.12) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  margin: 0 1px !important;
 }
 .homepage-container .message-action-btn:hover {
-  background: rgba(237, 233, 254, 0.95) !important;
-  border-color: rgba(124, 58, 237, 0.5) !important;
-  transform: scale(1.15) !important;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.2) !important;
+  background: rgba(124, 58, 237, 0.1) !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: scale(1.2) !important;
 }
 .homepage-container .message-action-btn svg {
-  width: 14px !important;
-  height: 14px !important;
+  width: 16px !important;
+  height: 16px !important;
 }
-/* Whisper icon — cyan */
-.homepage-container .message-action-btn[title="Whisper"] {
-  background: rgba(207, 250, 254, 0.85) !important;
-  border-color: rgba(6, 182, 212, 0.4) !important;
-}
-.homepage-container .message-action-btn[title="Whisper"]:hover {
-  background: rgba(165, 243, 252, 0.95) !important;
-  border-color: #0891b2 !important;
-}
-/* Report icon — orange */
-.homepage-container .message-action-btn[title="Report"] {
-  background: rgba(255, 237, 213, 0.85) !important;
-  border-color: rgba(249, 115, 22, 0.35) !important;
-}
-.homepage-container .message-action-btn[title="Report"]:hover {
-  background: rgba(254, 215, 170, 0.95) !important;
-  border-color: #ea580c !important;
-}
-/* Delete icon — rose */
-.homepage-container .message-action-btn[title="Delete Message"] {
-  background: rgba(255, 228, 230, 0.85) !important;
-  border-color: rgba(244, 63, 94, 0.35) !important;
-}
-.homepage-container .message-action-btn[title="Delete Message"]:hover {
-  background: rgba(254, 205, 211, 0.95) !important;
-  border-color: #e11d48 !important;
-}
-/* Kick icon — amber */
+/* Override any previously-set coloured backgrounds */
+.homepage-container .message-action-btn[title="Whisper"],
+.homepage-container .message-action-btn[title="Report"],
+.homepage-container .message-action-btn[title="Delete Message"],
 .homepage-container .message-action-btn[title="Kick User"] {
-  background: rgba(254, 243, 199, 0.85) !important;
-  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
-.homepage-container .message-action-btn[title="Kick User"]:hover {
-  background: rgba(253, 230, 138, 0.95) !important;
-  border-color: #d97706 !important;
-}
-.dark-mode .homepage-container .message-action-btn {
-  background: rgba(30, 15, 60, 0.85) !important;
-  border-color: rgba(139, 92, 246, 0.3) !important;
+.homepage-container .message-action-btn[title="Whisper"]:hover  { background: rgba(6,182,212,0.12) !important; }
+.homepage-container .message-action-btn[title="Report"]:hover   { background: rgba(249,115,22,0.12) !important; }
+.homepage-container .message-action-btn[title="Delete Message"]:hover { background: rgba(239,68,68,0.12) !important; }
+.homepage-container .message-action-btn[title="Kick User"]:hover { background: rgba(245,158,11,0.12) !important; }
+.dark-mode .homepage-container .message-action-btn:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
 }
 
-/* ── Chat strips: more vivid alternating ─────────────────────────── */
+/* ── Chat strips: vivid alternating ──────────────────────────────── */
 .homepage-container .message-row-wrapper {
   border-radius: 8px !important;
-  margin: 0 3px 1px !important;
+  margin: 0 2px 1px !important;
 }
 .homepage-container .message-row-wrapper:nth-child(odd),
 body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(odd) {
   background: #ffffff !important;
-  border-bottom: 1px solid rgba(109, 40, 217, 0.12) !important;
+  border-bottom: 1px solid rgba(109, 40, 217, 0.13) !important;
 }
 .homepage-container .message-row-wrapper:nth-child(even),
 body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
   background: hsl(270, 96%, 95%) !important;
-  border-bottom: 1px solid rgba(109, 40, 217, 0.14) !important;
+  border-bottom: 1px solid rgba(109, 40, 217, 0.15) !important;
 }
 .homepage-container .message-row-wrapper:hover {
-  background: rgba(124, 58, 237, 0.085) !important;
+  background: rgba(109, 40, 217, 0.07) !important;
 }
-.dark-mode .homepage-container .message-row-wrapper:nth-child(odd) {
-  background: #1e1535 !important;
-}
-.dark-mode .homepage-container .message-row-wrapper:nth-child(even) {
-  background: #231a42 !important;
-}
-.dark-mode .homepage-container .message-row-wrapper:hover {
-  background: rgba(139, 92, 246, 0.14) !important;
-}
+.dark-mode .homepage-container .message-row-wrapper:nth-child(odd)  { background: #1d1438 !important; }
+.dark-mode .homepage-container .message-row-wrapper:nth-child(even) { background: #22193f !important; }
+.dark-mode .homepage-container .message-row-wrapper:hover           { background: rgba(139, 92, 246, 0.16) !important; }
 
-/* ── Avatars: vivid coloured rings ───────────────────────────────── */
+/* ── Avatars: thicker vivid rings (3.5px) ────────────────────────── */
 .homepage-container .avatar-wrapper.owner-border img.message-avatar {
-  border: 2.5px solid #f59e0b !important;
-  box-shadow: 0 0 0 1.5px rgba(245, 158, 11, 0.35) !important;
+  border: 3.5px solid #f59e0b !important;
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.4) !important;
 }
 .homepage-container .avatar-wrapper.admin-border img.message-avatar {
-  border: 2.5px solid #ef4444 !important;
-  box-shadow: 0 0 0 1.5px rgba(239, 68, 68, 0.3) !important;
+  border: 3.5px solid #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.35) !important;
 }
 .homepage-container .avatar-wrapper.moderator-border img.message-avatar {
-  border: 2.5px solid #10b981 !important;
-  box-shadow: 0 0 0 1.5px rgba(16, 185, 129, 0.3) !important;
+  border: 3.5px solid #10b981 !important;
+  box-shadow: 0 0 0 1px rgba(16,185,129,0.35) !important;
 }
 .homepage-container .avatar-wrapper.badge-holder-border img.message-avatar {
-  border: 2.5px solid #8b5cf6 !important;
-  box-shadow: 0 0 0 1.5px rgba(139, 92, 246, 0.3) !important;
+  border: 3.5px solid #7c3aed !important;
+  box-shadow: 0 0 0 1px rgba(124,58,237,0.35) !important;
 }
-.homepage-container .avatar-wrapper.user-border img.message-avatar {
-  border: 2px solid rgba(99, 102, 241, 0.55) !important;
+.homepage-container .avatar-wrapper.user-border.female-border img.message-avatar {
+  border: 3px solid #ec4899 !important;
+  box-shadow: 0 0 0 1px rgba(236,72,153,0.3) !important;
+}
+.homepage-container .avatar-wrapper.user-border.male-border img.message-avatar {
+  border: 3px solid #3b82f6 !important;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.3) !important;
 }
 
-/* ── Header: more vivid gradient ─────────────────────────────────── */
+/* ── Header: DARK vivid gradient (fix title visibility) ─────────── */
 .chat-header {
-  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 45%, #7c3aed 100%) !important;
-  box-shadow: 0 4px 20px rgba(91, 33, 182, 0.35), 0 1px 4px rgba(0,0,0,0.15) !important;
+  background: linear-gradient(135deg, #3b0764 0%, #5b21b6 50%, #6d28d9 100%) !important;
+  box-shadow: 0 4px 22px rgba(76, 29, 149, 0.45), 0 1px 4px rgba(0,0,0,0.2) !important;
 }
 .dark-mode .chat-header {
-  background: linear-gradient(135deg, #1e0a3c 0%, #3b0764 55%, #4c1d95 100%) !important;
+  background: linear-gradient(135deg, #1a0533 0%, #2e0853 55%, #4c1d95 100%) !important;
 }
-.chat-header .header-title {
-  color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+/* Title: bright white + text-shadow for punch */
+.header-title,
+.chat-header .header-title,
+.chat-header .header-center .header-title {
+  color: #f5f3ff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.45), 0 0 20px rgba(255,255,255,0.15) !important;
 }
+/* User count badge */
+.chat-header .user-count {
+  background: rgba(255,255,255,0.22) !important;
+  color: #f5f3ff !important;
+  border: 1px solid rgba(255,255,255,0.35) !important;
+}
+/* Header icons */
 .header-action-btn {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  background: rgba(255,255,255,0.2) !important;
+  border: 1.5px solid rgba(255,255,255,0.35) !important;
   color: #ffffff !important;
 }
 .header-action-btn:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255,255,255,0.32) !important;
+  transform: scale(1.08) !important;
 }
 .header-action-btn svg { color: #ffffff !important; fill: #ffffff !important; }
+
+/* ── Whole chat page: subtle saturation boost ────────────────────── */
+.homepage-container .chat-feed {
+  filter: saturate(1.08) !important;
+}
+.homepage-container .chat-footer {
+  filter: saturate(1.05) !important;
+}
