@@ -1,0 +1,65 @@
+Upgrade my TingleTap chat application with a premium Royal Reputation System, Trust-Based Rewards, Anti-Spam Protection and Abuse Detection.
+
+## 1. Royal Reputation & Trust System
+- Every user has a Trust Score from 0 to 100.
+- New users start with a low trust score.
+- Trust increases through positive activity, account age and clean behavior.
+- Trust decreases for spam, abuse, warnings, mutes and violations.
+- Display Royal Trust Badges:
+  - 🛡️ Squire (0–20)
+  - ⚜️ Noble (21–40)
+  - 👑 Regent (41–60)
+  - 🏰 Monarch (61–80)
+  - 💎 Eternal Crown (81–100)
+- Trust score and rank must be stored in Firebase.
+- Badges must appear beside usernames in chat messages, profiles, member lists and user cards.
+
+## 2. Trust-Based Rewards & Perks
+- Higher trust levels unlock premium profile rewards.
+- Custom profile frames.
+- Premium profile decorations.
+- Exclusive chat colors.
+- Animated badge effects for higher ranks.
+- Higher daily usage limits.
+- Profile highlights and prestige effects.
+- Reward system should be configurable for future additions.
+
+## 3. Anti-Spam Protection
+- Detect repeated messages.
+- Detect copy-paste spam.
+- Detect emoji flooding.
+- Detect excessive capital letters.
+- Message rate limiting per user.
+- Automatic cooldown system.
+- Automatic temporary mute for spammers.
+- Optional room slow mode.
+- Store spam violations and mute history in Firebase.
+
+## 4. Abuse & Toxicity Detection
+- Detect Hindi and English abusive words.
+- Detect harassment, bullying and threats.
+- Automatically delete abusive messages.
+- First offense: warning.
+- Second offense: temporary mute.
+- Repeated offenses: increasing mute duration.
+- Severe abuse: automatic ban.
+- Store offense history and moderation records in Firebase.
+
+## Security Requirements
+- All moderation and trust calculations must be secure and resistant to abuse.
+- Prevent bypassing spam and abuse filters.
+- Update Firebase security rules.
+- Store moderation data safely.
+
+## UI Requirements
+- Premium luxury design matching the TingleTap theme.
+- Mobile-friendly and responsive.
+- Beautiful royal badges with premium styling.
+- Smooth animations and modern visuals.
+- Clear warning and moderation notifications.
+
+## Important Rules
+- Only Owners and Admins can create rooms.
+- Normal users must never have room creation permissions.
+- The system should automatically moderate spam and abusive behavior whenever possible.
+- Generate production-ready code and update all necessary React, Firebase, Firestore and security rule files.
