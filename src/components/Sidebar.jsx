@@ -251,6 +251,12 @@ const Sidebar = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Expose setProfileUser globally so SettingsSidebar can open ViewProfileModal
+  useEffect(() => {
+    window.setProfileUser = setProfileUser;
+    return () => { delete window.setProfileUser; };
+  }, [setProfileUser]);
+
   useEffect(() => {
     const q = query(collection(db, 'rooms'), orderBy('order'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -666,13 +672,7 @@ const Sidebar = ({
 
                   <button className="modern-dropdown-btn primary" onClick={(e) => { 
                     e.stopPropagation(); 
-                    if (window.setProfileUser && typeof window.setProfileUser === 'function') {
-                      window.setProfileUser(loggedInUserProfile);
-                    } else if (window.handleViewProfile && typeof window.handleViewProfile === 'function') {
-                      window.handleViewProfile(loggedInUserProfile);
-                    } else {
-                      toast.info(`👤 ${loggedInUserProfile?.displayName || 'User'} - ${loggedInUserProfile?.role || 'user'}`);
-                    }
+                    setProfileUser(loggedInUserProfile);
                     setDropdownUser(null); 
                   }}>
                     <div className="btn-icon">
@@ -1057,13 +1057,7 @@ const Sidebar = ({
 
                         <button className="modern-dropdown-btn primary" onClick={(e) => { 
                           e.stopPropagation(); 
-                          if (window.setProfileUser && typeof window.setProfileUser === 'function') {
-                            window.setProfileUser(userItem);
-                          } else if (window.handleViewProfile && typeof window.handleViewProfile === 'function') {
-                            window.handleViewProfile(userItem);
-                          } else {
-                            toast.info(`👤 ${userItem?.displayName || 'User'} - ${userItem?.role || 'user'}`);
-                          }
+                          setProfileUser(userItem);
                           setDropdownUser(null); 
                         }}>
                           <div className="btn-icon">

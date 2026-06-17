@@ -2910,6 +2910,26 @@ const SettingsSidebar = ({
                                 </button>
 
                                 <button 
+                                    className="modern-nav-btn navigation"
+                                    onClick={() => {
+                                        try {
+                                            navigate('/welcome');
+                                            onClose();
+                                            toast.success('🏠 Going to Dashboard!');
+                                        } catch (error) {
+                                            console.error('Navigation error:', error);
+                                            toast.error('Failed to navigate to Dashboard');
+                                        }
+                                    }}
+                                    title="Dashboard"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
+                                    </svg>
+                                    <span>DASHBOARD</span>
+                                </button>
+
+                                <button 
                                     className="modern-nav-btn rectangular feature"
                                     onClick={() => {
                                         try {
