@@ -37,14 +37,14 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21.44 11.05L12.25 20.24C11.1242 21.3658 9.59723 21.9983 8.005 21.9983C6.41277 21.9983 4.88584 21.3658 3.76 20.24C2.63416 19.1142 2.00166 17.5872 2.00166 15.995C2.00166 14.4028 2.63416 12.8758 3.76 11.75L12.95 2.56C13.7006 1.80944 14.7185 1.38778 15.78 1.38778C16.8415 1.38778 17.8594 1.80944 18.61 2.56C19.3606 3.31056 19.7822 4.32855 19.7822 5.39C19.7822 6.45145 19.3606 7.46944 18.61 8.22L9.41 17.41C9.03494 17.7851 8.52626 17.9958 7.995 17.9958C7.46374 17.9958 6.95506 17.7851 6.58 17.41C6.20494 17.0349 5.99421 16.5263 5.99421 15.995C5.99421 15.4637 6.20494 14.9551 6.58 14.58L15.07 6.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.6"/>
+    <path d="M12 7.5v9M7.5 12h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 );
 const PremiumDeleteIcon = () => (
@@ -406,10 +406,16 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     const currentUser = auth.currentUser;
     const isDropdownOpen = openDropdownId === id;
 
-    const avatarGender = isBot ? 'male' : (gender?.toLowerCase() === 'female' ? 'female' : 'male');
-    const avatarUrl = isBot ? 
-        `https://api.dicebear.com/8.x/bottts/svg?seed=tinglebot&backgroundColor=b6e3f4` :
-        (message.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${avatarGender}&backgroundColor=c0aede`);
+    const avatarGender = isBot ? 'male' : (gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male'));
+    const hasCustomAvatar = !!message.photoURL;
+    const getDefaultAvatar = (uid, gen) => {
+        if (gen === 'female') return `https://api.dicebear.com/8.x/adventurer/svg?seed=f${uid}&sex=female&backgroundColor=fecdd3,fbcfe8,f5d0fe,fde68a`;
+        if (gen === 'other')  return `https://api.dicebear.com/8.x/thumbs/svg?seed=o${uid}&backgroundColor=d1fae5,bfdbfe,ede9fe,fef3c7`;
+        return `https://api.dicebear.com/8.x/adventurer/svg?seed=m${uid}&sex=male&backgroundColor=bfdbfe,c7d2fe,ede9fe,dbeafe`;
+    };
+    const avatarUrl = isBot
+        ? `https://api.dicebear.com/8.x/bottts/svg?seed=tinglebot&backgroundColor=b6e3f4`
+        : (message.photoURL || getDefaultAvatar(uid, avatarGender));
     const isMyMessage = currentUser && currentUser.uid === uid;
     const viewerRole = loggedInUserProfile?.role || 'user';
     
@@ -462,7 +468,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         ref={avatarRef}
                         src={avatarUrl} 
                         alt="avatar" 
-                        className={`message-avatar avatar-gender-${avatarGender}`}
+                        className={`message-avatar avatar-gender-${avatarGender}${!hasCustomAvatar ? ' default-avatar-animated' : ''}`}
                         onClick={(e) => {
                             if (!isBot && !isMyMessage) {
                                 e.preventDefault();
@@ -6451,6 +6457,26 @@ const HomePage = ({ user }) => {
 
             {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
             <div className="chat-footer">
+                {isAttachmentDropdownOpen && (
+                    <div className="attachment-dropdown">
+                        <button className="attachment-option-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span>Image</span>
+                        </button>
+                        <button className="attachment-option-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span>Audio</span>
+                        </button>
+                        <button className="attachment-option-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="1.8"/><path d="M7 12h5m0 0v-3m0 3v3M17 9v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                            <span>GIF</span>
+                        </button>
+                        <button className="attachment-option-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                            <span>Style</span>
+                        </button>
+                    </div>
+                )}
                 <form onSubmit={handleSendMessage} className="message-form">
                     <div className="premium-input-container">
                         <button

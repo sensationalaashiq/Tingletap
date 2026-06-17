@@ -10109,41 +10109,40 @@ html body.theme-sunset .message-body p {
   transform: rotate(12deg) scale(1.08) !important;
 }
 
-/* Adjust chat-feed bottom to match sticky bar — last strip kisses the bar */
-.homepage-container .chat-feed {
-  bottom: 70px !important;
-  padding-bottom: 2px !important;
-}
+/* chat-feed bottom is handled at end of file */
 
 /* ═══════════════════════════════════════════════════════════════════
-   COMPACT CHAT STRIPS — tight layout, DP close to edge
+   COMPACT CHAT STRIPS — tight layout, DP 1px from left edge
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Edge-to-edge strips, no gaps between rows */
+/* Edge-to-edge strips */
 .homepage-container .message-row-wrapper {
   margin: 0 !important;
   border-radius: 0 !important;
 }
 
-/* Tighter row — DP very close to left edge, content close to DP */
+/* Row: 1px left padding so DP has 1px air from viewport edge */
 .homepage-container .message-row {
-  padding: 5px 8px 5px 3px !important;
-  gap: 5px !important;
+  padding: 5px 8px 5px 1px !important;
+  gap: 6px !important;
   align-items: flex-start !important;
 }
 
-/* Avatar: 34px, no border, no shadow — gender shape applied below */
+/* Avatar wrapper: 34px, circle, base styles */
 .homepage-container .avatar-wrapper {
   width: 34px !important;
   height: 34px !important;
   min-width: 34px !important;
   max-width: 34px !important;
   flex-shrink: 0 !important;
-  margin-left: 0 !important;
+  margin-left: 1px !important;
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
   padding: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 .homepage-container .message-avatar {
@@ -10151,6 +10150,9 @@ html body.theme-sunset .message-body p {
   height: 34px !important;
   min-width: 34px !important;
   max-width: 34px !important;
+  border-radius: 50% !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  border: none !important;
 }
 
 /* ── Remove ALL role/staff borders inside homepage ─────────────── */
@@ -10162,18 +10164,29 @@ html body.theme-sunset .message-body p {
   box-shadow: none !important;
 }
 
-/* ── GIRLS → perfect circle DP with ultra-thin pink border ─────── */
-.homepage-container .avatar-wrapper.female-border {
-  border: 1px solid rgba(244, 114, 182, 0.8) !important;
+/* ── BOYS → perfect circle with thin BLUE border ───────────────── */
+.homepage-container .avatar-wrapper.male-border {
+  border: 1.5px solid rgba(96, 165, 250, 0.9) !important;
   border-radius: 50% !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  padding: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12) !important;
+}
+.homepage-container .avatar-gender-male,
+.homepage-container .avatar-wrapper.male-border .message-avatar {
+  border-radius: 50% !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  border: none !important;
 }
 
-/* Female avatar img — force perfect circle via class on img element */
+/* ── GIRLS → perfect circle with thin PINK border ──────────────── */
+.homepage-container .avatar-wrapper.female-border {
+  border: 1.5px solid rgba(244, 114, 182, 0.9) !important;
+  border-radius: 50% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.12) !important;
+}
 .homepage-container .avatar-gender-female,
 .homepage-container .avatar-wrapper.female-border .message-avatar {
   border-radius: 50% !important;
@@ -10181,23 +10194,30 @@ html body.theme-sunset .message-body p {
   border: none !important;
 }
 
-/* ── BOYS → PERFECT SQUARE DP with ultra-thin blue border ────────── */
-.homepage-container .avatar-wrapper.male-border {
-  border-radius: 5px !important;
-  border: 1px solid rgba(59, 130, 246, 0.8) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  overflow: hidden !important;
+/* ── OTHERS → circle with thin teal border ──────────────────────── */
+.homepage-container .avatar-gender-other {
+  border-radius: 50% !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  border: none !important;
 }
 
-/* Male avatar img — override global circle clip-path to square via class on img */
-.homepage-container .avatar-gender-male,
-.homepage-container .avatar-wrapper.male-border .message-avatar {
-  border-radius: 4px !important;
-  clip-path: inset(0 round 4px) !important;
-  border: none !important;
+/* ── Animated glow ring for default (no custom photo) avatars ───── */
+@keyframes avatar-glow-pulse {
+  0%   { box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15), 0 0 8px 0 rgba(167, 139, 250, 0.2); }
+  50%  { box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3),  0 0 14px 2px rgba(167, 139, 250, 0.35); }
+  100% { box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15), 0 0 8px 0 rgba(167, 139, 250, 0.2); }
+}
+.homepage-container .default-avatar-animated {
+  animation: avatar-glow-pulse 2.8s ease-in-out infinite !important;
+}
+.homepage-container .avatar-wrapper.male-border .default-avatar-animated {
+  animation: none !important;
+}
+.homepage-container .avatar-wrapper.male-border:has(.default-avatar-animated) {
+  animation: avatar-glow-pulse 2.8s ease-in-out infinite !important;
+}
+.homepage-container .avatar-wrapper.female-border:has(.default-avatar-animated) {
+  animation: avatar-glow-pulse 2.8s ease-in-out infinite !important;
 }
 
 /* Gender badge — repositioned for 34px avatar */
@@ -10212,223 +10232,275 @@ html body.theme-sunset .message-body p {
 .homepage-container .message-displayname {
   font-size: 13px !important;
   line-height: 1.15 !important;
-  margin-bottom: 0px !important;
+  margin-bottom: 2px !important;
 }
 
-/* Tighter content column */
+/* Tighter content column — 2px gap so username & message have a tiny breath */
 .homepage-container .message-content-container {
-  padding: 0px 0 !important;
-  gap: 0px !important;
+  padding: 0 !important;
+  gap: 1px !important;
 }
 
-/* Message body density */
+/* header-row — small breathing room below name */
+.homepage-container .message-header-row {
+  margin-bottom: 2px !important;
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* message-body */
+.homepage-container .message-body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
 .homepage-container .message-body p {
+  margin: 0 !important;
+  padding: 0 !important;
   line-height: 1.35 !important;
-  margin: 0px 0 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PREMIUM INPUT BAR UPGRADES — lavender send, premium container
+   PREMIUM INPUT BAR — compact, full-width, no outer container
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Frosted glass bar — full-width, stuck to bottom edge, no gap below */
+/* Kill the old floating .chat-footer inside homepage */
 .homepage-container .chat-footer {
+  position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
   transform: none !important;
-  border-radius: 22px 22px 0 0 !important;
+  border-radius: 18px 18px 0 0 !important;
   height: auto !important;
-  min-height: 62px !important;
-  background: rgba(246, 242, 255, 0.98) !important;
+  min-height: 58px !important;
+  background: rgba(248, 245, 255, 0.97) !important;
   border: none !important;
-  border-top: 1.5px solid rgba(167, 139, 250, 0.35) !important;
-  box-shadow: 0 -6px 32px rgba(109, 40, 217, 0.13), 0 -1px 0 rgba(167, 139, 250, 0.25) !important;
-  backdrop-filter: blur(28px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
-  padding: 9px 16px 14px 16px !important;
+  border-top: 1px solid rgba(196, 181, 253, 0.3) !important;
+  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.1) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  padding: 8px 10px 10px 10px !important;
+  z-index: 2000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
 }
 
 .homepage-container .chat-footer:focus-within {
-  width: 100% !important;
-  transform: none !important;
-  background: rgba(246, 242, 255, 0.99) !important;
-  box-shadow: 0 -8px 36px rgba(109, 40, 217, 0.18), 0 -1px 0 rgba(167, 139, 250, 0.3) !important;
+  background: rgba(248, 245, 255, 0.99) !important;
+  box-shadow: 0 -6px 28px rgba(109, 40, 217, 0.15) !important;
 }
 
 .dark-mode .homepage-container .chat-footer {
-  background: rgba(8, 5, 24, 0.98) !important;
-  border-top-color: rgba(139, 92, 246, 0.32) !important;
-  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5), 0 -1px 0 rgba(139, 92, 246, 0.2) !important;
+  background: rgba(10, 5, 28, 0.97) !important;
+  border-top-color: rgba(139, 92, 246, 0.28) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Input pill — luxurious frosted lavender */
+/* Form fills full footer width */
+.homepage-container .message-form {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* Input row: attachment + pill + send, all in one line */
+.homepage-container .premium-input-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Input pill */
 .homepage-container .premium-input-wrapper {
-  background: rgba(245, 240, 255, 0.82) !important;
-  border: 1.5px solid rgba(196, 181, 253, 0.45) !important;
-  border-radius: 26px !important;
-  height: 44px !important;
-  box-shadow: inset 0 1px 4px rgba(109, 40, 217, 0.08), 0 1px 6px rgba(167, 139, 250, 0.1) !important;
-  transition: all 0.25s ease !important;
+  flex: 1 !important;
+  height: 40px !important;
+  background: rgba(237, 233, 254, 0.5) !important;
+  border: 1px solid rgba(196, 181, 253, 0.4) !important;
+  border-radius: 20px !important;
+  padding: 0 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s, background 0.2s !important;
 }
-
 .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(245, 240, 255, 0.97) !important;
-  border-color: rgba(167, 139, 250, 0.7) !important;
-  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.22), inset 0 1px 4px rgba(109, 40, 217, 0.07) !important;
+  background: rgba(237, 233, 254, 0.8) !important;
+  border-color: rgba(167, 139, 250, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.18) !important;
 }
-
 .dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(22, 10, 52, 0.82) !important;
-  border-color: rgba(139, 92, 246, 0.35) !important;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+  background: rgba(28, 12, 64, 0.7) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
 }
 
-/* Input text */
 .homepage-container .premium-input-field {
-  font-size: 14.5px !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 14px !important;
   color: #3b1075 !important;
-  letter-spacing: 0.015em !important;
-  font-weight: 500 !important;
+  font-weight: 450 !important;
 }
-
 .homepage-container .premium-input-field::placeholder {
-  color: rgba(139, 92, 246, 0.5) !important;
-  font-weight: 400 !important;
+  color: rgba(139, 92, 246, 0.45) !important;
 }
-
 .dark-mode .homepage-container .premium-input-field {
   color: #e9d5ff !important;
 }
 
-/* Attachment button — premium with light lavender SVG */
+/* Attachment button — circular, lavender tint */
 .homepage-container .premium-footer-btn.attachment-btn,
 .homepage-container .attachment-btn {
-  width: 42px !important;
-  height: 42px !important;
-  background: rgba(237, 233, 254, 0.6) !important;
-  border: 1.5px solid rgba(196, 181, 253, 0.4) !important;
-  border-radius: 14px !important;
-  color: #c4b5fd !important;
-  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.12) !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  background: rgba(237, 233, 254, 0.55) !important;
+  border: 1px solid rgba(196, 181, 253, 0.35) !important;
+  border-radius: 50% !important;
+  color: #a78bfa !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
   flex-shrink: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
-
 .homepage-container .attachment-btn:hover {
   background: rgba(237, 233, 254, 0.9) !important;
-  transform: rotate(10deg) scale(1.06) !important;
-  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.25) !important;
-  color: #a78bfa !important;
+  border-color: rgba(167, 139, 250, 0.55) !important;
+  transform: scale(1.07) !important;
+  color: #7c3aed !important;
 }
-
-.homepage-container .attachment-btn svg {
-  color: #c4b5fd !important;
-  stroke: #c4b5fd !important;
-}
-
 .dark-mode .homepage-container .attachment-btn {
-  background: rgba(40, 18, 80, 0.6) !important;
-  border-color: rgba(139, 92, 246, 0.35) !important;
+  background: rgba(40, 18, 80, 0.55) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
   color: #c4b5fd !important;
 }
 
-/* Send button — glowing lavender gem */
+/* Send button — circular, filled lavender */
 .homepage-container .premium-footer-btn.send-btn,
 .homepage-container .send-btn {
-  width: 44px !important;
-  height: 44px !important;
-  background: linear-gradient(145deg, #ddd6fe 0%, #c4b5fd 35%, #a78bfa 70%, #8b5cf6 100%) !important;
-  border: 1px solid rgba(196, 181, 253, 0.6) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 18px rgba(167, 139, 250, 0.5), 0 1px 4px rgba(196, 181, 253, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-  color: #f5f0ff !important;
-  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 3px 14px rgba(124, 58, 237, 0.4) !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
   flex-shrink: 0 !important;
+  padding: 0 !important;
 }
-
 .homepage-container .premium-footer-btn.send-btn:hover:not(:disabled),
 .homepage-container .send-btn:hover:not(:disabled) {
-  background: linear-gradient(145deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 75%, #7c3aed 100%) !important;
-  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6), 0 2px 10px rgba(167, 139, 250, 0.45), inset 0 1px 0 rgba(255,255,255,0.3) !important;
-  transform: scale(1.08) translateY(-1px) !important;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  box-shadow: 0 5px 20px rgba(109, 40, 217, 0.55) !important;
+  transform: scale(1.1) !important;
 }
-
 .homepage-container .send-btn:disabled {
-  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%) !important;
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%) !important;
   box-shadow: none !important;
-  opacity: 0.55 !important;
+  opacity: 0.6 !important;
   transform: none !important;
 }
-
-/* Send button SVG — light lavender icon via currentColor */
 .homepage-container .send-btn svg,
 .homepage-container .premium-footer-btn.send-btn svg {
-  color: #f5f0ff !important;
-}
-
-/* Attachment button SVG — light lavender icon via currentColor */
-.homepage-container .attachment-btn svg path {
-  stroke: #c4b5fd !important;
+  color: #fff !important;
+  fill: #fff !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FINAL OVERRIDES — username/message gap & bottom fill
+   ATTACHMENT DROPDOWN — floats above the bar
    ═══════════════════════════════════════════════════════════════════ */
-
-/* Zero the header-row bottom margin inside homepage */
-.homepage-container .message-header-row {
-  margin-bottom: 0 !important;
-  min-height: 0 !important;
-  padding-bottom: 0 !important;
+.homepage-container .attachment-dropdown {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  background: rgba(255, 252, 255, 0.98) !important;
+  border: 1px solid rgba(196, 181, 253, 0.35) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.12), 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 6px !important;
+  backdrop-filter: blur(16px) !important;
+  animation: dropdown-slide-up 0.18s ease !important;
 }
-
-/* Zero any gap/padding on the content container */
-.homepage-container .message-content-container {
-  gap: 0 !important;
-  padding: 0 !important;
+@keyframes dropdown-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
-/* message-body itself — no top margin/padding */
-.homepage-container .message-body {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
+.dark-mode .homepage-container .attachment-dropdown {
+  background: rgba(16, 8, 40, 0.98) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
 }
-
-/* Zero p margin inside message body */
-.homepage-container .message-body p {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1.3 !important;
+.homepage-container .attachment-option-btn {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 8px 14px !important;
+  background: rgba(237, 233, 254, 0.5) !important;
+  border: 1px solid rgba(196, 181, 253, 0.3) !important;
+  border-radius: 12px !important;
+  color: #7c3aed !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex: 1 !important;
+  min-width: 52px !important;
 }
-
-/* Compact the overall row vertical padding a bit more */
-.homepage-container .message-row {
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
+.homepage-container .attachment-option-btn:hover {
+  background: rgba(196, 181, 253, 0.35) !important;
+  border-color: rgba(167, 139, 250, 0.55) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15) !important;
+}
+.homepage-container .attachment-option-btn svg {
+  color: #7c3aed !important;
+  stroke: #7c3aed !important;
+}
+.dark-mode .homepage-container .attachment-option-btn {
+  background: rgba(40, 18, 80, 0.5) !important;
+  border-color: rgba(139, 92, 246, 0.28) !important;
+  color: #c4b5fd !important;
+}
+.dark-mode .homepage-container .attachment-option-btn svg {
+  color: #c4b5fd !important;
+  stroke: #c4b5fd !important;
 }
 
 /* ── Fill the area below the fixed input bar permanently ────────── */
-/* The chat-footer is fixed at bottom:0. Ensure the page body behind it
-   carries the same lavender/white background so nothing "peeks through". */
 .homepage-container::after {
   content: '';
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70px;
-  background: rgba(246, 242, 255, 0.98);
-  z-index: 1999;
+  height: 58px;
+  background: rgba(248, 245, 255, 0.97);
+  z-index: 1998;
   pointer-events: none;
 }
-
 .dark-mode .homepage-container::after {
-  background: rgba(8, 5, 24, 0.98);
+  background: rgba(10, 5, 28, 0.97);
 }
 
-/* The chat-footer sits above the ::after pseudo-element */
-.homepage-container .chat-footer {
-  z-index: 2000 !important;
+/* Chat-feed — leave room for 58px bar */
+.homepage-container .chat-feed {
+  bottom: 58px !important;
+  padding-bottom: 2px !important;
 }
