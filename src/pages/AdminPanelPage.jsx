@@ -45,6 +45,7 @@ const AdminPanelPage = () => {
   const [actionType, setActionType] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [isRoleReady, setIsRoleReady] = useState(false);
 
   // DevBan modal
   const [showDevBanModal, setShowDevBanModal] = useState(false);
@@ -115,7 +116,7 @@ const AdminPanelPage = () => {
     }
   };
 
-  // Check admin permissions
+  // Check admin permissions + auto-fix legacy superowner role
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -123,13 +124,20 @@ const AdminPanelPage = () => {
     }
     
     const userRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(userRef, (doc) => {
-      if (doc.exists()) {
-        const userData = doc.data();
+    const unsubscribe = onSnapshot(userRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        let userData = docSnap.data();
+        // Permanent fix: convert any legacy 'superowner' → 'owner' in Firestore immediately
+        if (userData.role === 'superowner') {
+          try { await updateDoc(userRef, { role: 'owner' }); } catch {}
+          userData = { ...userData, role: 'owner' };
+        }
         setCurrentUserProfile(userData);
-        if (!['owner', 'superowner', 'admin', 'moderator'].includes(userData.role)) {
+        if (!['owner', 'admin', 'moderator'].includes(userData.role)) {
           toast.error('Access denied. Admin privileges required.');
           navigate('/');
+        } else {
+          setIsRoleReady(true);
         }
       } else {
         navigate('/');
@@ -141,22 +149,29 @@ const AdminPanelPage = () => {
 
   // Real-time users data
   useEffect(() => {
+    if (!isRoleReady) return;
     const usersQuery = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-      const usersData = snapshot.docs
-        .map(doc => ({ id: doc.id, uid: doc.data().uid || doc.id, ...doc.data() }))
-        .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
-      setUsers(usersData);
-      setStats(prev => ({
-        ...prev,
-        totalUsers: usersData.length,
-        bannedUsers: usersData.filter(u => u.isBanned).length,
-        mutedUsers: usersData.filter(u => u.mutedInfo?.isMuted).length
-      }));
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(usersQuery,
+      (snapshot) => {
+        const usersData = snapshot.docs
+          .map(doc => ({ id: doc.id, uid: doc.data().uid || doc.id, ...doc.data() }))
+          .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+        setUsers(usersData);
+        setStats(prev => ({
+          ...prev,
+          totalUsers: usersData.length,
+          bannedUsers: usersData.filter(u => u.isBanned).length,
+          mutedUsers: usersData.filter(u => u.mutedInfo?.isMuted).length
+        }));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Users query error:', err.message);
+        setLoading(false);
+      }
+    );
     return () => unsubscribe();
-  }, []);
+  }, [isRoleReady]);
 
   // Real-time user status from RTDB
   useEffect(() => {
@@ -362,7 +377,7 @@ const AdminPanelPage = () => {
     }
   };
 
-  // ---- Superowner: send password reset email ----
+  // ---- Owner: send password reset email ----
   const handleSendPasswordReset = async () => {
     if (!changePwdTarget) return;
     setChangePwdLoading(true);
@@ -817,7 +832,7 @@ const AdminPanelPage = () => {
     };
   };
 
-  if (!currentUserProfile || !['owner', 'superowner', 'admin', 'moderator'].includes(currentUserProfile.role)) {
+  if (!currentUserProfile || !['owner', 'admin', 'moderator'].includes(currentUserProfile.role)) {
     return (
       <div className="luxury-admin-container">
         <div className="luxury-access-denied">
@@ -863,7 +878,7 @@ const AdminPanelPage = () => {
                   {currentUserProfile?.role === 'moderator' && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                   {!currentUserProfile?.role && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                 </svg>
-                {currentUserProfile?.role?.toUpperCase()}
+                {({'owner':'GODFATHER','admin':'HIGH COUNCIL','moderator':'GUARDIAN'}[currentUserProfile?.role]) || (currentUserProfile?.role?.toUpperCase()) || 'STAFF'}
               </div>
               <div className="luxury-admin-profile">
                 <span className="luxury-admin-name">{currentUserProfile?.displayName}</span>
@@ -1204,14 +1219,14 @@ const AdminPanelPage = () => {
                               </div>
                               
                               <div className="luxury-role-section">
-                                <span className={`luxury-role-badge role-${user.role || 'user'}`}>
+                                <span className={`luxury-role-badge role-${(user.role === 'superowner' ? 'owner' : user.role) || 'user'}`}>
                                   <svg viewBox="0 0 24 24" fill="none">
-                                    {user.role === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                                    {(user.role === 'owner' || user.role === 'superowner') && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
                                     {user.role === 'admin' && <path fill="#3b82f6" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
                                     {user.role === 'moderator' && <path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
                                     {(!user.role || user.role === 'user') && <path fill="#3b82f6" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
                                   </svg>
-                                  {user.role?.toUpperCase() || 'USER'}
+                                  {({'owner':'GODFATHER','superowner':'GODFATHER','admin':'HIGH COUNCIL','moderator':'GUARDIAN'}[user.role]) || (user.role?.toUpperCase()) || 'USER'}
                                 </span>
                               </div>
                               
