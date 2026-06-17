@@ -401,6 +401,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
         return <TingleBotMessage message={message} onDelete={onDelete} currentUser={loggedInUserProfile} />;
     }
     const [showActions, setShowActions] = useState(false);
+    const [actionsLocked, setActionsLocked] = useState(false);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const avatarRef = useRef(null);
@@ -463,7 +464,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
              data-sender-gender={avatarGender}
              data-sender-is-bot={isBot ? 'true' : 'false'}
              onMouseEnter={() => setShowActions(true)}
-             onMouseLeave={() => setShowActions(false)}>
+             onMouseLeave={() => { if (!actionsLocked) setShowActions(false); }}>
             <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}>
                 <div className={`avatar-wrapper ${getBorderClass()}`} style={{ position: 'relative' }}>
                     <img 
@@ -559,7 +560,12 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         document.body
                     )}
                 </div>
-                <div className="message-content-container">
+                <div className="message-content-container" onClick={(e) => {
+                    if (!e.target.closest('.message-action-btn') && !e.target.closest('.message-displayname') && !e.target.closest('.user-dropdown')) {
+                        setActionsLocked(prev => !prev);
+                        setShowActions(al => !al);
+                    }
+                }} style={{ cursor: 'pointer' }}>
                     <div className="message-header-row">
                         <div className="user-info" style={{ position: 'relative' }}>
                             <span 
@@ -683,7 +689,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             </span>
                         </div>
                         {!isBot && (
-                            <div className={`message-actions ${showActions ? 'show-actions' : ''}`}>
+                            <div className={`message-actions ${(showActions || actionsLocked) ? 'show-actions' : ''}`}>
                                 {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                 {!isMyMessage && (
                                     <>
