@@ -8543,26 +8543,26 @@ html body.theme-sunset .message-body p {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    background: transparent;
     display: flex;
     justify-content: flex-end;
     align-items: flex-start;
     z-index: 10000;
-    pointer-events: auto;
-    animation: fadeIn 0.3s ease-out;
-    padding: 60px 20px 20px 20px;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease-out;
+    padding: 60px 12px 20px 20px;
 }
 
 .pm-header-popup-container {
     background: white;
     border-radius: 16px;
-    width: 240px;
-    max-height: 280px;
+    width: 260px;
+    max-height: 300px;
     overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-    animation: slideInFromTopRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px rgba(109, 40, 217, 0.18), 0 2px 8px rgba(0,0,0,0.12);
+    animation: slideInFromTopRight 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: auto;
-    border: 2px solid #e5e7eb;
+    border: 1.5px solid rgba(139, 92, 246, 0.25);
 }
 
 @keyframes slideInFromTopRight {
@@ -9997,4 +9997,176 @@ html body.theme-sunset .message-body p {
   font-size: inherit !important;
   padding: inherit !important;
   line-height: inherit !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FULL-WIDTH STICKY INPUT BAR — sticks to very bottom on all screens
+   ═══════════════════════════════════════════════════════════════════ */
+.homepage-container .chat-footer {
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 58px !important;
+  border-radius: 18px 18px 0 0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+  border: none !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.1) !important;
+  padding: 8px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  transition: box-shadow 0.25s ease !important;
+}
+
+.homepage-container .chat-footer:focus-within {
+  transform: none !important;
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.99) !important;
+  box-shadow: 0 -6px 30px rgba(109, 40, 217, 0.16) !important;
+}
+
+.dark-mode .homepage-container .chat-footer {
+  background: rgba(12, 9, 30, 0.97) !important;
+  border-top-color: rgba(139, 92, 246, 0.25) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-mode .homepage-container .chat-footer:focus-within {
+  background: rgba(15, 10, 38, 0.99) !important;
+  box-shadow: 0 -6px 30px rgba(139, 92, 246, 0.15) !important;
+}
+
+.homepage-container .premium-input-container {
+  gap: 10px !important;
+  height: auto !important;
+}
+
+.homepage-container .premium-input-wrapper {
+  height: 42px !important;
+  background: rgba(237, 233, 254, 0.55) !important;
+  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
+  border-radius: 21px !important;
+  padding: 0 16px !important;
+}
+
+.homepage-container .premium-input-wrapper:focus-within {
+  background: rgba(237, 233, 254, 0.85) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
+}
+
+.dark-mode .homepage-container .premium-input-wrapper {
+  background: rgba(30, 16, 64, 0.7) !important;
+  border-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+.dark-mode .homepage-container .premium-input-wrapper:focus-within {
+  background: rgba(36, 18, 78, 0.9) !important;
+  border-color: rgba(139, 92, 246, 0.55) !important;
+}
+
+.homepage-container .premium-input-field {
+  font-size: 14px !important;
+  color: #3b0764 !important;
+}
+
+.dark-mode .homepage-container .premium-input-field {
+  color: #ede9fe !important;
+}
+
+.homepage-container .premium-footer-btn.send-btn,
+.homepage-container .send-btn {
+  width: 42px !important;
+  height: 42px !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4) !important;
+  flex-shrink: 0 !important;
+}
+
+.homepage-container .premium-footer-btn.send-btn:hover:not(:disabled),
+.homepage-container .send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9 0%, #9333ea 100%) !important;
+  box-shadow: 0 6px 20px rgba(109, 40, 217, 0.55) !important;
+  transform: scale(1.08) !important;
+}
+
+.homepage-container .premium-footer-btn.attachment-btn,
+.homepage-container .attachment-btn {
+  width: 38px !important;
+  height: 38px !important;
+  color: #7c3aed !important;
+  flex-shrink: 0 !important;
+}
+
+.homepage-container .attachment-btn:hover {
+  background: rgba(124, 58, 237, 0.1) !important;
+  transform: rotate(12deg) scale(1.08) !important;
+}
+
+/* Adjust chat-feed bottom to match sticky bar height */
+.homepage-container .chat-feed {
+  bottom: 58px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPACT CHAT STRIPS — smaller DP, tighter gaps, more msgs on screen
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Remove the 1px 4px margin between strips — full-width edge-to-edge */
+.homepage-container .message-row-wrapper {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Tighter inner row padding, close gap between dp and content */
+.homepage-container .message-row {
+  padding: 4px 8px 4px 2px !important;
+  gap: 6px !important;
+}
+
+/* Smaller avatar — brings DP close to left viewport edge */
+.homepage-container .avatar-wrapper {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  flex-shrink: 0 !important;
+  margin-left: 2px !important;
+}
+
+.homepage-container .message-avatar {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+/* Compact username — 13px instead of 18px */
+.homepage-container .message-displayname {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  margin-bottom: 1px !important;
+}
+
+/* Tighter content container */
+.homepage-container .message-content-container {
+  padding: 1px 0 !important;
+}
+
+/* Slightly smaller message body text for density */
+.homepage-container .message-body p {
+  line-height: 1.35 !important;
+  margin: 1px 0 !important;
+}
+
+/* Gender badge repositioned for smaller avatar */
+.homepage-container .gender-badge-on-avatar {
+  width: 12px !important;
+  height: 12px !important;
+  bottom: -2px !important;
+  right: -2px !important;
 }

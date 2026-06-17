@@ -53,9 +53,9 @@ const PremiumDeleteIcon = () => (
   </svg>
 );
 const PremiumPrivateBoxIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22 6l-10 7L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 9H16M8 13H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 );
 const MusicIcon = () => (
@@ -73,8 +73,8 @@ const MusicIcon = () => (
 );
 
 const CustomMenuIcon = () => (
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" fill="currentColor">
-    <path d="M16,11C16,9.34 14.66,8 13,8H11C9.34,8 8,9.34 8,11C8,12.66 9.34,14 11,14H13C14.66,14 16,12.66 16,11M14,11C14,11.55 13.55,12 13,12H11C10.45,12 10,11.55 10,11C10,10.45 10.45,10 11,10H13C13.55,10 14,10.45 14,11M9,16C6.24,16 4,17.79 4,20H6C6,18.9 7.34,18 9,18H15C16.66,18 18,18.9 18,20H20C20,17.79 17.76,16 15,16H9M20,5H4V7H20V5M20,9H4V11H7.08C7.03,10.67 7,10.34 7,10H4V12H7.41C7.96,13.19 9.05,14 10.32,14H13.68C14.95,14 16.04,13.19 16.59,12H20V10H17C17,10.34 16.97,10.67 16.92,11H20V9Z"/>
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+    <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const MaleIconSVG = () => (
