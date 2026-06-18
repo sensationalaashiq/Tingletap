@@ -2,247 +2,320 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>TingleTap – Email Verification</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-  /* ── Animated logo float (Apple Mail, Thunderbird, Samsung Mail) ── */
-  @keyframes float {
-    0%,100% { transform: translateY(0px) scale(1); }
-    50%      { transform: translateY(-10px) scale(1.04); }
-  }
-  @keyframes glow {
-    0%,100% { box-shadow: 0 0 24px rgba(168,85,247,0.5), 0 0 48px rgba(168,85,247,0.25); }
-    50%      { box-shadow: 0 0 40px rgba(168,85,247,0.8), 0 0 80px rgba(168,85,247,0.4); }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position:  200% center; }
-  }
-  @keyframes pulse-border {
-    0%,100% { border-color: rgba(192,132,252,0.6); }
-    50%      { border-color: rgba(139,92,246,1); }
-  }
-  @keyframes sparkle {
-    0%,100% { opacity: 0.4; transform: scale(0.8) rotate(0deg); }
-    50%      { opacity: 1;   transform: scale(1.2) rotate(180deg); }
+  /* ── Logo float ── */
+  @keyframes logo-float {
+    0%,100% { transform: translateY(0) scale(1); filter: drop-shadow(0 10px 24px rgba(139,92,246,.28)); }
+    50%      { transform: translateY(-9px) scale(1.03); filter: drop-shadow(0 20px 36px rgba(139,92,246,.44)); }
   }
 
-  .logo-img {
-    animation: float 3.5s ease-in-out infinite;
-    display: block;
-    margin: 0 auto;
+  /* ── Mail envelope draw + open ── */
+  @keyframes env-lid {
+    0%,40%  { transform: rotateX(0deg); }
+    60%,100%{ transform: rotateX(-35deg); }
   }
-  .otp-box {
-    animation: glow 2.5s ease-in-out infinite, pulse-border 2.5s ease-in-out infinite;
+  @keyframes dash-draw {
+    to { stroke-dashoffset: 0; }
   }
-  .shimmer-text {
-    background: linear-gradient(90deg,#9333ea,#c084fc,#e9d5ff,#c084fc,#9333ea);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: shimmer 3s linear infinite;
+
+  /* ── OTP digits glow pulse ── */
+  @keyframes otp-glow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,.15), 0 4px 16px rgba(139,92,246,.12); }
+    50%      { box-shadow: 0 0 0 6px rgba(139,92,246,.08), 0 8px 28px rgba(139,92,246,.22); }
   }
-  .star1 { animation: sparkle 2s ease-in-out infinite; }
-  .star2 { animation: sparkle 2.5s ease-in-out infinite 0.4s; }
-  .star3 { animation: sparkle 3s ease-in-out infinite 0.8s; }
+
+  /* ── Shimmer bar ── */
+  @keyframes shimmer-bar {
+    0%   { background-position: -400% center; }
+    100% { background-position:  400% center; }
+  }
+
+  /* ── Clock tick ── */
+  @keyframes tick {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* ── Star spin ── */
+  @keyframes star-spin {
+    0%,100% { transform: rotate(0deg) scale(1); opacity: .5; }
+    50%      { transform: rotate(90deg) scale(1.3); opacity: 1; }
+  }
+
+  /* ── Ping ripple ── */
+  @keyframes ping {
+    0%    { transform: scale(1);   opacity: .6; }
+    100%  { transform: scale(1.9); opacity: 0;  }
+  }
+
+  .logo-img   { animation: logo-float 3.8s ease-in-out infinite; }
+  .otp-cell   { animation: otp-glow 2.4s ease-in-out infinite; }
+  .shimmer    { animation: shimmer-bar 4s linear infinite; }
+  .star-a     { animation: star-spin 3s ease-in-out infinite; }
+  .star-b     { animation: star-spin 3.5s ease-in-out infinite .6s; }
+  .tick-hand  { animation: tick 4s linear infinite; transform-origin: 12px 12px; }
+  .ping-dot   { animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+
+  /* ── Responsive ── */
+  @media only screen and (max-width: 600px) {
+    .outer-td  { padding: 20px 8px !important; }
+    .card      { border-radius: 20px !important; }
+    .body-td   { padding: 28px 20px 24px !important; }
+    .brand-name{ font-size: 26px !important; }
+    .otp-cell  { width: 44px !important; height: 56px !important; font-size: 28px !important; }
+    .otp-wrap  { gap: 8px !important; }
+    .h2        { font-size: 22px !important; }
+  }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#0d001a;font-family:'Inter',Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f0ebff;font-family:'Inter',Arial,sans-serif;">
 
-<!--  Outer wrapper  -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:linear-gradient(160deg,#0d001a 0%,#1a003d 40%,#0f0025 100%);min-height:100vh;">
-  <tr><td align="center" style="padding:40px 16px;">
+       style="background:linear-gradient(160deg,#f5f0ff 0%,#ede8ff 50%,#f0ebff 100%);min-height:100vh;">
+<tr><td class="outer-td" align="center" style="padding:36px 16px;">
 
-    <!--  Card  -->
-    <table width="600" cellpadding="0" cellspacing="0" border="0"
-           style="max-width:600px;width:100%;background:rgba(255,255,255,0.04);border-radius:28px;
-                  border:1.5px solid rgba(192,132,252,0.3);
-                  box-shadow:0 40px 100px rgba(139,92,246,0.35),0 0 0 1px rgba(192,132,252,0.15);">
+  <!-- Card -->
+  <table class="card" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="max-width:580px;background:#ffffff;border-radius:24px;
+                border:1.5px solid rgba(167,139,250,.22);
+                box-shadow:0 20px 60px rgba(109,40,217,.1),0 4px 20px rgba(139,92,246,.08);">
 
-      <!--  Top accent bar  -->
-      <tr>
-        <td style="height:4px;border-radius:28px 28px 0 0;
-                   background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
-                   background-size:300% 100%;">
-        </td>
-      </tr>
+    <!-- Top shimmer bar -->
+    <tr>
+      <td style="height:5px;border-radius:24px 24px 0 0;overflow:hidden;">
+        <div class="shimmer" style="height:5px;
+          background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
+          background-size:400% 100%;"></div>
+      </td>
+    </tr>
 
-      <!--  Header / Logo  -->
-      <tr>
-        <td align="center" style="padding:44px 40px 28px;">
+    <!-- Logo header -->
+    <tr>
+      <td align="center" style="padding:40px 32px 24px;background:linear-gradient(180deg,#faf7ff 0%,#ffffff 100%);border-radius:0;">
 
-          <!-- Stars decoration -->
-          <div style="position:relative;display:inline-block;margin-bottom:8px;">
-            <span class="star1" style="display:inline-block;font-size:18px;margin-right:14px;vertical-align:middle;">✦</span>
-            <img class="logo-img"
-                 src="https://i.ibb.co/zWdy2ZdD/IMG-20250724-033823-966.jpg"
-                 alt="TingleTap"
-                 width="90" height="90"
-                 style="width:90px;height:90px;border-radius:22px;
-                        border:3px solid rgba(192,132,252,0.5);
-                        box-shadow:0 0 32px rgba(168,85,247,0.6),0 12px 40px rgba(0,0,0,0.5);
-                        display:inline-block;vertical-align:middle;">
-            <span class="star2" style="display:inline-block;font-size:18px;margin-left:14px;vertical-align:middle;">✦</span>
-          </div>
+        <!-- Decorative stars (animated SVG) -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 4px;">
+          <tr>
+            <td style="padding-right:18px;vertical-align:middle;">
+              <svg class="star-a" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2.09 6.26L20 10l-5.91 3.74L12 22l-2.09-8.26L4 10l5.91-1.74z"
+                      fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/>
+              </svg>
+            </td>
+            <td>
+              <img class="logo-img"
+                   src="https://i.ibb.co/zWdy2ZdD/IMG-20250724-033823-966.jpg"
+                   alt="TingleTap" width="88" height="88"
+                   style="width:88px;height:88px;border-radius:20px;display:block;
+                          border:2.5px solid rgba(167,139,250,.35);
+                          box-shadow:0 8px 32px rgba(139,92,246,.22),0 2px 8px rgba(139,92,246,.12);">
+            </td>
+            <td style="padding-left:18px;vertical-align:middle;">
+              <svg class="star-b" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2.09 6.26L20 10l-5.91 3.74L12 22l-2.09-8.26L4 10l5.91-1.74z"
+                      fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/>
+              </svg>
+            </td>
+          </tr>
+        </table>
 
-          <br>
-          <!-- Brand name -->
-          <span class="shimmer-text"
-                style="font-size:32px;font-weight:800;letter-spacing:1px;
-                       background:linear-gradient(90deg,#9333ea,#c084fc,#e9d5ff,#c084fc,#9333ea);
-                       background-size:200% auto;
-                       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                       background-clip:text;display:block;margin-top:14px;">
-            TingleTap
-          </span>
-          <span style="color:rgba(216,180,254,0.7);font-size:13px;letter-spacing:3px;
-                       text-transform:uppercase;font-weight:600;display:block;margin-top:6px;">
-            Email Verification
-          </span>
-        </td>
-      </tr>
+        <div class="brand-name"
+             style="font-size:30px;font-weight:800;letter-spacing:.5px;margin:14px 0 4px;
+                    background:linear-gradient(135deg,#6d28d9,#9333ea,#c084fc);
+                    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                    background-clip:text;">TingleTap</div>
+        <div style="color:#9b7ec8;font-size:12px;letter-spacing:3.5px;
+                    text-transform:uppercase;font-weight:600;">Email Verification</div>
+      </td>
+    </tr>
 
-      <!--  Divider  -->
-      <tr>
-        <td style="padding:0 40px;">
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.4),transparent);"></div>
-        </td>
-      </tr>
+    <!-- Divider -->
+    <tr><td style="padding:0 32px;">
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.3),transparent);"></div>
+    </td></tr>
 
-      <!--  Body  -->
-      <tr>
-        <td style="padding:36px 44px 32px;">
+    <!-- Body -->
+    <tr>
+      <td class="body-td" style="padding:36px 40px 32px;">
 
-          <!-- Mail icon -->
-          <div align="center" style="margin-bottom:24px;">
-            <div style="display:inline-block;background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(192,132,252,0.15));
-                        border:1.5px solid rgba(192,132,252,0.35);border-radius:20px;padding:18px 22px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none">
+        <!-- Mail icon (animated SVG) -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px;">
+          <tr><td align="center">
+            <div style="display:inline-block;position:relative;
+                        background:linear-gradient(135deg,#f5f0ff,#ede8ff);
+                        border:1.5px solid rgba(167,139,250,.3);
+                        border-radius:18px;padding:20px 24px;">
+              <!-- Ping ripple behind icon -->
+              <div class="ping-dot"
+                   style="position:absolute;inset:0;border-radius:18px;
+                          border:2px solid rgba(167,139,250,.4);"></div>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <linearGradient id="mg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#a855f7"/>
-                    <stop offset="100%" stop-color="#e879f9"/>
+                  <linearGradient id="mg1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#7c3aed"/>
+                    <stop offset="1" stop-color="#c084fc"/>
+                  </linearGradient>
+                  <linearGradient id="mg2" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#9333ea"/>
+                    <stop offset="1" stop-color="#e879f9"/>
                   </linearGradient>
                 </defs>
-                <rect x="2" y="4" width="20" height="16" rx="3" fill="url(#mg)" opacity="0.9"/>
-                <path d="M2 8l10 7 10-7" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <!-- Envelope body -->
+                <rect x="4" y="12" width="40" height="28" rx="5" fill="url(#mg1)" opacity=".15"/>
+                <rect x="4" y="12" width="40" height="28" rx="5" stroke="url(#mg1)" stroke-width="2.2" fill="none"/>
+                <!-- Envelope flap (animated lid) -->
+                <path d="M4 17l20 14 20-14" stroke="url(#mg2)" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"
+                      stroke-dasharray="60" stroke-dashoffset="60"
+                      style="animation:dash-draw 1s ease .3s forwards;"/>
+                <!-- Letter lines inside -->
+                <line x1="14" y1="28" x2="22" y2="28" stroke="#c084fc" stroke-width="1.8"
+                      stroke-linecap="round" opacity=".6"
+                      stroke-dasharray="8" stroke-dashoffset="8"
+                      style="animation:dash-draw .5s ease 1s forwards;"/>
+                <line x1="14" y1="32" x2="20" y2="32" stroke="#c084fc" stroke-width="1.8"
+                      stroke-linecap="round" opacity=".4"
+                      stroke-dasharray="6" stroke-dashoffset="6"
+                      style="animation:dash-draw .4s ease 1.2s forwards;"/>
+                <!-- Verified badge -->
+                <circle cx="38" cy="12" r="8" fill="#22c55e"/>
+                <path d="M34.5 12l2.5 2.5 4-4" stroke="white" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
+          </td></tr>
+        </table>
+
+        <!-- Heading -->
+        <h2 class="h2"
+            style="color:#2e1065;font-size:24px;font-weight:800;text-align:center;
+                   margin:0 0 14px;letter-spacing:.2px;line-height:1.3;">
+          Verify Your Email Address
+        </h2>
+        <p style="color:#6b48a0;font-size:15px;text-align:center;margin:0 0 32px;line-height:1.7;">
+          Hello <strong style="color:#7c3aed;">{{user_name}}</strong>, welcome to
+          <strong style="color:#9333ea;">TingleTap</strong>!<br>
+          Use the one-time code below to complete your sign-up.
+        </p>
+
+        <!-- OTP display -->
+        <div style="background:linear-gradient(135deg,#faf7ff,#f3eeff);
+                    border:1.5px solid rgba(167,139,250,.28);border-radius:20px;
+                    padding:28px 24px;text-align:center;margin-bottom:8px;">
+
+          <div style="color:#9b7ec8;font-size:11px;font-weight:700;
+                      letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;">
+            One-Time Password
           </div>
 
-          <!-- Greeting -->
-          <h2 style="color:#f3e8ff;font-size:26px;font-weight:800;text-align:center;
-                     margin:0 0 12px;letter-spacing:0.3px;">
-            Verify Your Email ✨
-          </h2>
-          <p style="color:rgba(233,213,255,0.8);font-size:16px;text-align:center;margin:0 0 28px;line-height:1.6;">
-            Hello <strong style="color:#e9d5ff;">{{user_name}}</strong>, welcome to
-            <strong style="color:#c084fc;">TingleTap</strong>! 👋<br>
-            Use the code below to complete your registration.
-          </p>
+          <!-- 6 individual digit cells -->
+          <table class="otp-wrap" cellpadding="0" cellspacing="0" border="0"
+                 style="margin:0 auto;border-collapse:separate;border-spacing:10px 0;">
+            <tr>
+              <!-- We render the whole code as one styled block for EmailJS compatibility -->
+              <td>
+                <div class="otp-cell"
+                     style="background:#ffffff;
+                            border:2px solid rgba(139,92,246,.35);border-radius:14px;
+                            padding:14px 28px;
+                            font-size:36px;font-weight:900;letter-spacing:14px;
+                            color:#4c1d95;font-family:'Courier New',monospace;
+                            box-shadow:0 4px 16px rgba(139,92,246,.12);
+                            padding-right:14px;">
+                  {{otp_code}}
+                </div>
+              </td>
+            </tr>
+          </table>
 
-          <!-- OTP Box -->
-          <div align="center" style="margin:32px 0;">
-            <div class="otp-box"
-                 style="display:inline-block;
-                        background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(168,85,247,0.2));
-                        border:2.5px solid rgba(192,132,252,0.6);
-                        border-radius:20px;padding:22px 44px;
-                        box-shadow:0 0 24px rgba(168,85,247,0.5),0 0 48px rgba(168,85,247,0.25);
-                        position:relative;">
+          <!-- Timer row -->
+          <table cellpadding="0" cellspacing="0" border="0" style="margin:20px auto 0;">
+            <tr>
+              <td style="padding-right:8px;vertical-align:middle;">
+                <!-- Animated clock SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="#ef4444" stroke-width="2" fill="rgba(239,68,68,.08)"/>
+                  <line class="tick-hand" x1="12" y1="12" x2="12" y2="6"
+                        stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="12" y1="12" x2="15.5" y2="12"
+                        stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </td>
+              <td style="font-size:13px;color:#ef4444;font-weight:700;vertical-align:middle;">
+                Expires in 10 minutes
+              </td>
+            </tr>
+          </table>
+        </div>
 
-              <!-- Sparkle corners -->
-              <span class="star3" style="position:absolute;top:-10px;left:-10px;font-size:16px;color:#c084fc;">✦</span>
-              <span class="star1" style="position:absolute;top:-10px;right:-10px;font-size:16px;color:#c084fc;">✦</span>
+        <p style="color:#9b7ec8;font-size:13px;text-align:center;margin:20px 0 0;line-height:1.6;">
+          Enter this code on the sign-up page to verify your email.<br>
+          If you did not request this, you can safely ignore this email.
+        </p>
 
-              <div style="color:rgba(216,180,254,0.7);font-size:11px;font-weight:700;
-                          letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;">
-                Your Code
-              </div>
-              <div style="font-size:44px;font-weight:900;letter-spacing:12px;
-                          color:#ffffff;font-family:'Courier New',monospace;
-                          text-shadow:0 0 20px rgba(192,132,252,0.8),0 0 40px rgba(168,85,247,0.5);
-                          padding-right:12px;">
-                {{otp_code}}
-              </div>
+        <!-- Divider -->
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.25),transparent);
+                    margin:32px 0 28px;"></div>
+
+        <!-- Signature with animated SVG heart -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;text-align:center;">
+          <tr><td align="center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:block;margin:0 auto 10px;">
+              <path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z"
+                    fill="#f9a8d4" stroke="#ec4899" stroke-width="1.5"
+                    style="animation:otp-glow 2s ease-in-out infinite;"/>
+            </svg>
+            <div style="color:#9b7ec8;font-size:13px;line-height:1.8;">
+              Warm regards,<br>
+              <strong style="color:#7c3aed;font-size:15px;">{{from_name}} — {{app_name}}</strong>
             </div>
-          </div>
+          </td></tr>
+        </table>
 
-          <!-- Timer -->
-          <div align="center" style="margin:20px 0;">
-            <span style="display:inline-flex;align-items:center;gap:8px;
-                         background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);
-                         border-radius:100px;padding:8px 18px;
-                         color:#fca5a5;font-size:13px;font-weight:600;">
-              ⏳ &nbsp;Expires in <strong>10 minutes</strong>
-            </span>
-          </div>
+      </td>
+    </tr>
 
-          <p style="color:rgba(216,180,254,0.65);font-size:14px;text-align:center;
-                    margin:20px 0 0;line-height:1.6;">
-            Enter this code on the sign-up page to verify your email address.<br>
-            If you didn't request this, you can safely ignore this email.
-          </p>
+    <!-- Footer -->
+    <tr><td style="padding:0 32px;">
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.2),transparent);"></div>
+    </td></tr>
+    <tr>
+      <td align="center" style="padding:20px 32px 32px;">
+        <p style="color:#b8a4d8;font-size:12px;margin:0 0 4px;">
+          Sent to <strong>{{user_email}}</strong>
+        </p>
+        <p style="color:#c4b5e0;font-size:11px;margin:0;">
+          &copy; 2025 TingleTap. All rights reserved.
+        </p>
+        <!-- Dot row -->
+        <div style="margin-top:14px;">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc;margin:0 3px;opacity:.5;"></span>
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a855f7;margin:0 3px;opacity:.7;"></span>
+          <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#9333ea;margin:0 3px;"></span>
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a855f7;margin:0 3px;opacity:.7;"></span>
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc;margin:0 3px;opacity:.5;"></span>
+        </div>
+      </td>
+    </tr>
 
-          <!-- Divider -->
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.3),transparent);
-                      margin:32px 0 28px;"></div>
+    <!-- Bottom shimmer bar -->
+    <tr>
+      <td style="height:5px;border-radius:0 0 24px 24px;overflow:hidden;">
+        <div class="shimmer" style="height:5px;
+          background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
+          background-size:400% 100%;"></div>
+      </td>
+    </tr>
 
-          <!-- Signature -->
-          <p style="color:rgba(216,180,254,0.5);font-size:14px;text-align:center;margin:0;line-height:1.8;">
-            With love &amp; sparkles ✨<br>
-            <strong style="color:#c084fc;font-size:16px;">{{from_name}} — {{app_name}}</strong>
-          </p>
-        </td>
-      </tr>
+  </table>
+  <!-- /Card -->
 
-      <!--  Footer  -->
-      <tr>
-        <td style="padding:0 40px;">
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.25),transparent);"></div>
-        </td>
-      </tr>
-      <tr>
-        <td align="center" style="padding:24px 40px 36px;">
-          <p style="color:rgba(192,132,252,0.45);font-size:12px;margin:0 0 6px;line-height:1.7;">
-            This email was sent to <strong style="color:rgba(192,132,252,0.7);">{{user_email}}</strong>
-          </p>
-          <p style="color:rgba(192,132,252,0.35);font-size:11px;margin:0;">
-            &copy; 2025 TingleTap. All rights reserved.
-          </p>
-          <!-- Bottom accent dots -->
-          <div style="margin-top:16px;">
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#7c3aed;margin:0 3px;opacity:0.6;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#a855f7;margin:0 3px;opacity:0.8;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#c084fc;margin:0 3px;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#a855f7;margin:0 3px;opacity:0.8;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#7c3aed;margin:0 3px;opacity:0.6;"></span>
-          </div>
-        </td>
-      </tr>
-
-      <!--  Bottom accent bar  -->
-      <tr>
-        <td style="height:4px;border-radius:0 0 28px 28px;
-                   background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
-                   background-size:300% 100%;">
-        </td>
-      </tr>
-
-    </table>
-    <!--  /Card  -->
-
-  </td></tr>
+</td></tr>
 </table>
-
 </body>
 </html>
