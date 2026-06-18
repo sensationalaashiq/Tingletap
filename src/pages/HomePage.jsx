@@ -3308,8 +3308,22 @@ const HomePage = ({ user }) => {
         try {
             const reporter = { 
                 uid: auth.currentUser.uid, 
-                name: auth.currentUser.displayName || 'Anonymous'
+                name: auth.currentUser.displayName || loggedInUserProfile?.displayName || 'Anonymous'
             };
+
+            // Capture IP and Device ID of reported user for admin panel
+            let reportedUserIp = null;
+            let reportedUserDeviceId = null;
+            let reportedUserDeviceInfo = null;
+            try {
+                const reportedSnap = await getDoc(doc(db, 'users', messageToReport.uid));
+                if (reportedSnap.exists()) {
+                    const rd = reportedSnap.data();
+                    reportedUserIp = rd.lastIP || rd.ipAddress || rd.lastIp || null;
+                    reportedUserDeviceId = rd.lastDeviceId || rd.deviceId || null;
+                    reportedUserDeviceInfo = rd.lastDeviceInfo || null;
+                }
+            } catch {}
             
             const report = {
                 reportType: reportData.reportType || 'Message',
@@ -3320,7 +3334,12 @@ const HomePage = ({ user }) => {
                 reason: reportData.reason || '',
                 reportedUser: { 
                     uid: messageToReport.uid, 
-                    name: messageToReport.displayName || 'Anonymous'
+                    name: messageToReport.displayName || 'Anonymous',
+                    displayName: messageToReport.displayName || 'Anonymous',
+                    ipAddress: reportedUserIp,
+                    deviceId: reportedUserDeviceId,
+                    deviceInfo: reportedUserDeviceInfo,
+                    isGuest: messageToReport.role === 'guest' || messageToReport.isGuest || false
                 },
                 reportedBy: reporter,
                 timestamp: serverTimestamp(),

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { Badges } from '../data/Badges';
-import { auth, db } from '../firebase/config';
+import { auth, db, rtdb } from '../firebase/config';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { ref, remove } from 'firebase/database';
 import {
   signOut, updateProfile, updatePassword,
   deleteUser, EmailAuthProvider, reauthenticateWithCredential
@@ -438,8 +439,21 @@ const WelcomeDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      if (user) await signOut(auth);
-      else { localStorage.removeItem('guestUser'); localStorage.removeItem('isGuest'); }
+      const cu = auth.currentUser;
+      if (cu?.isAnonymous) {
+        // Guest — wipe all their Firebase data before leaving
+        const uid = cu.uid;
+        try { remove(ref(rtdb, `status/${uid}`)); } catch {}
+        try { await deleteDoc(doc(db, 'users', uid)); } catch {}
+        try { await deleteUser(cu); } catch {}
+        localStorage.removeItem('guestUser');
+        localStorage.removeItem('isGuest');
+      } else if (cu) {
+        await signOut(auth);
+      } else {
+        localStorage.removeItem('guestUser');
+        localStorage.removeItem('isGuest');
+      }
       toast.success('Logged out successfully!');
       navigate('/');
     } catch { toast.error('Failed to logout'); }

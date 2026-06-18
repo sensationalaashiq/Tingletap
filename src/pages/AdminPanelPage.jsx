@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -94,6 +94,18 @@ const AdminPanelPage = () => {
   const [showChangePwdModal, setShowChangePwdModal] = useState(false);
   const [changePwdTarget, setChangePwdTarget] = useState(null);
   const [changePwdLoading, setChangePwdLoading] = useState(false);
+
+  // Change Email modal (Owner only)
+  const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
+  const [changeEmailTarget, setChangeEmailTarget] = useState(null);
+  const [changeEmailValue, setChangeEmailValue] = useState('');
+  const [changeEmailLoading, setChangeEmailLoading] = useState(false);
+
+  // Change Username modal (Owner only — no time-limit restrictions)
+  const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
+  const [changeUsernameTarget, setChangeUsernameTarget] = useState(null);
+  const [changeUsernameValue, setChangeUsernameValue] = useState('');
+  const [changeUsernameLoading, setChangeUsernameLoading] = useState(false);
 
   // IP Geolocation cache
   const [ipGeoCache, setIpGeoCache] = useState({});
@@ -408,6 +420,52 @@ const AdminPanelPage = () => {
     }
   };
 
+  // ---- Owner: change user email (Firestore) ----
+  const handleChangeEmail = async () => {
+    if (!changeEmailTarget || !changeEmailValue.trim()) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(changeEmailValue.trim())) { toast.error('Invalid email address'); return; }
+    setChangeEmailLoading(true);
+    try {
+      const userRef = doc(db, 'users', changeEmailTarget.uid || changeEmailTarget.id);
+      await updateDoc(userRef, {
+        email: changeEmailValue.trim().toLowerCase(),
+        emailChangedAt: new Date().toISOString(),
+        emailChangedBy: currentUserProfile?.displayName || 'Owner'
+      });
+      toast.success(`Email updated to "${changeEmailValue.trim()}" for ${changeEmailTarget.displayName}`);
+      setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue('');
+    } catch (err) { toast.error('Failed to update email: ' + err.message); }
+    finally { setChangeEmailLoading(false); }
+  };
+
+  // ---- Owner: change username (Firestore + usernames collection) ----
+  const handleChangeUsername = async () => {
+    if (!changeUsernameTarget || !changeUsernameValue.trim()) return;
+    const newName = changeUsernameValue.trim();
+    if (newName.length < 3 || newName.length > 30) { toast.error('Username must be 3–30 characters'); return; }
+    if (/[^a-zA-Z0-9_. ]/.test(newName)) { toast.error('Only letters, numbers, spaces, underscores and dots allowed'); return; }
+    setChangeUsernameLoading(true);
+    try {
+      const uid = changeUsernameTarget.uid || changeUsernameTarget.id;
+      const oldName = changeUsernameTarget.username || changeUsernameTarget.displayName;
+      if (oldName) {
+        try { await deleteDoc(doc(db, 'usernames', oldName.toLowerCase())); } catch {}
+      }
+      await setDoc(doc(db, 'usernames', newName.toLowerCase()), {
+        uid, email: changeUsernameTarget.email || null, createdAt: new Date().toISOString()
+      });
+      await updateDoc(doc(db, 'users', uid), {
+        displayName: newName, username: newName,
+        usernameChangedAt: new Date().toISOString(),
+        usernameChangedBy: currentUserProfile?.displayName || 'Owner'
+      });
+      toast.success(`Username updated to "${newName}" for ${changeUsernameTarget.displayName}`);
+      setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue('');
+    } catch (err) { toast.error('Failed to update username: ' + err.message); }
+    finally { setChangeUsernameLoading(false); }
+  };
+
   const handleAssignBadge = (targetUser) => {
     const myRole = currentUserProfile?.role;
     if (!['owner', 'admin'].includes(myRole)) {
@@ -486,6 +544,25 @@ const AdminPanelPage = () => {
         } else {
           toast.warning('User is not in any room right now.');
         }
+      } else if (action === 'ip_ban') {
+        const ip = reportData.reportedUser?.ipAddress;
+        if (ip) {
+          await IPBanSystem.banIP(ip, { reason: `Reported: ${reportData.category || 'Violation'}`, bannedBy: currentUserProfile?.displayName || 'Admin', reportId });
+          await updateDoc(reportRef, { status: 'action_taken', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+          toast.success(`IP ${ip} has been banned.`);
+        } else toast.error('No IP address captured for this report.');
+      } else if (action === 'device_ban') {
+        const deviceId = reportData.reportedUser?.deviceId;
+        const uid = reportData.reportedUser?.uid;
+        if (deviceId && uid) {
+          await DeviceBanSystem.banDevice(deviceId, { reason: `Reported: ${reportData.category || 'Violation'}`, bannedBy: currentUserProfile?.displayName || 'Admin', uid });
+          await updateDoc(doc(db, 'users', uid), {
+            isDeviceBanned: true,
+            deviceBanInfo: { bannedAt: new Date().toISOString(), bannedBy: currentUserProfile?.displayName || 'Admin', deviceId }
+          });
+          await updateDoc(reportRef, { status: 'action_taken', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
+          toast.success(`Device ID …${deviceId.slice(-8)} banned.`);
+        } else toast.error('No device ID captured for this report.');
       } else if (action === 'appeal_accept') {
         const uid = reportData.reportedUser?.uid || reportData.uid;
         if (uid) {
@@ -1445,17 +1522,41 @@ const AdminPanelPage = () => {
                                 )}
 
                                 {currentUserProfile?.role === 'owner' && user.uid !== currentUserProfile?.uid && (
-                                  <button
-                                    className="luxury-action-btn"
-                                    style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}
-                                    onClick={() => { setChangePwdTarget(user); setShowChangePwdModal(true); }}
-                                    title="Change Password"
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
-                                      <path fill="#ffffff" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z"/>
-                                    </svg>
-                                    <span>Chg Pwd</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      className="luxury-action-btn"
+                                      style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}
+                                      onClick={() => { setChangePwdTarget(user); setShowChangePwdModal(true); }}
+                                      title="Change Password"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                        <path fill="#ffffff" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z"/>
+                                      </svg>
+                                      <span>Chg Pwd</span>
+                                    </button>
+                                    <button
+                                      className="luxury-action-btn"
+                                      style={{ background: 'linear-gradient(135deg,#059669,#34d399)' }}
+                                      onClick={() => { setChangeEmailTarget(user); setChangeEmailValue(user.email || ''); setShowChangeEmailModal(true); }}
+                                      title="Change Email"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                        <path fill="#ffffff" d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
+                                      </svg>
+                                      <span>Chg Email</span>
+                                    </button>
+                                    <button
+                                      className="luxury-action-btn"
+                                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}
+                                      onClick={() => { setChangeUsernameTarget(user); setChangeUsernameValue(user.displayName || user.username || ''); setShowChangeUsernameModal(true); }}
+                                      title="Change Username"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                        <path fill="#ffffff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+                                      </svg>
+                                      <span>Chg Name</span>
+                                    </button>
+                                  </>
                                 )}
 
                                 <button 
@@ -1924,10 +2025,49 @@ const AdminPanelPage = () => {
                                 </svg>
                                 <div>
                                   <span className="rpt-party-label">Reported User</span>
-                                  <span className="rpt-party-name">{r.reportedUser?.name || r.reportedUser?.displayName || '—'}</span>
+                                  <span className="rpt-party-name">
+                                    {r.reportedUser?.name || r.reportedUser?.displayName || '—'}
+                                    {r.reportedUser?.isGuest && (
+                                      <span style={{marginLeft:5,background:'rgba(139,92,246,.15)',color:'#7c3aed',border:'1px solid rgba(139,92,246,.3)',borderRadius:4,fontSize:9,fontWeight:700,padding:'1px 5px',verticalAlign:'middle'}}>GUEST</span>
+                                    )}
+                                  </span>
                                 </div>
                               </div>
                             </div>
+
+                            {/* Forensic data — IP + Device ID */}
+                            {(r.reportedUser?.ipAddress || r.reportedUser?.deviceId) && (
+                              <div style={{display:'flex',flexWrap:'wrap',gap:8,margin:'10px 0',padding:'10px 14px',background:'linear-gradient(135deg,rgba(239,68,68,.05),rgba(220,38,38,.08))',border:'1px solid rgba(239,68,68,.18)',borderRadius:10}}>
+                                {r.reportedUser?.ipAddress && (
+                                  <div style={{display:'flex',alignItems:'center',gap:6,minWidth:0}}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                      <defs><linearGradient id={`ipg-${r.id}`} x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="#ef4444"/><stop offset="1" stopColor="#dc2626"/></linearGradient></defs>
+                                      <path fill={`url(#ipg-${r.id})`} d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,7H13V13H11V7M11,15H13V17H11V15Z"/>
+                                    </svg>
+                                    <span style={{fontSize:10,fontWeight:700,color:'#b91c1c',letterSpacing:.3}}>IP:</span>
+                                    <code style={{fontSize:11,fontWeight:700,color:'#dc2626',fontFamily:'monospace',background:'rgba(239,68,68,.1)',padding:'1px 6px',borderRadius:4}}>{r.reportedUser.ipAddress}</code>
+                                    <button title="Copy IP" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.ipAddress); toast.info('IP copied');}}
+                                      style={{background:'none',border:'none',cursor:'pointer',padding:'2px',color:'#9ca3af',display:'flex'}}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11}}><path fill="#9ca3af" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>
+                                    </button>
+                                  </div>
+                                )}
+                                {r.reportedUser?.deviceId && (
+                                  <div style={{display:'flex',alignItems:'center',gap:6,minWidth:0}}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                      <defs><linearGradient id={`dvg-${r.id}`} x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="#7c3aed"/><stop offset="1" stopColor="#6d28d9"/></linearGradient></defs>
+                                      <path fill={`url(#dvg-${r.id})`} d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/>
+                                    </svg>
+                                    <span style={{fontSize:10,fontWeight:700,color:'#5b21b6',letterSpacing:.3}}>Device:</span>
+                                    <code style={{fontSize:11,fontWeight:700,color:'#7c3aed',fontFamily:'monospace',background:'rgba(139,92,246,.1)',padding:'1px 6px',borderRadius:4,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={r.reportedUser.deviceId}>…{r.reportedUser.deviceId.slice(-12)}</code>
+                                    <button title="Copy Device ID" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.deviceId); toast.info('Device ID copied');}}
+                                      style={{background:'none',border:'none',cursor:'pointer',padding:'2px',color:'#9ca3af',display:'flex'}}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11}}><path fill="#9ca3af" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {r.messageText && (
                               <div className="rpt-msg-box">
@@ -1974,6 +2114,24 @@ const AdminPanelPage = () => {
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M16.5,12C16.78,12 17,12.22 17,12.5V13.5C17,13.78 16.78,14 16.5,14H15.5C15.22,14 15,13.78 15,13.5V12.5C15,12.22 15.22,12 15.5,12H16.5Z"/></svg>
                                   {load('mute') ? '…' : 'Mute'}
                                 </button>
+                                {r.reportedUser?.ipAddress && (
+                                  <button className="rpt-btn" disabled={load('ip_ban')} onClick={() => handleReportAction(r.id, 'ip_ban', r)}
+                                    style={{background:'linear-gradient(135deg,#dc2626,#b91c1c)',color:'#fff',border:'none'}}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                                      <path fill="#fff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,7H13V13H11V7M11,15H13V17H11V15Z"/>
+                                    </svg>
+                                    {load('ip_ban') ? '…' : 'IP Ban'}
+                                  </button>
+                                )}
+                                {r.reportedUser?.deviceId && (
+                                  <button className="rpt-btn" disabled={load('device_ban')} onClick={() => handleReportAction(r.id, 'device_ban', r)}
+                                    style={{background:'linear-gradient(135deg,#7c3aed,#5b21b6)',color:'#fff',border:'none'}}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                                      <path fill="#fff" d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/>
+                                    </svg>
+                                    {load('device_ban') ? '…' : 'Dev Ban'}
+                                  </button>
+                                )}
                                 {r.status === 'pending' && (
                                   <>
                                     <button className="rpt-btn rpt-btn--green" disabled={load('resolve')} onClick={() => handleReportAction(r.id, 'resolve', r)}>
@@ -2775,6 +2933,105 @@ const AdminPanelPage = () => {
                   style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#0369a1,#38bdf8)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changePwdLoading ? 'not-allowed' : 'pointer', opacity: changePwdLoading ? 0.7 : 1 }}
                 >
                   {changePwdLoading ? 'Sending...' : '📧 Send Reset Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Email Modal (Owner only) */}
+      {showChangeEmailModal && changeEmailTarget && (
+        <div className="luxury-modal-overlay" onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}>
+          <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            <div className="luxury-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#059669,#34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
+                    <path fill="#ffffff" d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Email</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#059669' }}>
+                    User: <strong>{changeEmailTarget.displayName}</strong>
+                  </p>
+                </div>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#065f46', lineHeight: 1.6 }}>
+                This updates the email stored in the user's profile. Their Firebase Auth login email remains unchanged.
+              </div>
+              <input
+                type="email"
+                value={changeEmailValue}
+                onChange={e => setChangeEmailValue(e.target.value)}
+                placeholder="Enter new email address"
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1.5px solid #d1fae5', fontSize: 13, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
+              />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}
+                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button onClick={handleChangeEmail} disabled={changeEmailLoading || !changeEmailValue.trim()}
+                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#059669,#34d399)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeEmailLoading ? 'not-allowed' : 'pointer', opacity: changeEmailLoading ? 0.7 : 1 }}>
+                  {changeEmailLoading ? 'Saving…' : '✉️ Update Email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Username Modal (Owner only, no time-limit) */}
+      {showChangeUsernameModal && changeUsernameTarget && (
+        <div className="luxury-modal-overlay" onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}>
+          <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            <div className="luxury-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
+                    <path fill="#ffffff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Username</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#7c3aed' }}>
+                    User: <strong>{changeUsernameTarget.displayName}</strong>
+                  </p>
+                </div>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.18)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#4c1d95', lineHeight: 1.6 }}>
+                Owner override — no 90-day cooldown applies. Old username will be freed and reassignable.
+              </div>
+              <input
+                type="text"
+                value={changeUsernameValue}
+                onChange={e => setChangeUsernameValue(e.target.value)}
+                placeholder="Enter new username (3–30 chars)"
+                maxLength={30}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1.5px solid #ede9fe', fontSize: 13, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                onKeyDown={e => e.key === 'Enter' && handleChangeUsername()}
+              />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}
+                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button onClick={handleChangeUsername} disabled={changeUsernameLoading || !changeUsernameValue.trim()}
+                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeUsernameLoading ? 'not-allowed' : 'pointer', opacity: changeUsernameLoading ? 0.7 : 1 }}>
+                  {changeUsernameLoading ? 'Saving…' : '✏️ Update Username'}
                 </button>
               </div>
             </div>
