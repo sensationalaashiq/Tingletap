@@ -1318,10 +1318,11 @@ const HomePage = ({ user }) => {
                 if (!docSnap.exists()) {
                     const defaultUserData = {
                         uid: user.uid,
-                        displayName: user.displayName || 'Anonymous',
+                        displayName: user.displayName
+                            || (user.isAnonymous ? (localStorage.getItem('guestUser') ? (JSON.parse(localStorage.getItem('guestUser')).displayName || 'Guest') : 'Guest') : 'Anonymous'),
                         email: user.email,
                         photoURL: user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`,
-                        role: 'user',
+                        role: user.isAnonymous ? 'guest' : 'user',
                         gender: 'male',
                         country: 'Unknown',
                         status: "I'm new here!",
@@ -2757,9 +2758,12 @@ const HomePage = ({ user }) => {
             }
         } else if (auth.currentUser) {
             uid = auth.currentUser.uid;
-            displayName = auth.currentUser.displayName || 'Anonymous';
+            // For anonymous (guest) Firebase users displayName is null — fall back to profile
+            displayName = auth.currentUser.displayName
+                || loggedInUserProfile?.displayName
+                || (auth.currentUser.isAnonymous ? 'Guest' : 'Anonymous');
             email = auth.currentUser.email;
-            photoURL = auth.currentUser.photoURL;
+            photoURL = auth.currentUser.photoURL || loggedInUserProfile?.photoURL;
             gender = loggedInUserProfile?.gender || 'male';
             role = loggedInUserProfile?.role || 'user';
         } else {

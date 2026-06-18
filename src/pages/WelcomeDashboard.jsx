@@ -416,6 +416,14 @@ const WelcomeDashboard = () => {
             setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
             setUserRole(d.role || 'registered');
             setUserBadge(d.badge || null);
+            // Guest users sign in anonymously so auth.currentUser is set but has no displayName.
+            // Load their chosen name/gender from localStorage when Firestore marks them as guest.
+            if (d.role === 'guest') {
+              const gd = localStorage.getItem('guestUser');
+              if (gd) {
+                try { setGuestUser(JSON.parse(gd)); } catch { /* ignore */ }
+              }
+            }
           }
         } catch { setCurrentDate(''); }
       })();
@@ -505,29 +513,56 @@ const WelcomeDashboard = () => {
             label: 'Purush',
             cls: 'wd-role--guest-male',
             icon: (
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
-                <circle cx="10" cy="7" r="4.5" stroke="#3b82f6" strokeWidth="1.8"/>
-                <path d="M5 18c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round"/>
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs>
+                  <linearGradient id="rc-purush" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6"/>
+                    <stop offset="100%" stopColor="#1d4ed8"/>
+                  </linearGradient>
+                </defs>
+                {/* Male symbol: circle + arrow pointing top-right */}
+                <circle cx="8.5" cy="10.5" r="4.5" stroke="url(#rc-purush)" strokeWidth="1.7" fill="rgba(59,130,246,0.1)"/>
+                <line x1="12" y1="7" x2="17" y2="2" stroke="url(#rc-purush)" strokeWidth="1.7" strokeLinecap="round"/>
+                <polyline points="13,2 17,2 17,6" stroke="url(#rc-purush)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             )
           };
           if (gender === 'female') return {
-            label: 'Mahila',
+            label: 'Stree',
             cls: 'wd-role--guest-female',
             icon: (
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
-                <circle cx="10" cy="7" r="4.5" stroke="#ec4899" strokeWidth="1.8"/>
-                <path d="M10 12v6M7.5 16h5" stroke="#ec4899" strokeWidth="1.8" strokeLinecap="round"/>
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs>
+                  <linearGradient id="rc-stree" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f472b6"/>
+                    <stop offset="100%" stopColor="#db2777"/>
+                  </linearGradient>
+                </defs>
+                {/* Female symbol: circle + cross below */}
+                <circle cx="10" cy="7.5" r="4.5" stroke="url(#rc-stree)" strokeWidth="1.7" fill="rgba(244,114,182,0.1)"/>
+                <line x1="10" y1="12" x2="10" y2="18" stroke="url(#rc-stree)" strokeWidth="1.7" strokeLinecap="round"/>
+                <line x1="7" y1="15.5" x2="13" y2="15.5" stroke="url(#rc-stree)" strokeWidth="1.7" strokeLinecap="round"/>
               </svg>
             )
           };
-          if (gender === 'transgender') return {
-            label: 'Purush/Mahila',
-            cls: 'wd-role--guest-transgender',
+          if (gender === 'transgender' || gender === 'other') return {
+            label: 'Navrang',
+            cls: 'wd-role--guest-navrang',
             icon: (
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true">
-                <circle cx="9" cy="8" r="3.8" stroke="#8b5cf6" strokeWidth="1.8"/>
-                <path d="M9 13v5M6.5 16h5M13 3l3-3M16 3h-3M16 3v3" stroke="#8b5cf6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs>
+                  <linearGradient id="rc-navrang" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#a855f7"/>
+                    <stop offset="50%" stopColor="#ec4899"/>
+                    <stop offset="100%" stopColor="#3b82f6"/>
+                  </linearGradient>
+                </defs>
+                {/* Transgender symbol: circle + male arrow top-right + female cross below */}
+                <circle cx="9" cy="9" r="3.8" stroke="url(#rc-navrang)" strokeWidth="1.7" fill="rgba(168,85,247,0.1)"/>
+                <line x1="11.7" y1="6.3" x2="16" y2="2" stroke="url(#rc-navrang)" strokeWidth="1.7" strokeLinecap="round"/>
+                <polyline points="13,2 16,2 16,5" stroke="url(#rc-navrang)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <line x1="9" y1="12.8" x2="9" y2="17.5" stroke="url(#rc-navrang)" strokeWidth="1.7" strokeLinecap="round"/>
+                <line x1="6.5" y1="15.5" x2="11.5" y2="15.5" stroke="url(#rc-navrang)" strokeWidth="1.7" strokeLinecap="round"/>
               </svg>
             )
           };
