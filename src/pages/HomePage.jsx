@@ -804,7 +804,34 @@ const HomePage = ({ user }) => {
     const [newMessage, setNewMessage] = useState('');
     const [roomName, setRoomName] = useState('');
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const [loggedInUserProfile, setLoggedInUserProfile] = useState(null);
+    const [loggedInUserProfile, setLoggedInUserProfile] = useState(() => {
+        // Synchronous lazy init — guests get their profile immediately on first render
+        // so Sidebar / SettingsSidebar never show "Guest" fallbacks
+        try {
+            if (localStorage.getItem('isGuest') !== 'true') return null;
+            const raw = localStorage.getItem('guestUser');
+            if (!raw) return null;
+            const g = JSON.parse(raw);
+            return {
+                ...g,
+                uid: g.uid,
+                displayName: g.displayName || g.username || 'Guest',
+                email: null,
+                photoURL: g.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${g.uid}&sex=${(g.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+                role: 'guest',
+                isGuest: true,
+                isAnonymous: true,
+                gender: g.gender || 'male',
+                age: g.age || 18,
+                badge: null,
+                isBanned: false,
+                isMuted: false,
+                mutedInfo: { isMuted: false },
+                settings: { allowPrivateMessagesLevel: 'guests', darkMode: false },
+                fontPreferences: { fontSize: '14px', fontColor: '#333333', fontFamily: 'inherit', isBold: false, isItalic: false, isUnderline: false, isStrikethrough: false }
+            };
+        } catch { return null; }
+    });
     const chatFeedRef = useRef(null);
     const textareaRef = useRef(null);
     const fontPopupRef = useRef(null);

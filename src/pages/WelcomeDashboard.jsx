@@ -375,19 +375,39 @@ const uploadToImgBB = async (blob) => {
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
+/* ── helper: read guest data from localStorage synchronously ── */
+const readGuestFromStorage = () => {
+  try {
+    if (localStorage.getItem('isGuest') !== 'true') return null;
+    const raw = localStorage.getItem('guestUser');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
 const WelcomeDashboard = () => {
   const navigate = useNavigate();
   const dropRef  = useRef(null);
 
   const [user, setUser]               = useState(null);
-  const [guestUser, setGuestUser]     = useState(null);
-  const [currentDate, setCurrentDate] = useState('');
+  // Lazy initializer — reads localStorage synchronously so first render already has correct data
+  const [guestUser, setGuestUser]     = useState(() => readGuestFromStorage());
+  const [currentDate, setCurrentDate] = useState(() => {
+    try {
+      if (localStorage.getItem('isGuest') !== 'true') return '';
+      const raw = localStorage.getItem('guestUser');
+      if (!raw) return '';
+      const g = JSON.parse(raw);
+      if (!g.createdAt) return '';
+      const dt = new Date(g.createdAt);
+      return isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch { return ''; }
+  });
   const [showBanModal, setShowBanModal] = useState(false);
   const [isScrolled, setIsScrolled]   = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showUserDrop, setShowUserDrop]   = useState(false);
   const [activeSubPanel, setActiveSubPanel] = useState(null);
-  const [userRole, setUserRole]       = useState('registered');
+  const [userRole, setUserRole]       = useState(() => localStorage.getItem('isGuest') === 'true' ? 'guest' : 'registered');
   const [userBadge, setUserBadge]     = useState(null);
 
   useEffect(() => {
