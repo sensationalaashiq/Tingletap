@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-toastify';
@@ -89,11 +88,6 @@ const AdminPanelPage = () => {
   const [createRoomData, setCreateRoomData] = useState({
     name: '', description: '', type: 'public', maxUsers: 50
   });
-
-  // Change Password modal
-  const [showChangePwdModal, setShowChangePwdModal] = useState(false);
-  const [changePwdTarget, setChangePwdTarget] = useState(null);
-  const [changePwdLoading, setChangePwdLoading] = useState(false);
 
   // Change Email modal (Owner only)
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
@@ -396,27 +390,6 @@ const AdminPanelPage = () => {
       toast.error(`Device ban failed: ${error.message}`);
     } finally {
       setDevBanning(false);
-    }
-  };
-
-  // ---- Owner: send password reset email ----
-  const handleSendPasswordReset = async () => {
-    if (!changePwdTarget) return;
-    setChangePwdLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, changePwdTarget.email);
-      await updateDoc(doc(db, 'users', changePwdTarget.uid || changePwdTarget.id), {
-        passwordResetRequestedAt: new Date().toISOString(),
-        passwordResetRequestedBy: currentUserProfile?.displayName || 'Owner'
-      });
-      toast.success(`Password reset email sent to ${changePwdTarget.email}. User will receive a link to set a new password.`);
-      setShowChangePwdModal(false);
-      setChangePwdTarget(null);
-    } catch (error) {
-      console.error('Password reset error:', error);
-      toast.error(`Failed to send reset email: ${error.message}`);
-    } finally {
-      setChangePwdLoading(false);
     }
   };
 
@@ -1521,19 +1494,8 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
 
-                                {currentUserProfile?.role === 'owner' && user.uid !== currentUserProfile?.uid && (
+                                {currentUserProfile?.role === 'owner' && (
                                   <>
-                                    <button
-                                      className="luxury-action-btn"
-                                      style={{ background: 'linear-gradient(135deg,#0369a1,#38bdf8)' }}
-                                      onClick={() => { setChangePwdTarget(user); setShowChangePwdModal(true); }}
-                                      title="Change Password"
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
-                                        <path fill="#ffffff" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z"/>
-                                      </svg>
-                                      <span>Chg Pwd</span>
-                                    </button>
                                     <button
                                       className="luxury-action-btn"
                                       style={{ background: 'linear-gradient(135deg,#059669,#34d399)' }}
@@ -2894,94 +2856,107 @@ const AdminPanelPage = () => {
         </div>
       )}
 
-      {/* Change Password Modal (Owner only) */}
-      {showChangePwdModal && changePwdTarget && (
-        <div className="luxury-modal-overlay" onClick={() => { setShowChangePwdModal(false); setChangePwdTarget(null); }}>
-          <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
-            <div className="luxury-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0369a1,#38bdf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
-                    <path fill="#ffffff" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,15V9H17V15H20Z"/>
-                  </svg>
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Password</h3>
-                  <p style={{ margin: 0, fontSize: 12, color: '#0369a1' }}>
-                    User: <strong>{changePwdTarget.displayName}</strong> ({changePwdTarget.email})
-                  </p>
-                </div>
-              </div>
-              <button className="luxury-modal-close" onClick={() => { setShowChangePwdModal(false); setChangePwdTarget(null); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-              </button>
-            </div>
-            <div className="luxury-modal-body">
-              <div style={{ background: 'rgba(3,105,161,0.08)', border: '1px solid rgba(3,105,161,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
-                <p style={{ margin: 0, fontSize: 13, color: '#0c4a6e', lineHeight: 1.6 }}>
-                  A <strong>password reset email</strong> will be sent to <strong>{changePwdTarget.email}</strong>. The user will receive a link to set a new password immediately.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => { setShowChangePwdModal(false); setChangePwdTarget(null); }}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                >Cancel</button>
-                <button
-                  onClick={handleSendPasswordReset}
-                  disabled={changePwdLoading}
-                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#0369a1,#38bdf8)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changePwdLoading ? 'not-allowed' : 'pointer', opacity: changePwdLoading ? 0.7 : 1 }}
-                >
-                  {changePwdLoading ? 'Sending...' : '📧 Send Reset Email'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Change Email Modal (Owner only) */}
       {showChangeEmailModal && changeEmailTarget && (
         <div className="luxury-modal-overlay" onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}>
-          <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
-            <div className="luxury-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#059669,#34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
-                    <path fill="#ffffff" d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
+          <div className="luxury-modal" style={{ maxWidth: 460, background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(5,150,105,0.18), 0 4px 16px rgba(0,0,0,0.08)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            {/* Gradient header strip */}
+            <div style={{ background: 'linear-gradient(135deg,#059669 0%,#34d399 60%,#6ee7b7 100%)', padding: '22px 24px 18px', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.35)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
+                    <defs>
+                      <linearGradient id="em-icon-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff"/>
+                        <stop offset="100%" stopColor="#d1fae5"/>
+                      </linearGradient>
+                    </defs>
+                    <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="url(#em-icon-g)" strokeWidth="1.8"/>
+                    <path d="M2 7.5L12 13.5L22 7.5" stroke="url(#em-icon-g)" strokeWidth="1.8" strokeLinecap="round"/>
+                    <circle cx="18.5" cy="16.5" r="3.5" fill="white" opacity="0.25"/>
+                    <path d="M17.2 16.5l1 1 2-2" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Email</h3>
-                  <p style={{ margin: 0, fontSize: 12, color: '#059669' }}>
-                    User: <strong>{changeEmailTarget.displayName}</strong>
+                  <h3 style={{ margin: 0, fontSize: 17, color: '#fff', fontWeight: 800, letterSpacing: '-0.3px' }}>Change Email</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.82)', fontWeight: 500 }}>
+                    Updating: <strong style={{ color: '#fff' }}>{changeEmailTarget.displayName}</strong>
                   </p>
                 </div>
               </div>
-              <button className="luxury-modal-close" onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              <button
+                onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}
+                style={{ position: 'absolute', top: 16, right: 16, width: 30, height: 30, borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
-            <div className="luxury-modal-body">
-              <div style={{ background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#065f46', lineHeight: 1.6 }}>
-                This updates the email stored in the user's profile. Their Firebase Auth login email remains unchanged.
+
+            <div style={{ padding: '22px 24px 24px' }}>
+              {/* Info card */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'linear-gradient(135deg,rgba(5,150,105,0.06),rgba(52,211,153,0.04))', border: '1px solid rgba(5,150,105,0.18)', borderRadius: 12, padding: '12px 14px', marginBottom: 20 }}>
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="9" fill="rgba(5,150,105,0.12)" stroke="#059669" strokeWidth="1.5"/>
+                  <path d="M12 8v4M12 16h.01" stroke="#059669" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <p style={{ margin: 0, fontSize: 12.5, color: '#065f46', lineHeight: 1.6 }}>
+                  Updates the profile email in Firestore. Firebase Auth login email stays unchanged.
+                </p>
               </div>
-              <input
-                type="email"
-                value={changeEmailValue}
-                onChange={e => setChangeEmailValue(e.target.value)}
-                placeholder="Enter new email address"
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1.5px solid #d1fae5', fontSize: 13, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
-                onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
-              />
+
+              {/* Input with icon */}
+              <div style={{ position: 'relative', marginBottom: 20 }}>
+                <div style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="#059669" strokeWidth="1.6"/>
+                    <path d="M2 8l10 6 10-6" stroke="#059669" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <input
+                  type="email"
+                  value={changeEmailValue}
+                  onChange={e => setChangeEmailValue(e.target.value)}
+                  placeholder="Enter new email address"
+                  style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 12, border: '1.8px solid #d1fae5', fontSize: 13.5, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', fontWeight: 500, background: '#f0fdf9', transition: 'border-color 0.2s' }}
+                  onFocus={e => e.target.style.borderColor = '#059669'}
+                  onBlur={e => e.target.style.borderColor = '#d1fae5'}
+                  onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
+                />
+              </div>
+
+              {/* Action buttons */}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <button
+                  onClick={() => { setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue(''); }}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 11, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#6b7280', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseOver={e => { e.currentTarget.style.background='#f3f4f6'; e.currentTarget.style.borderColor='#d1d5db'; }}
+                  onMouseOut={e => { e.currentTarget.style.background='#f9fafb'; e.currentTarget.style.borderColor='#e5e7eb'; }}
+                >
                   Cancel
                 </button>
-                <button onClick={handleChangeEmail} disabled={changeEmailLoading || !changeEmailValue.trim()}
-                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#059669,#34d399)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeEmailLoading ? 'not-allowed' : 'pointer', opacity: changeEmailLoading ? 0.7 : 1 }}>
-                  {changeEmailLoading ? 'Saving…' : '✉️ Update Email'}
+                <button
+                  onClick={handleChangeEmail}
+                  disabled={changeEmailLoading || !changeEmailValue.trim()}
+                  style={{ flex: 2, padding: '11px 0', borderRadius: 11, border: 'none', background: changeEmailLoading || !changeEmailValue.trim() ? 'linear-gradient(135deg,#6ee7b7,#a7f3d0)' : 'linear-gradient(135deg,#059669,#34d399)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeEmailLoading || !changeEmailValue.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'opacity 0.2s', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}
+                >
+                  {changeEmailLoading ? (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" width="15" height="15" style={{ animation: 'spin 1s linear infinite' }}>
+                        <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5"/>
+                        <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                      </svg>
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                        <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Update Email
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -2992,46 +2967,111 @@ const AdminPanelPage = () => {
       {/* Change Username Modal (Owner only, no time-limit) */}
       {showChangeUsernameModal && changeUsernameTarget && (
         <div className="luxury-modal-overlay" onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}>
-          <div className="luxury-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
-            <div className="luxury-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
-                    <path fill="#ffffff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+          <div className="luxury-modal" style={{ maxWidth: 460, background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(124,58,237,0.18), 0 4px 16px rgba(0,0,0,0.08)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            {/* Gradient header strip */}
+            <div style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a78bfa 60%,#c4b5fd 100%)', padding: '22px 24px 18px', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.35)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
+                    <defs>
+                      <linearGradient id="un-icon-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff"/>
+                        <stop offset="100%" stopColor="#ede9fe"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="9" cy="7" r="4" fill="none" stroke="url(#un-icon-g)" strokeWidth="1.8"/>
+                    <path d="M2 21c0-4 3.13-7 7-7h4" stroke="url(#un-icon-g)" strokeWidth="1.8" strokeLinecap="round"/>
+                    <path d="M16.5 12l1.2 1.2L21 10" stroke="url(#un-icon-g)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M15 15l5-5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Username</h3>
-                  <p style={{ margin: 0, fontSize: 12, color: '#7c3aed' }}>
-                    User: <strong>{changeUsernameTarget.displayName}</strong>
+                  <h3 style={{ margin: 0, fontSize: 17, color: '#fff', fontWeight: 800, letterSpacing: '-0.3px' }}>Change Username</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.82)', fontWeight: 500 }}>
+                    Updating: <strong style={{ color: '#fff' }}>{changeUsernameTarget.displayName}</strong>
                   </p>
                 </div>
               </div>
-              <button className="luxury-modal-close" onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              <button
+                onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}
+                style={{ position: 'absolute', top: 16, right: 16, width: 30, height: 30, borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
-            <div className="luxury-modal-body">
-              <div style={{ background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.18)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#4c1d95', lineHeight: 1.6 }}>
-                Owner override — no 90-day cooldown applies. Old username will be freed and reassignable.
+
+            <div style={{ padding: '22px 24px 24px' }}>
+              {/* Info card */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'linear-gradient(135deg,rgba(124,58,237,0.06),rgba(167,139,250,0.04))', border: '1px solid rgba(124,58,237,0.16)', borderRadius: 12, padding: '12px 14px', marginBottom: 20 }}>
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="rgba(124,58,237,0.12)" stroke="#7c3aed" strokeWidth="1.4" strokeLinejoin="round"/>
+                </svg>
+                <p style={{ margin: 0, fontSize: 12.5, color: '#4c1d95', lineHeight: 1.6 }}>
+                  Owner override — no cooldown applies. Old username is freed immediately and becomes reassignable.
+                </p>
               </div>
-              <input
-                type="text"
-                value={changeUsernameValue}
-                onChange={e => setChangeUsernameValue(e.target.value)}
-                placeholder="Enter new username (3–30 chars)"
-                maxLength={30}
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1.5px solid #ede9fe', fontSize: 13, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
-                onKeyDown={e => e.key === 'Enter' && handleChangeUsername()}
-              />
+
+              {/* Input with icon */}
+              <div style={{ position: 'relative', marginBottom: 20 }}>
+                <div style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                  <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                    <circle cx="9" cy="7" r="4" fill="none" stroke="#7c3aed" strokeWidth="1.6"/>
+                    <path d="M2 21c0-3.87 3.13-7 7-7" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round"/>
+                    <path d="M16 12l2 2 4-4" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={changeUsernameValue}
+                  onChange={e => setChangeUsernameValue(e.target.value)}
+                  placeholder="Enter new username (3–30 chars)"
+                  maxLength={30}
+                  style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 12, border: '1.8px solid #ede9fe', fontSize: 13.5, color: '#1e1b4b', outline: 'none', boxSizing: 'border-box', fontWeight: 500, background: '#faf5ff', transition: 'border-color 0.2s' }}
+                  onFocus={e => e.target.style.borderColor = '#7c3aed'}
+                  onBlur={e => e.target.style.borderColor = '#ede9fe'}
+                  onKeyDown={e => e.key === 'Enter' && handleChangeUsername()}
+                />
+                {changeUsernameValue && (
+                  <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: changeUsernameValue.length < 3 ? '#ef4444' : '#7c3aed', fontWeight: 600 }}>
+                    {changeUsernameValue.length}/30
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}
-                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <button
+                  onClick={() => { setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue(''); }}
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 11, border: '1.5px solid #e5e7eb', background: '#f9fafb', color: '#6b7280', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseOver={e => { e.currentTarget.style.background='#f3f4f6'; e.currentTarget.style.borderColor='#d1d5db'; }}
+                  onMouseOut={e => { e.currentTarget.style.background='#f9fafb'; e.currentTarget.style.borderColor='#e5e7eb'; }}
+                >
                   Cancel
                 </button>
-                <button onClick={handleChangeUsername} disabled={changeUsernameLoading || !changeUsernameValue.trim()}
-                  style={{ flex: 2, padding: '9px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeUsernameLoading ? 'not-allowed' : 'pointer', opacity: changeUsernameLoading ? 0.7 : 1 }}>
-                  {changeUsernameLoading ? 'Saving…' : '✏️ Update Username'}
+                <button
+                  onClick={handleChangeUsername}
+                  disabled={changeUsernameLoading || !changeUsernameValue.trim() || changeUsernameValue.trim().length < 3}
+                  style={{ flex: 2, padding: '11px 0', borderRadius: 11, border: 'none', background: changeUsernameLoading || changeUsernameValue.trim().length < 3 ? 'linear-gradient(135deg,#c4b5fd,#ddd6fe)' : 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: changeUsernameLoading || changeUsernameValue.trim().length < 3 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, boxShadow: '0 4px 14px rgba(124,58,237,0.3)', transition: 'all 0.2s' }}
+                >
+                  {changeUsernameLoading ? (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" width="15" height="15" style={{ animation: 'spin 1s linear infinite' }}>
+                        <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5"/>
+                        <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                      </svg>
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                        <path d="M12 20h9" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Update Username
+                    </>
+                  )}
                 </button>
               </div>
             </div>

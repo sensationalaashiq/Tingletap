@@ -402,6 +402,17 @@ const WelcomeDashboard = () => {
   }, []);
 
   useEffect(() => {
+    // Immediately load guest data from localStorage so displayName & badge render on first paint
+    const isGuestLocal = localStorage.getItem('isGuest') === 'true';
+    const gdRaw = localStorage.getItem('guestUser');
+    if (isGuestLocal && gdRaw) {
+      try {
+        const parsed = JSON.parse(gdRaw);
+        setGuestUser(parsed);
+        setUserRole('guest');
+      } catch { /* ignore */ }
+    }
+
     const cu = auth.currentUser;
     if (cu) {
       setUser(cu);
@@ -417,8 +428,7 @@ const WelcomeDashboard = () => {
             setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
             setUserRole(d.role || 'registered');
             setUserBadge(d.badge || null);
-            // Guest users sign in anonymously so auth.currentUser is set but has no displayName.
-            // Load their chosen name/gender from localStorage when Firestore marks them as guest.
+            // Refresh guest data from Firestore if role is guest
             if (d.role === 'guest') {
               const gd = localStorage.getItem('guestUser');
               if (gd) {
@@ -428,12 +438,8 @@ const WelcomeDashboard = () => {
           }
         } catch { setCurrentDate(''); }
       })();
-    } else {
-      const gd = localStorage.getItem('guestUser');
-      if (localStorage.getItem('isGuest') === 'true' && gd) {
-        setGuestUser(JSON.parse(gd));
-        setUserRole('guest');
-      }
+    } else if (!isGuestLocal) {
+      // No Firebase user and not a guest – nothing to do
     }
   }, []);
 

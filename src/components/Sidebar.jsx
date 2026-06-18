@@ -376,7 +376,7 @@ const Sidebar = ({
     if (!user || !targetUser) return false;
 
     const currentUser = loggedInUserProfile;
-    const currentRole = currentUser.role || 'user';
+    const currentRole = currentUser?.role || 'user';
     const targetRole = targetUser.role || 'user';
 
     // Role hierarchy: owner > admin > moderator > user
@@ -869,15 +869,18 @@ const Sidebar = ({
                     onClick={async () => {
                       const currentUser = auth.currentUser;
                       const isGuest = localStorage.getItem('isGuest') === 'true';
+                      const guestRaw = localStorage.getItem('guestUser');
+                      const guestUid = isGuest && guestRaw ? (() => { try { return JSON.parse(guestRaw).uid; } catch { return null; } })() : null;
+                      const currentUid = currentUser?.uid || guestUid;
 
-                      if (!currentUser && !isGuest) {
+                      if (!currentUid) {
                         toast.error("🔐 Please login or sign up to access rooms.");
                         return;
                       }
 
                       // Check if user is kicked from this specific room
                       try {
-                        const kickedUserDocRef = doc(db, 'rooms', room.id, 'kickedUsers', currentUser.uid);
+                        const kickedUserDocRef = doc(db, 'rooms', room.id, 'kickedUsers', currentUid);
                         const kickDoc = await getDoc(kickedUserDocRef);
 
                         if (kickDoc.exists()) {
@@ -900,7 +903,7 @@ const Sidebar = ({
                       // If user is currently in a room they got kicked from, redirect to room list
                       if (roomId && roomId !== room.id) {
                         try {
-                          const currentRoomKickDoc = doc(db, 'rooms', roomId, 'kickedUsers', currentUser.uid);
+                          const currentRoomKickDoc = doc(db, 'rooms', roomId, 'kickedUsers', currentUid);
                           const currentRoomKickSnap = await getDoc(currentRoomKickDoc);
 
                           if (currentRoomKickSnap.exists()) {
