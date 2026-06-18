@@ -2,245 +2,349 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>TingleTap – Reset Your Password</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-  /* ── Animated logo float (Apple Mail, Thunderbird, Samsung Mail) ── */
-  @keyframes float {
-    0%,100% { transform: translateY(0px) scale(1); }
-    50%      { transform: translateY(-10px) scale(1.04); }
+  /* ── Logo float ── */
+  @keyframes logo-float {
+    0%,100% { transform: translateY(0) scale(1); filter: drop-shadow(0 10px 24px rgba(139,92,246,.28)); }
+    50%      { transform: translateY(-9px) scale(1.03); filter: drop-shadow(0 20px 36px rgba(139,92,246,.44)); }
   }
-  @keyframes glow-btn {
-    0%,100% { box-shadow: 0 8px 32px rgba(168,85,247,0.45), 0 0 0 0 rgba(192,132,252,0.3); }
-    50%      { box-shadow: 0 12px 48px rgba(168,85,247,0.7), 0 0 0 8px rgba(192,132,252,0); }
+
+  /* ── Shimmer bar ── */
+  @keyframes shimmer-bar {
+    0%   { background-position: -400% center; }
+    100% { background-position:  400% center; }
   }
-  @keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position:  200% center; }
-  }
-  @keyframes sparkle {
-    0%,100% { opacity: 0.4; transform: scale(0.8) rotate(0deg); }
-    50%      { opacity: 1;   transform: scale(1.2) rotate(180deg); }
-  }
+
+  /* ── Shield pulse ── */
   @keyframes shield-pulse {
-    0%,100% { filter: drop-shadow(0 0 8px rgba(168,85,247,0.5)); }
-    50%      { filter: drop-shadow(0 0 20px rgba(168,85,247,0.9)); }
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .85; transform: scale(1.06); }
   }
 
-  .logo-img  { animation: float 3.5s ease-in-out infinite; display:block; margin:0 auto; }
-  .reset-btn { animation: glow-btn 2.5s ease-in-out infinite; }
-  .shimmer-text {
-    background: linear-gradient(90deg,#9333ea,#c084fc,#e9d5ff,#c084fc,#9333ea);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: shimmer 3s linear infinite;
+  /* ── Button glow ── */
+  @keyframes btn-glow {
+    0%,100% { box-shadow: 0 8px 28px rgba(109,40,217,.3), 0 2px 8px rgba(139,92,246,.15); }
+    50%      { box-shadow: 0 12px 40px rgba(109,40,217,.5), 0 4px 16px rgba(139,92,246,.25); }
   }
-  .star1 { animation: sparkle 2s ease-in-out infinite; }
-  .star2 { animation: sparkle 2.5s ease-in-out infinite 0.4s; }
-  .star3 { animation: sparkle 3s ease-in-out infinite 0.8s; }
-  .shield-icon { animation: shield-pulse 2.5s ease-in-out infinite; }
+
+  /* ── Key rotate ── */
+  @keyframes key-swing {
+    0%,100% { transform: rotate(-12deg); }
+    50%      { transform: rotate(12deg); }
+  }
+
+  /* ── Star spin ── */
+  @keyframes star-spin {
+    0%,100% { transform: rotate(0deg) scale(1); opacity: .5; }
+    50%      { transform: rotate(90deg) scale(1.3); opacity: 1; }
+  }
+
+  /* ── Ping ripple ── */
+  @keyframes ping {
+    0%   { transform: scale(1);   opacity: .55; }
+    100% { transform: scale(1.9); opacity: 0;   }
+  }
+
+  /* ── Dash draw ── */
+  @keyframes dash-draw { to { stroke-dashoffset: 0; } }
+
+  .logo-img      { animation: logo-float 3.8s ease-in-out infinite; }
+  .shimmer       { animation: shimmer-bar 4s linear infinite; }
+  .shield-icon   { animation: shield-pulse 2.6s ease-in-out infinite; }
+  .btn-glow      { animation: btn-glow 2.4s ease-in-out infinite; }
+  .key-icon      { animation: key-swing 2s ease-in-out infinite; transform-origin: center; }
+  .star-a        { animation: star-spin 3s ease-in-out infinite; }
+  .star-b        { animation: star-spin 3.5s ease-in-out infinite .6s; }
+  .ping-dot      { animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+
+  /* ── Responsive ── */
+  @media only screen and (max-width:600px) {
+    .outer-td  { padding: 20px 8px !important; }
+    .card      { border-radius: 20px !important; }
+    .body-td   { padding: 28px 20px 24px !important; }
+    .brand-name{ font-size: 26px !important; }
+    .h2        { font-size: 22px !important; }
+    .cta-btn   { padding: 16px 28px !important; font-size: 15px !important; }
+  }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#0d001a;font-family:'Inter',Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f0ebff;font-family:'Inter',Arial,sans-serif;">
 
-<!--  Outer wrapper  -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:linear-gradient(160deg,#0d001a 0%,#1a003d 40%,#0f0025 100%);min-height:100vh;">
-  <tr><td align="center" style="padding:40px 16px;">
+       style="background:linear-gradient(160deg,#f5f0ff 0%,#ede8ff 50%,#f0ebff 100%);min-height:100vh;">
+<tr><td class="outer-td" align="center" style="padding:36px 16px;">
 
-    <!--  Card  -->
-    <table width="600" cellpadding="0" cellspacing="0" border="0"
-           style="max-width:600px;width:100%;background:rgba(255,255,255,0.04);border-radius:28px;
-                  border:1.5px solid rgba(192,132,252,0.3);
-                  box-shadow:0 40px 100px rgba(139,92,246,0.35),0 0 0 1px rgba(192,132,252,0.15);">
+  <!-- Card -->
+  <table class="card" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="max-width:580px;background:#ffffff;border-radius:24px;
+                border:1.5px solid rgba(167,139,250,.22);
+                box-shadow:0 20px 60px rgba(109,40,217,.1),0 4px 20px rgba(139,92,246,.08);">
 
-      <!--  Top accent bar  -->
-      <tr>
-        <td style="height:4px;border-radius:28px 28px 0 0;
-                   background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
-                   background-size:300% 100%;">
-        </td>
-      </tr>
+    <!-- Top shimmer bar -->
+    <tr>
+      <td style="height:5px;border-radius:24px 24px 0 0;overflow:hidden;">
+        <div class="shimmer" style="height:5px;
+          background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
+          background-size:400% 100%;"></div>
+      </td>
+    </tr>
 
-      <!--  Header / Logo  -->
-      <tr>
-        <td align="center" style="padding:44px 40px 28px;">
+    <!-- Logo header -->
+    <tr>
+      <td align="center" style="padding:40px 32px 24px;background:linear-gradient(180deg,#faf7ff 0%,#ffffff 100%);">
 
-          <!-- Stars + Logo -->
-          <div style="display:inline-block;margin-bottom:8px;">
-            <span class="star1" style="display:inline-block;font-size:18px;margin-right:14px;vertical-align:middle;color:#c084fc;">✦</span>
-            <img class="logo-img"
-                 src="https://i.ibb.co/zWdy2ZdD/IMG-20250724-033823-966.jpg"
-                 alt="TingleTap"
-                 width="90" height="90"
-                 style="width:90px;height:90px;border-radius:22px;
-                        border:3px solid rgba(192,132,252,0.5);
-                        box-shadow:0 0 32px rgba(168,85,247,0.6),0 12px 40px rgba(0,0,0,0.5);
-                        display:inline-block;vertical-align:middle;">
-            <span class="star2" style="display:inline-block;font-size:18px;margin-left:14px;vertical-align:middle;color:#c084fc;">✦</span>
-          </div>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 4px;">
+          <tr>
+            <td style="padding-right:18px;vertical-align:middle;">
+              <svg class="star-a" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2.09 6.26L20 10l-5.91 3.74L12 22l-2.09-8.26L4 10l5.91-1.74z"
+                      fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/>
+              </svg>
+            </td>
+            <td>
+              <img class="logo-img"
+                   src="https://i.ibb.co/zWdy2ZdD/IMG-20250724-033823-966.jpg"
+                   alt="TingleTap" width="88" height="88"
+                   style="width:88px;height:88px;border-radius:20px;display:block;
+                          border:2.5px solid rgba(167,139,250,.35);
+                          box-shadow:0 8px 32px rgba(139,92,246,.22),0 2px 8px rgba(139,92,246,.12);">
+            </td>
+            <td style="padding-left:18px;vertical-align:middle;">
+              <svg class="star-b" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2.09 6.26L20 10l-5.91 3.74L12 22l-2.09-8.26L4 10l5.91-1.74z"
+                      fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/>
+              </svg>
+            </td>
+          </tr>
+        </table>
 
-          <br>
-          <span class="shimmer-text"
-                style="font-size:32px;font-weight:800;letter-spacing:1px;display:block;margin-top:14px;">
-            TingleTap
-          </span>
-          <span style="color:rgba(216,180,254,0.7);font-size:13px;letter-spacing:3px;
-                       text-transform:uppercase;font-weight:600;display:block;margin-top:6px;">
-            Password Reset
-          </span>
-        </td>
-      </tr>
+        <div class="brand-name"
+             style="font-size:30px;font-weight:800;letter-spacing:.5px;margin:14px 0 4px;
+                    background:linear-gradient(135deg,#6d28d9,#9333ea,#c084fc);
+                    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                    background-clip:text;">TingleTap</div>
+        <div style="color:#9b7ec8;font-size:12px;letter-spacing:3.5px;
+                    text-transform:uppercase;font-weight:600;">Password Reset</div>
+      </td>
+    </tr>
 
-      <!--  Divider  -->
-      <tr>
-        <td style="padding:0 40px;">
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.4),transparent);"></div>
-        </td>
-      </tr>
+    <!-- Divider -->
+    <tr><td style="padding:0 32px;">
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.3),transparent);"></div>
+    </td></tr>
 
-      <!--  Body  -->
-      <tr>
-        <td style="padding:36px 44px 32px;">
+    <!-- Body -->
+    <tr>
+      <td class="body-td" style="padding:36px 40px 32px;">
 
-          <!-- Shield icon -->
-          <div align="center" style="margin-bottom:24px;">
-            <div class="shield-icon"
-                 style="display:inline-block;
-                        background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(192,132,252,0.15));
-                        border:1.5px solid rgba(192,132,252,0.35);border-radius:20px;padding:18px 22px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none">
+        <!-- Animated shield icon -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px;">
+          <tr><td align="center">
+            <div style="display:inline-block;position:relative;
+                        background:linear-gradient(135deg,#f5f0ff,#ede8ff);
+                        border:1.5px solid rgba(167,139,250,.3);
+                        border-radius:18px;padding:20px 24px;">
+              <div class="ping-dot"
+                   style="position:absolute;inset:0;border-radius:18px;
+                          border:2px solid rgba(167,139,250,.35);"></div>
+              <svg class="shield-icon" width="52" height="52" viewBox="0 0 52 52" fill="none">
                 <defs>
-                  <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#a855f7"/>
-                    <stop offset="100%" stop-color="#e879f9"/>
+                  <linearGradient id="sg1" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#7c3aed"/>
+                    <stop offset="1" stop-color="#c084fc"/>
+                  </linearGradient>
+                  <linearGradient id="sg2" x1="0" y1="0" x2="52" y2="0" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#a855f7"/>
+                    <stop offset="1" stop-color="#e879f9"/>
                   </linearGradient>
                 </defs>
-                <path d="M12 2l8 4v6c0 5.5-4.5 9.5-8 10-3.5-.5-8-4.5-8-10V6l8-4z" fill="url(#sg)" opacity="0.9"/>
-                <path d="M8 12l3 3 5-6" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Shield body -->
+                <path d="M26 4l18 8v12c0 12-9 21-18 24C17 45 8 36 8 24V12l18-8z"
+                      fill="url(#sg1)" opacity=".18"/>
+                <path d="M26 4l18 8v12c0 12-9 21-18 24C17 45 8 36 8 24V12l18-8z"
+                      stroke="url(#sg1)" stroke-width="2.2" fill="none"/>
+                <!-- Inner check mark (drawn) -->
+                <path d="M18 26l6 7 11-13" stroke="url(#sg2)" stroke-width="3"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"
+                      stroke-dasharray="30" stroke-dashoffset="30"
+                      style="animation:dash-draw 0.7s ease 0.4s forwards;"/>
+                <!-- Decorative dots -->
+                <circle cx="26" cy="10" r="2.5" fill="#c084fc" opacity=".5"/>
+                <circle cx="36" cy="14" r="1.8" fill="#a855f7" opacity=".4"/>
+                <circle cx="16" cy="14" r="1.8" fill="#a855f7" opacity=".4"/>
               </svg>
             </div>
-          </div>
+          </td></tr>
+        </table>
 
-          <!-- Headline -->
-          <h2 style="color:#f3e8ff;font-size:26px;font-weight:800;text-align:center;
-                     margin:0 0 12px;letter-spacing:0.3px;">
-            Reset Your Password 🔐
-          </h2>
-          <p style="color:rgba(233,213,255,0.8);font-size:16px;text-align:center;
-                    margin:0 0 32px;line-height:1.7;">
-            We received a request to reset the password for your<br>
-            <strong style="color:#c084fc;">TingleTap</strong> account.<br>
-            Click the button below to set a new password.
-          </p>
+        <!-- Heading -->
+        <h2 class="h2"
+            style="color:#2e1065;font-size:24px;font-weight:800;text-align:center;
+                   margin:0 0 14px;letter-spacing:.2px;line-height:1.3;">
+          Reset Your Password
+        </h2>
+        <p style="color:#6b48a0;font-size:15px;text-align:center;margin:0 0 36px;line-height:1.7;">
+          We received a request to reset the password for your<br>
+          <strong style="color:#9333ea;">TingleTap</strong> account registered with<br>
+          <strong style="color:#7c3aed;">{{user_email}}</strong>
+        </p>
 
-          <!-- CTA Button -->
-          <div align="center" style="margin:32px 0;">
-            <a href="{{reset_link}}"
-               class="reset-btn"
-               style="display:inline-block;
-                      background:linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#c084fc 100%);
-                      color:white;text-decoration:none;
-                      font-size:17px;font-weight:800;letter-spacing:0.5px;
-                      padding:18px 48px;border-radius:16px;
-                      box-shadow:0 8px 32px rgba(168,85,247,0.45);
-                      border:1px solid rgba(255,255,255,0.15);">
-              🔑 &nbsp;Reset My Password
+        <!-- CTA Button -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 32px;">
+          <tr><td align="center">
+            <a href="{{reset_link}}" class="cta-btn btn-glow"
+               style="display:inline-table;
+                      background:linear-gradient(135deg,#6d28d9 0%,#9333ea 50%,#c084fc 100%);
+                      color:#ffffff;text-decoration:none;
+                      font-size:16px;font-weight:800;letter-spacing:.4px;
+                      padding:18px 52px;border-radius:16px;
+                      box-shadow:0 8px 28px rgba(109,40,217,.3);
+                      border:1px solid rgba(255,255,255,.2);">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <!-- Animated key SVG -->
+                    <svg class="key-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <circle cx="8" cy="8" r="5" stroke="white" stroke-width="2.2" fill="rgba(255,255,255,.15)"/>
+                      <path d="M12 11.5l8 8M16 16l2 2M18 14l2 2" stroke="white"
+                            stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                  </td>
+                  <td style="color:#ffffff;font-size:16px;font-weight:800;vertical-align:middle;white-space:nowrap;">
+                    Reset My Password
+                  </td>
+                </tr>
+              </table>
             </a>
-          </div>
+          </td></tr>
+        </table>
 
-          <!-- Or copy link -->
-          <div align="center" style="margin:24px 0;">
-            <p style="color:rgba(216,180,254,0.5);font-size:12px;margin:0 0 8px;">
-              Button not working? Copy this link:
-            </p>
-            <div style="background:rgba(124,58,237,0.12);border:1px solid rgba(192,132,252,0.25);
-                        border-radius:10px;padding:10px 16px;word-break:break-all;">
-              <a href="{{reset_link}}"
-                 style="color:#c084fc;font-size:12px;text-decoration:none;font-family:'Courier New',monospace;">
-                {{reset_link}}
-              </a>
+        <!-- Copy link box -->
+        <div style="background:#faf7ff;border:1.5px solid rgba(167,139,250,.25);
+                    border-radius:14px;padding:16px 20px;margin-bottom:24px;">
+          <div style="color:#9b7ec8;font-size:11px;font-weight:700;
+                      letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">
+            Button not working? Copy this link
+          </div>
+          <a href="{{reset_link}}"
+             style="color:#7c3aed;font-size:12px;font-family:'Courier New',monospace;
+                    word-break:break-all;text-decoration:none;line-height:1.6;">
+            {{reset_link}}
+          </a>
+        </div>
+
+        <!-- Expiry notice -->
+        <table cellpadding="0" cellspacing="0" border="0"
+               style="margin:0 auto 24px;background:rgba(239,68,68,.06);
+                      border:1.5px solid rgba(239,68,68,.18);border-radius:12px;padding:12px 20px;">
+          <tr>
+            <td style="padding-right:10px;vertical-align:middle;">
+              <!-- Clock SVG (animated hand) -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#ef4444" stroke-width="2" fill="rgba(239,68,68,.08)"/>
+                <line x1="12" y1="12" x2="12" y2="6" stroke="#ef4444" stroke-width="2.2"
+                      stroke-linecap="round"
+                      style="animation:key-swing 1.5s ease-in-out infinite;transform-origin:12px 12px;"/>
+                <line x1="12" y1="12" x2="16" y2="12" stroke="#ef4444" stroke-width="2"
+                      stroke-linecap="round"/>
+              </svg>
+            </td>
+            <td style="color:#ef4444;font-size:13px;font-weight:700;vertical-align:middle;">
+              This link expires in 1 hour
+            </td>
+          </tr>
+        </table>
+
+        <!-- Security box -->
+        <div style="background:linear-gradient(135deg,#faf7ff,#f3eeff);
+                    border:1.5px solid rgba(167,139,250,.22);border-radius:16px;
+                    padding:20px 24px;text-align:center;">
+          <!-- Lock SVG -->
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" style="display:block;margin:0 auto 10px;">
+            <defs>
+              <linearGradient id="lg1" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7c3aed"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+            <rect x="5" y="11" width="14" height="10" rx="3" fill="url(#lg1)" opacity=".2"/>
+            <rect x="5" y="11" width="14" height="10" rx="3" stroke="url(#lg1)" stroke-width="2" fill="none"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="url(#lg1)" stroke-width="2.2"
+                  stroke-linecap="round" fill="none"/>
+            <circle cx="12" cy="16" r="1.5" fill="#9333ea"/>
+            <line x1="12" y1="17.5" x2="12" y2="19" stroke="#9333ea" stroke-width="1.8"
+                  stroke-linecap="round"/>
+          </svg>
+          <p style="color:#6b48a0;font-size:13px;margin:0;line-height:1.7;">
+            If you did not request a password reset,<br>
+            <strong style="color:#4c1d95;">ignore this email — your account is safe.</strong>
+          </p>
+        </div>
+
+        <!-- Divider -->
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.25),transparent);
+                    margin:32px 0 28px;"></div>
+
+        <!-- Signature -->
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+          <tr><td align="center">
+            <!-- Animated heart SVG -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="display:block;margin:0 auto 10px;">
+              <path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z"
+                    fill="#f9a8d4" stroke="#ec4899" stroke-width="1.5"
+                    style="animation:shield-pulse 2.2s ease-in-out infinite;"/>
+            </svg>
+            <div style="color:#9b7ec8;font-size:13px;line-height:1.8;text-align:center;">
+              With care,<br>
+              <strong style="color:#7c3aed;font-size:15px;">The TingleTap Team</strong>
             </div>
-          </div>
+          </td></tr>
+        </table>
 
-          <!-- Timer -->
-          <div align="center" style="margin:20px 0;">
-            <span style="display:inline-flex;align-items:center;gap:8px;
-                         background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);
-                         border-radius:100px;padding:8px 18px;
-                         color:#fca5a5;font-size:13px;font-weight:600;">
-              ⏰ &nbsp;Link expires in <strong>1 hour</strong>
-            </span>
-          </div>
+      </td>
+    </tr>
 
-          <!-- Security notice -->
-          <div style="background:rgba(124,58,237,0.1);border:1.5px solid rgba(192,132,252,0.2);
-                      border-radius:16px;padding:18px 22px;margin:24px 0 0;text-align:center;">
-            <span class="star3" style="display:inline-block;font-size:20px;color:#c084fc;margin-bottom:8px;">🛡️</span>
-            <p style="color:rgba(216,180,254,0.7);font-size:13px;margin:0;line-height:1.6;">
-              If you didn't request this, <strong style="color:#e9d5ff;">ignore this email</strong> — your account is completely safe.
-            </p>
-          </div>
+    <!-- Footer -->
+    <tr><td style="padding:0 32px;">
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.2),transparent);"></div>
+    </td></tr>
+    <tr>
+      <td align="center" style="padding:20px 32px 32px;">
+        <p style="color:#b8a4d8;font-size:12px;margin:0 0 4px;line-height:1.7;">
+          This email was sent because you are registered with TingleTap as<br>
+          <strong>{{user_email}}</strong>
+        </p>
+        <p style="color:#c4b5e0;font-size:11px;margin:0;">
+          &copy; 2025 TingleTap. All rights reserved.
+        </p>
+        <div style="margin-top:14px;">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc;margin:0 3px;opacity:.5;"></span>
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a855f7;margin:0 3px;opacity:.7;"></span>
+          <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#9333ea;margin:0 3px;"></span>
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#a855f7;margin:0 3px;opacity:.7;"></span>
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c084fc;margin:0 3px;opacity:.5;"></span>
+        </div>
+      </td>
+    </tr>
 
-          <!-- Divider -->
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.3),transparent);
-                      margin:32px 0 28px;"></div>
+    <!-- Bottom shimmer bar -->
+    <tr>
+      <td style="height:5px;border-radius:0 0 24px 24px;overflow:hidden;">
+        <div class="shimmer" style="height:5px;
+          background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
+          background-size:400% 100%;"></div>
+      </td>
+    </tr>
 
-          <!-- Signature -->
-          <p style="color:rgba(216,180,254,0.5);font-size:14px;text-align:center;margin:0;line-height:1.8;">
-            With love &amp; care 💜<br>
-            <strong style="color:#c084fc;font-size:16px;">The TingleTap Team</strong>
-          </p>
-        </td>
-      </tr>
+  </table>
+  <!-- /Card -->
 
-      <!--  Footer  -->
-      <tr>
-        <td style="padding:0 40px;">
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(192,132,252,0.25),transparent);"></div>
-        </td>
-      </tr>
-      <tr>
-        <td align="center" style="padding:24px 40px 36px;">
-          <p style="color:rgba(192,132,252,0.45);font-size:12px;margin:0 0 6px;line-height:1.7;">
-            This email was sent to <strong style="color:rgba(192,132,252,0.7);">{{user_email}}</strong>
-            because you're registered with TingleTap.
-          </p>
-          <p style="color:rgba(192,132,252,0.35);font-size:11px;margin:0;">
-            &copy; 2025 TingleTap. All rights reserved.
-          </p>
-          <div style="margin-top:16px;">
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#7c3aed;margin:0 3px;opacity:0.6;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#a855f7;margin:0 3px;opacity:0.8;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#c084fc;margin:0 3px;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#a855f7;margin:0 3px;opacity:0.8;"></span>
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:#7c3aed;margin:0 3px;opacity:0.6;"></span>
-          </div>
-        </td>
-      </tr>
-
-      <!--  Bottom accent bar  -->
-      <tr>
-        <td style="height:4px;border-radius:0 0 28px 28px;
-                   background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc,#e879f9,#c084fc,#a855f7,#7c3aed);
-                   background-size:300% 100%;">
-        </td>
-      </tr>
-
-    </table>
-    <!--  /Card  -->
-
-  </td></tr>
+</td></tr>
 </table>
-
 </body>
 </html>
