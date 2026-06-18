@@ -6,7 +6,8 @@ import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, remove } from 'firebase/database';
 import {
   signOut, updateProfile, updatePassword,
-  deleteUser, EmailAuthProvider, reauthenticateWithCredential
+  deleteUser, EmailAuthProvider, reauthenticateWithCredential,
+  onAuthStateChanged
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -402,7 +403,7 @@ const WelcomeDashboard = () => {
   }, []);
 
   useEffect(() => {
-    // Immediately load guest data from localStorage so displayName & badge render on first paint
+    // Step 1 — immediately paint guest data from localStorage (zero-delay, covers first render)
     const isGuestLocal = localStorage.getItem('isGuest') === 'true';
     const gdRaw = localStorage.getItem('guestUser');
     if (isGuestLocal && gdRaw) {
@@ -413,34 +414,48 @@ const WelcomeDashboard = () => {
       } catch { /* ignore */ }
     }
 
-    const cu = auth.currentUser;
-    if (cu) {
+    // Step 2 — listen for Firebase auth state so we catch the anonymous user resolving
+    // after a page reload (Firebase auth is async, currentUser is null on first tick).
+    const unsubAuth = onAuthStateChanged(auth, async (cu) => {
+      if (!cu) return; // no Firebase user yet — guest data already set from localStorage above
+
       setUser(cu);
-      (async () => {
-        try {
-          const snap = await getDoc(doc(db, 'users', cu.uid));
-          if (snap.exists()) {
-            const d = snap.data();
-            if (d.isBanned) { setShowBanModal(true); setInterval(() => setShowBanModal(true), 1000); }
-            let dt = d.createdAt || cu.metadata.creationTime;
-            if (dt?.toDate) dt = dt.toDate();
-            else if (typeof dt === 'string') dt = new Date(dt);
-            setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
-            setUserRole(d.role || 'registered');
-            setUserBadge(d.badge || null);
-            // Refresh guest data from Firestore if role is guest
-            if (d.role === 'guest') {
-              const gd = localStorage.getItem('guestUser');
-              if (gd) {
-                try { setGuestUser(JSON.parse(gd)); } catch { /* ignore */ }
-              }
+
+      // If anonymous (guest) Firebase user — pull display data from localStorage
+      if (cu.isAnonymous) {
+        const gd = localStorage.getItem('guestUser');
+        if (gd) {
+          try {
+            const parsed = JSON.parse(gd);
+            setGuestUser(parsed);
+            setUserRole('guest');
+            // Set member-since date from localStorage data
+            if (parsed.createdAt) {
+              const dt = new Date(parsed.createdAt);
+              setCurrentDate(!isNaN(dt) ? dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
             }
-          }
-        } catch { setCurrentDate(''); }
-      })();
-    } else if (!isGuestLocal) {
-      // No Firebase user and not a guest – nothing to do
-    }
+          } catch { /* ignore */ }
+        }
+        return;
+      }
+
+      // Regular (non-anonymous) Firebase user — fetch Firestore profile
+      try {
+        const snap = await getDoc(doc(db, 'users', cu.uid));
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.isBanned) { setShowBanModal(true); setInterval(() => setShowBanModal(true), 1000); }
+          let dt = d.createdAt || cu.metadata.creationTime;
+          if (dt?.toDate) dt = dt.toDate();
+          else if (typeof dt === 'string') dt = new Date(dt);
+          setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+          setUserRole(d.role || 'registered');
+          setUserBadge(d.badge || null);
+        }
+      } catch { setCurrentDate(''); }
+    });
+
+    return () => unsubAuth();
   }, []);
 
   const handleLogout = async () => {
@@ -598,11 +613,11 @@ const WelcomeDashboard = () => {
   };
   const roleConfig = getRoleConfig();
 
-  const displayName = user?.displayName || guestUser?.displayName || 'User';
-  const userEmail   = user?.email || '';
+  const displayName = guestUser?.displayName || user?.displayName || 'User';
+  const userEmail   = user?.email || guestUser?.email || '';
   const isVerified  = user?.emailVerified;
   const initials    = displayName.slice(0, 2).toUpperCase();
-  const userPhoto   = user?.photoURL || '';
+  const userPhoto   = guestUser?.photoURL || user?.photoURL || '';
   const maskedEmail = userEmail
     ? userEmail.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + '·'.repeat(Math.min(b.length, 5)) + c)
     : '';

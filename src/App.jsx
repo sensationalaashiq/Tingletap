@@ -648,9 +648,15 @@ function App() {
           }
         };
       } else {
-        // Clear guest data if no authenticated user and no guest session
-        localStorage.removeItem('guestUser');
-        localStorage.removeItem('isGuest');
+        // Only clear guest data if there is truly no active guest session.
+        // Do NOT wipe it here when Firebase fires null briefly during anonymous-auth
+        // restore on page reload — the anonymous session will re-resolve moments later.
+        const hasActiveGuestSession = localStorage.getItem('isGuest') === 'true'
+          && localStorage.getItem('guestUser') !== null;
+        if (!hasActiveGuestSession) {
+          localStorage.removeItem('guestUser');
+          localStorage.removeItem('isGuest');
+        }
 
         // Preserve ALL font preferences across logout/login - NEVER reset them
         const savedFontPrefs = {
