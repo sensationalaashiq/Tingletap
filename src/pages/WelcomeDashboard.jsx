@@ -600,8 +600,9 @@ const WelcomeDashboard = () => {
       }
       default: {
         if (userRole === 'guest') {
-          const gender = guestUser?.gender;
-          if (gender === 'male') return {
+          const rawGender = guestUser?.gender || readGuestFromStorage()?.gender || '';
+          const gender = rawGender.toLowerCase();
+          if (gender === 'male' || gender === '') return {
             label: 'Purush',
             cls: 'wd-role--guest-male',
             icon: (
@@ -658,7 +659,18 @@ const WelcomeDashboard = () => {
               </svg>
             )
           };
-          return { label: 'Guest', cls: 'wd-role--guest', icon: <DiamondIcon /> };
+          return {
+            label: 'Purush',
+            cls: 'wd-role--guest-male',
+            icon: (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs><linearGradient id="rc-purush-fb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1d4ed8"/></linearGradient></defs>
+                <circle cx="8.5" cy="10.5" r="4.5" stroke="url(#rc-purush-fb)" strokeWidth="1.7" fill="rgba(59,130,246,0.1)"/>
+                <line x1="12" y1="7" x2="17" y2="2" stroke="url(#rc-purush-fb)" strokeWidth="1.7" strokeLinecap="round"/>
+                <polyline points="13,2 17,2 17,6" stroke="url(#rc-purush-fb)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+            )
+          };
         }
         return {
           label: 'Member',
@@ -807,7 +819,16 @@ const WelcomeDashboard = () => {
             </div>
             <div className="wd-ms-text">
               <span className="wd-ms-label">Member Since</span>
-              <span className="wd-ms-date">{currentDate || '—'}</span>
+              <span className="wd-ms-date">{(() => {
+                if (currentDate) return currentDate;
+                const src = guestUser || readGuestFromStorage();
+                if (src?.createdAt) {
+                  const dt = new Date(src.createdAt);
+                  if (!isNaN(dt)) return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                }
+                if (userRole === 'guest' || src) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                return '—';
+              })()}</span>
             </div>
             <div className={`wd-ms-badge wd-ms-badge--${userBadge ? 'badge' : (userRole || 'registered')}`}>
               <span className="wd-ms-badge-icon">{roleConfig.icon}</span>
