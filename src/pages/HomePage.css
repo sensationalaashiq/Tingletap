@@ -10524,65 +10524,91 @@ html body.theme-sunset .message-body p {
    ═══════════════════════════════════════════════════════════════════ */
 .avatar-portal-dropdown {
   position: fixed !important;
-  background: rgba(255, 253, 255, 0.97);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid rgba(196, 181, 253, 0.4);
-  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(245, 240, 255, 0.98) 0%, rgba(237, 228, 255, 0.98) 100%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(196, 181, 253, 0.55);
+  border-radius: 20px;
   box-shadow:
-    0 12px 40px rgba(109, 40, 217, 0.18),
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    0 20px 60px rgba(109, 40, 217, 0.22),
+    0 6px 20px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
   padding: 6px;
-  min-width: 200px;
-  max-width: 220px;
+  min-width: 210px;
+  max-width: 230px;
   z-index: 999999999;
   overflow: hidden;
-  animation: apdSlideIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: apdSlideIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 @keyframes apdSlideIn {
-  from { opacity: 0; transform: scale(0.88) translateY(-6px); }
+  from { opacity: 0; transform: scale(0.85) translateY(-8px); }
   to   { opacity: 1; transform: scale(1)    translateY(0);    }
 }
+/* ── Avatar panel header ─────────────────────────────────────────── */
 .apd-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px 6px;
+  gap: 12px;
+  padding: 14px 14px 10px;
+}
+.apd-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
 }
 .apd-avatar {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(196, 181, 253, 0.55);
-  flex-shrink: 0;
+  border: 2.5px solid rgba(167, 139, 250, 0.7);
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.25);
+}
+.apd-online-dot {
+  position: absolute;
+  bottom: 1px; right: 1px;
+  width: 10px; height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(34,197,94,0.5);
 }
 .apd-user-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 .apd-name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   color: #3b0764;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 .apd-role {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: #8b5cf6;
+  color: #7c3aed;
   text-transform: capitalize;
+}
+.apd-role-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  flex-shrink: 0;
 }
 .apd-divider {
   height: 1px;
-  background: rgba(196, 181, 253, 0.28);
-  margin: 4px 2px;
+  background: linear-gradient(90deg, transparent, rgba(167,139,250,0.35), transparent);
+  margin: 5px 8px;
 }
+
+/* ── Action buttons ───────────────────────────────────────────────── */
 .apd-btn {
   display: flex;
   align-items: center;
@@ -10591,65 +10617,64 @@ html body.theme-sunset .message-body p {
   padding: 9px 12px;
   border: none;
   background: transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   color: #3b0764;
   text-align: left;
-  transition: background 0.14s ease, transform 0.14s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   box-sizing: border-box;
 }
 .apd-btn:hover {
-  background: rgba(237, 233, 254, 0.75);
-  transform: translateX(2px);
+  background: rgba(237, 233, 254, 0.8);
+  transform: translateX(3px);
 }
-.apd-btn svg {
+
+/* Coloured icon pill for each button */
+.apd-icon-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 8px;
   flex-shrink: 0;
-  color: #7c3aed;
-  opacity: 0.85;
+  transition: transform 0.15s ease;
 }
-.apd-btn.apd-whisper svg {
-  color: #06b6d4;
-}
-.apd-btn.apd-whisper {
-  color: #0e7490;
-}
-.apd-btn.apd-whisper:hover {
-  background: rgba(207, 250, 254, 0.5);
-}
-.apd-btn.apd-danger {
-  color: #be123c;
-}
-.apd-btn.apd-danger svg {
-  color: #e11d48;
-}
-.apd-btn.apd-danger:hover {
-  background: rgba(255, 228, 230, 0.65);
-  transform: translateX(2px);
-}
+.apd-btn:hover .apd-icon-wrap { transform: scale(1.1); }
+
+.apd-icon-friend { background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white; }
+.apd-icon-pm     { background: linear-gradient(135deg, #34d399, #059669); color: white; }
+.apd-icon-whisper{ background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: white; }
+.apd-icon-block  { background: linear-gradient(135deg, #fb7185, #e11d48); color: white; }
+
+.apd-btn.apd-friend  { color: #4c1d95; }
+.apd-btn.apd-pm      { color: #065f46; }
+.apd-btn.apd-whisper { color: #0369a1; }
+.apd-btn.apd-danger  { color: #9f1239; }
+
+.apd-btn.apd-friend:hover  { background: rgba(221, 214, 254, 0.65); }
+.apd-btn.apd-pm:hover      { background: rgba(209, 250, 229, 0.65); }
+.apd-btn.apd-whisper:hover { background: rgba(224, 242, 254, 0.65); }
+.apd-btn.apd-danger:hover  { background: rgba(255, 228, 230, 0.65); }
 
 /* Dark mode */
 .dark-mode .avatar-portal-dropdown {
-  background: rgba(16, 8, 42, 0.97);
-  border-color: rgba(139, 92, 246, 0.32);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.45),
-    0 4px 16px rgba(109, 40, 217, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  background: linear-gradient(145deg, rgba(20, 8, 52, 0.98) 0%, rgba(30, 12, 68, 0.98) 100%);
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(109,40,217,0.25), 0 0 0 1px rgba(255,255,255,0.04) inset;
 }
+.dark-mode .apd-online-dot { border-color: #1e0844; }
 .dark-mode .apd-name { color: #ede9fe; }
-.dark-mode .apd-role { color: #a78bfa; }
-.dark-mode .apd-divider { background: rgba(139, 92, 246, 0.22); }
+.dark-mode .apd-role { color: #c4b5fd; }
 .dark-mode .apd-btn { color: #e9d5ff; }
-.dark-mode .apd-btn:hover { background: rgba(139, 92, 246, 0.18); }
-.dark-mode .apd-btn svg { color: #a78bfa; }
-.dark-mode .apd-btn.apd-whisper { color: #67e8f9; }
-.dark-mode .apd-btn.apd-whisper svg { color: #22d3ee; }
-.dark-mode .apd-btn.apd-whisper:hover { background: rgba(8, 145, 178, 0.18); }
-.dark-mode .apd-btn.apd-danger { color: #fca5a5; }
-.dark-mode .apd-btn.apd-danger svg { color: #f87171; }
-.dark-mode .apd-btn.apd-danger:hover { background: rgba(127, 29, 29, 0.3); }
+.dark-mode .apd-btn.apd-friend  { color: #ddd6fe; }
+.dark-mode .apd-btn.apd-pm      { color: #a7f3d0; }
+.dark-mode .apd-btn.apd-whisper { color: #bae6fd; }
+.dark-mode .apd-btn.apd-danger  { color: #fda4af; }
+.dark-mode .apd-btn:hover { background: rgba(139, 92, 246, 0.15); }
+.dark-mode .apd-btn.apd-friend:hover  { background: rgba(109, 40, 217, 0.2); }
+.dark-mode .apd-btn.apd-pm:hover      { background: rgba(5, 150, 105, 0.2); }
+.dark-mode .apd-btn.apd-whisper:hover { background: rgba(14, 165, 233, 0.2); }
+.dark-mode .apd-btn.apd-danger:hover  { background: rgba(225, 29, 72, 0.2); }
 
 /* ═══════════════════════════════════════════════════════════════════
    CRISP VIVID COLOR OVERHAUL — All elements more colourful

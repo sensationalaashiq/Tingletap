@@ -38,25 +38,35 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="sendGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#a78bfa"/>
-        <stop offset="100%" stopColor="#7c3aed"/>
+      <linearGradient id="sendGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#f472b6"/>
+        <stop offset="40%" stopColor="#a855f7"/>
+        <stop offset="100%" stopColor="#6366f1"/>
       </linearGradient>
+      <filter id="sendGlow">
+        <feGaussianBlur stdDeviation="0.8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
     </defs>
-    <path d="M3.4 2.02L21.6 10.56C22.8 11.14 22.8 12.86 21.6 13.44L3.4 21.98C2.12 22.6 0.72 21.48 1.04 20.1L2.8 13H11C11.55 13 12 12.55 12 12C12 11.45 11.55 11 11 11H2.8L1.04 3.9C0.72 2.52 2.12 1.4 3.4 2.02Z" fill="url(#sendGrad)" stroke="none"/>
+    <g filter="url(#sendGlow)">
+      <path d="M22 2L11 13" stroke="url(#sendGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="url(#sendGrad)" stroke="url(#sendGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </g>
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="attachGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c4b5fd"/>
-        <stop offset="100%" stopColor="#7c3aed"/>
+        <stop offset="0%" stopColor="#34d399"/>
+        <stop offset="50%" stopColor="#06b6d4"/>
+        <stop offset="100%" stopColor="#6366f1"/>
       </linearGradient>
     </defs>
-    <path d="M19.5 10.5L10.94 19.06C9.12 20.88 6.18 20.88 4.36 19.06C2.54 17.24 2.54 14.3 4.36 12.48L12.93 3.91C14.11 2.73 16.04 2.73 17.22 3.91C18.4 5.09 18.4 7.02 17.22 8.2L8.66 16.77C8.07 17.36 7.1 17.36 6.51 16.77C5.92 16.18 5.92 15.21 6.51 14.62L14.38 6.74" stroke="url(#attachGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="url(#attachGrad)" strokeWidth="1.5" opacity="0.3"/>
+    <path d="M12 7V17M7 12H17" stroke="url(#attachGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const PremiumDeleteIcon = () => (
@@ -541,28 +551,50 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                 left: `${dropdownPos.left}px`,
                             }}>
                                 <div className="apd-header">
-                                    <img src={avatarUrl} alt="avatar" className="apd-avatar" />
+                                    <div className="apd-avatar-wrap">
+                                        <img src={avatarUrl} alt="avatar" className="apd-avatar" />
+                                        <span className="apd-online-dot"></span>
+                                    </div>
                                     <div className="apd-user-info">
                                         <span className="apd-name">{displayName}</span>
-                                        <span className="apd-role">{role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Member'}</span>
+                                        <span className="apd-role">
+                                            <span className="apd-role-dot"></span>
+                                            {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Member'}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="apd-divider"></div>
-                                <button className="apd-btn" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/></svg>
+                                <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
+                                    <span className="apd-icon-wrap apd-icon-friend">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                                        </svg>
+                                    </span>
                                     <span>Add Friend</span>
                                 </button>
-                                <button className="apd-btn" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"/></svg>
+                                <button className="apd-btn apd-pm" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
+                                    <span className="apd-icon-wrap apd-icon-pm">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                    </span>
                                     <span>Send Message</span>
                                 </button>
                                 <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h.01M12 12h.01M16 12h.01" strokeWidth="2.5"/></svg>
+                                    <span className="apd-icon-wrap apd-icon-whisper">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                        </svg>
+                                    </span>
                                     <span>Whisper</span>
                                 </button>
                                 <div className="apd-divider"></div>
                                 <button className="apd-btn apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/></svg>
+                                    <span className="apd-icon-wrap apd-icon-block">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                        </svg>
+                                    </span>
                                     <span>Block User</span>
                                 </button>
                             </div>
