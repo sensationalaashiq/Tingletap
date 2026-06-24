@@ -1222,76 +1222,54 @@ const SettingsSidebar = ({
                 }
 
                 return (
-                    <div className="settings-tab-content style-tab-v2">
+                    <div className="st3-wrap">
 
-                        {/* ── LIVE PREVIEW ── */}
-                        <div className="sv2-preview-card">
-                            <div className="sv2-preview-stage">
+                        {/* ── HEADER: preview + reset ── */}
+                        <div className="st3-header">
+                            <div className="st3-preview-box">
+                                <span className="st3-live-dot" />
                                 <span className="username-preview-text" id="username-preview">
                                     {loggedInUserProfile?.displayName || 'YourUsername'}
                                 </span>
                             </div>
-                            <div className="sv2-preview-footer">
-                                <span className="sv2-live-dot" />
-                                Visible to everyone in chat
-                            </div>
+                            <button className="st3-reset-btn" title="Reset to Default" onClick={() => {
+                                const d = { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameOutlineEnabled:false, usernameOutlineColor:'#000000', usernameOutlineSize:'1px', usernameAnimationEnabled:false, usernameAnimationType:'pulse', usernameAnimationDuration:'1s', usernameLetterSpacing:'0px' };
+                                Object.entries(d).forEach(([k,v]) => handleSettingChange(k,v));
+                                setTimeout(applyUsernameStyles, 100);
+                            }}>
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M3 3v5h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Reset
+                            </button>
                         </div>
 
-                        {/* ── QUICK PRESETS ── */}
-                        <div className="sv2-section">
-                            <div className="sv2-section-label">Quick Presets</div>
-                            <div className="sv2-presets-row">
-                                {[
-                                    {
-                                        name: 'Default',
-                                        previewStyle: { color: '#333', fontFamily: 'inherit' },
-                                        preset: { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameTextShadow:'none', usernameOutlineEnabled:false, usernameAnimationEnabled:false, usernameLetterSpacing:'0px' }
-                                    },
-                                    {
-                                        name: 'Violet',
-                                        previewStyle: { background:'linear-gradient(to right,#667eea,#764ba2)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold' },
-                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameLetterSpacing:'0.5px', usernameAnimationEnabled:false }
-                                    },
-                                    {
-                                        name: 'Fire',
-                                        previewStyle: { background:'linear-gradient(45deg,#ff4500,#ff8c00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold' },
-                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#ff4500', usernameGradientEnd:'#ff8c00', usernameGradientDirection:'45deg', usernameTextShadow:'0 0 8px rgba(255,69,0,0.7)', usernameAnimationEnabled:true, usernameAnimationType:'glow', usernameAnimationDuration:'2s' }
-                                    },
-                                    {
-                                        name: 'Neon',
-                                        previewStyle: { color:'#00e5ff', textShadow:'0 0 8px rgba(0,229,255,0.9)', fontWeight:'bold' },
-                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:false, usernameFontColor:'#00e5ff', usernameTextShadow:'0 0 10px rgba(0,229,255,0.8)', usernameAnimationEnabled:true, usernameAnimationType:'glow', usernameAnimationDuration:'1.5s', usernameLetterSpacing:'1px' }
-                                    },
-                                    {
-                                        name: 'Elegant',
-                                        previewStyle: { fontFamily:'Georgia', fontStyle:'italic', background:'linear-gradient(135deg,#a18cd1,#fbc2eb)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' },
-                                        preset: { usernameFontSize:'13px', usernameFontFamily:'Georgia', usernameIsItalic:true, usernameIsBold:false, usernameGradientEnabled:true, usernameGradientStart:'#a18cd1', usernameGradientEnd:'#fbc2eb', usernameGradientDirection:'135deg', usernameTextShadow:'none', usernameLetterSpacing:'1px', usernameAnimationEnabled:false }
-                                    },
-                                    {
-                                        name: 'Gold',
-                                        previewStyle: { background:'linear-gradient(to right,#f7971e,#ffd200)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold', textShadow:'0 0 6px rgba(255,210,0,0.5)' },
-                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#f7971e', usernameGradientEnd:'#ffd200', usernameGradientDirection:'to right', usernameTextShadow:'0 0 10px rgba(255,215,0,0.8)', usernameAnimationEnabled:false, usernameLetterSpacing:'0.5px' }
-                                    },
-                                ].map((p) => (
-                                    <button key={p.name} className="sv2-preset-btn" onClick={() => {
-                                        Object.entries(p.preset).forEach(([k, v]) => handleSettingChange(k, v));
-                                        setTimeout(applyUsernameStyles, 100);
-                                    }}>
-                                        <span className="sv2-preset-preview" style={p.previewStyle}>Aa</span>
-                                        <span className="sv2-preset-name">{p.name}</span>
-                                    </button>
-                                ))}
-                            </div>
+                        {/* ── PRESETS ── */}
+                        <div className="st3-presets-row">
+                            {[
+                                { name:'Default', s:{color:'#555'}, p:{usernameFontSize:'12px',usernameFontColor:'#333333',usernameFontFamily:'inherit',usernameIsBold:false,usernameIsItalic:false,usernameIsUnderline:false,usernameIsStrikethrough:false,usernameGradientEnabled:false,usernameTextShadow:'none',usernameOutlineEnabled:false,usernameAnimationEnabled:false,usernameLetterSpacing:'0px'} },
+                                { name:'Violet', s:{background:'linear-gradient(to right,#667eea,#764ba2)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:700}, p:{usernameFontSize:'13px',usernameFontFamily:'inherit',usernameIsBold:true,usernameGradientEnabled:true,usernameGradientStart:'#667eea',usernameGradientEnd:'#764ba2',usernameGradientDirection:'to right',usernameTextShadow:'none',usernameLetterSpacing:'0.5px',usernameAnimationEnabled:false} },
+                                { name:'Fire', s:{background:'linear-gradient(45deg,#ff4500,#ff8c00)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:700}, p:{usernameFontSize:'13px',usernameFontFamily:'inherit',usernameIsBold:true,usernameGradientEnabled:true,usernameGradientStart:'#ff4500',usernameGradientEnd:'#ff8c00',usernameGradientDirection:'45deg',usernameTextShadow:'0 0 8px rgba(255,69,0,0.7)',usernameAnimationEnabled:true,usernameAnimationType:'glow',usernameAnimationDuration:'2s'} },
+                                { name:'Neon', s:{color:'#00e5ff',textShadow:'0 0 8px rgba(0,229,255,0.9)',fontWeight:700}, p:{usernameFontSize:'13px',usernameFontFamily:'inherit',usernameIsBold:true,usernameGradientEnabled:false,usernameFontColor:'#00e5ff',usernameTextShadow:'0 0 10px rgba(0,229,255,0.8)',usernameAnimationEnabled:true,usernameAnimationType:'glow',usernameAnimationDuration:'1.5s',usernameLetterSpacing:'1px'} },
+                                { name:'Elegant', s:{fontFamily:'Georgia',fontStyle:'italic',background:'linear-gradient(135deg,#a18cd1,#fbc2eb)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}, p:{usernameFontSize:'13px',usernameFontFamily:'Georgia',usernameIsItalic:true,usernameIsBold:false,usernameGradientEnabled:true,usernameGradientStart:'#a18cd1',usernameGradientEnd:'#fbc2eb',usernameGradientDirection:'135deg',usernameTextShadow:'none',usernameLetterSpacing:'1px',usernameAnimationEnabled:false} },
+                                { name:'Gold', s:{background:'linear-gradient(to right,#f7971e,#ffd200)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:700}, p:{usernameFontSize:'13px',usernameFontFamily:'inherit',usernameIsBold:true,usernameGradientEnabled:true,usernameGradientStart:'#f7971e',usernameGradientEnd:'#ffd200',usernameGradientDirection:'to right',usernameTextShadow:'0 0 10px rgba(255,215,0,0.8)',usernameAnimationEnabled:false,usernameLetterSpacing:'0.5px'} },
+                            ].map(p => (
+                                <button key={p.name} className="st3-preset" onClick={() => { Object.entries(p.p).forEach(([k,v]) => handleSettingChange(k,v)); setTimeout(applyUsernameStyles,100); }}>
+                                    <span className="st3-preset-aa" style={p.s}>Aa</span>
+                                    <span className="st3-preset-name">{p.name}</span>
+                                </button>
+                            ))}
                         </div>
 
-                        {/* ── TYPOGRAPHY ── */}
-                        <div className="sv2-section">
-                            <div className="sv2-section-label">Typography</div>
+                        {/* ── CONTROLS CARD ── */}
+                        <div className="st3-card">
 
-                            <div className="sv2-row">
-                                <span className="sv2-row-label">Font</span>
-                                <div className="sv2-select-wrap">
-                                    <select className="sv2-select" value={settings.usernameFontFamily} onChange={e => { handleSettingChange('usernameFontFamily', e.target.value); updatePreviewElement(); }}>
+                            {/* Font */}
+                            <div className="st3-row">
+                                <span className="st3-label">Font</span>
+                                <div className="st3-sel-wrap">
+                                    <select className="st3-sel" value={settings.usernameFontFamily} onChange={e => { handleSettingChange('usernameFontFamily', e.target.value); updatePreviewElement(); }}>
                                         <option value="inherit">Default</option>
                                         <option value="Georgia">Georgia</option>
                                         <option value="Great Vibes">Great Vibes</option>
@@ -1299,219 +1277,154 @@ const SettingsSidebar = ({
                                         <option value="Allura">Allura</option>
                                         <option value="Pacifico">Pacifico</option>
                                         <option value="Satisfy">Satisfy</option>
-                                        <option value="Courgette">Courgette</option>
-                                        <option value="Mr De Haviland">Mr De Haviland</option>
                                         <option value="Lobster">Lobster</option>
-                                        <option value="Kaushan Script">Kaushan Script</option>
-                                        <option value="Amatic SC">Amatic SC</option>
                                         <option value="Caveat">Caveat</option>
                                         <option value="Indie Flower">Indie Flower</option>
                                         <option value="Permanent Marker">Permanent Marker</option>
-                                        <option value="Sacramento">Sacramento</option>
-                                        <option value="Shadows Into Light">Shadows Into Light</option>
-                                        <option value="Source Sans Pro">Source Sans Pro</option>
+                                        <option value="Nunito">Nunito</option>
                                         <option value="Raleway">Raleway</option>
                                         <option value="Merriweather">Merriweather</option>
-                                        <option value="Nunito">Nunito</option>
+                                        <option value="Courgette">Courgette</option>
+                                        <option value="Sacramento">Sacramento</option>
                                         <option value="Ubuntu">Ubuntu</option>
-                                        <option value="Cabin">Cabin</option>
-                                        <option value="Crimson Text">Crimson Text</option>
                                     </select>
-                                    <svg className="sv2-chevron" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
+                                    <svg className="st3-chev" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
                                 </div>
                             </div>
 
-                            <div className="sv2-row">
-                                <span className="sv2-row-label">Size</span>
-                                <div className="sv2-pill-row">
-                                    {['8px','10px','11px','12px','13px','14px','15px','16px'].map(sz => (
-                                        <button key={sz} className={`sv2-pill ${settings.usernameFontSize === sz ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameFontSize', sz); updatePreviewElement(); }}>
-                                            {sz.replace('px','')}
-                                        </button>
+                            <div className="st3-divider" />
+
+                            {/* Size */}
+                            <div className="st3-row">
+                                <span className="st3-label">Size</span>
+                                <div className="st3-chips">
+                                    {['8','10','11','12','13','14','15','16'].map(sz => (
+                                        <button key={sz} className={`st3-chip ${settings.usernameFontSize === sz+'px' ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameFontSize', sz+'px'); updatePreviewElement(); }}>{sz}</button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="sv2-row">
-                                <span className="sv2-row-label">Spacing</span>
-                                <div className="sv2-pill-row">
-                                    {[{v:'-0.5px',l:'Tight'},{v:'0px',l:'Normal'},{v:'0.5px',l:'Wide'},{v:'1px',l:'Wider'},{v:'2px',l:'Max'}].map(s => (
-                                        <button key={s.v} className={`sv2-pill ${settings.usernameLetterSpacing === s.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameLetterSpacing', s.v); setTimeout(applyUsernameStyles, 50); }}>
-                                            {s.l}
-                                        </button>
+                            <div className="st3-divider" />
+
+                            {/* Style + Spacing */}
+                            <div className="st3-row" style={{flexWrap:'wrap',gap:'4px 6px'}}>
+                                <span className="st3-label">Style</span>
+                                <div className="st3-chips">
+                                    <button className={`st3-chip st3-fmt ${settings.usernameIsBold ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameIsBold', !settings.usernameIsBold); setTimeout(applyUsernameStyles,50); }}><b>B</b></button>
+                                    <button className={`st3-chip st3-fmt ${settings.usernameIsItalic ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameIsItalic', !settings.usernameIsItalic); setTimeout(applyUsernameStyles,50); }}><i>I</i></button>
+                                    <button className={`st3-chip st3-fmt ${settings.usernameIsUnderline ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameIsUnderline', !settings.usernameIsUnderline); setTimeout(applyUsernameStyles,50); }}><u>U</u></button>
+                                    <button className={`st3-chip st3-fmt ${settings.usernameIsStrikethrough ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameIsStrikethrough', !settings.usernameIsStrikethrough); setTimeout(applyUsernameStyles,50); }}><s>S</s></button>
+                                </div>
+                                <span className="st3-label" style={{marginLeft:'4px'}}>Space</span>
+                                <div className="st3-chips">
+                                    {[{v:'-0.5px',l:'−'},{v:'0px',l:'·'},{v:'0.5px',l:'+'},{v:'1px',l:'++'},{v:'2px',l:'MAX'}].map(s => (
+                                        <button key={s.v} className={`st3-chip ${settings.usernameLetterSpacing === s.v ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameLetterSpacing', s.v); setTimeout(applyUsernameStyles,50); }}>{s.l}</button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="sv2-row">
-                                <span className="sv2-row-label">Style</span>
-                                <div className="sv2-style-btns">
-                                    <button className={`sv2-style-btn ${settings.usernameIsBold ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsBold', !settings.usernameIsBold); setTimeout(applyUsernameStyles, 50); }} title="Bold"><b>B</b></button>
-                                    <button className={`sv2-style-btn ${settings.usernameIsItalic ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsItalic', !settings.usernameIsItalic); setTimeout(applyUsernameStyles, 50); }} title="Italic"><i>I</i></button>
-                                    <button className={`sv2-style-btn ${settings.usernameIsUnderline ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsUnderline', !settings.usernameIsUnderline); setTimeout(applyUsernameStyles, 50); }} title="Underline"><u>U</u></button>
-                                    <button className={`sv2-style-btn ${settings.usernameIsStrikethrough ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsStrikethrough', !settings.usernameIsStrikethrough); setTimeout(applyUsernameStyles, 50); }} title="Strikethrough"><s>S</s></button>
-                                </div>
-                            </div>
-                        </div>
+                            <div className="st3-divider" />
 
-                        {/* ── COLOR ── */}
-                        <div className="sv2-section">
-                            <div className="sv2-section-label">Color</div>
-
-                            <div className="sv2-color-mode-row">
-                                <button className={`sv2-mode-btn ${!settings.usernameGradientEnabled ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', false); setTimeout(applyUsernameStyles, 50); }}>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
-                                    Solid
-                                </button>
-                                <button className={`sv2-mode-btn ${settings.usernameGradientEnabled ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', true); setTimeout(applyUsernameStyles, 50); }}>
-                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><defs><linearGradient id="gIcon" x1="0%" y1="0%" x2="100%"><stop offset="0%" stopColor="#667eea"/><stop offset="100%" stopColor="#f093fb"/></linearGradient></defs><circle cx="12" cy="12" r="8" fill="url(#gIcon)"/></svg>
-                                    Gradient
-                                </button>
+                            {/* Color mode */}
+                            <div className="st3-row">
+                                <span className="st3-label">Color</span>
+                                <button className={`st3-mode-btn ${!settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', false); setTimeout(applyUsernameStyles,50); }}>Solid</button>
+                                <button className={`st3-mode-btn ${settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', true); setTimeout(applyUsernameStyles,50); }}>Gradient</button>
                             </div>
 
                             {!settings.usernameGradientEnabled ? (
-                                <div className="sv2-row">
-                                    <span className="sv2-row-label">Color</span>
-                                    <div className="sv2-color-row">
-                                        <input type="color" className="sv2-color-input" value={settings.usernameFontColor} onChange={e => { handleSettingChange('usernameFontColor', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
-                                        <div className="sv2-color-swatch" style={{ background: settings.usernameFontColor }} />
-                                        <span className="sv2-color-hex">{settings.usernameFontColor}</span>
-                                    </div>
+                                <div className="st3-row">
+                                    <span className="st3-label">Pick</span>
+                                    <input type="color" className="st3-color-input" value={settings.usernameFontColor} onChange={e => { handleSettingChange('usernameFontColor', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                    <span className="st3-hex">{settings.usernameFontColor}</span>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="sv2-row">
-                                        <span className="sv2-row-label">From</span>
-                                        <div className="sv2-color-row">
-                                            <input type="color" className="sv2-color-input" value={settings.usernameGradientStart} onChange={e => { handleSettingChange('usernameGradientStart', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
-                                            <div className="sv2-color-swatch" style={{ background: settings.usernameGradientStart }} />
-                                            <span className="sv2-color-hex">{settings.usernameGradientStart}</span>
-                                        </div>
+                                    <div className="st3-row">
+                                        <span className="st3-label">From</span>
+                                        <input type="color" className="st3-color-input" value={settings.usernameGradientStart} onChange={e => { handleSettingChange('usernameGradientStart', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        <span className="st3-hex">{settings.usernameGradientStart}</span>
+                                        <span className="st3-label" style={{marginLeft:'4px'}}>To</span>
+                                        <input type="color" className="st3-color-input" value={settings.usernameGradientEnd} onChange={e => { handleSettingChange('usernameGradientEnd', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        <span className="st3-hex">{settings.usernameGradientEnd}</span>
                                     </div>
-                                    <div className="sv2-row">
-                                        <span className="sv2-row-label">To</span>
-                                        <div className="sv2-color-row">
-                                            <input type="color" className="sv2-color-input" value={settings.usernameGradientEnd} onChange={e => { handleSettingChange('usernameGradientEnd', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
-                                            <div className="sv2-color-swatch" style={{ background: settings.usernameGradientEnd }} />
-                                            <span className="sv2-color-hex">{settings.usernameGradientEnd}</span>
-                                        </div>
-                                    </div>
-                                    <div className="sv2-row">
-                                        <span className="sv2-row-label">Dir</span>
-                                        <div className="sv2-dir-grid">
-                                            {[{v:'to right',l:'→'},{v:'to left',l:'←'},{v:'to bottom',l:'↓'},{v:'to top',l:'↑'},{v:'45deg',l:'↗'},{v:'135deg',l:'↘'},{v:'225deg',l:'↙'},{v:'315deg',l:'↖'},{v:'radial',l:'●'}].map(d => (
-                                                <button key={d.v} className={`sv2-dir-btn ${settings.usernameGradientDirection === d.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientDirection', d.v); setTimeout(applyUsernameStyles, 50); }}>{d.l}</button>
+                                    <div className="st3-row">
+                                        <span className="st3-label">Dir</span>
+                                        <div className="st3-chips">
+                                            {[{v:'to right',l:'→'},{v:'to left',l:'←'},{v:'to bottom',l:'↓'},{v:'45deg',l:'↗'},{v:'135deg',l:'↘'},{v:'225deg',l:'↙'},{v:'315deg',l:'↖'},{v:'radial',l:'●'}].map(d => (
+                                                <button key={d.v} className={`st3-chip ${settings.usernameGradientDirection === d.v ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientDirection', d.v); setTimeout(applyUsernameStyles,50); }}>{d.l}</button>
                                             ))}
                                         </div>
                                     </div>
                                 </>
                             )}
-                        </div>
 
-                        {/* ── EFFECTS ── */}
-                        <div className="sv2-section">
-                            <div className="sv2-section-label">Effects</div>
+                            <div className="st3-divider" />
 
-                            <div className="sv2-effects-label">Shadow</div>
-                            <div className="sv2-shadow-grid">
-                                {[
-                                    {v:'none', l:'None'},
-                                    {v:'1px 1px 2px rgba(0,0,0,0.3)', l:'Soft'},
-                                    {v:'2px 2px 4px rgba(0,0,0,0.5)', l:'Dark'},
-                                    {v:'0 0 8px rgba(255,255,255,0.8)', l:'White'},
-                                    {v:'0 0 10px rgba(0,255,255,0.8)', l:'Cyan'},
-                                    {v:'0 0 10px rgba(255,0,255,0.8)', l:'Pink'},
-                                    {v:'0 0 10px rgba(255,215,0,0.8)', l:'Gold'},
-                                    {v:'2px 2px 0px #000,4px 4px 0px #333', l:'3D'},
-                                ].map(s => (
-                                    <button key={s.v} className={`sv2-shadow-btn ${settings.usernameTextShadow === s.v ? 'active' : ''}`} style={{ textShadow: s.v === 'none' ? 'none' : s.v }} onClick={() => { handleSettingChange('usernameTextShadow', s.v); setTimeout(applyUsernameStyles, 50); }}>
-                                        {s.l}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="sv2-row" style={{ marginTop: '10px' }}>
-                                <span className="sv2-row-label">Outline</span>
-                                <div className="sv2-outline-row">
-                                    <label className="sv2-toggle">
-                                        <input type="checkbox" checked={settings.usernameOutlineEnabled} onChange={e => { handleSettingChange('usernameOutlineEnabled', e.target.checked); setTimeout(applyUsernameStyles, 50); }} />
-                                        <span className="sv2-toggle-track" />
-                                    </label>
-                                    {settings.usernameOutlineEnabled && (
-                                        <>
-                                            <input type="color" className="sv2-color-input sm" value={settings.usernameOutlineColor} onChange={e => { handleSettingChange('usernameOutlineColor', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
-                                            <div className="sv2-select-wrap sm">
-                                                <select className="sv2-select" value={settings.usernameOutlineSize} onChange={e => { handleSettingChange('usernameOutlineSize', e.target.value); setTimeout(applyUsernameStyles, 50); }}>
-                                                    <option value="0.5px">Thin</option>
-                                                    <option value="1px">Normal</option>
-                                                    <option value="1.5px">Medium</option>
-                                                    <option value="2px">Thick</option>
-                                                    <option value="2.5px">Bolder</option>
-                                                </select>
-                                                <svg className="sv2-chevron" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
-                                            </div>
-                                        </>
-                                    )}
+                            {/* Shadow */}
+                            <div className="st3-row" style={{flexWrap:'wrap',alignItems:'flex-start'}}>
+                                <span className="st3-label" style={{paddingTop:'2px'}}>Shadow</span>
+                                <div className="st3-chips" style={{flexWrap:'wrap'}}>
+                                    {[{v:'none',l:'—'},{v:'1px 1px 2px rgba(0,0,0,0.3)',l:'Soft'},{v:'2px 2px 4px rgba(0,0,0,0.5)',l:'Dark'},{v:'0 0 8px rgba(255,255,255,0.8)',l:'White'},{v:'0 0 10px rgba(0,255,255,0.8)',l:'Cyan'},{v:'0 0 10px rgba(255,0,255,0.8)',l:'Pink'},{v:'0 0 10px rgba(255,215,0,0.8)',l:'Gold'},{v:'2px 2px 0px #000,4px 4px 0px #333',l:'3D'}].map(s => (
+                                        <button key={s.v} className={`st3-chip ${settings.usernameTextShadow === s.v ? 'on' : ''}`} style={s.v!=='none'?{textShadow:s.v}:{}} onClick={() => { handleSettingChange('usernameTextShadow', s.v); setTimeout(applyUsernameStyles,50); }}>{s.l}</button>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* ── ANIMATION ── */}
-                        <div className="sv2-section">
-                            <div className="sv2-section-label">Animation</div>
+                            <div className="st3-divider" />
 
-                            <div className="sv2-row">
-                                <span className="sv2-row-label">Enable</span>
-                                <label className="sv2-toggle">
-                                    <input type="checkbox" checked={settings.usernameAnimationEnabled} onChange={e => { handleSettingChange('usernameAnimationEnabled', e.target.checked); setTimeout(applyUsernameStyles, 50); }} />
-                                    <span className="sv2-toggle-track" />
+                            {/* Outline */}
+                            <div className="st3-row">
+                                <span className="st3-label">Outline</span>
+                                <label className="st3-toggle">
+                                    <input type="checkbox" checked={settings.usernameOutlineEnabled} onChange={e => { handleSettingChange('usernameOutlineEnabled', e.target.checked); setTimeout(applyUsernameStyles,50); }} />
+                                    <span className="st3-track" />
                                 </label>
+                                {settings.usernameOutlineEnabled && (
+                                    <>
+                                        <input type="color" className="st3-color-input" value={settings.usernameOutlineColor} onChange={e => { handleSettingChange('usernameOutlineColor', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        <div className="st3-sel-wrap" style={{flex:'none',width:'76px'}}>
+                                            <select className="st3-sel" value={settings.usernameOutlineSize} onChange={e => { handleSettingChange('usernameOutlineSize', e.target.value); setTimeout(applyUsernameStyles,50); }}>
+                                                <option value="0.5px">Thin</option>
+                                                <option value="1px">Normal</option>
+                                                <option value="1.5px">Medium</option>
+                                                <option value="2px">Thick</option>
+                                            </select>
+                                            <svg className="st3-chev" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="st3-divider" />
+
+                            {/* Animation */}
+                            <div className="st3-row" style={{flexWrap:'wrap',gap:'4px 6px'}}>
+                                <span className="st3-label">Anim</span>
+                                <label className="st3-toggle">
+                                    <input type="checkbox" checked={settings.usernameAnimationEnabled} onChange={e => { handleSettingChange('usernameAnimationEnabled', e.target.checked); setTimeout(applyUsernameStyles,50); }} />
+                                    <span className="st3-track" />
+                                </label>
+                                {settings.usernameAnimationEnabled && (
+                                    <div className="st3-chips" style={{flexWrap:'wrap'}}>
+                                        {[{v:'pulse',l:'Pulse'},{v:'bounce',l:'Bounce'},{v:'shake',l:'Shake'},{v:'glow',l:'Glow'},{v:'fadeInOut',l:'Fade'},{v:'rainbow',l:'🌈'}].map(a => (
+                                            <button key={a.v} className={`st3-chip ${settings.usernameAnimationType === a.v ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameAnimationType', a.v); setTimeout(applyUsernameStyles,50); }}>{a.l}</button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {settings.usernameAnimationEnabled && (
-                                <>
-                                    <div className="sv2-anim-grid">
-                                        {[{v:'pulse',l:'Pulse'},{v:'bounce',l:'Bounce'},{v:'shake',l:'Shake'},{v:'glow',l:'Glow'},{v:'fadeInOut',l:'Fade'},{v:'rainbow',l:'Rainbow'}].map(a => (
-                                            <button key={a.v} className={`sv2-anim-btn ${settings.usernameAnimationType === a.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameAnimationType', a.v); setTimeout(applyUsernameStyles, 50); }}>
-                                                <span className={`sv2-anim-preview ${a.v}`}>Aa</span>
-                                                <span>{a.l}</span>
-                                            </button>
+                                <div className="st3-row">
+                                    <span className="st3-label">Speed</span>
+                                    <div className="st3-chips">
+                                        {[{v:'0.5s',l:'Fast'},{v:'1s',l:'Normal'},{v:'2s',l:'Slow'},{v:'3s',l:'Slower'}].map(sp => (
+                                            <button key={sp.v} className={`st3-chip ${settings.usernameAnimationDuration === sp.v ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameAnimationDuration', sp.v); setTimeout(applyUsernameStyles,50); }}>{sp.l}</button>
                                         ))}
                                     </div>
-                                    <div className="sv2-row" style={{ marginTop: '8px' }}>
-                                        <span className="sv2-row-label">Speed</span>
-                                        <div className="sv2-pill-row">
-                                            {[{v:'0.5s',l:'Fast'},{v:'1s',l:'Normal'},{v:'2s',l:'Slow'},{v:'3s',l:'Slower'}].map(sp => (
-                                                <button key={sp.v} className={`sv2-pill ${settings.usernameAnimationDuration === sp.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameAnimationDuration', sp.v); setTimeout(applyUsernameStyles, 50); }}>{sp.l}</button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
+                                </div>
                             )}
-                        </div>
 
-                        {/* ── RESET TO DEFAULT ── */}
-                        <div className="sv2-reset-wrap">
-                            <button
-                                className="sv2-reset-btn"
-                                onClick={() => {
-                                    const defaults = { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameOutlineEnabled:false, usernameOutlineColor:'#000000', usernameOutlineSize:'1px', usernameAnimationEnabled:false, usernameAnimationType:'pulse', usernameAnimationDuration:'1s', usernameLetterSpacing:'0px' };
-                                    Object.entries(defaults).forEach(([k, v]) => handleSettingChange(k, v));
-                                    setTimeout(applyUsernameStyles, 100);
-                                }}
-                            >
-                                <svg className="sv2-reset-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <linearGradient id="resetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#667eea"/>
-                                            <stop offset="100%" stopColor="#764ba2"/>
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="url(#resetGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M3 3v5h5" stroke="url(#resetGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <span className="sv2-reset-label">Reset to Default</span>
-                            </button>
                         </div>
 
                     </div>
