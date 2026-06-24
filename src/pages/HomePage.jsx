@@ -31,7 +31,7 @@ import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
 import { Badges as badges } from '../data/Badges';
-import { getRoleDisplayLabel } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import './HomePage.css';
 
@@ -865,16 +865,6 @@ const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
 );
 
 const getGenderBorderClass = (userOrGender) => {
-    let gender = 'male';
-    let role = 'user';
-    let badge = null;
-    if (typeof userOrGender === 'string') {
-        gender = userOrGender;
-    } else if (userOrGender && typeof userOrGender === 'object') {
-        gender = userOrGender.gender?.toLowerCase() === 'female' ? 'female' : 'male';
-        role = userOrGender.role || 'user';
-        badge = userOrGender.badge;
-    }
     const g = (typeof userOrGender === 'string' ? userOrGender : userOrGender?.gender || '').toLowerCase();
     if (g === 'female') return 'female-border';
     if (g === 'transgender' || g === 'other') return 'transgender-border';
@@ -901,7 +891,7 @@ const HomePage = ({ user }) => {
                 uid: g.uid,
                 displayName: g.displayName || g.username || auth.currentUser?.displayName || 'Guest',
                 email: null,
-                photoURL: g.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${g.uid}&sex=${(g.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+                photoURL: g.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${g.uid}&sex=${dicebearSex(g.gender)}&backgroundColor=c0aede`,
                 role: 'guest',
                 isGuest: true,
                 isAnonymous: true,
@@ -1354,7 +1344,7 @@ const HomePage = ({ user }) => {
             uid: guestUser.uid,
             displayName: guestUser.username || guestUser.displayName || auth.currentUser?.displayName || 'Guest',
             email: null,
-            photoURL: guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestUser.uid}&sex=${(guestUser.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+            photoURL: guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestUser.uid}&sex=${dicebearSex(guestUser.gender)}&backgroundColor=c0aede`,
             role: 'guest',
             isGuest: true,
             isAnonymous: true,
@@ -1848,7 +1838,7 @@ const HomePage = ({ user }) => {
                 gender: loggedInUserProfile.gender || 'male',
                 role: loggedInUserProfile.role || 'guest',
                 isGuest: isGuest || false,
-                photoURL: loggedInUserProfile.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${currentUid}&sex=${(loggedInUserProfile.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+                photoURL: loggedInUserProfile.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${currentUid}&sex=${dicebearSex(loggedInUserProfile.gender)}&backgroundColor=c0aede`,
                 uid: currentUid
             };
             
@@ -2474,7 +2464,7 @@ const HomePage = ({ user }) => {
                     role: 'guest',
                     isGuest: true,
                     isOnline: guestStatus.state === 'online',
-                    photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${(guestStatus.gender || 'male').toLowerCase()}&backgroundColor=c0aede`
+                    photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${dicebearSex(guestStatus.gender)}&backgroundColor=c0aede`
                 });
             }
         });
@@ -2820,7 +2810,7 @@ const HomePage = ({ user }) => {
                 // Prioritize username over displayName for guests
                 displayName = guestUser.username || guestUser.displayName || 'Guest';
                 email = null;
-                photoURL = guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${(guestUser.gender || 'male').toLowerCase()}&backgroundColor=c0aede`;
+                photoURL = guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${dicebearSex(guestUser.gender)}&backgroundColor=c0aede`;
                 gender = guestUser.gender || 'male';
                 role = 'guest';
                 

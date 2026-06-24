@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoleDisplayLabel } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -1955,7 +1955,7 @@ const SettingsSidebar = ({
                                     <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'))}>
                                         {getRoleDisplayLabel({
                                             role: loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'),
-                                            gender: (() => { try { return (JSON.parse(localStorage.getItem('guestUser') || '{}').gender || loggedInUserProfile?.gender || ''); } catch { return loggedInUserProfile?.gender || ''; } })(),
+                                            gender: loggedInUserProfile?.gender || getStoredGuestGender(),
                                             isGuest: loggedInUserProfile?.isGuest || auth.currentUser?.isAnonymous || false,
                                             badge: loggedInUserProfile?.badge
                                         })}

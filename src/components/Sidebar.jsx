@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
-import { getRoleDisplayLabel } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender } from '../utils/roleUtils';
 import AdminBanKickModal from './AdminBanKickModal';
 import EditProfileModal from './EditProfileModal';
 import ViewProfileModal from './ViewProfileModal';
@@ -663,7 +663,7 @@ const Sidebar = ({
                         <span className="dropdown-user-role">{
                           getRoleDisplayLabel({
                             role: loggedInUserProfile.role,
-                            gender: (() => { try { return (JSON.parse(localStorage.getItem('guestUser') || '{}').gender || loggedInUserProfile.gender || ''); } catch { return loggedInUserProfile.gender || ''; } })(),
+                            gender: loggedInUserProfile.gender || getStoredGuestGender(),
                             isGuest: loggedInUserProfile.isGuest || loggedInUserProfile.role === 'guest',
                             badge: loggedInUserProfile.badge
                           })

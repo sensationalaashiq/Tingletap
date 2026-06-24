@@ -1,5 +1,28 @@
 import { Badges } from '../data/Badges';
 
+/**
+ * Reads the stored guest gender directly from localStorage.
+ * Returns the raw gender string or '' if not available.
+ * Use this instead of parsing guestUser JSON inline.
+ */
+export const getStoredGuestGender = () => {
+  try {
+    const raw = localStorage.getItem('guestUser');
+    if (!raw) return '';
+    return JSON.parse(raw).gender || '';
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Normalise a gender string to a value DiceBear accepts ('male' | 'female').
+ * DiceBear's adventurer style only supports 'male' and 'female'.
+ */
+export const dicebearSex = (gender) => {
+  return (gender || '').toLowerCase() === 'female' ? 'female' : 'male';
+};
+
 export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
   const r = (role || '').toLowerCase();
   const g = (gender || '').toLowerCase();
