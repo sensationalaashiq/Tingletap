@@ -241,11 +241,19 @@ const Sidebar = ({
   liveUsers.forEach(u => { if (!uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
 
   const filteredUsers = Array.from(uniqueUsers.values()).filter(u => {
-    const online = window.onlineUsers?.has(u.uid) || window.userOnlineStatuses?.[u.uid]?.state === 'online' || u.isOnline;
+    /* Strict RTDB check — once RTDB data is loaded use it exclusively.
+       Falls back to u.isOnline only if RTDB hasn't populated yet. */
+    const rtdbHasData = (window.onlineUsers && window.onlineUsers.size > 0) ||
+      (window.userOnlineStatuses && Object.keys(window.userOnlineStatuses).length > 0);
+    const onlineViaRTDB = window.onlineUsers?.has(u.uid) ||
+      window.userOnlineStatuses?.[u.uid]?.state === 'online';
+    const online = rtdbHasData ? onlineViaRTDB : (onlineViaRTDB || u.isOnline);
     if (!online) return false;
+    if (searchQuery.trim()) {
+      if (!(u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim())) return false;
+    }
     if (genderFilter === 'female') return u.gender?.toLowerCase() === 'female';
     if (genderFilter === 'male')   return u.gender?.toLowerCase() !== 'female';
-    if (searchQuery.trim()) return (u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim());
     return true;
   });
 
@@ -295,20 +303,20 @@ const Sidebar = ({
           const pill = getRolePill(loggedInUserProfile.role);
           return (
             <div className={`sb-profile-card ${getBorderClass(loggedInUserProfile)}`}>
-              <div className="sb-profile-glow" />
 
               {/* Close button */}
               <button className="sb-close-btn" onClick={onClose} aria-label="Close sidebar">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                  <path fill="#fff" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                  <path fill="#7c3aed" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/>
                 </svg>
               </button>
 
-              {/* Avatar */}
+              {/* Avatar — centered, click opens dropdown */}
               <button
                 className="sb-big-avatar-wrap"
                 data-sb-trigger="true"
                 onClick={(e) => openDropdownAt(user.uid, e)}
+                title="Open profile menu"
               >
                 <img
                   className="sb-big-avatar"
@@ -318,12 +326,11 @@ const Sidebar = ({
                 <span className="sb-online-ring" />
               </button>
 
-              {/* Name + role */}
+              {/* Name + role + status — centered, click opens dropdown */}
               <div
                 className="sb-profile-meta"
                 data-sb-trigger="true"
                 onClick={(e) => openDropdownAt(user.uid, e)}
-                style={{ cursor: 'pointer' }}
               >
                 <div
                   className="sb-profile-name"
@@ -348,49 +355,16 @@ const Sidebar = ({
                     badge: loggedInUserProfile.badge
                   })}
                 </span>
-              </div>
-
-              {/* Status */}
-              {loggedInUserProfile.status && (
-                <div className="sb-profile-status" style={loggedInUserProfile.statusStyles ? {
-                  fontFamily: loggedInUserProfile.statusStyles.fontFamily || 'inherit',
-                  color: loggedInUserProfile.statusStyles.gradientEnabled ? 'transparent' : (loggedInUserProfile.statusStyles.textColor || 'rgba(255,255,255,0.85)'),
-                  background: loggedInUserProfile.statusStyles.gradientEnabled ? `linear-gradient(${loggedInUserProfile.statusStyles.gradientDirection || 'to right'}, ${loggedInUserProfile.statusStyles.gradientStart || '#667eea'}, ${loggedInUserProfile.statusStyles.gradientEnd || '#764ba2'})` : 'rgba(255,255,255,0.12)',
-                  WebkitBackgroundClip: loggedInUserProfile.statusStyles.gradientEnabled ? 'text' : 'initial',
-                  backgroundClip: loggedInUserProfile.statusStyles.gradientEnabled ? 'text' : 'initial',
-                } : {}}>
-                  {loggedInUserProfile.status}
-                </div>
-              )}
-
-              {/* Quick actions */}
-              <div className="sb-quick-actions">
-                <button className="sb-quick-btn" title="Edit Profile" onClick={(e) => { e.stopPropagation(); setShowEditProfileModal(true); }}>
-                  <svg viewBox="0 0 24 24" width="13" height="13">
-                    <path fill="#8b5cf6" d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/>
-                  </svg>
-                </button>
-                {(() => {
-                  const uRole = loggedInUserProfile.role?.toLowerCase();
-                  const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
-                  if (hasBadge || ['admin','owner','moderator'].includes(uRole)) return (
-                    <button className="sb-quick-btn" title="Change Status" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); }}>
-                      <svg viewBox="0 0 24 24" width="13" height="13">
-                        <path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-                      </svg>
-                    </button>
-                  );
-                  return null;
-                })()}
-                <button className="sb-quick-btn sb-quick-logout" title="Logout" onClick={async (e) => {
-                  e.stopPropagation();
-                  try { await signOut(auth); toast.success('👋 Logged out!'); onClose(); window.location.href = '/login'; }
-                  catch { toast.error('❌ Logout failed!'); }
-                }}>
-                  <svg viewBox="0 0 24 24" width="13" height="13">
-                    <path fill="#ef4444" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
-                  </svg>
-                </button>
+                {loggedInUserProfile.status && (
+                  <div className="sb-profile-status" style={loggedInUserProfile.statusStyles?.gradientEnabled ? {
+                    color: 'transparent',
+                    background: `linear-gradient(${loggedInUserProfile.statusStyles.gradientDirection || 'to right'}, ${loggedInUserProfile.statusStyles.gradientStart || '#667eea'}, ${loggedInUserProfile.statusStyles.gradientEnd || '#764ba2'})`,
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                  } : (loggedInUserProfile.statusStyles?.textColor ? { color: loggedInUserProfile.statusStyles.textColor } : {})}>
+                    {loggedInUserProfile.status}
+                  </div>
+                )}
               </div>
 
               {/* Self dropdown */}
@@ -645,7 +619,7 @@ const Sidebar = ({
                         {showMute && (
                           <button
                             className={`sb-mod-btn ${userItem.mutedInfo?.isMuted ? 'unmute' : 'mute'}`}
-                            title={userItem.mutedInfo?.isMuted ? 'Unmute' : 'Mute'}
+                            title={userItem.mutedInfo?.isMuted ? 'Unmute User' : 'Mute User'}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (userItem.mutedInfo?.isMuted) {
@@ -662,13 +636,17 @@ const Sidebar = ({
                               }
                             }}
                           >
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                              {userItem.mutedInfo?.isMuted ? (
-                                <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V5a3 3 0 0 1 3-3m7 9c0 3.53-2.61 6.44-6 6.93V21h-2v-3.07C7.61 17.44 5 14.53 5 11h2a5 5 0 0 0 5 5 5 5 0 0 0 5-5h2z"/>
-                              ) : (
-                                <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>
-                              )}
-                            </svg>
+                            {userItem.mutedInfo?.isMuted ? (
+                              /* Unmute — mic ON (green) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#10b981" d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.44 6 6.93V21h2v-2.07c3.39-.49 6-3.4 6-6.93h-2z"/>
+                              </svg>
+                            ) : (
+                              /* Mute — mic OFF with slash (amber) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#f59e0b" d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V6c0-1.66-1.34-3-3-3S9 4.34 9 6v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>
+                              </svg>
+                            )}
                           </button>
                         )}
                         {showKick && (
@@ -677,15 +655,16 @@ const Sidebar = ({
                             title="Kick from Room"
                             onClick={(e) => { e.stopPropagation(); openKickModal(userItem); }}
                           >
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                              <path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                            {/* Boot / exit-door kick icon (orange) */}
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                              <path fill="#f97316" d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
                             </svg>
                           </button>
                         )}
                         {showBan && (
                           <button
                             className={`sb-mod-btn ${userItem.isBanned ? 'unban' : 'ban'}`}
-                            title={userItem.isBanned ? 'Unban' : 'Ban User'}
+                            title={userItem.isBanned ? 'Unban User' : 'Ban User'}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (userItem.isBanned) {
@@ -702,13 +681,17 @@ const Sidebar = ({
                               }
                             }}
                           >
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                              {userItem.isBanned ? (
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-                              ) : (
-                                <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>
-                              )}
-                            </svg>
+                            {userItem.isBanned ? (
+                              /* Unban — check-circle (green) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#22c55e" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                              </svg>
+                            ) : (
+                              /* Ban — no-entry circle (red) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>
+                              </svg>
+                            )}
                           </button>
                         )}
                       </div>
