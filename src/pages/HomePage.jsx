@@ -6503,20 +6503,20 @@ const HomePage = ({ user }) => {
             )}
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
-                width: '100vw', height: '52px', minHeight: '52px', maxHeight: '52px',
-                padding: '4px 8px', boxSizing: 'border-box',
+                width: '100vw', height: '56px', minHeight: '56px', maxHeight: '56px',
+                padding: '6px 10px', boxSizing: 'border-box',
                 display: 'flex', alignItems: 'center',
                 background: isDarkMode ? '#0e0620' : '#f3eeff',
                 borderTop: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
                 boxShadow: '0 -2px 12px rgba(109,40,217,0.1)',
-                zIndex: 2000, overflow: 'hidden',
+                zIndex: 2000, overflow: 'visible',
             }}>
                 <form onSubmit={handleSendMessage} className="message-form" style={{
                     width: '100%', height: '44px', margin: 0, padding: 0,
                     display: 'flex', alignItems: 'center', background: 'transparent'
                 }}>
                     <div className="premium-input-container" style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
+                        display: 'flex', alignItems: 'center', gap: '8px',
                         width: '100%', height: '44px', background: 'transparent',
                         border: 'none', padding: 0, margin: 0
                     }}>
@@ -6524,8 +6524,8 @@ const HomePage = ({ user }) => {
                             type="button"
                             className="premium-footer-btn attachment-btn"
                             style={{
-                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                width: '38px', height: '38px', minWidth: '38px', maxWidth: '38px',
+                                minHeight: '38px', maxHeight: '38px', flexShrink: 0,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: 'transparent', border: 'none', borderRadius: '50%',
                                 padding: 0, cursor: 'pointer'
@@ -6540,12 +6540,12 @@ const HomePage = ({ user }) => {
                             <AttachmentIconSVG />
                         </button>
                         <div className="premium-input-wrapper" style={{
-                            flex: '1 1 auto', height: '40px',
+                            flex: '1 1 auto', height: '44px',
                             background: isDarkMode ? 'rgba(30,12,68,0.75)' : 'rgba(237,233,254,0.6)',
                             border: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(167,139,250,0.35)',
-                            borderRadius: '20px', padding: '0 14px',
+                            borderRadius: '22px', padding: '0 14px',
                             display: 'flex', alignItems: 'center',
-                            minWidth: 0, margin: 0
+                            minWidth: 0, margin: 0, boxSizing: 'border-box'
                         }}>
                             <input
                                 type="text"
@@ -6566,8 +6566,8 @@ const HomePage = ({ user }) => {
                             type="submit"
                             className="premium-footer-btn send-btn"
                             style={{
-                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                width: '44px', height: '44px', minWidth: '44px', maxWidth: '44px',
+                                minHeight: '44px', maxHeight: '44px', flexShrink: 0,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
                                 border: 'none', borderRadius: '50%', padding: 0, cursor: 'pointer',

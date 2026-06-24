@@ -10917,40 +10917,37 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
    ██  FINAL AUTHORITY BLOCK — beats every rule above  ██
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. HEADER TITLE: frosted dark pill (same style as icon buttons) ─ */
-/* The action buttons use rgba(255,255,255,0.2) frosted circles.        */
-/* We give the title a rgba(0,0,0,0.28) dark frosted pill so white text */
-/* is ALWAYS readable on any gradient (light lavender or dark purple).  */
+/* ── 1. HEADER TITLE & USER-COUNT: exact blue #3b82f6, no background ─ */
 body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
-  color: #ffffff !important;
-  font-weight: 700 !important;
+  color: #3b82f6 !important;
+  font-weight: 800 !important;
   font-size: 0.95rem !important;
-  background: rgba(0, 0, 0, 0.28) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: 14px !important;
-  padding: 3px 10px !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.6) !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.55), 0 0 8px rgba(255,255,255,0.3) !important;
   letter-spacing: 0.01em !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   opacity: 1 !important;
   visibility: visible !important;
-  display: inline-block !important;
+  display: inline !important;
 }
 
 body .homepage-container .chat-header .user-count,
 body .chat-header .user-count {
-  background: rgba(0, 0, 0, 0.28) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #3b82f6 !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.45) !important;
   font-size: 0.7rem !important;
   font-weight: 700 !important;
-  padding: 3px 8px !important;
-  border-radius: 12px !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
+  padding: 2px 7px !important;
+  border-radius: 10px !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
   box-shadow: none !important;
   margin-left: 5px !important;
   white-space: nowrap !important;
@@ -11160,16 +11157,15 @@ body .homepage-container .send-btn svg path {
   stroke: none !important;
 }
 
-/* Chat feed & ::after spacer synced to 52px footer (inline style wins) */
+/* Chat feed & ::after spacer synced to 56px footer (inline style wins) */
 body .homepage-container .chat-feed {
-  bottom: 52px !important;
+  bottom: 56px !important;
 }
 body .homepage-container::after {
-  height: 52px !important;
+  height: 56px !important;
 }
-/* Also kill older spacer values */
-.homepage-container::after { height: 52px !important; }
-.homepage-container .chat-feed { bottom: 52px !important; }
+.homepage-container::after { height: 56px !important; }
+.homepage-container .chat-feed { bottom: 56px !important; }
 
 /* Attachment dropdown floats cleanly above footer */
 body .homepage-container .attachment-dropdown {
