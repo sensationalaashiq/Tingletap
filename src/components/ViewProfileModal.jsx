@@ -596,7 +596,37 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
 
             setIsBlocked(true);
             setIsFriend(false);
-            toast.success(`Blocked ${user.displayName}`);
+            toast(
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,.4)'
+                    }}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
+                            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e1b4b', letterSpacing: '.2px' }}>User Blocked</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                            <span style={{ fontWeight: 700, color: '#b91c1c' }}>{user.displayName}</span> has been blocked
+                        </div>
+                    </div>
+                </div>,
+                {
+                    style: {
+                        background: 'linear-gradient(135deg, #fff5f5, #fee2e2)',
+                        border: '1.5px solid rgba(239,68,68,.3)',
+                        borderRadius: '14px',
+                        boxShadow: '0 8px 32px rgba(239,68,68,.15)',
+                        padding: '10px 14px',
+                    },
+                    icon: false,
+                    autoClose: 4000,
+                }
+            );
             onClose();
         } catch (error) {
             console.error('Error blocking user:', error);

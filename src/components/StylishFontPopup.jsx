@@ -664,6 +664,11 @@ const StylishFontPopup = ({
             onClick={handleApply} 
             title="Apply changes"
             style={{
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              color: '#fff',
+              WebkitTextFillColor: '#fff',
+              border: 'none',
+              boxShadow: '0 4px 16px rgba(99,102,241,.38)',
               visibility: 'visible',
               opacity: '1',
               zIndex: '999999',
@@ -671,7 +676,7 @@ const StylishFontPopup = ({
             }}
           >
             <CheckIcon />
-            <span>Apply</span>
+            <span style={{ color: '#fff', WebkitTextFillColor: '#fff', fontWeight: 700 }}>Apply</span>
           </button>
         </div>
       </div>

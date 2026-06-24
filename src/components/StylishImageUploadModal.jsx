@@ -1,11 +1,10 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import './StylishImageUploadModal.css';
 
-const StylishImageUploadModal = ({ 
-    isOpen, 
-    onClose, 
-    onImageUpload, 
+const StylishImageUploadModal = ({
+    isOpen,
+    onClose,
+    onImageUpload,
     onImageUrlUpload,
     fileInputRef,
     handleImageSelect,
@@ -14,13 +13,10 @@ const StylishImageUploadModal = ({
     imageUrl,
     setImageUrl
 }) => {
-    // Internal state management
     const [imageTab, setImageTab] = useState('upload');
     const [imageCaption, setImageCaption] = useState('');
 
     if (!isOpen) return null;
-
-    
 
     const handleFileUpload = () => {
         if (selectedImage && onImageUpload) {
@@ -37,179 +33,111 @@ const StylishImageUploadModal = ({
     };
 
     const resetModal = () => {
-        if (setImageUrl) {
-            setImageUrl('');
-        }
+        if (setImageUrl) setImageUrl('');
         setImageCaption('');
         setImageTab('upload');
-        if (fileInputRef && fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-        // Clear any preview states
-        if (window.clearImagePreview) {
-            window.clearImagePreview();
-        }
+        if (fileInputRef?.current) fileInputRef.current.value = '';
+        if (window.clearImagePreview) window.clearImagePreview();
         onClose();
     };
 
-    const handleOverlayClick = (e) => {
-        if (e.target === e.currentTarget) {
-            e.stopPropagation();
-            resetModal();
-        }
-    };
+    const canSend = imageTab === 'upload' ? !!selectedImage : !!imageUrl.trim();
 
     return (
-        <div className="stylish-image-modal-overlay" onClick={handleOverlayClick}>
-            <div className="stylish-image-modal">
-                <div className="stylish-modal-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        <div className="sim-overlay" onClick={e => { if (e.target === e.currentTarget) resetModal(); }}>
+            <div className="sim-card" onClick={e => e.stopPropagation()}>
+
+                {/* Icon Ring */}
+                <div className="sim-icon-ring">
+                    <svg viewBox="0 0 64 64" width="42" height="42" fill="none">
+                        <defs>
+                            <linearGradient id="simG" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#8b5cf6"/>
+                                <stop offset="100%" stopColor="#6d28d9"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="6" y="12" width="52" height="40" rx="6" fill="url(#simG)" opacity=".15"/>
+                        <rect x="6" y="12" width="52" height="40" rx="6" stroke="url(#simG)" strokeWidth="2.5" fill="none"/>
+                        <circle cx="20" cy="26" r="5" fill="url(#simG)" opacity=".7"/>
+                        <path d="M6 40l14-12 10 10 8-8 18 14" stroke="url(#simG)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M38 8v8M34 10l4-2 4 2" stroke="url(#simG)" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <h3>Upload Image</h3>
-                    <button 
-                        className="stylish-close-btn"
-                        onClick={resetModal}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
                 </div>
 
-                <div className="stylish-modal-tabs">
-                    <button 
-                        className={`stylish-tab-btn ${imageTab === 'upload' ? 'active' : ''}`}
-                        onClick={() => {
-                            setImageTab('upload');
-                            if (setImageUrl) {
-                                setImageUrl('');
-                            }
-                        }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                <div className="sim-title">Upload Image</div>
+
+                {/* Tabs */}
+                <div className="sim-tabs">
+                    <button className={`sim-tab${imageTab === 'upload' ? ' active' : ''}`}
+                        onClick={() => { setImageTab('upload'); if (setImageUrl) setImageUrl(''); }}>
+                        <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+                            <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Upload File
                     </button>
-                    <button 
-                        className={`stylish-tab-btn ${imageTab === 'url' ? 'active' : ''}`}
-                        onClick={() => {
-                            setImageTab('url');
-                            if (fileInputRef.current) {
-                                fileInputRef.current.value = '';
-                            }
-                        }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z"/>
+                    <button className={`sim-tab${imageTab === 'url' ? ' active' : ''}`}
+                        onClick={() => { setImageTab('url'); if (fileInputRef?.current) fileInputRef.current.value = ''; }}>
+                        <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+                            <path d="M7.5 10a2.5 2.5 0 003.536 3.536l2.5-2.5a2.5 2.5 0 00-3.536-3.536l-1.25 1.25" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+                            <path d="M12.5 10a2.5 2.5 0 00-3.536-3.536l-2.5 2.5a2.5 2.5 0 003.536 3.536l1.25-1.25" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
                         </svg>
                         URL Link
                     </button>
                 </div>
 
-                <div className="stylish-modal-content">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        onChange={handleImageSelect}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                    />
+                <input ref={fileInputRef} type="file" onChange={handleImageSelect} accept="image/*" style={{ display: 'none' }}/>
 
+                {/* Content */}
+                <div className="sim-content">
                     {imageTab === 'upload' ? (
-                        <div className="stylish-upload-section">
-                            {imagePreview ? (
-                                <div className="stylish-preview-container">
-                                    <img 
-                                        src={imagePreview} 
-                                        alt="Preview" 
-                                        className="stylish-image-preview"
-                                    />
-                                    <button 
-                                        className="stylish-remove-btn"
-                                        onClick={() => {
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.value = '';
-                                            }
-                                        }}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            ) : (
-                                <div 
-                                    className="stylish-drop-zone"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        imagePreview ? (
+                            <div className="sim-preview-wrap">
+                                <img src={imagePreview} alt="Preview" className="sim-preview-img"/>
+                                <button className="sim-remove-preview" onClick={() => { if (fileInputRef?.current) fileInputRef.current.value = ''; }}>
+                                    <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+                                        <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                                     </svg>
-                                    <p>Click to select image</p>
-                                    <span>Max size: 10MB</span>
-                                </div>
-                            )}
-                        </div>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="sim-drop-zone" onClick={() => fileInputRef?.current?.click()}>
+                                <svg viewBox="0 0 48 48" width="40" height="40" fill="none">
+                                    <rect x="4" y="8" width="40" height="32" rx="4" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" strokeWidth="2" strokeDasharray="4 3"/>
+                                    <circle cx="16" cy="20" r="4" fill="#8b5cf6" opacity=".5"/>
+                                    <path d="M4 32l12-10 8 8 6-6 14 10" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".6"/>
+                                    <path d="M24 14v-6M21 11l3-3 3 3" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <p className="sim-drop-text">Click to select image</p>
+                                <span className="sim-drop-hint">JPG, PNG, GIF, WEBP · Max 10MB</span>
+                            </div>
+                        )
                     ) : (
-                        <div className="stylish-url-section">
-                            <input
-                                type="url"
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                placeholder="https://example.com/image.jpg"
-                                className="stylish-url-input"
-                            />
-                            <p className="stylish-url-help">
-                                Paste a direct link to an image (jpg, png, gif, webp, bmp, svg)
-                            </p>
+                        <div className="sim-url-section">
+                            <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+                                placeholder="https://example.com/image.jpg" className="sim-url-input"/>
+                            <p className="sim-url-hint">Paste a direct link to an image</p>
                             {imageUrl && (
-                                <div className="stylish-url-preview">
-                                    <img 
-                                        src={imageUrl} 
-                                        alt="URL Preview" 
-                                        className="stylish-url-image"
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
-                                        }}
-                                        onLoad={(e) => {
-                                            e.target.style.display = 'block';
-                                        }}
-                                    />
-                                </div>
+                                <img src={imageUrl} alt="URL Preview" className="sim-url-preview"
+                                    onError={e => e.target.style.display='none'}
+                                    onLoad={e => e.target.style.display='block'}/>
                             )}
                         </div>
                     )}
 
-                    <textarea
-                        value={imageCaption}
-                        onChange={(e) => setImageCaption(e.target.value)}
-                        placeholder="Add a caption (optional)"
-                        className="stylish-caption-input"
-                        rows="2"
-                    />
+                    <textarea value={imageCaption} onChange={e => setImageCaption(e.target.value)}
+                        placeholder="Add a caption (optional)..." className="sim-caption" rows="2"/>
                 </div>
 
-                <div className="stylish-modal-actions">
-                    <button 
-                        className="stylish-btn stylish-btn-send" 
+                {/* Actions */}
+                <div className="sim-actions">
+                    <button className="sim-btn-cancel" onClick={resetModal}>Cancel</button>
+                    <button className="sim-btn-send" disabled={!canSend}
                         onClick={imageTab === 'upload' ? handleFileUpload : handleUrlUpload}
-                        disabled={imageTab === 'upload' ? !selectedImage : !imageUrl.trim()}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                        style={{ opacity: canSend ? 1 : 0.5, cursor: canSend ? 'pointer' : 'not-allowed' }}>
+                        <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+                            <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        Send
-                    </button>
-                    <button 
-                        className="stylish-btn stylish-btn-cancel" 
-                        onClick={resetModal}
-                    >
-                        Cancel
+                        <span style={{ color: '#fff', fontWeight: 700 }}>Send Image</span>
                     </button>
                 </div>
             </div>

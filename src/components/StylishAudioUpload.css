@@ -1,393 +1,119 @@
-
-.stylish-audio-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* ── Audio Upload Modal — BCM Design System ── */
+.sau-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.62);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
     z-index: 99999;
-    padding: 20px;
-    animation: fadeIn 0.3s ease;
+    animation: sauFade .18s ease;
 }
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+@keyframes sauFade { from { opacity:0 } to { opacity:1 } }
+@keyframes sauUp {
+    from { opacity:0; transform:translateY(22px) scale(.95) }
+    to   { opacity:1; transform:translateY(0) scale(1) }
 }
-
-.stylish-audio-upload {
-    background: linear-gradient(135deg, #f3f0ff 0%, #e9e5ff 100%);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 320px;
-    max-height: 80vh;
-    overflow: hidden;
-    box-shadow: 
-        0 25px 50px rgba(0, 0, 0, 0.4),
-        0 0 0 1px rgba(139, 92, 246, 0.3),
-        0 0 20px rgba(139, 92, 246, 0.2);
-    border: 2px solid rgba(139, 92, 246, 0.4);
-    position: relative;
-    z-index: 100000;
-    animation: slideUp 0.3s ease;
-    display: flex;
-    flex-direction: column;
+.sau-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 24px 22px 20px;
+    width: min(360px, 93vw);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    box-shadow: 0 10px 48px rgba(16,185,129,.16), 0 2px 14px rgba(0,0,0,.11);
+    animation: sauUp .24s cubic-bezier(.34,1.56,.64,1);
+    border: 1px solid rgba(16,185,129,.14);
 }
-
-@keyframes slideUp {
-    from { 
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.sau-icon-ring {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg,rgba(16,185,129,.09),rgba(8,145,178,.13));
+    border: 2px solid rgba(16,185,129,.24);
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 2px 8px rgba(16,185,129,.25));
 }
+.sau-title { font-size: 1.18rem; font-weight: 800; color: #1a1a2e; letter-spacing: -.02em; margin-top: -4px; }
 
-.audio-upload-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    color: white;
-    border-radius: 12px 12px 0 0;
+/* Tabs */
+.sau-tabs { display: flex; gap: 8px; width: 100%; }
+.sau-tab {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px; border-radius: 10px; border: 1.5px solid rgba(16,185,129,.2);
+    background: #fafafa; color: #9ca3af;
+    font-size: .82rem; font-weight: 700; cursor: pointer;
+    transition: all .16s ease; font-family: inherit;
 }
+.sau-tab:hover { border-color: rgba(16,185,129,.4); color: #059669; background: #f0fdf4; }
+.sau-tab.active { background: linear-gradient(135deg,rgba(16,185,129,.12),rgba(8,145,178,.08)); border-color: #10b981; color: #065f46; }
 
-.header-icon {
-    display: flex;
-    align-items: center;
-    color: white;
+/* Content */
+.sau-content { width: 100%; }
+
+/* Drop zone */
+.sau-drop-zone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 22px 16px;
+    background: rgba(16,185,129,.04); border: 2px dashed rgba(16,185,129,.28);
+    border-radius: 14px; cursor: pointer; transition: all .18s ease; min-height: 120px;
 }
+.sau-drop-zone:hover { background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.5); }
+.sau-drop-text { font-size: .88rem; font-weight: 700; color: #059669; margin: 0; }
+.sau-drop-hint { font-size: .72rem; color: #9ca3af; }
 
-.header-icon svg {
-    color: white !important;
-    fill: white !important;
+/* Audio preview */
+.sau-audio-preview {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 14px; background: rgba(16,185,129,.05); border-radius: 14px;
+    border: 1px solid rgba(16,185,129,.18);
 }
-
-.header-title {
-    flex: 1;
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: white !important;
+.sau-wave-icon { display: flex; align-items: center; }
+.sau-audio-player { width: 100%; border-radius: 8px; }
+.sau-file-name { font-size: .78rem; font-weight: 600; color: #6b7280; margin: 0; }
+.sau-reset-btn {
+    padding: 5px 12px; border-radius: 8px; border: 1.5px solid rgba(16,185,129,.3);
+    background: transparent; color: #059669; font-size: .76rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit;
+    transition: all .15s ease;
 }
+.sau-reset-btn:hover { background: rgba(16,185,129,.08); }
 
-.close-btn {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 8px !important;
-    width: 28px !important;
-    height: 28px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    color: white !important;
-    transition: all 0.2s ease !important;
-    padding: 0 !important;
+/* Record section */
+.sau-record-section { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; }
+.sau-record-btn {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg,#10b981,#0891b2);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(16,185,129,.4);
+    transition: all .2s ease;
 }
-
-.close-btn:hover {
-    background: rgba(255, 255, 255, 0.3) !important;
-    transform: scale(1.05) !important;
+.sau-record-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(16,185,129,.5); }
+.sau-record-btn.recording { background: linear-gradient(135deg,#ef4444,#dc2626); animation: recPulse 1.2s infinite; box-shadow: 0 4px 16px rgba(239,68,68,.4); }
+@keyframes recPulse { 0%,100% { box-shadow: 0 4px 16px rgba(239,68,68,.4) } 50% { box-shadow: 0 4px 28px rgba(239,68,68,.7) } }
+.sau-record-hint { font-size: .8rem; font-weight: 600; color: #6b7280; text-align: center; }
+.sau-recording-pulse { display: flex; gap: 4px; align-items: center; }
+.sau-recording-pulse span {
+    width: 6px; height: 6px; border-radius: 50%; background: #ef4444;
+    animation: dot 1s infinite;
 }
+.sau-recording-pulse span:nth-child(2) { animation-delay: .15s; }
+.sau-recording-pulse span:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 0%,100% { opacity:.3; transform:scale(.8) } 50% { opacity:1; transform:scale(1.2) } }
 
-.close-btn svg {
-    color: white !important;
-    stroke: white !important;
+/* Actions */
+.sau-actions { display: flex; gap: 10px; width: 100%; margin-top: 2px; }
+.sau-btn-cancel {
+    flex: 1; padding: 11px; border-radius: 11px;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280;
+    font-size: .9rem; font-weight: 600; cursor: pointer;
+    transition: all .15s ease; font-family: inherit;
 }
-
-.audio-tabs {
-    display: flex;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+.sau-btn-cancel:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; }
+.sau-btn-send {
+    flex: 1.5; padding: 11px; border-radius: 11px;
+    border: none; background: linear-gradient(135deg,#10b981,#0891b2);
+    color: #fff !important; -webkit-text-fill-color: #fff !important;
+    font-size: .9rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    box-shadow: 0 4px 16px rgba(16,185,129,.38);
+    transition: all .15s ease; font-family: inherit;
 }
-
-.tab-btn {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-weight: 600;
-    color: #6b7280;
-    transition: all 0.2s ease;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.tab-btn.active {
-    background: white;
-    color: #8b5cf6;
-    border-bottom: 2px solid #8b5cf6;
-}
-
-.tab-btn:hover:not(.active) {
-    background: rgba(139, 92, 246, 0.05);
-}
-
-.tab-btn svg {
-    width: 16px !important;
-    height: 16px !important;
-}
-
-.audio-content {
-    padding: 16px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow-y: auto;
-    max-height: 50vh;
-}
-
-.upload-section,
-.record-section {
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex: 1;
-}
-
-.drop-zone {
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
-    padding: 32px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #fafafa;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.drop-zone:hover {
-    border-color: #8b5cf6;
-    background: #f3e8ff;
-}
-
-.drop-zone svg {
-    color: #8b5cf6;
-    margin-bottom: 8px;
-}
-
-.drop-zone p {
-    margin: 12px 0 8px 0;
-    font-weight: 600;
-    color: #374151;
-    font-size: 16px;
-}
-
-.drop-zone span {
-    color: #6b7280;
-    font-size: 14px;
-}
-
-.record-controls {
-    text-align: center;
-    padding: 32px 24px;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.record-btn {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px auto;
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.record-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    transition: all 0.6s ease;
-    transform: translate(-50%, -50%);
-}
-
-.record-btn:hover::before {
-    width: 100px;
-    height: 100px;
-}
-
-.record-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 12px 30px rgba(139, 92, 246, 0.6);
-}
-
-.record-btn.recording {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    animation: recordPulse 1.5s infinite;
-}
-
-.record-btn:disabled {
-    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.record-btn:disabled:hover {
-    transform: none;
-    box-shadow: 0 8px 20px rgba(156, 163, 175, 0.4);
-}
-
-@keyframes recordPulse {
-    0%, 100% { 
-        transform: scale(1);
-        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-    }
-    50% { 
-        transform: scale(1.15);
-        box-shadow: 0 12px 30px rgba(239, 68, 68, 0.6);
-    }
-}
-
-.record-controls p {
-    color: #374151;
-    font-weight: 600;
-    font-size: 16px;
-    margin: 0;
-}
-
-.audio-preview {
-    text-align: center;
-    padding: 20px;
-    background: #fafafa;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-}
-
-.audio-preview audio {
-    width: 100%;
-    margin-bottom: 12px;
-    border-radius: 6px;
-}
-
-.audio-preview p {
-    color: #374151;
-    font-weight: 600;
-    font-size: 14px;
-    margin: 0 0 12px 0;
-}
-
-.reset-btn {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 12px;
-    transition: all 0.2s ease;
-}
-
-.reset-btn:hover {
-    background: #e5e7eb;
-    transform: translateY(-1px);
-}
-
-.upload-actions {
-    display: flex;
-    gap: 8px;
-    padding: 0 16px 16px 16px;
-}
-
-.upload-btn {
-    flex: 1;
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-}
-
-.upload-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #059669, #047857);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.upload-btn:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.upload-btn svg {
-    width: 16px !important;
-    height: 16px !important;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 480px) {
-    .stylish-audio-upload {
-        margin: 10px;
-        max-width: calc(100% - 20px);
-    }
-    
-    .audio-upload-header {
-        padding: 12px 16px;
-    }
-    
-    .audio-content {
-        padding: 16px;
-    }
-    
-    .upload-actions {
-        padding: 0 16px 16px 16px;
-    }
-
-    .record-btn {
-        width: 60px;
-        height: 60px;
-    }
-
-    .drop-zone {
-        padding: 12px;
-    }
-}
+.sau-btn-send:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(16,185,129,.48); }
+.sau-btn-send:active { transform: translateY(0); }

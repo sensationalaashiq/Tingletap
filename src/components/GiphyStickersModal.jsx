@@ -1,213 +1,162 @@
-
 import React, { useState, useEffect } from 'react';
 import './GiphyStickersModal.css';
 
-// Premium SVG Icons
-const GiphyIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="giphy_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#00ff99" />
-        <stop offset="50%" stopColor="#00ccff" />
-        <stop offset="100%" stopColor="#9933ff" />
-      </linearGradient>
-      <filter id="giphy_shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(153,51,255,0.4)"/>
-      </filter>
-    </defs>
-    <rect x="2" y="2" width="20" height="20" rx="4" fill="url(#giphy_gradient)" filter="url(#giphy_shadow)" />
-    <rect x="4" y="4" width="16" height="16" rx="2" fill="white" />
-    <path d="M8 8h8v2H8zm0 4h6v2H8zm0 4h4v2H8z" fill="url(#giphy_gradient)" />
-    <circle cx="17" cy="13" r="1.5" fill="url(#giphy_gradient)" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="close_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ef4444" />
-        <stop offset="100%" stopColor="#dc2626" />
-      </linearGradient>
-    </defs>
-    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="search_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="100%" stopColor="#f8fafc" />
-      </linearGradient>
-    </defs>
-    <circle cx="11" cy="11" r="8" stroke="url(#search_gradient)" strokeWidth="2"/>
-    <path d="m21 21-4.35-4.35" stroke="url(#search_gradient)" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
 const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [gifs, setGifs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [gifs, setGifs] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
+    const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
 
-  // Fetch trending GIFs on component mount
-  useEffect(() => {
-    if (isOpen) {
-      fetchTrendingGifs();
-    }
-  }, [isOpen]);
+    useEffect(() => {
+        if (isOpen) fetchTrendingGifs();
+    }, [isOpen]);
 
-  const fetchTrendingGifs = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(
-        `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=12&rating=pg-13`
-      );
-      const data = await response.json();
-      if (data.data) {
-        setGifs(data.data);
-      }
-    } catch (err) {
-      setError('Failed to load GIFs');
-      console.error('Error fetching trending GIFs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchTrendingGifs = async () => {
+        setLoading(true); setError('');
+        try {
+            const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=18&rating=pg-13`);
+            const data = await res.json();
+            if (data.data) setGifs(data.data);
+        } catch { setError('Failed to load GIFs'); }
+        finally { setLoading(false); }
+    };
 
-  const searchGifs = async () => {
-    if (!searchTerm.trim()) {
-      fetchTrendingGifs();
-      return;
-    }
+    const searchGifs = async () => {
+        if (!searchTerm.trim()) { fetchTrendingGifs(); return; }
+        setLoading(true); setError('');
+        try {
+            const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(searchTerm)}&limit=18&rating=pg-13`);
+            const data = await res.json();
+            if (data.data) setGifs(data.data);
+        } catch { setError('Failed to search GIFs'); }
+        finally { setLoading(false); }
+    };
 
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(
-        `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(searchTerm)}&limit=12&rating=pg-13`
-      );
-      const data = await response.json();
-      if (data.data) {
-        setGifs(data.data);
-      }
-    } catch (err) {
-      setError('Failed to search GIFs');
-      console.error('Error searching GIFs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const handleGifSelect = (gif) => {
+        if (onSelectGif) { onSelectGif(gif); onClose(); }
+    };
 
-  const handleGifSelect = (gif) => {
-    console.log("🎬 GIF selected:", gif);
-    try {
-      if (onSelectGif && typeof onSelectGif === 'function') {
-        onSelectGif(gif);
-        onClose();
-      } else {
-        console.error("onSelectGif prop is not a function:", onSelectGif);
-      }
-    } catch (error) {
-      console.error("Error in handleGifSelect:", error);
-    }
-  };
+    if (!isOpen) return null;
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      searchGifs();
-    }
-  };
+    return (
+        <div className="gsm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="gsm-card" onClick={e => e.stopPropagation()}>
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="giphy-modal-overlay" onClick={onClose}>
-      <div className="giphy-modal-container" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="giphy-modal-header">
-          <h3 className="giphy-modal-title">
-            <GiphyIcon />
-            GIFs
-          </h3>
-          <button className="giphy-close-btn" onClick={onClose}>
-            <CloseIcon />
-          </button>
-        </div>
-
-        {/* Search Section */}
-        <div className="giphy-search-section">
-          <div className="giphy-search-container">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Search for GIFs..."
-              className="giphy-search-input"
-            />
-            <button onClick={searchGifs} className="giphy-search-btn">
-              <SearchIcon />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="giphy-content">
-          {loading && (
-            <div className="giphy-loading">
-              <div className="loading-spinner"></div>
-              <p>Loading GIFs...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="giphy-error">
-              <p>{error}</p>
-              <button onClick={fetchTrendingGifs} className="retry-btn">
-                Try Again
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && gifs.length === 0 && (
-            <div className="giphy-empty">
-              <div className="empty-icon">🎭</div>
-              <p>No GIFs found</p>
-              <small>Try a different search term</small>
-            </div>
-          )}
-
-          {!loading && !error && gifs.length > 0 && (
-            <div className="giphy-grid">
-              {gifs.map((gif) => (
-                <div
-                  key={gif.id}
-                  className="gif-item"
-                  onClick={() => handleGifSelect(gif)}
-                >
-                  <img
-                    src={gif.images.fixed_height_small.url}
-                    alt={gif.title}
-                    loading="lazy"
-                  />
-                  <div className="gif-overlay">
-                    <span className="gif-title">{gif.title}</span>
-                  </div>
+                {/* Header with icon */}
+                <div className="gsm-header">
+                    <div className="gsm-icon-ring">
+                        <svg viewBox="0 0 48 48" width="34" height="34" fill="none">
+                            <defs>
+                                <linearGradient id="gsmG1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#ec4899"/>
+                                    <stop offset="33%" stopColor="#f97316"/>
+                                    <stop offset="66%" stopColor="#22c55e"/>
+                                    <stop offset="100%" stopColor="#6366f1"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#gsmG1)" opacity=".18"/>
+                            <rect x="4" y="4" width="40" height="40" rx="10" stroke="url(#gsmG1)" strokeWidth="2.2" fill="none"/>
+                            {/* G-I-F letters */}
+                            <text x="8" y="30" fontSize="16" fontWeight="900" fontFamily="Arial, sans-serif" fill="url(#gsmG1)">GIF</text>
+                        </svg>
+                    </div>
+                    <div className="gsm-title-wrap">
+                        <span className="gsm-title">GIF & Stickers</span>
+                        <span className="gsm-subtitle">Trending & Search</span>
+                    </div>
+                    <button className="gsm-close" onClick={onClose}>
+                        <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
+                            <path d="M15 5L5 15M5 5l10 10" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                    </button>
                 </div>
-              ))}
+
+                {/* Search */}
+                <div className="gsm-search-wrap">
+                    <div className="gsm-search-box">
+                        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" className="gsm-search-icon">
+                            <circle cx="9" cy="9" r="6" stroke="#9ca3af" strokeWidth="1.8"/>
+                            <path d="m16 16-3.5-3.5" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && searchGifs()}
+                            placeholder="Search GIFs..."
+                            className="gsm-search-input"
+                        />
+                        {searchTerm && (
+                            <button className="gsm-search-clear" onClick={() => { setSearchTerm(''); fetchTrendingGifs(); }}>
+                                <svg viewBox="0 0 16 16" width="12" height="12" fill="none">
+                                    <path d="M12 4L4 12M4 4l8 8" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round"/>
+                                </svg>
+                            </button>
+                        )}
+                        <button className="gsm-search-btn" onClick={searchGifs}>
+                            <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+                                <circle cx="9" cy="9" r="6" stroke="#fff" strokeWidth="1.8"/>
+                                <path d="m16 16-3.5-3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Section label */}
+                <div className="gsm-section-label">
+                    {searchTerm ? `Results for "${searchTerm}"` : '🔥 Trending'}
+                </div>
+
+                {/* GIF grid */}
+                <div className="gsm-content">
+                    {loading && (
+                        <div className="gsm-loading">
+                            <div className="gsm-spinner"/>
+                            <p>Loading GIFs…</p>
+                        </div>
+                    )}
+                    {error && (
+                        <div className="gsm-error">
+                            <svg viewBox="0 0 20 20" width="32" height="32" fill="none">
+                                <path d="M10 2L2 17h16L10 2z" stroke="#f97316" strokeWidth="1.5" strokeLinejoin="round"/>
+                                <line x1="10" y1="9" x2="10" y2="13" stroke="#f97316" strokeWidth="1.8" strokeLinecap="round"/>
+                                <circle cx="10" cy="15.5" r="0.8" fill="#f97316"/>
+                            </svg>
+                            <p>{error}</p>
+                            <button className="gsm-retry" onClick={fetchTrendingGifs}>Try Again</button>
+                        </div>
+                    )}
+                    {!loading && !error && gifs.length === 0 && (
+                        <div className="gsm-empty">
+                            <svg viewBox="0 0 48 48" width="48" height="48" fill="none">
+                                <rect x="6" y="6" width="36" height="36" rx="8" stroke="#d1d5db" strokeWidth="2" strokeDasharray="4 3"/>
+                                <path d="M18 28l4-4 4 4 4-6" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <p>No GIFs found</p>
+                            <small>Try a different search term</small>
+                        </div>
+                    )}
+                    {!loading && !error && gifs.length > 0 && (
+                        <div className="gsm-grid">
+                            {gifs.map(gif => (
+                                <div key={gif.id} className="gsm-gif-item" onClick={() => handleGifSelect(gif)}>
+                                    <img src={gif.images.fixed_height_small.url} alt={gif.title} loading="lazy"/>
+                                    <div className="gsm-gif-overlay">
+                                        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                                            <circle cx="8" cy="8" r="6" fill="rgba(255,255,255,.9)"/>
+                                            <path d="M6 5.5l5 2.5-5 2.5V5.5z" fill="#6366f1"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default GiphyStickersModal;

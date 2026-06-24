@@ -218,27 +218,35 @@ const SettingsSidebar = ({
 
     // Removed laggy theme initialization - handled by App.jsx
 
-    useEffect(() => {
-        if (blockedUsers.length === 0) {
-            setBlockedUserProfiles([]);
-            return;
+    // Load blocked users directly from Firestore so it's always up-to-date
+    const loadBlockedUserProfiles = async () => {
+        if (!auth.currentUser) return;
+        try {
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            if (!userDoc.exists()) return;
+            const blockedIds = userDoc.data()?.blockedUsers || [];
+            if (blockedIds.length === 0) { setBlockedUserProfiles([]); return; }
+            const userPromises = blockedIds.map(uid => getDoc(doc(db, 'users', uid)));
+            const userDocs = await Promise.all(userPromises);
+            const profiles = userDocs
+                .filter(d => d.exists())
+                .map(d => ({ id: d.id, ...d.data() }));
+            setBlockedUserProfiles(profiles);
+        } catch (error) {
+            console.error("Error loading blocked user profiles:", error);
         }
+    };
 
-        const loadBlockedUserProfiles = async () => {
-            try {
-                const userPromises = blockedUsers.map(uid => getDoc(doc(db, 'users', uid)));
-                const userDocs = await Promise.all(userPromises);
-                const profiles = userDocs
-                    .filter(doc => doc.exists())
-                    .map(doc => ({ id: doc.id, ...doc.data() }));
-                setBlockedUserProfiles(profiles);
-            } catch (error) {
-                console.error("Error loading blocked user profiles:", error);
-            }
-        };
-
+    useEffect(() => {
         loadBlockedUserProfiles();
     }, [blockedUsers]);
+
+    // Reload when blocked tab becomes active
+    useEffect(() => {
+        if (activeTab === 'blocked') {
+            loadBlockedUserProfiles();
+        }
+    }, [activeTab]);
 
     // Load friends profiles
     useEffect(() => {
@@ -621,7 +629,37 @@ const SettingsSidebar = ({
                 // Update local state
                 setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
 
-                toast.success(`🚫 Blocked ${friend.displayName}`);
+                toast(
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                            width: '36px', height: '36px', borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,.4)'
+                        }}>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
+                                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e1b4b', letterSpacing: '.2px' }}>User Blocked</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                                <span style={{ fontWeight: 700, color: '#b91c1c' }}>{friend.displayName}</span> has been blocked
+                            </div>
+                        </div>
+                    </div>,
+                    {
+                        style: {
+                            background: 'linear-gradient(135deg, #fff5f5, #fee2e2)',
+                            border: '1.5px solid rgba(239,68,68,.3)',
+                            borderRadius: '14px',
+                            boxShadow: '0 8px 32px rgba(239,68,68,.15)',
+                            padding: '10px 14px',
+                        },
+                        icon: false,
+                        autoClose: 4000,
+                    }
+                );
             } catch (error) {
                 console.error('Error blocking friend:', error);
                 toast.error('Failed to block user. Please try again.');
@@ -1021,9 +1059,9 @@ const SettingsSidebar = ({
                                         </div>
                                         <button
                                             className="unblock-btn"
-                                            onClick={() => onUnblockUser(user.uid)}
+                                            onClick={() => onUnblockUser(user.id || user.uid)}
                                         >
-                                            Unblock
+                                            ✓ Unblock
                                         </button>
                                     </div>
                                 ))}
