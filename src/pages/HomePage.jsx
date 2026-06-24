@@ -38,14 +38,25 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.18"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sendGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a78bfa"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </linearGradient>
+    </defs>
+    <path d="M3.4 2.02L21.6 10.56C22.8 11.14 22.8 12.86 21.6 13.44L3.4 21.98C2.12 22.6 0.72 21.48 1.04 20.1L2.8 13H11C11.55 13 12 12.55 12 12C12 11.45 11.55 11 11 11H2.8L1.04 3.9C0.72 2.52 2.12 1.4 3.4 2.02Z" fill="url(#sendGrad)" stroke="none"/>
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21.44 11.05L12.25 20.24C10.15 22.34 6.78 22.34 4.68 20.24C2.58 18.14 2.58 14.77 4.68 12.67L13.86 3.49C15.28 2.07 17.59 2.07 19.01 3.49C20.43 4.91 20.43 7.22 19.01 8.64L9.83 17.82C9.12 18.53 7.97 18.53 7.26 17.82C6.55 17.11 6.55 15.96 7.26 15.25L15.25 7.26" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="attachGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#c4b5fd"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
+      </linearGradient>
+    </defs>
+    <path d="M19.5 10.5L10.94 19.06C9.12 20.88 6.18 20.88 4.36 19.06C2.54 17.24 2.54 14.3 4.36 12.48L12.93 3.91C14.11 2.73 16.04 2.73 17.22 3.91C18.4 5.09 18.4 7.02 17.22 8.2L8.66 16.77C8.07 17.36 7.1 17.36 6.51 16.77C5.92 16.18 5.92 15.21 6.51 14.62L14.38 6.74" stroke="url(#attachGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const PremiumDeleteIcon = () => (

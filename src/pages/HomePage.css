@@ -10707,6 +10707,17 @@ html body.theme-sunset .message-body p {
   background: rgba(210, 190, 255, 0.75) !important;
   border: 2px solid rgba(109, 40, 217, 0.4) !important;
   color: #5b21b6 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+.homepage-container .premium-footer-btn.attachment-btn svg,
+.homepage-container .attachment-btn svg {
+  width: 20px !important;
+  height: 20px !important;
 }
 .homepage-container .premium-footer-btn.send-btn,
 .homepage-container .send-btn {
@@ -10715,6 +10726,24 @@ html body.theme-sunset .message-body p {
   min-width: 46px !important;
   background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%) !important;
   box-shadow: 0 4px 18px rgba(91, 33, 182, 0.55) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+.homepage-container .premium-footer-btn.send-btn svg,
+.homepage-container .send-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: #ffffff !important;
+}
+/* Override any conflicting send-btn svg color rules */
+.homepage-container .send-btn svg path {
+  fill: url(#sendGrad) !important;
+  stroke: none !important;
 }
 
 /* Sync ::after + chat-feed with 64px footer */
@@ -10851,19 +10880,21 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
 .dark-mode .chat-header {
   background: linear-gradient(135deg, #1a0533 0%, #2e0853 55%, #4c1d95 100%) !important;
 }
-/* Title: bright white + text-shadow for punch */
+/* Title: lavender colour for visibility on dark purple header */
 .header-title,
 .chat-header .header-title,
 .chat-header .header-center .header-title {
-  color: #f5f3ff !important;
+  color: #ddd6fe !important;
   font-weight: 700 !important;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.45), 0 0 20px rgba(255,255,255,0.15) !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5), 0 0 24px rgba(196,181,253,0.3) !important;
+  letter-spacing: 0.01em !important;
 }
-/* User count badge */
+/* User count badge — lavender */
 .chat-header .user-count {
-  background: rgba(255,255,255,0.22) !important;
-  color: #f5f3ff !important;
-  border: 1px solid rgba(255,255,255,0.35) !important;
+  background: rgba(196, 181, 253, 0.22) !important;
+  color: #ddd6fe !important;
+  border: 1.5px solid rgba(196, 181, 253, 0.55) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
 }
 /* Header icons */
 .header-action-btn {
