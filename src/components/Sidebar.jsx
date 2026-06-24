@@ -1,6 +1,7 @@
 // src/components/Sidebar.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';

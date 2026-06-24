@@ -2195,3 +2195,110 @@
   transition: all 0.2s ease;
   font-family: inherit;
 }
+/* ── Sidebar APD Override (inline, not portal) ───────────────────── */
+.sidebar-apd {
+  position: absolute !important;
+  right: 0;
+  left: auto;
+  top: calc(100% + 6px);
+  z-index: 99999;
+  min-width: 206px;
+  max-width: 226px;
+}
+.sidebar-own-apd {
+  left: 0;
+  right: auto;
+}
+.user-list-item {
+  position: relative;
+}
+.sidebar-profile-centered {
+  position: relative;
+}
+
+/* ── Block Confirm Modal ─────────────────────────────────────────── */
+.block-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999999;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bcFadeIn 0.15s ease;
+}
+@keyframes bcFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.block-confirm-modal {
+  background: linear-gradient(145deg, #ffffff 0%, #fdf4ff 100%);
+  border-radius: 22px;
+  padding: 30px 28px 24px;
+  max-width: 310px;
+  width: 90%;
+  text-align: center;
+  box-shadow:
+    0 24px 64px rgba(109, 40, 217, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1.5px rgba(196, 181, 253, 0.5);
+  animation: bcSlideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes bcSlideUp {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.block-confirm-icon-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.block-confirm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.2px;
+}
+.block-confirm-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 22px;
+  line-height: 1.55;
+}
+.block-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.block-cancel-btn, .block-do-btn {
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: none;
+  letter-spacing: 0.1px;
+}
+.block-cancel-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
+}
+.block-cancel-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+.block-do-btn {
+  background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+}
+.block-do-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 20px rgba(225, 29, 72, 0.45);
+}
