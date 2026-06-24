@@ -1222,565 +1222,185 @@ const SettingsSidebar = ({
                 }
 
                 return (
-                    <div className="settings-tab-content username-font-tab">
-                        <div className="username-tab-header">
-                            <h3>
-                                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                                    <path d="M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.5,17.5H14V19H10V17.5H10.5C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z"/>
-                                </svg>
-                                Username Style Studio
-                            </h3>
-                            <p className="tab-description">Customize your username appearance - Your style will be visible to ALL users in the chat</p>
-                            <div style={{
-                                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1))',
-                                border: '1px solid rgba(34, 197, 94, 0.3)',
-                                borderRadius: '8px',
-                                padding: '12px',
-                                fontSize: '12px',
-                                color: '#22c55e',
-                                marginTop: '10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                    <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
-                                </svg>
-                                <span><strong>Professional Chat Style:</strong> Your custom username style will be visible to ALL users in the chat - just like Discord, Slack, and other professional chat applications!</span>
+                    <div className="settings-tab-content style-tab-v2">
+
+                        {/* ── LIVE PREVIEW ── */}
+                        <div className="sv2-preview-card">
+                            <div className="sv2-preview-stage">
+                                <span className="username-preview-text" id="username-preview">
+                                    {loggedInUserProfile?.displayName || 'YourUsername'}
+                                </span>
+                            </div>
+                            <div className="sv2-preview-footer">
+                                <span className="sv2-live-dot" />
+                                Visible to everyone in chat
                             </div>
                         </div>
 
-                        {/* Live Preview Section - Always visible at top */}
-                        <div className="stylish-setting-group preview-group">
-                            <div className="group-header">
-                                <div className="group-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M12,18.5A6.5,6.5 0 0,1 5.5,12A6.5,6.5 0 0,1 12,5.5A6.5,6.5 0 0,1 18.5,12A6.5,6.5 0 0,1 12,18.5M12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16Z"/>
-                                    </svg>
-                                </div>
-                                <h4>LIVE PREVIEW</h4>
-                            </div>
-                            <div className="enhanced-username-preview">
-                                <div className="preview-stage">
-                                    <div className="username-preview-text" id="username-preview">
-                                        {loggedInUserProfile?.displayName || 'YourUsername'}
-                                    </div>
-                                </div>
-                                <div className="preview-info">
-                                    <span className="live-indicator">●</span>
-                                    <span>Real-time preview of your username styling</span>
-                                </div>
+                        {/* ── QUICK PRESETS ── */}
+                        <div className="sv2-section">
+                            <div className="sv2-section-label">Quick Presets</div>
+                            <div className="sv2-presets-row">
+                                {[
+                                    {
+                                        name: 'Default',
+                                        previewStyle: { color: '#333', fontFamily: 'inherit' },
+                                        preset: { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameTextShadow:'none', usernameOutlineEnabled:false, usernameAnimationEnabled:false, usernameLetterSpacing:'0px' }
+                                    },
+                                    {
+                                        name: 'Violet',
+                                        previewStyle: { background:'linear-gradient(to right,#667eea,#764ba2)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold' },
+                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameLetterSpacing:'0.5px', usernameAnimationEnabled:false }
+                                    },
+                                    {
+                                        name: 'Fire',
+                                        previewStyle: { background:'linear-gradient(45deg,#ff4500,#ff8c00)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold' },
+                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#ff4500', usernameGradientEnd:'#ff8c00', usernameGradientDirection:'45deg', usernameTextShadow:'0 0 8px rgba(255,69,0,0.7)', usernameAnimationEnabled:true, usernameAnimationType:'glow', usernameAnimationDuration:'2s' }
+                                    },
+                                    {
+                                        name: 'Neon',
+                                        previewStyle: { color:'#00e5ff', textShadow:'0 0 8px rgba(0,229,255,0.9)', fontWeight:'bold' },
+                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:false, usernameFontColor:'#00e5ff', usernameTextShadow:'0 0 10px rgba(0,229,255,0.8)', usernameAnimationEnabled:true, usernameAnimationType:'glow', usernameAnimationDuration:'1.5s', usernameLetterSpacing:'1px' }
+                                    },
+                                    {
+                                        name: 'Elegant',
+                                        previewStyle: { fontFamily:'Georgia', fontStyle:'italic', background:'linear-gradient(135deg,#a18cd1,#fbc2eb)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' },
+                                        preset: { usernameFontSize:'13px', usernameFontFamily:'Georgia', usernameIsItalic:true, usernameIsBold:false, usernameGradientEnabled:true, usernameGradientStart:'#a18cd1', usernameGradientEnd:'#fbc2eb', usernameGradientDirection:'135deg', usernameTextShadow:'none', usernameLetterSpacing:'1px', usernameAnimationEnabled:false }
+                                    },
+                                    {
+                                        name: 'Gold',
+                                        previewStyle: { background:'linear-gradient(to right,#f7971e,#ffd200)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold', textShadow:'0 0 6px rgba(255,210,0,0.5)' },
+                                        preset: { usernameFontSize:'14px', usernameFontFamily:'inherit', usernameIsBold:true, usernameGradientEnabled:true, usernameGradientStart:'#f7971e', usernameGradientEnd:'#ffd200', usernameGradientDirection:'to right', usernameTextShadow:'0 0 10px rgba(255,215,0,0.8)', usernameAnimationEnabled:false, usernameLetterSpacing:'0.5px' }
+                                    },
+                                ].map((p) => (
+                                    <button key={p.name} className="sv2-preset-btn" onClick={() => {
+                                        Object.entries(p.preset).forEach(([k, v]) => handleSettingChange(k, v));
+                                        setTimeout(applyUsernameStyles, 100);
+                                    }}>
+                                        <span className="sv2-preset-preview" style={p.previewStyle}>Aa</span>
+                                        <span className="sv2-preset-name">{p.name}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Basic Typography */}
-                        <div className="stylish-setting-group">
-                            <div className="group-header">
-                                <div className="group-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M18.5,4L19.66,8.35L18.7,8.61C18.25,7.74 17.79,6.87 17.26,6.43C16.73,6 16.11,6 15.5,6H13V16.5C13,17 13,17.5 13.5,17.5H14V19H10V17.5H10.5C11,17.5 11,17 11,16.5V6H8.5C7.89,6 7.27,6 6.74,6.43C6.21,6.87 5.75,7.74 5.3,8.61L4.34,8.35L5.5,4H18.5Z"/>
-                                    </svg>
-                                </div>
-                                <h4>BASIC TYPOGRAPHY</h4>
-                            </div>
+                        {/* ── TYPOGRAPHY ── */}
+                        <div className="sv2-section">
+                            <div className="sv2-section-label">Typography</div>
 
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Font Size</span>
-                                    <small>Adjust the size of usernames (8-16px)</small>
-                                </div>
-                                <div className="stylish-select-wrapper">
-                                    <select
-                                        className="stylish-select"
-                                        value={settings.usernameFontSize}
-                                        onChange={(e) => {
-                                            handleSettingChange('usernameFontSize', e.target.value);
-                                            updatePreviewElement();
-                                        }}
-                                    >
-                                        <option value="8px">Tiny (8px)</option>
-                                        <option value="9px">Extra Small (9px)</option>
-                                        <option value="10px">Small (10px)</option>
-                                        <option value="11px">Medium Small (11px)</option>
-                                        <option value="12px">Normal (12px)</option>
-                                        <option value="13px">Medium (13px)</option>
-                                        <option value="14px">Large (14px)</option>
-                                        <option value="15px">Extra Large (15px)</option>
-                                        <option value="16px">Maximum (16px)</option>
+                            <div className="sv2-row">
+                                <span className="sv2-row-label">Font</span>
+                                <div className="sv2-select-wrap">
+                                    <select className="sv2-select" value={settings.usernameFontFamily} onChange={e => { handleSettingChange('usernameFontFamily', e.target.value); updatePreviewElement(); }}>
+                                        <option value="inherit">Default</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Great Vibes">Great Vibes</option>
+                                        <option value="Dancing Script">Dancing Script</option>
+                                        <option value="Allura">Allura</option>
+                                        <option value="Pacifico">Pacifico</option>
+                                        <option value="Satisfy">Satisfy</option>
+                                        <option value="Courgette">Courgette</option>
+                                        <option value="Mr De Haviland">Mr De Haviland</option>
+                                        <option value="Lobster">Lobster</option>
+                                        <option value="Kaushan Script">Kaushan Script</option>
+                                        <option value="Amatic SC">Amatic SC</option>
+                                        <option value="Caveat">Caveat</option>
+                                        <option value="Indie Flower">Indie Flower</option>
+                                        <option value="Permanent Marker">Permanent Marker</option>
+                                        <option value="Sacramento">Sacramento</option>
+                                        <option value="Shadows Into Light">Shadows Into Light</option>
+                                        <option value="Source Sans Pro">Source Sans Pro</option>
+                                        <option value="Raleway">Raleway</option>
+                                        <option value="Merriweather">Merriweather</option>
+                                        <option value="Nunito">Nunito</option>
+                                        <option value="Ubuntu">Ubuntu</option>
+                                        <option value="Cabin">Cabin</option>
+                                        <option value="Crimson Text">Crimson Text</option>
                                     </select>
-                                    <div className="select-arrow">
-                                        <svg viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                                        </svg>
-                                    </div>
+                                    <svg className="sv2-chevron" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
                                 </div>
                             </div>
 
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Font Family</span>
-                                    <small>Choose the typeface for usernames</small>
-                                </div>
-                                <div className="stylish-select-wrapper">
-                                    <select
-                                        className="stylish-select font-family-select"
-                                        value={settings.usernameFontFamily}
-                                        onChange={(e) => {
-                                            handleSettingChange('usernameFontFamily', e.target.value);
-                                            updatePreviewElement();
-                                        }}
-                                    >
-                                        <option value="inherit" style={{fontFamily: 'inherit'}}>Default Font</option>
-                                        <option value="Georgia" style={{fontFamily: 'Georgia'}}>Georgia</option>
-                                        <option value="Great Vibes" style={{fontFamily: 'Great Vibes'}}>Great Vibes</option>
-                                        <option value="Dancing Script" style={{fontFamily: 'Dancing Script'}}>Dancing Script</option>
-                                        <option value="Allura" style={{fontFamily: 'Allura'}}>Allura</option>
-                                        <option value="Pacifico" style={{fontFamily: 'Pacifico'}}>Pacifico</option>
-                                        <option value="Satisfy" style={{fontFamily: 'Satisfy'}}>Satisfy</option>
-                                        <option value="Courgette" style={{fontFamily: 'Courgette'}}>Courgette</option>
-                                        <option value="Mr De Haviland" style={{fontFamily: 'Mr De Haviland'}}>Mr De Haviland</option>
-                                        <option value="Lobster" style={{fontFamily: 'Lobster'}}>Lobster</option>
-                                        <option value="Kaushan Script" style={{fontFamily: 'Kaushan Script'}}>Kaushan Script</option>
-                                        <option value="Amatic SC" style={{fontFamily: 'Amatic SC'}}>Amatic SC</option>
-                                        <option value="Caveat" style={{fontFamily: 'Caveat'}}>Caveat</option>
-                                        <option value="Indie Flower" style={{fontFamily: 'Indie Flower'}}>Indie Flower</option>
-                                        <option value="Permanent Marker" style={{fontFamily: 'Permanent Marker'}}>Permanent Marker</option>
-                                        <option value="Sacramento" style={{fontFamily: 'Sacramento'}}>Sacramento</option>
-                                        <option value="Shadows Into Light" style={{fontFamily: 'Shadows Into Light'}}>Shadows Into Light</option>
-                                        <option value="Source Sans Pro" style={{fontFamily: 'Source Sans Pro'}}>Source Sans Pro</option>
-                                        <option value="Raleway" style={{fontFamily: 'Raleway'}}>Raleway</option>
-                                        <option value="Merriweather" style={{fontFamily: 'Merriweather'}}>Merriweather</option>
-                                        <option value="Nunito" style={{fontFamily: 'Nunito'}}>Nunito</option>
-                                        <option value="Ubuntu" style={{fontFamily: 'Ubuntu'}}>Ubuntu</option>
-                                        <option value="Cabin" style={{fontFamily: 'Cabin'}}>Cabin</option>
-                                        <option value="Crimson Text" style={{fontFamily: 'Crimson Text'}}>Crimson Text</option>
-                                    </select>
-                                    <div className="select-arrow">
-                                        <svg viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Letter Spacing</span>
-                                    <small>Adjust spacing between characters</small>
-                                </div>
-                                <div className="stylish-select-wrapper">
-                                    <select
-                                        className="stylish-select"
-                                        value={settings.usernameLetterSpacing}
-                                        onChange={(e) => {
-                                            handleSettingChange('usernameLetterSpacing', e.target.value);
-                                            setTimeout(applyUsernameStyles, 50);
-                                        }}
-                                    >
-                                        <option value="-1px">Very Condensed</option>
-                                        <option value="-0.5px">Condensed</option>
-                                        <option value="0px">Normal</option>
-                                        <option value="0.5px">Slightly Wide</option>
-                                        <option value="1px">Wide</option>
-                                        <option value="1.5px">Wider</option>
-                                        <option value="2px">Widest</option>
-                                        <option value="3px">Extra Wide</option>
-                                    </select>
-                                    <div className="select-arrow">
-                                        <svg viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Font Style Toggles */}
-                            <div className="font-style-grid">
-                                <div className="style-toggle-item">
-                                    <label className="stylish-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.usernameIsBold}
-                                            onChange={(e) => {
-                                                handleSettingChange('usernameIsBold', e.target.checked);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                        <span className="toggle-label">Bold</span>
-                                    </label>
-                                </div>
-
-                                <div className="style-toggle-item">
-                                    <label className="stylish-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.usernameIsItalic}
-                                            onChange={(e) => {
-                                                handleSettingChange('usernameIsItalic', e.target.checked);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                        <span className="toggle-label">Italic</span>
-                                    </label>
-                                </div>
-
-                                <div className="style-toggle-item">
-                                    <label className="stylish-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.usernameIsUnderline}
-                                            onChange={(e) => {
-                                                handleSettingChange('usernameIsUnderline', e.target.checked);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                        <span className="toggle-label">Underline</span>
-                                    </label>
-                                </div>
-
-                                <div className="style-toggle-item">
-                                    <label className="stylish-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.usernameIsStrikethrough}
-                                            onChange={(e) => {
-                                                handleSettingChange('usernameIsStrikethrough', e.target.checked);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                        <span className="toggle-label">Strikethrough</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Color & Gradient Effects */}
-                        <div className="stylish-setting-group">
-                            <div className="group-header">
-                                <div className="group-icon gradient-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/>
-                                    </svg>
-                                </div>
-                                <h4>COLOR & GRADIENTS</h4>
-                            </div>
-
-                            <div className="color-mode-toggle">
-                                <div className="mode-option" onClick={() => {
-                                    handleSettingChange('usernameGradientEnabled', false);
-                                    setTimeout(applyUsernameStyles, 50);
-                                }}>
-                                    <div className={`mode-selector ${!settings.usernameGradientEnabled ? 'active' : ''}`}>
-                                        <svg viewBox="0 0 24 24" width="18" height="18">
-                                            <path d="M12,18.5A6.5,6.5 0 0,1 5.5,12A6.5,6.5 0 0,1 12,5.5A6.5,6.5 0 0,1 18.5,12A6.5,6.5 0 0,1 12,18.5M12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16Z"/>
-                                        </svg>
-                                    </div>
-                                    <span>Solid Color</span>
-                                </div>
-                                <div className="mode-option" onClick={() => {
-                                    handleSettingChange('usernameGradientEnabled', true);
-                                    setTimeout(applyUsernameStyles, 50);
-                                }}>
-                                    <div className={`mode-selector ${settings.usernameGradientEnabled ? 'active' : ''}`}>
-                                        <svg viewBox="0 0 24 24" width="18" height="18">
-                                            <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/>
-                                        </svg>
-                                    </div>
-                                    <span>Gradient</span>
-                                </div>
-                            </div>
-
-                            {!settings.usernameGradientEnabled ? (
-                                <div className="color-picker-section">
-                                    <div className="stylish-setting-item">
-                                        <div className="setting-label">
-                                            <span>Text Color</span>
-                                            <small>Choose a solid color for usernames</small>
-                                        </div>
-                                        <div className="stylish-color-picker">
-                                            <input
-                                                type="color"
-                                                value={settings.usernameFontColor}
-                                                onChange={(e) => {
-                                                    handleSettingChange('usernameFontColor', e.target.value);
-                                                    setTimeout(applyUsernameStyles, 50);
-                                                }}
-                                                className="color-input"
-                                            />
-                                            <div className="color-preview" style={{backgroundColor: settings.usernameFontColor}}></div>
-                                            <span className="color-code">{settings.usernameFontColor}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="gradient-section">
-                                    <div className="gradient-colors">
-                                        <div className="stylish-setting-item">
-                                            <div className="setting-label">
-                                                <span>Start Color</span>
-                                                <small>First color in the gradient</small>
-                                            </div>
-                                            <div className="stylish-color-picker">
-                                                <input
-                                                    type="color"
-                                                    value={settings.usernameGradientStart}
-                                                    onChange={(e) => {
-                                                        handleSettingChange('usernameGradientStart', e.target.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                    className="color-input"
-                                                />
-                                                <div className="color-preview" style={{backgroundColor: settings.usernameGradientStart}}></div>
-                                                <span className="color-code">{settings.usernameGradientStart}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="stylish-setting-item">
-                                            <div className="setting-label">
-                                                <span>End Color</span>
-                                                <small>Second color in the gradient</small>
-                                            </div>
-                                            <div className="stylish-color-picker">
-                                                <input
-                                                    type="color"
-                                                    value={settings.usernameGradientEnd}
-                                                    onChange={(e) => {
-                                                        handleSettingChange('usernameGradientEnd', e.target.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                    className="color-input"
-                                                />
-                                                <div className="color-preview" style={{backgroundColor: settings.usernameGradientEnd}}></div>
-                                                <span className="color-code">{settings.usernameGradientEnd}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="stylish-setting-item">
-                                        <div className="setting-label">
-                                            <span>Gradient Direction</span>
-                                            <small>Direction of the gradient effect</small>
-                                        </div>
-                                        <div className="gradient-direction-grid">
-                                            {[
-                                                {value: 'to right', label: '→', desc: 'Left to Right'},
-                                                {value: 'to left', label: '←', desc: 'Right to Left'},
-                                                {value: 'to bottom', label: '↓', desc: 'Top to Bottom'},
-                                                {value: 'to top', label: '↑', desc: 'Bottom to Top'},
-                                                {value: '45deg', label: '↗', desc: 'Diagonal NE'},
-                                                {value: '135deg', label: '↘', desc: 'Diagonal SE'},
-                                                {value: '225deg', label: '↙', desc: 'Diagonal SW'},
-                                                {value: '315deg', label: '↖', desc: 'Diagonal NW'},
-                                                {value: 'radial', label: '●', desc: 'Radial'}
-                                            ].map((dir) => (
-                                                <button
-                                                    key={dir.value}
-                                                    className={`gradient-direction-btn ${settings.usernameGradientDirection === dir.value ? 'active' : ''}`}
-                                                    onClick={() => {
-                                                        handleSettingChange('usernameGradientDirection', dir.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                    title={dir.desc}
-                                                >
-                                                    <span className="direction-arrow">{dir.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Effects & Enhancements */}
-                        <div className="stylish-setting-group">
-                            <div className="group-header">
-                                <div className="group-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"/>
-                                    </svg>
-                                </div>
-                                <h4>EFFECTS & ENHANCEMENTS</h4>
-                            </div>
-
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Text Shadow</span>
-                                    <small>Add shadow effects to usernames</small>
-                                </div>
-                                <div className="shadow-presets">
-                                    {[
-                                        {value: 'none', label: 'None', preview: 'Text'},
-                                        {value: '1px 1px 2px rgba(0,0,0,0.3)', label: 'Soft', preview: 'Text'},
-                                        {value: '2px 2px 4px rgba(0,0,0,0.5)', label: 'Medium', preview: 'Text'},
-                                        {value: '3px 3px 6px rgba(0,0,0,0.7)', label: 'Strong', preview: 'Text'},
-                                        {value: '0 0 8px rgba(255,255,255,0.8)', label: 'White Glow', preview: 'Text'},
-                                        {value: '0 0 10px rgba(0,255,255,0.8)', label: 'Cyan Glow', preview: 'Text'},
-                                        {value: '0 0 10px rgba(255,0,255,0.8)', label: 'Magenta Glow', preview: 'Text'},
-                                        {value: '0 0 10px rgba(255,215,0,0.8)', label: 'Gold Glow', preview: 'Text'},
-                                        {value: '2px 2px 0px #000, 4px 4px 0px #333', label: '3D Effect', preview: 'Text'},
-                                    ].map((shadow) => (
-                                        <button
-                                            key={shadow.value}
-                                            className={`shadow-preset-btn ${settings.usernameTextShadow === shadow.value ? 'active' : ''}`}
-                                            onClick={() => {
-                                                handleSettingChange('usernameTextShadow', shadow.value);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                            title={shadow.label}
-                                        >
-                                            <span className="shadow-preview" style={{textShadow: shadow.value === 'none' ? 'none' : shadow.value}}>
-                                                {shadow.preview}
-                                            </span>
-                                            <span className="shadow-label">{shadow.label}</span>
+                            <div className="sv2-row">
+                                <span className="sv2-row-label">Size</span>
+                                <div className="sv2-pill-row">
+                                    {['8px','10px','11px','12px','13px','14px','15px','16px'].map(sz => (
+                                        <button key={sz} className={`sv2-pill ${settings.usernameFontSize === sz ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameFontSize', sz); updatePreviewElement(); }}>
+                                            {sz.replace('px','')}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Text Outline */}
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Text Outline</span>
-                                    <small>Add outline border around text</small>
+                            <div className="sv2-row">
+                                <span className="sv2-row-label">Spacing</span>
+                                <div className="sv2-pill-row">
+                                    {[{v:'-0.5px',l:'Tight'},{v:'0px',l:'Normal'},{v:'0.5px',l:'Wide'},{v:'1px',l:'Wider'},{v:'2px',l:'Max'}].map(s => (
+                                        <button key={s.v} className={`sv2-pill ${settings.usernameLetterSpacing === s.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameLetterSpacing', s.v); setTimeout(applyUsernameStyles, 50); }}>
+                                            {s.l}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="outline-controls">
-                                    <label className="outline-toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.usernameOutlineEnabled}
-                                            onChange={(e) => {
-                                                handleSettingChange('usernameOutlineEnabled', e.target.checked);
-                                                setTimeout(applyUsernameStyles, 50);
-                                            }}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                        <span className="toggle-label">Enable Outline</span>
-                                    </label>
+                            </div>
 
-                                    {settings.usernameOutlineEnabled && (
-                                        <div className="outline-settings">
-                                            <div className="stylish-color-picker compact">
-                                                <input
-                                                    type="color"
-                                                    value={settings.usernameOutlineColor}
-                                                    onChange={(e) => {
-                                                        handleSettingChange('usernameOutlineColor', e.target.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                    className="color-input"
-                                                />
-                                                <div className="color-preview" style={{backgroundColor: settings.usernameOutlineColor}}></div>
-                                            </div>
-
-                                            <div className="stylish-select-wrapper compact">
-                                                <select
-                                                    className="stylish-select"
-                                                    value={settings.usernameOutlineSize}
-                                                    onChange={(e) => {
-                                                        handleSettingChange('usernameOutlineSize', e.target.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                >
-                                                    <option value="0.5px">Thin</option>
-                                                    <option value="1px">Normal</option>
-                                                    <option value="1.5px">Medium</option>
-                                                    <option value="2px">Thick</option>
-                                                    <option value="2.5px">Very Thick</option>
-                                                </select>
-                                                <div className="select-arrow">
-                                                    <svg viewBox="0 0 24 24" width="14" height="14">
-                                                        <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                            <div className="sv2-row">
+                                <span className="sv2-row-label">Style</span>
+                                <div className="sv2-style-btns">
+                                    <button className={`sv2-style-btn ${settings.usernameIsBold ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsBold', !settings.usernameIsBold); setTimeout(applyUsernameStyles, 50); }} title="Bold"><b>B</b></button>
+                                    <button className={`sv2-style-btn ${settings.usernameIsItalic ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsItalic', !settings.usernameIsItalic); setTimeout(applyUsernameStyles, 50); }} title="Italic"><i>I</i></button>
+                                    <button className={`sv2-style-btn ${settings.usernameIsUnderline ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsUnderline', !settings.usernameIsUnderline); setTimeout(applyUsernameStyles, 50); }} title="Underline"><u>U</u></button>
+                                    <button className={`sv2-style-btn ${settings.usernameIsStrikethrough ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameIsStrikethrough', !settings.usernameIsStrikethrough); setTimeout(applyUsernameStyles, 50); }} title="Strikethrough"><s>S</s></button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Animation Effects */}
-                        <div className="stylish-setting-group">
-                            <div className="group-header">
-                                <div className="group-icon animation-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16Z"/>
-                                    </svg>
-                                </div>
-                                <h4>ANIMATION EFFECTS</h4>
+                        {/* ── COLOR ── */}
+                        <div className="sv2-section">
+                            <div className="sv2-section-label">Color</div>
+
+                            <div className="sv2-color-mode-row">
+                                <button className={`sv2-mode-btn ${!settings.usernameGradientEnabled ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', false); setTimeout(applyUsernameStyles, 50); }}>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+                                    Solid
+                                </button>
+                                <button className={`sv2-mode-btn ${settings.usernameGradientEnabled ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', true); setTimeout(applyUsernameStyles, 50); }}>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><defs><linearGradient id="gIcon" x1="0%" y1="0%" x2="100%"><stop offset="0%" stopColor="#667eea"/><stop offset="100%" stopColor="#f093fb"/></linearGradient></defs><circle cx="12" cy="12" r="8" fill="url(#gIcon)"/></svg>
+                                    Gradient
+                                </button>
                             </div>
 
-                            <div className="stylish-setting-item">
-                                <div className="setting-label">
-                                    <span>Enable Animation</span>
-                                    <small>Add motion effects to usernames</small>
-                                </div>
-                                <label className="stylish-main-toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.usernameAnimationEnabled}
-                                        onChange={(e) => {
-                                            handleSettingChange('usernameAnimationEnabled', e.target.checked);
-                                            setTimeout(applyUsernameStyles, 50);
-                                        }}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            {settings.usernameAnimationEnabled && (
-                                <>
-                                    <div className="animation-presets">
-                                        {[
-                                            {value: 'pulse', label: 'Pulse', desc: 'Gentle pulsing effect'},
-                                            {value: 'bounce', label: 'Bounce', desc: 'Bouncing motion'},
-                                            {value: 'shake', label: 'Shake', desc: 'Subtle shaking'},
-                                            {value: 'glow', label: 'Glow', desc: 'Glowing effect'},
-                                            {value: 'fadeInOut', label: 'Fade', desc: 'Fade in and out'},
-                                            {value: 'rainbow', label: 'Rainbow', desc: 'Color cycling'}
-                                        ].map((anim) => (
-                                            <button
-                                                key={anim.value}
-                                                className={`animation-preset-btn ${settings.usernameAnimationType === anim.value ? 'active' : ''}`}
-                                                onClick={() => {
-                                                    handleSettingChange('usernameAnimationType', anim.value);
-                                                    setTimeout(applyUsernameStyles, 50);
-                                                }}
-                                                title={anim.desc}
-                                            >
-                                                <span className={`animation-preview ${anim.value}`}>Aa</span>
-                                                <span className="animation-label">{anim.label}</span>
-                                            </button>
-                                        ))}
+                            {!settings.usernameGradientEnabled ? (
+                                <div className="sv2-row">
+                                    <span className="sv2-row-label">Color</span>
+                                    <div className="sv2-color-row">
+                                        <input type="color" className="sv2-color-input" value={settings.usernameFontColor} onChange={e => { handleSettingChange('usernameFontColor', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
+                                        <div className="sv2-color-swatch" style={{ background: settings.usernameFontColor }} />
+                                        <span className="sv2-color-hex">{settings.usernameFontColor}</span>
                                     </div>
-
-                                    <div className="stylish-setting-item">
-                                        <div className="setting-label">
-                                            <span>Animation Speed</span>
-                                            <small>Control the speed of animation</small>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="sv2-row">
+                                        <span className="sv2-row-label">From</span>
+                                        <div className="sv2-color-row">
+                                            <input type="color" className="sv2-color-input" value={settings.usernameGradientStart} onChange={e => { handleSettingChange('usernameGradientStart', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
+                                            <div className="sv2-color-swatch" style={{ background: settings.usernameGradientStart }} />
+                                            <span className="sv2-color-hex">{settings.usernameGradientStart}</span>
                                         </div>
-                                        <div className="speed-selector">
-                                            {[
-                                                {value: '0.5s', label: 'Very Fast'},
-                                                {value: '1s', label: 'Fast'},
-                                                {value: '1.5s', label: 'Normal'},
-                                                {value: '2s', label: 'Slow'},
-                                                {value: '3s', label: 'Very Slow'}
-                                            ].map((speed) => (
-                                                <button
-                                                    key={speed.value}
-                                                    className={`speed-btn ${settings.usernameAnimationDuration === speed.value ? 'active' : ''}`}
-                                                    onClick={() => {
-                                                        handleSettingChange('usernameAnimationDuration', speed.value);
-                                                        setTimeout(applyUsernameStyles, 50);
-                                                    }}
-                                                >
-                                                    {speed.label}
-                                                </button>
+                                    </div>
+                                    <div className="sv2-row">
+                                        <span className="sv2-row-label">To</span>
+                                        <div className="sv2-color-row">
+                                            <input type="color" className="sv2-color-input" value={settings.usernameGradientEnd} onChange={e => { handleSettingChange('usernameGradientEnd', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
+                                            <div className="sv2-color-swatch" style={{ background: settings.usernameGradientEnd }} />
+                                            <span className="sv2-color-hex">{settings.usernameGradientEnd}</span>
+                                        </div>
+                                    </div>
+                                    <div className="sv2-row">
+                                        <span className="sv2-row-label">Dir</span>
+                                        <div className="sv2-dir-grid">
+                                            {[{v:'to right',l:'→'},{v:'to left',l:'←'},{v:'to bottom',l:'↓'},{v:'to top',l:'↑'},{v:'45deg',l:'↗'},{v:'135deg',l:'↘'},{v:'225deg',l:'↙'},{v:'315deg',l:'↖'},{v:'radial',l:'●'}].map(d => (
+                                                <button key={d.v} className={`sv2-dir-btn ${settings.usernameGradientDirection === d.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameGradientDirection', d.v); setTimeout(applyUsernameStyles, 50); }}>{d.l}</button>
                                             ))}
                                         </div>
                                     </div>
@@ -1788,139 +1408,88 @@ const SettingsSidebar = ({
                             )}
                         </div>
 
-                        {/* Quick Presets */}
-                        <div className="stylish-setting-group">
-                            <div className="group-header">
-                                <div className="group-icon">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                                        <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
-                                    </svg>
-                                </div>
-                                <h4>QUICK PRESETS</h4>
+                        {/* ── EFFECTS ── */}
+                        <div className="sv2-section">
+                            <div className="sv2-section-label">Effects</div>
+
+                            <div className="sv2-effects-label">Shadow</div>
+                            <div className="sv2-shadow-grid">
+                                {[
+                                    {v:'none', l:'None'},
+                                    {v:'1px 1px 2px rgba(0,0,0,0.3)', l:'Soft'},
+                                    {v:'2px 2px 4px rgba(0,0,0,0.5)', l:'Dark'},
+                                    {v:'0 0 8px rgba(255,255,255,0.8)', l:'White'},
+                                    {v:'0 0 10px rgba(0,255,255,0.8)', l:'Cyan'},
+                                    {v:'0 0 10px rgba(255,0,255,0.8)', l:'Pink'},
+                                    {v:'0 0 10px rgba(255,215,0,0.8)', l:'Gold'},
+                                    {v:'2px 2px 0px #000,4px 4px 0px #333', l:'3D'},
+                                ].map(s => (
+                                    <button key={s.v} className={`sv2-shadow-btn ${settings.usernameTextShadow === s.v ? 'active' : ''}`} style={{ textShadow: s.v === 'none' ? 'none' : s.v }} onClick={() => { handleSettingChange('usernameTextShadow', s.v); setTimeout(applyUsernameStyles, 50); }}>
+                                        {s.l}
+                                    </button>
+                                ))}
                             </div>
 
-                            <div className="preset-buttons">
-                                <button 
-                                    className="preset-btn classic"
-                                    onClick={() => {
-                                        const preset = {
-                                            usernameFontSize: '12px',
-                                            usernameFontColor: '#000000',
-                                            usernameFontFamily: 'inherit',
-                                            usernameIsBold: false,
-                                            usernameIsItalic: false,
-                                            usernameIsUnderline: false,
-                                            usernameIsStrikethrough: false,
-                                            usernameGradientEnabled: false,
-                                            usernameTextShadow: 'none',
-                                            usernameOutlineEnabled: false,
-                                            usernameAnimationEnabled: false,
-                                            usernameLetterSpacing: '0px'
-                                        };
-                                        Object.entries(preset).forEach(([key, value]) => {
-                                            handleSettingChange(key, value);
-                                        });
-                                        setTimeout(applyUsernameStyles, 100);
-                                    }}
-                                >
-                                    <span className="preset-preview" style={{fontFamily: 'inherit', fontSize: '12px'}}>Classic</span>
-                                    <span className="preset-name">Default</span>
-                                </button>
-
-                                <button 
-                                    className="preset-btn modern"
-                                    onClick={() => {
-                                        const preset = {
-                                            usernameFontSize: '14px',
-                                            usernameFontFamily: 'Roboto',
-                                            usernameIsBold: true,
-                                            usernameGradientEnabled: true,
-                                            usernameGradientStart: '#667eea',
-                                            usernameGradientEnd: '#764ba2',
-                                            usernameGradientDirection: 'to right',
-                                            usernameTextShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                                            usernameLetterSpacing: '0.5px'
-                                        };
-                                        Object.entries(preset).forEach(([key, value]) => {
-                                            handleSettingChange(key, value);
-                                        });
-                                        setTimeout(applyUsernameStyles, 100);
-                                    }}
-                                >
-                                    <span className="preset-preview" style={{
-                                        fontFamily: 'Roboto', 
-                                        fontSize: '12px', 
-                                        fontWeight: 'bold',
-                                        background: 'linear-gradient(to right, #667eea, #764ba2)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        letterSpacing: '0.5px'
-                                    }}>Modern</span>
-                                    <span className="preset-name">Gradient</span>
-                                </button>
-
-                                <button 
-                                    className="preset-btn gaming"
-                                    onClick={() => {
-                                        const preset = {
-                                            usernameFontSize: '15px',
-                                            usernameFontFamily: 'Impact',
-                                            usernameIsBold: true,
-                                            usernameGradientEnabled: true,
-                                            usernameGradientStart: '#ff0000',
-                                            usernameGradientEnd: '#ff8c00',
-                                            usernameGradientDirection: '45deg',
-                                            usernameTextShadow: '0 0 10px rgba(255,0,0,0.8)',
-                                            usernameOutlineEnabled: true,
-                                            usernameOutlineColor: '#000000',
-                                            usernameOutlineSize: '2px',
-                                            usernameAnimationEnabled: true,
-                                            usernameAnimationType: 'glow',
-                                            usernameAnimationDuration: '2s'
-                                        };
-                                        Object.entries(preset).forEach(([key, value]) => {
-                                            handleSettingChange(key, value);
-                                        });
-                                        setTimeout(applyUsernameStyles, 100);
-                                    }}
-                                >
-                                    <span className="preset-preview gaming-style">Gaming</span>
-                                    <span className="preset-name">Gaming</span>
-                                </button>
-
-                                <button 
-                                    className="preset-btn elegant"
-                                    onClick={() => {
-                                        const preset = {
-                                            usernameFontSize: '13px',
-                                            usernameFontFamily: 'Georgia',
-                                            usernameIsItalic: true,
-                                            usernameGradientEnabled: true,
-                                            usernameGradientStart: '#667eea',
-                                            usernameGradientEnd: '#f093fb',
-                                            usernameGradientDirection: 'to bottom',
-                                            usernameTextShadow: '1px 1px 3px rgba(0,0,0,0.2)',
-                                            usernameLetterSpacing: '1px'
-                                        };
-                                        Object.entries(preset).forEach(([key, value]) => {
-                                            handleSettingChange(key, value);
-                                        });
-                                        setTimeout(applyUsernameStyles, 100);
-                                    }}
-                                >
-                                    <span className="preset-preview" style={{
-                                        fontFamily: 'Georgia', 
-                                        fontSize: '12px', 
-                                        fontStyle: 'italic',
-                                        background: 'linear-gradient(to bottom, #667eea, #f093fb)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        letterSpacing: '1px'
-                                    }}>Elegant</span>
-                                    <span className="preset-name">Elegant</span>
-                                </button>
+                            <div className="sv2-row" style={{ marginTop: '10px' }}>
+                                <span className="sv2-row-label">Outline</span>
+                                <div className="sv2-outline-row">
+                                    <label className="sv2-toggle">
+                                        <input type="checkbox" checked={settings.usernameOutlineEnabled} onChange={e => { handleSettingChange('usernameOutlineEnabled', e.target.checked); setTimeout(applyUsernameStyles, 50); }} />
+                                        <span className="sv2-toggle-track" />
+                                    </label>
+                                    {settings.usernameOutlineEnabled && (
+                                        <>
+                                            <input type="color" className="sv2-color-input sm" value={settings.usernameOutlineColor} onChange={e => { handleSettingChange('usernameOutlineColor', e.target.value); setTimeout(applyUsernameStyles, 50); }} />
+                                            <div className="sv2-select-wrap sm">
+                                                <select className="sv2-select" value={settings.usernameOutlineSize} onChange={e => { handleSettingChange('usernameOutlineSize', e.target.value); setTimeout(applyUsernameStyles, 50); }}>
+                                                    <option value="0.5px">Thin</option>
+                                                    <option value="1px">Normal</option>
+                                                    <option value="1.5px">Medium</option>
+                                                    <option value="2px">Thick</option>
+                                                    <option value="2.5px">Bolder</option>
+                                                </select>
+                                                <svg className="sv2-chevron" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
+
+                        {/* ── ANIMATION ── */}
+                        <div className="sv2-section">
+                            <div className="sv2-section-label">Animation</div>
+
+                            <div className="sv2-row">
+                                <span className="sv2-row-label">Enable</span>
+                                <label className="sv2-toggle">
+                                    <input type="checkbox" checked={settings.usernameAnimationEnabled} onChange={e => { handleSettingChange('usernameAnimationEnabled', e.target.checked); setTimeout(applyUsernameStyles, 50); }} />
+                                    <span className="sv2-toggle-track" />
+                                </label>
+                            </div>
+
+                            {settings.usernameAnimationEnabled && (
+                                <>
+                                    <div className="sv2-anim-grid">
+                                        {[{v:'pulse',l:'Pulse'},{v:'bounce',l:'Bounce'},{v:'shake',l:'Shake'},{v:'glow',l:'Glow'},{v:'fadeInOut',l:'Fade'},{v:'rainbow',l:'Rainbow'}].map(a => (
+                                            <button key={a.v} className={`sv2-anim-btn ${settings.usernameAnimationType === a.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameAnimationType', a.v); setTimeout(applyUsernameStyles, 50); }}>
+                                                <span className={`sv2-anim-preview ${a.v}`}>Aa</span>
+                                                <span>{a.l}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="sv2-row" style={{ marginTop: '8px' }}>
+                                        <span className="sv2-row-label">Speed</span>
+                                        <div className="sv2-pill-row">
+                                            {[{v:'0.5s',l:'Fast'},{v:'1s',l:'Normal'},{v:'2s',l:'Slow'},{v:'3s',l:'Slower'}].map(sp => (
+                                                <button key={sp.v} className={`sv2-pill ${settings.usernameAnimationDuration === sp.v ? 'active' : ''}`} onClick={() => { handleSettingChange('usernameAnimationDuration', sp.v); setTimeout(applyUsernameStyles, 50); }}>{sp.l}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                     </div>
                 );
 
