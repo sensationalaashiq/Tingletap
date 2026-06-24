@@ -439,6 +439,14 @@
   transition: opacity 0.15s;
 }
 .sb-user-item:hover .sb-mod-actions { opacity: 1; }
+.sb-mod-actions.sb-mod-visible { opacity: 1; }
+
+.sb-row-selected {
+  background: rgba(124,58,237,0.09) !important;
+}
+.sb-row-selected .sb-list-avatar {
+  border-color: rgba(124,58,237,0.55) !important;
+}
 
 .sb-mod-btn {
   width: 26px;

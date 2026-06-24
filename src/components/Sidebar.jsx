@@ -87,6 +87,7 @@ const Sidebar = ({
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [sidebarKickConfirm, setSidebarKickConfirm] = useState({ isOpen: false, user: null });
+  const [selectedUser, setSelectedUser] = useState(null);
   const dropdownRef = useRef(null);
   const { roomId } = useParams();
   const navigate   = useNavigate();
@@ -100,12 +101,14 @@ const Sidebar = ({
     setDropdownUser(prev => prev === uid ? null : uid);
   };
 
-  /* -- click outside closes dropdown -- */
+  /* -- click outside closes dropdown + deselects row -- */
   useEffect(() => {
     const handler = (event) => {
       const dropdown = event.target.closest('.sb-apd');
       const trigger  = event.target.closest('[data-sb-trigger]');
       if (!dropdown && !trigger) setDropdownUser(null);
+      const row = event.target.closest('.sb-user-item');
+      if (!row) setSelectedUser(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -552,14 +555,23 @@ const Sidebar = ({
                 const showKick  = showMod && canDoKick(userItem);
                 const showBan   = showMod && canDoBan(userItem);
 
+                const isRowSelected = selectedUser === userItem.uid;
+
                 return (
-                  <li key={userItem.uid} className={`sb-user-item ${getBorderClass(userItem)}`}>
-                    {/* Avatar */}
+                  <li key={userItem.uid} className={`sb-user-item ${getBorderClass(userItem)} ${isRowSelected ? 'sb-row-selected' : ''}`}>
+                    {/* Avatar — click opens dropdown */}
                     <button
                       className="sb-user-avatar-wrap"
                       data-sb-trigger="true"
                       disabled={isSelf}
-                      onClick={(e) => { if (!isSelf) { e.preventDefault(); e.stopPropagation(); openDropdownAt(userItem.uid, e); } }}
+                      onClick={(e) => {
+                        if (!isSelf) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedUser(null);
+                          openDropdownAt(userItem.uid, e);
+                        }
+                      }}
                     >
                       <img
                         className="sb-list-avatar"
@@ -570,12 +582,18 @@ const Sidebar = ({
                       <span className={`sb-dot ${isOnline ? 'online' : 'offline'}`} />
                     </button>
 
-                    {/* Info */}
+                    {/* Info — click toggles mod action visibility */}
                     <div
                       className="sb-user-info"
-                      data-sb-trigger="true"
                       style={{ cursor: isSelf ? 'default' : 'pointer', flex: 1, minWidth: 0 }}
-                      onClick={(e) => { if (!isSelf) { e.preventDefault(); e.stopPropagation(); openDropdownAt(userItem.uid, e); } }}
+                      onClick={(e) => {
+                        if (!isSelf) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDropdownUser(null);
+                          setSelectedUser(prev => prev === userItem.uid ? null : userItem.uid);
+                        }
+                      }}
                     >
                       <div className="sb-user-name-row">
                         <span
@@ -609,9 +627,9 @@ const Sidebar = ({
                       )}
                     </div>
 
-                    {/* Mod action buttons (hidden for regular users) */}
+                    {/* Mod action buttons — hidden by default, appear on hover OR row-click */}
                     {(showMute || showKick || showBan) && (
-                      <div className="sb-mod-actions">
+                      <div className={`sb-mod-actions${isRowSelected ? ' sb-mod-visible' : ''}`}>
                         {showMute && (
                           <button
                             className={`sb-mod-btn ${userItem.mutedInfo?.isMuted ? 'unmute' : 'mute'}`}
