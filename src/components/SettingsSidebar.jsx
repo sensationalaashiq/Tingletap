@@ -803,22 +803,6 @@ const SettingsSidebar = ({
 
                             <label className="setting-item">
                                 <div className="setting-info">
-                                    <span>Room Entry Notifications</span>
-                                    <small>Sound when entering a new room</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.roomEntryNotifications}
-                                        onChange={(e) => handleSettingChange('roomEntryNotifications', e.target.checked)}
-                                        disabled={!settings.soundEnabled}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
                                     <span>User Mention Notifications</span>
                                     <small>Sound when someone mentions you (@username)</small>
                                 </div>
@@ -853,115 +837,6 @@ const SettingsSidebar = ({
                             </div>
                         </div>
 
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M10,21H14A2,2 0 0,1 12,23A2,2 0 0,1 10,21M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19Z"/>
-                                </svg>
-                                DESKTOP NOTIFICATIONS
-                            </h4>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Browser Notifications</span>
-                                    <small>Show native desktop notifications for new messages</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.desktopNotifications || false}
-                                        onChange={(e) => handleSettingChange('desktopNotifications', e.target.checked)}
-                                    />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Popup Notifications</span>
-                                    <small>Show in-app popup notifications</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.popupNotifications || false}
-                                        onChange={(e) => handleSettingChange('popupNotifications', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Email Notifications</span>
-                                    <small>Send important notifications via email</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.emailNotifications || false}
-                                        onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-                        </div>
-
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12C2,6.5 6.47,2 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/>
-                                </svg>
-                                NOTIFICATION TIMING
-                            </h4>
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Do Not Disturb Mode</span>
-                                    <small>Mute all notifications temporarily</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.doNotDisturb || false}
-                                        onChange={(e) => handleSettingChange('doNotDisturb', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Quiet Hours</span>
-                                    <small>Automatically mute notifications during certain hours</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.quietHours || false}
-                                        onChange={(e) => handleSettingChange('quietHours', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span>Notification Delay</span>
-                                    <small>Delay before showing notifications (seconds)</small>
-                                </div>
-                                <div className="volume-control">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="10"
-                                        value={settings.notificationDelay || 0}
-                                        onChange={(e) => handleSettingChange('notificationDelay', parseInt(e.target.value))}
-                                        className="volume-slider"
-                                    />
-                                    <span className="volume-value">{settings.notificationDelay || 0}s</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 );
 
@@ -1106,144 +981,6 @@ const SettingsSidebar = ({
                                 </label>
                             </label>
 
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Voice Calls</span>
-                                    <small>Allow incoming voice calls</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.allowVoiceCalls || true}
-                                        onChange={(e) => handleSettingChange('allowVoiceCalls', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Video Calls</span>
-                                    <small>Allow incoming video calls</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.allowVideoCalls || true}
-                                        onChange={(e) => handleSettingChange('allowVideoCalls', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-                        </div>
-
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
-                                </svg>
-                                DATA & SECURITY
-                            </h4>
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Read Receipts</span>
-                                    <small>Show when you've read messages</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.readReceipts || true}
-                                        onChange={(e) => handleSettingChange('readReceipts', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Save Chat History</span>
-                                    <small>Automatically save chat messages locally</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.saveChatHistory || true}
-                                        onChange={(e) => handleSettingChange('saveChatHistory', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Anonymize Analytics</span>
-                                    <small>Remove personal data from usage analytics</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.anonymizeAnalytics || false}
-                                        onChange={(e) => handleSettingChange('anonymizeAnalytics', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Two-Factor Authentication</span>
-                                    <small>Enable 2FA for enhanced security</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.twoFactorAuth || false}
-                                        onChange={(e) => handleSettingChange('twoFactorAuth', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-                        </div>
-
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L18,9.5L16.59,8.09L11,13.67L7.41,10.09L6,11.5L11,16.5Z"/>
-                                </svg>
-                                CONTENT FILTERING
-                            </h4>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span>Content Filter Level</span>
-                                    <small>Filter inappropriate content</small>
-                                </div>
-                                <select 
-                                    className="privacy-select"
-                                    value={settings.contentFilterLevel || 'medium'}
-                                    onChange={(e) => handleSettingChange('contentFilterLevel', e.target.value)}
-                                >
-                                    <option value="off">Off</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="strict">Strict</option>
-                                </select>
-                            </div>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Block Explicit Content</span>
-                                    <small>Automatically hide explicit messages and media</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.blockExplicitContent || false}
-                                        onChange={(e) => handleSettingChange('blockExplicitContent', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
                         </div>
                     </div>
                 );
@@ -1289,80 +1026,6 @@ const SettingsSidebar = ({
                     </div>
                 );
 
-            case 'audio':
-                return (
-                    <div className="settings-tab-content">
-                        <h3>Audio Settings</h3>
-
-                        <div className="setting-group">
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span>Microphone Volume</span>
-                                    <small>Adjust your microphone input level</small>
-                                </div>
-                                <div className="volume-control">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={settings.micVolume}
-                                        onChange={(e) => handleSettingChange('micVolume', parseInt(e.target.value))}
-                                        className="volume-slider"
-                                    />
-                                    <span className="volume-value">{settings.micVolume}%</span>
-                                </div>
-                            </div>
-
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span>Speaker Volume</span>
-                                    <small>Adjust your speaker output level</small>
-                                </div>
-                                <div className="volume-control">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={settings.speakerVolume}
-                                        onChange={(e) => handleSettingChange('speakerVolume', parseInt(e.target.value))}
-                                        className="volume-slider"
-                                    />
-                                    <span className="volume-value">{settings.speakerVolume}%</span>
-                                </div>
-                            </div>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Echo Cancellation</span>
-                                    <small>Reduce echo during calls</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.echoCancellation}
-                                        onChange={(e) => handleSettingChange('echoCancellation', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Noise Suppression</span>
-                                    <small>Reduce background noise</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.noiseSuppression}
-                                        onChange={(e) => handleSettingChange('noiseSuppression', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-                        </div>
-                    </div>
-                );
 
             case 'friends':
                 return (
@@ -3610,27 +3273,24 @@ const SettingsSidebar = ({
                             <span>Blocked</span>
                         </button>
 
-                        <button 
-                            className={`settings-tab ${activeTab === 'audio' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('audio')}
-                            title="Audio"
-                        >
-                            <svg viewBox="0 0 24 24" width="20" height="20">
-                                <path fill="#3b82f6" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
-                            </svg>
-                            <span>Audio</span>
-                        </button>
-
-                        <button 
-                            className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('friends')}
-                            title="Friends"
-                        >
-                            <svg viewBox="0 0 24 24" width="20" height="20">
-                                <path fill="#ec4899" d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,13C18.67,13 22,14.34 22,17V20H10V17C10,14.34 13.33,13 16,13M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,13C10.67,13 14,14.34 14,17V20H2V17C2,14.34 5.33,13 8,13Z"/>
-                            </svg>
-                            <span>Friends</span>
-                        </button>
+                        {(() => {
+                            const userRoleForFriends = loggedInUserProfile?.role?.toLowerCase();
+                            const hasBadgeForFriends = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
+                            const hasFriendsAccess = hasBadgeForFriends || ['admin', 'owner', 'moderator'].includes(userRoleForFriends);
+                            if (!hasFriendsAccess) return null;
+                            return (
+                                <button 
+                                    className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('friends')}
+                                    title="Friends"
+                                >
+                                    <svg viewBox="0 0 24 24" width="20" height="20">
+                                        <path fill="#ec4899" d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,13C18.67,13 22,14.34 22,17V20H10V17C10,14.34 13.33,13 16,13M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,13C10.67,13 14,14.34 14,17V20H2V17C2,14.34 5.33,13 8,13Z"/>
+                                    </svg>
+                                    <span>Friends</span>
+                                </button>
+                            );
+                        })()}
 
                         {(() => {
                             const userRole = loggedInUserProfile?.role?.toLowerCase();

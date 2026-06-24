@@ -569,7 +569,15 @@ const Sidebar = ({
         <div className={`sidebar-header ${loggedInUserProfile?.badge ? 'badge-bg-' + loggedInUserProfile.badge : ''}`}>
           {user && loggedInUserProfile && (
             <div className={`sidebar-profile-centered ${getBorderClass(loggedInUserProfile || user)}`} style={{ position: 'relative', zIndex: 1 }}>
-              <div className="avatar-wrapper" style={{ position: 'relative' }}>
+              <div className="avatar-wrapper" style={{ position: 'relative', cursor: 'pointer' }} onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (dropdownUser === user.uid) {
+                  setDropdownUser(null);
+                } else {
+                  setDropdownUser(user.uid);
+                }
+              }}>
                 <img className="sidebar-avatar" src={getAvatarUrl(user.uid, loggedInUserProfile?.gender || user?.gender || 'male', loggedInUserProfile?.photoURL || user?.photoURL)} alt="avatar" />
                 <GenderBadge 
                   gender={loggedInUserProfile?.gender || user?.gender || 'male'} 
@@ -941,7 +949,17 @@ const Sidebar = ({
                 const isDropdownOpen = dropdownUser === userItem.uid;
                 return (
                   <li className={`user-list-item ${getBorderClass(userItem)}`} key={userItem.uid}>
-                    <div className="avatar-wrapper" style={{ position: 'relative' }}>
+                    <div className="avatar-wrapper" style={{ position: 'relative', cursor: user?.uid !== userItem.uid ? 'pointer' : 'default' }} onClick={(e) => {
+                      if (user?.uid !== userItem.uid) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (dropdownUser === userItem.uid) {
+                          setDropdownUser(null);
+                        } else {
+                          setDropdownUser(userItem.uid);
+                        }
+                      }
+                    }}>
                       <img className="list-avatar" src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="avatar" />
                       <GenderBadge 
                         gender={userItem.gender || 'male'} 
