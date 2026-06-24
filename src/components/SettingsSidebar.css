@@ -2528,27 +2528,24 @@
 /* Enhanced Username Font Tab Styling */
 .username-font-tab {
     padding: 0 !important;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: transparent;
     min-height: auto;
 }
 
 /* Force visibility for preview and elements */
 .enhanced-username-preview,
-.enhanced-username-preview *,
 .preview-stage,
-.preview-stage *,
 .username-preview-text,
 #username-preview {
     visibility: visible !important;
     opacity: 1 !important;
-    display: block !important;
 }
 
 .username-tab-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 24px;
-    margin: -8px -8px 0 -8px;
+    padding: 20px 16px;
+    margin: 0;
     border-radius: 0 0 20px 20px;
     text-align: center;
     box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);

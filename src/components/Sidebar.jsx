@@ -226,6 +226,7 @@ const Sidebar = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [rooms, setRooms] = useState([]);
   const [dropdownUser, setDropdownUser] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [profileUser, setProfileUser] = useState(null);
   const [adminModalVisible, setAdminModalVisible] = useState(false);
   const [adminModalType, setAdminModalType] = useState('');
@@ -233,6 +234,14 @@ const Sidebar = ({
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const dropdownRef = useRef(null);
+
+  const openDropdownAt = (uid, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 252));
+    const top = rect.bottom + 8;
+    setDropdownPosition({ top, left });
+    setDropdownUser(prev => prev === uid ? null : uid);
+  };
   const { roomId } = useParams();
   const navigate = useNavigate();
 
@@ -572,11 +581,7 @@ const Sidebar = ({
               <div className="avatar-wrapper" style={{ position: 'relative', cursor: 'pointer' }} onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (dropdownUser === user.uid) {
-                  setDropdownUser(null);
-                } else {
-                  setDropdownUser(user.uid);
-                }
+                openDropdownAt(user.uid, e);
               }}>
                 <img className="sidebar-avatar" src={getAvatarUrl(user.uid, loggedInUserProfile?.gender || user?.gender || 'male', loggedInUserProfile?.photoURL || user?.photoURL)} alt="avatar" />
                 <GenderBadge 
@@ -591,13 +596,7 @@ const Sidebar = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-
-                  // Handle current user dropdown toggle using same system as user list
-                  if (dropdownUser === user.uid) {
-                    setDropdownUser(null);
-                  } else {
-                    setDropdownUser(user.uid);
-                  }
+                  openDropdownAt(user.uid, e);
                 }}
                 data-dropdown-trigger="true"
               >
@@ -645,8 +644,9 @@ const Sidebar = ({
               {/* Current User Profile Dropdown */}
               {dropdownUser === user.uid && (
                 <div 
-                  className="modern-sidebar-dropdown position-below-right" 
+                  className="modern-sidebar-dropdown"
                   ref={dropdownRef}
+                  style={{ top: dropdownPosition.top, left: dropdownPosition.left, right: 'auto', bottom: 'auto' }}
                 >
                   <div className="dropdown-header">
                     <div className="dropdown-user-info">
@@ -953,11 +953,7 @@ const Sidebar = ({
                       if (user?.uid !== userItem.uid) {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (dropdownUser === userItem.uid) {
-                          setDropdownUser(null);
-                        } else {
-                          setDropdownUser(userItem.uid);
-                        }
+                        openDropdownAt(userItem.uid, e);
                       }
                     }}>
                       <img className="list-avatar" src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="avatar" />
@@ -981,14 +977,7 @@ const Sidebar = ({
                         if (user?.uid !== userItem.uid) {
                           e.preventDefault();
                           e.stopPropagation();
-
-                          // If this dropdown is already open, close it
-                          if (dropdownUser === userItem.uid) {
-                            setDropdownUser(null);
-                          } else {
-                            // Close any other dropdown and open this one
-                            setDropdownUser(userItem.uid);
-                          }
+                          openDropdownAt(userItem.uid, e);
                         }
                       }}
                       data-dropdown-trigger="true"
@@ -1043,8 +1032,9 @@ const Sidebar = ({
                     {/* User List Item Dropdown */}
                     {dropdownUser === userItem.uid && user?.uid !== userItem.uid && (
                       <div 
-                        className="modern-sidebar-dropdown position-below-right" 
+                        className="modern-sidebar-dropdown"
                         ref={dropdownRef}
+                        style={{ top: dropdownPosition.top, left: dropdownPosition.left, right: 'auto', bottom: 'auto' }}
                       >
                         <div className="dropdown-header">
                           <div className="dropdown-user-info">
