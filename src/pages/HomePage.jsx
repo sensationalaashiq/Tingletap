@@ -1395,7 +1395,7 @@ const HomePage = ({ user }) => {
                     localStorage.setItem('guestUser', JSON.stringify(restored));
                     setLoggedInUserProfile(buildGuestProfile(restored));
                 } else if (auth.currentUser.displayName) {
-                    const minimal = { uid: auth.currentUser.uid, displayName: auth.currentUser.displayName, gender: 'male', role: 'guest' };
+                    const minimal = { uid: auth.currentUser.uid, displayName: auth.currentUser.displayName, gender: getStoredGuestGender() || 'male', role: 'guest' };
                     setLoggedInUserProfile(buildGuestProfile(minimal));
                 }
             }).catch(() => {});

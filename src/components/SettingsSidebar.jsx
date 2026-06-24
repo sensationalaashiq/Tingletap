@@ -1490,6 +1490,30 @@ const SettingsSidebar = ({
                             )}
                         </div>
 
+                        {/* ── RESET TO DEFAULT ── */}
+                        <div className="sv2-reset-wrap">
+                            <button
+                                className="sv2-reset-btn"
+                                onClick={() => {
+                                    const defaults = { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameOutlineEnabled:false, usernameOutlineColor:'#000000', usernameOutlineSize:'1px', usernameAnimationEnabled:false, usernameAnimationType:'pulse', usernameAnimationDuration:'1s', usernameLetterSpacing:'0px' };
+                                    Object.entries(defaults).forEach(([k, v]) => handleSettingChange(k, v));
+                                    setTimeout(applyUsernameStyles, 100);
+                                }}
+                            >
+                                <svg className="sv2-reset-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="resetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#667eea"/>
+                                            <stop offset="100%" stopColor="#764ba2"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="url(#resetGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M3 3v5h5" stroke="url(#resetGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                <span className="sv2-reset-label">Reset to Default</span>
+                            </button>
+                        </div>
+
                     </div>
                 );
 

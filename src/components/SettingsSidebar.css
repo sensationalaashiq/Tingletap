@@ -5156,3 +5156,57 @@ select {
 .sv2-anim-preview.glow    { animation: glow 1.5s ease-in-out infinite; color: #8b5cf6; }
 .sv2-anim-preview.fadeInOut { animation: fadeInOut 1.5s ease-in-out infinite; }
 .sv2-anim-preview.rainbow { animation: rainbow 2s linear infinite; }
+
+/* ── Reset to Default button ── */
+.sv2-reset-wrap {
+  padding: 4px 0 8px;
+  display: flex;
+  justify-content: center;
+}
+.sv2-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 20px;
+  border-radius: 24px;
+  border: 1.5px solid rgba(139,92,246,0.35);
+  background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.sv2-reset-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(102,126,234,0.14) 0%, rgba(118,75,162,0.14) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: inherit;
+}
+.sv2-reset-btn:hover::before { opacity: 1; }
+.sv2-reset-btn:hover {
+  border-color: rgba(139,92,246,0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(124,58,237,0.2);
+}
+.sv2-reset-btn:active { transform: translateY(0); }
+.sv2-reset-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.4s ease;
+}
+.sv2-reset-btn:hover .sv2-reset-icon { transform: rotate(-360deg); }
+.sv2-reset-label { position: relative; }
+.dark-mode .sv2-reset-btn {
+  border-color: rgba(139,92,246,0.4);
+  background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.12) 100%);
+  color: #a78bfa;
+}
+.dark-mode .sv2-reset-btn:hover { box-shadow: 0 4px 16px rgba(139,92,246,0.25); }
