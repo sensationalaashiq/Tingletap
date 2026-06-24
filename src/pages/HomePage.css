@@ -10560,17 +10560,28 @@ html body.theme-sunset .message-body p {
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid rgba(167, 139, 250, 0.7);
-  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.25);
+  border: 2.5px solid #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.35), 0 0 14px 4px rgba(139, 92, 246, 0.3);
 }
 .apd-online-dot {
   position: absolute;
   bottom: 1px; right: 1px;
   width: 10px; height: 10px;
-  background: #22c55e;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 1px 4px rgba(34,197,94,0.5);
+}
+.apd-dot-online {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34,197,94,0.7);
+  animation: apdPulseGreen 2s ease-in-out infinite;
+}
+.apd-dot-offline {
+  background: #9ca3af;
+  box-shadow: none;
+}
+@keyframes apdPulseGreen {
+  0%, 100% { box-shadow: 0 0 4px rgba(34,197,94,0.6); }
+  50%       { box-shadow: 0 0 10px rgba(34,197,94,0.95); }
 }
 .apd-user-info {
   display: flex;
@@ -10631,30 +10642,35 @@ html body.theme-sunset .message-body p {
   transform: translateX(3px);
 }
 
-/* Coloured icon pill for each button */
+/* Icon wrap — no background, just a coloured icon */
 .apd-icon-wrap {
   display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 8px;
+  width: 26px; height: 26px;
+  border-radius: 6px;
   flex-shrink: 0;
+  background: transparent;
   transition: transform 0.15s ease;
 }
-.apd-btn:hover .apd-icon-wrap { transform: scale(1.1); }
+.apd-btn:hover .apd-icon-wrap { transform: scale(1.15); }
 
-.apd-icon-friend { background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white; }
-.apd-icon-pm     { background: linear-gradient(135deg, #34d399, #059669); color: white; }
-.apd-icon-whisper{ background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: white; }
-.apd-icon-block  { background: linear-gradient(135deg, #fb7185, #e11d48); color: white; }
+/* Coloured icons — gradient text colour via fill */
+.apd-icon-view-profile { color: #7c3aed; }
+.apd-icon-friend       { color: #7c3aed; }
+.apd-icon-pm           { color: #059669; }
+.apd-icon-whisper      { color: #0ea5e9; }
+.apd-icon-block        { color: #e11d48; }
 
-.apd-btn.apd-friend  { color: #4c1d95; }
-.apd-btn.apd-pm      { color: #065f46; }
-.apd-btn.apd-whisper { color: #0369a1; }
-.apd-btn.apd-danger  { color: #9f1239; }
+.apd-btn.apd-view-profile { color: #5b21b6; }
+.apd-btn.apd-friend       { color: #4c1d95; }
+.apd-btn.apd-pm           { color: #065f46; }
+.apd-btn.apd-whisper      { color: #0369a1; }
+.apd-btn.apd-danger       { color: #9f1239; }
 
-.apd-btn.apd-friend:hover  { background: rgba(221, 214, 254, 0.65); }
-.apd-btn.apd-pm:hover      { background: rgba(209, 250, 229, 0.65); }
-.apd-btn.apd-whisper:hover { background: rgba(224, 242, 254, 0.65); }
-.apd-btn.apd-danger:hover  { background: rgba(255, 228, 230, 0.65); }
+.apd-btn.apd-view-profile:hover { background: rgba(221, 214, 254, 0.55); }
+.apd-btn.apd-friend:hover       { background: rgba(221, 214, 254, 0.65); }
+.apd-btn.apd-pm:hover           { background: rgba(209, 250, 229, 0.65); }
+.apd-btn.apd-whisper:hover      { background: rgba(224, 242, 254, 0.65); }
+.apd-btn.apd-danger:hover       { background: rgba(255, 228, 230, 0.65); }
 
 /* Dark mode */
 .dark-mode .avatar-portal-dropdown {
@@ -10666,11 +10682,18 @@ html body.theme-sunset .message-body p {
 .dark-mode .apd-name { color: #ede9fe; }
 .dark-mode .apd-role { color: #c4b5fd; }
 .dark-mode .apd-btn { color: #e9d5ff; }
+.dark-mode .apd-btn.apd-view-profile { color: #c4b5fd; }
 .dark-mode .apd-btn.apd-friend  { color: #ddd6fe; }
 .dark-mode .apd-btn.apd-pm      { color: #a7f3d0; }
 .dark-mode .apd-btn.apd-whisper { color: #bae6fd; }
 .dark-mode .apd-btn.apd-danger  { color: #fda4af; }
+.dark-mode .apd-icon-view-profile { color: #a78bfa; }
+.dark-mode .apd-icon-friend       { color: #a78bfa; }
+.dark-mode .apd-icon-pm           { color: #34d399; }
+.dark-mode .apd-icon-whisper      { color: #38bdf8; }
+.dark-mode .apd-icon-block        { color: #fb7185; }
 .dark-mode .apd-btn:hover { background: rgba(139, 92, 246, 0.15); }
+.dark-mode .apd-btn.apd-view-profile:hover { background: rgba(109, 40, 217, 0.18); }
 .dark-mode .apd-btn.apd-friend:hover  { background: rgba(109, 40, 217, 0.2); }
 .dark-mode .apd-btn.apd-pm:hover      { background: rgba(5, 150, 105, 0.2); }
 .dark-mode .apd-btn.apd-whisper:hover { background: rgba(14, 165, 233, 0.2); }

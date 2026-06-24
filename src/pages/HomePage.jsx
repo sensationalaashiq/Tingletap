@@ -539,62 +539,110 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                     
                 {/* Avatar Click Dropdown - Portal with fixed positioning to avoid scroll container clipping */}
                     {!isBot && !isMyMessage && isDropdownOpen && createPortal(
-                        <>
-                            <div className="sidebar-dropdown-backdrop" onClick={closeAllDropdowns}></div>
-                            <div className="avatar-portal-dropdown" style={{
-                                top: `${dropdownPos.top}px`,
-                                left: `${dropdownPos.left}px`,
-                            }}>
-                                <div className="apd-header">
-                                    <div className="apd-avatar-wrap">
-                                        <img src={avatarUrl} alt="avatar" className="apd-avatar" />
-                                        <span className="apd-online-dot"></span>
+                        (() => {
+                            const isOnlineNow = window.onlineUsers?.has(uid);
+                            const targetRole = role?.toLowerCase() || '';
+                            const isTargetGuest = message.isGuest === true;
+                            const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
+                            const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
+                            const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true;
+                            const isLimited = isViewerGuest || isTargetGuest;
+
+                            const getRoleLabel = () => {
+                                if (isTargetGuest) {
+                                    return (gender?.toLowerCase() === 'female') ? 'Guest' : 'Purush';
+                                }
+                                if (targetRole === 'owner') return 'Owner';
+                                if (targetRole === 'admin') return 'Admin';
+                                if (targetRole === 'moderator') return 'Moderator';
+                                if (targetRole === 'badge_holder' || targetRole === 'badge-holder' || badge) return 'Badge Holder';
+                                return 'User';
+                            };
+
+                            return (
+                                <>
+                                    <div className="sidebar-dropdown-backdrop" onClick={closeAllDropdowns}></div>
+                                    <div className="avatar-portal-dropdown" style={{
+                                        top: `${dropdownPos.top}px`,
+                                        left: `${dropdownPos.left}px`,
+                                    }}>
+                                        <div className="apd-header">
+                                            <div className="apd-avatar-wrap">
+                                                <img src={avatarUrl} alt="avatar" className="apd-avatar" />
+                                                <span className={`apd-online-dot ${isOnlineNow ? 'apd-dot-online' : 'apd-dot-offline'}`}></span>
+                                            </div>
+                                            <div className="apd-user-info">
+                                                <span className="apd-name">{displayName}</span>
+                                                <span className="apd-role">
+                                                    <span className="apd-role-dot"></span>
+                                                    {getRoleLabel()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="apd-divider"></div>
+
+                                        {/* View Profile — always visible */}
+                                        <button className="apd-btn apd-view-profile" onClick={(e) => { e.stopPropagation(); onViewProfile(message); closeAllDropdowns(); }}>
+                                            <span className="apd-icon-wrap apd-icon-view-profile">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                    <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                                                </svg>
+                                            </span>
+                                            <span>View Profile</span>
+                                        </button>
+
+                                        {/* Add Friend — hidden when viewer or target is guest */}
+                                        {!isLimited && (
+                                            <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
+                                                <span className="apd-icon-wrap apd-icon-friend">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
+                                                    </svg>
+                                                </span>
+                                                <span>Add Friend</span>
+                                            </button>
+                                        )}
+
+                                        {/* Send Message — always visible */}
+                                        <button className="apd-btn apd-pm" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
+                                            <span className="apd-icon-wrap apd-icon-pm">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                                                </svg>
+                                            </span>
+                                            <span>Send Message</span>
+                                        </button>
+
+                                        {/* Whisper — hidden when viewer or target is guest */}
+                                        {!isLimited && (
+                                            <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
+                                                <span className="apd-icon-wrap apd-icon-whisper">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                        <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
+                                                    </svg>
+                                                </span>
+                                                <span>Whisper</span>
+                                            </button>
+                                        )}
+
+                                        {/* Block — hidden on Owner/Admin/Moderator profiles */}
+                                        {!isTargetStaff && (
+                                            <>
+                                                <div className="apd-divider"></div>
+                                                <button className="apd-btn apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
+                                                    <span className="apd-icon-wrap apd-icon-block">
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
+                                                        </svg>
+                                                    </span>
+                                                    <span>Block User</span>
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
-                                    <div className="apd-user-info">
-                                        <span className="apd-name">{displayName}</span>
-                                        <span className="apd-role">
-                                            <span className="apd-role-dot"></span>
-                                            {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Member'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="apd-divider"></div>
-                                <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
-                                    <span className="apd-icon-wrap apd-icon-friend">
-                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-                                        </svg>
-                                    </span>
-                                    <span>Add Friend</span>
-                                </button>
-                                <button className="apd-btn apd-pm" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
-                                    <span className="apd-icon-wrap apd-icon-pm">
-                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                        </svg>
-                                    </span>
-                                    <span>Send Message</span>
-                                </button>
-                                <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
-                                    <span className="apd-icon-wrap apd-icon-whisper">
-                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                        </svg>
-                                    </span>
-                                    <span>Whisper</span>
-                                </button>
-                                <div className="apd-divider"></div>
-                                <button className="apd-btn apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
-                                    <span className="apd-icon-wrap apd-icon-block">
-                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                                        </svg>
-                                    </span>
-                                    <span>Block User</span>
-                                </button>
-                            </div>
-                        </>,
-                        document.body
+                                </>
+                            );
+                        })()
                     )}
                 </div>
                 <div className="message-content-container" onClick={(e) => {
