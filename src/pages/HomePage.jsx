@@ -6504,11 +6504,11 @@ const HomePage = ({ user }) => {
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
                 width: '100vw', height: '52px', minHeight: '52px', maxHeight: '52px',
-                padding: '0 8px', boxSizing: 'border-box',
+                padding: '6px 8px', boxSizing: 'border-box',
                 display: 'flex', alignItems: 'center',
-                background: isDarkMode ? '#0e0620' : '#f3eeff',
-                borderTop: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
-                boxShadow: '0 -2px 12px rgba(109,40,217,0.1)',
+                background: 'transparent',
+                borderTop: 'none',
+                boxShadow: 'none',
                 zIndex: 2000, overflow: 'visible',
             }}>
                 <form onSubmit={handleSendMessage} className="message-form" style={{

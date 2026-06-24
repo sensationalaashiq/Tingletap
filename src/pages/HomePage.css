@@ -11157,17 +11157,17 @@ body .homepage-container .send-btn svg path {
   stroke: none !important;
 }
 
-/* Chat feed spacer synced to 52px footer — also padding-bottom as backup */
+/* Chat feed ends exactly where the input container starts (52px) */
 body .homepage-container .chat-feed {
   bottom: 52px !important;
-  padding-bottom: 52px !important;
+  padding-bottom: 0 !important;
 }
 body .homepage-container::after {
   height: 52px !important;
   min-height: 52px !important;
 }
 .homepage-container::after { height: 52px !important; min-height: 52px !important; }
-.homepage-container .chat-feed { bottom: 52px !important; padding-bottom: 52px !important; }
+.homepage-container .chat-feed { bottom: 52px !important; padding-bottom: 0 !important; }
 
 /* Attachment dropdown floats cleanly above footer */
 body .homepage-container .attachment-dropdown {
