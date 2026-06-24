@@ -6539,29 +6539,21 @@ const HomePage = ({ user }) => {
                         >
                             <AttachmentIconSVG />
                         </button>
-                        <div className="premium-input-wrapper" style={{
-                            flex: '1 1 auto', height: '36px',
-                            background: isDarkMode ? 'rgba(30,12,68,0.75)' : 'rgba(237,233,254,0.6)',
-                            border: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(167,139,250,0.35)',
-                            borderRadius: '18px', padding: '0 14px',
-                            display: 'flex', alignItems: 'center',
-                            minWidth: 0, margin: 0, boxSizing: 'border-box', alignSelf: 'center'
-                        }}>
                             <input
                                 type="text"
                                 className="premium-input-field"
                                 style={{
-                                    width: '100%', height: '100%', background: 'transparent',
+                                    flex: '1 1 auto', height: '100%', background: 'transparent',
                                     border: 'none', outline: 'none', fontSize: '15px',
                                     fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
-                                    caretColor: '#7c3aed', padding: 0, margin: 0
+                                    caretColor: '#7c3aed', padding: '0 6px', margin: 0,
+                                    minWidth: 0
                                 }}
                                 placeholder="Type a message..."
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
                             />
-                        </div>
                         <button
                             type="submit"
                             className="premium-footer-btn send-btn"
