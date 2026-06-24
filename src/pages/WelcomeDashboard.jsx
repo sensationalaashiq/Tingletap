@@ -600,11 +600,11 @@ const WelcomeDashboard = () => {
       }
       default: {
         if (userRole === 'guest') {
-          // Read gender from multiple sources for robustness — localStorage is authoritative
+          // Read gender from ALL sources — state first (includes Firestore data), then localStorage
           const gender = (
-            getStoredGuestGender() ||
             guestUser?.gender ||
-            ''
+            getStoredGuestGender() ||
+            (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').gender || ''; } catch { return ''; } })()
           ).toLowerCase();
 
           // Check female FIRST to avoid wrong fallback
@@ -659,7 +659,18 @@ const WelcomeDashboard = () => {
               </svg>
             )
           };
-          return { label: 'Guest', cls: 'wd-role--guest-male', icon: null };
+          return {
+            label: 'Purush',
+            cls: 'wd-role--guest-male',
+            icon: (
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
+                <defs><linearGradient id="rc-purush-fb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1d4ed8"/></linearGradient></defs>
+                <circle cx="8.5" cy="10.5" r="4.5" stroke="url(#rc-purush-fb)" strokeWidth="1.7" fill="rgba(59,130,246,0.1)"/>
+                <line x1="12" y1="7" x2="17" y2="2" stroke="url(#rc-purush-fb)" strokeWidth="1.7" strokeLinecap="round"/>
+                <polyline points="13,2 17,2 17,6" stroke="url(#rc-purush-fb)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+            )
+          };
         }
         return {
           label: 'Member',

@@ -898,7 +898,7 @@ const HomePage = ({ user }) => {
                 role: 'guest',
                 isGuest: true,
                 isAnonymous: true,
-                gender: g.gender || 'male',
+                gender: g.gender || '',
                 age: g.age || 18,
                 badge: null,
                 isBanned: false,
