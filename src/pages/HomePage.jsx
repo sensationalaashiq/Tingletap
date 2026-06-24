@@ -6512,64 +6512,53 @@ const HomePage = ({ user }) => {
                 zIndex: 2000, overflow: 'visible',
             }}>
                 <form onSubmit={handleSendMessage} className="message-form" style={{
-                    width: '100%', height: '52px', margin: 0, padding: 0,
-                    display: 'flex', alignItems: 'center', background: 'transparent'
+                    width: '100%', height: '100%', margin: 0, padding: 0,
+                    display: 'flex', alignItems: 'center', background: 'transparent', gap: '4px'
                 }}>
-                    <div className="premium-input-container" style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        width: '100%', height: '52px', background: 'transparent',
-                        border: 'none', padding: 0, margin: 0
-                    }}>
-                        <button
-                            type="button"
-                            className="premium-footer-btn attachment-btn"
-                            style={{
-                                width: '40px', height: '52px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '52px', maxHeight: '52px', flexShrink: 0,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: 'transparent', border: 'none', borderRadius: '0',
-                                padding: 0, cursor: 'pointer'
-                            }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsAttachmentDropdownOpen(prev => !prev);
-                            }}
-                            title="Add attachment"
-                        >
-                            <AttachmentIconSVG />
-                        </button>
-                            <input
-                                type="text"
-                                className="premium-input-field"
-                                style={{
-                                    flex: '1 1 auto', height: '100%', background: 'transparent',
-                                    border: 'none', outline: 'none', fontSize: '15px',
-                                    fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
-                                    caretColor: '#7c3aed', padding: '0 6px', margin: 0,
-                                    minWidth: 0
-                                }}
-                                placeholder="Type a message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
-                            />
-                        <button
-                            type="submit"
-                            className="premium-footer-btn send-btn"
-                            style={{
-                                width: '40px', height: '52px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '52px', maxHeight: '52px', flexShrink: 0,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: 'transparent',
-                                border: 'none', borderRadius: '0', padding: 0, cursor: 'pointer',
-                                opacity: !newMessage.trim() ? 0.5 : 1
-                            }}
-                            disabled={!newMessage.trim()}
-                        >
-                            <SendIconSVG />
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        className="premium-footer-btn attachment-btn"
+                        style={{
+                            width: '40px', height: '100%', minWidth: '40px', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer'
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsAttachmentDropdownOpen(prev => !prev);
+                        }}
+                        title="Add attachment"
+                    >
+                        <AttachmentIconSVG />
+                    </button>
+                    <input
+                        type="text"
+                        className="premium-input-field"
+                        style={{
+                            flex: '1 1 auto', height: '100%', background: 'transparent',
+                            border: 'none', outline: 'none', fontSize: '15px',
+                            fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
+                            caretColor: '#7c3aed', padding: '0 4px', margin: 0, minWidth: 0
+                        }}
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
+                    />
+                    <button
+                        type="submit"
+                        className="premium-footer-btn send-btn"
+                        style={{
+                            width: '40px', height: '100%', minWidth: '40px', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+                            opacity: !newMessage.trim() ? 0.5 : 1
+                        }}
+                        disabled={!newMessage.trim()}
+                    >
+                        <SendIconSVG />
+                    </button>
                 </form>
             </div>
 
