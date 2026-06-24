@@ -537,7 +537,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         (() => {
                             const isOnlineNow = window.onlineUsers?.has(uid);
                             const targetRole = role?.toLowerCase() || '';
-                            const isTargetGuest = message.isGuest === true || targetRole === 'guest' || (!message.uid && !uid);
+                            const isTargetGuest = message.isGuest === true || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
                             const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
                             const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
                             const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true || viewerRole === 'guest';
@@ -5095,7 +5095,9 @@ const HomePage = ({ user }) => {
                 email: email || '',
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
-                role: userProfile.role || 'user',
+                role: userProfile.role || (userProfile.isGuest ? 'guest' : 'user'),
+                isGuest: userProfile.isGuest || false,
+                isAnonymous: userProfile.isAnonymous || false,
                 photoURL: userProfile.photoURL || null
             };
 
@@ -5180,7 +5182,9 @@ const HomePage = ({ user }) => {
                 email: email || '',
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
-                role: userProfile.role || 'user',
+                role: userProfile.role || (userProfile.isGuest ? 'guest' : 'user'),
+                isGuest: userProfile.isGuest || false,
+                isAnonymous: userProfile.isAnonymous || false,
                 photoURL: userProfile.photoURL || null
             };
 
@@ -5470,7 +5474,9 @@ const HomePage = ({ user }) => {
                 email: email || '',
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
-                role: userProfile.role || 'user',
+                role: userProfile.role || (userProfile.isGuest ? 'guest' : 'user'),
+                isGuest: userProfile.isGuest || false,
+                isAnonymous: userProfile.isAnonymous || false,
                 photoURL: userProfile.photoURL || null
             };
 
@@ -5592,7 +5598,9 @@ const HomePage = ({ user }) => {
                 email: email || '',
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
-                role: userProfile.role || 'user',
+                role: userProfile.role || (userProfile.isGuest ? 'guest' : 'user'),
+                isGuest: userProfile.isGuest || false,
+                isAnonymous: userProfile.isAnonymous || false,
                 photoURL: userProfile.photoURL || null
             };
 
@@ -5665,7 +5673,9 @@ const HomePage = ({ user }) => {
                 email: email || '',
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
-                role: userProfile.role || 'user',
+                role: userProfile.role || (userProfile.isGuest ? 'guest' : 'user'),
+                isGuest: userProfile.isGuest || false,
+                isAnonymous: userProfile.isAnonymous || false,
                 photoURL: userProfile.photoURL || null,
                 isSticker: true // Mark as sticker message
             };

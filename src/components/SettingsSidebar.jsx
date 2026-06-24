@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getRoleDisplayLabel } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -1942,8 +1943,8 @@ const SettingsSidebar = ({
                                 <div className="modern-profile-info">
                                     <h4 className="modern-profile-name">{loggedInUserProfile?.displayName || 'Anonymous'}</h4>
                                     <p className="modern-profile-email">{auth.currentUser?.email}</p>
-                                    <span className="modern-role-badge" data-role={loggedInUserProfile?.role || 'user'}>
-                                        {loggedInUserProfile?.role || 'user'}
+                                    <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || 'user')}>
+                                        {getRoleDisplayLabel({ role: loggedInUserProfile?.role, gender: loggedInUserProfile?.gender, isGuest: loggedInUserProfile?.isGuest, badge: loggedInUserProfile?.badge })}
                                     </span>
                                 </div>
                             </div>
