@@ -1357,7 +1357,7 @@ const HomePage = ({ user }) => {
             role: 'guest',
             isGuest: true,
             isAnonymous: true,
-            gender: guestUser.gender || 'male',
+            gender: guestUser.gender || '',
             age: guestUser.age || 18,
             country: 'Unknown',
             status: "I'm a guest here!",
@@ -1395,7 +1395,7 @@ const HomePage = ({ user }) => {
                     localStorage.setItem('guestUser', JSON.stringify(restored));
                     setLoggedInUserProfile(buildGuestProfile(restored));
                 } else if (auth.currentUser.displayName) {
-                    const minimal = { uid: auth.currentUser.uid, displayName: auth.currentUser.displayName, gender: getStoredGuestGender() || 'male', role: 'guest' };
+                    const minimal = { uid: auth.currentUser.uid, displayName: auth.currentUser.displayName, gender: getStoredGuestGender() || '', role: 'guest' };
                     setLoggedInUserProfile(buildGuestProfile(minimal));
                 }
             }).catch(() => {});
@@ -2470,7 +2470,7 @@ const HomePage = ({ user }) => {
                 fullUserProfiles.push({
                     uid: uid,
                     displayName: displayName,
-                    gender: guestStatus.gender || 'male',
+                    gender: guestStatus.gender || '',
                     role: 'guest',
                     isGuest: true,
                     isOnline: guestStatus.state === 'online',
@@ -2821,7 +2821,7 @@ const HomePage = ({ user }) => {
                 displayName = guestUser.username || guestUser.displayName || 'Guest';
                 email = null;
                 photoURL = guestUser.photoURL || `${getDefaultAvatarUrl(uid, guestUser.gender)}`;
-                gender = guestUser.gender || 'male';
+                gender = guestUser.gender || '';
                 role = 'guest';
                 
                 // Log guest username for debugging
