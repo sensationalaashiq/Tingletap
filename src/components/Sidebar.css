@@ -48,8 +48,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 16px 14px 13px;
+  gap: 4px;
+  padding: 11px 12px 10px;
   background: linear-gradient(160deg, #f5f3ff 0%, #ede9fe 60%, #e0d9ff 100%);
   border-bottom: 1.5px solid rgba(196,181,253,0.55);
   overflow: hidden;
@@ -95,8 +95,8 @@
   margin-bottom: 1px;
 }
 .sb-big-avatar {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
   border: 2.5px solid rgba(139,92,246,0.45);
@@ -128,31 +128,43 @@
   cursor: pointer;
 }
 
+/* Name row: username + badge + role pill all on same line */
+.sb-profile-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 210px;
+  flex-wrap: nowrap;
+}
+
 .sb-profile-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #3b1f8c;
   display: flex;
   align-items: center;
-  gap: 4px;
-  text-align: center;
-  max-width: 200px;
+  gap: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.35;
+  line-height: 1.3;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .sb-role-pill {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 20px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   display: inline-block;
   width: fit-content;
   border: 1px solid rgba(0,0,0,0.06);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .sb-profile-status {
@@ -161,7 +173,7 @@
   color: #6d28d9;
   background: rgba(139,92,246,0.1);
   border-radius: 10px;
-  padding: 2px 9px;
+  padding: 2px 9px 2px 7px;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -170,7 +182,6 @@
   align-items: center;
   gap: 4px;
 }
-.sb-profile-status::before { content: '💬'; font-size: 9px; }
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .sb-tabs {
