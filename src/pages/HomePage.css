@@ -11157,15 +11157,15 @@ body .homepage-container .send-btn svg path {
   stroke: none !important;
 }
 
-/* Chat feed & ::after spacer synced to 54px footer (inline style wins) */
+/* Chat feed & ::after spacer synced to 40px footer (inline style wins) */
 body .homepage-container .chat-feed {
-  bottom: 54px !important;
+  bottom: 40px !important;
 }
 body .homepage-container::after {
-  height: 54px !important;
+  height: 40px !important;
 }
-.homepage-container::after { height: 54px !important; }
-.homepage-container .chat-feed { bottom: 54px !important; }
+.homepage-container::after { height: 40px !important; }
+.homepage-container .chat-feed { bottom: 40px !important; }
 
 /* Attachment dropdown floats cleanly above footer */
 body .homepage-container .attachment-dropdown {
