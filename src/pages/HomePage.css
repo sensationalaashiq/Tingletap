@@ -10957,8 +10957,80 @@ body .chat-header .user-count {
   align-items: center !important;
 }
 
-/* ── 2. FOOTER — perfectly sized strip, no dead space ─────────────── */
-/* Footer is exactly 58px. Inner row is 46px. 6px breathing room top+bottom. */
+/* ── 2. FOOTER — transparent strip, no capsule, no background ──────── */
+/* Kill every earlier rule that adds background/border-radius to footer  */
+body .homepage-container .chat-footer,
+body .homepage-container .chat-footer:focus-within,
+body.dark-mode .homepage-container .chat-footer,
+body.dark-mode .homepage-container .chat-footer:focus-within,
+.dark-mode .homepage-container .chat-footer {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  border-top: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  padding: 0 8px !important;
+}
+
+/* Kill attachment button capsule/circle styling */
+body .homepage-container .premium-footer-btn.attachment-btn,
+body .homepage-container .attachment-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 36px !important;
+  height: 52px !important;
+}
+
+/* Kill send button capsule/circle styling */
+body .homepage-container .premium-footer-btn.send-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 36px !important;
+  height: 52px !important;
+}
+
+/* Kill any wrapper capsule that might appear */
+body .homepage-container .premium-input-wrapper,
+body .homepage-container .premium-input-container {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Input field: flat, full height, no styling */
+body .homepage-container .premium-input-field,
+body .homepage-container .premium-input-field:focus {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 4px !important;
+}
+
+/* Message form fills footer exactly */
+body .homepage-container .message-form {
+  height: 52px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
 body .homepage-container .chat-footer {
   position: fixed !important;
   bottom: 0 !important;
