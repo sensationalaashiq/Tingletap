@@ -10917,30 +10917,32 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
    ██  FINAL AUTHORITY BLOCK — beats every rule above  ██
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. HEADER TITLE & USER-COUNT: bright blue, always visible ──── */
+/* ── 1. HEADER TITLE & USER-COUNT: pure white, max contrast ──────── */
 body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
-  color: #93c5fd !important;
-  font-weight: 700 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
   font-size: 1rem !important;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.55) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6), 0 0 12px rgba(255,255,255,0.15) !important;
   letter-spacing: 0.01em !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 body .homepage-container .chat-header .user-count,
 body .chat-header .user-count {
-  background: rgba(147, 197, 253, 0.18) !important;
-  color: #93c5fd !important;
-  border: 1.5px solid rgba(147, 197, 253, 0.5) !important;
+  background: rgba(255,255,255,0.25) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255,255,255,0.5) !important;
   font-size: 0.72rem !important;
   font-weight: 700 !important;
   padding: 2px 8px !important;
   border-radius: 12px !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.35) !important;
   box-shadow: none !important;
   margin-left: 6px !important;
   white-space: nowrap !important;
@@ -10950,7 +10952,8 @@ body .chat-header .user-count {
   align-items: center !important;
 }
 
-/* ── 2. FOOTER — single clean strip, zero extra layers ─────────── */
+/* ── 2. FOOTER — perfectly sized strip, no dead space ─────────────── */
+/* Footer is exactly 58px. Inner row is 46px. 6px breathing room top+bottom. */
 body .homepage-container .chat-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -10958,21 +10961,23 @@ body .homepage-container .chat-footer {
   right: 0 !important;
   width: 100vw !important;
   max-width: 100vw !important;
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
-  padding: 0 10px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  padding: 6px 10px !important;
+  box-sizing: border-box !important;
   margin: 0 !important;
   border-radius: 0 !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: stretch !important;
   background: #f3eeff !important;
   border-top: 1.5px solid rgba(139, 92, 246, 0.22) !important;
   box-shadow: 0 -3px 16px rgba(109, 40, 217, 0.1) !important;
   z-index: 2000 !important;
   overflow: visible !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   filter: none !important;
   transform: none !important;
 }
@@ -10984,46 +10989,51 @@ body .dark-mode .homepage-container .chat-footer {
   box-shadow: 0 -3px 18px rgba(0,0,0,0.45) !important;
 }
 
+/* Form fills the entire remaining height inside footer */
 body .homepage-container .message-form {
   width: 100% !important;
-  height: 44px !important;
+  height: 46px !important;
   margin: 0 !important;
   padding: 0 !important;
   display: flex !important;
   align-items: center !important;
   background: transparent !important;
+  flex: 1 !important;
 }
 
+/* Row: attachment | pill | send — all 46px tall */
 body .homepage-container .premium-input-container {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   width: 100% !important;
-  height: 44px !important;
+  height: 46px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
   margin: 0 !important;
+  flex: 1 !important;
 }
 
-/* Input pill — only visible container */
+/* Input pill — sole visible container, full height */
 body .homepage-container .premium-input-wrapper {
   flex: 1 1 auto !important;
-  height: 44px !important;
+  height: 46px !important;
   background: rgba(237, 233, 254, 0.6) !important;
   border: 1.5px solid rgba(167, 139, 250, 0.35) !important;
-  border-radius: 22px !important;
+  border-radius: 23px !important;
   padding: 0 16px !important;
   display: flex !important;
   align-items: center !important;
   box-shadow: none !important;
   margin: 0 !important;
+  min-width: 0 !important;
   transition: border-color 0.2s, background 0.2s !important;
 }
 
 body .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(237, 233, 254, 0.9) !important;
+  background: rgba(237, 233, 254, 0.92) !important;
   border-color: rgba(139, 92, 246, 0.6) !important;
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15) !important;
 }
@@ -11040,15 +11050,17 @@ body .homepage-container .premium-input-field {
   background: transparent !important;
   border: none !important;
   outline: none !important;
-  font-size: 14.5px !important;
+  font-size: 15px !important;
   font-weight: 450 !important;
   color: #2e1065 !important;
   caret-color: #7c3aed !important;
   padding: 0 !important;
+  margin: 0 !important;
+  line-height: 46px !important;
 }
 
 body .homepage-container .premium-input-field::placeholder {
-  color: rgba(124, 58, 237, 0.42) !important;
+  color: rgba(124, 58, 237, 0.4) !important;
 }
 
 body.dark-mode .homepage-container .premium-input-field,
@@ -11056,15 +11068,15 @@ body .dark-mode .homepage-container .premium-input-field {
   color: #e9d5ff !important;
 }
 
-/* Attachment button — ghost circle, no background box */
+/* Attachment button — 46×46 transparent circle */
 body .homepage-container .premium-footer-btn.attachment-btn,
 body .homepage-container .attachment-btn {
-  width: 42px !important;
-  height: 42px !important;
-  min-width: 42px !important;
-  max-width: 42px !important;
-  min-height: 42px !important;
-  max-height: 42px !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -11086,19 +11098,19 @@ body .homepage-container .attachment-btn:hover {
 
 body .homepage-container .premium-footer-btn.attachment-btn svg,
 body .homepage-container .attachment-btn svg {
-  width: 22px !important;
-  height: 22px !important;
+  width: 23px !important;
+  height: 23px !important;
 }
 
-/* Send button — vivid violet circle */
+/* Send button — 46×46 vivid violet circle */
 body .homepage-container .premium-footer-btn.send-btn,
 body .homepage-container .send-btn {
-  width: 44px !important;
-  height: 44px !important;
-  min-width: 44px !important;
-  max-width: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -11129,8 +11141,8 @@ body .homepage-container .send-btn:disabled {
 
 body .homepage-container .premium-footer-btn.send-btn svg,
 body .homepage-container .send-btn svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 21px !important;
+  height: 21px !important;
   color: #ffffff !important;
   fill: #ffffff !important;
 }
@@ -11140,18 +11152,18 @@ body .homepage-container .send-btn svg path {
   stroke: none !important;
 }
 
-/* Chat feed & ::after spacer synced to 60px footer */
+/* Chat feed & ::after spacer synced to 58px footer */
 body .homepage-container .chat-feed {
-  bottom: 60px !important;
+  bottom: 58px !important;
 }
 body .homepage-container::after {
-  height: 60px !important;
+  height: 58px !important;
 }
 
 /* Attachment dropdown floats cleanly above footer */
 body .homepage-container .attachment-dropdown {
   position: fixed !important;
-  bottom: 64px !important;
+  bottom: 62px !important;
   left: 10px !important;
   right: 10px !important;
   z-index: 2100 !important;
