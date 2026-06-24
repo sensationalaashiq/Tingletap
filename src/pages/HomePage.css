@@ -310,16 +310,16 @@
 }
 
 .message-row-wrapper:hover .message-actions {
-  display: flex !important;
-  visibility: visible !important;
   opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .message-actions {
   position: absolute !important;
   right: 8px !important;
-  top: 22px !important;
-  transform: none !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   display: flex !important;
   flex-direction: row !important;
   gap: 2px !important;
@@ -330,17 +330,11 @@
   padding: 0 !important;
   justify-content: flex-end !important;
   align-items: center !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
-  transition: all 0.2s ease !important;
+  transition: opacity 0.15s ease, visibility 0.15s ease !important;
   box-shadow: none !important;
-}
-
-.message-actions.show-actions {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 .dark-mode .message-actions {
@@ -1635,19 +1629,7 @@ html body.theme-sunset .message-body p {
   opacity: 1;
 }
 
-.message-actions {
-  display: none;
-  flex-direction: row;
-  gap: 2px;
-  z-index: 1000 !important;
-  background: none;
-  border: none;
-  padding: 0;
-  align-items: center;
-  margin-top: 2px;
-}
-
-/* Message actions controlled by state, not CSS hover */
+/* Message actions — controlled by CSS hover only (see top of file) */
 
 .action-btn {
   width: 20px;
@@ -11348,13 +11330,13 @@ body .homepage-container .attachment-dropdown {
   align-items: center;
   gap: 5px;
   height: 26px;
-  padding: 0 8px 0 7px;
+  padding: 0 6px 0 8px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-  box-shadow: 0 2px 10px rgba(124,58,237,0.35);
+  background: rgba(237, 233, 254, 0.95);
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(124,58,237,0.15);
   flex-shrink: 0;
   animation: whisper-chip-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
-  border: none;
   user-select: none;
 }
 @keyframes whisper-chip-in {
@@ -11363,8 +11345,9 @@ body .homepage-container .attachment-dropdown {
 }
 
 .whisper-chip-icon {
-  color: rgba(255,255,255,0.85);
+  color: #7c3aed;
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .whisper-chip-label {
@@ -11373,16 +11356,16 @@ body .homepage-container .attachment-dropdown {
   gap: 3px;
 }
 .whisper-chip-to {
-  font-size: 9px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.7);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #8b5cf6;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 .whisper-chip-name {
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: #5b21b6;
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -11390,19 +11373,28 @@ body .homepage-container .attachment-dropdown {
 }
 
 .whisper-chip-close {
-  background: rgba(255,255,255,0.2);
-  border: none;
+  background: rgba(109, 40, 217, 0.12);
+  border: 1px solid rgba(109, 40, 217, 0.25);
   border-radius: 50%;
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  margin-left: 1px;
-  color: #fff;
-  transition: background 0.13s;
+  margin-left: 2px;
+  color: #7c3aed;
+  transition: background 0.13s, border-color 0.13s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.whisper-chip-close:hover {
+  background: rgba(109, 40, 217, 0.22);
+  border-color: rgba(109, 40, 217, 0.45);
+}
+.whisper-chip-close svg {
+  display: block;
   flex-shrink: 0;
 }
-.whisper-chip-close:hover { background: rgba(255,255,255,0.35); }

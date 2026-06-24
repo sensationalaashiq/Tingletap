@@ -414,8 +414,6 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
         return null;
     }
-    const [showActions, setShowActions] = useState(false);
-    const [actionsLocked, setActionsLocked] = useState(false);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const avatarRef = useRef(null);
@@ -644,11 +642,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         document.body
                     )}
                 </div>
-                <div className="message-content-container" onClick={(e) => {
-                    if (!e.target.closest('.message-action-btn') && !e.target.closest('.message-displayname') && !e.target.closest('.user-dropdown')) {
-                        setActionsLocked(prev => !prev);
-                    }
-                }} style={{ cursor: 'pointer' }}>
+                <div className="message-content-container" style={{ cursor: 'default' }}>
                     <div className="message-header-row">
                         <div className="user-info" style={{ position: 'relative' }}>
                             <span 
@@ -772,7 +766,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             </span>
                         </div>
                         {!isBot && (
-                            <div className={`message-actions ${(showActions || actionsLocked) ? 'show-actions' : ''}`}>
+                            <div className="message-actions">
                                 {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                 {!isMyMessage && (
                                     <>
@@ -6650,8 +6644,8 @@ const HomePage = ({ user }) => {
                                 onClick={() => setWhisperTarget(null)}
                                 title="Cancel whisper"
                             >
-                                <svg width="9" height="9" viewBox="0 0 14 14" fill="none">
-                                    <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                                    <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
                                 </svg>
                             </button>
                         </div>
