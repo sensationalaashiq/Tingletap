@@ -1,10 +1,10 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
 import { auth, rtdb, db } from './firebase/config';
-import { ref, onValue, set, onDisconnect, serverTimestamp } from "firebase/database";
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, onValue, set, onDisconnect, serverTimestamp, remove } from "firebase/database";
+import { doc, onSnapshot, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 
 import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
@@ -778,6 +778,70 @@ function App() {
         localStorage.removeItem('isGuest');
       }
     }
+  }, [user]);
+
+  // 5-minute inactivity auto-logout for guest users
+  useEffect(() => {
+    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+    let inactivityTimer = null;
+
+    const cleanupGuestAndLogout = async () => {
+      const isGuest = localStorage.getItem('isGuest') === 'true';
+      if (!isGuest) return;
+      try {
+        const cu = auth.currentUser;
+        if (cu?.isAnonymous) {
+          const uid = cu.uid;
+          try { await remove(ref(rtdb, `status/${uid}`)); } catch {}
+          try { await deleteDoc(doc(db, 'users', uid)); } catch {}
+          try { await deleteUser(cu); } catch {}
+        }
+        localStorage.removeItem('guestUser');
+        localStorage.removeItem('isGuest');
+        setUser(null);
+        setUserProfile(null);
+        window.location.href = '/';
+      } catch (err) {
+        console.error('Guest auto-logout error:', err);
+        localStorage.removeItem('guestUser');
+        localStorage.removeItem('isGuest');
+        window.location.href = '/';
+      }
+    };
+
+    const resetTimer = () => {
+      if (localStorage.getItem('isGuest') !== 'true') return;
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(cleanupGuestAndLogout, INACTIVITY_LIMIT);
+    };
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+
+    const handleActivity = () => {
+      if (localStorage.getItem('isGuest') === 'true') {
+        resetTimer();
+      }
+    };
+
+    // Only start the timer if this is a guest session
+    if (localStorage.getItem('isGuest') === 'true') {
+      activityEvents.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }));
+      resetTimer();
+    }
+
+    // Re-check when user state changes (guest logs in)
+    const checkGuest = () => {
+      if (localStorage.getItem('isGuest') === 'true') {
+        activityEvents.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }));
+        resetTimer();
+      }
+    };
+    checkGuest();
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleActivity));
+    };
   }, [user]);
 
   // Set up global font preference functions

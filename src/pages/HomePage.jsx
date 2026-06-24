@@ -1841,7 +1841,9 @@ const HomePage = ({ user }) => {
                 displayName: displayNameForStatus,
                 gender: loggedInUserProfile.gender || 'male',
                 role: loggedInUserProfile.role || 'guest',
-                isGuest: isGuest || false
+                isGuest: isGuest || false,
+                photoURL: loggedInUserProfile.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${currentUid}&sex=${(loggedInUserProfile.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+                uid: currentUid
             };
             
             // Store comprehensive device info in Firestore for persistence (only for registered users)

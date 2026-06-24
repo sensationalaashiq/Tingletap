@@ -1941,10 +1941,24 @@ const SettingsSidebar = ({
                                     <div className="modern-status-indicator"></div>
                                 </div>
                                 <div className="modern-profile-info">
-                                    <h4 className="modern-profile-name">{loggedInUserProfile?.displayName || 'Anonymous'}</h4>
-                                    <p className="modern-profile-email">{auth.currentUser?.email}</p>
-                                    <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || 'user')}>
-                                        {getRoleDisplayLabel({ role: loggedInUserProfile?.role, gender: loggedInUserProfile?.gender, isGuest: loggedInUserProfile?.isGuest, badge: loggedInUserProfile?.badge })}
+                                    <h4 className="modern-profile-name">{
+                                        loggedInUserProfile?.displayName ||
+                                        auth.currentUser?.displayName ||
+                                        (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').displayName || null; } catch { return null; } })() ||
+                                        (auth.currentUser?.isAnonymous ? 'Guest' : 'Anonymous')
+                                    }</h4>
+                                    <p className="modern-profile-email">{
+                                        auth.currentUser?.isAnonymous
+                                            ? 'Guest Account (Temporary)'
+                                            : (auth.currentUser?.email || '')
+                                    }</p>
+                                    <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'))}>
+                                        {getRoleDisplayLabel({
+                                            role: loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'),
+                                            gender: loggedInUserProfile?.gender || (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').gender || 'male'; } catch { return 'male'; } })(),
+                                            isGuest: loggedInUserProfile?.isGuest || auth.currentUser?.isAnonymous || false,
+                                            badge: loggedInUserProfile?.badge
+                                        })}
                                     </span>
                                 </div>
                             </div>

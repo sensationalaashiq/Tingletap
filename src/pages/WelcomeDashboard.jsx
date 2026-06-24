@@ -433,6 +433,14 @@ const WelcomeDashboard = () => {
         const parsed = JSON.parse(gdRaw);
         setGuestUser(parsed);
         setUserRole('guest');
+        // Set currentDate immediately so it never shows '—' for guests
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (parsed.createdAt) {
+          const dt = new Date(parsed.createdAt);
+          setCurrentDate(!isNaN(dt) ? dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : today);
+        } else {
+          setCurrentDate(today);
+        }
       } catch { /* ignore */ }
     }
 
