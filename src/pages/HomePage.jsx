@@ -541,7 +541,10 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
                             const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
                             const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true || viewerRole === 'guest';
+                            // Add Friend + Whisper: hidden if EITHER side is guest
                             const isLimited = isViewerGuest || isTargetGuest;
+                            // Send Message: hidden only when viewer is guest AND target is NOT guest
+                            const canShowSendMessage = !(isViewerGuest && !isTargetGuest);
 
                             const getRoleLabel = () => getRoleDisplayLabel({
                                 role: targetRole,
@@ -594,7 +597,8 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                             </button>
                                         )}
 
-                                        {/* Send Message — always visible */}
+                                        {/* Send Message — hidden when viewer is guest and target is non-guest */}
+                                        {canShowSendMessage && (
                                         <button className="apd-btn apd-pm" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
                                             <span className="apd-icon-wrap apd-icon-pm">
                                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -603,6 +607,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                             </span>
                                             <span>Send Message</span>
                                         </button>
+                                        )}
 
                                         {/* Whisper — hidden when viewer or target is guest */}
                                         {!isLimited && (
