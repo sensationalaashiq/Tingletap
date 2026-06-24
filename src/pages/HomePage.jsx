@@ -13,6 +13,7 @@ import { ref, set, remove, onValue, onDisconnect, get } from 'firebase/database'
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
+import ChatActionModal from '../components/ChatActionModal';
 import Sidebar from '../components/Sidebar';
 import SettingsSidebar from '../components/SettingsSidebar';
 import CustomAudioPlayer from '../components/CustomAudioPlayer';
@@ -3260,11 +3261,10 @@ const HomePage = ({ user }) => {
         });
     };
 
-    const handleKickUser = (uid, displayName) => {
+    const handleKickUser = (uid, displayName, userObj) => {
         setKickUserConfirm({
             isOpen: true,
-            title: "Kick User",
-            message: `Are you sure you want to kick ${displayName}? They will be removed from the chat room.`,
+            user: userObj || { uid, displayName },
             onConfirm: async () => {
                 try {
                     const kickedUsersRef = doc(db, 'rooms', roomId, 'kickedUsers', uid);
@@ -5790,35 +5790,24 @@ const HomePage = ({ user }) => {
         <>
             <div className="homepage-container">
                 {/* Confirmation Dialogs */}
-                <StylishConfirmationDialogue 
+                <ChatActionModal
                     isOpen={clearChatConfirm.isOpen}
-                    title={clearChatConfirm.title}
-                    message={clearChatConfirm.message}
-                    confirmText="Yes, Clear All"
-                    cancelText="Cancel"
-                    type="danger"
+                    type="deleteAll"
                     onConfirm={clearChatConfirm.onConfirm}
                     onCancel={clearChatConfirm.onCancel}
                 />
-                
-                <StylishConfirmationDialogue 
+
+                <ChatActionModal
                     isOpen={deleteMessageConfirm.isOpen}
-                    title={deleteMessageConfirm.title || "Delete Message"}
-                    message={deleteMessageConfirm.message || "Are you sure you want to delete this message?"}
-                    confirmText="Yes, Delete"
-                    cancelText="Cancel"
-                    type="danger"
+                    type="delete"
                     onConfirm={deleteMessageConfirm.onConfirm}
                     onCancel={deleteMessageConfirm.onCancel}
                 />
-                
-                <StylishConfirmationDialogue 
+
+                <ChatActionModal
                     isOpen={kickUserConfirm.isOpen}
-                    title={kickUserConfirm.title || "Kick User"}
-                    message={kickUserConfirm.message || "Are you sure you want to kick this user?"}
-                    confirmText="Yes, Kick"
-                    cancelText="Cancel"
-                    type="warning"
+                    type="kick"
+                    user={kickUserConfirm.user}
                     onConfirm={kickUserConfirm.onConfirm}
                     onCancel={kickUserConfirm.onCancel}
                 />
