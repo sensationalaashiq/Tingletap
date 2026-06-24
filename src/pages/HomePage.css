@@ -10423,8 +10423,17 @@ html body.theme-sunset .message-body p {
 }
 .homepage-container .send-btn svg,
 .homepage-container .premium-footer-btn.send-btn svg {
-  color: #fff !important;
-  fill: #fff !important;
+  color: inherit !important;
+  fill: inherit !important;
+}
+/* Restore the icon's own fill colours (paper plane icon) */
+body .homepage-container .send-btn svg path[fill="#e2c4ff"],
+body .homepage-container .send-btn svg path[fill="#E2C4FF"] {
+  fill: #e2c4ff !important;
+}
+body .homepage-container .send-btn svg path[fill="#020288"],
+body .homepage-container .send-btn svg path[fill="#020288"] {
+  fill: #020288 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

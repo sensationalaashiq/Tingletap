@@ -535,14 +535,14 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         (() => {
                             const isOnlineNow = window.onlineUsers?.has(uid);
                             const targetRole = role?.toLowerCase() || '';
-                            const isTargetGuest = message.isGuest === true;
+                            const isTargetGuest = message.isGuest === true || targetRole === 'guest' || (!message.uid && !uid);
                             const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
                             const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
-                            const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true;
+                            const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true || viewerRole === 'guest';
                             const isLimited = isViewerGuest || isTargetGuest;
 
                             const getRoleLabel = () => {
-                                if (isTargetGuest) {
+                                if (isTargetGuest || targetRole === 'guest') {
                                     return (gender?.toLowerCase() === 'female') ? 'Guest' : 'Purush';
                                 }
                                 if (targetRole === 'owner') return 'Owner';
