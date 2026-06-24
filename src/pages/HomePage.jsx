@@ -540,11 +540,22 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             const isTargetGuest = message.isGuest === true || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
                             const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
                             const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
-                            const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true || viewerRole === 'guest';
-                            // Add Friend + Whisper: hidden if EITHER side is guest
+                            // Robust guest detection — also check localStorage in case profile hasn't loaded yet
+                            const isViewerGuest = !loggedInUserProfile ||
+                                loggedInUserProfile?.isGuest === true ||
+                                loggedInUserProfile?.isGuest === 'true' ||
+                                viewerRole === 'guest' ||
+                                localStorage.getItem('isGuest') === 'true';
+                            // Add Friend + Whisper: hidden if EITHER side is guest (no exceptions)
                             const isLimited = isViewerGuest || isTargetGuest;
-                            // Send Message: hidden only when viewer is guest AND target is NOT guest
-                            const canShowSendMessage = !(isViewerGuest && !isTargetGuest);
+                            // Send Message visibility:
+                            //   Guest → Guest:  show
+                            //   Guest → Staff:  show (guests can reach staff)
+                            //   Guest → Other:  hide
+                            //   Non-guest → *:  show
+                            const canShowSendMessage = isViewerGuest
+                                ? (isTargetGuest || isTargetStaff)
+                                : true;
 
                             const getRoleLabel = () => getRoleDisplayLabel({
                                 role: targetRole,

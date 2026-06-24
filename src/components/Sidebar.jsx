@@ -1037,9 +1037,21 @@ const Sidebar = ({
 
                     {/* User List Item Dropdown - apd style same as HomePage */}
                     {dropdownUser === userItem.uid && user?.uid !== userItem.uid && (() => {
-                      const isCurrentUserGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+                      // Robust guest detection — also check localStorage in case profile hasn't loaded yet
+                      const isCurrentUserGuest = loggedInUserProfile?.isGuest === true ||
+                        loggedInUserProfile?.isGuest === 'true' ||
+                        loggedInUserProfile?.role?.toLowerCase() === 'guest' ||
+                        localStorage.getItem('isGuest') === 'true';
                       const isTargetGuest = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
+                      const isTargetStaff = ['owner', 'admin', 'moderator'].includes(userItem.role?.toLowerCase());
+                      // Add Friend + Whisper: hidden if EITHER side is guest (no exceptions)
                       const isLimited = isCurrentUserGuest || isTargetGuest;
+                      // Send Message: Guest can message guests and staff; hide for regular non-guest users
+                      const canShowSendMessage = isCurrentUserGuest
+                        ? (isTargetGuest || isTargetStaff)
+                        : true;
+                      // Block User: never show on staff profiles
+                      const canShowBlock = !isTargetStaff;
                       const isOnlineNow = window.onlineUsers?.has(userItem.uid) || window.userOnlineStatuses?.[userItem.uid]?.state === 'online' || userItem.isOnline;
                       const roleLabel = getRoleDisplayLabel({ role: userItem.role, gender: userItem.gender, isGuest: isTargetGuest, badge: userItem.badge });
                       return (
@@ -1099,7 +1111,7 @@ const Sidebar = ({
                             </button>
                           )}
 
-                          {!(isCurrentUserGuest && !isTargetGuest) && (
+                          {canShowSendMessage && (
                           <button className="apd-btn apd-pm" onClick={(e) => { 
                             e.stopPropagation(); 
                             if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem);
@@ -1131,6 +1143,8 @@ const Sidebar = ({
                             </button>
                           )}
 
+                          {canShowBlock && (
+                          <>
                           <div className="apd-divider"></div>
                           <button className="apd-btn apd-danger" onClick={(e) => { 
                             e.stopPropagation(); 
@@ -1145,6 +1159,8 @@ const Sidebar = ({
                             </span>
                             <span>Block User</span>
                           </button>
+                          </>
+                          )}
                         </div>
                       );
                     })()}
