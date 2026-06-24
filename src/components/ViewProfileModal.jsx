@@ -3,6 +3,7 @@ import { auth, db } from '../firebase/config';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { Badges as badges } from '../data/Badges';
+import { getRoleDisplayLabel } from '../utils/roleUtils';
 import RoyalTrustBadge from './RoyalTrustBadge';
 import './ViewProfileModal.css';
 import './RoyalTrustBadge.css';
@@ -1052,20 +1053,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                                 </h2>
                                 <div className={`role-badge ${realTimeUser.role?.toLowerCase()}-${realTimeUser.gender?.toLowerCase()}`}>
                                     <span className="role-purple-dot"></span>
-                                    {(() => {
-                                        const role = realTimeUser.role?.toLowerCase();
-                                        const gender = realTimeUser.gender?.toLowerCase();
-                                        const isGuest = realTimeUser.isGuest;
-                                        if (isGuest) {
-                                            if (gender === 'male') return 'Purush';
-                                            return 'Guest';
-                                        }
-                                        if (role === 'owner') return 'Owner';
-                                        if (role === 'admin') return 'Admin';
-                                        if (role === 'moderator') return 'Moderator';
-                                        if (role === 'badge-holder') return 'Badge Holder';
-                                        return 'User';
-                                    })()}
+                                    {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
                                 </div>
                             </div>
                             {(realTimeUser.status || realTimeUser.bio) && (

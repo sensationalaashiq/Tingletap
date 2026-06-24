@@ -1,1 +1,2 @@
 - [Admin panel last-seen & reports](admin-panel-fixes.md) — lastSeen must use status.lastChanged from RTDB (not lastLoginAt); reports tab reads `reports` Firestore collection
+- [Role display labels](role-labels.md) — shared getRoleDisplayLabel() in src/utils/roleUtils.js; owner→Godfather, admin→High Council, moderator→Guardian, user→Member, badge→badge name, guest+male→Purush, guest+female→Stree, guest+trans→Ardhnaari

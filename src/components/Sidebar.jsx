@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
+import { getRoleDisplayLabel } from '../utils/roleUtils';
 import AdminBanKickModal from './AdminBanKickModal';
 import EditProfileModal from './EditProfileModal';
 import ViewProfileModal from './ViewProfileModal';
@@ -672,7 +673,7 @@ const Sidebar = ({
                           {loggedInUserProfile.displayName}
                         </span>
                         <span className="dropdown-user-role">{
-                          ({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[loggedInUserProfile.role]) || 'Member'
+                          getRoleDisplayLabel({ role: loggedInUserProfile.role, gender: loggedInUserProfile.gender, isGuest: loggedInUserProfile.isGuest, badge: loggedInUserProfile.badge })
                         }</span>
                       </div>
                     </div>
@@ -1035,7 +1036,7 @@ const Sidebar = ({
                       const isTargetGuest = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
                       const isLimited = isCurrentUserGuest || isTargetGuest;
                       const isOnlineNow = window.onlineUsers?.has(userItem.uid) || window.userOnlineStatuses?.[userItem.uid]?.state === 'online' || userItem.isOnline;
-                      const roleLabel = isTargetGuest ? 'Guest' : (({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[userItem.role?.toLowerCase()]) || 'Member');
+                      const roleLabel = getRoleDisplayLabel({ role: userItem.role, gender: userItem.gender, isGuest: isTargetGuest, badge: userItem.badge });
                       return (
                         <div 
                           className="avatar-portal-dropdown"

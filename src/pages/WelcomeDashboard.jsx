@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { Badges } from '../data/Badges';
+import { getRoleDisplayLabel } from '../utils/roleUtils';
 import { auth, db, rtdb } from '../firebase/config';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, remove } from 'firebase/database';
@@ -601,8 +602,8 @@ const WelcomeDashboard = () => {
             )
           };
           if (gender === 'transgender' || gender === 'other') return {
-            label: 'Navrang',
-            cls: 'wd-role--guest-navrang',
+            label: 'Ardhnaari',
+            cls: 'wd-role--guest-transgender',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
                 <defs>

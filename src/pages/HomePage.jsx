@@ -31,6 +31,7 @@ import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
 import { Badges as badges } from '../data/Badges';
+import { getRoleDisplayLabel } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import './HomePage.css';
 
@@ -542,16 +543,12 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             const isViewerGuest = !loggedInUserProfile || loggedInUserProfile?.isGuest === true || viewerRole === 'guest';
                             const isLimited = isViewerGuest || isTargetGuest;
 
-                            const getRoleLabel = () => {
-                                if (isTargetGuest || targetRole === 'guest') {
-                                    return (gender?.toLowerCase() === 'female') ? 'Guest' : 'Purush';
-                                }
-                                if (targetRole === 'owner') return 'Owner';
-                                if (targetRole === 'admin') return 'Admin';
-                                if (targetRole === 'moderator') return 'Moderator';
-                                if (targetRole === 'badge_holder' || targetRole === 'badge-holder' || badge) return 'Badge Holder';
-                                return 'User';
-                            };
+                            const getRoleLabel = () => getRoleDisplayLabel({
+                                role: targetRole,
+                                gender,
+                                isGuest: isTargetGuest,
+                                badge
+                            });
 
                             return (
                                 <>
