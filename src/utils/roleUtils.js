@@ -37,6 +37,8 @@ export const getDefaultAvatarUrl = (uid, gender) => {
  */
 export const getStoredGuestGender = () => {
   try {
+    const direct = localStorage.getItem('guestGender');
+    if (direct) return direct;
     const raw = localStorage.getItem('guestUser');
     if (!raw) return '';
     return JSON.parse(raw).gender || '';

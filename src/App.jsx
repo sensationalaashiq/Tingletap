@@ -656,6 +656,7 @@ function App() {
         if (!hasActiveGuestSession) {
           localStorage.removeItem('guestUser');
           localStorage.removeItem('isGuest');
+          localStorage.removeItem('guestGender');
         }
 
         // Preserve ALL font preferences across logout/login - NEVER reset them
@@ -776,6 +777,7 @@ function App() {
         console.error('❌ Error parsing guest data:', error);
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
       }
     }
   }, [user]);
@@ -798,6 +800,7 @@ function App() {
         }
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
         setUser(null);
         setUserProfile(null);
         window.location.href = '/';
@@ -805,6 +808,7 @@ function App() {
         console.error('Guest auto-logout error:', err);
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
         window.location.href = '/';
       }
     };

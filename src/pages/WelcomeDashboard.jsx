@@ -469,7 +469,9 @@ const WelcomeDashboard = () => {
             const snap = await getDoc(doc(db, 'users', cu.uid));
             if (snap.exists()) {
               const d = snap.data();
-              parsed = { ...d, uid: cu.uid };
+              const existingLocal = JSON.parse(localStorage.getItem('guestUser') || '{}');
+              parsed = { ...existingLocal, ...d, uid: cu.uid };
+              if (!parsed.gender && existingLocal.gender) parsed.gender = existingLocal.gender;
               // Restore localStorage for future renders
               localStorage.setItem('guestUser', JSON.stringify(parsed));
               localStorage.setItem('isGuest', 'true');
@@ -526,11 +528,13 @@ const WelcomeDashboard = () => {
         try { await deleteUser(cu); } catch {}
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
       } else if (cu) {
         await signOut(auth);
       } else {
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
       }
       toast.success('Logged out successfully!');
       navigate('/');

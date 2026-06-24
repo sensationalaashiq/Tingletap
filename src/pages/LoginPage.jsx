@@ -458,6 +458,7 @@ const LoginPage = () => {
       await setDoc(doc(db, 'users', user.uid), guestUserData);
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');
+      localStorage.setItem('guestGender', guestFormData.gender);
       navigate('/welcome');
     } catch (err) {
       setError('Guest login failed. Please try again.');

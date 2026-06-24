@@ -28,6 +28,7 @@ const ProtectedRoute = ({ children, profile }) => {
         console.error('Error parsing guest data:', error);
         localStorage.removeItem('guestUser');
         localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestGender');
       }
     }
 

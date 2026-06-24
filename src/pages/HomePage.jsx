@@ -1391,7 +1391,9 @@ const HomePage = ({ user }) => {
             getDoc(doc(db, 'users', auth.currentUser.uid)).then((snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
-                    const restored = { ...d, uid: auth.currentUser.uid };
+                    const existingLocal = JSON.parse(localStorage.getItem('guestUser') || '{}');
+                    const restored = { ...existingLocal, ...d, uid: auth.currentUser.uid };
+                    if (!restored.gender && existingLocal.gender) restored.gender = existingLocal.gender;
                     localStorage.setItem('guestUser', JSON.stringify(restored));
                     setLoggedInUserProfile(buildGuestProfile(restored));
                 } else if (auth.currentUser.displayName) {
