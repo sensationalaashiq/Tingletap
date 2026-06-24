@@ -6,8 +6,9 @@ export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
 
   if (isGuest || r === 'guest') {
     if (g === 'female') return 'Stree';
-    if (g === 'transgender' || g === 'other') return 'Ardhnaari';
-    return 'Purush';
+    if (g === 'transgender' || g === 'other') return 'Navrang';
+    if (g === 'male') return 'Purush';
+    return 'Purush'; // only if gender is truly unset on a guest
   }
 
   if (badge && Badges[badge]?.name) {

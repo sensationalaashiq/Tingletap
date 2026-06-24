@@ -1417,6 +1417,11 @@ html body.theme-sunset .message-body p {
   border: 2px solid #FF1493;
 }
 
+.message-avatar.transgender-border,
+.avatar.transgender-border {
+  border: 2px solid #FF0000;
+}
+
 .message-avatar {
   width: 38px !important;
   height: 38px !important;
@@ -10189,6 +10194,20 @@ html body.theme-sunset .message-body p {
 }
 .homepage-container .avatar-gender-female,
 .homepage-container .avatar-wrapper.female-border .message-avatar {
+  border-radius: 50% !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  border: none !important;
+}
+
+/* ── TRANSGENDER → perfect circle with RED border ───────────────── */
+.homepage-container .avatar-wrapper.transgender-border {
+  border: 1.5px solid rgba(239, 68, 68, 0.9) !important;
+  border-radius: 50% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12) !important;
+}
+.homepage-container .avatar-wrapper.transgender-border .message-avatar {
   border-radius: 50% !important;
   clip-path: circle(50% at 50% 50%) !important;
   border: none !important;

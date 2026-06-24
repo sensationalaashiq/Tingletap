@@ -1056,6 +1056,23 @@
   box-shadow: none;
 }
 
+.transgender-border .list-avatar,
+.transgender-border .sidebar-avatar {
+  border: 3px solid #FF0000;
+  box-shadow: none;
+}
+
+/* Sidebar profile container borders — gender only */
+.sidebar-profile-centered.transgender-border {
+  border: 2px solid rgba(239, 68, 68, 0.7) !important;
+}
+.sidebar-profile-centered.male-border {
+  border: 2px solid rgba(59, 130, 246, 0.7) !important;
+}
+.sidebar-profile-centered.female-border {
+  border: 2px solid rgba(236, 72, 153, 0.7) !important;
+}
+
 
 
 /* Modern sidebar dropdown styles - Fixed to right viewport */

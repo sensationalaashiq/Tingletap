@@ -368,18 +368,10 @@ const Sidebar = ({
 
   const getBorderClass = (user) => {
     if (!user) return 'male-border';
-
-    // Handle guest users safely
-    const gender = user.gender?.toLowerCase() === 'female' ? 'female-border' : 'male-border';
-
-    // Check if user is guest
-    if (user.isGuest) return `user-border ${gender}`;
-
-    if (user.role === 'owner' || user.role === 'superowner') return `owner-border ${gender}`;
-    if (user.role === 'admin') return `admin-border ${gender}`;
-    if (user.role === 'moderator') return `moderator-border ${gender}`;
-    if (user.role === 'badge_holder' || user.badge) return `badge-holder-border ${gender}`;
-    return `user-border ${gender}`;
+    const g = user.gender?.toLowerCase();
+    if (g === 'female') return 'female-border';
+    if (g === 'transgender' || g === 'other') return 'transgender-border';
+    return 'male-border';
   };
 
   // Check if current user can kick another user
@@ -585,11 +577,7 @@ const Sidebar = ({
                 openDropdownAt(user.uid, e);
               }}>
                 <img className="sidebar-avatar" src={getAvatarUrl(user.uid, loggedInUserProfile?.gender || user?.gender || 'male', loggedInUserProfile?.photoURL || user?.photoURL)} alt="avatar" />
-                <GenderBadge 
-                  gender={loggedInUserProfile?.gender || user?.gender || 'male'} 
-                  size="medium"
-                  className="online"
-                />
+                {/* GenderBadge removed — gender shown via border colour only */}
               </div>
               <div 
                 className="sidebar-user-info" 
@@ -963,18 +951,7 @@ const Sidebar = ({
                       }
                     }}>
                       <img className="list-avatar" src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="avatar" />
-                      <GenderBadge 
-                        gender={userItem.gender || 'male'} 
-                        size="small"
-                        className={(() => {
-                          // Check multiple sources for online status
-                          const isOnlineInWindow = window.onlineUsers?.has(userItem.uid);
-                          const isOnlineInStatus = window.userOnlineStatuses?.[userItem.uid]?.state === 'online';
-                          const isOnlineInProps = userItem.isOnline;
-
-                          return (isOnlineInWindow || isOnlineInStatus || isOnlineInProps) ? 'online' : '';
-                        })()}
-                      />
+                      {/* GenderBadge removed — gender shown via border colour only */}
                     </div>
                     <div 
                       className="user-info-container"

@@ -629,7 +629,7 @@ const WelcomeDashboard = () => {
             )
           };
           if (gender === 'transgender' || gender === 'other') return {
-            label: 'Ardhnaari',
+            label: 'Navrang',
             cls: 'wd-role--guest-transgender',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>

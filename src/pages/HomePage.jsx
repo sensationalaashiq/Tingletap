@@ -456,13 +456,10 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     }
 
     const getBorderClass = () => {
-        const genderClass = avatarGender === 'female' ? 'female-border' : 'male-border';
-        
-        if (role === 'owner') return `owner-border ${genderClass}`;
-        if (role === 'admin') return `admin-border ${genderClass}`;
-        if (role === 'moderator') return `moderator-border ${genderClass}`;
-        if (role === 'badge_holder' || badge) return `badge-holder-border ${genderClass}`;
-        return `user-border ${genderClass}`;
+        const g = avatarGender?.toLowerCase();
+        if (g === 'female') return 'female-border';
+        if (g === 'transgender' || g === 'other') return 'transgender-border';
+        return 'male-border';
     };
 
     return (
@@ -523,13 +520,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             transition: 'opacity 0.1s ease-in-out'
                         }}
                     />
-                    {!isBot && (
-                        <GenderBadge 
-                            gender={message.gender || 'male'} 
-                            size="small"
-                            className={window.onlineUsers?.has(uid) ? 'online' : ''}
-                        />
-                    )}
+                    {/* GenderBadge removed — gender shown via border colour only */}
                     
                     
                 {/* Avatar Click Dropdown - Portal with fixed positioning to avoid scroll container clipping */}
@@ -884,12 +875,10 @@ const getGenderBorderClass = (userOrGender) => {
         role = userOrGender.role || 'user';
         badge = userOrGender.badge;
     }
-    const genderClass = gender === 'female' ? 'female-border' : 'male-border';
-    if (role === 'owner') return `owner-border ${genderClass}`;
-    if (role === 'admin') return `admin-border ${genderClass}`;
-    if (role === 'moderator') return `moderator-border ${genderClass}`;
-    if (role === 'badge_holder' || badge) return `badge-holder-border ${genderClass}`;
-    return `user-border ${genderClass}`;
+    const g = (typeof userOrGender === 'string' ? userOrGender : userOrGender?.gender || '').toLowerCase();
+    if (g === 'female') return 'female-border';
+    if (g === 'transgender' || g === 'other') return 'transgender-border';
+    return 'male-border';
 };
 
 const HomePage = ({ user }) => {
