@@ -6503,8 +6503,8 @@ const HomePage = ({ user }) => {
             )}
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
-                width: '100vw', height: '52px', minHeight: '52px', maxHeight: '52px',
-                padding: '6px 8px', boxSizing: 'border-box',
+                width: '100vw', height: '44px', minHeight: '44px', maxHeight: '44px',
+                padding: '0 8px', boxSizing: 'border-box',
                 display: 'flex', alignItems: 'center',
                 background: 'transparent',
                 borderTop: 'none',
