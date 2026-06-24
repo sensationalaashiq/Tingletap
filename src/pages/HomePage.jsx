@@ -6474,32 +6474,62 @@ const HomePage = ({ user }) => {
             </div>
 
             {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
-            <div className="chat-footer">
-                {isAttachmentDropdownOpen && (
-                    <div className="attachment-dropdown">
-                        <button className="attachment-option-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            <span>Image</span>
-                        </button>
-                        <button className="attachment-option-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            <span>Audio</span>
-                        </button>
-                        <button className="attachment-option-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="1.8"/><path d="M7 12h5m0 0v-3m0 3v3M17 9v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                            <span>GIF</span>
-                        </button>
-                        <button className="attachment-option-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                            <span>Style</span>
-                        </button>
-                    </div>
-                )}
-                <form onSubmit={handleSendMessage} className="message-form">
-                    <div className="premium-input-container">
+            {isAttachmentDropdownOpen && (
+                <div style={{
+                    position: 'fixed', bottom: '56px', left: '10px', right: '10px',
+                    zIndex: 2100, background: 'rgba(255,252,255,0.98)',
+                    border: '1px solid rgba(196,181,253,0.4)', borderRadius: '16px',
+                    boxShadow: '0 -4px 24px rgba(109,40,217,0.14)',
+                    display: 'flex', flexDirection: 'row', gap: '8px',
+                    padding: '10px 14px', backdropFilter: 'blur(18px)'
+                }}>
+                    <button className="attachment-option-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>Image</span>
+                    </button>
+                    <button className="attachment-option-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>Audio</span>
+                    </button>
+                    <button className="attachment-option-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="1.8"/><path d="M7 12h5m0 0v-3m0 3v3M17 9v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <span>GIF</span>
+                    </button>
+                    <button className="attachment-option-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        <span>Style</span>
+                    </button>
+                </div>
+            )}
+            <div className="chat-footer" style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0,
+                width: '100vw', height: '52px', minHeight: '52px', maxHeight: '52px',
+                padding: '4px 8px', boxSizing: 'border-box',
+                display: 'flex', alignItems: 'center',
+                background: isDarkMode ? '#0e0620' : '#f3eeff',
+                borderTop: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
+                boxShadow: '0 -2px 12px rgba(109,40,217,0.1)',
+                zIndex: 2000, overflow: 'hidden',
+            }}>
+                <form onSubmit={handleSendMessage} className="message-form" style={{
+                    width: '100%', height: '44px', margin: 0, padding: 0,
+                    display: 'flex', alignItems: 'center', background: 'transparent'
+                }}>
+                    <div className="premium-input-container" style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        width: '100%', height: '44px', background: 'transparent',
+                        border: 'none', padding: 0, margin: 0
+                    }}>
                         <button
                             type="button"
                             className="premium-footer-btn attachment-btn"
+                            style={{
+                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
+                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'transparent', border: 'none', borderRadius: '50%',
+                                padding: 0, cursor: 'pointer'
+                            }}
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -6509,10 +6539,23 @@ const HomePage = ({ user }) => {
                         >
                             <AttachmentIconSVG />
                         </button>
-                        <div className="premium-input-wrapper">
+                        <div className="premium-input-wrapper" style={{
+                            flex: '1 1 auto', height: '40px',
+                            background: isDarkMode ? 'rgba(30,12,68,0.75)' : 'rgba(237,233,254,0.6)',
+                            border: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(167,139,250,0.35)',
+                            borderRadius: '20px', padding: '0 14px',
+                            display: 'flex', alignItems: 'center',
+                            minWidth: 0, margin: 0
+                        }}>
                             <input
                                 type="text"
                                 className="premium-input-field"
+                                style={{
+                                    width: '100%', height: '100%', background: 'transparent',
+                                    border: 'none', outline: 'none', fontSize: '15px',
+                                    fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
+                                    caretColor: '#7c3aed', padding: 0, margin: 0
+                                }}
                                 placeholder="Type a message..."
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
@@ -6522,6 +6565,15 @@ const HomePage = ({ user }) => {
                         <button
                             type="submit"
                             className="premium-footer-btn send-btn"
+                            style={{
+                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
+                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                                border: 'none', borderRadius: '50%', padding: 0, cursor: 'pointer',
+                                boxShadow: '0 3px 12px rgba(109,40,217,0.4)',
+                                opacity: !newMessage.trim() ? 0.5 : 1
+                            }}
                             disabled={!newMessage.trim()}
                         >
                             <SendIconSVG />
