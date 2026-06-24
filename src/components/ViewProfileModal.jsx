@@ -70,7 +70,7 @@ const convertToSpotifyEmbedURL = (url) => {
     return url; // Return original if can't convert
 };
 
-const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
+const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisper, currentUserProfile: propsCurrentUser }) => {
     const [activeTab, setActiveTab] = useState('info');
     const [friendsData, setFriendsData] = useState([]);
     const [isCurrentUser, setIsCurrentUser] = useState(false);
@@ -985,6 +985,14 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
                                 style={{ cursor: 'pointer' }}
                                 title="Click to view full image"
                             />
+                            {(() => {
+                                const isOnlineNow = window.onlineUsers?.has(realTimeUser.uid) || 
+                                    (window.userOnlineStatuses && window.userOnlineStatuses[realTimeUser.uid]?.state === 'online') ||
+                                    realTimeUser.isOnline;
+                                return (
+                                    <span className={`profile-online-dot ${isOnlineNow ? 'online' : 'offline'}`}></span>
+                                );
+                            })()}
                             <span className="gender-badge-on-avatar">
                                 {realTimeUser.gender?.toLowerCase() === 'female' ? (
                                     <svg width="14" height="14" id="Filled_Expand" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" data-name="Filled Expand">
@@ -1020,7 +1028,6 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
                                     </svg>
                                 )}
                             </span>
-                            <div className="status-dot"></div>
                         </div>
 
                         <div className="user-info-centered">
@@ -1044,7 +1051,21 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
                                     )}
                                 </h2>
                                 <div className={`role-badge ${realTimeUser.role?.toLowerCase()}-${realTimeUser.gender?.toLowerCase()}`}>
-                                    {realTimeUser.role?.toUpperCase() || 'USER'}
+                                    <span className="role-purple-dot"></span>
+                                    {(() => {
+                                        const role = realTimeUser.role?.toLowerCase();
+                                        const gender = realTimeUser.gender?.toLowerCase();
+                                        const isGuest = realTimeUser.isGuest;
+                                        if (isGuest) {
+                                            if (gender === 'male') return 'Purush';
+                                            return 'Guest';
+                                        }
+                                        if (role === 'owner') return 'Owner';
+                                        if (role === 'admin') return 'Admin';
+                                        if (role === 'moderator') return 'Moderator';
+                                        if (role === 'badge-holder') return 'Badge Holder';
+                                        return 'User';
+                                    })()}
                                 </div>
                             </div>
                             {(realTimeUser.status || realTimeUser.bio) && (
@@ -1344,44 +1365,80 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile }) => {
                             </div>
 
                             {/* Action Buttons */}
-                            {!isCurrentUser && (
-                                <div className="action-section">
-                                    {isFriend ? (
-                                        <button className="action-button remove-btn" onClick={handleRemoveFriend}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="15" y1="9" x2="9" y2="15"></line>
-                                                <line x1="9" y1="9" x2="15" y2="15"></line>
-                                            </svg>
-                                            Remove Friend
-                                        </button>
-                                    ) : friendRequestSent ? (
-                                        <button className="action-button sent-btn" disabled>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="20,6 9,17 4,12"></polyline>
-                                            </svg>
-                                            Request Sent
-                                        </button>
-                                    ) : (
-                                        <button className="action-button add-btn" onClick={handleSendFriendRequest}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                            </svg>
-                                            Add Friend
-                                        </button>
-                                    )}
+                            {!isCurrentUser && (() => {
+                                const viewerRole = currentUserProfile?.role?.toLowerCase() || propsCurrentUser?.role?.toLowerCase() || 'guest';
+                                const isViewerGuest = !auth.currentUser || currentUserProfile?.isGuest === true || propsCurrentUser?.isGuest === true;
+                                const isTargetGuest = realTimeUser?.isGuest === true;
+                                const isTargetStaff = ['owner', 'admin', 'moderator'].includes(realTimeUser?.role?.toLowerCase());
+                                const isLimited = isViewerGuest || isTargetGuest;
 
-                                    <button className="action-button block-btn" onClick={handleBlockUser}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                            <circle cx="12" cy="16" r="1"></circle>
-                                            <path d="m12 1-3 6h6l-3-6"></path>
-                                        </svg>
-                                        Block User
-                                    </button>
-                                </div>
-                            )}
+                                return (
+                                    <div className="action-section-pills">
+                                        <button className="pill-btn pill-view-profile" onClick={() => onOpenProfile && onOpenProfile(realTimeUser)}>
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                                            </svg>
+                                            View Profile
+                                        </button>
+
+                                        {!isLimited && (
+                                            isFriend ? (
+                                                <button className="pill-btn pill-add-friend" onClick={handleRemoveFriend}>
+                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
+                                                    </svg>
+                                                    Remove Friend
+                                                </button>
+                                            ) : friendRequestSent ? (
+                                                <button className="pill-btn pill-add-friend" disabled>
+                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                                                    </svg>
+                                                    Request Sent
+                                                </button>
+                                            ) : (
+                                                <button className="pill-btn pill-add-friend" onClick={handleSendFriendRequest}>
+                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
+                                                    </svg>
+                                                    Add Friend
+                                                </button>
+                                            )
+                                        )}
+
+                                        <button className="pill-btn pill-send-message" onClick={() => {
+                                            if (onSendMessage) { onSendMessage(realTimeUser); onClose(); }
+                                            else if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(realTimeUser); onClose(); }
+                                        }}>
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                                            </svg>
+                                            Send Message
+                                        </button>
+
+                                        {!isLimited && (
+                                            <button className="pill-btn pill-whisper" onClick={() => {
+                                                if (onWhisper) { onWhisper(realTimeUser); onClose(); }
+                                                else if (window.handleWhisperFromSidebar) { window.handleWhisperFromSidebar(realTimeUser); onClose(); }
+                                            }}>
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
+                                                </svg>
+                                                Whisper
+                                            </button>
+                                        )}
+
+                                        {!isTargetStaff && (
+                                            <button className="pill-btn pill-block" onClick={handleBlockUser}>
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
+                                                </svg>
+                                                Block User
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Profile Deletion Section for Current User */}
                             {isCurrentUser && (

@@ -29,8 +29,6 @@ import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
 import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
-import TingleBot from '../components/TingleBot';
-import TingleBotMessage from '../components/TingleBotMessage';
 import { Badges as badges } from '../data/Badges';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import './HomePage.css';
@@ -417,9 +415,8 @@ const ImageMessage = ({ imageUrl, imageFileName }) => {
 const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
-    // Render TingleBot messages with special component - Fixed identification
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
-        return <TingleBotMessage message={message} onDelete={onDelete} currentUser={loggedInUserProfile} />;
+        return null;
     }
     const [showActions, setShowActions] = useState(false);
     const [actionsLocked, setActionsLocked] = useState(false);
@@ -437,9 +434,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
         if (gen === 'other')  return `https://api.dicebear.com/8.x/thumbs/svg?seed=o${uid}&backgroundColor=d1fae5,bfdbfe,ede9fe,fef3c7`;
         return `https://api.dicebear.com/8.x/adventurer/svg?seed=m${uid}&sex=male&backgroundColor=bfdbfe,c7d2fe,ede9fe,dbeafe`;
     };
-    const avatarUrl = isBot
-        ? `https://api.dicebear.com/8.x/bottts/svg?seed=tinglebot&backgroundColor=b6e3f4`
-        : (message.photoURL || getDefaultAvatar(uid, avatarGender));
+    const avatarUrl = message.photoURL || getDefaultAvatar(uid, avatarGender);
     const isMyMessage = currentUser && currentUser.uid === uid;
     const viewerRole = loggedInUserProfile?.role || 'user';
     
@@ -988,8 +983,6 @@ const HomePage = ({ user }) => {
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
     
-    // TingleBot state
-    const [tingleBotEnabled, setTingleBotEnabled] = useState(true);
 
     // Helper function for private message avatar cache busting - DEFINE FIRST
     const getPrivateMessageAvatarUrl = useCallback((user) => {
@@ -1122,8 +1115,6 @@ const HomePage = ({ user }) => {
         ));
 
     }, [privateMessageTarget, setPrivateMessageTarget, setConversations, setMinimizedConversations, getPrivateMessageAvatarUrl]);
-    const [moderationEvents, setModerationEvents] = useState(null);
-    const [userJoinEvents, setUserJoinEvents] = useState(null);
 
     // StylishModal state - boolean flags for opening/closing modals
     const [imagePopupOpen, setImagePopupOpen] = useState(false);
@@ -2501,28 +2492,6 @@ const HomePage = ({ user }) => {
                 !previousUids.includes(uid) && uid !== auth.currentUser?.uid
             );
             
-            // Trigger user join events for TingleBot
-            if (newJoiners.length > 0 && tingleBotEnabled) {
-                newJoiners.forEach(uid => {
-                    getDoc(doc(db, 'users', uid)).then(userDoc => {
-                        if (userDoc.exists()) {
-                            const userData = userDoc.data();
-                            setUserJoinEvents({
-                                type: 'user_join',
-                                user: {
-                                    uid: uid,
-                                    displayName: userData.displayName || 'Anonymous',
-                                    gender: userData.gender || 'male',
-                                    role: userData.role || 'user'
-                                },
-                                timestamp: Date.now()
-                            });
-                        }
-                    }).catch(error => {
-                    });
-                });
-            }
-            
             // Update state with current room users
             setOnlineUserIds(currentUidsInRoom);
             
@@ -2539,7 +2508,7 @@ const HomePage = ({ user }) => {
         });
         
         return () => unsubscribe();
-    }, [roomId, tingleBotEnabled]); // Removed onlineUserIds dependency to prevent loops
+    }, [roomId]); // Removed onlineUserIds dependency to prevent loops
 
     
 
@@ -3273,17 +3242,6 @@ const HomePage = ({ user }) => {
                     remove(ref(rtdb, `status/${uid}/currentRoomId`));
                     playNotificationSound('adminAction');
                     
-                    // Trigger TingleBot moderation event
-                    setModerationEvents({
-                        type: 'kick',
-                        user: { uid, displayName },
-                        moderator: {
-                            uid: auth.currentUser.uid,
-                            displayName: loggedInUserProfile.displayName
-                        },
-                        timestamp: Date.now()
-                    });
-                    
                     setKickUserConfirm({ isOpen: false });
                 } catch (error) {
                     setKickUserConfirm({ isOpen: false });
@@ -3302,17 +3260,6 @@ const HomePage = ({ user }) => {
                 await updateDoc(userToMuteRef, {
                     "mutedInfo.isMuted": true,
                     "mutedInfo.mutedByRole": loggedInUserProfile.role
-                });
-                
-                // Trigger TingleBot moderation event
-                setModerationEvents({
-                    type: 'mute',
-                    user: { uid: userToMute.uid, displayName: userToMute.displayName },
-                    moderator: {
-                        uid: auth.currentUser.uid,
-                        displayName: loggedInUserProfile.displayName
-                    },
-                    timestamp: Date.now()
                 });
                 
                 toast.success(`${userToMute.displayName} has been muted.`);
@@ -3335,17 +3282,6 @@ const HomePage = ({ user }) => {
             try {
                 await updateDoc(userToBanRef, { isBanned: true });
                 remove(ref(rtdb, `status/${userToBan.uid}`));
-                
-                // Trigger TingleBot moderation event
-                setModerationEvents({
-                    type: 'ban',
-                    user: { uid: userToBan.uid, displayName: userToBan.displayName },
-                    moderator: {
-                        uid: auth.currentUser.uid,
-                        displayName: loggedInUserProfile.displayName
-                    },
-                    timestamp: Date.now()
-                });
                 
                 toast.success(`${userToBan.displayName} has been banned globally.`);
             } catch (error) {
@@ -4693,16 +4629,6 @@ const HomePage = ({ user }) => {
         }
     };
 
-    // Clear moderation events after they're processed by TingleBot
-    React.useEffect(() => {
-        if (moderationEvents) {
-            // Clear the event after a short delay to ensure TingleBot processes it
-            const timer = setTimeout(() => {
-                setModerationEvents(null);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [moderationEvents]);
 
     // Expose functions for auto-tag functionality and private messages
     React.useEffect(() => {
@@ -5802,15 +5728,6 @@ const HomePage = ({ user }) => {
 
                 
 
-                {/* TingleBot System */}
-                {tingleBotEnabled && roomId && loggedInUserProfile && (
-                    <TingleBot 
-                        roomId={roomId}
-                        currentUser={loggedInUserProfile}
-                        onUserJoin={userJoinEvents}
-                        moderationEvents={moderationEvents}
-                    />
-                )}
 
                 <Sidebar
                     user={user}

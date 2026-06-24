@@ -299,19 +299,20 @@
 }
 
 .profile-pic {
-    width: 50px;
-    height: 50px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid;
+    border: 2px solid transparent;
     aspect-ratio: 1;
     cursor: pointer !important;
     transition: all 0.3s ease !important;
+    box-shadow: 0 0 0 3px #8b5cf6, 0 0 14px 4px rgba(139, 92, 246, 0.45);
 }
 
 .profile-pic:hover {
     transform: scale(1.05) !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 0 0 3px #8b5cf6, 0 0 20px 6px rgba(139, 92, 246, 0.6) !important;
 }
 
 /* Role-based border colors for profile modal */
@@ -380,26 +381,31 @@
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
 }
 
-.status-dot {
+.profile-online-dot {
     position: absolute;
-    bottom: -2px;
-    left: -2px;
-    width: 16px;
-    height: 16px;
+    bottom: 0px;
+    right: 0px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
-    background: #10b981;
-    border: 3px solid white;
-    animation: statusPulse 2s ease-in-out infinite;
-    z-index: 10;
+    border: 2.5px solid white;
+    z-index: 11;
+    transition: background 0.3s ease;
 }
 
-@keyframes statusPulse {
-    0%, 100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
-    50% {
-        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-    }
+.profile-online-dot.online {
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    animation: onlinePulse 2s ease-in-out infinite;
+}
+
+.profile-online-dot.offline {
+    background: #9ca3af;
+}
+
+@keyframes onlinePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+    50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
 }
 
 .user-info-centered {
@@ -446,8 +452,20 @@
     justify-content: flex-start;
 }
 
-.role-badge {
+.role-purple-dot {
     display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    flex-shrink: 0;
+    margin-right: 3px;
+    box-shadow: 0 0 4px rgba(255,255,255,0.8);
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
     padding: 2px 6px;
     background: linear-gradient(135deg, #8b5cf6 0%, #b57edc 100%);
     color: #ffffff;
@@ -465,6 +483,7 @@
     right: 10px;
     transform: translateY(-50%);
     z-index: 10;
+    gap: 3px;
 }
 
 /* Role and Gender Based Badge Colors */
@@ -1272,6 +1291,125 @@
         gap: 8px;
         flex-wrap: nowrap;
     }
+}
+
+/* ===== PILL ACTION BUTTONS ===== */
+.action-section-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    justify-content: flex-start;
+}
+
+.pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    white-space: nowrap;
+    letter-spacing: 0.1px;
+}
+
+.pill-btn svg {
+    flex-shrink: 0;
+}
+
+.pill-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pill-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.pill-view-profile {
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    color: #5b21b6;
+    box-shadow: 0 2px 8px rgba(139,92,246,0.18);
+}
+
+.pill-view-profile svg {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border-radius: 50%;
+    padding: 2px;
+    color: white;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+}
+
+.pill-add-friend {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    color: #6d28d9;
+    box-shadow: 0 2px 8px rgba(109,40,217,0.18);
+}
+
+.pill-add-friend svg {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    border-radius: 50%;
+    padding: 2px;
+    color: white;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+}
+
+.pill-send-message {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+    box-shadow: 0 2px 8px rgba(16,185,129,0.18);
+}
+
+.pill-send-message svg {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 50%;
+    padding: 2px;
+    color: white;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+}
+
+.pill-whisper {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    color: #0369a1;
+    box-shadow: 0 2px 8px rgba(14,165,233,0.18);
+}
+
+.pill-whisper svg {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    border-radius: 50%;
+    padding: 2px;
+    color: white;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+}
+
+.pill-block {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.18);
+}
+
+.pill-block svg {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-radius: 50%;
+    padding: 2px;
+    color: white;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
 }
 
 /* Removed conflicting iframe styles */
