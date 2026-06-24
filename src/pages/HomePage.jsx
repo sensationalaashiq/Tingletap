@@ -416,6 +416,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     }
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+    const [guestLockModal, setGuestLockModal] = useState(null);
     const avatarRef = useRef(null);
     
     const currentUser = auth.currentUser;
@@ -459,7 +460,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
         return 'male-border';
     };
 
-    return (
+    return (<>
         <div className={`message-row-wrapper ${isWhisper ? 'whisper-message' : ''}`}
              data-message-id={id}
              data-user-id={uid}
@@ -585,15 +586,16 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                             <span>View Profile</span>
                                         </button>
 
-                                        {/* Add Friend — hidden when viewer or target is guest */}
-                                        {!isLimited && (
-                                            <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
+                                        {/* Add Friend — visible to all; guests see locked modal */}
+                                        {(isViewerGuest || !isTargetGuest) && (
+                                            <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('friend'); } else { onAddFriend(message); closeAllDropdowns(); } }}>
                                                 <span className="apd-icon-wrap apd-icon-friend">
                                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                                         <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
                                                     </svg>
                                                 </span>
                                                 <span>Add Friend</span>
+                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="10" height="10" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
                                         )}
 
@@ -609,15 +611,16 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                         </button>
                                         )}
 
-                                        {/* Whisper — hidden when viewer or target is guest */}
-                                        {!isLimited && (
-                                            <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
+                                        {/* Whisper — visible to all; guests see locked modal */}
+                                        {(isViewerGuest || !isTargetGuest) && (
+                                            <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('whisper'); } else { onWhisper(message); closeAllDropdowns(); } }}>
                                                 <span className="apd-icon-wrap apd-icon-whisper">
                                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                                         <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
                                                     </svg>
                                                 </span>
                                                 <span>Whisper</span>
+                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="10" height="10" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
                                         )}
 
@@ -845,7 +848,48 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                 </div>
             </div>
         </div>
-    );
+
+        {/* Compact Guest Feature Locked Modal */}
+        {guestLockModal && createPortal(
+            <div
+                onClick={() => setGuestLockModal(null)}
+                style={{ position:'fixed', inset:0, zIndex:99998, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.55)' }}
+            >
+                <div
+                    onClick={e => e.stopPropagation()}
+                    style={{ background:'#fff', borderRadius:'20px', padding:'24px 20px 20px', width:'min(310px,88vw)', display:'flex', flexDirection:'column', alignItems:'center', gap:'12px', boxShadow:'0 8px 40px rgba(99,102,241,0.22),0 2px 12px rgba(0,0,0,0.14)', border:'1px solid rgba(99,102,241,0.13)' }}
+                >
+                    <div style={{ width:'58px', height:'58px', borderRadius:'50%', background:'linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.16))', border:'2px solid rgba(99,102,241,.22)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </div>
+                    <div style={{ fontSize:'1.1rem', fontWeight:700, color:'#1a1a2e', letterSpacing:'-0.02em', textAlign:'center' }}>
+                        {guestLockModal === 'friend' ? '🤝 Add Friend' : '🤫 Whisper'}
+                    </div>
+                    <p style={{ fontSize:'0.8rem', color:'#6b7280', textAlign:'center', lineHeight:1.55, margin:0, padding:'0 4px' }}>
+                        {guestLockModal === 'friend'
+                            ? 'Register an account or get a badge to send friend requests and build your connections.'
+                            : 'Register an account or get a badge to send private whisper messages to other users.'}
+                    </p>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', width:'100%', background:'linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.04))', border:'1px solid rgba(99,102,241,.15)', borderRadius:'10px', padding:'9px 12px' }}>
+                        <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#6366f1' }}>🔒 Requires:</span>
+                        <span style={{ fontSize:'0.72rem', color:'#6b7280', lineHeight:1.5 }}>Registered account • Badge holder or Staff role</span>
+                    </div>
+                    <div style={{ display:'flex', gap:'8px', width:'100%', marginTop:'2px' }}>
+                        <button onClick={() => setGuestLockModal(null)} style={{ flex:1, padding:'10px', borderRadius:'11px', background:'#fff', border:'1.5px solid #e5e7eb', color:'#6b7280', fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            Close
+                        </button>
+                        <button onClick={() => setGuestLockModal(null)} style={{ flex:1.4, padding:'10px', borderRadius:'11px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'#fff', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 14px rgba(99,102,241,.35)' }}>
+                            Register Now
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+    </>);
 };
 
 const ConfirmationToast = ({ message, onConfirm, onCancel }) => (

@@ -1071,7 +1071,34 @@ const SettingsSidebar = ({
                 );
 
 
-            case 'friends':
+            case 'friends': {
+                const _frRole = loggedInUserProfile?.role?.toLowerCase();
+                const _frBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
+                const _frAccess = _frBadge || ['admin','owner','moderator'].includes(_frRole);
+                if (!_frAccess) {
+                    return (
+                        <div className="settings-tab-content">
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',padding:'28px 16px',textAlign:'center'}}>
+                                <div style={{width:'64px',height:'64px',borderRadius:'50%',background:'linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.15))',border:'2px solid rgba(99,102,241,.22)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                </div>
+                                <div style={{fontSize:'1.05rem',fontWeight:700,color:'#1a1a2e'}}>Friends — Locked</div>
+                                <p style={{fontSize:'0.8rem',color:'#6b7280',lineHeight:1.55,margin:0}}>
+                                    Register an account or get a badge to access your friends list, send friend requests, and manage connections.
+                                </p>
+                                <div style={{background:'linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.05))',border:'1px solid rgba(99,102,241,.18)',borderRadius:'10px',padding:'10px 14px',width:'100%',boxSizing:'border-box',textAlign:'left'}}>
+                                    <p style={{margin:'0 0 6px',fontSize:'0.72rem',fontWeight:700,color:'#6366f1'}}>🔒 Requires:</p>
+                                    <ul style={{margin:0,padding:'0 0 0 14px',fontSize:'0.72rem',color:'#6b7280',lineHeight:1.6}}>
+                                        <li>Registered account</li>
+                                        <li>Badge holder or Staff role</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
                 return (
                     <div className="settings-tab-content">
                         <h3>Friends Management</h3>
@@ -1224,6 +1251,7 @@ const SettingsSidebar = ({
                         </div>
                     </div>
                 );
+            }
 
             case 'username-font':
                 // Check access permissions
@@ -2902,12 +2930,12 @@ const SettingsSidebar = ({
                             const userRoleForFriends = loggedInUserProfile?.role?.toLowerCase();
                             const hasBadgeForFriends = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
                             const hasFriendsAccess = hasBadgeForFriends || ['admin', 'owner', 'moderator'].includes(userRoleForFriends);
-                            if (!hasFriendsAccess) return null;
                             return (
                                 <button 
                                     className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('friends')}
                                     title="Friends"
+                                    style={{ position: 'relative' }}
                                 >
                                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -2916,6 +2944,7 @@ const SettingsSidebar = ({
                                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                                     </svg>
                                     <span>Friends</span>
+                                    {!hasFriendsAccess && <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#ef4444',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>}
                                 </button>
                             );
                         })()}
@@ -2925,13 +2954,12 @@ const SettingsSidebar = ({
                             const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
                             const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
 
-                            if (!hasAccess) return null;
-
                             return (
                                 <button 
                                     className={`settings-tab ${activeTab === 'username-font' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('username-font')}
                                     title="Username Style"
+                                    style={{ position: 'relative' }}
                                 >
                                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>
@@ -2941,6 +2969,7 @@ const SettingsSidebar = ({
                                         <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
                                     </svg>
                                     <span>Style</span>
+                                    {!hasAccess && <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#ef4444',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>}
                                 </button>
                             );
                         })()}

@@ -12,8 +12,7 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
 
         .epm-overlay {
           position: fixed; inset: 0; z-index: 9990;
-          background: rgba(14,10,40,.52);
-          backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+          background: rgba(0,0,0,0.58);
           animation: epmFadeIn .28s ease both;
         }
         @keyframes epmFadeIn { from{opacity:0} to{opacity:1} }
