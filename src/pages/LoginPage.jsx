@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously } from "firebase/auth";
+import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
@@ -453,6 +453,7 @@ const LoginPage = () => {
         photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestFormData.displayName}&sex=${guestFormData.gender.toLowerCase()}`,
         createdAt: new Date().toISOString(), lastLogin: new Date().toISOString()
       };
+      await updateProfile(user, { displayName: guestFormData.displayName, photoURL: guestUserData.photoURL });
       await setDoc(doc(db, 'users', user.uid), guestUserData);
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');

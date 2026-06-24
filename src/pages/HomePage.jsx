@@ -893,7 +893,7 @@ const HomePage = ({ user }) => {
             return {
                 ...g,
                 uid: g.uid,
-                displayName: g.displayName || g.username || 'Guest',
+                displayName: g.displayName || g.username || auth.currentUser?.displayName || 'Guest',
                 email: null,
                 photoURL: g.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${g.uid}&sex=${(g.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
                 role: 'guest',
@@ -1343,75 +1343,57 @@ const HomePage = ({ user }) => {
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
         
+        const buildGuestProfile = (guestUser) => ({
+            ...guestUser,
+            uid: guestUser.uid,
+            displayName: guestUser.username || guestUser.displayName || auth.currentUser?.displayName || 'Guest',
+            email: null,
+            photoURL: guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestUser.uid}&sex=${(guestUser.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
+            role: 'guest',
+            isGuest: true,
+            isAnonymous: true,
+            gender: guestUser.gender || 'male',
+            age: guestUser.age || 18,
+            country: 'Unknown',
+            status: "I'm a guest here!",
+            bio: '',
+            friends: [],
+            blockedUsers: [],
+            isBanned: false,
+            isMuted: false,
+            mutedInfo: { isMuted: false },
+            settings: { allowPrivateMessagesLevel: 'guests', darkMode: false, notifications: false },
+            fontPreferences: { fontSize: "14px", fontColor: "#333333", fontFamily: "inherit", isBold: false, isItalic: false, isUnderline: false, isStrikethrough: false },
+            createdAt: guestUser.createdAt || new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            badge: null,
+            selectedTheme: 'light'
+        });
+
         if (isGuest && guestData) {
             try {
                 const guestUser = JSON.parse(guestData);
-                
-                // Set guest profile with limited permissions and complete structure
-                const guestProfile = {
-                    ...guestUser,
-                    uid: guestUser.uid,
-                    // Prioritize username over displayName for guests
-                    displayName: guestUser.username || guestUser.displayName || 'Guest',
-                    email: null,
-                    photoURL: guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestUser.uid}&sex=${(guestUser.gender || 'male').toLowerCase()}&backgroundColor=c0aede`,
-                    role: 'guest',
-                    isGuest: true,
-                    isAnonymous: true,
-                    gender: guestUser.gender || 'male',
-                    age: guestUser.age || 18,
-                    country: 'Unknown',
-                    status: "I'm a guest here!",
-                    bio: '',
-                    friends: [],
-                    blockedUsers: [],
-                    isBanned: false,
-                    isMuted: false,
-                    mutedInfo: {
-                        isMuted: false
-                    },
-                    settings: {
-                        allowPrivateMessagesLevel: 'guests',
-                        darkMode: false,
-                        notifications: false
-                    },
-                    fontPreferences: {
-                        fontSize: "14px",
-                        fontColor: "#333333", 
-                        fontFamily: "inherit",
-                        isBold: false,
-                        isItalic: false,
-                        isUnderline: false,
-                        isStrikethrough: false
-                    },
-                    createdAt: new Date().toISOString(),
-                    lastLogin: new Date().toISOString(),
-                    badge: null,
-                    selectedTheme: 'light'
-                };
-                
-                setLoggedInUserProfile(guestProfile);
-                
-                // Don't try to access Firestore for guest users
+                setLoggedInUserProfile(buildGuestProfile(guestUser));
                 return () => {};
             } catch (error) {
                 console.error('Guest user error:', error);
-                // Set a default guest profile on error
-                const fallbackGuestData = guestData ? JSON.parse(guestData) : {};
-                setLoggedInUserProfile({
-                    uid: fallbackGuestData.uid || 'guest-' + Date.now(),
-                    displayName: fallbackGuestData.displayName || fallbackGuestData.username || 'Guest',
-                    email: null,
-                    photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=guest&sex=male&backgroundColor=c0aede`,
-                    role: 'guest',
-                    isGuest: true,
-                    gender: fallbackGuestData.gender || 'male',
-                    isBanned: false,
-                    isMuted: false,
-                    mutedInfo: { isMuted: false }
-                });
-                return () => {};
             }
+        }
+
+        // Fallback: isGuest flag set but localStorage data missing — fetch from Firestore using anonymous auth
+        if (isGuest && auth.currentUser?.isAnonymous) {
+            getDoc(doc(db, 'users', auth.currentUser.uid)).then((snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const restored = { ...d, uid: auth.currentUser.uid };
+                    localStorage.setItem('guestUser', JSON.stringify(restored));
+                    setLoggedInUserProfile(buildGuestProfile(restored));
+                } else if (auth.currentUser.displayName) {
+                    const minimal = { uid: auth.currentUser.uid, displayName: auth.currentUser.displayName, gender: 'male', role: 'guest' };
+                    setLoggedInUserProfile(buildGuestProfile(minimal));
+                }
+            }).catch(() => {});
+            return () => {};
         }
         
         if (user) {

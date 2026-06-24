@@ -396,11 +396,12 @@ const WelcomeDashboard = () => {
     try {
       if (localStorage.getItem('isGuest') !== 'true') return '';
       const raw = localStorage.getItem('guestUser');
-      if (!raw) return '';
+      const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      if (!raw) return today;
       const g = JSON.parse(raw);
-      if (!g.createdAt) return '';
+      if (!g.createdAt) return today;
       const dt = new Date(g.createdAt);
-      return isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      return isNaN(dt) ? today : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     } catch { return ''; }
   });
   const [showBanModal, setShowBanModal] = useState(false);
@@ -442,20 +443,47 @@ const WelcomeDashboard = () => {
 
       setUser(cu);
 
-      // If anonymous (guest) Firebase user — pull display data from localStorage
+      // If anonymous (guest) Firebase user — pull display data from localStorage, fallback to Firestore
       if (cu.isAnonymous) {
+        // Always mark as guest role immediately
+        setUserRole('guest');
+
+        // Try localStorage first
+        let parsed = null;
         const gd = localStorage.getItem('guestUser');
         if (gd) {
+          try { parsed = JSON.parse(gd); } catch { /* ignore */ }
+        }
+
+        // Fallback: fetch from Firestore if localStorage is missing or incomplete
+        if (!parsed || !parsed.displayName || !parsed.gender) {
           try {
-            const parsed = JSON.parse(gd);
-            setGuestUser(parsed);
-            setUserRole('guest');
-            // Set member-since date from localStorage data
-            if (parsed.createdAt) {
-              const dt = new Date(parsed.createdAt);
-              setCurrentDate(!isNaN(dt) ? dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+            const snap = await getDoc(doc(db, 'users', cu.uid));
+            if (snap.exists()) {
+              const d = snap.data();
+              parsed = { ...d, uid: cu.uid };
+              // Restore localStorage for future renders
+              localStorage.setItem('guestUser', JSON.stringify(parsed));
+              localStorage.setItem('isGuest', 'true');
             }
           } catch { /* ignore */ }
+        }
+
+        // Also use Firebase Auth displayName as ultimate fallback
+        if (!parsed?.displayName && cu.displayName) {
+          parsed = { ...(parsed || {}), displayName: cu.displayName, uid: cu.uid };
+        }
+
+        if (parsed) {
+          setGuestUser(parsed);
+          // Set member-since date — use createdAt or today for fresh guest sessions
+          const rawDate = parsed.createdAt;
+          if (rawDate) {
+            const dt = new Date(rawDate);
+            setCurrentDate(!isNaN(dt) ? dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+          } else {
+            setCurrentDate(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+          }
         }
         return;
       }
