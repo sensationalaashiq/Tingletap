@@ -6503,7 +6503,7 @@ const HomePage = ({ user }) => {
             )}
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
-                width: '100vw', height: '40px', minHeight: '40px', maxHeight: '40px',
+                width: '100vw', height: '52px', minHeight: '52px', maxHeight: '52px',
                 padding: '0 8px', boxSizing: 'border-box',
                 display: 'flex', alignItems: 'center',
                 background: isDarkMode ? '#0e0620' : '#f3eeff',
@@ -6512,20 +6512,20 @@ const HomePage = ({ user }) => {
                 zIndex: 2000, overflow: 'visible',
             }}>
                 <form onSubmit={handleSendMessage} className="message-form" style={{
-                    width: '100%', height: '40px', margin: 0, padding: 0,
+                    width: '100%', height: '52px', margin: 0, padding: 0,
                     display: 'flex', alignItems: 'center', background: 'transparent'
                 }}>
                     <div className="premium-input-container" style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
-                        width: '100%', height: '40px', background: 'transparent',
+                        width: '100%', height: '52px', background: 'transparent',
                         border: 'none', padding: 0, margin: 0
                     }}>
                         <button
                             type="button"
                             className="premium-footer-btn attachment-btn"
                             style={{
-                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                width: '40px', height: '52px', minWidth: '40px', maxWidth: '40px',
+                                minHeight: '52px', maxHeight: '52px', flexShrink: 0,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: 'transparent', border: 'none', borderRadius: '0',
                                 padding: 0, cursor: 'pointer'
@@ -6540,10 +6540,10 @@ const HomePage = ({ user }) => {
                             <AttachmentIconSVG />
                         </button>
                         <div className="premium-input-wrapper" style={{
-                            flex: '1 1 auto', height: '40px',
+                            flex: '1 1 auto', height: '36px',
                             background: isDarkMode ? 'rgba(30,12,68,0.75)' : 'rgba(237,233,254,0.6)',
                             border: isDarkMode ? '1.5px solid rgba(139,92,246,0.3)' : '1.5px solid rgba(167,139,250,0.35)',
-                            borderRadius: '20px', padding: '0 14px',
+                            borderRadius: '18px', padding: '0 14px',
                             display: 'flex', alignItems: 'center',
                             minWidth: 0, margin: 0, boxSizing: 'border-box', alignSelf: 'center'
                         }}>
@@ -6566,8 +6566,8 @@ const HomePage = ({ user }) => {
                             type="submit"
                             className="premium-footer-btn send-btn"
                             style={{
-                                width: '40px', height: '40px', minWidth: '40px', maxWidth: '40px',
-                                minHeight: '40px', maxHeight: '40px', flexShrink: 0,
+                                width: '40px', height: '52px', minWidth: '40px', maxWidth: '40px',
+                                minHeight: '52px', maxHeight: '52px', flexShrink: 0,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: 'transparent',
                                 border: 'none', borderRadius: '0', padding: 0, cursor: 'pointer',
