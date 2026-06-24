@@ -65,8 +65,7 @@ const StylishFontPopup = ({
 
     const basicColors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-      '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#F4D03F', '#A9DFBF',
-      '#E8DAEF', '#D5DBDB', '#FADBD8', '#D1F2EB'
+      '#BB8FCE', '#85C1E9'
     ];
 
     const guestColors = [
@@ -128,8 +127,10 @@ const StylishFontPopup = ({
   }, [userRole, userBadge]);
 
   const canAccessFonts = useCallback(() => {
-    return !isGuest;
-  }, [isGuest]);
+    const isStaff = ['owner', 'admin', 'moderator'].includes(userRole);
+    const hasBadge = userBadge && userBadge !== null;
+    return isStaff || hasBadge;
+  }, [isGuest, userRole, userBadge]);
 
   // Event handlers with immediate state updates
   const handleColorSelect = useCallback((color) => {

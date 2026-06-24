@@ -11398,3 +11398,48 @@ body .homepage-container .attachment-dropdown {
   display: block;
   flex-shrink: 0;
 }
+
+/* ===== USERNAME FORCE STYLING: GUEST & REGISTERED ===== */
+.message-row-wrapper[data-sender-role="guest"] .message-displayname,
+.message-row-wrapper[data-sender-role="user"] .message-displayname {
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
+  font-size: 11.5px !important;
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+  background: none !important;
+  background-image: none !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+/* Dark mode override for guest/user usernames */
+.dark-mode .message-row-wrapper[data-sender-role="guest"] .message-displayname,
+.dark-mode .message-row-wrapper[data-sender-role="user"] .message-displayname {
+  color: #e2e2e2 !important;
+  -webkit-text-fill-color: #e2e2e2 !important;
+}
+
+/* ===== TAG MENTION STYLES ===== */
+.tag-self-mention {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 0.88em;
+  padding: 1px 7px 2px;
+  border-radius: 999px;
+  box-shadow: 0 1px 6px rgba(124,58,237,0.35);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  vertical-align: middle;
+  cursor: default;
+}
+
+.tag-other-mention {
+  color: #7c3aed;
+  font-weight: 600;
+}
