@@ -673,7 +673,12 @@ const Sidebar = ({
                           {loggedInUserProfile.displayName}
                         </span>
                         <span className="dropdown-user-role">{
-                          getRoleDisplayLabel({ role: loggedInUserProfile.role, gender: loggedInUserProfile.gender, isGuest: loggedInUserProfile.isGuest, badge: loggedInUserProfile.badge })
+                          getRoleDisplayLabel({
+                            role: loggedInUserProfile.role,
+                            gender: (() => { try { return (JSON.parse(localStorage.getItem('guestUser') || '{}').gender || loggedInUserProfile.gender || ''); } catch { return loggedInUserProfile.gender || ''; } })(),
+                            isGuest: loggedInUserProfile.isGuest || loggedInUserProfile.role === 'guest',
+                            badge: loggedInUserProfile.badge
+                          })
                         }</span>
                       </div>
                     </div>

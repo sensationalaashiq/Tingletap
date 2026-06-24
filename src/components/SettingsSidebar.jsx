@@ -1955,7 +1955,7 @@ const SettingsSidebar = ({
                                     <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'))}>
                                         {getRoleDisplayLabel({
                                             role: loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'),
-                                            gender: loggedInUserProfile?.gender || (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').gender || 'male'; } catch { return 'male'; } })(),
+                                            gender: (() => { try { return (JSON.parse(localStorage.getItem('guestUser') || '{}').gender || loggedInUserProfile?.gender || ''); } catch { return loggedInUserProfile?.gender || ''; } })(),
                                             isGuest: loggedInUserProfile?.isGuest || auth.currentUser?.isAnonymous || false,
                                             badge: loggedInUserProfile?.badge
                                         })}

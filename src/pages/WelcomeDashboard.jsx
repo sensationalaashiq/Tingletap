@@ -600,26 +600,16 @@ const WelcomeDashboard = () => {
       }
       default: {
         if (userRole === 'guest') {
-          const rawGender = guestUser?.gender || readGuestFromStorage()?.gender || '';
-          const gender = rawGender.toLowerCase();
-          if (gender === 'male' || gender === '') return {
-            label: 'Purush',
-            cls: 'wd-role--guest-male',
-            icon: (
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
-                <defs>
-                  <linearGradient id="rc-purush" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6"/>
-                    <stop offset="100%" stopColor="#1d4ed8"/>
-                  </linearGradient>
-                </defs>
-                {/* Male symbol: circle + arrow pointing top-right */}
-                <circle cx="8.5" cy="10.5" r="4.5" stroke="url(#rc-purush)" strokeWidth="1.7" fill="rgba(59,130,246,0.1)"/>
-                <line x1="12" y1="7" x2="17" y2="2" stroke="url(#rc-purush)" strokeWidth="1.7" strokeLinecap="round"/>
-                <polyline points="13,2 17,2 17,6" stroke="url(#rc-purush)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-              </svg>
-            )
-          };
+          // Always read gender DIRECTLY from localStorage — never rely on state alone
+          let gender = '';
+          try {
+            const _gd = JSON.parse(localStorage.getItem('guestUser') || '{}');
+            gender = (_gd.gender || guestUser?.gender || '').toLowerCase();
+          } catch {
+            gender = (guestUser?.gender || '').toLowerCase();
+          }
+
+          // Check female FIRST to avoid wrong fallback
           if (gender === 'female') return {
             label: 'Stree',
             cls: 'wd-role--guest-female',
@@ -682,7 +672,11 @@ const WelcomeDashboard = () => {
   };
   const roleConfig = getRoleConfig();
 
-  const displayName = guestUser?.displayName || user?.displayName || 'User';
+  // Read displayName directly from localStorage for immediate render — no state lag
+  const displayName = guestUser?.displayName
+    || (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').displayName || ''; } catch { return ''; } })()
+    || user?.displayName
+    || 'User';
   const userEmail   = user?.email || guestUser?.email || '';
   const isVerified  = user?.emailVerified;
   const initials    = displayName.slice(0, 2).toUpperCase();
