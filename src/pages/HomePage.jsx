@@ -36,21 +36,28 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="sendGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#f472b6"/>
-        <stop offset="40%" stopColor="#a855f7"/>
+        <stop offset="0%" stopColor="#c084fc"/>
+        <stop offset="50%" stopColor="#818cf8"/>
+        <stop offset="100%" stopColor="#38bdf8"/>
+      </linearGradient>
+      <linearGradient id="sendGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#e879f9"/>
         <stop offset="100%" stopColor="#6366f1"/>
       </linearGradient>
-      <filter id="sendGlow">
-        <feGaussianBlur stdDeviation="0.8" result="blur"/>
+      <filter id="sendGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="0.6" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
     </defs>
-    <g filter="url(#sendGlow)">
-      <path d="M22 2L11 13" stroke="url(#sendGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="url(#sendGrad)" stroke="url(#sendGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <g filter="url(#sendGlow)" transform="rotate(-40, 12, 12)">
+      <path d="M21 3L3 10.5L10 13.5L13.5 21L21 3Z"
+        fill="url(#sendGrad2)" stroke="url(#sendGrad)" strokeWidth="1.2"
+        strokeLinejoin="round"/>
+      <path d="M10 13.5L14.5 9" stroke="white" strokeWidth="1.2"
+        strokeLinecap="round" opacity="0.7"/>
     </g>
   </svg>
 );
@@ -642,7 +649,8 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                     </div>
                                 </>
                             );
-                        })()
+                        })(),
+                        document.body
                     )}
                 </div>
                 <div className="message-content-container" onClick={(e) => {
