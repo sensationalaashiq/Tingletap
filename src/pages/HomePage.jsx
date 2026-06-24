@@ -23,6 +23,7 @@ import StylishFontPopup from '../components/StylishFontPopup';
 import StylishImageUploadModal from '../components/StylishImageUploadModal';
 import StylishAudioUpload from '../components/StylishAudioUpload';
 import StylishReportModal from '../components/StylishReportModal';
+import BlockConfirmModal from '../components/BlockConfirmModal';
 
 import MinimizedConversations from '../components/MinimizedConversations';
 import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
@@ -950,6 +951,8 @@ const HomePage = ({ user }) => {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [isSettingsSidebarOpen, setIsSettingsSidebarOpen] = useState(false);
     const [blockedUsers, setBlockedUsers] = useState([]);
+    const [usersWhoBlockedMe, setUsersWhoBlockedMe] = useState([]);
+    const [blockConfirmTarget, setBlockConfirmTarget] = useState(null);
     const [profileUser, setProfileUser] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('info');
   const [userFriends, setUserFriends] = useState([]);
@@ -1497,6 +1500,10 @@ const HomePage = ({ user }) => {
                     // Load blocked users
                     if (userData.blockedUsers) {
                         setBlockedUsers(userData.blockedUsers);
+                    }
+                    // Load users who blocked me (bidirectional block)
+                    if (userData.blockedBy) {
+                        setUsersWhoBlockedMe(userData.blockedBy);
                     }
 
                     // Load global settings from Firebase and sync with localStorage
@@ -3407,6 +3414,10 @@ const HomePage = ({ user }) => {
     };
 
     const handleWhisperUser = (message) => {
+        if (blockedUsers.includes(message.uid) || usersWhoBlockedMe.includes(message.uid)) {
+            toast.error("You cannot whisper to a blocked user");
+            return;
+        }
         setWhisperTarget({
             uid: message.uid,
             displayName: message.displayName
@@ -3427,6 +3438,11 @@ const HomePage = ({ user }) => {
         
         if (user.uid === auth.currentUser.uid) {
             toast.info("You cannot send a friend request to yourself");
+            return;
+        }
+
+        if (blockedUsers.includes(user.uid) || usersWhoBlockedMe.includes(user.uid)) {
+            toast.error("You cannot send a friend request to a blocked user");
             return;
         }
         
@@ -3506,8 +3522,10 @@ const HomePage = ({ user }) => {
             }
         }
         
-        // Check if target user is blocked
+        // Check if target user is blocked (bidirectional)
         if (currentUser.blockedUsers?.includes(targetUser.uid)) return false;
+        if (targetUser.blockedUsers?.includes(currentUser.uid)) return false;
+        if (targetUser.blockedBy?.includes(currentUser.uid)) return false;
         
         // Check target user's private message settings
         const allowLevel = targetUser.settings?.allowPrivateMessagesLevel || 'all';
@@ -3538,27 +3556,9 @@ const HomePage = ({ user }) => {
             handlePrivateMessage(user);
         };
         
-        window.handleBlockUserFromSidebar = async (user) => {
+        window.handleBlockUserFromSidebar = (user) => {
             if (!auth.currentUser || !user) return;
-            
-            try {
-                const currentUserRef = doc(db, 'users', auth.currentUser.uid);
-                const currentUserDoc = await getDoc(currentUserRef);
-                const currentUserData = currentUserDoc.data();
-                
-                const updatedBlocked = [...(currentUserData.blockedUsers || []), user.uid];
-                const updatedFriends = (currentUserData.friends || []).filter(id => id !== user.uid);
-                
-                await updateDoc(currentUserRef, {
-                    blockedUsers: updatedBlocked,
-                    friends: updatedFriends
-                });
-                
-                setBlockedUsers(updatedBlocked);
-                toast.success(`🚫 Blocked ${user.displayName}`);
-            } catch (error) {
-                toast.error('Failed to block user');
-            }
+            handleBlockUser(user);
         };
         
         window.handleAddFriendFromSidebar = handleAddFriend;
@@ -4860,28 +4860,53 @@ const HomePage = ({ user }) => {
         }
     }, [isDragging, dragOffset]);
 
-    const handleBlockUser = async (user) => {
+    const handleBlockUser = (user) => {
+        if (!user || !auth.currentUser) return;
+        setBlockConfirmTarget(user);
+    };
+
+    const confirmBlockUser = async () => {
+        const user = blockConfirmTarget;
+        setBlockConfirmTarget(null);
+        if (!user || !auth.currentUser) return;
+
         try {
-            if (!auth.currentUser) return;
-            
             const currentUserId = auth.currentUser.uid;
             const userRef = doc(db, 'users', currentUserId);
-            
-            // Get current blocked users list
+            const targetRef = doc(db, 'users', user.uid);
+
             const userDoc = await getDoc(userRef);
             const currentBlockedUsers = userDoc.data()?.blockedUsers || [];
-            
-            // Add new blocked user if not already blocked
-            if (!currentBlockedUsers.includes(user.uid)) {
-                const updatedBlockedUsers = [...currentBlockedUsers, user.uid];
-                await updateDoc(userRef, {
-                    blockedUsers: updatedBlockedUsers
-                });
-                setBlockedUsers(updatedBlockedUsers);
-                toast.success(`🚫 Blocked ${user.displayName}`);
-            } else {
+
+            if (currentBlockedUsers.includes(user.uid)) {
                 toast.info(`${user.displayName} is already blocked`);
+                return;
             }
+
+            const updatedBlockedUsers = [...currentBlockedUsers, user.uid];
+
+            // Remove from friends both ways
+            const updatedFriends = (userDoc.data()?.friends || []).filter(id => id !== user.uid);
+
+            // Update current user: add to blockedUsers, remove from friends
+            await updateDoc(userRef, {
+                blockedUsers: updatedBlockedUsers,
+                friends: updatedFriends
+            });
+            setBlockedUsers(updatedBlockedUsers);
+
+            // Update target user: add current user to their blockedBy array
+            const targetDoc = await getDoc(targetRef);
+            const targetBlockedBy = targetDoc.data()?.blockedBy || [];
+            if (!targetBlockedBy.includes(currentUserId)) {
+                const targetFriends = (targetDoc.data()?.friends || []).filter(id => id !== currentUserId);
+                await updateDoc(targetRef, {
+                    blockedBy: [...targetBlockedBy, currentUserId],
+                    friends: targetFriends
+                });
+            }
+
+            toast.success(`🚫 ${user.displayName} has been blocked`);
         } catch (error) {
             toast.error("Failed to block user");
         }
@@ -4902,6 +4927,17 @@ const HomePage = ({ user }) => {
                 blockedUsers: updatedBlockedUsers
             });
             setBlockedUsers(updatedBlockedUsers);
+
+            // Also remove current user from target's blockedBy array
+            try {
+                const targetRef = doc(db, 'users', userId);
+                const targetDoc = await getDoc(targetRef);
+                if (targetDoc.exists()) {
+                    const targetBlockedBy = (targetDoc.data()?.blockedBy || []).filter(id => id !== currentUserId);
+                    await updateDoc(targetRef, { blockedBy: targetBlockedBy });
+                }
+            } catch (_) {}
+
             toast.success("User unblocked successfully");
         } catch (error) {
             toast.error("Failed to unblock user");
@@ -5861,7 +5897,12 @@ const HomePage = ({ user }) => {
                       </header>
 
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
-                        {messages.map((msg, index) => (
+                        {messages.filter(msg => {
+                            if (!msg.uid) return true;
+                            if (blockedUsers.includes(msg.uid)) return false;
+                            if (usersWhoBlockedMe.includes(msg.uid)) return false;
+                            return true;
+                        }).map((msg, index) => (
                             <ChatMessage
                                 key={msg.id}
                                 message={msg}
@@ -6554,6 +6595,13 @@ const HomePage = ({ user }) => {
             </div>
 
             </div>{/* end homepage-container */}
+
+            {/* Block Confirmation Modal */}
+            <BlockConfirmModal
+                targetUser={blockConfirmTarget}
+                onConfirm={confirmBlockUser}
+                onCancel={() => setBlockConfirmTarget(null)}
+            />
         </>
     );
 };

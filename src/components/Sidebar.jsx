@@ -1074,6 +1074,23 @@ const Sidebar = ({
 
                         <button className="modern-dropdown-btn" onClick={(e) => { 
                           e.stopPropagation(); 
+                          if (window.handlePrivateMessageFromSidebar && typeof window.handlePrivateMessageFromSidebar === 'function') {
+                            window.handlePrivateMessageFromSidebar(userItem);
+                          } else {
+                            toast.info(`💬 Opening PM with ${userItem?.displayName || 'User'}`);
+                          }
+                          setDropdownUser(null); 
+                        }}>
+                          <div className="btn-icon">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                              <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2M8,14H6V12H8V14M8,11H6V9H8V11M8,8H6V6H8V8M15,14H10V12H15V14M18,11H10V9H18V11M18,8H10V6H18V8Z"/>
+                            </svg>
+                          </div>
+                          <span>Private Message</span>
+                        </button>
+
+                        <button className="modern-dropdown-btn" onClick={(e) => { 
+                          e.stopPropagation(); 
                           if (window.handleAddFriendFromSidebar && typeof window.handleAddFriendFromSidebar === 'function') {
                             window.handleAddFriendFromSidebar(userItem);
                           } else {
@@ -1237,133 +1254,6 @@ const Sidebar = ({
         </div>
 
         </div>
-
-      {profileUser && (
-        <div className="profile-modal">
-          <div className="profile-modal-content">
-            <button className="modal-close-btn" onClick={() => setProfileUser(null)}>✖</button>
-
-            {/* Header Section - Compact */}
-            <div className="profile-header">
-              <div className={`avatar-wrapper ${getBorderClass(profileUser)}`}>
-                <img src={getAvatarUrl(profileUser.uid, profileUser.gender, profileUser.photoURL)} alt="avatar" className="modal-avatar" />
-                <span className="gender-badge-on-avatar">
-                  {profileUser.gender?.toLowerCase() === 'female' ? <FemaleIconSVG /> : <MaleIconSVG />}
-                </span>
-              </div>
-              <div className="profile-user-details">
-                <div className="username-badge-wrapper">
-                  <h2 
-                    className="profile-name"
-                    data-user-uid={profileUser.uid}
-                    data-role={profileUser.badge ? 'badge_holder' : (profileUser.role || 'user')}
-                    data-badge={profileUser.badge ? 'true' : 'false'}
-                    data-gender={profileUser.gender || 'male'}
-                    data-is-bot="false"
-                  >
-                    {profileUser.displayName}
-                  </h2>
-                  {profileUser.badge && badges[profileUser.badge] && (
-                    <span
-                      className="inline-badge"
-                      title={badges[profileUser.badge].name}
-                      dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }}
-                    />
-                  )}
-                </div>
-                {profileUser.status && (
-                  <div className="profile-status">
-                    {profileUser.status}
-                  </div>
-                )}
-                <div className="profile-basic-info">
-                  <span className="profile-role">{profileUser.role || 'User'}</span>
-                  <span className="profile-gender">{profileUser.gender}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="profile-tabs">
-              <button className="profile-tab-btn active">👤 Info</button>
-              <button className="profile-tab-btn">👥 Friends</button>
-              <button className="profile-tab-btn">⏱️ Activity</button>
-            </div>
-
-            {/* Content Area - Scrollable */}
-            <div className="profile-content">
-              <div className="profile-info">
-                <div className="info-row">
-                  <span className="info-label">Gender:</span>
-                  <span className="info-value">{profileUser.gender}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Role:</span>
-                  <span className="info-value">{profileUser.role}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Status:</span>
-                  <span className={`info-value ${onlineUsers.has && onlineUsers.has(profileUser.uid) ? 'online' : ''}`}>
-                    {onlineUsers.has && onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Last Seen:</span>
-                  <span className="info-value">
-                    {window.getUserStatus ? window.getUserStatus(profileUser.uid).status : 'Unknown'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Friends Section */}
-              <div className="profile-friends">
-                <div className="friends-header">
-                  <h4>Friends</h4>
-                  <span className="friends-count">2</span>
-                </div>
-                <div className="friends-list-container">
-                  <div className="friends-grid">
-                    {/* Sample friends with proper DP grid */}
-                    <div className={`mini-friend-dp moderator-border female-border`}
-                      onClick={() => {
-                        toast.info('💬 Starting chat with Shadow Warrior');
-                        setProfileUser(null);
-                        onClose();
-                      }}
-                    >
-                      <div className="mini-friend-tooltip">Shadow Warrior</div>
-                      <img 
-                        src={`https://api.dicebear.com/8.x/adventurer/svg?seed=shadowwarrior&sex=female`}
-                        alt="avatar"
-                      />
-                      <span className="mini-gender-badge">
-                        <FemaleIconSVG />
-                      </span>
-                    </div>
-
-                    <div className={`mini-friend-dp male-border`}
-                      onClick={() => {
-                        toast.info('💬 Starting chat with Thunder Strike');
-                        setProfileUser(null);
-                        onClose();
-                      }}
-                    >
-                      <div className="mini-friend-tooltip">Thunder Strike</div>
-                      <img 
-                        src={`https://api.dicebear.com/8.x/adventurer/svg?seed=thunderstrike&sex=male`}
-                        alt="avatar"
-                      />
-                      <span className="mini-gender-badge">
-                        <MaleIconSVG />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Edit Profile Modal */}
       {showEditProfileModal && (
