@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
@@ -1137,7 +1138,7 @@ const AdminPanelPage = () => {
                   <div className="luxury-activity-list">
                     {users.slice(0, 5).map(user => (
                       <div key={user.uid} className="luxury-activity-item">
-                        <img src={user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`} alt="" />
+                        <img src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`} alt="" />
                         <div>
                           <span className="luxury-activity-name">{user.displayName}</span>
                           <span className="luxury-activity-action">
@@ -1255,7 +1256,7 @@ const AdminPanelPage = () => {
                             <div className="luxury-td user-profile-cell">
                               <div className="luxury-user-avatar-wrapper">
                                 <img 
-                                  src={user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`}
+                                  src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`}
                                   alt={user.displayName}
                                   className="luxury-user-avatar"
                                 />
@@ -2327,7 +2328,7 @@ const AdminPanelPage = () => {
                           {/* User */}
                           <div style={{ display:'flex', alignItems:'center', gap:9, minWidth:0 }}>
                             <img
-                              src={u.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${u.uid}`}
+                              src={u.photoURL || `${getDefaultAvatarUrl(u.uid, u.gender)}`}
                               style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, border:`2px solid ${rank.color}`, objectFit:'cover' }}
                               alt=""
                             />

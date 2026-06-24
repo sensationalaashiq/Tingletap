@@ -1,4 +1,5 @@
 import React from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import './BlockConfirmModal.css';
 
 const BlockConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
@@ -32,7 +33,7 @@ const BlockConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
                 <div className="bcm-user-preview">
                     <div className="bcm-avatar-wrap">
                         <img
-                            src={`https://api.dicebear.com/8.x/adventurer/svg?seed=${targetUser.uid}&sex=${targetUser.gender?.toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede`}
+                            src={`${getDefaultAvatarUrl(targetUser.uid, targetUser.gender)}`}
                             alt="avatar"
                             className="bcm-avatar"
                         />

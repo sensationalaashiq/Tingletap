@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { db } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import './AdminBanKickModal.css';
@@ -132,7 +133,7 @@ const AdminBanKickModal = ({
 
           <div className="abk-user-strip">
             <img
-              src={selectedUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${selectedUser.uid}`}
+              src={selectedUser.photoURL || `${getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}`}
               alt=""
               className="abk-user-avatar"
             />

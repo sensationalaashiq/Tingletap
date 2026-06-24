@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoleDisplayLabel, getStoredGuestGender } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -1005,7 +1005,7 @@ const SettingsSidebar = ({
                                     <div key={user.id} className="blocked-user-item" data-user-id={user.id}>
                                         <div className="blocked-user-info">
                                             <img 
-                                                src={user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=${user.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
+                                                src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`}
                                                 alt="avatar"
                                                 className="blocked-user-avatar"
                                             />
@@ -1045,7 +1045,7 @@ const SettingsSidebar = ({
                                     friendsProfiles.map(friend => (
                                         <div key={friend.id} className="friend-item" data-user-id={friend.id}>
                                             <img 
-                                                src={friend.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${friend.id}&sex=${friend.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
+                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
                                                 alt="avatar"
                                                 className="friend-avatar"
                                             />
@@ -1934,7 +1934,7 @@ const SettingsSidebar = ({
                             <div className="modern-profile-section">
                                 <div className="modern-avatar-container">
                                     <img 
-                                        src={loggedInUserProfile?.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${auth.currentUser?.uid}&sex=${loggedInUserProfile?.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
+                                        src={loggedInUserProfile?.photoURL || `${getDefaultAvatarUrl(auth.currentUser?.uid, loggedInUserProfile?.gender)}`}
                                         alt="avatar"
                                         className="modern-account-avatar"
                                     />

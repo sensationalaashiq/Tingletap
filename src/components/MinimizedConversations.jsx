@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { createPortal } from 'react-dom';
 import './MinimizedConversations.css';
 import { auth } from '../firebase/config';
@@ -94,7 +95,7 @@ const MinimizedConversations = ({
     
     // Default avatar based on gender
     const g = (cachedUser?.gender || gender)?.toLowerCase() === 'female' ? 'female' : 'male';
-    return `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${g}&backgroundColor=c0aede`;
+    return `${getDefaultAvatarUrl(uid, gender)}`;
   };
 
   const getBorderClass = (user) => {
@@ -151,7 +152,7 @@ const MinimizedConversations = ({
                     onError={(e) => {
                       // Fallback to default avatar if image fails to load
                       const g = conversation.otherUser?.gender?.toLowerCase() === 'female' ? 'female' : 'male';
-                      const fallbackUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${conversation.otherUserId}&sex=${g}&backgroundColor=c0aede`;
+                      const fallbackUrl = `${getDefaultAvatarUrl(conversation.otherUserId, conversation.otherUserGender)}`;
                       if (e.target.src !== fallbackUrl) {
                         e.target.src = fallbackUrl;
                       }

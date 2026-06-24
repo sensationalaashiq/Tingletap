@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, createUserProfile, checkUsernameAvailability, reserveUsername } from '../firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
@@ -240,8 +241,8 @@ const SignupPage = () => {
         } catch (imgError) { console.warn('Failed to upload profile picture, using default'); }
       }
       const defaultAvatar = formData.gender === 'female'
-        ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=female&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-        : `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+        ? `${getDefaultAvatarUrl(user.uid, 'female')}`
+        : `${getDefaultAvatarUrl(user.uid, 'male')}`;
       const userProfileData = {
         uid: user.uid, email: formData.email, displayName: formData.fullName,
         username: formData.username.toLowerCase(),

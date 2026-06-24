@@ -219,11 +219,14 @@ export default app;
 
 // Helper function to generate avatar URL with proper gender
 export const generateAvatarUrl = (uid, gender = 'male', photoURL = null) => {
-  if (photoURL) {
-    return photoURL;
-  }
-
-  // Use 'sex' attribute for DiceBear API instead of 'gender'
-  const sexAttribute = gender?.toLowerCase() === 'female' ? 'female' : 'male';
-  return `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${sexAttribute}&backgroundColor=c0aede`;
+  if (photoURL) return photoURL;
+  // Deterministic index from uid
+  let h = 5381;
+  const s = uid || 'default';
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) + h) ^ s.charCodeAt(i); h = h >>> 0; }
+  const n = h % 100;
+  const g = (gender || '').toLowerCase();
+  if (g === 'female') return `https://randomuser.me/api/portraits/women/${n}.jpg`;
+  if (g === 'transgender' || g === 'other') return `https://randomuser.me/api/portraits/women/${(n + 37) % 100}.jpg`;
+  return `https://randomuser.me/api/portraits/men/${n}.jpg`;
 };

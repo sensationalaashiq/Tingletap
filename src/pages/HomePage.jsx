@@ -31,7 +31,7 @@ import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
 import { Badges as badges } from '../data/Badges';
-import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import './HomePage.css';
 
@@ -425,9 +425,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
     const avatarGender = isBot ? 'male' : (gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male'));
     const hasCustomAvatar = !!message.photoURL;
     const getDefaultAvatar = (uid, gen) => {
-        if (gen === 'female') return `https://api.dicebear.com/8.x/adventurer/svg?seed=f${uid}&sex=female&backgroundColor=fecdd3,fbcfe8,f5d0fe,fde68a`;
-        if (gen === 'other')  return `https://api.dicebear.com/8.x/thumbs/svg?seed=o${uid}&backgroundColor=d1fae5,bfdbfe,ede9fe,fef3c7`;
-        return `https://api.dicebear.com/8.x/adventurer/svg?seed=m${uid}&sex=male&backgroundColor=bfdbfe,c7d2fe,ede9fe,dbeafe`;
+        return getDefaultAvatarUrl(uid, gen);
     };
     const avatarUrl = message.photoURL || getDefaultAvatar(uid, avatarGender);
     const isMyMessage = currentUser && currentUser.uid === uid;
@@ -891,7 +889,7 @@ const HomePage = ({ user }) => {
                 uid: g.uid,
                 displayName: g.displayName || g.username || auth.currentUser?.displayName || 'Guest',
                 email: null,
-                photoURL: g.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${g.uid}&sex=${dicebearSex(g.gender)}&backgroundColor=c0aede`,
+                photoURL: g.photoURL || `${getDefaultAvatarUrl(g.uid, g.gender)}`,
                 role: 'guest',
                 isGuest: true,
                 isAnonymous: true,
@@ -1033,7 +1031,7 @@ const HomePage = ({ user }) => {
         }
         
         const gender = user.gender?.toLowerCase() === 'female' ? 'female' : 'male';
-        return `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=${gender}&backgroundColor=c0aede&t=${timestamp}&pm=true`;
+        return `${getDefaultAvatarUrl(user.uid, user.gender)}`;
     }, []);
 
     // Helper function to update user avatars in real-time with comprehensive private message support
@@ -1043,7 +1041,7 @@ const HomePage = ({ user }) => {
         
         const newAvatarUrl = userData.photoURL ? 
             `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}&v=${randomSeed}&cb=${Date.now()}` :
-            `https://api.dicebear.com/8.x/adventurer/svg?seed=${userId}&sex=${(userData.gender || 'male').toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede&t=${avatarTimestamp}&cb=${Date.now()}`;
+            `${getDefaultAvatarUrl(userId, userData.gender)}`;
 
         // Comprehensive avatar selectors including all private message locations
         const avatarSelectors = [
@@ -1110,7 +1108,7 @@ const HomePage = ({ user }) => {
                     
                     avatar.onerror = () => {
                         // Fallback to default avatar with cache busting
-                        const fallbackUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${userId}&sex=${(userData.gender || 'male').toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede&t=${Date.now()}&fallback=true`;
+                        const fallbackUrl = `${getDefaultAvatarUrl(userId, userData.gender)}`;
                         if (avatar.src !== fallbackUrl) {
                             avatar.src = fallbackUrl;
                         }
@@ -1278,7 +1276,7 @@ const HomePage = ({ user }) => {
                 const avatarTimestamp = Date.now();
                 const newAvatarUrl = updatedUserData.photoURL ? 
                     `${updatedUserData.photoURL}${updatedUserData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}` :
-                    `https://api.dicebear.com/8.x/adventurer/svg?seed=${updatedUserData.uid}&sex=${(updatedUserData.gender || 'male').toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede&t=${avatarTimestamp}`;
+                    `${getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender)}`;
 
                 // Update all avatars for this user in chat messages
                 const messageAvatars = document.querySelectorAll(`[data-message-uid="${updatedUserData.uid}"] .message-avatar`);
@@ -1344,7 +1342,7 @@ const HomePage = ({ user }) => {
             uid: guestUser.uid,
             displayName: guestUser.username || guestUser.displayName || auth.currentUser?.displayName || 'Guest',
             email: null,
-            photoURL: guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestUser.uid}&sex=${dicebearSex(guestUser.gender)}&backgroundColor=c0aede`,
+            photoURL: guestUser.photoURL || `${getDefaultAvatarUrl(guestUser.uid, guestUser.gender)}`,
             role: 'guest',
             isGuest: true,
             isAnonymous: true,
@@ -1402,7 +1400,7 @@ const HomePage = ({ user }) => {
                         displayName: user.displayName
                             || (user.isAnonymous ? (localStorage.getItem('guestUser') ? (JSON.parse(localStorage.getItem('guestUser')).displayName || 'Guest') : 'Guest') : 'Anonymous'),
                         email: user.email,
-                        photoURL: user.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}`,
+                        photoURL: user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`,
                         role: user.isAnonymous ? 'guest' : 'user',
                         gender: 'male',
                         country: 'Unknown',
@@ -1515,7 +1513,7 @@ const HomePage = ({ user }) => {
                         const avatarTimestamp = Date.now();
                         const newAvatarUrl = userData.photoURL ? 
                             `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}&v=${Math.random().toString(36).substring(7)}` :
-                            `https://api.dicebear.com/8.x/adventurer/svg?seed=${userId}&sex=${(userData.gender || 'male').toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede&t=${avatarTimestamp}`;
+                            `${getDefaultAvatarUrl(userId, userData.gender)}`;
                         
                         // Dispatch global profile update event
                         window.dispatchEvent(new CustomEvent('userProfileUpdated', {
@@ -1590,7 +1588,7 @@ const HomePage = ({ user }) => {
                                     
                                     // Handle error with fallback
                                     avatar.onerror = () => {
-                                        const fallbackUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${userId}&sex=${(userData.gender || 'male').toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede&t=${Date.now()}&pmfallback=true`;
+                                        const fallbackUrl = `${getDefaultAvatarUrl(userId, userData.gender)}`;
                                         if (avatar.src !== fallbackUrl) {
                                             avatar.src = fallbackUrl;
                                         }
@@ -1838,7 +1836,7 @@ const HomePage = ({ user }) => {
                 gender: loggedInUserProfile.gender || 'male',
                 role: loggedInUserProfile.role || 'guest',
                 isGuest: isGuest || false,
-                photoURL: loggedInUserProfile.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${currentUid}&sex=${dicebearSex(loggedInUserProfile.gender)}&backgroundColor=c0aede`,
+                photoURL: loggedInUserProfile.photoURL || `${getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender)}`,
                 uid: currentUid
             };
             
@@ -2464,7 +2462,7 @@ const HomePage = ({ user }) => {
                     role: 'guest',
                     isGuest: true,
                     isOnline: guestStatus.state === 'online',
-                    photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${dicebearSex(guestStatus.gender)}&backgroundColor=c0aede`
+                    photoURL: `${getDefaultAvatarUrl(uid, guestStatus.gender)}`
                 });
             }
         });
@@ -2810,7 +2808,7 @@ const HomePage = ({ user }) => {
                 // Prioritize username over displayName for guests
                 displayName = guestUser.username || guestUser.displayName || 'Guest';
                 email = null;
-                photoURL = guestUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${dicebearSex(guestUser.gender)}&backgroundColor=c0aede`;
+                photoURL = guestUser.photoURL || `${getDefaultAvatarUrl(uid, guestUser.gender)}`;
                 gender = guestUser.gender || 'male';
                 role = 'guest';
                 
@@ -2868,7 +2866,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -2994,7 +2992,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -3116,7 +3114,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -3466,7 +3464,7 @@ const HomePage = ({ user }) => {
             const friendRequestData = {
                 senderId: auth.currentUser.uid,
                 senderName: loggedInUserProfile?.displayName || auth.currentUser.email?.split('@')[0] || 'Anonymous',
-                senderPhoto: `https://api.dicebear.com/8.x/adventurer/svg?seed=${auth.currentUser.uid}&gender=${loggedInUserProfile?.gender?.toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede`,
+                senderPhoto: `${getDefaultAvatarUrl(auth.currentUser.uid, loggedInUserProfile?.gender)}`,
                 receiverId: user.uid,
                 receiverName: user.displayName || 'Anonymous',
                 status: 'pending',
@@ -3847,7 +3845,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -5024,7 +5022,7 @@ const HomePage = ({ user }) => {
                 if (!userSnap.exists()) {
                     const defaultUserData = {
                         uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, 
+                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
                         isOnline: true, isBanned: false, isMuted: false
@@ -5130,7 +5128,7 @@ const HomePage = ({ user }) => {
                 if (!userSnap.exists()) {
                     const defaultUserData = {
                         uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, 
+                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
                         isOnline: true, isBanned: false, isMuted: false
@@ -5321,7 +5319,7 @@ const HomePage = ({ user }) => {
                 if (!userSnap.exists()) {
                     const defaultUserData = {
                         uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, 
+                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
                         isOnline: true, isBanned: false, isMuted: false
@@ -5548,7 +5546,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -5634,7 +5632,7 @@ const HomePage = ({ user }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -6041,7 +6039,7 @@ const HomePage = ({ user }) => {
                                             >
                                                 <div className="friend-request-avatar">
                                                     <img 
-                                                        src={request.senderPhoto || `https://api.dicebear.com/8.x/adventurer/svg?seed=${request.senderId}&gender=male&backgroundColor=c0aede`} 
+                                                        src={request.senderPhoto || `${getDefaultAvatarUrl(request.senderId, request.senderGender || 'male')}`} 
                                                         alt="avatar"
                                                     />
                                                 </div>
@@ -6137,7 +6135,7 @@ const HomePage = ({ user }) => {
                                                     <img 
                                                         src={(() => {
                                                             const cachedUser = window.userProfilesCache?.get(conversation.otherUserId);
-                                                            return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `https://api.dicebear.com/8.x/adventurer/svg?seed=${conversation.otherUserId}&gender=male&backgroundColor=c0aede`;
+                                                            return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `${getDefaultAvatarUrl(conversation.otherUserId, conversation.otherUserGender || 'male')}`;
                                                         })()} 
                                                         alt="avatar"
                                                         className="conversation-avatar"
@@ -6289,7 +6287,7 @@ const HomePage = ({ user }) => {
                                     {/* Avatar */}
                                     <div className={`ultra-avatar-container ${getGenderBorderClass(profileUser)}`}>
                                         <img 
-                                            src={profileUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${profileUser.uid}`}
+                                            src={profileUser.photoURL || `${getDefaultAvatarUrl(profileUser.uid, profileUser.gender)}`}
                                             alt="Profile"
                                             className="ultra-avatar"
                                         />
@@ -6441,7 +6439,7 @@ const HomePage = ({ user }) => {
                                                     <div key={friend.uid} className="ultra-friend-item">
                                                         <div className={`ultra-friend-avatar ${getGenderBorderClass(friend)}`}>
                                                             <img 
-                                                                src={friend.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${friend.uid}&sex=${friend.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
+                                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.uid, friend.gender)}`}
                                                                 alt="Friend avatar"
                                                             />
                                                             <div className={`ultra-friend-status ${onlineUsers.has(friend.uid) ? 'online' : 'offline'}`}></div>

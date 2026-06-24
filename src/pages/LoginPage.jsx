@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -450,7 +451,7 @@ const LoginPage = () => {
         uid: user.uid, email: null, displayName: guestFormData.displayName,
         age: parseInt(guestFormData.age), gender: guestFormData.gender,
         role: 'guest', isAnonymous: true, isGuest: true,
-        photoURL: `https://api.dicebear.com/8.x/adventurer/svg?seed=${guestFormData.displayName}&sex=${guestFormData.gender.toLowerCase()}`,
+        photoURL: `${getDefaultAvatarUrl(guestFormData.displayName, guestFormData.gender)}`,
         createdAt: new Date().toISOString(), lastLogin: new Date().toISOString()
       };
       await updateProfile(user, { displayName: guestFormData.displayName, photoURL: guestUserData.photoURL });

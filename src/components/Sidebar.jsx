@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
-import { getRoleDisplayLabel, getStoredGuestGender } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import AdminBanKickModal from './AdminBanKickModal';
 import EditProfileModal from './EditProfileModal';
 import ViewProfileModal from './ViewProfileModal';
@@ -362,8 +362,7 @@ const Sidebar = ({
     if (photoURL) {
       return photoURL;
     }
-    const g = gender?.toLowerCase() === 'female' ? 'female' : 'male';
-    return `https://api.dicebear.com/8.x/adventurer/svg?seed=${uid}&sex=${g}&backgroundColor=c0aede`;
+    return getDefaultAvatarUrl(uid, gender);
   };
 
   const getBorderClass = (user) => {

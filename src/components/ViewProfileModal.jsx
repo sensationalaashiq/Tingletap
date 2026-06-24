@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase/config';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import { Badges as badges } from '../data/Badges';
@@ -677,7 +678,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
     };
 
     const getAvatarUrl = () => {
-        if (!realTimeUser?.uid) return `https://api.dicebear.com/8.x/adventurer/svg?seed=default&backgroundColor=b6e3f4`;
+        if (!realTimeUser?.uid) return `${getDefaultAvatarUrl('default', 'male')}`;
         // Check cache for most recent user data
         const cachedUser = (window.userProfilesCache instanceof Map)
             ? window.userProfilesCache.get(realTimeUser.uid)
@@ -693,8 +694,8 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
 
         const gender = cachedUser?.gender || realTimeUser.gender;
         const defaultAvatar = gender?.toLowerCase() === 'female' 
-            ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${realTimeUser.uid}&sex=female&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-            : `https://api.dicebear.com/8.x/adventurer/svg?seed=${realTimeUser.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+            ? `${getDefaultAvatarUrl(realTimeUser.uid, "female")}`
+            : `${getDefaultAvatarUrl(realTimeUser.uid, "male")}`;
 
         return defaultAvatar;
     };
@@ -1484,7 +1485,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                                             title={friend.displayName}
                                         >
                                             <img 
-                                                src={friend.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${friend.uid || friend.id}&sex=${friend.gender?.toLowerCase() === 'female' ? 'female' : 'male'}`}
+                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.uid || friend.id, friend.gender)}`}
                                                 alt={friend.displayName}
                                                 className="friend-grid-pic"
                                             />

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
@@ -344,9 +345,9 @@ const LuxuryPrivateMessageWindow = ({
                 <div className="ultra-pm-avatar-wrapper">
                   <img
                     src={(() => {
-                      if (!privateMessageTarget?.uid) return `https://api.dicebear.com/8.x/adventurer/svg?seed=default&gender=male&backgroundColor=c0aede`;
+                      if (!privateMessageTarget?.uid) return `${getDefaultAvatarUrl('default', 'male')}`;
                       const cachedUser = window.userProfilesCache?.get(privateMessageTarget.uid);
-                      return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `https://api.dicebear.com/8.x/adventurer/svg?seed=${privateMessageTarget.uid}&gender=${privateMessageTarget?.gender?.toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede`;
+                      return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `${getDefaultAvatarUrl(privateMessageTarget.uid, privateMessageTarget?.gender)}`;
                     })()}
                     alt="avatar"
                     className="ultra-pm-avatar"
@@ -438,9 +439,9 @@ const LuxuryPrivateMessageWindow = ({
                                 return getPrivateMessageAvatarUrl(cachedUser);
                               }
                               if (msg.senderId === auth.currentUser?.uid) {
-                                return loggedInUserProfile?.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${msg.senderId}&gender=${loggedInUserProfile?.gender?.toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede`;
+                                return loggedInUserProfile?.photoURL || `${getDefaultAvatarUrl(msg.senderId, loggedInUserProfile?.gender)}`;
                               } else {
-                                return privateMessageTarget?.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${msg.senderId}&gender=${privateMessageTarget?.gender?.toLowerCase() === 'female' ? 'female' : 'male'}&backgroundColor=c0aede`;
+                                return privateMessageTarget?.photoURL || `${getDefaultAvatarUrl(msg.senderId, privateMessageTarget?.gender)}`;
                               }
                             })()}
                             alt="avatar"

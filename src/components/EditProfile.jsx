@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { auth, db } from '../firebase/config';
@@ -65,14 +66,14 @@ const EditProfile = ({ onClose, onSuccess }) => {
             languages: data.languages || ''
           });
           const defaultAvatar = data.gender === 'female' 
-            ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=female&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+            ? `${getDefaultAvatarUrl(user.uid, 'female')}`
             : data.gender === 'male'
-            ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-            : `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+            ? `${getDefaultAvatarUrl(user.uid, 'male')}`
+            : `${getDefaultAvatarUrl(user.uid, 'male')}`;
           setProfilePicPreview(data.photoURL || defaultAvatar);
         } else {
           setFormData(prev => ({ ...prev, displayName: user.displayName || '' }));
-          setProfilePicPreview(`https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`);
+          setProfilePicPreview(`${getDefaultAvatarUrl(user.uid, 'male')}`);
         }
         setLoading(false);
       });
@@ -366,10 +367,10 @@ const EditProfile = ({ onClose, onSuccess }) => {
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
       const finalPhotoURL = profilePic ? photoURL : (
         formData.gender === 'female' 
-          ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=female&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+          ? `${getDefaultAvatarUrl(user.uid, 'female')}`
           : formData.gender === 'male'
-          ? `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
-          : `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.uid}&sex=male&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`
+          ? `${getDefaultAvatarUrl(user.uid, 'male')}`
+          : `${getDefaultAvatarUrl(user.uid, 'male')}`
       );
 
       const getCurrentFontPreferences = () => {
