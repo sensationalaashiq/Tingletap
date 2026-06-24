@@ -898,7 +898,7 @@ const HomePage = ({ user }) => {
                 role: 'guest',
                 isGuest: true,
                 isAnonymous: true,
-                gender: g.gender || '',
+                gender: g.gender || localStorage.getItem('guestGender') || '',
                 age: g.age || 18,
                 badge: null,
                 isBanned: false,
@@ -1357,7 +1357,7 @@ const HomePage = ({ user }) => {
             role: 'guest',
             isGuest: true,
             isAnonymous: true,
-            gender: guestUser.gender || '',
+            gender: guestUser.gender || getStoredGuestGender() || '',
             age: guestUser.age || 18,
             country: 'Unknown',
             status: "I'm a guest here!",
@@ -1393,7 +1393,7 @@ const HomePage = ({ user }) => {
                     const d = snap.data();
                     const existingLocal = JSON.parse(localStorage.getItem('guestUser') || '{}');
                     const restored = { ...existingLocal, ...d, uid: auth.currentUser.uid };
-                    if (!restored.gender && existingLocal.gender) restored.gender = existingLocal.gender;
+                    if (!restored.gender) restored.gender = existingLocal.gender || getStoredGuestGender() || '';
                     localStorage.setItem('guestUser', JSON.stringify(restored));
                     setLoggedInUserProfile(buildGuestProfile(restored));
                 } else if (auth.currentUser.displayName) {
