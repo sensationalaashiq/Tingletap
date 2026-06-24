@@ -451,7 +451,7 @@ const LoginPage = () => {
         uid: user.uid, email: null, displayName: guestFormData.displayName,
         age: parseInt(guestFormData.age), gender: guestFormData.gender,
         role: 'guest', isAnonymous: true, isGuest: true,
-        photoURL: `${getDefaultAvatarUrl(guestFormData.displayName, guestFormData.gender)}`,
+        photoURL: getDefaultAvatarUrl(user.uid, guestFormData.gender),
         createdAt: new Date().toISOString(), lastLogin: new Date().toISOString()
       };
       await updateProfile(user, { displayName: guestFormData.displayName, photoURL: guestUserData.photoURL });

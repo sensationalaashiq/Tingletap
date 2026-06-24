@@ -1,2 +1,3 @@
 - [Admin panel last-seen & reports](admin-panel-fixes.md) — lastSeen must use status.lastChanged from RTDB (not lastLoginAt); reports tab reads `reports` Firestore collection
-- [Role display labels](role-labels.md) — shared getRoleDisplayLabel() in src/utils/roleUtils.js; owner→Godfather, admin→High Council, moderator→Guardian, user→Member, badge→badge name, guest+male→Purush, guest+female→Stree, guest+trans→Ardhnaari
+- [Role display labels](role-labels.md) — shared getRoleDisplayLabel() in src/utils/roleUtils.js; owner→Godfather, admin→High Council, moderator→Guardian, user→Member, badge→badge name, guest+male→Purush, guest+female→Stree, guest+trans→Navrang
+- [Guest avatar & gender consistency](guest-avatar-gender.md) — photoURL must use user.uid (not displayName) as hash seed; buildGuestProfile must regenerate uid-based URL if stored one is from randomuser.me

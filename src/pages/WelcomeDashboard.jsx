@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { Badges } from '../data/Badges';
-import { getRoleDisplayLabel } from '../utils/roleUtils';
+import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db, rtdb } from '../firebase/config';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, remove } from 'firebase/database';
@@ -600,14 +600,12 @@ const WelcomeDashboard = () => {
       }
       default: {
         if (userRole === 'guest') {
-          // Always read gender DIRECTLY from localStorage — never rely on state alone
-          let gender = '';
-          try {
-            const _gd = JSON.parse(localStorage.getItem('guestUser') || '{}');
-            gender = (_gd.gender || guestUser?.gender || '').toLowerCase();
-          } catch {
-            gender = (guestUser?.gender || '').toLowerCase();
-          }
+          // Read gender from multiple sources for robustness — localStorage is authoritative
+          const gender = (
+            getStoredGuestGender() ||
+            guestUser?.gender ||
+            ''
+          ).toLowerCase();
 
           // Check female FIRST to avoid wrong fallback
           if (gender === 'female') return {
@@ -1031,6 +1029,12 @@ const EditProfilePanel = ({ user, onDone }) => {
       }
       await updateProfile(user, { displayName: form.displayName, photoURL });
       await setDoc(doc(db, 'users', user.uid), { ...form, photoURL, updatedAt: new Date().toISOString() }, { merge: true });
+      if (localStorage.getItem('isGuest') === 'true') {
+        try {
+          const existing = JSON.parse(localStorage.getItem('guestUser') || '{}');
+          localStorage.setItem('guestUser', JSON.stringify({ ...existing, ...form, photoURL }));
+        } catch { }
+      }
       toast.success('Profile updated!');
       onDone();
     } catch (e) { toast.error(e.message); }

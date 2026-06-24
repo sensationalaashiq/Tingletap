@@ -884,12 +884,17 @@ const HomePage = ({ user }) => {
             const raw = localStorage.getItem('guestUser');
             if (!raw) return null;
             const g = JSON.parse(raw);
+            const correctPhotoURL = getDefaultAvatarUrl(g.uid, g.gender);
+            const storedPhoto = g.photoURL;
+            const photoURL = storedPhoto && !storedPhoto.includes('randomuser.me')
+                ? storedPhoto
+                : correctPhotoURL;
             return {
                 ...g,
                 uid: g.uid,
                 displayName: g.displayName || g.username || auth.currentUser?.displayName || 'Guest',
                 email: null,
-                photoURL: g.photoURL || `${getDefaultAvatarUrl(g.uid, g.gender)}`,
+                photoURL,
                 role: 'guest',
                 isGuest: true,
                 isAnonymous: true,
@@ -1337,12 +1342,18 @@ const HomePage = ({ user }) => {
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
         
-        const buildGuestProfile = (guestUser) => ({
+        const buildGuestProfile = (guestUser) => {
+            const correctPhotoURL = getDefaultAvatarUrl(guestUser.uid, guestUser.gender);
+            const storedPhoto = guestUser.photoURL;
+            const photoURL = storedPhoto && !storedPhoto.includes('randomuser.me')
+                ? storedPhoto
+                : correctPhotoURL;
+            return {
             ...guestUser,
             uid: guestUser.uid,
             displayName: guestUser.username || guestUser.displayName || auth.currentUser?.displayName || 'Guest',
             email: null,
-            photoURL: guestUser.photoURL || `${getDefaultAvatarUrl(guestUser.uid, guestUser.gender)}`,
+            photoURL,
             role: 'guest',
             isGuest: true,
             isAnonymous: true,
@@ -1362,7 +1373,8 @@ const HomePage = ({ user }) => {
             lastLogin: new Date().toISOString(),
             badge: null,
             selectedTheme: 'light'
-        });
+        };
+        };
 
         if (isGuest && guestData) {
             try {
