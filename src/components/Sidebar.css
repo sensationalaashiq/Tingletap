@@ -46,10 +46,10 @@
 .sb-profile-card {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 4px;
-  padding: 11px 12px 10px;
+  gap: 9px;
+  padding: 8px 10px 8px 10px;
   background: linear-gradient(160deg, #f5f3ff 0%, #ede9fe 60%, #e0d9ff 100%);
   border-bottom: 1.5px solid rgba(196,181,253,0.55);
   overflow: hidden;
@@ -63,14 +63,15 @@
 
 .sb-profile-glow { display: none; }
 
-/* close btn — top-right corner */
+/* close btn — right side, shrink to end of row */
 .sb-close-btn {
-  position: absolute;
-  top: 8px;
-  right: 9px;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  position: relative;
+  top: auto;
+  right: auto;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
   border: 1px solid rgba(139,92,246,0.28);
   background: rgba(255,255,255,0.7);
   display: flex;
@@ -79,11 +80,12 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 .sb-close-btn svg path { fill: #7c3aed; }
 .sb-close-btn:hover { background: rgba(237,233,254,0.95); border-color: #8b5cf6; }
 
-/* Avatar — centered 50px */
+/* Avatar — compact 38px horizontal layout */
 .sb-big-avatar-wrap {
   position: relative;
   background: none;
@@ -92,54 +94,54 @@
   padding: 0;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-bottom: 1px;
 }
 .sb-big-avatar {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid rgba(139,92,246,0.45);
-  box-shadow: 0 3px 12px rgba(139,92,246,0.22), 0 1px 4px rgba(0,0,0,0.08);
+  border: 2px solid rgba(139,92,246,0.45);
+  box-shadow: 0 2px 10px rgba(139,92,246,0.22), 0 1px 3px rgba(0,0,0,0.08);
   display: block;
   transition: border-color 0.18s, box-shadow 0.18s;
 }
-.sb-big-avatar-wrap:hover .sb-big-avatar { border-color: #8b5cf6; box-shadow: 0 4px 16px rgba(139,92,246,0.35); }
+.sb-big-avatar-wrap:hover .sb-big-avatar { border-color: #8b5cf6; box-shadow: 0 3px 14px rgba(139,92,246,0.35); }
 
 .sb-online-ring {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 11px;
-  height: 11px;
+  bottom: 1px;
+  right: 1px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #22c55e;
   border: 2px solid #ede9fe;
   box-shadow: 0 0 0 1px rgba(34,197,94,0.3);
 }
 
-/* Profile meta — centered column below avatar */
+/* Profile meta — left-aligned column next to avatar */
 .sb-profile-meta {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  width: 100%;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
   cursor: pointer;
 }
 
-/* Name row: username + badge + role pill all on same line */
-.sb-profile-name-row {
+/* Name + role pill on same row */
+.sb-name-role-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 5px;
-  max-width: 210px;
+  max-width: 100%;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .sb-profile-name {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #3b1f8c;
   display: flex;
@@ -154,9 +156,9 @@
 }
 
 .sb-role-pill {
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 20px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -168,19 +170,19 @@
 }
 
 .sb-profile-status {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
   color: #6d28d9;
   background: rgba(139,92,246,0.1);
   border-radius: 10px;
-  padding: 2px 9px 2px 7px;
-  max-width: 200px;
+  padding: 2px 8px 2px 6px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */

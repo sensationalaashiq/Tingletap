@@ -332,29 +332,31 @@ const Sidebar = ({
                 data-sb-trigger="true"
                 onClick={(e) => openDropdownAt(user.uid, e)}
               >
-                <div
-                  className="sb-profile-name"
-                  data-user-uid={user.uid}
-                  data-profile-uid={user.uid}
-                  data-role={loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user')}
-                  data-badge={loggedInUserProfile.badge ? 'true' : 'false'}
-                  data-gender={loggedInUserProfile.gender || 'male'}
-                  data-is-bot="false"
-                >
-                  {loggedInUserProfile.displayName || user.displayName || 'User'}
-                  {loggedInUserProfile.badge && badges[loggedInUserProfile.badge] && (
-                    <span className="inline-badge" title={badges[loggedInUserProfile.badge].name}
-                      dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
-                  )}
+                <div className="sb-name-role-row">
+                  <div
+                    className="sb-profile-name"
+                    data-user-uid={user.uid}
+                    data-profile-uid={user.uid}
+                    data-role={loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user')}
+                    data-badge={loggedInUserProfile.badge ? 'true' : 'false'}
+                    data-gender={loggedInUserProfile.gender || 'male'}
+                    data-is-bot="false"
+                  >
+                    {loggedInUserProfile.displayName || user.displayName || 'User'}
+                    {loggedInUserProfile.badge && badges[loggedInUserProfile.badge] && (
+                      <span className="inline-badge" title={badges[loggedInUserProfile.badge].name}
+                        dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
+                    )}
+                  </div>
+                  <span className="sb-role-pill" style={{ background: pill.bg, color: pill.color }}>
+                    {getRoleDisplayLabel({
+                      role: loggedInUserProfile.role,
+                      gender: loggedInUserProfile.gender || getStoredGuestGender(),
+                      isGuest: loggedInUserProfile.isGuest || loggedInUserProfile.role === 'guest',
+                      badge: loggedInUserProfile.badge
+                    })}
+                  </span>
                 </div>
-                <span className="sb-role-pill" style={{ background: pill.bg, color: pill.color }}>
-                  {getRoleDisplayLabel({
-                    role: loggedInUserProfile.role,
-                    gender: loggedInUserProfile.gender || getStoredGuestGender(),
-                    isGuest: loggedInUserProfile.isGuest || loggedInUserProfile.role === 'guest',
-                    badge: loggedInUserProfile.badge
-                  })}
-                </span>
                 {loggedInUserProfile.status && (
                   <div className="sb-profile-status" style={loggedInUserProfile.statusStyles?.gradientEnabled ? {
                     color: 'transparent',
@@ -362,6 +364,11 @@ const Sidebar = ({
                     WebkitBackgroundClip: 'text',
                     backgroundClip: 'text',
                   } : (loggedInUserProfile.statusStyles?.textColor ? { color: loggedInUserProfile.statusStyles.textColor } : {})}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.82}}>
+                      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="currentColor"/>
+                      <circle cx="5" cy="5" r="1.2" fill="currentColor" opacity="0.6"/>
+                      <circle cx="19" cy="18" r="1" fill="currentColor" opacity="0.5"/>
+                    </svg>
                     {loggedInUserProfile.status}
                   </div>
                 )}

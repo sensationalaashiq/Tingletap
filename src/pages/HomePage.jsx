@@ -6553,28 +6553,53 @@ const HomePage = ({ user }) => {
             {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
             {isAttachmentDropdownOpen && (
                 <div style={{
-                    position: 'fixed', bottom: '56px', left: '10px', right: '10px',
-                    zIndex: 2100, background: 'rgba(255,252,255,0.98)',
-                    border: '1px solid rgba(196,181,253,0.4)', borderRadius: '16px',
-                    boxShadow: '0 -4px 24px rgba(109,40,217,0.14)',
-                    display: 'flex', flexDirection: 'row', gap: '8px',
-                    padding: '10px 14px', backdropFilter: 'blur(18px)'
+                    position: 'fixed', bottom: '52px', left: '8px', right: '8px',
+                    zIndex: 2100,
+                    background: isDarkMode ? 'rgba(14,7,35,0.97)' : 'rgba(250,248,255,0.98)',
+                    border: isDarkMode ? '1px solid rgba(139,92,246,0.25)' : '1px solid rgba(196,181,253,0.5)',
+                    borderRadius: '18px',
+                    boxShadow: isDarkMode
+                        ? '0 -6px 32px rgba(109,40,217,0.28), 0 2px 12px rgba(0,0,0,0.4)'
+                        : '0 -6px 32px rgba(109,40,217,0.16), 0 2px 12px rgba(139,92,246,0.08)',
+                    display: 'flex', flexDirection: 'row', gap: '10px',
+                    padding: '12px 16px', backdropFilter: 'blur(24px)',
+                    alignItems: 'stretch',
                 }}>
-                    <button className="attachment-option-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        <span>Image</span>
+                    <button className="hp-attach-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#667eea,#764ba2)'}}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="18" height="18" rx="3.5" stroke="white" strokeWidth="1.6"/>
+                                <circle cx="8.5" cy="8.5" r="1.8" fill="white"/>
+                                <path d="M21 15.5l-5.5-5.5L5 21" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">Photo</span>
                     </button>
-                    <button className="attachment-option-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        <span>Audio</span>
+                    <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#f093fb,#f5576c)'}}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">Audio</span>
                     </button>
-                    <button className="attachment-option-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="1.8"/><path d="M7 12h5m0 0v-3m0 3v3M17 9v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                        <span>GIF</span>
+                    <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)'}}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                <rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/>
+                                <path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">GIF</span>
                     </button>
-                    <button className="attachment-option-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                        <span>Style</span>
+                    <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)'}}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">Style</span>
                     </button>
                 </div>
             )}
@@ -6609,6 +6634,28 @@ const HomePage = ({ user }) => {
                     >
                         <AttachmentIconSVG />
                     </button>
+                    {/* Whisper Chip */}
+                    {whisperTarget && (
+                        <div className="whisper-chip" title={`Whispering to ${whisperTarget.displayName}`}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span className="whisper-chip-label">
+                                <span className="whisper-chip-to">To</span>
+                                <span className="whisper-chip-name">{whisperTarget.displayName}</span>
+                            </span>
+                            <button
+                                type="button"
+                                className="whisper-chip-close"
+                                onClick={() => setWhisperTarget(null)}
+                                title="Cancel whisper"
+                            >
+                                <svg width="9" height="9" viewBox="0 0 14 14" fill="none">
+                                    <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                     <input
                         type="text"
                         className="premium-input-field"
@@ -6618,7 +6665,7 @@ const HomePage = ({ user }) => {
                             fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
                             caretColor: '#7c3aed', padding: '0 4px', margin: 0, minWidth: 0
                         }}
-                        placeholder="Type a message..."
+                        placeholder={whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...'}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
