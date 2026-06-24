@@ -381,7 +381,12 @@ const readGuestFromStorage = () => {
   try {
     if (localStorage.getItem('isGuest') !== 'true') return null;
     const raw = localStorage.getItem('guestUser');
-    return raw ? JSON.parse(raw) : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    // Always augment with the dedicated guestGender key — it is set synchronously
+    // before signInAnonymously, so it is the most reliable source of truth.
+    const dedicatedGender = localStorage.getItem('guestGender');
+    if (parsed && dedicatedGender) parsed.gender = dedicatedGender;
+    return parsed;
   } catch { return null; }
 };
 
@@ -463,6 +468,13 @@ const WelcomeDashboard = () => {
           try { parsed = JSON.parse(gd); } catch { /* ignore */ }
         }
 
+        // Always apply dedicated guestGender key — it is the most reliable source because
+        // it is written synchronously before signInAnonymously in LoginPage.
+        const dedicatedGender = localStorage.getItem('guestGender');
+        if (dedicatedGender) {
+          parsed = parsed ? { ...parsed, gender: dedicatedGender } : { gender: dedicatedGender, uid: cu.uid };
+        }
+
         // Fallback: fetch from Firestore if localStorage is missing or incomplete
         if (!parsed || !parsed.displayName || !parsed.gender) {
           try {
@@ -471,7 +483,9 @@ const WelcomeDashboard = () => {
               const d = snap.data();
               const existingLocal = JSON.parse(localStorage.getItem('guestUser') || '{}');
               parsed = { ...existingLocal, ...d, uid: cu.uid };
-              if (!parsed.gender && existingLocal.gender) parsed.gender = existingLocal.gender;
+              // Always prefer dedicated guestGender key over Firestore/localStorage
+              if (dedicatedGender) parsed.gender = dedicatedGender;
+              else if (!parsed.gender && existingLocal.gender) parsed.gender = existingLocal.gender;
               // Restore localStorage for future renders
               localStorage.setItem('guestUser', JSON.stringify(parsed));
               localStorage.setItem('isGuest', 'true');

@@ -656,7 +656,9 @@ function App() {
         if (!hasActiveGuestSession) {
           localStorage.removeItem('guestUser');
           localStorage.removeItem('isGuest');
-          localStorage.removeItem('guestGender');
+          // NOTE: Do NOT remove guestGender here — it may be set synchronously
+          // at the start of a new guest login before signInAnonymously resolves.
+          // guestGender is only cleared by explicit logout handlers.
         }
 
         // Preserve ALL font preferences across logout/login - NEVER reset them

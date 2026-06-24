@@ -443,6 +443,9 @@ const LoginPage = () => {
     if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) { setError('Age must be between 18 and 100'); return; }
     if (!guestFormData.gender) { setError('Please select your gender'); return; }
     if (!captchaToken) { setError('Please complete the captcha verification'); return; }
+    // Store gender IMMEDIATELY — synchronously before any Firebase calls.
+    // This survives any auth-state-change race conditions during signInAnonymously.
+    localStorage.setItem('guestGender', guestFormData.gender);
     setLoading(true);
     try {
       const userCredential = await signInAnonymously(auth);
@@ -461,6 +464,8 @@ const LoginPage = () => {
       localStorage.setItem('guestGender', guestFormData.gender);
       navigate('/welcome');
     } catch (err) {
+      // On failure, clean up the pre-set gender key so it doesn't leak into a future session
+      localStorage.removeItem('guestGender');
       setError('Guest login failed. Please try again.');
     } finally {
       setLoading(false);
