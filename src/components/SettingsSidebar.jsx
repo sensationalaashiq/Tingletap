@@ -1073,8 +1073,8 @@ const SettingsSidebar = ({
                                                     }}
                                                     title="Send Message"
                                                 >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12">
-                                                        <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                                                     </svg>
                                                 </button>
                                                 <button 
@@ -1082,8 +1082,10 @@ const SettingsSidebar = ({
                                                     onClick={() => handleRemoveFriend(friend)}
                                                     title="Remove Friend"
                                                 >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12">
-                                                        <path d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z"/>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                        <circle cx="8.5" cy="7" r="4"/>
+                                                        <line x1="23" y1="11" x2="17" y2="11"/>
                                                     </svg>
                                                 </button>
                                                 <button 
@@ -1091,8 +1093,9 @@ const SettingsSidebar = ({
                                                     onClick={() => handleBlockFriend(friend)}
                                                     title="Block User"
                                                 >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12">
-                                                        <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M12,19C8.13,19 5,15.87 5,12C5,8.13 8.13,5 12,5C15.87,5 19,8.13 19,12C19,15.87 15.87,19 12,19M7.5,12C7.5,15.04 9.96,17.5 13,17.5V6.5C9.96,6.5 7.5,8.96 7.5,12Z"/>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <circle cx="12" cy="12" r="10"/>
+                                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                                                     </svg>
                                                 </button>
                                             </div>
@@ -1100,8 +1103,11 @@ const SettingsSidebar = ({
                                     ))
                                 ) : (
                                     <div className="empty-friends">
-                                        <svg viewBox="0 0 24 24" width="48" height="48" fill="#9ca3af">
-                                            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,6H4V4H6V6M10,6H8V4H10V6M6,10H4V8H6V10M10,10H8V8H10V10M6,14H4V12H6V14M10,14H8V12H10V14Z"/>
+                                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#c4b5fd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                                         </svg>
                                         <p>No friends yet</p>
                                         <small>Add friends to see them here</small>
@@ -1131,8 +1137,10 @@ const SettingsSidebar = ({
                                         onClose();
                                     }}
                                 >
-                                    <svg viewBox="0 0 24 24" width="12" height="12">
-                                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.41,10.09L6,11.5L11,16.5Z"/>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="8.5" cy="7" r="4"/>
+                                        <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
                                     </svg>
                                     View Requests
                                 </button>
@@ -1483,8 +1491,9 @@ const SettingsSidebar = ({
                         {/* Status Management Section */}
                         <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6Z"/>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
                                 </svg>
                                 STATUS MANAGEMENT
                             </h4>
@@ -1511,8 +1520,9 @@ const SettingsSidebar = ({
                                             }}
                                             title="Change Status"
                                         >
-                                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6Z"/>
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                             </svg>
                                             <span>CHANGE STATUS</span>
                                         </button>
@@ -1559,8 +1569,9 @@ const SettingsSidebar = ({
                                         }}
                                         title="Clear Status"
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                                         </svg>
                                         <span>CLEAR STATUS</span>
                                     </button>
@@ -1571,8 +1582,10 @@ const SettingsSidebar = ({
                         {/* Cover Media Section */}
                         <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
                                 </svg>
                                 COVER MEDIA
                             </h4>
@@ -1678,8 +1691,10 @@ const SettingsSidebar = ({
                                                 }}
                                                 title="Upload Cover Photo"
                                             >
-                                                <svg viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M16,10V12H13V16H11V12H8V10H11V7H13V10H16Z"/>
+                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                                    <polyline points="21 15 16 10 5 21"/>
                                                 </svg>
                                                 <span>UPLOAD COVER PHOTO</span>
                                             </button>
@@ -2042,10 +2057,10 @@ const SettingsSidebar = ({
                         {/* Navigation Section */}
                         <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,2L13.09,8.26L22,9L14.74,14.74L16.18,22.91L12,18.18L7.82,22.91L9.26,14.74L2,9L10.91,8.26L12,2Z"/>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
                                 </svg>
-                               NAVIGATION
+                                NAVIGATION
                             </h4>
                             <div className="modern-button-grid">
                                 <button 
@@ -2060,8 +2075,9 @@ const SettingsSidebar = ({
                                     }}
                                     title="Edit Profile"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                     </svg>
                                     <span>EDIT PROFILE</span>
                                 </button>
@@ -2077,8 +2093,11 @@ const SettingsSidebar = ({
                                     }}
                                     title="Change Username"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2C14.75,2 17.25,3 19.25,5C21.25,7 22.25,9.5 22.25,12C22.25,13.92 21.75,15.7 20.75,17.33L19.33,15.92C19.77,14.67 20,13.36 20,12C20,10 19.27,8.27 17.82,6.82C16.37,5.37 14.63,4.67 12.62,4.67C10.5,4.67 8.73,5.4 7.27,6.87C5.8,8.33 5.06,10.09 5.06,12.14C5.06,14.08 5.74,15.78 7.1,17.24C8.45,18.7 10.17,19.43 12.25,19.43H13V21.93H12C9.25,21.93 6.89,20.93 4.92,18.93C2.97,16.93 2,14.58 2,11.93C2,9.18 3,6.75 5,4.75C7,2.75 9.37,1.75 12,2M22,17V19H19V22H17V19H14V17H17V14H19V17H22Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" opacity="0"/>
+                                        <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
                                     </svg>
                                     <span>CHANGE USERNAME</span>
                                 </button>
@@ -2097,8 +2116,9 @@ const SettingsSidebar = ({
                                     }}
                                     title="Rooms"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                        <polyline points="9 22 9 12 15 12 15 22"/>
                                     </svg>
                                     <span>ROOMS</span>
                                 </button>
@@ -2117,8 +2137,9 @@ const SettingsSidebar = ({
                                     }}
                                     title="Dashboard"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                                     </svg>
                                     <span>DASHBOARD</span>
                                 </button>
@@ -2154,10 +2175,11 @@ const SettingsSidebar = ({
                                     }}
                                     title="View Profile"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
                                     </svg>
-                                    <span>VIEW PROFILE</span>
+                                    <span>VIEW MY PROFILE</span>
                                 </button>
 
                                 {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
@@ -2175,8 +2197,8 @@ const SettingsSidebar = ({
                                         }}
                                         title="Admin Panel"
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                         </svg>
                                         <span>ADMIN PANEL</span>
                                     </button>
@@ -2187,8 +2209,8 @@ const SettingsSidebar = ({
                         {/* Quick Settings Section */}
                         <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z"/>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                                 </svg>
                                 QUICK SETTINGS
                             </h4>
@@ -2201,11 +2223,17 @@ const SettingsSidebar = ({
                                     }}
                                     title={settings.soundEnabled ? 'Mute Sounds' : 'Enable Sounds'}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         {settings.soundEnabled ? (
-                                            <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
+                                            <>
+                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                            </>
                                         ) : (
-                                            <path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z"/>
+                                            <>
+                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                                <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                                            </>
                                         )}
                                     </svg>
                                     <span>{settings.soundEnabled ? 'SOUND ON' : 'SOUND OFF'}</span>
@@ -2219,8 +2247,13 @@ const SettingsSidebar = ({
                                     }}
                                     title={settings.compactMode ? 'Normal View' : 'Compact View'}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M3,3H21V9H19V5H5V19H19V15H21V21H3V3M16,11H21L18,8L16,11M21,13H16L18,16L21,13Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6"/>
+                                        <line x1="8" y1="12" x2="21" y2="12"/>
+                                        <line x1="8" y1="18" x2="21" y2="18"/>
+                                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                        <line x1="3" y1="18" x2="3.01" y2="18"/>
                                     </svg>
                                     <span>{settings.compactMode ? 'NORMAL' : 'COMPACT'}</span>
                                 </button>
@@ -2233,8 +2266,8 @@ const SettingsSidebar = ({
                                     }}
                                     title={settings.autoScrollChat ? 'Disable Auto Scroll' : 'Enable Auto Scroll'}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 2L12 22M2 12l10 10 10-10"/>
                                     </svg>
                                     <span>{settings.autoScrollChat ? 'AUTO SCROLL ON' : 'AUTO SCROLL OFF'}</span>
                                 </button>
@@ -2247,8 +2280,9 @@ const SettingsSidebar = ({
                                     }}
                                     title={settings.showTimestamps ? 'Hide Timestamps' : 'Show Timestamps'}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
                                     </svg>
                                     <span>{settings.showTimestamps ? 'TIME ON' : 'TIME OFF'}</span>
                                 </button>
@@ -2258,8 +2292,9 @@ const SettingsSidebar = ({
                         {/* Account Management Section */}
                         <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
                                 </svg>
                                 ACCOUNT MANAGEMENT
                             </h4>
@@ -2268,8 +2303,9 @@ const SettingsSidebar = ({
                                     className="modern-management-btn warning"
                                     onClick={handleClearAllData}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z"/>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                        <path d="M3 3v5h5"/>
                                     </svg>
                                     <span>RESET SETTINGS</span>
                                 </button>
@@ -2278,8 +2314,10 @@ const SettingsSidebar = ({
                                     className="modern-management-btn danger"
                                     onClick={handleLogout}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                        <polyline points="16 17 21 12 16 7"/>
+                                        <line x1="21" y1="12" x2="9" y2="12"/>
                                     </svg>
                                     <span>LOGOUT</span>
                                 </button>
@@ -2290,8 +2328,9 @@ const SettingsSidebar = ({
                         {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role)) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                        <path d="M12,2L13,7H20L15,10L17,15L12,12L7,15L9,10L4,7H11L12,2M12,6L10.5,9.5L7,9.5L9.75,11.5L8.5,15L12,13L15.5,15L14.25,11.5L17,9.5L13.5,9.5L12,6Z"/>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                                     </svg>
                                     WARNING & ANNOUNCEMENTS
                                 </h4>
@@ -2304,8 +2343,9 @@ const SettingsSidebar = ({
                                         }}
                                         title="Create Warning or Announcement"
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                                         </svg>
                                         <span>CREATE ALERT</span>
                                     </button>
@@ -2318,8 +2358,13 @@ const SettingsSidebar = ({
                                         }}
                                         title="Manage Warnings and Announcements"
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19M5,7V19H19V7H5M7,9H9V11H7V9M11,9H17V11H11V9M7,13H9V15H7V13M11,13H17V15H11V13M7,17H9V19H7V17M11,17H17V19H11V17Z"/>
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="8" y1="6" x2="21" y2="6"/>
+                                            <line x1="8" y1="12" x2="21" y2="12"/>
+                                            <line x1="8" y1="18" x2="21" y2="18"/>
+                                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                            <line x1="3" y1="18" x2="3.01" y2="18"/>
                                         </svg>
                                         <span>MANAGE ALERTS</span>
                                     </button>
@@ -2331,8 +2376,8 @@ const SettingsSidebar = ({
                         {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role)) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title admin-title">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                     </svg>
                                     ADMIN CONTROLS
                                 </h4>
@@ -2346,8 +2391,9 @@ const SettingsSidebar = ({
                                             }}
                                             title="Admin Panel"
                                         >
-                                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                                <polyline points="9 12 11 14 15 10"/>
                                             </svg>
                                             <span>ADMIN PANEL</span>
                                         </button>
@@ -2363,8 +2409,10 @@ const SettingsSidebar = ({
                                             }
                                         }}
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                            <path d="M10 11v6M14 11v6"/>
                                         </svg>
                                         <span>CLEAR CHAT</span>
                                     </button>
@@ -2379,8 +2427,9 @@ const SettingsSidebar = ({
                                             }
                                         }}
                                     >
-                                        <svg viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="3"/>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
                                         </svg>
                                         <span>ADVANCED ADMIN</span>
                                     </button>
