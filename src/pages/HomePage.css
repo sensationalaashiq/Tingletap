@@ -11159,86 +11159,82 @@ body .dark-mode .homepage-container .premium-input-field {
 }
 
 /* Attachment button — 46×46 transparent circle */
+/* Attachment button — no background, just icon */
 body .homepage-container .premium-footer-btn.attachment-btn,
 body .homepage-container .attachment-btn {
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  max-width: 46px !important;
-  min-height: 46px !important;
-  max-height: 46px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   background: transparent !important;
   border: none !important;
-  border-radius: 50% !important;
+  border-radius: 8px !important;
   padding: 0 !important;
   cursor: pointer !important;
   box-shadow: none !important;
-  transition: background 0.18s ease, transform 0.18s ease !important;
+  transition: opacity 0.18s ease, transform 0.18s ease !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn:hover,
 body .homepage-container .attachment-btn:hover {
-  background: rgba(167, 139, 250, 0.15) !important;
+  background: transparent !important;
+  opacity: 0.75 !important;
   transform: scale(1.08) !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn svg,
 body .homepage-container .attachment-btn svg {
-  width: 23px !important;
-  height: 23px !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
-/* Send button — 46×46 vivid violet circle */
+/* Send button — no background, just icon */
 body .homepage-container .premium-footer-btn.send-btn,
 body .homepage-container .send-btn {
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  max-width: 46px !important;
-  min-height: 46px !important;
-  max-height: 46px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+  background: transparent !important;
   border: none !important;
-  border-radius: 50% !important;
+  border-radius: 8px !important;
   padding: 0 !important;
   cursor: pointer !important;
-  box-shadow: 0 3px 14px rgba(109, 40, 217, 0.45) !important;
-  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s !important;
+  box-shadow: none !important;
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn:hover:not(:disabled),
 body .homepage-container .send-btn:hover:not(:disabled) {
-  transform: scale(1.1) !important;
-  box-shadow: 0 5px 22px rgba(109, 40, 217, 0.6) !important;
+  background: transparent !important;
+  transform: scale(1.12) !important;
+  box-shadow: none !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn:disabled,
 body .homepage-container .send-btn:disabled {
-  background: linear-gradient(135deg, #c4b5fd 0%, #a5b4fc 100%) !important;
+  background: transparent !important;
   box-shadow: none !important;
-  opacity: 0.55 !important;
+  opacity: 0.4 !important;
   transform: none !important;
   cursor: not-allowed !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn svg,
 body .homepage-container .send-btn svg {
-  width: 21px !important;
-  height: 21px !important;
-  color: #ffffff !important;
-  fill: #ffffff !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 body .homepage-container .send-btn svg path {
-  fill: #ffffff !important;
   stroke: none !important;
 }
 
