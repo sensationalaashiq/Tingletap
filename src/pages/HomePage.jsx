@@ -36,28 +36,13 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sendGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#c084fc"/>
-        <stop offset="50%" stopColor="#818cf8"/>
-        <stop offset="100%" stopColor="#38bdf8"/>
-      </linearGradient>
-      <linearGradient id="sendGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#e879f9"/>
-        <stop offset="100%" stopColor="#6366f1"/>
-      </linearGradient>
-      <filter id="sendGlow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="0.6" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <g filter="url(#sendGlow)" transform="rotate(-40, 12, 12)">
-      <path d="M21 3L3 10.5L10 13.5L13.5 21L21 3Z"
-        fill="url(#sendGrad2)" stroke="url(#sendGrad)" strokeWidth="1.2"
-        strokeLinejoin="round"/>
-      <path d="M10 13.5L14.5 9" stroke="white" strokeWidth="1.2"
-        strokeLinecap="round" opacity="0.7"/>
+  <svg id="Capa_1" enableBackground="new 0 0 512.019 512.019" viewBox="0 0 512.019 512.019" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <g>
+      <path d="m242.532 355.703 168.472 85.314c.021-.147 59.984-430.889 60-431l-12.56 17.699z" fill="#e2c4ff"/>
+      <path d="m41.003 231.017 150 80 267.44-283.301 12.56-17.699c-49.879 25.251-143.984 73.988-430 221z" fill="#e2c4ff"/>
+      <g><g>
+        <path d="m466.431 1.123-430 221c-7.049 3.622-7.27 13.644-.389 17.577l134.961 77.121v185.195c0 8.386 9.643 12.936 16.135 7.896l132.857-103.221 86.535 43.27c6.115 3.055 13.434-.795 14.377-7.566l60-431c1.114-8.003-7.275-13.974-14.476-10.272zm-257.019 466.162 46.09-92.838 44.662 22.331zm193.607-41.44-147.544-73.771c-4.915-2.461-10.954-.487-13.429 4.498l-51.043 102.815v-148.37c0-3.588-1.924-6.901-5.039-8.682l-123.99-70.852 396.469-203.767z" fill="#020288"/>
+      </g></g>
     </g>
   </svg>
 );
