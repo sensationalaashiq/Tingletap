@@ -470,217 +470,171 @@ const StylishFontPopup = ({
   const fontFamilies = getFontFamilies();
 
   return (
-    <>
-      <div 
-        className="stylish-font-popup-backdrop" 
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 10000
-        }}
-      />
-      <div className="stylish-font-popup">
+    <div
+      className="sfp-overlay"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.62)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 100000,
+      }}
+    >
+      <div
+        className="stylish-font-popup"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
         <div className="font-popup-header">
           <div className="popup-title">
-            <MessageIcon />
-            <span>Message Text Styling</span>
+            <svg className="title-icon" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" style={{ width:32, height:32, padding:6, background:'rgba(99,102,241,.1)', borderRadius:'50%', border:'1.5px solid rgba(99,102,241,.22)', flexShrink:0 }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <path d="M13 8H7M17 12H7"/>
+            </svg>
+            <span>Message Style</span>
           </div>
-          <button className="close-btn" onClick={onClose}>
-            <CloseIcon />
+          <button
+            onClick={e => { e.stopPropagation(); onClose(); }}
+            style={{ background: '#fff', border: '1.5px solid #e5e7eb', width:30, height:30, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, color:'#6b7280' }}
+          >
+            <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
+              <path d="M15 5L5 15M5 5l10 10" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </button>
         </div>
 
+        {/* Body */}
         <div className="font-popup-body">
-          {/* Color Section */}
+
+          {/* Color */}
           <div className="font-section">
             <label className="section-label">
-              <ColorPaletteIcon />
-              Text Color ({colorPalette.length} Colors Available)
+              <svg className="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              Text Color
+              <span style={{ marginLeft:'auto', fontSize:'.68rem', color:'#9ca3af', fontWeight:500, textTransform:'none', letterSpacing:0 }}>{fontSettings.fontColor}</span>
             </label>
             <div className="color-grid">
               {colorPalette.map((color, index) => (
                 <button
                   key={`color-${index}-${color}`}
                   className={`color-swatch ${fontSettings.fontColor === color ? 'selected' : ''}`}
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: color, background: color, border: fontSettings.fontColor === color ? '2.5px solid #6366f1' : '2px solid transparent' }}
                   onClick={() => handleColorSelect(color)}
                   title={color}
                 />
               ))}
             </div>
-            <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-              Selected: {fontSettings.fontColor}
-            </div>
           </div>
 
-          {/* Font Family Section */}
+          {/* Font Family */}
           {canAccessFonts() && (
             <div className="font-section">
               <label className="section-label">
-                <FontIcon />
-                Font Family ({fontFamilies.length} Options)
+                <svg className="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4,7 4,4 20,4 20,7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                Font
               </label>
-              <select
-                className="font-select"
-                value={fontSettings.fontFamily}
-                onChange={handleFontFamilyChange}
-              >
+              <select className="font-select" value={fontSettings.fontFamily} onChange={handleFontFamilyChange}>
                 {fontFamilies.map((font, index) => (
-                  <option key={`font-${index}-${font.value}`} value={font.value}>
-                    {font.name}
-                  </option>
+                  <option key={`font-${index}-${font.value}`} value={font.value}>{font.name}</option>
                 ))}
               </select>
-              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-                Selected: {fontFamilies.find(f => f.value === fontSettings.fontFamily)?.name || 'Default'}
-              </div>
             </div>
           )}
 
-          {/* Font Size Section */}
+          {/* Font Size */}
           {canAccessFonts() && (
             <div className="font-section">
               <label className="section-label">
-                <SizeIcon />
-                Font Size
+                <svg className="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+                Size
               </label>
               <div className="size-controls">
-                <input
-                  type="range"
-                  min="10"
-                  max="32"
-                  value={parseInt(fontSettings.fontSize)}
-                  onChange={handleFontSizeChange}
-                  className="size-slider"
-                />
+                <input type="range" min="10" max="32" value={parseInt(fontSettings.fontSize)} onChange={handleFontSizeChange} className="size-slider"/>
                 <span className="size-value">{fontSettings.fontSize}</span>
               </div>
             </div>
           )}
 
-          {/* Style Options */}
+          {/* Style toggles */}
           {canAccessStyles() && (
             <div className="font-section">
               <label className="section-label">
-                <StyleIcon />
-                Text Styles
+                <svg className="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Style
               </label>
               <div className="style-toggles">
-                <button
-                  className={`style-toggle ${fontSettings.isBold ? 'active' : ''}`}
-                  onClick={() => handleStyleToggle('isBold')}
-                  title="Bold"
-                >
-                  <strong>B</strong>
-                </button>
-                <button
-                  className={`style-toggle ${fontSettings.isItalic ? 'active' : ''}`}
-                  onClick={() => handleStyleToggle('isItalic')}
-                  title="Italic"
-                >
-                  <em>I</em>
-                </button>
-                <button
-                  className={`style-toggle ${fontSettings.isUnderline ? 'active' : ''}`}
-                  onClick={() => handleStyleToggle('isUnderline')}
-                  title="Underline"
-                >
-                  <u>U</u>
-                </button>
-                <button
-                  className={`style-toggle ${fontSettings.isStrikethrough ? 'active' : ''}`}
-                  onClick={() => handleStyleToggle('isStrikethrough')}
-                  title="Strikethrough"
-                >
-                  <s>S</s>
-                </button>
+                {[
+                  { key: 'isBold', label: 'B', style: { fontWeight: 'bold' } },
+                  { key: 'isItalic', label: 'I', style: { fontStyle: 'italic' } },
+                  { key: 'isUnderline', label: 'U', style: { textDecoration: 'underline' } },
+                  { key: 'isStrikethrough', label: 'S', style: { textDecoration: 'line-through' } },
+                ].map(({ key, label, style }) => (
+                  <button
+                    key={key}
+                    className={`style-toggle ${fontSettings[key] ? 'active' : ''}`}
+                    onClick={() => handleStyleToggle(key)}
+                    style={{
+                      background: fontSettings[key] ? 'rgba(99,102,241,.12)' : '#fff',
+                      border: `1.5px solid ${fontSettings[key] ? '#6366f1' : '#e5e7eb'}`,
+                      color: fontSettings[key] ? '#4f46e5' : '#9ca3af',
+                      ...style,
+                    }}
+                  >{label}</button>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Preview Section */}
+          {/* Preview */}
           <div className="font-section">
             <label className="section-label">
-              <PreviewIcon />
-              Live Preview
+              <svg className="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview
             </label>
-            <div
-              className="font-preview"
-              style={{
-                fontSize: fontSettings.fontSize,
-                color: fontSettings.fontColor,
-                fontFamily: fontSettings.fontFamily,
-                fontWeight: fontSettings.isBold ? 'bold' : 'normal',
-                fontStyle: fontSettings.isItalic ? 'italic' : 'normal',
-                textDecoration: `${fontSettings.isUnderline ? 'underline ' : ''}${fontSettings.isStrikethrough ? 'line-through' : ''}`.trim() || 'none'
-              }}
-            >
-              ✨ This is how your messages will appear to everyone! 💫
-              <br />
-              <small style={{ opacity: 0.7 }}>Your styling will be visible to all users in the chat.</small>
+            <div className="font-preview" style={{
+              fontSize: fontSettings.fontSize,
+              color: fontSettings.fontColor,
+              fontFamily: fontSettings.fontFamily,
+              fontWeight: fontSettings.isBold ? 'bold' : 'normal',
+              fontStyle: fontSettings.isItalic ? 'italic' : 'normal',
+              textDecoration: [fontSettings.isUnderline && 'underline', fontSettings.isStrikethrough && 'line-through'].filter(Boolean).join(' ') || 'none'
+            }}>
+              Your message will look like this in chat!
             </div>
           </div>
         </div>
 
-        <div 
-          className="font-popup-footer"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '16px',
-            padding: '16px 20px',
-            background: 'transparent',
-            borderTop: '2px solid #8b5cf6',
-            position: 'sticky',
-            bottom: '0',
-            zIndex: '999999',
-            minHeight: '70px',
-            visibility: 'visible',
-            opacity: '1'
-          }}
-        >
-          <button 
-            className="action-btn reset-btn" 
-            onClick={handleReset} 
-            title="Reset to defaults"
-            style={{
-              visibility: 'visible',
-              opacity: '1',
-              zIndex: '999999',
-              position: 'relative'
-            }}
-          >
-            <RefreshIcon />
-            <span>Reset</span>
+        {/* Footer */}
+        <div style={{ display:'flex', gap:10, padding:'12px 18px 16px', borderTop:'1px solid rgba(99,102,241,.1)', flexShrink:0, background:'#fff' }}>
+          <button onClick={handleReset} style={{
+            flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+            padding:'10px 14px', borderRadius:11,
+            background:'#fff', border:'1.5px solid #e5e7eb', color:'#6b7280',
+            fontSize:'.88rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+          }}>
+            <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+              <path d="M3.5 6A7 7 0 1 1 3 10" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M1 6h4V2" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ color:'#6b7280' }}>Reset</span>
           </button>
-          <button 
-            className="action-btn apply-btn" 
-            onClick={handleApply} 
-            title="Apply changes"
-            style={{
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              color: '#fff',
-              WebkitTextFillColor: '#fff',
-              border: 'none',
-              boxShadow: '0 4px 16px rgba(99,102,241,.38)',
-              visibility: 'visible',
-              opacity: '1',
-              zIndex: '999999',
-              position: 'relative'
-            }}
-          >
-            <CheckIcon />
-            <span style={{ color: '#fff', WebkitTextFillColor: '#fff', fontWeight: 700 }}>Apply</span>
+          <button onClick={handleApply} style={{
+            flex:1.6, display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+            padding:'10px 14px', borderRadius:11,
+            background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            border:'none', color:'#fff', WebkitTextFillColor:'#fff',
+            fontSize:'.88rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+            boxShadow:'0 4px 16px rgba(99,102,241,.38)',
+          }}>
+            <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+              <path d="M3 10l5 5L17 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ color:'#fff', WebkitTextFillColor:'#fff', fontWeight:700 }}>Apply Style</span>
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

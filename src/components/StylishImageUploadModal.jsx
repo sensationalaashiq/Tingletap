@@ -130,14 +130,25 @@ const StylishImageUploadModal = ({
 
                 {/* Actions */}
                 <div className="sim-actions">
-                    <button className="sim-btn-cancel" onClick={resetModal}>Cancel</button>
+                    <button className="sim-btn-cancel" onClick={resetModal}
+                        style={{ background: '#fff', border: '1.5px solid #e5e7eb', color: '#6b7280' }}>
+                        Cancel
+                    </button>
                     <button className="sim-btn-send" disabled={!canSend}
                         onClick={imageTab === 'upload' ? handleFileUpload : handleUrlUpload}
-                        style={{ opacity: canSend ? 1 : 0.5, cursor: canSend ? 'pointer' : 'not-allowed' }}>
+                        style={{
+                            opacity: canSend ? 1 : 0.45,
+                            cursor: canSend ? 'pointer' : 'not-allowed',
+                            background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)',
+                            border: 'none',
+                            color: '#fff',
+                            WebkitTextFillColor: '#fff',
+                            boxShadow: '0 4px 16px rgba(139,92,246,.42)',
+                        }}>
                         <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
                             <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        <span style={{ color: '#fff', fontWeight: 700 }}>Send Image</span>
+                        <span style={{ color: '#fff', WebkitTextFillColor: '#fff', fontWeight: 700 }}>Send Image</span>
                     </button>
                 </div>
             </div>

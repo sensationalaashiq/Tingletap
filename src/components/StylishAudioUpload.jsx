@@ -69,17 +69,20 @@ const StylishAudioUpload = ({
                 {/* Tabs */}
                 <div className="sau-tabs">
                     <button className={`sau-tab${audioTab === 'upload' ? ' active' : ''}`}
-                        onClick={() => { setAudioTab('upload'); setIsRecording(false); setRecordedBlob(null); if (mediaRecorder && isRecording) mediaRecorder.stop(); }}>
+                        onClick={() => { setAudioTab('upload'); setIsRecording(false); setRecordedBlob(null); if (mediaRecorder && isRecording) mediaRecorder.stop(); }}
+                        style={{ background: audioTab === 'upload' ? 'rgba(16,185,129,.12)' : '#fafafa', color: audioTab === 'upload' ? '#065f46' : '#9ca3af', border: `1.5px solid ${audioTab === 'upload' ? '#10b981' : 'rgba(16,185,129,.2)'}` }}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-                            <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3" stroke={audioTab === 'upload' ? '#065f46' : '#9ca3af'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Upload File
                     </button>
                     <button className={`sau-tab${audioTab === 'record' ? ' active' : ''}`}
-                        onClick={() => { setAudioTab('record'); setSelectedAudio(null); setAudioPreview(null); if (audioInputRef?.current) audioInputRef.current.value = ''; }}>
+                        onClick={() => { setAudioTab('record'); setSelectedAudio(null); setAudioPreview(null); if (audioInputRef?.current) audioInputRef.current.value = ''; }}
+                        style={{ background: audioTab === 'record' ? 'rgba(16,185,129,.12)' : '#fafafa', color: audioTab === 'record' ? '#065f46' : '#9ca3af', border: `1.5px solid ${audioTab === 'record' ? '#10b981' : 'rgba(16,185,129,.2)'}` }}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-                            <circle cx="10" cy="10" r="4" fill="currentColor"/>
-                            <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                            <rect x="7" y="2" width="6" height="11" rx="3" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" fill="none"/>
+                            <path d="M4 10c0 4.42 8 4.42 8 0" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                            <line x1="8" y1="17" x2="8" y2="19" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round"/>
                         </svg>
                         Record
                     </button>
@@ -137,14 +140,23 @@ const StylishAudioUpload = ({
                                     className={`sau-record-btn${isRecording ? ' recording' : ''}`}
                                     onClick={isRecording ? stopRecording : startRecording}
                                     disabled={!navigator.mediaDevices?.getUserMedia}
+                                    style={{
+                                        background: isRecording
+                                            ? 'linear-gradient(135deg,#ef4444,#dc2626)'
+                                            : 'linear-gradient(135deg,#10b981,#0891b2)',
+                                        border: 'none',
+                                    }}
                                 >
                                     {isRecording ? (
-                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
+                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff">
                                             <rect x="6" y="6" width="12" height="12" rx="2"/>
                                         </svg>
                                     ) : (
-                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
-                                            <circle cx="12" cy="12" r="7"/>
+                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                                            <rect x="8" y="3" width="8" height="14" rx="4" fill="#fff"/>
+                                            <path d="M5 11c0 6.627 14 6.627 14 0" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                                            <line x1="12" y1="19" x2="12" y2="22" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                                            <line x1="9" y1="22" x2="15" y2="22" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
                                         </svg>
                                     )}
                                 </button>
@@ -171,7 +183,10 @@ const StylishAudioUpload = ({
 
                 {/* Actions */}
                 <div className="sau-actions">
-                    <button className="sau-btn-cancel" onClick={handleClose}>Cancel</button>
+                    <button className="sau-btn-cancel" onClick={handleClose}
+                        style={{ background: '#fff', border: '1.5px solid #e5e7eb', color: '#6b7280' }}>
+                        Cancel
+                    </button>
                     <button className="sau-btn-send" disabled={!canSend}
                         onClick={handleUpload}
                         style={{
