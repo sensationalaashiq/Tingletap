@@ -1029,109 +1029,117 @@ const Sidebar = ({
                       )}
                     </div>
 
-                    {/* User List Item Dropdown */}
-                    {dropdownUser === userItem.uid && user?.uid !== userItem.uid && (
-                      <div 
-                        className="modern-sidebar-dropdown"
-                        ref={dropdownRef}
-                        style={{ top: dropdownPosition.top, left: dropdownPosition.left, right: 'auto', bottom: 'auto' }}
-                      >
-                        <div className="dropdown-header">
-                          <div className="dropdown-user-info">
-                            <img src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="avatar" className="dropdown-avatar" />
-                            <div className="dropdown-user-details">
-                              <span 
-                                className="dropdown-username"
+                    {/* User List Item Dropdown - apd style same as HomePage */}
+                    {dropdownUser === userItem.uid && user?.uid !== userItem.uid && (() => {
+                      const isCurrentUserGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+                      const isTargetGuest = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
+                      const isLimited = isCurrentUserGuest || isTargetGuest;
+                      const isOnlineNow = window.onlineUsers?.has(userItem.uid) || window.userOnlineStatuses?.[userItem.uid]?.state === 'online' || userItem.isOnline;
+                      const roleLabel = isTargetGuest ? 'Guest' : (({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[userItem.role?.toLowerCase()]) || 'Member');
+                      return (
+                        <div 
+                          className="avatar-portal-dropdown"
+                          ref={dropdownRef}
+                          style={{ top: dropdownPosition.top, left: dropdownPosition.left, right: 'auto', bottom: 'auto' }}
+                        >
+                          <div className="apd-header">
+                            <div className="apd-avatar-wrap">
+                              <img src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="avatar" className="apd-avatar" />
+                              <span className={`apd-online-dot ${isOnlineNow ? 'apd-dot-online' : 'apd-dot-offline'}`}></span>
+                            </div>
+                            <div className="apd-user-info">
+                              <span className="apd-name"
                                 data-user-uid={userItem.uid}
                                 data-user-id={userItem.uid}
                                 data-profile-uid={userItem.uid}
-                                data-username={userItem.displayName}
                                 data-role={userItem.badge ? 'badge_holder' : (userItem.role || 'user')}
                                 data-badge={userItem.badge ? 'true' : 'false'}
                                 data-gender={userItem.gender || 'male'}
-                                data-is-bot="false"
-                                style={{
-                                  color: '#1e293b !important',
-                                  opacity: '1 !important',
-                                  fontWeight: '600',
-                                  fontSize: '14px'
-                                }}
-                              >
-                                {userItem.displayName}
+                              >{userItem.displayName}</span>
+                              <span className="apd-role">
+                                <span className="apd-role-dot"></span>
+                                {roleLabel}
                               </span>
-                              <span className="dropdown-user-role">{
-                                ({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian','user':'Member'}[userItem.role]) || 'Member'
-                              }</span>
                             </div>
                           </div>
+                          <div className="apd-divider"></div>
+
+                          <button className="apd-btn apd-view-profile" onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setProfileUser(userItem);
+                            setDropdownUser(null); 
+                          }}>
+                            <span className="apd-icon-wrap apd-icon-view-profile">
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                              </svg>
+                            </span>
+                            <span>View Profile</span>
+                          </button>
+
+                          {!isLimited && (
+                            <button className="apd-btn apd-friend" onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (window.handleAddFriendFromSidebar) window.handleAddFriendFromSidebar(userItem);
+                              else toast.info(`👥 Adding ${userItem?.displayName || 'User'} as friend`);
+                              setDropdownUser(null); 
+                            }}>
+                              <span className="apd-icon-wrap apd-icon-friend">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                  <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
+                                </svg>
+                              </span>
+                              <span>Add Friend</span>
+                            </button>
+                          )}
+
+                          <button className="apd-btn apd-pm" onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem);
+                            else toast.info(`💬 Opening PM with ${userItem?.displayName || 'User'}`);
+                            setDropdownUser(null); 
+                          }}>
+                            <span className="apd-icon-wrap apd-icon-pm">
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                              </svg>
+                            </span>
+                            <span>Send Message</span>
+                          </button>
+
+                          {!isLimited && (
+                            <button className="apd-btn apd-whisper" onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem);
+                              else toast.info(`🔊 Whispering to ${userItem?.displayName || 'User'}`);
+                              setDropdownUser(null); 
+                            }}>
+                              <span className="apd-icon-wrap apd-icon-whisper">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                  <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
+                                </svg>
+                              </span>
+                              <span>Whisper</span>
+                            </button>
+                          )}
+
+                          <div className="apd-divider"></div>
+                          <button className="apd-btn apd-danger" onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (window.handleBlockUserFromSidebar) window.handleBlockUserFromSidebar(userItem);
+                            else toast.info(`🚫 Blocking ${userItem?.displayName || 'User'}`);
+                            setDropdownUser(null); 
+                          }}>
+                            <span className="apd-icon-wrap apd-icon-block">
+                              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
+                              </svg>
+                            </span>
+                            <span>Block User</span>
+                          </button>
                         </div>
-                        <div className="dropdown-divider"></div>
-
-                        <button className="modern-dropdown-btn primary" onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setProfileUser(userItem);
-                          setDropdownUser(null); 
-                        }}>
-                          <div className="btn-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                              <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
-                            </svg>
-                          </div>
-                          <span>View Profile</span>
-                        </button>
-
-                        <button className="modern-dropdown-btn" onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (window.handlePrivateMessageFromSidebar && typeof window.handlePrivateMessageFromSidebar === 'function') {
-                            window.handlePrivateMessageFromSidebar(userItem);
-                          } else {
-                            toast.info(`💬 Opening PM with ${userItem?.displayName || 'User'}`);
-                          }
-                          setDropdownUser(null); 
-                        }}>
-                          <div className="btn-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                              <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2M8,14H6V12H8V14M8,11H6V9H8V11M8,8H6V6H8V8M15,14H10V12H15V14M18,11H10V9H18V11M18,8H10V6H18V8Z"/>
-                            </svg>
-                          </div>
-                          <span>Private Message</span>
-                        </button>
-
-                        <button className="modern-dropdown-btn" onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (window.handleAddFriendFromSidebar && typeof window.handleAddFriendFromSidebar === 'function') {
-                            window.handleAddFriendFromSidebar(userItem);
-                          } else {
-                            toast.info(`👥 Adding ${userItem?.displayName || 'User'} as friend`);
-                          }
-                          setDropdownUser(null); 
-                        }}>
-                          <div className="btn-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                              <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
-                            </svg>
-                          </div>
-                          <span>Add Friend</span>
-                        </button>
-
-                        <button className="modern-dropdown-btn danger" onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (window.handleBlockUserFromSidebar && typeof window.handleBlockUserFromSidebar === 'function') {
-                            window.handleBlockUserFromSidebar(userItem);
-                          } else {
-                            toast.info(`🚫 Blocking ${userItem?.displayName || 'User'}`);
-                          }
-                          setDropdownUser(null); 
-                        }}>
-                          <div className="btn-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                              <path d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
-                            </svg>
-                          </div>
-                          <span>Block User</span>
-                        </button>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="moderation-actions">
                       {loggedInUserProfile && user?.uid !== userItem.uid && (

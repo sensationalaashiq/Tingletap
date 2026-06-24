@@ -3563,6 +3563,10 @@ const HomePage = ({ user }) => {
         
         window.handleAddFriendFromSidebar = handleAddFriend;
         
+        window.handleWhisperFromSidebar = (user) => {
+            handleWhisperUser({ uid: user.uid, displayName: user.displayName });
+        };
+        
         // Cleanup function
         return () => {
             delete window.setProfileUser;
@@ -3570,6 +3574,7 @@ const HomePage = ({ user }) => {
             delete window.handlePrivateMessageFromSidebar;
             delete window.handleBlockUserFromSidebar;
             delete window.handleAddFriendFromSidebar;
+            delete window.handleWhisperFromSidebar;
             delete window.updateUserAvatarInHomePage;
             delete window.getPrivateMessageAvatarUrl;
         };
@@ -3708,6 +3713,9 @@ const HomePage = ({ user }) => {
         window.textareaRef = textareaRef;
         window.setPmHeaderBoxOpen = setPmHeaderBoxOpen;
         window.pmHeaderBoxOpen = pmHeaderBoxOpen;
+        window.handleWhisperFromSidebar = (user) => {
+            handleWhisperUser({ uid: user.uid, displayName: user.displayName });
+        };
         
         return () => {
             delete window.handleAddFriendFromSidebar;
@@ -3722,6 +3730,7 @@ const HomePage = ({ user }) => {
             delete window.textareaRef;
             delete window.setPmHeaderBoxOpen;
             delete window.pmHeaderBoxOpen;
+            delete window.handleWhisperFromSidebar;
         };
     }, [handleAddFriend, friendsProfiles, scrollToBottom, pmHeaderBoxOpen]);
 
@@ -4681,6 +4690,9 @@ const HomePage = ({ user }) => {
         window.handlePrivateMessageFromSidebar = handlePrivateMessage;
         window.handleBlockUserFromSidebar = handleBlockUser;
         window.handleAddFriendFromSidebar = handleAddFriend;
+        window.handleWhisperFromSidebar = (user) => {
+            handleWhisperUser({ uid: user.uid, displayName: user.displayName });
+        };
         window.friendRequestCount = friendRequests.length;
         window.friendsProfiles = friendsProfiles;
         window.loadFriends = loadFriends;

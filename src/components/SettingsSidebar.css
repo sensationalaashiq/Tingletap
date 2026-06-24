@@ -176,63 +176,79 @@
 /* Settings Content */
 .settings-content {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: calc(100vh - 60px);
+    overflow: hidden;
 }
 
-/* Settings Tabs - Original Large Design */
+/* Settings Tabs - Left sidebar nav */
 .settings-tabs {
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border-bottom: 2px solid #e5e7eb;
-    padding: 16px 0;
-    min-height: auto;
+    width: 110px;
+    min-width: 90px;
+    flex-shrink: 0;
+    background: #f8f9fb;
+    border-right: 2px solid #e5e7eb;
+    border-bottom: none;
+    padding: 8px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.dark-mode .settings-tabs {
+    background: #111827;
+    border-right-color: #374151;
 }
 
 .settings-tab {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 18px 28px;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px 6px;
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 11px;
     font-weight: 600;
     color: #6b21a8;
-    text-align: left;
-    transition: all 0.3s ease;
-    border-left: 4px solid transparent;
+    text-align: center;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    width: 100%;
+    line-height: 1.2;
 }
 
 .settings-tab:hover {
-    background: rgba(107, 33, 168, 0.12);
+    background: rgba(107, 33, 168, 0.10);
     color: #581c87;
-    transform: translateX(4px);
 }
 
 .settings-tab.active {
-    background: rgba(107, 33, 168, 0.2);
+    background: rgba(107, 33, 168, 0.18);
     color: #4c1d95;
     border-left-color: #7c3aed;
     font-weight: 700;
-    box-shadow: inset 4px 0 8px rgba(124, 58, 237, 0.2);
 }
 
 .settings-tab svg {
     fill: currentColor;
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
 }
 
 /* Settings Body */
 .settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
+    overflow-x: hidden;
+    padding: 16px;
     background: #ffffff;
+    min-width: 0;
 }
 
 .dark-mode .settings-body {
