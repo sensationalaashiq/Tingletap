@@ -540,12 +540,13 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             const isTargetGuest = message.isGuest === true || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
                             const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
                             const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
-                            // Robust guest detection — also check localStorage in case profile hasn't loaded yet
+                            // Robust guest detection — check every possible source
                             const isViewerGuest = !loggedInUserProfile ||
                                 loggedInUserProfile?.isGuest === true ||
                                 loggedInUserProfile?.isGuest === 'true' ||
                                 viewerRole === 'guest' ||
-                                localStorage.getItem('isGuest') === 'true';
+                                localStorage.getItem('isGuest') === 'true' ||
+                                auth.currentUser?.isAnonymous === true;
                             // Add Friend + Whisper: hidden if EITHER side is guest (no exceptions)
                             const isLimited = isViewerGuest || isTargetGuest;
                             // Send Message visibility:

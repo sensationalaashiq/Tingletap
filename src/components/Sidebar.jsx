@@ -1037,11 +1037,12 @@ const Sidebar = ({
 
                     {/* User List Item Dropdown - apd style same as HomePage */}
                     {dropdownUser === userItem.uid && user?.uid !== userItem.uid && (() => {
-                      // Robust guest detection — also check localStorage in case profile hasn't loaded yet
+                      // Robust guest detection — check every possible source
                       const isCurrentUserGuest = loggedInUserProfile?.isGuest === true ||
                         loggedInUserProfile?.isGuest === 'true' ||
                         loggedInUserProfile?.role?.toLowerCase() === 'guest' ||
-                        localStorage.getItem('isGuest') === 'true';
+                        localStorage.getItem('isGuest') === 'true' ||
+                        auth.currentUser?.isAnonymous === true;
                       const isTargetGuest = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
                       const isTargetStaff = ['owner', 'admin', 'moderator'].includes(userItem.role?.toLowerCase());
                       // Add Friend + Whisper: hidden if EITHER side is guest (no exceptions)
