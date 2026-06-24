@@ -3494,37 +3494,37 @@ const HomePage = ({ user }) => {
     const canSendPrivateMessage = (currentUser, targetUser) => {
         if (!currentUser || !targetUser) return false;
         
-        // Guest restrictions: Guests can only PM other guests
-        if (currentUser.isGuest || currentUser.role === 'guest') {
-            if (!targetUser.isGuest && targetUser.role !== 'guest') {
-                return false; // Guests can't PM non-guests
-            }
+        const currentIsGuest = currentUser.isGuest === true || currentUser.role?.toLowerCase() === 'guest';
+        const targetIsGuest = targetUser.isGuest === true || targetUser.role?.toLowerCase() === 'guest';
+
+        // Guests can only initiate PMs with other Guests
+        if (currentIsGuest && !targetIsGuest) {
+            return false;
         }
         
-        // Non-guests can't PM guests (to maintain guest isolation)
-        if (!currentUser.isGuest && currentUser.role !== 'guest') {
-            if (targetUser.isGuest || targetUser.role === 'guest') {
-                return false; // Non-guests can't PM guests
-            }
-        }
-        
+        // Non-guests CAN initiate PMs with Guests (and with other non-guests)
+        // No additional restriction needed here
+
         // Check if target user is blocked (bidirectional)
         if (currentUser.blockedUsers?.includes(targetUser.uid)) return false;
         if (targetUser.blockedUsers?.includes(currentUser.uid)) return false;
         if (targetUser.blockedBy?.includes(currentUser.uid)) return false;
         
-        // Check target user's private message settings
-        const allowLevel = targetUser.settings?.allowPrivateMessagesLevel || 'all';
-        
-        switch (allowLevel) {
-            case 'none':
-                return false;
-            case 'friends':
-                return currentUser.friends?.includes(targetUser.uid) || false;
-            case 'all':
-            default:
-                return true;
+        // Check target user's private message settings (only applies to non-guest targets)
+        if (!targetIsGuest) {
+            const allowLevel = targetUser.settings?.allowPrivateMessagesLevel || 'all';
+            switch (allowLevel) {
+                case 'none':
+                    return false;
+                case 'friends':
+                    return currentUser.friends?.includes(targetUser.uid) || false;
+                case 'all':
+                default:
+                    return true;
+            }
         }
+
+        return true;
     };
 
     // Expose profile modal functions globally for Sidebar access
@@ -4409,7 +4409,15 @@ const HomePage = ({ user }) => {
 
     const handleSendPrivateMessage = async () => {
         if (privateMessage.trim() === '' || !privateMessageTarget || !auth.currentUser) return;
-        
+
+        // Backend enforcement: Guests cannot initiate messages to non-guests
+        const senderIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+        const targetIsGuest = privateMessageTarget?.isGuest === true || privateMessageTarget?.role?.toLowerCase() === 'guest';
+        if (senderIsGuest && !targetIsGuest) {
+            toast.error("Guests can only send messages to other Guests.");
+            return;
+        }
+
         try {
             // Create a unique conversation ID based on user IDs
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
@@ -6396,15 +6404,22 @@ const HomePage = ({ user }) => {
                                         </div>
                                         
                                         <div className="ultra-action-buttons">
-                                            <button 
-                                                className="ultra-action-btn primary"
-                                                onClick={() => handlePrivateMessage(profileUser)}
-                                            >
-                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                                </svg>
-                                                Message
-                                            </button>
+                                            {(() => {
+                                                const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+                                                const profileTargetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
+                                                const canShowMsg = !(viewerIsGuest && !profileTargetIsGuest);
+                                                return canShowMsg ? (
+                                                    <button 
+                                                        className="ultra-action-btn primary"
+                                                        onClick={() => handlePrivateMessage(profileUser)}
+                                                    >
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                                                        </svg>
+                                                        Message
+                                                    </button>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     </>
                                 )}

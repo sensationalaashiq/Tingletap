@@ -1099,6 +1099,7 @@ const Sidebar = ({
                             </button>
                           )}
 
+                          {!(isCurrentUserGuest && !isTargetGuest) && (
                           <button className="apd-btn apd-pm" onClick={(e) => { 
                             e.stopPropagation(); 
                             if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem);
@@ -1112,6 +1113,7 @@ const Sidebar = ({
                             </span>
                             <span>Send Message</span>
                           </button>
+                          )}
 
                           {!isLimited && (
                             <button className="apd-btn apd-whisper" onClick={(e) => { 
