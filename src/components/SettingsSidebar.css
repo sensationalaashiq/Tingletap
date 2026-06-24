@@ -8,7 +8,6 @@
     position: fixed;
     inset: 0;
     background: rgba(109,40,217,.15);
-    backdrop-filter: blur(6px);
     z-index: 2499;
     opacity: 0;
     animation: ssOverlayIn .25s ease forwards;
@@ -48,7 +47,6 @@
     background: linear-gradient(135deg, rgba(139,92,246,.14) 0%, rgba(99,102,241,.1) 100%);
     border-bottom: 1.5px solid rgba(167,139,250,.3);
     flex-shrink: 0;
-    backdrop-filter: blur(8px);
 }
 .settings-header h2 {
     margin: 0;
@@ -113,7 +111,6 @@
     overflow-x: hidden;
     scrollbar-width: none;
     gap: 1px;
-    backdrop-filter: blur(8px);
 }
 .settings-tabs::-webkit-scrollbar { display: none; }
 

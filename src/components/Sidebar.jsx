@@ -366,8 +366,8 @@ const Sidebar = ({
               {/* Quick actions */}
               <div className="sb-quick-actions">
                 <button className="sb-quick-btn" title="Edit Profile" onClick={(e) => { e.stopPropagation(); setShowEditProfileModal(true); }}>
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                    <path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/>
+                  <svg viewBox="0 0 24 24" width="13" height="13">
+                    <path fill="#8b5cf6" d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/>
                   </svg>
                 </button>
                 {(() => {
@@ -375,8 +375,8 @@ const Sidebar = ({
                   const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
                   if (hasBadge || ['admin','owner','moderator'].includes(uRole)) return (
                     <button className="sb-quick-btn" title="Change Status" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); }}>
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                      <svg viewBox="0 0 24 24" width="13" height="13">
+                        <path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
                       </svg>
                     </button>
                   );
@@ -387,8 +387,8 @@ const Sidebar = ({
                   try { await signOut(auth); toast.success('👋 Logged out!'); onClose(); window.location.href = '/login'; }
                   catch { toast.error('❌ Logout failed!'); }
                 }}>
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                    <path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                  <svg viewBox="0 0 24 24" width="13" height="13">
+                    <path fill="#ef4444" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
                   </svg>
                 </button>
               </div>
@@ -411,11 +411,11 @@ const Sidebar = ({
                   </div>
                   <div className="sb-apd-divider" />
                   <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setProfileUser(loggedInUserProfile); setDropdownUser(null); }}>
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                     View Profile
                   </button>
                   <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowEditProfileModal(true); setDropdownUser(null); }}>
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#8b5cf6" d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
                     Edit Profile
                   </button>
                   {(() => {
@@ -423,7 +423,7 @@ const Sidebar = ({
                     const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
                     if (hasBadge || ['admin','owner','moderator'].includes(uRole)) return (
                       <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); setDropdownUser(null); }}>
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                        <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                         Change Status
                       </button>
                     );
@@ -436,7 +436,7 @@ const Sidebar = ({
                     catch { toast.error('❌ Logout failed!'); }
                     setDropdownUser(null);
                   }}>
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ef4444" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
                     Logout
                   </button>
                 </div>,
@@ -449,15 +449,27 @@ const Sidebar = ({
         {/* ── TABS ─────────────────────────────────────────────────── */}
         <div className="sb-tabs">
           <button className={`sb-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+              <defs>
+                <linearGradient id="tabUsersG" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#a78bfa"/>
+                  <stop offset="100%" stopColor="#7c3aed"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#tabUsersG)" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
             </svg>
             Users
             <span className="sb-tab-count">{filteredUsers.length}</span>
           </button>
           <button className={`sb-tab ${activeTab === 'rooms' ? 'active' : ''}`} onClick={() => setActiveTab('rooms')}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+              <defs>
+                <linearGradient id="tabRoomsG" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#34d399"/>
+                  <stop offset="100%" stopColor="#059669"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#tabRoomsG)" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
             Rooms
           </button>
@@ -726,25 +738,25 @@ const Sidebar = ({
                           <div className="sb-apd-divider"/>
 
                           <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setProfileUser(userItem); setDropdownUser(null); }}>
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
+                            <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                             View Profile
                           </button>
 
                           {!limited && (
                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleAddFriendFromSidebar) window.handleAddFriendFromSidebar(userItem); else toast.info(`Adding ${userItem.displayName} as friend`); setDropdownUser(null); }}>
-                              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M15 14c-2.67 0-8 1.33-8 4v2h16v-2c0-2.67-5.33-4-8-4m0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 10H2v2h3v3h2v-3h3v-2H7V7H5v3z"/></svg>
+                              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#10b981" d="M15 14c-2.67 0-8 1.33-8 4v2h16v-2c0-2.67-5.33-4-8-4m0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 10H2v2h3v3h2v-3h3v-2H7V7H5v3z"/></svg>
                               Add Friend
                             </button>
                           )}
 
                           <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); else toast.info(`Opening PM with ${userItem.displayName}`); setDropdownUser(null); }}>
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+                            <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#3b82f6" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                             Send Message
                           </button>
 
                           {!limited && (
                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem); else toast.info(`Whispering to ${userItem.displayName}`); setDropdownUser(null); }}>
-                              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M13 11h-2V9h2v2m0 4h-2v-2h2v2z"/></svg>
+                              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M13 11h-2V9h2v2m0 4h-2v-2h2v2z"/></svg>
                               Whisper
                             </button>
                           )}
@@ -753,7 +765,7 @@ const Sidebar = ({
                             <>
                               <div className="sb-apd-divider"/>
                               <button className="sb-apd-btn sb-apd-danger" onClick={(e) => { e.stopPropagation(); if (window.handleBlockUserFromSidebar) window.handleBlockUserFromSidebar(userItem); else toast.info(`Blocking ${userItem.displayName}`); setDropdownUser(null); }}>
-                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 2c2.01 0 3.86.64 5.3 1.7L5.7 17.3A7.93 7.93 0 0 1 4 12c0-4.42 3.58-8 8-8m0 16c-2.01 0-3.86-.64-5.3-1.7L18.3 6.7A7.93 7.93 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg>
+                                <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 2c2.01 0 3.86.64 5.3 1.7L5.7 17.3A7.93 7.93 0 0 1 4 12c0-4.42 3.58-8 8-8m0 16c-2.01 0-3.86-.64-5.3-1.7L18.3 6.7A7.93 7.93 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg>
                                 Block User
                               </button>
                             </>
@@ -764,7 +776,7 @@ const Sidebar = ({
                             <>
                               <div className="sb-apd-divider"/>
                               <div className="sb-apd-mod-label">
-                                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                <svg viewBox="0 0 24 24" width="11" height="11"><path fill="#7c3aed" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
                                 Moderation
                               </div>
                               {showMute && (
@@ -778,16 +790,18 @@ const Sidebar = ({
                                   }
                                   setDropdownUser(null);
                                 }}>
-                                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                                    {userItem.mutedInfo?.isMuted ? <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V5a3 3 0 0 1 3-3m7 9c0 3.53-2.61 6.44-6 6.93V21h-2v-3.07C7.61 17.44 5 14.53 5 11h2a5 5 0 0 0 5 5 5 5 0 0 0 5-5h2z"/> : <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>}
+                                  <svg viewBox="0 0 24 24" width="15" height="15">
+                                    {userItem.mutedInfo?.isMuted
+                                      ? <path fill="#10b981" d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V5a3 3 0 0 1 3-3m7 9c0 3.53-2.61 6.44-6 6.93V21h-2v-3.07C7.61 17.44 5 14.53 5 11h2a5 5 0 0 0 5 5 5 5 0 0 0 5-5h2z"/>
+                                      : <path fill="#f59e0b" d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>}
                                   </svg>
                                   {userItem.mutedInfo?.isMuted ? 'Unmute User' : 'Mute User'}
                                 </button>
                               )}
                               {showKick && (
                                 <button className="sb-apd-btn sb-apd-orange" onClick={(e) => { e.stopPropagation(); openKickModal(userItem); }}>
-                                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                                    <path d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                                  <svg viewBox="0 0 24 24" width="15" height="15">
+                                    <path fill="#f97316" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
                                   </svg>
                                   Kick from Room
                                 </button>
@@ -803,8 +817,8 @@ const Sidebar = ({
                                   }
                                   setDropdownUser(null);
                                 }}>
-                                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                                    <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>
+                                  <svg viewBox="0 0 24 24" width="15" height="15">
+                                    <path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>
                                   </svg>
                                   {userItem.isBanned ? 'Unban User' : 'Ban User'}
                                 </button>

@@ -2,7 +2,6 @@
   position: fixed;
   inset: 0;
   background: rgba(109, 40, 217, 0.15);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;

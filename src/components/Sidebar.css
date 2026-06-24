@@ -9,7 +9,6 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
-  backdrop-filter: blur(2px);
 }
 .sb-overlay.open { opacity: 1; visibility: visible; }
 
@@ -23,8 +22,8 @@
 .sb-panel {
   position: fixed;
   top: 0;
-  right: -240px;
-  width: 225px;
+  right: -260px;
+  width: 248px;
   height: 100vh;
   background: #f8f6ff;
   display: flex;
@@ -40,7 +39,7 @@
 .sb-panel.open { right: 0; }
 
 @media (max-width: 768px) {
-  .sb-panel { width: 72vw; right: -75vw; max-width: 230px; }
+  .sb-panel { width: 78vw; right: -80vw; max-width: 260px; }
 }
 
 /* ── Profile Card — compact horizontal lavender ───────────────────────────── */
@@ -125,11 +124,11 @@
   gap: 2px;
   flex: 1;
   min-width: 0;
-  padding-right: 24px;
+  padding-right: 26px;
 }
 
 .sb-profile-name {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #3b1f8c;
   display: flex;
@@ -139,6 +138,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  line-height: 1.3;
 }
 
 .sb-role-pill {
@@ -226,7 +226,7 @@
   background: rgba(124,58,237,0.07);
   font-weight: 700;
 }
-.sb-tab svg { fill: currentColor; }
+.sb-tab svg { overflow: visible; }
 
 .sb-tab-count {
   background: linear-gradient(135deg, #7c3aed, #a855f7);

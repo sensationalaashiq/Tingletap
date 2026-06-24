@@ -2,7 +2,6 @@
 .gsm-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.62);
-    backdrop-filter: blur(6px);
     display: flex; align-items: center; justify-content: center;
     z-index: 99999;
     animation: gsmFade .18s ease;
