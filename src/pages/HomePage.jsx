@@ -5051,9 +5051,23 @@ const HomePage = ({ user }) => {
             // Remove from friends both ways
             const updatedFriends = (userDoc.data()?.friends || []).filter(id => id !== user.uid);
 
+            // Build blockedUsersMap — stores display info so guests (no Firestore doc) still show in blocked list
+            const existingMap = userDoc.data()?.blockedUsersMap || {};
+            const updatedMap = {
+                ...existingMap,
+                [user.uid]: {
+                    uid: user.uid,
+                    displayName: user.displayName || 'Unknown User',
+                    photoURL: user.photoURL || null,
+                    role: user.role || 'guest',
+                    gender: user.gender || null,
+                }
+            };
+
             // Update current user: add to blockedUsers, remove from friends
             await updateDoc(userRef, {
                 blockedUsers: updatedBlockedUsers,
+                blockedUsersMap: updatedMap,
                 friends: updatedFriends
             });
             setBlockedUsers(updatedBlockedUsers);
@@ -5121,10 +5135,15 @@ const HomePage = ({ user }) => {
             const currentUserId = auth.currentUser.uid;
             const userRef = doc(db, 'users', currentUserId);
             
-            // Remove user from blocked list
+            // Remove user from blocked list and blockedUsersMap
             const updatedBlockedUsers = blockedUsers.filter(id => id !== userId);
+            const userDoc = await getDoc(userRef);
+            const existingMap = userDoc.data()?.blockedUsersMap || {};
+            const updatedMap = { ...existingMap };
+            delete updatedMap[userId];
             await updateDoc(userRef, {
-                blockedUsers: updatedBlockedUsers
+                blockedUsers: updatedBlockedUsers,
+                blockedUsersMap: updatedMap
             });
             setBlockedUsers(updatedBlockedUsers);
 

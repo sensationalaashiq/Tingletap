@@ -227,11 +227,26 @@ const SettingsSidebar = ({
             if (!userDoc.exists()) return;
             const blockedIds = userDoc.data()?.blockedUsers || [];
             if (blockedIds.length === 0) { setBlockedUserProfiles([]); return; }
-            const userPromises = blockedIds.map(uid => getDoc(doc(db, 'users', uid)));
-            const userDocs = await Promise.all(userPromises);
-            const profiles = userDocs
-                .filter(d => d.exists())
-                .map(d => ({ id: d.id, ...d.data() }));
+
+            // blockedUsersMap holds display info for guests who have no Firestore doc
+            const blockedUsersMap = userDoc.data()?.blockedUsersMap || {};
+
+            const userDocs = await Promise.all(blockedIds.map(uid => getDoc(doc(db, 'users', uid))));
+
+            const profiles = blockedIds.map((uid, i) => {
+                const d = userDocs[i];
+                if (d.exists()) {
+                    return { id: d.id, ...d.data() };
+                }
+                // Fallback: use stored snapshot (covers guest users with no Firestore doc)
+                const stored = blockedUsersMap[uid];
+                if (stored) {
+                    return { id: uid, ...stored };
+                }
+                // Last resort: show minimal placeholder so user can still unblock
+                return { id: uid, uid, displayName: 'Unknown User', role: 'guest', photoURL: null };
+            });
+
             setBlockedUserProfiles(profiles);
         } catch (error) {
             console.error("Error loading blocked user profiles:", error);
