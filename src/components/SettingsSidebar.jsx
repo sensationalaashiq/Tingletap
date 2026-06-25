@@ -1554,8 +1554,8 @@ const SettingsSidebar = ({
                             </div>
                         </div>
 
-                        {/* Status Management Section */}
-                        <div className="modern-setting-group">
+                        {/* Status Management Section — hidden for guest users */}
+                        {!auth.currentUser?.isAnonymous && <div className="modern-setting-group">
                             <h4 className="modern-section-title">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10"/>
@@ -1643,7 +1643,7 @@ const SettingsSidebar = ({
                                     </button>
                                 )}
                             </div>
-                        </div>
+                        </div>}
 
                         {/* Cover Media Section */}
                         <div className="modern-setting-group">
@@ -2129,6 +2129,7 @@ const SettingsSidebar = ({
                                 NAVIGATION
                             </h4>
                             <div className="modern-button-grid">
+                                {!auth.currentUser?.isAnonymous && (
                                 <button 
                                     className="modern-nav-btn navigation"
                                     onClick={() => {
@@ -2147,6 +2148,7 @@ const SettingsSidebar = ({
                                     </svg>
                                     <span>EDIT PROFILE</span>
                                 </button>
+                                )}
 
                                 <button 
                                     className="modern-nav-btn navigation"

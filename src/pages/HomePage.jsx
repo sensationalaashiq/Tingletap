@@ -2622,7 +2622,8 @@ const HomePage = ({ user }) => {
             const actionsMenuContainer = e.target.closest('.actions-menu-container');
             
             // Close attachment dropdown if clicking outside all attachment-related elements
-            if (!attachmentBtn && !attachmentDropdown && !attachmentOptionBtn && !actionsMenuContainer && isAttachmentDropdownOpen) {
+            const attachPopup = e.target.closest('.hp-attach-popup');
+            if (!attachmentBtn && !attachmentDropdown && !attachmentOptionBtn && !actionsMenuContainer && !attachPopup && isAttachmentDropdownOpen) {
                 setIsAttachmentDropdownOpen(false);
             }
             
@@ -6603,7 +6604,7 @@ const HomePage = ({ user }) => {
                     </span>
                 );
                 return (
-                <div style={{
+                <div className="hp-attach-popup" style={{
                     position: 'fixed', bottom: '52px', left: '8px', right: '8px',
                     zIndex: 2100,
                     background: isDarkMode ? 'rgba(14,7,35,0.97)' : 'rgba(250,248,255,0.98)',

@@ -716,7 +716,7 @@ const WelcomeDashboard = () => {
   /* ── settings rows ── */
   const settingsRows = [
     { section: 'Profile', items: [
-      { label: 'Edit Profile',    sub: 'Update avatar & info',       IconEl: <EditIcon animated />, color: '#6366f1', bg: 'rgba(99,102,241,0.13)',  sub_id: 'edit-profile'   },
+      ...( userRole !== 'guest' ? [{ label: 'Edit Profile', sub: 'Update avatar & info', IconEl: <EditIcon animated />, color: '#6366f1', bg: 'rgba(99,102,241,0.13)', sub_id: 'edit-profile' }] : []),
       { label: 'Change Username', sub: 'Edit your display name',     IconEl: <AtIcon animated />,   color: '#a855f7', bg: 'rgba(168,85,247,0.13)', sub_id: 'change-username' },
       { label: 'Change Password', sub: 'Update your password',       IconEl: <KeyIcon animated />,  color: '#8b5cf6', bg: 'rgba(139,92,246,0.13)', sub_id: 'change-password' },
     ]},
