@@ -813,22 +813,6 @@ const SettingsSidebar = ({
 
                             <label className="setting-item">
                                 <div className="setting-info">
-                                    <span>Incoming Call Notifications</span>
-                                    <small>Sound for incoming voice/video calls</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.incomingCallNotifications}
-                                        onChange={(e) => handleSettingChange('incomingCallNotifications', e.target.checked)}
-                                        disabled={!settings.soundEnabled}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
-
-                            <label className="setting-item">
-                                <div className="setting-info">
                                     <span>Friend Request Notifications</span>
                                     <small>Sound for new friend requests</small>
                                 </div>
@@ -964,66 +948,73 @@ const SettingsSidebar = ({
                                 </svg>
                                 COMMUNICATION SETTINGS
                             </h4>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Private Messages</span>
-                                    <small>Control who can send you private messages</small>
-                                </div>
-                                <select 
-                                    className="privacy-select"
-                                    value={settings.allowPrivateMessagesLevel || 'all'}
-                                    onChange={(e) => handleSettingChange('allowPrivateMessagesLevel', e.target.value)}
-                                >
-                                    <option value="all">Everyone</option>
-                                    <option value="friends">Friends Only</option>
-                                    <option value="none">No One</option>
-                                </select>
-                            </div>
 
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Private Messages (Legacy)</span>
-                                    <small>Basic private message toggle</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.allowPrivateMessages}
-                                        onChange={(e) => handleSettingChange('allowPrivateMessages', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
+                            {isAnonymous ? (
+                                /* Guest: only simple On/Off private message toggle */
+                                <label className="setting-item">
+                                    <div className="setting-info">
+                                        <span>Allow Private Messages</span>
+                                        <small>On for All — Off for All (Owners can always message you)</small>
+                                    </div>
+                                    <label className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={settings.allowPrivateMessages !== false}
+                                            onChange={(e) => handleSettingChange('allowPrivateMessages', e.target.checked)}
+                                        />
+                                        <span className="toggle-slider"></span>
+                                    </label>
                                 </label>
-                            </label>
+                            ) : (
+                                /* Registered users: full options */
+                                <>
+                                    <div className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Allow Private Messages</span>
+                                            <small>Control who can send you private messages</small>
+                                        </div>
+                                        <select
+                                            className="privacy-select"
+                                            value={settings.allowPrivateMessagesLevel || 'all'}
+                                            onChange={(e) => handleSettingChange('allowPrivateMessagesLevel', e.target.value)}
+                                        >
+                                            <option value="all">Everyone</option>
+                                            <option value="friends">Friends Only</option>
+                                            <option value="none">No One</option>
+                                        </select>
+                                    </div>
 
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Whisper Messages</span>
-                                    <small>Let users send you whisper messages</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.allowWhisperMessages}
-                                        onChange={(e) => handleSettingChange('allowWhisperMessages', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
+                                    <label className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Allow Whisper Messages</span>
+                                            <small>Let users send you whisper messages</small>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={settings.allowWhisperMessages}
+                                                onChange={(e) => handleSettingChange('allowWhisperMessages', e.target.checked)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </label>
 
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Allow Friend Requests</span>
-                                    <small>Let others send you friend requests</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.allowFriendRequests || true}
-                                        onChange={(e) => handleSettingChange('allowFriendRequests', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
+                                    <label className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Allow Friend Requests</span>
+                                            <small>Let others send you friend requests</small>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={settings.allowFriendRequests || true}
+                                                onChange={(e) => handleSettingChange('allowFriendRequests', e.target.checked)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                </>
+                            )}
 
                         </div>
                     </div>

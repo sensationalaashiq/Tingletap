@@ -775,7 +775,9 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                     <>
                                         {canKick && <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>}
                                         <button onClick={(e) => { e.stopPropagation(); onReport(message) }} className="message-action-btn" title="Report"><ReportIconSVG /></button>
-                                        <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
+                                        {viewerRole !== 'guest' && !currentUser?.isAnonymous && (
+                                            <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
+                                        )}
                                     </>
                                 )}
                             </div>
