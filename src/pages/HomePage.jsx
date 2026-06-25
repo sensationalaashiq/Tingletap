@@ -559,84 +559,61 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                             return (
                                 <>
                                     <div className="sidebar-dropdown-backdrop" onClick={closeAllDropdowns}></div>
-                                    <div className="avatar-portal-dropdown" style={{
+                                    <div className="sb-apd" style={{
                                         top: `${dropdownPos.top}px`,
                                         left: `${dropdownPos.left}px`,
                                     }}>
-                                        <div className="apd-header">
-                                            <div className="apd-avatar-wrap">
-                                                <img src={avatarUrl} alt="avatar" className="apd-avatar" />
-                                                <span className={`apd-online-dot ${isOnlineNow ? 'apd-dot-online' : 'apd-dot-offline'}`}></span>
+                                        <div className="sb-apd-header">
+                                            <div className="sb-apd-avatar-wrap">
+                                                <img src={avatarUrl} alt="avatar" className="sb-apd-avatar" />
+                                                <span className={`sb-apd-dot ${isOnlineNow ? 'online' : ''}`}/>
                                             </div>
-                                            <div className="apd-user-info">
-                                                <span className="apd-name">{displayName}</span>
-                                                <span className="apd-role">
-                                                    <span className="apd-role-dot"></span>
-                                                    {getRoleLabel()}
-                                                </span>
+                                            <div>
+                                                <div className="sb-apd-name">{displayName}</div>
+                                                <div className="sb-apd-role">{getRoleLabel()}</div>
                                             </div>
                                         </div>
-                                        <div className="apd-divider"></div>
+                                        <div className="sb-apd-divider"/>
 
                                         {/* View Profile — always visible */}
-                                        <button className="apd-btn apd-view-profile" onClick={(e) => { e.stopPropagation(); onViewProfile(message); closeAllDropdowns(); }}>
-                                            <span className="apd-icon-wrap apd-icon-view-profile">
-                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                    <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                                                </svg>
-                                            </span>
-                                            <span>View Profile</span>
+                                        <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); onViewProfile(message); closeAllDropdowns(); }}>
+                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path fill="#6366f1" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+                                            View Profile
                                         </button>
 
                                         {/* Add Friend — visible to all; guests see locked modal */}
                                         {(isViewerGuest || !isTargetGuest) && (
-                                            <button className="apd-btn apd-friend" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('friend'); } else { onAddFriend(message); closeAllDropdowns(); } }}>
-                                                <span className="apd-icon-wrap apd-icon-friend">
-                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
-                                                    </svg>
-                                                </span>
-                                                <span>Add Friend</span>
-                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="10" height="10" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
+                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('friend'); } else { onAddFriend(message); closeAllDropdowns(); } }}>
+                                                <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ec4899" d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/></svg>
+                                                Add Friend
+                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="9" height="9" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
                                         )}
 
                                         {/* Send Message — hidden when viewer is guest and target is non-guest */}
                                         {canShowSendMessage && (
-                                        <button className="apd-btn apd-pm" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
-                                            <span className="apd-icon-wrap apd-icon-pm">
-                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                                </svg>
-                                            </span>
-                                            <span>Send Message</span>
-                                        </button>
+                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); onPrivateMessage(message); closeAllDropdowns(); }}>
+                                                <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#8b5cf6" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></svg>
+                                                Send Message
+                                            </button>
                                         )}
 
                                         {/* Whisper — visible to all; guests see locked modal */}
                                         {(isViewerGuest || !isTargetGuest) && (
-                                            <button className="apd-btn apd-whisper" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('whisper'); } else { onWhisper(message); closeAllDropdowns(); } }}>
-                                                <span className="apd-icon-wrap apd-icon-whisper">
-                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                        <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
-                                                    </svg>
-                                                </span>
-                                                <span>Whisper</span>
-                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="10" height="10" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
+                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('whisper'); } else { onWhisper(message); closeAllDropdowns(); } }}>
+                                                <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>
+                                                Whisper
+                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="9" height="9" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
                                         )}
 
                                         {/* Block — hidden on Owner/Admin/Moderator profiles */}
                                         {!isTargetStaff && (
                                             <>
-                                                <div className="apd-divider"></div>
-                                                <button className="apd-btn apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
-                                                    <span className="apd-icon-wrap apd-icon-block">
-                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
-                                                        </svg>
-                                                    </span>
-                                                    <span>Block User</span>
+                                                <div className="sb-apd-divider"/>
+                                                <button className="sb-apd-btn sb-apd-danger" onClick={(e) => { e.stopPropagation(); onBlock(message); closeAllDropdowns(); }}>
+                                                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ef4444" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/></svg>
+                                                    Block User
                                                 </button>
                                             </>
                                         )}

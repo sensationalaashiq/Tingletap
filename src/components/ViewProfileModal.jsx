@@ -894,943 +894,538 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
     if (!user?.uid) return null;
     if (!realTimeUser) return null;
 
+    const isOnlineNow = window.onlineUsers?.has(realTimeUser.uid) ||
+        (window.userOnlineStatuses && window.userOnlineStatuses[realTimeUser.uid]?.state === 'online') ||
+        realTimeUser.isOnline;
+
+    const sStyles = realTimeUser.statusStyles || user.statusStyles || {};
+    const hasStatusGradient = sStyles.gradientEnabled;
+    const statusStyle = {
+        fontFamily: sStyles.fontFamily || 'inherit',
+        fontSize: sStyles.fontSize || '11px',
+        fontWeight: sStyles.fontWeight || 'normal',
+        fontStyle: 'italic',
+        textDecoration: sStyles.textDecoration || 'none',
+        color: hasStatusGradient ? 'transparent' : (sStyles.textColor || '#9370c8'),
+        background: hasStatusGradient
+            ? `linear-gradient(${sStyles.gradientDirection || 'to right'}, ${sStyles.gradientStart || '#667eea'}, ${sStyles.gradientEnd || '#764ba2'})`
+            : 'none',
+        WebkitBackgroundClip: hasStatusGradient ? 'text' : 'initial',
+        backgroundClip: hasStatusGradient ? 'text' : 'initial',
+        display: hasStatusGradient ? 'inline-block' : 'block',
+        textShadow: sStyles.textShadow || 'none',
+        animation: sStyles.animation || 'none',
+    };
+
+    const getTrustGradient = (s) => {
+        if (s <= 20) return 'linear-gradient(90deg,#C4A882,#8B7355)';
+        if (s <= 40) return 'linear-gradient(90deg,#E8E8E8,#A8A8A8)';
+        if (s <= 60) return 'linear-gradient(90deg,#FFD700,#FFA500)';
+        if (s <= 80) return 'linear-gradient(90deg,#9B59B6,#667eea)';
+        return 'linear-gradient(90deg,#00D4FF,#7B2FBE,#FFD700)';
+    };
+
+    const getCountryFlag = (name) => {
+        if (!name) return '';
+        const map = {
+            'India':'IN','Pakistan':'PK','Bangladesh':'BD','Nepal':'NP','Sri Lanka':'LK',
+            'United States':'US','USA':'US','United Kingdom':'GB','UK':'GB',
+            'Canada':'CA','Australia':'AU','Germany':'DE','France':'FR','Japan':'JP',
+            'China':'CN','Russia':'RU','Brazil':'BR','Mexico':'MX','Italy':'IT',
+            'Spain':'ES','South Korea':'KR','Indonesia':'ID','Saudi Arabia':'SA',
+            'UAE':'AE','United Arab Emirates':'AE','Turkey':'TR','Thailand':'TH',
+            'Malaysia':'MY','Singapore':'SG','Philippines':'PH','Vietnam':'VN',
+            'Egypt':'EG','Nigeria':'NG','South Africa':'ZA','Kenya':'KE',
+            'Argentina':'AR','Colombia':'CO','Netherlands':'NL','Sweden':'SE',
+            'Norway':'NO','Denmark':'DK','Finland':'FI','Poland':'PL',
+            'Portugal':'PT','Greece':'GR','Ukraine':'UA','Belgium':'BE',
+            'Switzerland':'CH','Austria':'AT','Israel':'IL','Iran':'IR',
+            'New Zealand':'NZ','Ireland':'IE','Morocco':'MA','Algeria':'DZ',
+            'Qatar':'QA','Kuwait':'KW','Bahrain':'BH','Oman':'OM','Jordan':'JO',
+            'Lebanon':'LB','Myanmar':'MM','Cambodia':'KH','Taiwan':'TW',
+            'Hong Kong':'HK','Ghana':'GH','Ethiopia':'ET','Tanzania':'TZ',
+            'Uganda':'UG','Rwanda':'RW','Zimbabwe':'ZW','Senegal':'SN',
+            'Chile':'CL','Peru':'PE','Romania':'RO','Czech Republic':'CZ',
+            'Hungary':'HU','Afghanistan':'AF','Libya':'LY','Sudan':'SD',
+            'Iraq':'IQ','Syria':'SY','Yemen':'YE','Tunisia':'TN','Angola':'AO',
+            'Mozambique':'MZ','Zambia':'ZM','Cameroon':'CM','Ivory Coast':'CI',
+        };
+        const code = map[name] || map[name.trim()];
+        if (!code) return '🌍';
+        return [...code].map(c => String.fromCodePoint(c.charCodeAt(0) + 127397)).join('');
+    };
+
+    const coverType = realTimeUser.spotifyTrackURL ? 'spotify'
+        : realTimeUser.coverVideoURL ? 'youtube'
+        : realTimeUser.coverPhotoURL ? 'image'
+        : 'default';
+
+    const roleColorMap = {
+        owner: '#FFD700', admin: '#FF4500', moderator: '#32CD32',
+        'badge-holder': '#9370DB', badge_holder: '#9370DB',
+        user: realTimeUser.gender === 'female' ? '#E91E63' : '#4A90E2',
+        guest: realTimeUser.gender === 'female' ? '#E91E63' : '#6b7280',
+    };
+    const avatarBorderColor = roleColorMap[realTimeUser.role?.toLowerCase()] || '#8b5cf6';
+
+    const vpIsViewerGuest = !auth.currentUser || currentUserProfile?.isGuest === true || propsCurrentUser?.isGuest === true;
+    const vpIsTargetGuest = realTimeUser?.isGuest === true;
+    const vpIsTargetStaff = ['owner', 'admin', 'moderator'].includes(realTimeUser?.role?.toLowerCase());
+    const vpIsLimited = vpIsViewerGuest || vpIsTargetGuest;
+
     return (
-        <div className="modern-profile-overlay" onClick={onClose}>
+        <div className="vpm-overlay" onClick={onClose}>
             <div className="modern-profile-container" onClick={e => e.stopPropagation()}>
 
-                {/* Cover Background */}
-                <div className={`cover-background ${
-                    realTimeUser.spotifyTrackURL ? 'has-spotify' : 
-                    realTimeUser.coverVideoURL ? 'has-video' : 
-                    realTimeUser.coverPhotoURL ? 'has-photo' : ''
-                }`}>
-                    {realTimeUser.spotifyTrackURL ? (
-                        <div className="spotify-container">
+        <div className="vpm-overlay" onClick={onClose}>
+            <div className="vpm-container" onClick={e => e.stopPropagation()}>
+
+                {/* ── COVER ── */}
+                <div className={`vpm-cover vpm-cover--${coverType}`}>
+                    {coverType === 'spotify' && (
+                        <div className="vpm-spotify-frame">
+                            <div className="vpm-spotify-glow"/>
                             <iframe
-                                key={`spotify-${realTimeUser.uid}-${realTimeUser.spotifyTrackURL?.slice(-10)}`}
+                                key={`spotify-${realTimeUser.uid}`}
                                 src={convertToSpotifyEmbedURL(realTimeUser.spotifyTrackURL)}
-                                width="100%"
-                                height="152"
-                                frameBorder="0"
+                                width="100%" height="152" frameBorder="0"
                                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                allowFullScreen={true}
-                                loading="lazy"
-                                title="Spotify Track Player"
-                                onLoad={() => {
-                                    console.log('✅ Spotify track loaded successfully');
-                                }}
-                                onError={(e) => {
-                                    console.error('❌ Spotify track failed to load:', e);
-                                }}
+                                allowFullScreen title="Spotify"
+                                style={{borderRadius:'0',display:'block',position:'relative',zIndex:1}}
                             />
-                        </div>
-                    ) : realTimeUser.coverVideoURL && realTimeUser.coverVideoURL !== "" ? (
-                        <div className="video-container">
-                            <iframe
-                                key={`video-${realTimeUser.uid}-${realTimeUser.coverVideoURL?.slice(-10)}`}
-                                src={convertToYouTubeEmbedURL(realTimeUser.coverVideoURL)}
-                                width="100%"
-                                height="250"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen={true}
-                                loading="lazy"
-                                title="YouTube Cover Video"
-                                onLoad={() => {
-                                    console.log('✅ Cover video loaded successfully');
-                                }}
-                                onError={(e) => {
-                                    console.error('❌ Video failed to load:', e);
-                                }}
-                            />
-                        </div>
-                    ) : realTimeUser.coverPhotoURL && realTimeUser.coverPhotoURL !== "" ? (
-                        <img
-                            key={`image-${realTimeUser.coverPhotoURL}-${realTimeUser.uid}-${Date.now()}`}
-                            src={realTimeUser.coverPhotoURL}
-                            alt="Cover Photo"
-                            className="cover-media cover-photo"
-                            onLoad={() => {
-                                console.log('✅ Cover photo loaded successfully');
-                            }}
-                            onError={(e) => {
-                                console.error('❌ Cover photo failed to load');
-                                e.target.style.display = 'block';
-                            }}
-                        />
-                    ) : (
-                        <div className="cover-media default-gradient">
-                            <div className="default-cover-content">
-                                <svg viewBox="0 0 24 24" width="48" height="48" fill="rgba(255,255,255,0.3)">
-                                    <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                                </svg>
-                                <span style={{color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '8px'}}>
-                                    {realTimeUser.displayName}
-                                </span>
+                            <div className="vpm-cover-badge vpm-cover-badge--spotify">
+                                <svg width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/></svg>
+                                Spotify · Now Playing
                             </div>
                         </div>
                     )}
-
-                    {/* Cover Media Badge */}
-                    {(realTimeUser.spotifyTrackURL || realTimeUser.coverVideoURL || realTimeUser.coverPhotoURL) && (
-                        <div className="cover-media-badge">
-                            {realTimeUser.spotifyTrackURL ? (
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                    <circle cx="12" cy="12" r="12" fill="#1DB954"/>
-                                    <path fill="#FFFFFF" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/>
-                                </svg>
-                            ) : realTimeUser.coverVideoURL && realTimeUser.coverVideoURL !== "" ? (
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                </svg>
-                            ) : realTimeUser.coverPhotoURL && realTimeUser.coverPhotoURL !== "" ? (
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                </svg>
-                            ) : null}
+                    {coverType === 'youtube' && (
+                        <div className="vpm-youtube-frame">
+                            <iframe
+                                key={`yt-${realTimeUser.uid}`}
+                                src={convertToYouTubeEmbedURL(realTimeUser.coverVideoURL)}
+                                width="100%" height="100%" frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen title="YouTube Cover"
+                            />
+                            <div className="vpm-youtube-cinematic"/>
+                            <div className="vpm-cover-badge vpm-cover-badge--youtube">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                YouTube
+                            </div>
                         </div>
                     )}
-
-                    {/* Close Button */}
-                    <button className="close-button" onClick={onClose}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                    {coverType === 'image' && (
+                        <div className="vpm-image-frame">
+                            <img src={realTimeUser.coverPhotoURL} alt="Cover" className="vpm-cover-img" onError={e => e.target.style.display='none'}/>
+                            <div className="vpm-image-gradient"/>
+                            <div className="vpm-cover-badge vpm-cover-badge--image">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                Cover Photo
+                            </div>
+                        </div>
+                    )}
+                    {coverType === 'default' && (
+                        <div className="vpm-default-cover">
+                            <div className="vpm-orb vpm-orb-1"/><div className="vpm-orb vpm-orb-2"/><div className="vpm-orb vpm-orb-3"/>
+                            <span className="vpm-default-initial">{(realTimeUser.displayName || user.displayName || '?').charAt(0).toUpperCase()}</span>
+                        </div>
+                    )}
+                    <button className="vpm-close-btn" onClick={onClose} title="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
 
-                {/* Profile Header */}
-                <div className="profile-header">
-                    <div className="header-content-centered">
-                        <div className="avatar-section">
-                            <img 
-                                src={getAvatarUrl()} 
-                                alt="Profile" 
-                                className="profile-pic"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('Profile picture clicked, opening full image');
-                                    setShowFullImage(true);
-                                }}
-                                style={{ cursor: 'pointer' }}
-                                title="Click to view full image"
-                            />
-                            {(() => {
-                                const isOnlineNow = window.onlineUsers?.has(realTimeUser.uid) || 
-                                    (window.userOnlineStatuses && window.userOnlineStatuses[realTimeUser.uid]?.state === 'online') ||
-                                    realTimeUser.isOnline;
-                                return (
-                                    <span className={`profile-online-dot ${isOnlineNow ? 'online' : 'offline'}`}></span>
-                                );
-                            })()}
-                            <span className="gender-badge-on-avatar">
-                                {realTimeUser.gender?.toLowerCase() === 'female' ? (
-                                    <svg width="14" height="14" id="Filled_Expand" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" data-name="Filled Expand">
-                                        <path d="m35 38.607a11.983 11.983 0 0 0 4.477-20.983 10 10 0 1 0 -14.954 0 11.983 11.983 0 0 0 4.477 20.983v10.393h-8v6h8v8h6v-8h8v-6h-8zm-3-31.607a4 4 0 1 1 -4 4 4 4 0 0 1 4-4zm-6 20a6 6 0 1 1 6 6 6 6 0 0 1 -6-6z" fill="#f68dc1"/>
-                                        <path d="m35 49v-10.393a11.983 11.983 0 0 0 4.477-20.983 9.987 9.987 0 0 0 -6.477-16.574 9.987 9.987 0 0 0 -6.477 16.574 11.969 11.969 0 0 0 -4.523 9.376c0 5.589 3.827 9.666 9 11v13h-8v4h8v8h4v-8h8v-6zm-3-42a4 4 0 1 1 -4 4 4 4 0 0 1 4-4zm0 26a6 6 0 1 1 6-6 6 6 0 0 1 -6 6z" fill="#f35faa"/>
-                                    </svg>
-                                ) : realTimeUser.gender?.toLowerCase() === 'other' ? (
-                                    <svg width="14" height="14" id="Layer_1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" data-name="Layer 1">
-                                        <defs>
-                                            <linearGradient id="GradientFill_1_Modal" gradientUnits="userSpaceOnUse" x1="10.291" x2="501.771" y1="255.997" y2="255.997">
-                                                <stop offset="0" stopColor="#58c8df"/>
-                                                <stop offset="1" stopColor="#53a7dd"/>
-                                            </linearGradient>
-                                        </defs>
-                                        <path d="m367.353 157.494c-1.593 12.6-20.2 31.412-36.384 43.042-16.188-11.63-34.79-30.447-36.391-43.042-.378-3.007.344-4.986 2.651-7.3a10.415 10.415 0 0 1 14.688 0c.721.721 1.564 1.764 2.543 2.971 1.307 1.622 2.929 3.629 4.993 5.765a16 16 0 0 0 23.025 0c2.064-2.136 3.693-4.143 4.993-5.765.979-1.207 1.822-2.25 2.536-2.971a10.416 10.416 0 0 1 14.695 0c2.308 2.314 3.029 4.293 2.651 7.3zm-36.384-33.125a42.454 42.454 0 0 0 -56.365 3.207c-9.322 9.323-13.394 21.060-11.766 33.94 4.094 32.333 44.692 62.88 59.98 71.932a16.055 16.055 0 0 0 16.3 0c15.3-9.052 55.894-39.6 59.987-71.932 1.629-12.88-2.443-24.617-11.773-33.947a42.452 42.452 0 0 0 -56.358-3.2zm-158.85 137.418c-1.586 12.58-20.2 31.4-36.391 43.027-16.188-11.63-34.79-30.447-36.383-43.034-.379-3.015.343-4.994 2.657-7.3a10.417 10.417 0 0 1 14.688 0c.721.721 1.557 1.757 2.536 2.972 1.315 1.614 2.929 3.629 4.994 5.758a16.013 16.013 0 0 0 23.031 0c2.058-2.129 3.679-4.144 4.987-5.751.978-1.214 1.821-2.258 2.543-2.979a10.4 10.4 0 0 1 14.688 0c2.314 2.307 3.029 4.286 2.65 7.308zm-36.376-33.14a42.478 42.478 0 0 0 -56.372 3.208c-9.323 9.322-13.395 21.059-11.759 33.94 4.079 32.333 44.677 62.88 59.979 71.931a16.036 16.036 0 0 0 16.288 0c15.3-9.051 55.9-39.6 59.98-71.931 1.629-12.881-2.443-24.618-11.759-33.94a42.444 42.444 0 0 0 -56.357-3.208zm261.335 10.108a93.495 93.495 0 1 0 -132.225 0 92.893 92.893 0 0 0 132.225 0zm-195.226 101.186a93.5 93.5 0 1 0 -132.233 0 93.625 93.625 0 0 0 132.233 0zm40.377-256.041a124.609 124.609 0 0 0 -36.72 85.6c-48.756-32.626-115.5-27.439-158.522 15.581a125.435 125.435 0 0 0 72.753 213.16v25.433h-40.334a16 16 0 0 0 0 32h40.334v40.326a16 16 0 1 0 32 0v-40.322h40.319a16 16 0 0 0 0-32h-40.321v-25.437a125.277 125.277 0 0 0 109.4-121.316 125.509 125.509 0 0 0 168.362-182.032l40.27-40.263v35.477a16 16 0 0 0 32 0v-74.107a16.008 16.008 0 0 0 -16-16h-74.11a16 16 0 0 0 0 32h35.476l-40.507 40.5c-49.142-37.172-119.616-33.379-164.4 11.4z" fill="url(#GradientFill_1_Modal)" fillRule="evenodd"/>
-                                    </svg>
-                                ) : (
-                                    <svg width="14" height="14" clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit="2" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <linearGradient id="maleGradientModal" gradientTransform="matrix(38.402 -29.918 29.918 38.402 879.315 261.556)" gradientUnits="userSpaceOnUse" x1="0" x2="1" y1="0" y2="0">
-                                                <stop offset="0" stopColor="#0056e0"/>
-                                                <stop offset=".01" stopColor="#0056e0"/>
-                                                <stop offset="1" stopColor="#00e5b8"/>
-                                            </linearGradient>
-                                        </defs>
-                                        <g transform="translate(-106 -159)">
-                                            <g transform="translate(-764.321 -65.93)">
-                                                <g id="ngicon">
-                                                    <path d="m903.204 236.514-7.015 7.014c-4.849-3.22-11.433-2.709-15.673 1.532-4.841 4.84-4.822 12.734.06 17.617 4.883 4.882 12.777 4.901 17.617.06 4.241-4.24 4.752-10.824 1.532-15.673l7.004-7.004.014 3.371c.006 1.38 1.131 2.495 2.511 2.489s2.495-1.131 2.489-2.511l-.04-9.392c-.006-1.374-1.12-2.486-2.494-2.489l-9.374-.022c-1.38-.003-2.503 1.114-2.506 2.494s1.114 2.503 2.494 2.506zm-19.092 22.627c-2.923-2.923-2.959-7.648-.061-10.546s7.624-2.862 10.546.06c2.923 2.923 2.959 7.649.061 10.547-2.898 2.897-7.624 2.862-10.546-.061z" fill="url(#maleGradientModal)"/>
-                                                </g>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="user-info-centered">
-                            <div className="username-role-container">
-                                <h2 className="modal-display-name">
-                                    {realTimeUser.displayName || user.displayName || 'Anonymous'}
-                                    {realTimeUser.badge && badges[realTimeUser.badge] && (
-                                        <span
-                                            className="inline-badge"
-                                            title={badges[realTimeUser.badge].name}
-                                            dangerouslySetInnerHTML={{ __html: badges[realTimeUser.badge].svg }}
-                                            style={{
-                                                width: '16px',
-                                                height: '16px',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginLeft: '4px'
-                                            }}
-                                        />
-                                    )}
-                                </h2>
-                                <div className={`role-badge ${realTimeUser.role?.toLowerCase()}-${realTimeUser.gender?.toLowerCase()}`}>
-                                    <span className="role-purple-dot"></span>
-                                    {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
-                                </div>
-                            </div>
-                            {(realTimeUser.status || realTimeUser.bio) && (
-                                <p 
-                                    className="user-bio"
-                                    style={{
-                                        fontFamily: (realTimeUser.statusStyles?.fontFamily || user.statusStyles?.fontFamily) || 'inherit',
-                                        fontSize: (realTimeUser.statusStyles?.fontSize || user.statusStyles?.fontSize) || '10px',
-                                        fontWeight: (realTimeUser.statusStyles?.fontWeight || user.statusStyles?.fontWeight) || 'normal',
-                                        fontStyle: (realTimeUser.statusStyles?.fontStyle || user.statusStyles?.fontStyle) || 'italic',
-                                        textDecoration: (realTimeUser.statusStyles?.textDecoration || user.statusStyles?.textDecoration) || 'none',
-                                        color: (realTimeUser.statusStyles?.gradientEnabled || user.statusStyles?.gradientEnabled) ? 'transparent' : ((realTimeUser.statusStyles?.textColor || user.statusStyles?.textColor) || '#6b7280'),
-                                        background: (realTimeUser.statusStyles?.gradientEnabled || user.statusStyles?.gradientEnabled) ? 
-                                            `linear-gradient(${(realTimeUser.statusStyles?.gradientDirection || user.statusStyles?.gradientDirection) || 'to right'}, ${(realTimeUser.statusStyles?.gradientStart || user.statusStyles?.gradientStart) || '#667eea'}, ${(realTimeUser.statusStyles?.gradientEnd || user.statusStyles?.gradientEnd) || '#764ba2'})` : 'transparent',
-                                        WebkitBackgroundClip: (realTimeUser.statusStyles?.gradientEnabled || user.statusStyles?.gradientEnabled) ? 'text' : 'initial',
-                                        backgroundClip: (realTimeUser.statusStyles?.gradientEnabled || user.statusStyles?.gradientEnabled) ? 'text' : 'initial',
-                                        textShadow: (realTimeUser.statusStyles?.textShadow || user.statusStyles?.textShadow) || 'none',
-                                        animation: (realTimeUser.statusStyles?.animation || user.statusStyles?.animation) || 'none',
-                                        border: 'none',
-                                        padding: '2px 0'
-                                    }}
-                                >
-                                    {realTimeUser.status || realTimeUser.bio}
-                                </p>
-                            )}
-                        </div>
+                {/* ── IDENTITY ── */}
+                <div className="vpm-identity">
+                    <div className="vpm-avatar-ring" style={{'--ring-color': avatarBorderColor}}>
+                        <img
+                            src={getAvatarUrl()}
+                            alt="Profile"
+                            className="vpm-avatar"
+                            onClick={() => setShowFullImage(true)}
+                            title="Click to enlarge"
+                        />
+                        <span className={`vpm-online-dot ${isOnlineNow ? 'online' : ''}`}/>
                     </div>
+
+                    <h2 className="vpm-username modal-display-name" data-user-uid={realTimeUser.uid} data-user-id={realTimeUser.uid}>
+                        {realTimeUser.displayName || user.displayName || 'Anonymous'}
+                        {realTimeUser.badge && badges[realTimeUser.badge] && (
+                            <span className="vpm-inline-badge" title={badges[realTimeUser.badge].name}
+                                  dangerouslySetInnerHTML={{ __html: badges[realTimeUser.badge].svg }}/>
+                        )}
+                    </h2>
+
+                    <div className={`vpm-role-pill vpm-role-${realTimeUser.role?.toLowerCase() || 'user'}`}>
+                        <span className="vpm-role-dot"/>
+                        {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
+                        {realTimeUser.gender && (
+                            <span className="vpm-gender-chip">
+                                {realTimeUser.gender?.toLowerCase() === 'female' ? ' · ♀' :
+                                 realTimeUser.gender?.toLowerCase() === 'other' ? ' · ⚧' : ' · ♂'}
+                            </span>
+                        )}
+                    </div>
+
+                    {(realTimeUser.status || realTimeUser.bio) && (
+                        <p className="vpm-status user-bio" style={statusStyle}>
+                            ❝{realTimeUser.status || realTimeUser.bio}❞
+                        </p>
+                    )}
                 </div>
 
-                {/* Royal Trust Badge Section — always show for registered users */}
-                {!realTimeUser.isGuest && (
-                    <div className="profile-trust-section">
-                        <div className="profile-trust-header">
-                            <span className="profile-trust-title">Royal Trust Rank</span>
+                {/* ── BADGE SHOWCASE ── */}
+                {realTimeUser.badge && badges[realTimeUser.badge] && (
+                    <div className="vpm-badge-showcase">
+                        <div className="vpm-badge-glow-ring"/>
+                        <div className="vpm-badge-icon-wrap">
+                            <span className="vpm-badge-svg" dangerouslySetInnerHTML={{ __html: badges[realTimeUser.badge].svg }}/>
                         </div>
-                        <div className="profile-trust-badge-wrap">
+                        <div className="vpm-badge-meta">
+                            <span className="vpm-badge-label">✦ Special Badge</span>
+                            <span className="vpm-badge-name">{badges[realTimeUser.badge].name}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── ROYAL TRUST ── */}
+                {!realTimeUser.isGuest && (
+                    <div className="vpm-trust-section">
+                        <span className="vpm-section-label">✦ Royal Trust Rank</span>
+                        <div className="vpm-trust-inner">
                             <RoyalTrustBadge
                                 trustScore={realTimeUser.trustScore ?? 10}
                                 trustRank={realTimeUser.trustRank}
-                                size="lg"
-                                showLabel={true}
-                                showTooltip={true}
+                                size="sm" showLabel={true} showTooltip={true}
                             />
-                            <div className="profile-trust-bar-section">
-                                <div className="profile-trust-bar-bg">
-                                    <div
-                                        className="profile-trust-bar-fill"
-                                        style={{
-                                            width: `${realTimeUser.trustScore ?? 10}%`,
-                                            background: (() => {
-                                                const s = realTimeUser.trustScore ?? 10;
-                                                if (s <= 20) return 'linear-gradient(90deg,#C4A882,#8B7355)';
-                                                if (s <= 40) return 'linear-gradient(90deg,#E8E8E8,#A8A8A8)';
-                                                if (s <= 60) return 'linear-gradient(90deg,#FFD700,#FFA500)';
-                                                if (s <= 80) return 'linear-gradient(90deg,#9B59B6,#667eea)';
-                                                return 'linear-gradient(90deg,#00D4FF,#7B2FBE,#FFD700)';
-                                            })()
-                                        }}
-                                    />
+                            <div className="vpm-trust-bar-wrap">
+                                <div className="vpm-trust-bar">
+                                    <div className="vpm-trust-fill" style={{ width:`${realTimeUser.trustScore ?? 10}%`, background: getTrustGradient(realTimeUser.trustScore ?? 10) }}/>
                                 </div>
-                                <div className="profile-trust-bar-label">
-                                    <span>Trust Score</span>
-                                    <span>{realTimeUser.trustScore ?? 10}/100</span>
-                                </div>
+                                <span className="vpm-trust-score">{realTimeUser.trustScore ?? 10}/100</span>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Tab Navigation */}
-                <div className="tab-navigation">
-                    <button 
-                        className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
-                        onClick={() => {
-                            setActiveTab('info');
-                            // Apply styles immediately when switching to info tab
-                            setTimeout(() => applyFontPreferences(), 0);
-                        }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/>
-                        </svg>
+                {/* ── TABS ── */}
+                <div className="vpm-tabs">
+                    <button className={`vpm-tab-btn ${activeTab === 'info' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('info'); setTimeout(() => applyFontPreferences(), 50); }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z"/></svg>
                         Info
                     </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'friends' ? 'active' : ''}`}
-                        onClick={() => {
-                            setActiveTab('friends');
-                            // Reload friends data when tab is clicked
-                            loadFriendsData();
-                        }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,14C12.42,14 16,15.79 16,18V20H0V18C0,15.79 3.58,14 8,14Z"/>
-                        </svg>
-                        Friends ({(realTimeUser?.friends?.length || user?.friends?.length || friendsData.length)})
+                    <button className={`vpm-tab-btn ${activeTab === 'friends' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('friends'); loadFriendsData(); }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,14C12.42,14 16,15.79 16,18V20H0V18C0,15.79 3.58,14 8,14Z"/></svg>
+                        Friends ({realTimeUser?.friends?.length || friendsData.length || 0})
                     </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'activity' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('activity')}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z"/>
-                        </svg>
+                    <button className={`vpm-tab-btn ${activeTab === 'activity' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('activity')}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z"/></svg>
                         Activity
                     </button>
                 </div>
 
-                {/* Content Area */}
-                <div className={`content-section ${activeTab === 'info' ? 'info-tab' : ''}`}>
+                {/* ── CONTENT ── */}
+                <div className="vpm-content">
+
+                    {/* INFO TAB */}
                     {activeTab === 'info' && (
-                        <div className="info-content">
-                            <div className="info-list smooth-scroll">
-                                {realTimeUser.age && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,6A3,3 0 0,0 9,9A3,3 0 0,0 12,12A3,3 0 0,0 15,9A3,3 0 0,0 12,6M6,8.5A2.5,2.5 0 0,0 3.5,11A2.5,2.5 0 0,0 6,13.5A2.5,2.5 0 0,0 8.5,11A2.5,2.5 0 0,0 6,8.5M18,8.5A2.5,2.5 0 0,0 15.5,11A2.5,2.5 0 0,0 18,13.5A2.5,2.5 0 0,0 20.5,11A2.5,2.5 0 0,0 18,8.5M12,14C10,14 6,15 6,17V19H18V17C18,15 14,14 12,14M4.5,14.5C3.5,14.5 1.5,15 1.5,16.5V18.5H4.5V16.5C4.5,15.9 5.4,15.6 6.7,15.4C5.9,15.1 4.5,14.6 4.5,14.5M19.5,14.5C18.6,14.6 17.1,15.1 16.3,15.4C17.6,15.6 18.5,15.9 18.5,16.5V18.5H21.5V16.5C21.5,15 19.5,14.5 19.5,14.5Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Age</span>
-                                            <span className="info-value">{realTimeUser.age} years old</span>
-                                        </div>
+                        <div className="vpm-info-grid">
+                            {realTimeUser.country && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🌍</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Country</span>
+                                        <span className="vpm-info-value">{getCountryFlag(realTimeUser.country)} {realTimeUser.country}</span>
                                     </div>
-                                )}
-
-                                {realTimeUser.gender && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                                <defs>
-                                                  <linearGradient id="profileGenderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#8b5cf6" />
-                                                    <stop offset="50%" stopColor="#ec4899" />
-                                                    <stop offset="100%" stopColor="#3b82f6" />
-                                                  </linearGradient>
-                                                </defs>
-                                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"
-                                                      fill="url(#profileGenderGradient)"/>
-                                                <circle cx="12" cy="8" r="2" fill="rgba(255, 255, 255, 0.3)"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Gender</span>
-                                            <span className="info-value">{realTimeUser.gender}</span>
-                                        </div>
+                                </div>
+                            )}
+                            {realTimeUser.age && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🎂</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Age</span>
+                                        <span className="vpm-info-value">{realTimeUser.age} years</span>
                                     </div>
-                                )}
-
-                                {realTimeUser.country && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Country</span>
-                                            <span className="info-value">{realTimeUser.country}</span>
-                                        </div>
+                                </div>
+                            )}
+                            {realTimeUser.gender && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">{realTimeUser.gender?.toLowerCase()==='female'?'♀':realTimeUser.gender?.toLowerCase()==='other'?'⚧':'♂'}</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Gender</span>
+                                        <span className="vpm-info-value">{realTimeUser.gender}</span>
                                     </div>
-                                )}
-
-                                {realTimeUser.languages && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Languages</span>
-                                            <span className="info-value">{realTimeUser.languages}</span>
-                                        </div>
+                                </div>
+                            )}
+                            {realTimeUser.relationship && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">💕</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Relationship</span>
+                                        <span className="vpm-info-value">{getRelationshipDisplay(realTimeUser.relationship)}</span>
                                     </div>
-                                )}
-
-                                {realTimeUser.profession && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm6 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Profession</span>
-                                            <span className="info-value">{realTimeUser.profession}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.relationship && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Relationship</span>
-                                            <span className="info-value">{getRelationshipDisplay(realTimeUser.relationship)}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.interests && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Interests</span>
-                                            <span className="info-value">{realTimeUser.interests}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.bio && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                                                <path d="M8 12h8v2H8zm0 4h8v2H8z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">About</span>
-                                            <span className="info-value bio-text">{realTimeUser.bio}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Additional info fields */}
-                                {realTimeUser.location && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Location</span>
-                                            <span className="info-value">{realTimeUser.location}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.hobbies && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7.5,13.5L9,12L7.5,10.5L12,6L16.5,10.5L15,12L16.5,13.5L12,18L7.5,13.5Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Hobbies</span>
-                                            <span className="info-value">{realTimeUser.hobbies}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.education && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Education</span>
-                                            <span className="info-value">{realTimeUser.education}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.website && (
-                                    <div className="info-item">
-                                        <div className="info-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="info-details">
-                                            <span className="info-label">Website</span>
-                                            <span className="info-value">
-                                                <a href={realTimeUser.website} target="_blank" rel="noopener noreferrer" 
-                                                   style={{color: '#8b5cf6', textDecoration: 'none'}}>
-                                                    {realTimeUser.website}
-                                                </a>
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
+                                </div>
+                            )}
+                            <div className="vpm-info-card">
+                                <span className="vpm-info-icon">⏱</span>
+                                <div className="vpm-info-text">
+                                    <span className="vpm-info-label">Last Seen</span>
+                                    <span className="vpm-info-value" style={{color: isOnlineNow ? '#16a34a' : undefined}}>
+                                        {isOnlineNow ? '🟢 Online now' : formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt || realTimeUser.last_seen)}
+                                    </span>
+                                </div>
                             </div>
-
-                            {/* Action Buttons */}
-                            {!isCurrentUser && (() => {
-                                const viewerRole = currentUserProfile?.role?.toLowerCase() || propsCurrentUser?.role?.toLowerCase() || 'guest';
-                                const isViewerGuest = !auth.currentUser || currentUserProfile?.isGuest === true || propsCurrentUser?.isGuest === true;
-                                const isTargetGuest = realTimeUser?.isGuest === true;
-                                const isTargetStaff = ['owner', 'admin', 'moderator'].includes(realTimeUser?.role?.toLowerCase());
-                                const isLimited = isViewerGuest || isTargetGuest;
-
-                                return (
-                                    <div className="action-section-pills">
-                                        <button className="pill-btn pill-view-profile" onClick={() => onOpenProfile && onOpenProfile(realTimeUser)}>
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                                            </svg>
-                                            View Profile
-                                        </button>
-
-                                        {!isLimited && (
-                                            isFriend ? (
-                                                <button className="pill-btn pill-add-friend" onClick={handleRemoveFriend}>
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
-                                                    </svg>
-                                                    Remove Friend
-                                                </button>
-                                            ) : friendRequestSent ? (
-                                                <button className="pill-btn pill-add-friend" disabled>
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
-                                                    </svg>
-                                                    Request Sent
-                                                </button>
-                                            ) : (
-                                                <button className="pill-btn pill-add-friend" onClick={handleSendFriendRequest}>
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/>
-                                                    </svg>
-                                                    Add Friend
-                                                </button>
-                                            )
-                                        )}
-
-                                        <button className="pill-btn pill-send-message" onClick={() => {
-                                            if (onSendMessage) { onSendMessage(realTimeUser); onClose(); }
-                                            else if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(realTimeUser); onClose(); }
-                                        }}>
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                            </svg>
-                                            Send Message
-                                        </button>
-
-                                        {!isLimited && (
-                                            <button className="pill-btn pill-whisper" onClick={() => {
-                                                if (onWhisper) { onWhisper(realTimeUser); onClose(); }
-                                                else if (window.handleWhisperFromSidebar) { window.handleWhisperFromSidebar(realTimeUser); onClose(); }
-                                            }}>
-                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>
-                                                </svg>
-                                                Whisper
-                                            </button>
-                                        )}
-
-                                        {!isTargetStaff && (
-                                            <button className="pill-btn pill-block" onClick={handleBlockUser}>
-                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
-                                                </svg>
-                                                Block User
-                                            </button>
-                                        )}
+                            <div className="vpm-info-card">
+                                <span className="vpm-info-icon">📅</span>
+                                <div className="vpm-info-text">
+                                    <span className="vpm-info-label">Member Since</span>
+                                    <span className="vpm-info-value">{formatJoinDate(realTimeUser.createdAt || realTimeUser.joinedAt || realTimeUser.registrationDate)}</span>
+                                </div>
+                            </div>
+                            <div className="vpm-info-card">
+                                <span className="vpm-info-icon">👥</span>
+                                <div className="vpm-info-text">
+                                    <span className="vpm-info-label">Friends</span>
+                                    <span className="vpm-info-value">{realTimeUser?.friends?.length || friendsData.length || 0} friends</span>
+                                </div>
+                            </div>
+                            {realTimeUser.profession && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">💼</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Profession</span>
+                                        <span className="vpm-info-value">{realTimeUser.profession}</span>
                                     </div>
-                                );
-                            })()}
-
-                            {/* Profile Deletion Section for Current User */}
-                            {isCurrentUser && (
-                                <div className="action-section" style={{marginTop: '20px', borderTop: '1px solid rgba(239, 68, 68, 0.2)', paddingTop: '15px'}}>
-                                    <div style={{marginBottom: '10px', textAlign: 'center'}}>
-                                        <h4 style={{color: '#ef4444', fontSize: '14px', margin: '0 0 5px 0'}}>Danger Zone</h4>
-                                        <p style={{fontSize: '12px', color: '#6b7280', margin: '0'}}>Permanently delete your profile with 3-day grace period</p>
+                                </div>
+                            )}
+                            {realTimeUser.languages && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🗣</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Languages</span>
+                                        <span className="vpm-info-value">{realTimeUser.languages}</span>
                                     </div>
-
-                                    {realTimeUser?.markedForDeletion ? (
-                                        <div style={{textAlign: 'center'}}>
-                                            <p style={{color: '#ef4444', fontSize: '12px', marginBottom: '10px'}}>
-                                                ⚠️ Profile scheduled for deletion on {realTimeUser.permanentDeletionDate?.toDate?.()?.toLocaleDateString() || 'Unknown'}
-                                            </p>
-                                            <button className="action-button add-btn" onClick={handleRevertDeletion}>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m0 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"></path>
-                                                </svg>
-                                                Cancel Deletion
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button 
-                                            className="action-button" 
-                                            onClick={handleDeleteProfile}
-                                            style={{
-                                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                                border: '1px solid #ef4444',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="3,6 5,6 21,6"></polyline>
-                                                <path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                            Delete Profile Permanently
-                                        </button>
-                                    )}
+                                </div>
+                            )}
+                            {realTimeUser.education && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🎓</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Education</span>
+                                        <span className="vpm-info-value">{realTimeUser.education}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {realTimeUser.interests && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">⭐</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Interests</span>
+                                        <span className="vpm-info-value">{realTimeUser.interests}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {realTimeUser.hobbies && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🎯</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Hobbies</span>
+                                        <span className="vpm-info-value">{realTimeUser.hobbies}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {realTimeUser.location && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">📍</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Location</span>
+                                        <span className="vpm-info-value">{realTimeUser.location}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {realTimeUser.website && (
+                                <div className="vpm-info-card">
+                                    <span className="vpm-info-icon">🔗</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">Website</span>
+                                        <span className="vpm-info-value">
+                                            <a href={realTimeUser.website} target="_blank" rel="noopener noreferrer" style={{color:'#8b5cf6',textDecoration:'none'}}>
+                                                {realTimeUser.website.replace(/^https?:\/\//,'')}
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            {realTimeUser.bio && (
+                                <div className="vpm-info-card vpm-info-card--about">
+                                    <span className="vpm-info-icon">📝</span>
+                                    <div className="vpm-info-text">
+                                        <span className="vpm-info-label">About</span>
+                                        <span className="vpm-info-value vpm-bio-text">{realTimeUser.bio}</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     )}
 
+                    {/* FRIENDS TAB */}
                     {activeTab === 'friends' && (
-                        <div className="friends-content">
-                            {friendsData.length > 0 ? (
-                                <div className="friends-grid">
-                                    {friendsData.map(friend => (
-                                        <div 
-                                            key={friend.uid || friend.id} 
-                                            className="friend-grid-item"
-                                            onClick={() => onOpenProfile && onOpenProfile(friend)}
-                                            title={friend.displayName}
-                                        >
-                                            <img 
-                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.uid || friend.id, friend.gender)}`}
-                                                alt={friend.displayName}
-                                                className="friend-grid-pic"
-                                            />
-                                            <div className="friend-name-overlay">{friend.displayName}</div>
-                                        </div>
-                                    ))}
+                        <div className="vpm-friends-grid">
+                            {friendsData.length > 0 ? friendsData.map(f => (
+                                <div key={f.uid || f.id} className="vpm-friend-item" onClick={() => onOpenProfile && onOpenProfile(f)} title={f.displayName}>
+                                    <img src={f.photoURL || getDefaultAvatarUrl(f.uid || f.id, f.gender)} alt={f.displayName} className="vpm-friend-avatar"/>
+                                    <div className="vpm-friend-name">{f.displayName}</div>
                                 </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="9" cy="7" r="4"></circle>
-                                        <path d="m22 21-3-3"></path>
-                                        <path d="m16 16 3 3"></path>
-                                    </svg>
+                            )) : (
+                                <div className="vpm-empty">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 21-3-3m-2-2 3 3"/></svg>
                                     <p>No friends yet</p>
                                 </div>
                             )}
                         </div>
                     )}
 
+                    {/* ACTIVITY TAB */}
                     {activeTab === 'activity' && (
-                        <div className="activity-content">
-                            <div className="activity-stats">
-                                <div className="stat-item">
-                                    <div className="stat-icon">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3H19M5,7V5H19V7H5M5,9H10V19H5V9M12,9H19V19H12V9Z"/>
-                                        </svg>
-                                    </div>
-                                    <div className="stat-details">
-                                        <span className="stat-value">{formatJoinDate(realTimeUser.createdAt || realTimeUser.joinedAt || realTimeUser.registrationDate)}</span>
-                                        <span className="stat-label">Joined</span>
-                                    </div>
-                                </div>
-
-                                <div className="stat-item">
-                                    <div className="stat-icon">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
-                                        </svg>
-                                    </div>
-                                    <div className="stat-details">
-                                        <span className="stat-value" style={{
-                                            color: (() => {
-                                                const isOnline = window.onlineUsers?.has(realTimeUser.uid) || 
-                                                                realTimeUser.isOnline || 
-                                                                (window.userOnlineStatuses && window.userOnlineStatuses[realTimeUser.uid]?.status === 'online');
-                                                return isOnline ? '#10b981' : '#6b7280';
-                                            })(),
-                                            fontWeight: '700'
-                                        }}>
-                                            {formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt || realTimeUser.last_seen)}
-                                        </span>
-                                        <span className="stat-label">Status</span>
-                                    </div>
-                                </div>
-
-                                <div className="stat-item">
-                                    <div className="stat-icon">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M8,4C10.21,4 12,5.79 12,8C12,10.21 10.21,12 8,12C5.79,12 4,10.21 4,8C4,5.79 5.79,4 8,4M8,14C12.42,14 16,15.79 16,18V20H0V18C0,15.79 3.58,14 8,14Z"/>
-                                        </svg>
-                                    </div>
-                                    <div className="stat-details">
-                                        <span className="stat-value">{friendsData?.length || realTimeUser.friends?.length || 0}</span>
-                                        <span className="stat-label">Friends</span>
-                                    </div>
-                                </div>
-
-                                {realTimeUser.role && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,1L9,9L1,9L7.5,14L5.5,22L12,17.5L18.5,22L16.5,14L23,9L15,9L12,1Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value" style={{
-                                                color: realTimeUser.role === 'owner' ? '#FFD700' : 
-                                                      realTimeUser.role === 'admin' ? '#FF4500' : 
-                                                      realTimeUser.role === 'moderator' ? '#32CD32' : 
-                                                      realTimeUser.role === 'badge-holder' ? '#9370DB' : '#8b5cf6',
-                                                fontWeight: '700'
-                                            }}>
-                                                {realTimeUser.role?.charAt(0).toUpperCase() + realTimeUser.role?.slice(1)}
-                                            </span>
-                                            <span className="stat-label">Role</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.badge && badges[realTimeUser.badge] && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value">{badges[realTimeUser.badge]?.name || 'Special Badge'}</span>
-                                            <span className="stat-label">Badge</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.profileViews && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M12,4.5C17,4.5 21.27,7.61 23,12C21.27,16.39 17,19.5 12,19.5C7,19.5 2.73,16.39 1,12C2.73,7.61 7,4.5 12,4.5M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value">{realTimeUser.profileViews || 0}</span>
-                                            <span className="stat-label">Profile Views</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.totalMessages && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6V9M14,14H6V12H14V14M18,8H6V6H18V8Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value">{realTimeUser.totalMessages || 0}</span>
-                                            <span className="stat-label">Messages Sent</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.updatedAt && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M21,10.12H14.22L16.96,7.3C14.23,4.6 9.81,4.5 7.08,7.2C4.35,9.91 4.35,14.28 7.08,17C9.81,19.7 14.23,19.7 16.96,17C18.32,15.65 19,14.08 19,12.1H21C21,14.08 20.12,16.65 18.36,18.39C14.85,21.87 9.15,21.87 5.64,18.39C2.14,14.92 2.11,9.28 5.64,5.81C9.17,2.34 14.85,2.34 18.36,5.81L21,3V10.12M12.5,8V12.25L16,14.33L15.28,15.54L11,13V8H12.5Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value">{formatLastSeen(realTimeUser.updatedAt)}</span>
-                                            <span className="stat-label">Profile Updated</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {isCurrentUser && auth.currentUser?.email && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value" style={{fontSize: '12px'}}>{auth.currentUser.email}</span>
-                                            <span className="stat-label">Email</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.accountType && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value">{realTimeUser.accountType}</span>
-                                            <span className="stat-label">Account Type</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {realTimeUser.verified && (
-                                    <div className="stat-item">
-                                        <div className="stat-icon">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2Z"/>
-                                            </svg>
-                                        </div>
-                                        <div className="stat-details">
-                                            <span className="stat-value" style={{color: '#10b981', fontWeight: '700'}}>Verified</span>
-                                            <span className="stat-label">Account Status</span>
-                                        </div>
-                                    </div>
-                                )}
+                        <div className="vpm-activity-grid">
+                            <div className="vpm-stat-card">
+                                <span className="vpm-stat-icon">📅</span>
+                                <span className="vpm-stat-value">{formatJoinDate(realTimeUser.createdAt || realTimeUser.joinedAt || realTimeUser.registrationDate)}</span>
+                                <span className="vpm-stat-label">Joined</span>
                             </div>
+                            <div className="vpm-stat-card">
+                                <span className="vpm-stat-icon">👁</span>
+                                <span className="vpm-stat-value" style={{color: isOnlineNow ? '#16a34a' : undefined}}>
+                                    {isOnlineNow ? 'Online' : formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt)}
+                                </span>
+                                <span className="vpm-stat-label">Last Seen</span>
+                            </div>
+                            <div className="vpm-stat-card">
+                                <span className="vpm-stat-icon">👥</span>
+                                <span className="vpm-stat-value">{realTimeUser?.friends?.length || friendsData.length || 0}</span>
+                                <span className="vpm-stat-label">Friends</span>
+                            </div>
+                            {realTimeUser.role && (
+                                <div className="vpm-stat-card">
+                                    <span className="vpm-stat-icon">🌟</span>
+                                    <span className="vpm-stat-value" style={{color: avatarBorderColor}}>
+                                        {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
+                                    </span>
+                                    <span className="vpm-stat-label">Role</span>
+                                </div>
+                            )}
+                            {realTimeUser.badge && badges[realTimeUser.badge] && (
+                                <div className="vpm-stat-card">
+                                    <span className="vpm-stat-icon">🏅</span>
+                                    <span className="vpm-stat-value">{badges[realTimeUser.badge].name}</span>
+                                    <span className="vpm-stat-label">Badge</span>
+                                </div>
+                            )}
+                            {realTimeUser.profileViews && (
+                                <div className="vpm-stat-card">
+                                    <span className="vpm-stat-icon">👀</span>
+                                    <span className="vpm-stat-value">{realTimeUser.profileViews}</span>
+                                    <span className="vpm-stat-label">Profile Views</span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Full Image Modal */}
-            {showFullImage && (
-                <div 
-                    className="full-image-overlay" 
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            console.log('Full image overlay clicked, closing');
-                            setShowFullImage(false);
-                        }
-                    }}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0, 0, 0, 0.95)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 999999999,
-                        padding: '40px',
-                        animation: 'fadeIn 0.3s ease'
-                    }}
-                >
-                    <div 
-                        style={{
-                            position: 'relative',
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <img
-                            src={getAvatarUrl()}
-                            alt={`${realTimeUser.displayName}'s Profile Picture`}
-                            style={{
-                                width: 'auto',
-                                height: 'auto',
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                borderRadius: '20px',
-                                boxShadow: '0 30px 60px rgba(0, 0, 0, 0.8)',
-                                border: '4px solid rgba(255, 255, 255, 0.3)',
-                                objectFit: 'contain',
-                                transition: 'all 0.3s ease'
-                            }}
-                            onLoad={(e) => {
-                                console.log('✅ Full image loaded:', e.target.src);
-                            }}
-                            onError={(e) => {
-                                console.error('❌ Full image failed to load:', e.target.src);
-                            }}
-                        />
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('Close button clicked');
-                                setShowFullImage(false);
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                border: 'none',
-                                background: 'rgba(255, 255, 255, 0.95)',
-                                color: '#333',
-                                fontSize: '24px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)',
-                                transition: 'all 0.3s ease',
-                                zIndex: 10
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.background = '#ff4444';
-                                e.target.style.color = 'white';
-                                e.target.style.transform = 'scale(1.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-                                e.target.style.color = '#333';
-                                e.target.style.transform = 'scale(1)';
-                            }}
-                        >
-                            ×
+                {/* ── ACTION BUTTONS ── */}
+                {!isCurrentUser && (
+                    <div className="vpm-actions">
+                        <button className="vpm-action-btn vpm-action-view" onClick={() => onOpenProfile && onOpenProfile(realTimeUser)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+                            View Full Profile
                         </button>
-                        <div 
-                            style={{
-                                position: 'absolute',
-                                bottom: '20px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                background: 'rgba(0, 0, 0, 0.8)',
-                                color: 'white',
-                                padding: '12px 24px',
-                                borderRadius: '25px',
-                                fontSize: '16px',
-                                fontWeight: '600',
-                                whiteSpace: 'nowrap',
-                                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)',
-                                backdropFilter: 'blur(10px)'
-                            }}
-                        >
-                            {realTimeUser.displayName}'s Profile Picture
-                        </div>
+
+                        {!vpIsLimited && (
+                            isFriend ? (
+                                <button className="vpm-action-btn vpm-action-friend" onClick={handleRemoveFriend}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/></svg>
+                                    Remove Friend
+                                </button>
+                            ) : friendRequestSent ? (
+                                <button className="vpm-action-btn vpm-action-friend" disabled>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                                    Request Sent
+                                </button>
+                            ) : (
+                                <button className="vpm-action-btn vpm-action-friend" onClick={handleSendFriendRequest}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/></svg>
+                                    Add Friend
+                                </button>
+                            )
+                        )}
+
+                        <button className="vpm-action-btn vpm-action-msg" onClick={() => {
+                            if (onSendMessage) { onSendMessage(realTimeUser); onClose(); }
+                            else if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(realTimeUser); onClose(); }
+                        }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></svg>
+                            Message
+                        </button>
+
+                        {!vpIsLimited && (
+                            <button className="vpm-action-btn vpm-action-whisper" onClick={() => {
+                                if (onWhisper) { onWhisper(realTimeUser); onClose(); }
+                                else if (window.handleWhisperFromSidebar) { window.handleWhisperFromSidebar(realTimeUser); onClose(); }
+                            }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>
+                                Whisper
+                            </button>
+                        )}
+
+                        {!vpIsTargetStaff && (
+                            <button className="vpm-action-btn vpm-action-block" onClick={handleBlockUser}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/></svg>
+                                Block
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* ── SELF DANGER ZONE ── */}
+                {isCurrentUser && (
+                    <div className="vpm-danger-zone">
+                        <span className="vpm-danger-title">⚠ Danger Zone</span>
+                        <p className="vpm-danger-desc">Permanently delete your profile (3-day grace period)</p>
+                        {realTimeUser?.markedForDeletion ? (
+                            <>
+                                <p style={{color:'#ef4444',fontSize:'12px',textAlign:'center',marginBottom:'8px'}}>
+                                    Deletion scheduled for {realTimeUser.permanentDeletionDate?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                                </p>
+                                <button className="vpm-action-btn vpm-action-view" onClick={handleRevertDeletion}>Cancel Deletion</button>
+                            </>
+                        ) : (
+                            <button className="vpm-action-btn vpm-action-delete" onClick={handleDeleteProfile}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,6 5,6 21,6"/><path d="m19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"/></svg>
+                                Delete Profile Permanently
+                            </button>
+                        )}
+                    </div>
+                )}
+
+            </div>
+        </div>
+
+        {/* Full-size image overlay */}
+        {showFullImage && (
+            <div className="vpm-fullimg-overlay" onClick={() => setShowFullImage(false)}>
+                <div style={{position:'relative',maxWidth:'90vw',maxHeight:'90vh'}}>
+                    <img src={getAvatarUrl()} className="vpm-fullimg" alt="Full profile" onClick={e => e.stopPropagation()}/>
+                    <button className="vpm-fullimg-close" onClick={() => setShowFullImage(false)}>✕</button>
+                    <div style={{textAlign:'center',color:'rgba(255,255,255,0.7)',fontSize:'13px',marginTop:'10px'}}>
+                        {realTimeUser.displayName}'s Profile Picture
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+        )}
     );
 };
 
