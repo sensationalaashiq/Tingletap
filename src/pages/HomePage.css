@@ -10663,12 +10663,12 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
 }
 .apd-btn:hover .apd-icon-wrap { transform: scale(1.15); }
 
-/* Coloured icons — gradient text colour via fill */
-.apd-icon-view-profile { color: #7c3aed; }
-.apd-icon-friend       { color: #7c3aed; }
-.apd-icon-pm           { color: #059669; }
-.apd-icon-whisper      { color: #0ea5e9; }
-.apd-icon-block        { color: #e11d48; }
+/* Coloured icons — gradient background tiles */
+.apd-icon-view-profile { color: #fff; background: linear-gradient(135deg,#7c3aed,#6366f1); border-radius: 7px; }
+.apd-icon-friend       { color: #fff; background: linear-gradient(135deg,#8b5cf6,#a855f7); border-radius: 7px; }
+.apd-icon-pm           { color: #fff; background: linear-gradient(135deg,#10b981,#059669); border-radius: 7px; }
+.apd-icon-whisper      { color: #fff; background: linear-gradient(135deg,#0ea5e9,#0284c7); border-radius: 7px; }
+.apd-icon-block        { color: #fff; background: linear-gradient(135deg,#ef4444,#b91c1c); border-radius: 7px; }
 
 .apd-btn.apd-view-profile { color: #5b21b6; }
 .apd-btn.apd-friend       { color: #4c1d95; }

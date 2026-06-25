@@ -6586,6 +6586,7 @@ const HomePage = ({ user }) => {
                     loggedInUserProfile={loggedInUserProfile}
                     blockedUsers={blockedUsers}
                     onUnblockUser={handleUnblockUser}
+                    friendRequests={friendRequests}
                     onOpenProfile={(user) => {
                         setProfileSidebarUser(user);
                         setIsProfileSidebarOpen(true);

@@ -30,7 +30,8 @@ const SettingsSidebar = ({
     loggedInUserProfile, 
     blockedUsers, 
     onUnblockUser,
-    onOpenProfile 
+    onOpenProfile,
+    friendRequests = []
 }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('general');
@@ -949,7 +950,7 @@ const SettingsSidebar = ({
                                 COMMUNICATION SETTINGS
                             </h4>
 
-                            {isAnonymous ? (
+                            {auth.currentUser?.isAnonymous ? (
                                 /* Guest: only simple On/Off private message toggle */
                                 <label className="setting-item">
                                     <div className="setting-info">
@@ -2177,6 +2178,7 @@ const SettingsSidebar = ({
                                 </button>
                                 )}
 
+                                {!auth.currentUser?.isAnonymous && (
                                 <button 
                                     className="modern-nav-btn navigation"
                                     onClick={() => {
@@ -2196,6 +2198,7 @@ const SettingsSidebar = ({
                                     </svg>
                                     <span>CHANGE USERNAME</span>
                                 </button>
+                                )}
 
                                 <button 
                                     className="modern-nav-btn navigation"

@@ -714,19 +714,31 @@ const WelcomeDashboard = () => {
     : '';
 
   /* ── settings rows ── */
-  const settingsRows = [
+  const isGuestUser = userRole === 'guest';
+  const settingsRows = isGuestUser ? [
+    { section: 'Session', items: [
+      { label: 'Sign Out', sub: 'End current session', IconEl: <SignOutIcon animated />, color: '#f97316', bg: 'rgba(249,115,22,0.1)', action: handleLogout, danger: false },
+    ]},
+    { section: 'Locked Features', items: [
+      { label: 'Edit Profile',     sub: 'Register to unlock',    IconEl: <EditIcon />,      color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', locked: true },
+      { label: 'Change Username',  sub: 'Register to unlock',    IconEl: <AtIcon />,        color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', locked: true },
+      { label: 'Change Password',  sub: 'Register to unlock',    IconEl: <KeyIcon />,       color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', locked: true },
+      { label: 'Delete Account',   sub: 'Register to unlock',    IconEl: <TrashIcon />,     color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', locked: true },
+    ]},
+  ] : [
     { section: 'Profile', items: [
-      ...( userRole !== 'guest' ? [{ label: 'Edit Profile', sub: 'Update avatar & info', IconEl: <EditIcon animated />, color: '#6366f1', bg: 'rgba(99,102,241,0.13)', sub_id: 'edit-profile' }] : []),
-      { label: 'Change Username', sub: 'Edit your display name',     IconEl: <AtIcon animated />,   color: '#a855f7', bg: 'rgba(168,85,247,0.13)', sub_id: 'change-username' },
-      { label: 'Change Password', sub: 'Update your password',       IconEl: <KeyIcon animated />,  color: '#8b5cf6', bg: 'rgba(139,92,246,0.13)', sub_id: 'change-password' },
+      { label: 'Edit Profile',     sub: 'Update avatar & info',          IconEl: <EditIcon animated />,     color: '#6366f1', bg: 'rgba(99,102,241,0.13)',  sub_id: 'edit-profile' },
+      { label: 'Change Username',  sub: 'Edit your display name',        IconEl: <AtIcon animated />,       color: '#a855f7', bg: 'rgba(168,85,247,0.13)', sub_id: 'change-username' },
+      { label: 'Change Password',  sub: 'Update your password',          IconEl: <KeyIcon animated />,      color: '#8b5cf6', bg: 'rgba(139,92,246,0.13)', sub_id: 'change-password' },
     ]},
     { section: 'Session', items: [
-      { label: 'Sign Out',       sub: 'End current session',          IconEl: <SignOutIcon animated />, color: '#f97316', bg: 'rgba(249,115,22,0.1)',  action: handleLogout,     danger: false },
-      { label: 'Delete Account', sub: 'Permanently remove account',   IconEl: <TrashIcon animated />,  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   sub_id: 'delete-account', danger: true  },
+      { label: 'Sign Out',         sub: 'End current session',           IconEl: <SignOutIcon animated />,  color: '#f97316', bg: 'rgba(249,115,22,0.1)',  action: handleLogout,     danger: false },
+      { label: 'Delete Account',   sub: 'Permanently remove account',    IconEl: <TrashIcon animated />,    color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   sub_id: 'delete-account', danger: true  },
     ]},
   ];
 
   const handleRowClick = (item) => {
+    if (item.locked) { toast.info('🔒 Register an account to unlock this feature!'); return; }
     if (item.sub_id) {
       if (!user && item.sub_id !== 'delete-account') { toast.info('Not available for guest users'); return; }
       setActiveSubPanel(item.sub_id);
