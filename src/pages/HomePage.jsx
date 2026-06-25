@@ -3011,7 +3011,6 @@ const HomePage = ({ user }) => {
                             icon: '⚠️'
                         });
                     }
-                    setWhisperTarget(null);
                     setTimeout(() => scrollToBottom(true), 100);
                     return;
                 }
@@ -3023,7 +3022,6 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             setNewMessage('');
-            setWhisperTarget(null); // Clear whisper target after sending
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -5188,7 +5186,6 @@ const HomePage = ({ user }) => {
             setImageUrl('');
             setImageTab('upload');
             setImagePopupOpen(false);
-            setWhisperTarget(null);
             
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -5275,7 +5272,6 @@ const HomePage = ({ user }) => {
             setImageUrl('');
             setImageTab('upload');
             setImagePopupOpen(false);
-            setWhisperTarget(null);
             
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -5567,7 +5563,6 @@ const HomePage = ({ user }) => {
             setAudioPreview(null);
             setNewMessage('');
             setAudioPopupOpen(false);
-            setWhisperTarget(null);
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -5686,7 +5681,6 @@ const HomePage = ({ user }) => {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
             setGiphyStickersModalOpen(false);
-            setWhisperTarget(null);
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -5799,7 +5793,6 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             setGiphyStickersModalOpen(false);
-            setWhisperTarget(null);
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);

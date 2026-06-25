@@ -165,25 +165,25 @@
 }
 
 .sm-preset-btn {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 7px;
   padding: 8px 11px;
   border-radius: 10px;
-  border: 1.5px solid rgba(99,102,241,0.12);
-  background: rgba(99,102,241,0.03);
-  cursor: pointer;
+  border: 1.5px solid rgba(99,102,241,0.18) !important;
+  background: rgba(99,102,241,0.04) !important;
+  cursor: pointer !important;
   transition: all .15s;
   text-align: left;
 }
 .sm-preset-btn:hover {
-  border-color: var(--pc, #6366f1);
-  background: rgba(99,102,241,0.06);
+  border-color: var(--pc, #6366f1) !important;
+  background: rgba(99,102,241,0.08) !important;
 }
 .sm-preset-btn.selected {
-  border-color: var(--pc, #6366f1);
-  background: rgba(99,102,241,0.1);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+  border-color: var(--pc, #6366f1) !important;
+  background: rgba(99,102,241,0.12) !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.18);
 }
 .sm-preset-icon { display: flex; align-items: center; flex-shrink: 0; }
 .sm-preset-text { font-size: 0.75rem; font-weight: 500; color: #374151; }
@@ -195,24 +195,24 @@
   gap: 6px;
 }
 .sm-premium-btn {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 5px;
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1.5px solid rgba(99,102,241,0.18);
-  background: rgba(99,102,241,0.04);
+  border: 1.5px solid rgba(99,102,241,0.22) !important;
+  background: rgba(99,102,241,0.05) !important;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4b5563;
-  cursor: pointer;
+  color: #4b5563 !important;
+  cursor: pointer !important;
   transition: all .15s;
 }
-.sm-premium-btn:hover { border-color: #6366f1; color: #6366f1; }
+.sm-premium-btn:hover { border-color: #6366f1 !important; color: #6366f1 !important; background: rgba(99,102,241,0.1) !important; }
 .sm-premium-btn.selected {
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
-  color: #fff;
-  border-color: transparent;
+  background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 .sm-premium-icon { display: flex; align-items: center; flex-shrink: 0; }
 
@@ -259,23 +259,23 @@
   gap: 8px;
 }
 .sm-color-mode {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 5px;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1.5px solid rgba(99,102,241,0.18);
-  background: rgba(99,102,241,0.04);
+  border: 1.5px solid rgba(99,102,241,0.22) !important;
+  background: rgba(99,102,241,0.05) !important;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
+  color: #6b7280 !important;
+  cursor: pointer !important;
   transition: all .15s;
 }
 .sm-color-mode.active {
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
-  color: #fff;
-  border-color: transparent;
+  background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 .sm-color-pick {
   display: flex;
@@ -331,7 +331,7 @@
   background: #fff;
 }
 .sm-btn {
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -339,31 +339,31 @@
   border-radius: 11px;
   font-size: 0.82rem;
   font-weight: 700;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all .16s;
-  border: none;
   font-family: 'Inter', sans-serif;
   letter-spacing: 0.01em;
 }
 .sm-btn-clear {
-  background: rgba(239,68,68,0.07);
-  color: #dc2626;
-  border: 1.5px solid rgba(239,68,68,0.2);
+  background: rgba(239,68,68,0.07) !important;
+  color: #dc2626 !important;
+  border: 1.5px solid rgba(239,68,68,0.2) !important;
 }
-.sm-btn-clear:hover { background: rgba(239,68,68,0.14); }
+.sm-btn-clear:hover { background: rgba(239,68,68,0.14) !important; }
 
 .sm-btn-cancel {
-  background: rgba(99,102,241,0.07);
-  color: #6366f1;
-  border: 1.5px solid rgba(99,102,241,0.18);
+  background: rgba(99,102,241,0.07) !important;
+  color: #6366f1 !important;
+  border: 1.5px solid rgba(99,102,241,0.18) !important;
   flex: 1;
 }
-.sm-btn-cancel:hover { background: rgba(99,102,241,0.14); }
+.sm-btn-cancel:hover { background: rgba(99,102,241,0.14) !important; }
 
 .sm-btn-save {
   flex: 1.6;
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%) !important;
+  color: #fff !important;
+  border: none !important;
   box-shadow: 0 4px 14px rgba(99,102,241,0.35);
 }
 .sm-btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(99,102,241,0.45); }

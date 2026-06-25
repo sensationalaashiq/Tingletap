@@ -247,29 +247,29 @@
 }
 .abk-btn-cancel {
   padding: 9px 18px;
-  border: 1.5px solid #e9d5ff;
+  border: 1.5px solid #e9d5ff !important;
   border-radius: 10px;
-  background: #fff;
-  color: #7c3aed;
+  background: #faf5ff !important;
+  color: #7c3aed !important;
   font-size: 12.5px;
   font-weight: 600;
   font-family: inherit;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.15s;
 }
-.abk-btn-cancel:hover:not(:disabled) { background: #faf5ff; }
+.abk-btn-cancel:hover:not(:disabled) { background: #ede9fe !important; }
 .abk-btn-confirm {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 6px;
   padding: 9px 18px;
-  border: none;
+  border: none !important;
   border-radius: 10px;
-  color: #fff;
+  color: #fff !important;
   font-size: 12.5px;
   font-weight: 700;
   font-family: inherit;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: opacity 0.15s, transform 0.15s;
 }
 .abk-btn-confirm:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }

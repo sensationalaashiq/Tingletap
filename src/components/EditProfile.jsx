@@ -717,38 +717,37 @@ const EditProfile = ({ onClose, onSuccess }) => {
           .crop-btn {
             flex: 1;
             padding: 14px 20px;
-            border: none;
+            border: none !important;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
+            cursor: pointer !important;
             transition: all 0.3s ease;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             gap: 8px;
           }
 
           .save-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+            color: white !important;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
           }
 
           .save-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 22px rgba(99, 102, 241, 0.5);
           }
 
           .cancel-btn {
-            background: #f1f5f9;
-            color: #64748b;
-            border: 1px solid #e2e8f0;
+            background: rgba(99,102,241,0.07) !important;
+            color: #6366f1 !important;
+            border: 1.5px solid rgba(99,102,241,0.2) !important;
           }
 
           .cancel-btn:hover {
-            background: #e2e8f0;
-            color: #475569;
+            background: rgba(99,102,241,0.14) !important;
           }
         `}</style>
       </div>

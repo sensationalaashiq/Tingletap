@@ -97,15 +97,15 @@ select.wd-input {
 
 /* ── Save button ── */
 .wd-save-btn {
-  display: flex; align-items: center; justify-content: center; gap: 9px;
+  display: flex !important; align-items: center; justify-content: center; gap: 9px;
   padding: 15px 24px; border-radius: 16px;
-  background: linear-gradient(135deg,#5b5bd6,#7c3aed,#a855f7);
-  color: #fff; font-size: 15.5px; font-weight: 800;
-  border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg,#5b5bd6,#7c3aed,#a855f7) !important;
+  color: #fff !important; font-size: 15.5px; font-weight: 800;
+  border: none !important; cursor: pointer !important; font-family: 'Inter', sans-serif;
   transition: all .28s ease;
   box-shadow: 0 6px 24px rgba(91,91,214,.38); width: 100%;
 }
-.wd-save-btn span { color: #fff; }
+.wd-save-btn span { color: #fff !important; }
 .wd-save-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 10px 32px rgba(91,91,214,.52);
