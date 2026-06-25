@@ -114,8 +114,20 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="epm-head">
             <div className="epm-title-row">
               <div className="epm-icon-wrap">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
-                  <path d="M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <defs>
+                    <linearGradient id="epmCamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f472b6"/>
+                      <stop offset="40%" stopColor="#c084fc"/>
+                      <stop offset="80%" stopColor="#818cf8"/>
+                      <stop offset="100%" stopColor="#67e8f9"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="1" y="4.5" width="22" height="16" rx="4" fill="url(#epmCamGrad)"/>
+                  <circle cx="12" cy="12.5" r="4.2" fill="white" opacity="0.9"/>
+                  <circle cx="12" cy="12.5" r="2.5" fill="url(#epmCamGrad)"/>
+                  <rect x="8.5" y="2.5" width="7" height="3.5" rx="1.5" fill="url(#epmCamGrad)"/>
+                  <circle cx="19.5" cy="7.5" r="1.2" fill="white" opacity="0.75"/>
                 </svg>
               </div>
               <div className="epm-titles">

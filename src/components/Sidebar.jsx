@@ -241,12 +241,13 @@ const Sidebar = ({
   liveUsers.forEach(u => { if (!uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
 
   const filteredUsers = Array.from(uniqueUsers.values()).filter(u => {
-    /* Strict RTDB check — once RTDB data is loaded use it exclusively.
-       Falls back to u.isOnline only if RTDB hasn't populated yet. */
+    const STALE_MS = 5 * 60 * 1000;
+    const now = Date.now();
+    const statusEntry = window.userOnlineStatuses?.[u.uid];
+    const fresh = !statusEntry?.last_changed || (now - statusEntry.last_changed) < STALE_MS;
     const rtdbHasData = (window.onlineUsers && window.onlineUsers.size > 0) ||
       (window.userOnlineStatuses && Object.keys(window.userOnlineStatuses).length > 0);
-    const onlineViaRTDB = window.onlineUsers?.has(u.uid) ||
-      window.userOnlineStatuses?.[u.uid]?.state === 'online';
+    const onlineViaRTDB = (window.onlineUsers?.has(u.uid) || statusEntry?.state === 'online') && fresh;
     const online = rtdbHasData ? onlineViaRTDB : (onlineViaRTDB || u.isOnline);
     if (!online) return false;
     if (searchQuery.trim()) {

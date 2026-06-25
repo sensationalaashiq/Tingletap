@@ -239,8 +239,11 @@ const RoomListPage = () => {
     return onValue(ref(rtdb, 'status'), (snap) => {
       const presences = snap.val() || {};
       const counts = {};
+      const STALE_MS = 5 * 60 * 1000;
+      const now = Date.now();
       Object.values(presences).forEach(u => {
-        if (u.state === 'online' && u.currentRoomId)
+        const fresh = !u.last_changed || (now - u.last_changed) < STALE_MS;
+        if (u.state === 'online' && u.currentRoomId && fresh)
           counts[u.currentRoomId] = (counts[u.currentRoomId] || 0) + 1;
       });
       setRoomCounts(counts);

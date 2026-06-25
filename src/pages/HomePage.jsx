@@ -1984,8 +1984,15 @@ const HomePage = ({ user }) => {
                 state: 'offline',
                 lastSeen: serverTimestamp()
             }).then(() => {
-                set(userStatusRef, statusData);
+                set(userStatusRef, { ...statusData, last_changed: Date.now() });
             });
+
+            // Heartbeat every 55s so ghost entries are filtered out automatically
+            const heartbeatInterval = setInterval(() => {
+                set(userStatusRef, { ...statusData, last_changed: Date.now() }).catch(() => {});
+            }, 55000);
+
+            return () => clearInterval(heartbeatInterval);
         }
     }, [roomId, user, loggedInUserProfile]);
 
@@ -2610,21 +2617,26 @@ const HomePage = ({ user }) => {
         const statusRef = ref(rtdb, 'status');
         const unsubscribe = onValue(statusRef, (snapshot) => {
             const statuses = snapshot.val() || {};
+            const STALE_MS = 5 * 60 * 1000; // 5 minutes — entries older than this are ghost
+            const now = Date.now();
             
             // Get users who are actually online in this room
             const currentUidsInRoom = Object.keys(statuses)
                 .filter(uid => {
                     const userStatus = statuses[uid];
+                    const fresh = !userStatus.last_changed || (now - userStatus.last_changed) < STALE_MS;
                     return userStatus && 
                            userStatus.state === 'online' && 
-                           userStatus.currentRoomId === roomId;
+                           userStatus.currentRoomId === roomId &&
+                           fresh;
                 });
             
-            // Get all online users regardless of room
+            // Get all online users regardless of room (fresh only)
             const allOnlineUids = Object.keys(statuses)
                 .filter(uid => {
                     const userStatus = statuses[uid];
-                    return userStatus && userStatus.state === 'online';
+                    const fresh = !userStatus.last_changed || (now - userStatus.last_changed) < STALE_MS;
+                    return userStatus && userStatus.state === 'online' && fresh;
                 });
             
             // Detect new users joining this room only
@@ -3354,6 +3366,15 @@ const HomePage = ({ user }) => {
                 try {
                     await deleteDoc(doc(db, 'rooms', roomId, 'messages', messageId));
                     setDeleteMessageConfirm({ isOpen: false });
+                    toast(
+                        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                          <div style={{width:'34px',height:'34px',borderRadius:'50%',background:'linear-gradient(135deg,#f97316,#ef4444)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(239,68,68,.35)'}}>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                          </div>
+                          <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>Message Deleted</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Message removed successfully</div></div>
+                        </div>,
+                        {style:{background:'linear-gradient(135deg,#fff7ed,#ffedd5)',border:'1.5px solid rgba(249,115,22,.28)',borderRadius:'14px',boxShadow:'0 8px 28px rgba(249,115,22,.14)',padding:'10px 14px'},icon:false,autoClose:3000}
+                    );
                 } catch (error) {
                     setDeleteMessageConfirm({ isOpen: false });
                 }
@@ -3380,8 +3401,16 @@ const HomePage = ({ user }) => {
                     });
                     remove(ref(rtdb, `status/${uid}/currentRoomId`));
                     playNotificationSound('adminAction');
-                    
                     setKickUserConfirm({ isOpen: false });
+                    toast(
+                        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                          <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(245,158,11,.4)'}}>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
+                          </div>
+                          <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Kicked</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#d97706'}}>{displayName}</span> removed from room</div></div>
+                        </div>,
+                        {style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
+                    );
                 } catch (error) {
                     setKickUserConfirm({ isOpen: false });
                 }
@@ -3401,7 +3430,15 @@ const HomePage = ({ user }) => {
                     "mutedInfo.mutedByRole": loggedInUserProfile.role
                 });
                 
-                toast.success(`${userToMute.displayName} has been muted.`);
+                toast(
+                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#06b6d4,#0284c7)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(6,182,212,.35)'}}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.27 3L2 4.27l6.01 6.01V11c0 2.76 2.24 5 5 5c.65 0 1.27-.13 1.84-.35L16.7 17.6C15.66 18.18 14.37 18.5 13 18.5c-5.25 0-8-4.5-8-8.5H3c0 4.93 3.82 9 9 9c1.69 0 3.26-.48 4.6-1.3L20.73 22 22 20.73 3.27 3zm7.73 1c2.76 0 5 2.24 5 5v.17l1.45 1.45c.35-.51.55-1.12.55-1.62 0-3.08-2.42-5-5-5-.5 0-.98.08-1.44.21L9 4.73C10.07 3.23 11.5 4 13 4z"/></svg>
+                      </div>
+                      <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Muted</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#0284c7'}}>{userToMute.displayName}</span> has been muted</div></div>
+                    </div>,
+                    {style:{background:'linear-gradient(135deg,#f0f9ff,#e0f2fe)',border:'1.5px solid rgba(6,182,212,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(6,182,212,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
+                );
             } catch (error) {
                 toast.error("Could not mute user. Check permissions.");
             }
@@ -3422,7 +3459,15 @@ const HomePage = ({ user }) => {
                 await updateDoc(userToBanRef, { isBanned: true });
                 remove(ref(rtdb, `status/${userToBan.uid}`));
                 
-                toast.success(`${userToBan.displayName} has been banned globally.`);
+                toast(
+                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#ef4444,#7f1d1d)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(239,68,68,.4)'}}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
+                      </div>
+                      <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Banned</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#b91c1c'}}>{userToBan.displayName}</span> banned globally</div></div>
+                    </div>,
+                    {style:{background:'linear-gradient(135deg,#fff5f5,#fee2e2)',border:'1.5px solid rgba(239,68,68,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(239,68,68,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
+                );
             } catch (error) {
                 toast.error("Could not ban user. Check permissions.");
             }
@@ -3587,7 +3632,15 @@ const HomePage = ({ user }) => {
             };
             
             await addDoc(collection(db, 'friendRequests'), friendRequestData);
-            toast.success(`Friend request sent to ${user.displayName || 'Anonymous'}!`);
+            toast(
+                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                  <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#22c55e,#16a34a)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(34,197,94,.35)'}}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                  </div>
+                  <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>Friend Request Sent</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Sent to <span style={{fontWeight:700,color:'#16a34a'}}>{user.displayName || 'Anonymous'}</span></div></div>
+                </div>,
+                {style:{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid rgba(34,197,94,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(34,197,94,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
+            );
             
         } catch (error) {
             toast.error("Failed to send friend request. Please try again.");
@@ -5006,14 +5059,21 @@ const HomePage = ({ user }) => {
             setBlockedUsers(updatedBlockedUsers);
 
             // Update target user: add current user to their blockedBy array
-            const targetDoc = await getDoc(targetRef);
-            const targetBlockedBy = targetDoc.data()?.blockedBy || [];
-            if (!targetBlockedBy.includes(currentUserId)) {
-                const targetFriends = (targetDoc.data()?.friends || []).filter(id => id !== currentUserId);
-                await updateDoc(targetRef, {
-                    blockedBy: [...targetBlockedBy, currentUserId],
-                    friends: targetFriends
-                });
+            // This may fail due to Firestore rules — handled gracefully, block still works
+            try {
+                const targetDoc = await getDoc(targetRef);
+                if (targetDoc.exists()) {
+                    const targetBlockedBy = targetDoc.data()?.blockedBy || [];
+                    if (!targetBlockedBy.includes(currentUserId)) {
+                        const targetFriends = (targetDoc.data()?.friends || []).filter(id => id !== currentUserId);
+                        await updateDoc(targetRef, {
+                            blockedBy: [...targetBlockedBy, currentUserId],
+                            friends: targetFriends
+                        });
+                    }
+                }
+            } catch (_) {
+                // Permission denied for target's doc is expected — block still applied on our side
             }
 
             toast(
@@ -6868,20 +6928,24 @@ const HomePage = ({ user }) => {
             <ToastContainer
                 position="bottom-right"
                 autoClose={4000}
-                hideProgressBar={false}
+                hideProgressBar
                 newestOnTop
                 closeOnClick
                 pauseOnHover
                 theme="light"
                 toastStyle={{
-                    background: 'rgba(255,255,255,0.97)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1.5px solid rgba(167,139,250,0.25)',
+                    background: 'rgba(255,255,255,0.98)',
+                    backdropFilter: 'blur(24px)',
+                    border: '1.5px solid rgba(167,139,250,0.2)',
                     borderRadius: '16px',
                     color: '#1e1b4b',
                     fontFamily: 'Inter, sans-serif',
-                    boxShadow: '0 12px 40px rgba(109,40,217,0.15)',
+                    fontSize: '13px',
+                    boxShadow: '0 16px 48px rgba(109,40,217,0.13), 0 4px 12px rgba(0,0,0,0.08)',
+                    padding: '10px 14px',
+                    minHeight: 'unset',
                 }}
+                style={{ zIndex: 99999 }}
             />
         </>
     );

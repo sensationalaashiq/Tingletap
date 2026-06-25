@@ -9,6 +9,41 @@ import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 
+const COUNTRIES = [
+  { name: 'Afghanistan', flag: '🇦🇫' }, { name: 'Algeria', flag: '🇩🇿' },
+  { name: 'Argentina', flag: '🇦🇷' }, { name: 'Australia', flag: '🇦🇺' },
+  { name: 'Austria', flag: '🇦🇹' }, { name: 'Bangladesh', flag: '🇧🇩' },
+  { name: 'Belgium', flag: '🇧🇪' }, { name: 'Brazil', flag: '🇧🇷' },
+  { name: 'Canada', flag: '🇨🇦' }, { name: 'Chile', flag: '🇨🇱' },
+  { name: 'China', flag: '🇨🇳' }, { name: 'Colombia', flag: '🇨🇴' },
+  { name: 'Egypt', flag: '🇪🇬' }, { name: 'Ethiopia', flag: '🇪🇹' },
+  { name: 'France', flag: '🇫🇷' }, { name: 'Germany', flag: '🇩🇪' },
+  { name: 'Ghana', flag: '🇬🇭' }, { name: 'Greece', flag: '🇬🇷' },
+  { name: 'India', flag: '🇮🇳' }, { name: 'Indonesia', flag: '🇮🇩' },
+  { name: 'Iran', flag: '🇮🇷' }, { name: 'Iraq', flag: '🇮🇶' },
+  { name: 'Ireland', flag: '🇮🇪' }, { name: 'Israel', flag: '🇮🇱' },
+  { name: 'Italy', flag: '🇮🇹' }, { name: 'Japan', flag: '🇯🇵' },
+  { name: 'Jordan', flag: '🇯🇴' }, { name: 'Kenya', flag: '🇰🇪' },
+  { name: 'Malaysia', flag: '🇲🇾' }, { name: 'Mexico', flag: '🇲🇽' },
+  { name: 'Morocco', flag: '🇲🇦' }, { name: 'Myanmar', flag: '🇲🇲' },
+  { name: 'Nepal', flag: '🇳🇵' }, { name: 'Netherlands', flag: '🇳🇱' },
+  { name: 'New Zealand', flag: '🇳🇿' }, { name: 'Nigeria', flag: '🇳🇬' },
+  { name: 'Norway', flag: '🇳🇴' }, { name: 'Pakistan', flag: '🇵🇰' },
+  { name: 'Philippines', flag: '🇵🇭' }, { name: 'Poland', flag: '🇵🇱' },
+  { name: 'Portugal', flag: '🇵🇹' }, { name: 'Qatar', flag: '🇶🇦' },
+  { name: 'Romania', flag: '🇷🇴' }, { name: 'Russia', flag: '🇷🇺' },
+  { name: 'Saudi Arabia', flag: '🇸🇦' }, { name: 'Singapore', flag: '🇸🇬' },
+  { name: 'South Africa', flag: '🇿🇦' }, { name: 'South Korea', flag: '🇰🇷' },
+  { name: 'Spain', flag: '🇪🇸' }, { name: 'Sri Lanka', flag: '🇱🇰' },
+  { name: 'Sweden', flag: '🇸🇪' }, { name: 'Switzerland', flag: '🇨🇭' },
+  { name: 'Syria', flag: '🇸🇾' }, { name: 'Taiwan', flag: '🇹🇼' },
+  { name: 'Thailand', flag: '🇹🇭' }, { name: 'Turkey', flag: '🇹🇷' },
+  { name: 'Ukraine', flag: '🇺🇦' }, { name: 'United Arab Emirates', flag: '🇦🇪' },
+  { name: 'United Kingdom', flag: '🇬🇧' }, { name: 'United States', flag: '🇺🇸' },
+  { name: 'Venezuela', flag: '🇻🇪' }, { name: 'Vietnam', flag: '🇻🇳' },
+  { name: 'Other', flag: '🌍' },
+];
+
 const EditProfile = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     displayName: '',
@@ -40,6 +75,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
   const [completedCrop, setCompletedCrop] = useState(null);
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
+  const [brightness, setBrightness] = useState(100);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -97,6 +135,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
       
       setScale(1);
       setRotate(0);
+      setFlipH(false);
+      setFlipV(false);
+      setBrightness(100);
       setImagePosition({ x: 0, y: 0 });
       setIsDragging(false);
       setCrop({
@@ -298,6 +339,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setCompletedCrop(null);
         setScale(1);
         setRotate(0);
+        setFlipH(false);
+        setFlipV(false);
+        setBrightness(100);
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
         
@@ -305,7 +349,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           setProfilePicPreview(previewUrl);
         }, 50);
         
-        toast.success('✅ Image cropped successfully! Now save your profile to apply changes.');
+        toast.success('Image cropped successfully! Save your profile to apply.');
       }
     } catch (error) {
       toast.error('Failed to crop image');
@@ -316,16 +360,13 @@ const EditProfile = ({ onClose, onSuccess }) => {
   const handleCropCancel = () => {
     setShowCropper(false);
     setOriginalImage(null);
-    setCrop({
-      unit: '%',
-      width: 90,
-      height: 90,
-      x: 5,
-      y: 5
-    });
+    setCrop({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
     setCompletedCrop(null);
     setScale(1);
     setRotate(0);
+    setFlipH(false);
+    setFlipV(false);
+    setBrightness(100);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
   };
@@ -449,19 +490,30 @@ const EditProfile = ({ onClose, onSuccess }) => {
         <div className="crop-modal-content">
           <div className="crop-header">
             <div className="crop-title">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
                 <defs>
-                  <linearGradient id="camGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#7c3aed"/>
-                    <stop offset="50%" stopColor="#a855f7"/>
-                    <stop offset="100%" stopColor="#6d28d9"/>
+                  <linearGradient id="camGradNew" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f472b6"/>
+                    <stop offset="35%" stopColor="#a855f7"/>
+                    <stop offset="70%" stopColor="#6366f1"/>
+                    <stop offset="100%" stopColor="#06b6d4"/>
                   </linearGradient>
+                  <filter id="camGlow"><feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#a855f7" floodOpacity="0.5"/></filter>
                 </defs>
-                <path fill="url(#camGrad)" d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
+                <rect x="1" y="5" width="22" height="16" rx="3.5" fill="url(#camGradNew)" filter="url(#camGlow)"/>
+                <circle cx="12" cy="13" r="4.2" fill="white" opacity="0.95"/>
+                <circle cx="12" cy="13" r="2.5" fill="url(#camGradNew)"/>
+                <rect x="8" y="3" width="8" height="4" rx="1.5" fill="url(#camGradNew)"/>
+                <circle cx="19" cy="8" r="1.2" fill="white" opacity="0.8"/>
               </svg>
-              <span>Adjust Profile Photo</span>
+              <span>Edit Profile Photo</span>
             </div>
-            <div className="crop-subtitle">✨ Drag · Scale · Rotate — then apply</div>
+            <div className="crop-subtitle">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f59e0b"/>
+              </svg>
+              Drag · Zoom · Rotate · Flip — then Apply
+            </div>
           </div>
 
           <div className="crop-content">
@@ -484,8 +536,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
                     width: '100%', 
                     height: '100%', 
                     objectFit: 'contain',
-                    transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale}) rotate(${rotate}deg)`,
+                    transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale * (flipH ? -1 : 1)}, ${scale * (flipV ? -1 : 1)}) rotate(${rotate}deg)`,
                     transformOrigin: 'center',
+                    filter: `brightness(${brightness}%)`,
                     cursor: isDragging ? 'grabbing' : 'grab',
                     userSelect: 'none',
                     touchAction: 'none',
@@ -501,66 +554,99 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
             <div className="crop-controls">
               <div className="control-group">
-                <label>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path fill="#8b5cf6" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <defs><linearGradient id="scaleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
+                    <path fill="url(#scaleGrad)" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                   </svg>
-                  Scale
+                  Zoom — {Math.round(scale * 100)}%
                 </label>
-                <input 
-                  type="range" 
-                  min="0.5" 
-                  max="3" 
-                  step="0.1" 
-                  value={scale}
-                  onChange={(e) => setScale(parseFloat(e.target.value))}
-                />
+                <input type="range" min="0.5" max="3" step="0.05" value={scale}
+                  onChange={(e) => setScale(parseFloat(e.target.value))} className="crop-slider" />
               </div>
 
               <div className="control-group">
-                <label>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path fill="#06b6d4" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <defs><linearGradient id="rotGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#0ea5e9"/></linearGradient></defs>
+                    <path fill="url(#rotGrad)" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                   </svg>
-                  Rotate
+                  Rotate — {rotate}°
                 </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="360" 
-                  step="5" 
-                  value={rotate}
-                  onChange={(e) => setRotate(parseFloat(e.target.value))}
-                />
+                <input type="range" min="0" max="360" step="5" value={rotate}
+                  onChange={(e) => setRotate(parseFloat(e.target.value))} className="crop-slider" />
+              </div>
+
+              <div className="control-group">
+                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <defs><linearGradient id="briGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#fbbf24"/></linearGradient></defs>
+                    <circle cx="12" cy="12" r="5" fill="url(#briGrad)"/>
+                    <path stroke="url(#briGrad)" strokeWidth="2" strokeLinecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                  </svg>
+                  Brightness — {brightness}%
+                </label>
+                <input type="range" min="30" max="180" step="5" value={brightness}
+                  onChange={(e) => setBrightness(parseInt(e.target.value))} className="crop-slider" />
+              </div>
+
+              <div className="crop-flip-row">
+                <button
+                  type="button"
+                  className={`crop-flip-btn ${flipH ? 'active' : ''}`}
+                  onClick={() => setFlipH(h => !h)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 12h18M3 12L7 8M3 12l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12l-4-4M21 12l-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Flip H
+                </button>
+                <button
+                  type="button"
+                  className={`crop-flip-btn ${flipV ? 'active' : ''}`}
+                  onClick={() => setFlipV(v => !v)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v18M12 3L8 7M12 3l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 21l-4-4M12 21l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Flip V
+                </button>
+                <button
+                  type="button"
+                  className="crop-flip-btn reset-btn"
+                  onClick={() => { setScale(1); setRotate(0); setFlipH(false); setFlipV(false); setBrightness(100); setImagePosition({x:0,y:0}); }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4v5h5M20 20v-5h-5M4.05 9A9 9 0 0 1 20 12.95M19.95 15A9 9 0 0 1 4 11.05" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                  </svg>
+                  Reset
+                </button>
               </div>
             </div>
 
             <div className="crop-help">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#6d28d9" strokeWidth="1.8"/>
+                <path d="M12 16v-4M12 8h.01" stroke="#6d28d9" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              Drag to move • Use sliders to adjust
+              Drag image to reposition inside the circle
             </div>
           </div>
 
           <canvas ref={canvasRef} style={{ display: 'none' }} />
 
           <div className="crop-actions">
-            <button
-              className="crop-btn save-btn"
-              onClick={handleCropComplete}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path fill="white" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            <button className="crop-btn save-btn" onClick={handleCropComplete}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Apply Crop
+              Apply Photo
             </button>
-            <button
-              className="crop-btn cancel-btn"
-              onClick={handleCropCancel}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path fill="#7c3aed" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            <button className="crop-btn cancel-btn" onClick={handleCropCancel}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"/>
               </svg>
               Cancel
             </button>
@@ -586,8 +672,20 @@ const EditProfile = ({ onClose, onSuccess }) => {
             : <span className="wd-avatar-init">{(formData.displayName || 'U').slice(0, 2).toUpperCase()}</span>
           }
           <div className="wd-avatar-overlay">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
-              <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="avCamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f472b6"/>
+                  <stop offset="40%" stopColor="#a855f7"/>
+                  <stop offset="80%" stopColor="#6366f1"/>
+                  <stop offset="100%" stopColor="#06b6d4"/>
+                </linearGradient>
+              </defs>
+              <rect x="1" y="4.5" width="22" height="16" rx="4" fill="url(#avCamGrad)"/>
+              <circle cx="12" cy="12.5" r="4" fill="white" opacity="0.9"/>
+              <circle cx="12" cy="12.5" r="2.3" fill="url(#avCamGrad)"/>
+              <rect x="8.5" y="2.5" width="7" height="3.5" rx="1.5" fill="url(#avCamGrad)"/>
+              <circle cx="19.5" cy="7.5" r="1.1" fill="white" opacity="0.75"/>
             </svg>
           </div>
         </div>
@@ -599,12 +697,27 @@ const EditProfile = ({ onClose, onSuccess }) => {
           style={{ display: 'none' }}
         />
         <span className="wd-avatar-hint">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.55}}>
-            <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="hintCamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#a855f7"/>
+                <stop offset="100%" stopColor="#6366f1"/>
+              </linearGradient>
+            </defs>
+            <rect x="1" y="3.5" width="22" height="16" rx="4" fill="url(#hintCamGrad)"/>
+            <circle cx="12" cy="11.5" r="3.8" fill="white" opacity="0.9"/>
+            <circle cx="12" cy="11.5" r="2.2" fill="url(#hintCamGrad)"/>
           </svg>
           Tap photo to change
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.4}}>
-            <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <defs>
+              <linearGradient id="starGradHint" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#f59e0b"/>
+                <stop offset="50%" stopColor="#ec4899"/>
+                <stop offset="100%" stopColor="#a855f7"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="url(#starGradHint)"/>
           </svg>
         </span>
       </div>
@@ -677,14 +790,12 @@ const EditProfile = ({ onClose, onSuccess }) => {
                 </svg>
                 Country
               </label>
-              <input
-                className="wd-input"
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                placeholder="Country"
-              />
+              <select className="wd-input" name="country" value={formData.country} onChange={handleInputChange}>
+                <option value="">Select country…</option>
+                {COUNTRIES.map(c => (
+                  <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
+                ))}
+              </select>
             </div>
             <div className="wd-field-group">
               <label className="wd-label">
