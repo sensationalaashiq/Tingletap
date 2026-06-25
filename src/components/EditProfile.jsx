@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -365,13 +366,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
       const userDocRef = doc(db, 'users', user.uid);
       const currentUserDoc = await getDoc(userDocRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
-      const finalPhotoURL = profilePic ? photoURL : (
-        formData.gender === 'female' 
-          ? `${getDefaultAvatarUrl(user.uid, 'female')}`
-          : formData.gender === 'male'
-          ? `${getDefaultAvatarUrl(user.uid, 'male')}`
-          : `${getDefaultAvatarUrl(user.uid, 'male')}`
-      );
+      const finalPhotoURL = profilePic
+        ? photoURL
+        : (currentUserData.photoURL || profilePicPreview || getDefaultAvatarUrl(user.uid, formData.gender || 'male'));
 
       const getCurrentFontPreferences = () => {
         if (window.chatFontPreferences) {
@@ -447,18 +444,17 @@ const EditProfile = ({ onClose, onSuccess }) => {
     );
   }
 
-  // Modern Crop Modal
-  if (showCropper) {
-    return (
-      <div className="modern-crop-modal">
+  const cropModalJSX = showCropper ? createPortal(
+    <div className="modern-crop-modal">
         <div className="crop-modal-content">
           <div className="crop-header">
             <div className="crop-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17l-3-3 1.5-1.5L9 14l6-6 1.5 1.5L9 17z"/>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
               </svg>
-              <span>Crop Your Photo</span>
+              <span>Adjust Profile Photo</span>
             </div>
+            <div className="crop-subtitle">Drag · Scale · Rotate — then apply</div>
           </div>
 
           <div className="crop-content">
@@ -563,191 +559,13 @@ const EditProfile = ({ onClose, onSuccess }) => {
             </button>
           </div>
         </div>
-
-        <style jsx>{`
-          .modern-crop-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(30, 20, 60, 0.72);
-            backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
-            animation: cropFadeIn 0.28s ease-out;
-          }
-          @keyframes cropFadeIn { from { opacity:0 } to { opacity:1 } }
-
-          .crop-modal-content {
-            background: linear-gradient(160deg, #faf8ff 0%, #f3effe 100%);
-            border-radius: 28px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow:
-              0 32px 64px rgba(109, 40, 217, 0.22),
-              0 0 0 1.5px rgba(196, 181, 253, 0.55),
-              inset 0 1px 0 rgba(255,255,255,0.85);
-            animation: cropSlideUp 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: hidden;
-          }
-          @keyframes cropSlideUp {
-            from { opacity:0; transform: scale(0.88) translateY(36px); }
-            to   { opacity:1; transform: scale(1) translateY(0); }
-          }
-
-          .crop-header {
-            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 60%, #c4b5fd 100%);
-            padding: 22px 24px 18px;
-            text-align: center;
-            border-bottom: 1.5px solid rgba(196,181,253,0.4);
-            position: relative;
-          }
-          .crop-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 60px; height: 3px;
-            background: linear-gradient(90deg, #a78bfa, #7c3aed);
-            border-radius: 2px;
-          }
-
-          .crop-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: #4c1d95;
-            font-size: 18px;
-            font-weight: 700;
-            font-family: 'Playfair Display', 'Georgia', serif;
-            letter-spacing: 0.02em;
-          }
-          .crop-title svg { filter: drop-shadow(0 1px 2px rgba(124,58,237,0.25)); }
-
-          .crop-content { padding: 26px 26px 18px; }
-
-          .crop-preview-area {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 22px;
-          }
-
-          .circular-preview {
-            width: 240px;
-            height: 240px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: linear-gradient(135deg, #ede9fe, #f5f3ff);
-            border: 4px solid #a78bfa;
-            position: relative;
-            box-shadow:
-              0 0 0 6px rgba(167,139,250,0.15),
-              0 12px 36px rgba(124,58,237,0.2);
-          }
-
-          .crop-overlay {
-            position: absolute; top:0; left:0; right:0; bottom:0;
-            border: 2.5px solid rgba(167,139,250,0.5);
-            border-radius: 50%;
-            pointer-events: none;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), transparent 60%);
-          }
-
-          .crop-controls { margin-bottom: 18px; }
-
-          .control-group { margin-bottom: 14px; }
-
-          .control-group label {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: #5b21b6;
-            font-weight: 700;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 8px;
-          }
-
-          .control-group input[type="range"] {
-            width: 100%;
-            height: 5px;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #ddd6fe, #ede9fe);
-            outline: none;
-            -webkit-appearance: none;
-          }
-          .control-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px; height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(124,58,237,0.35);
-          }
-
-          .crop-help {
-            background: rgba(167,139,250,0.1);
-            padding: 11px 15px;
-            border-radius: 12px;
-            color: #6d28d9;
-            font-size: 12.5px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 18px;
-            border: 1px solid rgba(167,139,250,0.25);
-          }
-
-          .crop-actions {
-            display: flex;
-            gap: 12px;
-            padding: 0 26px 26px;
-          }
-
-          .crop-btn {
-            flex: 1;
-            padding: 14px 20px;
-            border: none !important;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer !important;
-            transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-          }
-
-          .save-btn {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9) !important;
-            color: white !important;
-            box-shadow: 0 6px 20px rgba(124,58,237,0.38);
-          }
-          .save-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 28px rgba(124,58,237,0.5);
-          }
-
-          .cancel-btn {
-            background: rgba(167,139,250,0.1) !important;
-            color: #7c3aed !important;
-            border: 1.5px solid rgba(167,139,250,0.35) !important;
-          }
-          .cancel-btn:hover {
-            background: rgba(167,139,250,0.2) !important;
-            transform: translateY(-1px);
-          }
-        `}</style>
-      </div>
-    );
-  }
+    </div>,
+    document.body
+  ) : null;
 
   return (
+    <>
+    {cropModalJSX}
     <div className="ep-wd-container">
 
       {/* ── Avatar ── */}
@@ -999,6 +817,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
         </button>
       </form>
     </div>
+    </>
   );
 };
 

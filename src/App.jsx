@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
 import { auth, rtdb, db } from './firebase/config';
-import { ref, onValue, set, onDisconnect, serverTimestamp, remove } from "firebase/database";
+import { ref, onValue, set, onDisconnect, serverTimestamp, remove, get, update } from "firebase/database";
 import { doc, onSnapshot, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 
 import LandingPage from './pages/LandingPage';
@@ -625,6 +625,30 @@ function App() {
                 .then(() => set(userStatusRef, onlineData));
         });
 
+        // One-time stale session cleanup: mark any status entry older than 8 min as offline
+        const cleanupStaleStatuses = async () => {
+          try {
+            const statusSnap = await get(ref(rtdb, 'status'));
+            if (!statusSnap.exists()) return;
+            const statuses = statusSnap.val();
+            const STALE_MS = 8 * 60 * 1000;
+            const now = Date.now();
+            const updates = {};
+            Object.entries(statuses).forEach(([uid, s]) => {
+              if (s?.state === 'online' && s?.last_changed && (now - s.last_changed) > STALE_MS) {
+                updates[`status/${uid}/state`] = 'offline';
+                updates[`status/${uid}/last_changed`] = now;
+              }
+            });
+            if (Object.keys(updates).length > 0) {
+              await update(ref(rtdb), updates);
+            }
+          } catch (e) {
+            // Silently ignore cleanup errors
+          }
+        };
+        cleanupStaleStatuses();
+
         // Store unsubscribe functions globally for cleanup
         window.cleanupFirestoreListeners = () => {
           try {
@@ -797,6 +821,16 @@ function App() {
         if (cu?.isAnonymous) {
           const uid = cu.uid;
           try { await remove(ref(rtdb, `status/${uid}`)); } catch {}
+          // Mark guest session as ended; auto-delete after 1 hour
+          try {
+            const endTime = new Date().toISOString();
+            const deleteAt = new Date(Date.now() + 3600 * 1000).toISOString();
+            await updateDoc(doc(db, 'guestSessions', uid), {
+              sessionEnded: endTime,
+              deleteAt,
+              status: 'ended'
+            });
+          } catch {}
           try { await deleteDoc(doc(db, 'users', uid)); } catch {}
           try { await deleteUser(cu); } catch {}
         }

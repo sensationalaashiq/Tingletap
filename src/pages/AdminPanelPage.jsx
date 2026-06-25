@@ -4,7 +4,7 @@ import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
-import { ref, onValue, remove } from 'firebase/database';
+import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
@@ -116,6 +116,9 @@ const AdminPanelPage = () => {
   const [trustAdjustDelta, setTrustAdjustDelta] = useState('');
   const [trustAdjusting, setTrustAdjusting] = useState(false);
   const [trustSortBy, setTrustSortBy] = useState('score_desc');
+
+  // Guest Sessions
+  const [guestSessions, setGuestSessions] = useState([]);
 
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
@@ -304,6 +307,30 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
+  // Real-time guest sessions (active + ended-but-not-yet-expired)
+  useEffect(() => {
+    const sessionsRef = collection(db, 'guestSessions');
+    const unsubscribe = onSnapshot(sessionsRef, async (snapshot) => {
+      const now = new Date().toISOString();
+      const sessions = [];
+      const expired = [];
+      snapshot.docs.forEach(d => {
+        const data = { id: d.id, ...d.data() };
+        if (data.deleteAt && data.deleteAt < now) {
+          expired.push(d.id);
+        } else {
+          sessions.push(data);
+        }
+      });
+      setGuestSessions(sessions.sort((a, b) => (b.sessionStarted || '').localeCompare(a.sessionStarted || '')));
+      // Auto-delete expired sessions
+      for (const id of expired) {
+        try { await deleteDoc(doc(db, 'guestSessions', id)); } catch {}
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Moderation functions
   const handleModerateUser = (user, action) => {
     setSelectedUser(user);
@@ -434,6 +461,10 @@ const AdminPanelPage = () => {
         usernameChangedAt: new Date().toISOString(),
         usernameChangedBy: currentUserProfile?.displayName || 'Owner'
       });
+      // Mirror the new displayName into RTDB so online presence reflects the change everywhere
+      try {
+        await rtdbUpdate(ref(rtdb, `status/${uid}`), { displayName: newName });
+      } catch {}
       toast.success(`Username updated to "${newName}" for ${changeUsernameTarget.displayName}`);
       setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue('');
     } catch (err) { toast.error('Failed to update username: ' + err.message); }
@@ -1089,6 +1120,15 @@ const AdminPanelPage = () => {
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M12,1L9.5,8H2L7.72,12.27L5.82,19.27L12,15.27L18.18,19.27L16.28,12.27L22,8H14.5L12,1Z"/>
+                  </>
+                )
+              },
+              {
+                id: 'guests', label: 'Guests', iconColor: '#67e8f9',
+                badge: guestSessions.filter(s => s.status === 'active').length,
+                renderIcon: (c) => (
+                  <>
+                    <path fill={c} d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
                   </>
                 )
               }
@@ -2475,6 +2515,89 @@ const AdminPanelPage = () => {
                     💡 Scores increase daily with clean activity. Spam violations −3 pts · Warnings −5 pts · Mutes −8 pts · Bans −30 pts. Use the ⚖ Adjust button for manual corrections.
                   </div>
                 </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Guest Sessions Tab ── */}
+          {activeTab === 'guests' && (() => {
+            const activeSessions = guestSessions.filter(s => s.status === 'active');
+            const endedSessions = guestSessions.filter(s => s.status === 'ended');
+            return (
+              <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {/* Stats row */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Active Now', value: activeSessions.length, color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+                    { label: 'Recent (last hour)', value: endedSessions.length, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+                    { label: 'Total Tracked', value: guestSessions.length, color: '#67e8f9', bg: 'rgba(103,232,249,0.1)' }
+                  ].map(s => (
+                    <div key={s.label} style={{ flex: '1 1 120px', background: s.bg, border: `1.5px solid ${s.color}33`, borderRadius: 12, padding: '12px 16px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 26, fontWeight: 900, color: s.color }}>{s.value}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sessions table */}
+                {guestSessions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', fontSize: 14 }}>
+                    No guest sessions recorded yet. Sessions appear here when guests log in.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {guestSessions.map(s => {
+                      const isActive = s.status === 'active';
+                      const started = s.sessionStarted ? new Date(s.sessionStarted).toLocaleString() : '—';
+                      const ended = s.sessionEnded ? new Date(s.sessionEnded).toLocaleString() : '—';
+                      const deleteAt = s.deleteAt ? new Date(s.deleteAt).toLocaleString() : null;
+                      const genderEmoji = s.gender === 'female' ? '👩' : s.gender === 'trans' ? '🌈' : '👨';
+                      return (
+                        <div key={s.id} style={{
+                          background: isActive ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.03)',
+                          border: `1.5px solid ${isActive ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                          borderRadius: 12, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8
+                        }}>
+                          {/* Row 1: Name + status badge */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: '#f1f5f9' }}>{genderEmoji} {s.displayName}</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                              background: isActive ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
+                              color: isActive ? '#10b981' : '#f59e0b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                              {isActive ? '● Live' : '✓ Ended'}
+                            </span>
+                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>Age {s.age} · {s.gender}</span>
+                          </div>
+
+                          {/* Row 2: Device info */}
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#94a3b8' }}>
+                            <span>🖥 {s.deviceType || '—'}</span>
+                            <span>🌐 {s.browser || '—'}</span>
+                            <span>💻 {s.os || '—'}</span>
+                          </div>
+
+                          {/* Row 3: IP + location */}
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#94a3b8' }}>
+                            <span>🔌 {s.ip || 'Unknown IP'}</span>
+                            {(s.city || s.country) && (
+                              <span>📍 {[s.city, s.region, s.country].filter(Boolean).join(', ')}</span>
+                            )}
+                            {s.lat && s.lon && (
+                              <span style={{ fontFamily: 'monospace' }}>({Number(s.lat).toFixed(4)}, {Number(s.lon).toFixed(4)})</span>
+                            )}
+                          </div>
+
+                          {/* Row 4: Timestamps */}
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: '#64748b' }}>
+                            <span>▶ Started: {started}</span>
+                            {!isActive && <span>⏹ Ended: {ended}</span>}
+                            {deleteAt && <span>🗑 Auto-deletes: {deleteAt}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })()}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from '../firebase/config';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
@@ -462,6 +462,62 @@ const LoginPage = () => {
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');
       localStorage.setItem('guestGender', guestFormData.gender);
+
+      // Track guest session in Firestore for admin panel visibility
+      try {
+        let ipAddress = 'Unknown';
+        try {
+          const ipRes = await fetch('https://api.ipify.org?format=json');
+          const { ip } = await ipRes.json();
+          ipAddress = ip || 'Unknown';
+        } catch {}
+
+        let geoData = {};
+        try {
+          const geoRes = await fetch(`https://ip-api.com/json/${ipAddress}?fields=status,country,city,regionName,lat,lon`);
+          const geo = await geoRes.json();
+          if (geo.status === 'success') {
+            geoData = { lat: geo.lat, lon: geo.lon, city: geo.city, country: geo.country, region: geo.regionName };
+          }
+        } catch {}
+
+        const ua = navigator.userAgent || 'Unknown';
+        let browser = 'Unknown';
+        if (ua.includes('Edg/')) browser = 'Edge';
+        else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
+        else if (ua.includes('Firefox/')) browser = 'Firefox';
+        else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+        let os = 'Unknown';
+        if (ua.includes('Windows')) os = 'Windows';
+        else if (ua.includes('Mac')) os = 'macOS';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('Linux')) os = 'Linux';
+        else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+        const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+        const deviceType = /iPad|Tablet/i.test(ua) ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+
+        const sessionRef = doc(db, 'guestSessions', user.uid);
+        await setDoc(sessionRef, {
+          uid: user.uid,
+          displayName: guestFormData.displayName,
+          gender: guestFormData.gender,
+          age: parseInt(guestFormData.age),
+          ip: ipAddress,
+          userAgent: ua,
+          browser,
+          os,
+          deviceType,
+          ...geoData,
+          sessionStarted: new Date().toISOString(),
+          sessionEnded: null,
+          deleteAt: null,
+          status: 'active'
+        });
+        localStorage.setItem('guestSessionId', user.uid);
+      } catch (e) {
+        // Session tracking failure is non-fatal
+      }
+
       navigate('/welcome');
     } catch (err) {
       // On failure, clean up the pre-set gender key so it doesn't leak into a future session
