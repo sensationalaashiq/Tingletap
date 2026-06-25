@@ -135,7 +135,7 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.auth.uid == userId &&
         request.resource.data.uid == request.auth.uid &&
-        request.resource.data.email is string;
+        (request.resource.data.email is string || request.resource.data.email == null);
 
       // User updating their own profile
       allow update: if request.auth != null &&
@@ -423,8 +423,12 @@ service cloud.firestore {
       allow read, write: if isOwner() || isAdmin();
     }
 
-    match /guestSessions/{document=**} {
-      allow read, write: if isOwner() || isAdmin();
+    // Guest sessions: staff can read/write all; the guest user themselves can
+    // create and update their OWN session document (keyed by their Firebase UID).
+    match /guestSessions/{sessionId} {
+      allow read, write: if isOwner() || isAdmin() || isModerator();
+      allow create, update: if request.auth != null && request.auth.uid == sessionId;
+      allow delete: if isOwner() || isAdmin();
     }
 
     match /statistics/{document=**} {

@@ -9,6 +9,7 @@ import HCaptcha from '@hcaptcha/react-hcaptcha';
 import BanKickModal from '../components/BanKickModal';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
+import DeviceFingerprint from '../utils/deviceFingerprint';
 import './LandingPage.css';
 
 const originalAlert = window.alert;

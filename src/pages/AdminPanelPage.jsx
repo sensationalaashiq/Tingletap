@@ -541,13 +541,13 @@ const AdminPanelPage = () => {
       } else if (action === 'kick') {
         const uid = reportData.reportedUser?.uid;
         const target = users.find(u => u.uid === uid || u.id === uid);
-        const statusEntry = onlineStatuses[uid];
-        if (target && statusEntry?.currentRoomId) {
-          remove(ref(rtdb, `status/${uid}/currentRoomId`));
+        if (target) {
           await updateDoc(reportRef, { status: 'action_taken' });
-          toast.success(`${target.displayName} kicked from room.`);
+          setSelectedUser(target);
+          setActionType('kick');
+          setIsModalVisible(true);
         } else {
-          toast.warning('User is not in any room right now.');
+          toast.error('User not found in active users list.');
         }
       } else if (action === 'ip_ban') {
         const ip = reportData.reportedUser?.ipAddress;
