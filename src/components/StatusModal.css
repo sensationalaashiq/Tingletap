@@ -116,6 +116,9 @@
   color: #6366f1;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .sm-input {
@@ -182,7 +185,7 @@
   background: rgba(99,102,241,0.1);
   box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
 }
-.sm-preset-emoji { font-size: 1rem; flex-shrink: 0; }
+.sm-preset-icon { display: flex; align-items: center; flex-shrink: 0; }
 .sm-preset-text { font-size: 0.75rem; font-weight: 500; color: #374151; }
 
 /* ── Premium styles grid ── */
@@ -192,6 +195,9 @@
   gap: 6px;
 }
 .sm-premium-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 12px;
   border-radius: 20px;
   border: 1.5px solid rgba(99,102,241,0.18);
@@ -208,6 +214,7 @@
   color: #fff;
   border-color: transparent;
 }
+.sm-premium-icon { display: flex; align-items: center; flex-shrink: 0; }
 
 /* ── Style grid ── */
 .sm-style-grid {
@@ -221,6 +228,9 @@
   gap: 4px;
 }
 .sm-style-group label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.68rem;
   font-weight: 600;
   color: #7c8db5;
@@ -249,6 +259,9 @@
   gap: 8px;
 }
 .sm-color-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 14px;
   border-radius: 20px;
   border: 1.5px solid rgba(99,102,241,0.18);
@@ -318,6 +331,10 @@
   background: #fff;
 }
 .sm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 10px 14px;
   border-radius: 11px;
   font-size: 0.82rem;

@@ -395,14 +395,17 @@ const Sidebar = ({
                     <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                     View Profile
                   </button>
-                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowEditProfileModal(true); setDropdownUser(null); }}>
-                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#8b5cf6" d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
-                    Edit Profile
-                  </button>
+                  {!auth.currentUser?.isAnonymous && (
+                    <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowEditProfileModal(true); setDropdownUser(null); }}>
+                      <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#8b5cf6" d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83ZM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+                      Edit Profile
+                    </button>
+                  )}
                   {(() => {
                     const uRole = loggedInUserProfile.role?.toLowerCase();
                     const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
-                    if (hasBadge || ['admin','owner','moderator'].includes(uRole)) return (
+                    const isGuest = auth.currentUser?.isAnonymous || uRole === 'guest';
+                    if (!isGuest && (hasBadge || ['admin','owner','moderator'].includes(uRole))) return (
                       <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); setDropdownUser(null); }}>
                         <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                         Change Status

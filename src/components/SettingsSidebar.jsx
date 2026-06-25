@@ -1078,137 +1078,151 @@ const SettingsSidebar = ({
                 if (!_frAccess) {
                     return (
                         <div className="settings-tab-content">
-                            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',padding:'28px 16px',textAlign:'center'}}>
-                                <div style={{width:'64px',height:'64px',borderRadius:'50%',background:'linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.15))',border:'2px solid rgba(99,102,241,.22)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'14px',padding:'28px 16px',textAlign:'center'}}>
+                                <div style={{width:'68px',height:'68px',borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 24px rgba(99,102,241,.35)'}}>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
                                     </svg>
                                 </div>
-                                <div style={{fontSize:'1.05rem',fontWeight:700,color:'#1a1a2e'}}>Friends — Locked</div>
-                                <p style={{fontSize:'0.8rem',color:'#6b7280',lineHeight:1.55,margin:0}}>
-                                    Register an account or get a badge to access your friends list, send friend requests, and manage connections.
-                                </p>
-                                <div style={{background:'linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.05))',border:'1px solid rgba(99,102,241,.18)',borderRadius:'10px',padding:'10px 14px',width:'100%',boxSizing:'border-box',textAlign:'left'}}>
-                                    <p style={{margin:'0 0 6px',fontSize:'0.72rem',fontWeight:700,color:'#6366f1'}}>🔒 Requires:</p>
-                                    <ul style={{margin:0,padding:'0 0 0 14px',fontSize:'0.72rem',color:'#6b7280',lineHeight:1.6}}>
-                                        <li>Registered account</li>
-                                        <li>Badge holder or Staff role</li>
-                                    </ul>
+                                <div>
+                                    <div style={{fontSize:'1rem',fontWeight:800,color:'#1a1a2e',marginBottom:'5px'}}>Friends — Locked</div>
+                                    <p style={{fontSize:'0.8rem',color:'#6b7280',lineHeight:1.55,margin:0}}>
+                                        Register an account or get a badge to access your friends list and manage connections.
+                                    </p>
+                                </div>
+                                <div style={{background:'linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.05))',border:'1px solid rgba(99,102,241,.18)',borderRadius:'12px',padding:'12px 14px',width:'100%',boxSizing:'border-box',textAlign:'left'}}>
+                                    <div style={{fontSize:'10px',fontWeight:800,color:'#6366f1',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'7px',display:'flex',alignItems:'center',gap:'5px'}}>
+                                        <svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                                        Requires
+                                    </div>
+                                    {[
+                                        {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>, text:'Registered account'},
+                                        {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 17l-6.18 3.02L7 13.14 2 8.27l6.91-1.01z"/></svg>, text:'Badge holder or Staff role'},
+                                    ].map((item,i)=>(
+                                        <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',color:'#4b5563',marginBottom:'3px'}}>{item.icon}{item.text}</div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     );
                 }
                 return (
-                    <div className="settings-tab-content">
-                        <h3>Friends Management</h3>
+                    <div className="settings-tab-content" style={{display:'flex',flexDirection:'column',gap:'14px',minHeight:0}}>
 
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="9" cy="7" r="4"/>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                </svg>
-                                MY FRIENDS ({friendsProfiles.length})
-                            </h4>
-                            <div className="friends-list">
+                        {/* ── MY FRIENDS ── */}
+                        <div className="sf-section">
+                            <div className="sf-section-header">
+                                <div className="sf-section-icon" style={{background:'linear-gradient(135deg,#6366f1,#7c3aed)'}}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                                    </svg>
+                                </div>
+                                <span className="sf-section-title">My Friends</span>
+                                <span className="sf-section-badge">{friendsProfiles.length}</span>
+                            </div>
+                            <div className="sf-friends-list">
                                 {friendsProfiles.length > 0 ? (
                                     friendsProfiles.map(friend => (
-                                        <div key={friend.id} className="friend-item" data-user-id={friend.id}>
-                                            <img 
+                                        <div key={friend.id} className="sf-friend-item">
+                                            <img
                                                 src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
                                                 alt="avatar"
-                                                className="friend-avatar"
+                                                className="sf-friend-avatar"
                                             />
-                                            <div className="friend-info">
-                                                <p className="friend-name">{friend.displayName}</p>
-                                                <p className="friend-status">{friend.role || 'User'}</p>
+                                            <div className="sf-friend-info">
+                                                <div className="sf-friend-name">{friend.displayName}</div>
+                                                <div className="sf-friend-role">{friend.role || 'Member'}</div>
                                             </div>
-                                            <div className="friend-actions">
-                                                <button 
-                                                    className="friend-action-btn message-btn"
-                                                    onClick={() => {
-                                                        if (window.handlePrivateMessageFromSidebar) {
-                                                            window.handlePrivateMessageFromSidebar(friend);
-                                                        }
-                                                        onClose();
-                                                        toast.success(`💬 Opening chat with ${friend.displayName}`);
-                                                    }}
-                                                    title="Send Message"
-                                                >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                            <div className="sf-friend-btns">
+                                                <button className="sf-btn sf-btn-msg" title="Message"
+                                                    onClick={() => { if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(friend); onClose(); }}>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                                                     </svg>
                                                 </button>
-                                                <button 
-                                                    className="friend-action-btn remove-btn"
-                                                    onClick={() => handleRemoveFriend(friend)}
-                                                    title="Remove Friend"
-                                                >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                                        <circle cx="8.5" cy="7" r="4"/>
-                                                        <line x1="23" y1="11" x2="17" y2="11"/>
+                                                <button className="sf-btn sf-btn-remove" title="Remove"
+                                                    onClick={() => handleRemoveFriend(friend)}>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                                                     </svg>
                                                 </button>
-                                                <button 
-                                                    className="friend-action-btn block-btn"
-                                                    onClick={() => handleBlockFriend(friend)}
-                                                    title="Block User"
-                                                >
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <circle cx="12" cy="12" r="10"/>
-                                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                                <button className="sf-btn sf-btn-block" title="Block"
+                                                    onClick={() => handleBlockFriend(friend)}>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.68L5.68 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.68L18.32 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/>
                                                     </svg>
                                                 </button>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="empty-friends">
-                                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#c4b5fd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <div className="sf-empty">
+                                        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#c4b5fd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                                             <circle cx="9" cy="7" r="4"/>
                                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                                         </svg>
-                                        <p>No friends yet</p>
-                                        <small>Add friends to see them here</small>
+                                        <div className="sf-empty-title">No friends yet</div>
+                                        <div className="sf-empty-sub">Click someone's name in chat to add them</div>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="setting-group">
-                            <h4>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="8.5" cy="7" r="4"/>
-                                    <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
-                                </svg>
-                                FRIEND REQUESTS
-                            </h4>
-                            <div className="friends-section">
-                                <p style={{ color: '#6b7280', fontSize: '14px', margin: '10px 0' }}>
-                                    Manage incoming and outgoing friend requests
-                                </p>
-                                <button 
-                                    className="action-btn feature"
-                                    onClick={() => {
-                                        // This would open friend requests modal/section
-                                        toast.info('📬 Check your profile modal for friend requests!');
-                                        onClose();
-                                    }}
-                                >
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="8.5" cy="7" r="4"/>
-                                        <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+                        {/* ── FRIEND REQUESTS ── */}
+                        <div className="sf-section">
+                            <div className="sf-section-header">
+                                <div className="sf-section-icon" style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                        <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                     </svg>
-                                    View Requests
-                                </button>
+                                </div>
+                                <span className="sf-section-title">Friend Requests</span>
+                                {friendRequests && friendRequests.length > 0 && (
+                                    <span className="sf-section-badge sf-badge-green">{friendRequests.length}</span>
+                                )}
+                            </div>
+                            <div className="sf-friends-list">
+                                {friendRequests && friendRequests.length > 0 ? (
+                                    friendRequests.map(req => (
+                                        <div key={req.id} className="sf-friend-item sf-request-item">
+                                            <img
+                                                src={req.senderPhotoURL || `${getDefaultAvatarUrl(req.senderId, req.senderGender)}`}
+                                                alt="avatar"
+                                                className="sf-friend-avatar"
+                                            />
+                                            <div className="sf-friend-info">
+                                                <div className="sf-friend-name">{req.senderName || 'Unknown'}</div>
+                                                <div className="sf-friend-role" style={{color:'#10b981'}}>wants to be friends</div>
+                                            </div>
+                                            <div className="sf-friend-btns">
+                                                <button className="sf-btn sf-btn-accept" title="Accept"
+                                                    onClick={() => { if (window.handleAcceptFriendRequestFromSettings) window.handleAcceptFriendRequestFromSettings(req); else toast.success(`Accepted ${req.senderName}'s request!`); }}>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                                    </svg>
+                                                </button>
+                                                <button className="sf-btn sf-btn-decline" title="Decline"
+                                                    onClick={() => { if (window.handleDeclineFriendRequestFromSettings) window.handleDeclineFriendRequestFromSettings(req); else toast.info(`Declined ${req.senderName}'s request`); }}>
+                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="sf-empty">
+                                        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#6ee7b7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="8.5" cy="7" r="4"/>
+                                            <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+                                        </svg>
+                                        <div className="sf-empty-title">No pending requests</div>
+                                        <div className="sf-empty-sub">Incoming friend requests appear here</div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1554,96 +1568,118 @@ const SettingsSidebar = ({
                             </div>
                         </div>
 
-                        {/* Status Management Section — hidden for guest users */}
-                        {!auth.currentUser?.isAnonymous && <div className="modern-setting-group">
+                        {/* Status Management Section — locked for guests, full access for registered */}
+                        <div className="modern-setting-group">
                             <h4 className="modern-section-title">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10"/>
                                     <polyline points="12 6 12 12 16 14"/>
                                 </svg>
                                 STATUS MANAGEMENT
                             </h4>
 
-                            {/* Current Status Display */}
-                            {loggedInUserProfile?.status && (
-                                <div className="current-status-display">
-                                    <div className="status-label">CURRENT STATUS</div>
-                                    <div className="current-status-text">{loggedInUserProfile.status}</div>
-                                </div>
-                            )}
-
-                            <div className="modern-button-grid">
-                                {(() => {
-                                    const userRole = loggedInUserProfile?.role?.toLowerCase();
-                                    const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                    const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
-
-                                    return hasAccess ? (
-                                        <button 
-                                            className="modern-nav-btn rectangular feature"
-                                            onClick={() => {
-                                                setShowStatusModal(true);
-                                            }}
-                                            title="Change Status"
-                                        >
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            {auth.currentUser?.isAnonymous ? (
+                                /* ── LOCKED for guest users (Spotify-style) ── */
+                                <div style={{
+                                    position:'relative', borderRadius:'14px', overflow:'hidden',
+                                    background:'linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.08))',
+                                    border:'1.5px solid rgba(99,102,241,.18)', padding:'18px 16px'
+                                }}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+                                        <div style={{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 12px rgba(99,102,241,.35)'}}>
+                                            <svg viewBox="0 0 24 24" width="19" height="19" fill="white">
+                                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
                                             </svg>
-                                            <span>CHANGE STATUS</span>
-                                        </button>
-                                    ) : (
-                                        <div style={{
-                                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                                            borderRadius: '8px',
-                                            padding: '16px',
-                                            textAlign: 'center',
-                                            color: '#dc2626'
-                                        }}>
-                                            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ marginBottom: '8px' }}>
-                                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
-                                            </svg>
-                                            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Premium Feature</h4>
-                                            <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.4' }}>
-                                                Status customization is restricted to Badge Holders, Admins, Owners, and Moderators only.
-                                            </p>
-                                            <p style={{ margin: '0', fontSize: '12px', opacity: '0.8' }}>
-                                                Contact an admin to get access to this feature.
-                                            </p>
                                         </div>
-                                    );
-                                })()}
+                                        <div>
+                                            <div style={{fontSize:'13px',fontWeight:800,color:'#1e1b4b',lineHeight:1.2}}>Status — Guest Locked</div>
+                                            <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Register to unlock this feature</div>
+                                        </div>
+                                    </div>
+                                    <p style={{margin:'0 0 10px',fontSize:'11.5px',color:'#6b7280',lineHeight:1.55}}>
+                                        Set your mood, activity, and style with custom animated status messages. Available to registered members.
+                                    </p>
+                                    <div style={{display:'flex',flexDirection:'column',gap:'5px',background:'rgba(255,255,255,.6)',borderRadius:'9px',padding:'10px 12px',border:'1px solid rgba(99,102,241,.12)'}}>
+                                        <div style={{fontSize:'10px',fontWeight:800,color:'#6366f1',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'3px'}}>What you unlock:</div>
+                                        {[
+                                            {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Custom status messages'},
+                                            {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Gold, Neon, Royal premium styles'},
+                                            {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Animated & gradient text effects'},
+                                        ].map((item,i) => (
+                                            <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',color:'#4b5563'}}>
+                                                {item.icon}{item.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Lock shimmer overlay */}
+                                    <div style={{position:'absolute',top:0,right:0,bottom:0,width:'40px',background:'linear-gradient(270deg,rgba(255,255,255,.18),transparent)',pointerEvents:'none'}}/>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Current Status Display */}
+                                    {loggedInUserProfile?.status && (
+                                        <div className="current-status-display">
+                                            <div className="status-label">CURRENT STATUS</div>
+                                            <div className="current-status-text">{loggedInUserProfile.status}</div>
+                                        </div>
+                                    )}
 
-                                {loggedInUserProfile?.status && (
-                                    <button 
-                                        className="modern-nav-btn warning"
-                                        onClick={async () => {
-                                            const confirmClear = window.confirm('Are you sure you want to clear your status?');
-                                            if (confirmClear) {
-                                                try {
-                                                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                                                        status: '',
-                                                        updatedAt: new Date().toISOString()
-                                                    });
-                                                    toast.success('✅ Status cleared successfully!');
-                                                } catch (error) {
-                                                    console.error('Error clearing status:', error);
-                                                    toast.error('❌ Failed to clear status.');
-                                                }
-                                            }
-                                        }}
-                                        title="Clear Status"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="3 6 5 6 21 6"/>
-                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                        </svg>
-                                        <span>CLEAR STATUS</span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>}
+                                    <div className="modern-button-grid">
+                                        {(() => {
+                                            const userRole = loggedInUserProfile?.role?.toLowerCase();
+                                            const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
+                                            const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+
+                                            return hasAccess ? (
+                                                <button
+                                                    className="modern-nav-btn rectangular feature"
+                                                    onClick={() => setShowStatusModal(true)}
+                                                    title="Change Status"
+                                                >
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                    </svg>
+                                                    <span>CHANGE STATUS</span>
+                                                </button>
+                                            ) : (
+                                                <div style={{background:'linear-gradient(135deg,rgba(239,68,68,.08),rgba(220,38,38,.06))',border:'1px solid rgba(239,68,68,.22)',borderRadius:'10px',padding:'12px 14px',textAlign:'center',color:'#dc2626'}}>
+                                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style={{marginBottom:'6px',opacity:.7}}>
+                                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                                                    </svg>
+                                                    <div style={{fontSize:'12px',fontWeight:700,margin:'0 0 4px'}}>Premium Feature</div>
+                                                    <div style={{fontSize:'11px',opacity:.8}}>For badge holders and staff only.</div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {loggedInUserProfile?.status && (
+                                            <button
+                                                className="modern-nav-btn warning"
+                                                onClick={async () => {
+                                                    const confirmClear = window.confirm('Are you sure you want to clear your status?');
+                                                    if (confirmClear) {
+                                                        try {
+                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), { status: '', updatedAt: new Date().toISOString() });
+                                                            toast.success('Status cleared!');
+                                                        } catch (error) {
+                                                            toast.error('Failed to clear status.');
+                                                        }
+                                                    }
+                                                }}
+                                                title="Clear Status"
+                                            >
+                                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                                </svg>
+                                                <span>CLEAR STATUS</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
 
                         {/* Cover Media Section */}
                         <div className="modern-setting-group">

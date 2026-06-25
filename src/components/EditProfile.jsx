@@ -799,7 +799,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           {/* Display Name */}
           <div className="wd-field-group">
             <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#6366f1">
                 <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
               </svg>
               Display Name *
@@ -819,7 +819,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           <div className="wd-field-row">
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b">
                   <path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z"/>
                 </svg>
                 Age
@@ -837,7 +837,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
             </div>
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ec4899">
                   <path d="M9,9H7V7H9V9M17,7H15V9H17V7M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z"/>
                 </svg>
                 Gender
@@ -855,7 +855,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           <div className="wd-field-row">
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#10b981">
                   <path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
                 </svg>
                 Country
@@ -871,7 +871,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
             </div>
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#3b82f6">
                   <path d="M20,6H16V4A2,2 0 0,0 14,2H10A2,2 0 0,0 8,4V6H4A2,2 0 0,0 2,8V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V8A2,2 0 0,0 20,6M10,4H14V6H10V4M20,20H4V8H20V20Z"/>
                 </svg>
                 Profession
@@ -891,7 +891,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           <div className="wd-field-row">
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ef4444">
                   <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
                 </svg>
                 Relationship
@@ -907,7 +907,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
             </div>
             <div className="wd-field-group">
               <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#06b6d4">
                   <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/>
                 </svg>
                 Languages
@@ -926,7 +926,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           {/* Status */}
           <div className="wd-field-group">
             <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#8b5cf6">
                 <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z"/>
               </svg>
               Status
@@ -945,7 +945,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           {/* Interests */}
           <div className="wd-field-group">
             <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#f97316">
                 <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
               </svg>
               Interests
@@ -963,7 +963,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
           {/* Bio */}
           <div className="wd-field-group">
             <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#84cc16">
                 <path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z"/>
               </svg>
               Bio
