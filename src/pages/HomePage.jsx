@@ -967,6 +967,7 @@ const HomePage = ({ user }) => {
     const [reportCategory, setReportCategory] = useState('Spam');
     const [reportReason, setReportReason] = useState('');
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [muteTimeLeft, setMuteTimeLeft] = useState('');
     const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
     
     // Confirmation dialog states
@@ -1741,6 +1742,64 @@ const HomePage = ({ user }) => {
         // Initialize immediately on component mount
         initializeFontPreferencesFromLocalStorage();
     }, []); // Empty dependency array - runs only once on mount
+
+    // ── Kick listener: auto-navigate user out when kicked from this room ──
+    useEffect(() => {
+        const uid = loggedInUserProfile?.uid;
+        if (!uid || !roomId || loggedInUserProfile?.role === 'guest' || loggedInUserProfile?.isGuest) return;
+
+        const kickedRef = doc(db, 'rooms', roomId, 'kickedUsers', uid);
+        const unsub = onSnapshot(kickedRef, (snap) => {
+            if (snap.exists()) {
+                const kd = snap.data();
+                localStorage.setItem('lastKickData', JSON.stringify({
+                    roomName: kd.roomName || roomName || '',
+                    reason: kd.reason || 'No reason given',
+                    kickedBy: kd.kickedBy?.name || 'An administrator',
+                    kickedAt: kd.kickedAt?.toDate ? kd.kickedAt.toDate().toISOString() : new Date().toISOString()
+                }));
+                toast.error('You have been removed from this room.', { toastId: 'kick-notice', autoClose: 4000 });
+                setTimeout(() => navigate('/welcome'), 1500);
+            }
+        }, () => {});
+        return () => unsub();
+    }, [loggedInUserProfile?.uid, roomId]);
+
+    // ── Mute countdown: live timer shown when user is muted ──
+    useEffect(() => {
+        const mutedInfo = loggedInUserProfile?.mutedInfo;
+        if (!mutedInfo?.isMuted) { setMuteTimeLeft(''); return; }
+
+        const parseDuration = (str) => {
+            if (!str) return 0;
+            const s = str.toString().toLowerCase();
+            const n = parseInt(s) || 5;
+            if (s.includes('hour')) return n * 3600000;
+            if (s.includes('day'))  return n * 86400000;
+            return n * 60000;
+        };
+
+        const raw = mutedInfo.mutedAt;
+        const mutedAt = raw?.toDate ? raw.toDate().getTime() : (raw?.seconds ? raw.seconds * 1000 : Date.now());
+        const duration = parseDuration(mutedInfo.duration) || 300000;
+        const endTime = mutedAt + duration;
+
+        const tick = () => {
+            const remaining = endTime - Date.now();
+            if (remaining <= 0) { setMuteTimeLeft(''); return; }
+            const h = Math.floor(remaining / 3600000);
+            const m = Math.floor((remaining % 3600000) / 60000);
+            const s = Math.floor((remaining % 60000) / 1000);
+            setMuteTimeLeft(h > 0
+                ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
+                : `${m}:${s.toString().padStart(2,'0')}`
+            );
+        };
+
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration]);
 
     // Font preferences loading effect - runs when user profile changes
     useEffect(() => {
@@ -5890,6 +5949,43 @@ const HomePage = ({ user }) => {
                     onMute={handleMuteUser}
                     onBan={handleBanUser}
                 />
+
+                {/* ── Mute Banner ── */}
+                {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0,
+                        zIndex: 9000,
+                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        borderBottom: '2px solid #f59e0b',
+                        padding: '10px 20px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                        boxShadow: '0 4px 16px rgba(245,158,11,0.25)',
+                        fontFamily: 'Inter, sans-serif'
+                    }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="#92400e"/>
+                        </svg>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#78350f', letterSpacing: '0.01em' }}>
+                            You are muted
+                        </span>
+                        <span style={{
+                            background: 'rgba(146,64,14,0.12)',
+                            border: '1.5px solid rgba(146,64,14,0.25)',
+                            borderRadius: '8px',
+                            padding: '2px 10px',
+                            fontWeight: 800,
+                            fontSize: '13px',
+                            color: '#92400e',
+                            fontVariantNumeric: 'tabular-nums',
+                            letterSpacing: '0.05em'
+                        }}>
+                            {muteTimeLeft}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 500 }}>
+                            remaining — you cannot send messages
+                        </span>
+                    </div>
+                )}
 
                 <div className={`chat-container ${isDarkMode ? 'dark-mode' : ''}`}>
                 

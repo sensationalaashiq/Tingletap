@@ -411,84 +411,61 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
               <div className="info-section">
                 <div className="detail-item">
                   <AlertIcon />
-                  <span className="label">Status:</span>
-                  <span className="value banned">Account Disabled</span>
+                  <span className="label">Reason:</span>
+                  <span className="value banned">{banInfo.reason || 'Account suspended due to policy violations'}</span>
                 </div>
                 <div className="detail-item">
                   <UserIcon />
-                  <span className="label">System:</span>
-                  <span className="value">TingleTap</span>
+                  <span className="label">Banned By:</span>
+                  <span className="value">{banInfo.bannedBy || 'System Administrator'}</span>
                 </div>
                 <div className="detail-item">
                   <CalendarIcon />
-                  <span className="label">Detected:</span>
-                  <span className="value">{formatDate(new Date())}</span>
+                  <span className="label">Date:</span>
+                  <span className="value">{banInfo.bannedAt ? formatDate(new Date(banInfo.bannedAt)) : formatDate(new Date())}</span>
                 </div>
                 <div className="detail-item">
                   <IdIcon />
                   <span className="label">User ID:</span>
-                  <span className="value user-id">{auth.currentUser?.uid ? `${auth.currentUser.uid.slice(0, 16)}...` : 'Not Available'}</span>
+                  <span className="value user-id">{auth.currentUser?.uid ? `${auth.currentUser.uid.slice(0, 16)}...` : (banInfo.userId ? `${banInfo.userId.slice(0,16)}...` : 'Not Available')}</span>
                 </div>
+                {banInfo.email && (
+                  <div className="detail-item">
+                    <EmailIcon />
+                    <span className="label">Email:</span>
+                    <span className="value">{banInfo.email}</span>
+                  </div>
+                )}
               </div>
 
               <div className="info-section">
                 <h3 className="section-title">
                   <SupportIcon />
-                  Contact Support
+                  Appeal Your Ban
                 </h3>
                 <div className="contact-info">
-                  <p>For assistance, email: <span className="contact-email">admin@tingleapp.com</span></p>
-                  <p>Include your User ID in your message</p>
+                  <p>If you believe this ban is a mistake, contact: <span className="contact-email">admin@tingleapp.com</span></p>
+                  <p>Include your User ID and the reason for appeal.</p>
                 </div>
               </div>
             </div>
 
             <div className="modal-footer">
               <button className="primary-btn" onClick={() => {
-                console.log("🚫 Ban acknowledged by user - MODAL WILL REMAIN OPEN");
-                // For banned users, absolutely prevent closing
-                setShowBanModal(true);
-                
-                // Show alert about persistent suspension
-                setTimeout(() => {
-                  alert('Your account remains suspended. The system will continue to display this message until the suspension is lifted. Please contact support for assistance.');
-                }, 100);
-                
-                // Force modal to stay visible
-                setTimeout(() => {
-                  setShowBanModal(true);
-                  const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                  if (modalElement) {
-                    modalElement.style.display = 'flex';
-                    modalElement.style.zIndex = '2147483647';
-                    modalElement.style.visibility = 'visible';
-                    modalElement.style.opacity = '1';
-                  }
-                }, 200);
+                alert('Your account remains suspended. Please contact support at admin@tingleapp.com for assistance.');
               }}>
                 I Understand
               </button>
               <button className="secondary-btn" onClick={() => {
-                const subject = 'Account Suspension Appeal - TingleTap';
-                const body = `Hello Admin,
-
-I am writing to request assistance regarding my suspended TingleTap account.
-
-User ID: ${auth.currentUser?.uid || 'Not Available'}
-Email: ${auth.currentUser?.email || 'Not Available'}
-Date: ${new Date().toLocaleDateString()}
-
-Please review my account suspension and provide information about the reason for suspension.
-
-Thank you for your assistance.
-
-Best regards`;
-                
-                const mailtoLink = `mailto:admin@tingleapp.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.open(mailtoLink, '_blank');
+                const uid = auth.currentUser?.uid || banInfo.userId || 'Not Available';
+                const email = auth.currentUser?.email || banInfo.email || 'Not Available';
+                const reason = banInfo.reason || 'Unknown';
+                const subject = 'Account Ban Appeal - TingleTap';
+                const body = `Hello Admin,\n\nI am writing to appeal my account ban on TingleTap.\n\nUser ID: ${uid}\nEmail: ${email}\nBan Reason Given: ${reason}\nDate: ${new Date().toLocaleDateString()}\n\nI believe this ban was issued in error because: [Please explain your situation here]\n\nThank you for reviewing my appeal.\n\nBest regards`;
+                window.open(`mailto:admin@tingleapp.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
               }}>
                 <ExitIcon />
-                Contact Support
+                Appeal Ban
               </button>
             </div>
           </div>

@@ -224,6 +224,7 @@ const RoomListPage = () => {
   const [showAdultModal, setShowAdultModal]   = useState(false);
   const [pendingAdultRoom, setPendingAdultRoom] = useState(null);
   const [showBanKickModal, setShowBanKickModal] = useState(false);
+  const [kickModalData, setKickModalData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -345,7 +346,17 @@ const RoomListPage = () => {
     try {
       if (userId) {
         const kick = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', userId));
-        if (kick.exists()) { setShowBanKickModal(true); return; }
+        if (kick.exists()) {
+          const kd = kick.data();
+          setKickModalData({
+            roomName: room.name,
+            reason: kd.reason || 'No reason specified',
+            kickedBy: kd.kickedBy?.name || kd.kickedByName || 'An administrator',
+            kickedAt: kd.kickedAt?.toDate ? kd.kickedAt.toDate() : new Date()
+          });
+          setShowBanKickModal(true);
+          return;
+        }
       }
     } catch {}
 
@@ -513,7 +524,13 @@ const RoomListPage = () => {
           roomName={pendingAdultRoom?.name || 'Adult Room'}
         />
       )}
-      {showBanKickModal && <BanKickModal isVisible onClose={() => setShowBanKickModal(false)} />}
+      {showBanKickModal && (
+        <BanKickModal
+          isVisible
+          onClose={() => { setShowBanKickModal(false); setKickModalData(null); }}
+          kickInfo={kickModalData}
+        />
+      )}
 
       <ToastContainer position="bottom-center" autoClose={3000} theme="light"
         toastStyle={{ background:'rgba(255,255,255,.95)', backdropFilter:'blur(16px)', border:'1.5px solid rgba(99,102,241,.2)', borderRadius:'14px', color:'#1e1b4b', fontFamily:'Inter,sans-serif' }} />

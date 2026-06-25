@@ -567,52 +567,49 @@ const EditProfile = ({ onClose, onSuccess }) => {
         <style jsx>{`
           .modern-crop-modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(8px);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(30, 20, 60, 0.72);
+            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10000;
             padding: 20px;
-            animation: fadeIn 0.3s ease-out;
+            animation: cropFadeIn 0.28s ease-out;
           }
-
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
+          @keyframes cropFadeIn { from { opacity:0 } to { opacity:1 } }
 
           .crop-modal-content {
-            background: linear-gradient(145deg, #ffffff, #f8fafc);
-            border-radius: 24px;
+            background: linear-gradient(160deg, #faf8ff 0%, #f3effe 100%);
+            border-radius: 28px;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 
-              0 25px 50px rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(255, 255, 255, 0.1);
-            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 440px;
+            box-shadow:
+              0 32px 64px rgba(109, 40, 217, 0.22),
+              0 0 0 1.5px rgba(196, 181, 253, 0.55),
+              inset 0 1px 0 rgba(255,255,255,0.85);
+            animation: cropSlideUp 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
             overflow: hidden;
           }
-
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: scale(0.9) translateY(40px);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1) translateY(0);
-            }
+          @keyframes cropSlideUp {
+            from { opacity:0; transform: scale(0.88) translateY(36px); }
+            to   { opacity:1; transform: scale(1) translateY(0); }
           }
 
           .crop-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 60%, #c4b5fd 100%);
+            padding: 22px 24px 18px;
             text-align: center;
+            border-bottom: 1.5px solid rgba(196,181,253,0.4);
+            position: relative;
+          }
+          .crop-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 3px;
+            background: linear-gradient(90deg, #a78bfa, #7c3aed);
+            border-radius: 2px;
           }
 
           .crop-title {
@@ -620,109 +617,106 @@ const EditProfile = ({ onClose, onSuccess }) => {
             align-items: center;
             justify-content: center;
             gap: 10px;
-            color: white;
+            color: #4c1d95;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'Playfair Display', 'Georgia', serif;
+            letter-spacing: 0.02em;
           }
+          .crop-title svg { filter: drop-shadow(0 1px 2px rgba(124,58,237,0.25)); }
 
-          .crop-content {
-            padding: 24px;
-          }
+          .crop-content { padding: 26px 26px 18px; }
 
           .crop-preview-area {
             display: flex;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
           }
 
           .circular-preview {
-            width: 200px;
-            height: 200px;
+            width: 240px;
+            height: 240px;
             border-radius: 50%;
             overflow: hidden;
-            background: #f1f5f9;
-            border: 4px solid #667eea;
+            background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+            border: 4px solid #a78bfa;
             position: relative;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+            box-shadow:
+              0 0 0 6px rgba(167,139,250,0.15),
+              0 12px 36px rgba(124,58,237,0.2);
           }
 
           .crop-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border: 2px solid rgba(102, 126, 234, 0.6);
+            position: absolute; top:0; left:0; right:0; bottom:0;
+            border: 2.5px solid rgba(167,139,250,0.5);
             border-radius: 50%;
             pointer-events: none;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), transparent 60%);
           }
 
-          .crop-controls {
-            margin-bottom: 20px;
-          }
+          .crop-controls { margin-bottom: 18px; }
 
-          .control-group {
-            margin-bottom: 16px;
-          }
+          .control-group { margin-bottom: 14px; }
 
           .control-group label {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #475569;
-            font-weight: 600;
-            font-size: 14px;
+            gap: 7px;
+            color: #5b21b6;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
             margin-bottom: 8px;
           }
 
           .control-group input[type="range"] {
             width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #e2e8f0;
+            height: 5px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #ddd6fe, #ede9fe);
             outline: none;
             -webkit-appearance: none;
           }
-
           .control-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 20px; height: 20px;
             border-radius: 50%;
-            background: #667eea;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.35);
           }
 
           .crop-help {
-            background: rgba(102, 126, 234, 0.1);
-            padding: 12px 16px;
+            background: rgba(167,139,250,0.1);
+            padding: 11px 15px;
             border-radius: 12px;
-            color: #475569;
-            font-size: 13px;
+            color: #6d28d9;
+            font-size: 12.5px;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(102, 126, 234, 0.2);
+            margin-bottom: 18px;
+            border: 1px solid rgba(167,139,250,0.25);
           }
 
           .crop-actions {
             display: flex;
             gap: 12px;
-            padding: 0 24px 24px;
+            padding: 0 26px 26px;
           }
 
           .crop-btn {
             flex: 1;
             padding: 14px 20px;
             border: none !important;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer !important;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
             display: flex !important;
             align-items: center;
             justify-content: center;
@@ -730,24 +724,23 @@ const EditProfile = ({ onClose, onSuccess }) => {
           }
 
           .save-btn {
-            background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9) !important;
             color: white !important;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 20px rgba(124,58,237,0.38);
           }
-
           .save-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(99, 102, 241, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(124,58,237,0.5);
           }
 
           .cancel-btn {
-            background: rgba(99,102,241,0.07) !important;
-            color: #6366f1 !important;
-            border: 1.5px solid rgba(99,102,241,0.2) !important;
+            background: rgba(167,139,250,0.1) !important;
+            color: #7c3aed !important;
+            border: 1.5px solid rgba(167,139,250,0.35) !important;
           }
-
           .cancel-btn:hover {
-            background: rgba(99,102,241,0.14) !important;
+            background: rgba(167,139,250,0.2) !important;
+            transform: translateY(-1px);
           }
         `}</style>
       </div>
@@ -992,13 +985,13 @@ const EditProfile = ({ onClose, onSuccess }) => {
                 <span>{uploading ? 'Uploading…' : 'Saving…'}</span>
               </>
             : <>
-                {/* Floppy disk — universal save icon, same as WelcomeDashboard */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                {/* Floppy disk — universal save icon */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#e0d4ff">
                   <path d="M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3M19,19H5V5H16.17L19,7.83V19M12,12C10.34,12 9,13.34 9,15C9,16.66 10.34,18 12,18C13.66,18 15,16.66 15,15C15,13.34 13.66,12 12,12M6,6H15V10H6V6Z"/>
                 </svg>
                 <span>Save Changes</span>
                 {/* Paper-plane accent */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{opacity:.7}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#c4b5fd">
                   <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
                 </svg>
               </>
