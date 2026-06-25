@@ -51,6 +51,28 @@ const getRoomIcon = (roomName) => {
 };
 
 /* ─── Role pill colors ───────────────────────────────────────────────────── */
+const buildStatusStyle = (statusStyles) => {
+  if (!statusStyles) return {};
+  const s = {};
+  if (statusStyles.gradientEnabled) {
+    s.background = `linear-gradient(${statusStyles.gradientDirection || 'to right'}, ${statusStyles.gradientStart || '#667eea'}, ${statusStyles.gradientEnd || '#764ba2'})`;
+    s.WebkitBackgroundClip = 'text';
+    s.backgroundClip = 'text';
+    s.color = 'transparent';
+  } else if (statusStyles.textColor) {
+    s.color = statusStyles.textColor;
+  }
+  if (statusStyles.fontFamily && statusStyles.fontFamily !== 'inherit') s.fontFamily = statusStyles.fontFamily;
+  if (statusStyles.fontSize) s.fontSize = statusStyles.fontSize;
+  if (statusStyles.fontWeight) s.fontWeight = statusStyles.fontWeight;
+  if (statusStyles.fontStyle && statusStyles.fontStyle !== 'normal') s.fontStyle = statusStyles.fontStyle;
+  if (statusStyles.textDecoration && statusStyles.textDecoration !== 'none') s.textDecoration = statusStyles.textDecoration;
+  if (statusStyles.textShadow && statusStyles.textShadow !== 'none') s.textShadow = statusStyles.textShadow;
+  if (statusStyles.letterSpacing && statusStyles.letterSpacing !== 'normal') s.letterSpacing = statusStyles.letterSpacing;
+  if (statusStyles.animation && statusStyles.animation !== 'none') s.animation = statusStyles.animation;
+  return s;
+};
+
 const getRolePill = (role) => {
   const map = {
     owner:     { bg: '#fef3c7', color: '#92400e', label: 'Godfather' },
@@ -343,7 +365,13 @@ const Sidebar = ({
                     data-gender={loggedInUserProfile.gender || 'male'}
                     data-is-bot="false"
                   >
-                    {loggedInUserProfile.displayName || user.displayName || 'User'}
+                    <span
+                      className="sb-username-text"
+                      data-user-uid={user.uid}
+                      data-user-id={user.uid}
+                    >
+                      {loggedInUserProfile.displayName || user.displayName || 'User'}
+                    </span>
                     {loggedInUserProfile.badge && badges[loggedInUserProfile.badge] && (
                       <span className="inline-badge" title={badges[loggedInUserProfile.badge].name}
                         dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
@@ -359,18 +387,15 @@ const Sidebar = ({
                   </span>
                 </div>
                 {loggedInUserProfile.status && (
-                  <div className="sb-profile-status" style={loggedInUserProfile.statusStyles?.gradientEnabled ? {
-                    color: 'transparent',
-                    background: `linear-gradient(${loggedInUserProfile.statusStyles.gradientDirection || 'to right'}, ${loggedInUserProfile.statusStyles.gradientStart || '#667eea'}, ${loggedInUserProfile.statusStyles.gradientEnd || '#764ba2'})`,
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                  } : (loggedInUserProfile.statusStyles?.textColor ? { color: loggedInUserProfile.statusStyles.textColor } : {})}>
+                  <div className="sb-profile-status">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.82}}>
-                      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="currentColor"/>
-                      <circle cx="5" cy="5" r="1.2" fill="currentColor" opacity="0.6"/>
-                      <circle cx="19" cy="18" r="1" fill="currentColor" opacity="0.5"/>
+                      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="#6d28d9"/>
+                      <circle cx="5" cy="5" r="1.2" fill="#6d28d9" opacity="0.6"/>
+                      <circle cx="19" cy="18" r="1" fill="#6d28d9" opacity="0.5"/>
                     </svg>
-                    {loggedInUserProfile.status}
+                    <span style={buildStatusStyle(loggedInUserProfile.statusStyles)}>
+                      {loggedInUserProfile.status}
+                    </span>
                   </div>
                 )}
               </div>
@@ -602,7 +627,13 @@ const Sidebar = ({
                           data-is-bot="false"
                           style={{ opacity: isSelf ? 0.65 : 1 }}
                         >
-                          {userItem.displayName || 'Anonymous'}
+                          <span
+                            className="sb-username-text"
+                            data-user-uid={userItem.uid}
+                            data-user-id={userItem.uid}
+                          >
+                            {userItem.displayName || 'Anonymous'}
+                          </span>
                           {userItem.badge && badges[userItem.badge] && (
                             <span className="inline-badge" title={badges[userItem.badge].name}
                               dangerouslySetInnerHTML={{ __html: badges[userItem.badge].svg }} />
@@ -613,16 +644,13 @@ const Sidebar = ({
                         </span>
                       </div>
                       {userItem.status && (
-                        <div className="sb-user-status" style={userItem.statusStyles ? {
-                          color: userItem.statusStyles.gradientEnabled ? 'transparent' : (userItem.statusStyles.textColor || '#7c3aed'),
-                          background: userItem.statusStyles.gradientEnabled ? `linear-gradient(${userItem.statusStyles.gradientDirection || 'to right'}, ${userItem.statusStyles.gradientStart || '#667eea'}, ${userItem.statusStyles.gradientEnd || '#764ba2'})` : 'none',
-                          WebkitBackgroundClip: userItem.statusStyles.gradientEnabled ? 'text' : 'initial',
-                          backgroundClip: userItem.statusStyles.gradientEnabled ? 'text' : 'initial',
-                        } : {}}>
-                          <svg width="7" height="7" viewBox="0 0 24 24" style={{flexShrink:0,opacity:0.7}} fill="currentColor">
+                        <div className="sb-user-status">
+                          <svg width="7" height="7" viewBox="0 0 24 24" style={{flexShrink:0,opacity:0.7}} fill="#7c3aed">
                             <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
                           </svg>
-                          {userItem.status}
+                          <span style={buildStatusStyle(userItem.statusStyles)}>
+                            {userItem.status}
+                          </span>
                         </div>
                       )}
                     </div>
