@@ -614,11 +614,14 @@ const Sidebar = ({
                       </div>
                       {userItem.status && (
                         <div className="sb-user-status" style={userItem.statusStyles ? {
-                          color: userItem.statusStyles.gradientEnabled ? 'transparent' : (userItem.statusStyles.textColor || '#64748b'),
+                          color: userItem.statusStyles.gradientEnabled ? 'transparent' : (userItem.statusStyles.textColor || '#7c3aed'),
                           background: userItem.statusStyles.gradientEnabled ? `linear-gradient(${userItem.statusStyles.gradientDirection || 'to right'}, ${userItem.statusStyles.gradientStart || '#667eea'}, ${userItem.statusStyles.gradientEnd || '#764ba2'})` : 'none',
                           WebkitBackgroundClip: userItem.statusStyles.gradientEnabled ? 'text' : 'initial',
                           backgroundClip: userItem.statusStyles.gradientEnabled ? 'text' : 'initial',
                         } : {}}>
+                          <svg width="7" height="7" viewBox="0 0 24 24" style={{flexShrink:0,opacity:0.7}} fill="currentColor">
+                            <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
+                          </svg>
                           {userItem.status}
                         </div>
                       )}

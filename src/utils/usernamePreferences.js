@@ -422,6 +422,8 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     [data-user-uid="${userId}"].dropdown-username,
     [data-user-uid="${userId}"].message-displayname,
     [data-user-uid="${userId}"].message-username,
+    [data-user-uid="${userId}"].sb-list-username,
+    [data-user-uid="${userId}"].sb-profile-name,
 
     /* Username elements by user ID */
     .username[data-user-id="${userId}"],
@@ -435,6 +437,8 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     .profile-name[data-user-id="${userId}"],
     .modern-profile-name[data-user-id="${userId}"],
     .dropdown-username[data-user-id="${userId}"],
+    .sb-list-username[data-user-id="${userId}"],
+    .sb-profile-name[data-user-id="${userId}"],
 
     /* Additional specific selectors for better coverage */
     [data-username="${userName}"][data-user-id="${userId}"],

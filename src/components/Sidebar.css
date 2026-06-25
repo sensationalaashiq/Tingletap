@@ -141,18 +141,19 @@
 }
 
 .sb-profile-name {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: #3b1f8c;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.3;
   flex-shrink: 1;
   min-width: 0;
+  letter-spacing: 0.01em;
 }
 
 .sb-role-pill {
@@ -393,7 +394,7 @@
 }
 
 .sb-list-username {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #1e1b4b;
   white-space: nowrap;
@@ -401,9 +402,10 @@
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   flex: 1;
+  line-height: 1.3;
 }
 
 .sb-user-role-pill {
@@ -418,13 +420,18 @@
 
 .sb-user-status {
   font-size: 10px;
-  color: #64748b;
-  font-style: italic;
+  color: #7c3aed;
+  font-style: normal;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 130px;
-  margin-top: 1px;
+  max-width: 140px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.85;
 }
 
 /* ── Mod action buttons (on user rows) ───────────────────────────────────── */
@@ -654,13 +661,23 @@
 }
 .sb-apd-mod-label svg { fill: #7c3aed; }
 
-/* ── inline-badge (reused class) ─────────────────────────────────────────── */
-.inline-badge {
+/* ── inline-badge in sidebar — override the 14px !important from HomePage.css */
+.sb-list-username .inline-badge,
+.sb-profile-name .inline-badge,
+.sb-apd-name .inline-badge {
   display: inline-flex;
   align-items: center;
-  margin-left: 2px;
+  flex-shrink: 0;
+  margin-left: 3px;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
 }
-.inline-badge svg { width: 14px; height: 14px; }
+.sb-list-username .inline-badge svg,
+.sb-profile-name .inline-badge svg,
+.sb-apd-name .inline-badge svg {
+  width: 20px !important;
+  height: 20px !important;
+  vertical-align: -4px;
+}
 
 /* ── border classes for list items (legacy compat) ───────────────────────── */
 .male-border .sb-list-avatar        { border-color: rgba(59,130,246,0.4); }
