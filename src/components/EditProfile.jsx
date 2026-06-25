@@ -449,12 +449,19 @@ const EditProfile = ({ onClose, onSuccess }) => {
         <div className="crop-modal-content">
           <div className="crop-header">
             <div className="crop-title">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="camGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#7c3aed"/>
+                    <stop offset="50%" stopColor="#a855f7"/>
+                    <stop offset="100%" stopColor="#6d28d9"/>
+                  </linearGradient>
+                </defs>
+                <path fill="url(#camGrad)" d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z"/>
               </svg>
               <span>Adjust Profile Photo</span>
             </div>
-            <div className="crop-subtitle">Drag · Scale · Rotate — then apply</div>
+            <div className="crop-subtitle">✨ Drag · Scale · Rotate — then apply</div>
           </div>
 
           <div className="crop-content">
@@ -495,8 +502,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
             <div className="crop-controls">
               <div className="control-group">
                 <label>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path fill="#8b5cf6" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                   </svg>
                   Scale
                 </label>
@@ -512,8 +519,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
               <div className="control-group">
                 <label>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C17.52 2 22 6.48 22 12s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 18c4.41 0 8-3.59 8-8s-3.59-8-8-8-8 3.59-8 8 3.59 8 8 8zm1-13h-2v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path fill="#06b6d4" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
                   </svg>
                   Rotate
                 </label>
@@ -543,8 +550,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
               className="crop-btn save-btn"
               onClick={handleCropComplete}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path fill="white" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
               </svg>
               Apply Crop
             </button>
@@ -552,8 +559,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
               className="crop-btn cancel-btn"
               onClick={handleCropCancel}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 18L18 6M6 6l12 12"/>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path fill="#7c3aed" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
               </svg>
               Cancel
             </button>

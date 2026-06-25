@@ -155,25 +155,26 @@ select.wd-input {
   font-family: 'Inter', sans-serif;
 }
 .crop-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
-  padding: 24px 28px 20px;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 55%, #c4b5fd 100%);
+  padding: 22px 28px 18px;
   text-align: center;
   position: relative;
   overflow: hidden;
+  border-bottom: 1.5px solid rgba(196,181,253,0.45);
 }
 .crop-header::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.12) 0%, transparent 60%),
-              radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  background: radial-gradient(circle at 20% 50%, rgba(167,139,250,0.14) 0%, transparent 60%),
+              radial-gradient(circle at 80% 20%, rgba(196,181,253,0.1) 0%, transparent 50%);
   pointer-events: none;
 }
 .crop-header::after {
   content: '';
   position: absolute;
   bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 60px; height: 3px;
-  background: rgba(255,255,255,0.4);
+  width: 52px; height: 3px;
+  background: linear-gradient(90deg, #a78bfa, #7c3aed, #a78bfa);
   border-radius: 2px;
 }
 .crop-title {
@@ -181,19 +182,19 @@ select.wd-input {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #ffffff;
-  font-size: 20px;
+  color: #3b0764;
+  font-size: 19px;
   font-weight: 800;
   font-family: 'Playfair Display', 'Georgia', serif;
   letter-spacing: 0.02em;
   position: relative;
 }
-.crop-title svg { filter: drop-shadow(0 1px 4px rgba(0,0,0,0.25)); }
+.crop-title svg { filter: drop-shadow(0 1px 3px rgba(124,58,237,0.2)); }
 .crop-subtitle {
-  color: rgba(255,255,255,0.75);
+  color: rgba(75, 29, 148, 0.72);
   font-size: 12.5px;
   margin-top: 5px;
-  font-weight: 400;
+  font-weight: 500;
   position: relative;
 }
 .crop-content { padding: 28px 28px 20px; }

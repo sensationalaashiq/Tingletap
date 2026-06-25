@@ -453,42 +453,65 @@
 }
 
 /* ── BLOCKED USERS ── */
-.blocked-users-list { max-height: 280px; overflow-y: auto; }
+.blocked-users-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; }
+.blocked-users-list::-webkit-scrollbar { width: 3px; }
+.blocked-users-list::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 3px; }
 .blocked-user-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px;
-    background: rgba(255,255,255,.7);
-    border-radius: 10px;
-    margin-bottom: 6px;
-    border: 1px solid rgba(239,68,68,.12);
+    padding: 10px 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(254,242,242,0.85) 100%);
+    border-radius: 13px;
+    border: 1.5px solid rgba(239,68,68,0.15);
     transition: all .2s ease;
-    box-shadow: 0 1px 4px rgba(239,68,68,.06);
+    box-shadow: 0 2px 8px rgba(239,68,68,0.07);
 }
-.blocked-user-item:hover { background: rgba(254,242,242,.8); border-color: rgba(239,68,68,.25); }
-.blocked-user-info { display: flex; align-items: center; gap: 8px; }
+.blocked-user-item:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(254,226,226,0.9) 100%);
+    border-color: rgba(239,68,68,0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(239,68,68,0.12);
+}
+.blocked-user-info { display: flex; align-items: center; gap: 10px; }
 .blocked-user-avatar {
-    width: 34px; height: 34px;
+    width: 38px; height: 38px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid rgba(239,68,68,.35);
+    border: 2.5px solid rgba(239,68,68,0.4);
+    box-shadow: 0 2px 8px rgba(239,68,68,0.15);
 }
-.blocked-user-name { font-size: 12px; font-weight: 700; color: #1e1b4b; }
-.blocked-user-role { font-size: 10px; color: #9ca3af; }
+.blocked-user-details { display: flex; flex-direction: column; gap: 2px; }
+.blocked-user-name { font-size: 13px; font-weight: 700; color: #1e1b4b; }
+.blocked-user-role {
+    font-size: 10.5px;
+    color: #ef4444;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+}
 .unblock-btn {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    border: none;
-    border-radius: 7px;
-    padding: 5px 10px;
-    font-size: 11px;
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 11.5px;
     font-weight: 700;
-    cursor: pointer;
-    transition: all .2s ease;
+    cursor: pointer !important;
+    transition: all .2s cubic-bezier(0.34,1.56,0.64,1);
     white-space: nowrap;
+    display: flex !important;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 3px 10px rgba(16,185,129,0.25);
+    letter-spacing: 0.02em;
 }
-.unblock-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+.unblock-btn:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 6px 18px rgba(16,185,129,0.4) !important;
+    background: linear-gradient(135deg, #059669, #047857) !important;
+}
 
 /* ── ACCOUNT CARD ── */
 .modern-account-card {

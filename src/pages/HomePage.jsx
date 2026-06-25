@@ -34,6 +34,8 @@ import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
 // --- SVG Icons (No changes here) ---
@@ -6860,6 +6862,26 @@ const HomePage = ({ user }) => {
                 targetUser={blockConfirmTarget}
                 onConfirm={confirmBlockUser}
                 onCancel={() => setBlockConfirmTarget(null)}
+            />
+
+            {/* Toast Notifications */}
+            <ToastContainer
+                position="bottom-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                pauseOnHover
+                theme="light"
+                toastStyle={{
+                    background: 'rgba(255,255,255,0.97)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1.5px solid rgba(167,139,250,0.25)',
+                    borderRadius: '16px',
+                    color: '#1e1b4b',
+                    fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 12px 40px rgba(109,40,217,0.15)',
+                }}
             />
         </>
     );

@@ -5,7 +5,7 @@ import { auth, db, rtdb } from '../firebase/config';
 import { doc, setDoc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { ref, onValue } from 'firebase/database';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import StatusModal from '../components/StatusModal';
 import AdultRoomModal from '../components/AdultRoomModal';
@@ -336,11 +336,11 @@ const RoomListPage = () => {
 
     if (isGuest && gd) {
       try { userId = JSON.parse(gd).uid; }
-      catch { toast.error('Please login to access rooms'); return; }
+      catch { return; }
     } else if (cu) {
       userId = cu.uid; role = userRole || 'user';
     } else {
-      toast.error('Please login to access rooms'); return;
+      return;
     }
 
     try {
@@ -363,9 +363,8 @@ const RoomListPage = () => {
     const name = room.name.toLowerCase();
     if (name.includes('staff') || name.includes('admin')) {
       if (!['owner','admin','moderator'].includes(role.toLowerCase())) {
-        toast.error('Staff Room is restricted to staff only'); return;
+        return;
       }
-      toast.success(`Staff Access Granted — Welcome ${role}!`);
     }
 
     if (name.includes('adult') || name.includes('18+')) {
@@ -532,8 +531,6 @@ const RoomListPage = () => {
         />
       )}
 
-      <ToastContainer position="bottom-center" autoClose={3000} theme="light"
-        toastStyle={{ background:'rgba(255,255,255,.95)', backdropFilter:'blur(16px)', border:'1.5px solid rgba(99,102,241,.2)', borderRadius:'14px', color:'#1e1b4b', fontFamily:'Inter,sans-serif' }} />
     </div>
   );
 };
