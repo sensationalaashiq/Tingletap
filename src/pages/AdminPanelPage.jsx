@@ -518,36 +518,51 @@ const AdminPanelPage = () => {
         toast.success('Report resolved.');
       } else if (action === 'ban') {
         const uid = reportData.reportedUser?.uid;
-        const target = users.find(u => u.uid === uid || u.id === uid);
+        const target = users.find(u => u.uid === uid || u.id === uid) || (uid ? {
+          uid, id: uid,
+          displayName: reportData.reportedUser?.displayName || reportData.reportedName || 'Unknown User',
+          email: reportData.reportedUser?.email || null,
+          role: reportData.reportedUser?.role || 'user',
+          ...reportData.reportedUser
+        } : null);
         if (target) {
-          await updateDoc(reportRef, { status: 'action_taken' });
           setSelectedUser(target);
           setActionType('ban');
           setIsModalVisible(true);
         } else {
-          toast.error('User not found.');
+          toast.error('No user UID available in this report.');
         }
       } else if (action === 'mute') {
         const uid = reportData.reportedUser?.uid;
-        const target = users.find(u => u.uid === uid || u.id === uid);
+        const target = users.find(u => u.uid === uid || u.id === uid) || (uid ? {
+          uid, id: uid,
+          displayName: reportData.reportedUser?.displayName || reportData.reportedName || 'Unknown User',
+          email: reportData.reportedUser?.email || null,
+          role: reportData.reportedUser?.role || 'user',
+          ...reportData.reportedUser
+        } : null);
         if (target) {
-          await updateDoc(reportRef, { status: 'action_taken' });
           setSelectedUser(target);
           setActionType('mute');
           setIsModalVisible(true);
         } else {
-          toast.error('User not found.');
+          toast.error('No user UID available in this report.');
         }
       } else if (action === 'kick') {
         const uid = reportData.reportedUser?.uid;
-        const target = users.find(u => u.uid === uid || u.id === uid);
+        const target = users.find(u => u.uid === uid || u.id === uid) || (uid ? {
+          uid, id: uid,
+          displayName: reportData.reportedUser?.displayName || reportData.reportedName || 'Unknown User',
+          email: reportData.reportedUser?.email || null,
+          role: reportData.reportedUser?.role || 'user',
+          ...reportData.reportedUser
+        } : null);
         if (target) {
-          await updateDoc(reportRef, { status: 'action_taken' });
           setSelectedUser(target);
           setActionType('kick');
           setIsModalVisible(true);
         } else {
-          toast.error('User not found in active users list.');
+          toast.error('No user UID available in this report.');
         }
       } else if (action === 'ip_ban') {
         const ip = reportData.reportedUser?.ipAddress;
@@ -2574,6 +2589,9 @@ const AdminPanelPage = () => {
                             <span>🖥 {s.deviceType || '—'}</span>
                             <span>🌐 {s.browser || '—'}</span>
                             <span>💻 {s.os || '—'}</span>
+                            {s.deviceId && (
+                              <span title={s.deviceId} style={{ cursor: 'help' }}>📱 Device: <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{s.deviceId.slice(0, 12)}…</span></span>
+                            )}
                           </div>
 
                           {/* Row 3: IP + location */}

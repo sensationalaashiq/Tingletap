@@ -497,6 +497,15 @@ const LoginPage = () => {
         const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
         const deviceType = /iPad|Tablet/i.test(ua) ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
 
+        let deviceId = '';
+        try {
+          const dfModule = await import('../utils/deviceFingerprint');
+          const DeviceFingerprint = dfModule.default;
+          const deviceProfile = await DeviceFingerprint.getDeviceProfile();
+          deviceId = deviceProfile.deviceId || '';
+          localStorage.setItem('guestDeviceId', deviceId);
+        } catch {}
+
         const sessionRef = doc(db, 'guestSessions', user.uid);
         await setDoc(sessionRef, {
           uid: user.uid,
@@ -508,10 +517,11 @@ const LoginPage = () => {
           browser,
           os,
           deviceType,
+          deviceId,
           ...geoData,
           sessionStarted: new Date().toISOString(),
           sessionEnded: null,
-          deleteAt: null,
+          deleteAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
           status: 'active'
         });
         localStorage.setItem('guestSessionId', user.uid);

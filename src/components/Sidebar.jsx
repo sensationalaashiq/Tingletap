@@ -52,17 +52,17 @@ const getRoomIcon = (roomName) => {
 
 /* ─── Role pill colors ───────────────────────────────────────────────────── */
 const PREMIUM_STYLE_MAP = {
-  'gold-foil':    { background: 'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
-  'cosmic':       { background: 'linear-gradient(135deg,#8b5cf6,#ec4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
-  'ember':        { background: 'linear-gradient(135deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
-  'arctic':       { background: 'linear-gradient(135deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
-  'rose-gold':    { background: 'linear-gradient(135deg,#f9a8d4,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
+  'gold-foil':    { background: 'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+  'cosmic':       { background: 'linear-gradient(135deg,#8b5cf6,#ec4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+  'ember':        { background: 'linear-gradient(135deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+  'arctic':       { background: 'linear-gradient(135deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+  'rose-gold':    { background: 'linear-gradient(135deg,#f9a8d4,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
   'matte-luxe':   { color: '#2d2d2d', fontWeight: '600', letterSpacing: '0.5px' },
   'royal-script': { fontFamily: 'Playfair Display, serif', color: '#1a1a1a', fontWeight: '700', fontStyle: 'italic' },
   'velvet-shadow':{ color: '#4a4a4a', fontWeight: '600', textShadow: '3px 3px 6px rgba(0,0,0,0.4)' },
   'minimal-mono': { fontFamily: 'JetBrains Mono, monospace', color: '#333333', fontWeight: '500', letterSpacing: '1px' },
   'neon-glow':    { color: '#39ff14', fontWeight: '700', textShadow: '0 0 7px #39ff14,0 0 14px #39ff14,0 0 21px #39ff14' },
-  'ocean-wave':   { background: 'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
+  'ocean-wave':   { background: 'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
 };
 
 const buildStatusStyle = (statusStyles) => {
@@ -80,6 +80,7 @@ const buildStatusStyle = (statusStyles) => {
       s.WebkitBackgroundClip = 'text';
       s.backgroundClip = 'text';
       s.color = 'transparent';
+      s.display = 'inline-block';
     } else if (statusStyles.textColor) {
       s.color = statusStyles.textColor;
     }

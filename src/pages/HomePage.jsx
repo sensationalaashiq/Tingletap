@@ -1950,7 +1950,7 @@ const HomePage = ({ user }) => {
                 deviceType: deviceType,
                 country: loggedInUserProfile.country || 'Unknown',
                 displayName: displayNameForStatus,
-                gender: loggedInUserProfile.gender || 'male',
+                gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
                 role: loggedInUserProfile.role || 'guest',
                 isGuest: isGuest || false,
                 photoURL: loggedInUserProfile.photoURL || `${getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender)}`,
@@ -2567,12 +2567,14 @@ const HomePage = ({ user }) => {
                 const guestData = localStorage.getItem('guestUser');
                 let displayName = guestStatus.displayName || 'Guest';
                 
-                // If this is the current guest user, use their chosen username
+                let guestGender = guestStatus.gender || '';
+                // If this is the current guest user, use their chosen username and ensure correct gender
                 if (isGuest && guestData) {
                     try {
                         const currentGuestUser = JSON.parse(guestData);
                         if (currentGuestUser.uid === uid) {
                             displayName = currentGuestUser.username || currentGuestUser.displayName || 'Guest';
+                            guestGender = currentGuestUser.gender || getStoredGuestGender() || guestStatus.gender || '';
                         }
                     } catch (e) {
                         console.error('Error parsing guest data:', e);
@@ -2582,11 +2584,11 @@ const HomePage = ({ user }) => {
                 fullUserProfiles.push({
                     uid: uid,
                     displayName: displayName,
-                    gender: guestStatus.gender || '',
+                    gender: guestGender,
                     role: 'guest',
                     isGuest: true,
                     isOnline: guestStatus.state === 'online',
-                    photoURL: `${getDefaultAvatarUrl(uid, guestStatus.gender)}`
+                    photoURL: `${getDefaultAvatarUrl(uid, guestGender)}`
                 });
             }
         });
