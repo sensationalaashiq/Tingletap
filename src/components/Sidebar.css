@@ -431,7 +431,6 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  opacity: 0.85;
 }
 
 /* ── Mod action buttons (on user rows) ───────────────────────────────────── */

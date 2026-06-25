@@ -51,24 +51,43 @@ const getRoomIcon = (roomName) => {
 };
 
 /* ─── Role pill colors ───────────────────────────────────────────────────── */
+const PREMIUM_STYLE_MAP = {
+  'gold-foil':    { background: 'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
+  'matte-luxe':   { color: '#2d2d2d', fontWeight: '600', letterSpacing: '0.5px' },
+  'royal-script': { fontFamily: 'Playfair Display, serif', color: '#1a1a1a', fontWeight: '700', fontStyle: 'italic' },
+  'velvet-shadow':{ color: '#4a4a4a', fontWeight: '600', textShadow: '3px 3px 6px rgba(0,0,0,0.4)' },
+  'minimal-mono': { fontFamily: 'JetBrains Mono, monospace', color: '#333333', fontWeight: '500', letterSpacing: '1px' },
+  'neon-glow':    { color: '#39ff14', fontWeight: '700', textShadow: '0 0 7px #39ff14,0 0 14px #39ff14,0 0 21px #39ff14' },
+  'ocean-wave':   { background: 'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700' },
+};
+
 const buildStatusStyle = (statusStyles) => {
   if (!statusStyles) return {};
-  const s = {};
-  if (statusStyles.gradientEnabled) {
-    s.background = `linear-gradient(${statusStyles.gradientDirection || 'to right'}, ${statusStyles.gradientStart || '#667eea'}, ${statusStyles.gradientEnd || '#764ba2'})`;
-    s.WebkitBackgroundClip = 'text';
-    s.backgroundClip = 'text';
-    s.color = 'transparent';
-  } else if (statusStyles.textColor) {
-    s.color = statusStyles.textColor;
+
+  const premBase = (statusStyles.premiumStyle && statusStyles.premiumStyle !== 'none')
+    ? (PREMIUM_STYLE_MAP[statusStyles.premiumStyle] || {})
+    : {};
+
+  const s = { ...premBase };
+
+  if (!premBase.color && !premBase.background) {
+    if (statusStyles.gradientEnabled) {
+      s.background = `linear-gradient(${statusStyles.gradientDirection || 'to right'}, ${statusStyles.gradientStart || '#667eea'}, ${statusStyles.gradientEnd || '#764ba2'})`;
+      s.WebkitBackgroundClip = 'text';
+      s.backgroundClip = 'text';
+      s.color = 'transparent';
+    } else if (statusStyles.textColor) {
+      s.color = statusStyles.textColor;
+    }
   }
-  if (statusStyles.fontFamily && statusStyles.fontFamily !== 'inherit') s.fontFamily = statusStyles.fontFamily;
+
+  if (!premBase.fontFamily && statusStyles.fontFamily && statusStyles.fontFamily !== 'inherit') s.fontFamily = statusStyles.fontFamily;
   if (statusStyles.fontSize) s.fontSize = statusStyles.fontSize;
-  if (statusStyles.fontWeight) s.fontWeight = statusStyles.fontWeight;
-  if (statusStyles.fontStyle && statusStyles.fontStyle !== 'normal') s.fontStyle = statusStyles.fontStyle;
+  if (!premBase.fontWeight && statusStyles.fontWeight) s.fontWeight = statusStyles.fontWeight;
+  if (!premBase.fontStyle && statusStyles.fontStyle && statusStyles.fontStyle !== 'normal') s.fontStyle = statusStyles.fontStyle;
   if (statusStyles.textDecoration && statusStyles.textDecoration !== 'none') s.textDecoration = statusStyles.textDecoration;
-  if (statusStyles.textShadow && statusStyles.textShadow !== 'none') s.textShadow = statusStyles.textShadow;
-  if (statusStyles.letterSpacing && statusStyles.letterSpacing !== 'normal') s.letterSpacing = statusStyles.letterSpacing;
+  if (!premBase.textShadow && statusStyles.textShadow && statusStyles.textShadow !== 'none') s.textShadow = statusStyles.textShadow;
+  if (!premBase.letterSpacing && statusStyles.letterSpacing && statusStyles.letterSpacing !== 'normal') s.letterSpacing = statusStyles.letterSpacing;
   if (statusStyles.animation && statusStyles.animation !== 'none') s.animation = statusStyles.animation;
   return s;
 };
@@ -625,7 +644,6 @@ const Sidebar = ({
                           data-badge={userItem.badge ? 'true' : 'false'}
                           data-gender={userItem.gender || 'male'}
                           data-is-bot="false"
-                          style={{ opacity: isSelf ? 0.65 : 1 }}
                         >
                           <span
                             className="sb-username-text"
