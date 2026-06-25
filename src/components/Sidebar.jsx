@@ -662,7 +662,7 @@ const Sidebar = ({
                           )}
                         </span>
                         <span className="sb-user-role-pill" style={{ background: pill.bg, color: pill.color }}>
-                          {pill.label}
+                          {getRoleDisplayLabel({ role: userItem.role, gender: userItem.gender, isGuest: tIsGuest, badge: userItem.badge })}
                         </span>
                       </div>
                       {userItem.status && (

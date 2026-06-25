@@ -30,6 +30,7 @@ import VPNBlockModal from './components/VPNBlockModal';
 
 // Removed toast notifications
 import { checkUserVPN } from './utils/vpnDetection';
+import { getStoredGuestGender } from './utils/roleUtils';
 import BanKickModal from './components/BanKickModal';
 import './App.css';
 
@@ -453,7 +454,19 @@ function App() {
 
               return; // Exit early, don't process normal profile logic
             } else {
-              setUserProfile(profile);
+              // If this is an anonymous (guest) Firebase user, ensure the profile
+              // always carries isGuest + role + gender so every downstream
+              // component (Sidebar, SettingsSidebar, etc.) shows Purush/Stree/Navrang
+              // instead of "Member".
+              const resolvedProfile = currentUser.isAnonymous
+                ? {
+                    ...profile,
+                    isGuest: true,
+                    role: 'guest',
+                    gender: profile.gender || getStoredGuestGender(),
+                  }
+                : profile;
+              setUserProfile(resolvedProfile);
 
               // Apply user's saved theme from profile with optimization
               const userTheme = profile.selectedTheme || profile.settings?.selectedTheme || 'light';
