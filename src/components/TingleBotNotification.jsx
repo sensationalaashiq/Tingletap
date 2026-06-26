@@ -123,6 +123,12 @@ const IconDefault = () => (
   </svg>
 );
 
+const DeleteIcon = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+  </svg>
+);
+
 /* ─────────────────────────────────────────────
    MAP event type → icon + strip variant class
 ───────────────────────────────────────────── */
@@ -180,7 +186,7 @@ function buildDisplayText(message) {
 /* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
-const TingleBotNotification = ({ message }) => {
+const TingleBotNotification = ({ message, onDelete, isOwner }) => {
   const eventType = detectEventType(message);
   const { Icon, cls } = EVENT_MAP[eventType] || { Icon: IconDefault, cls: '' };
   const text = buildDisplayText(message);
@@ -199,7 +205,7 @@ const TingleBotNotification = ({ message }) => {
   };
 
   return (
-    <div className="tinglebot-strip-wrapper" aria-live="polite" aria-atomic="true">
+    <div className={`tinglebot-strip-wrapper${isOwner && onDelete ? ' tinglebot-strip-wrapper--interactive' : ''}`} aria-live="polite" aria-atomic="true">
       <div className={`tinglebot-strip ${cls}`}>
         <span className="tinglebot-icon">
           <Icon />
@@ -207,6 +213,15 @@ const TingleBotNotification = ({ message }) => {
         <span className="tinglebot-brand">TingleBot</span>
         <span className="tinglebot-sep" />
         <span className="tinglebot-text">{renderText()}</span>
+        {isOwner && onDelete && message.id && (
+          <button
+            className="tinglebot-delete-btn"
+            title="Delete TingleBot Message"
+            onClick={(e) => { e.stopPropagation(); onDelete(message.id); }}
+          >
+            <DeleteIcon />
+          </button>
+        )}
       </div>
     </div>
   );

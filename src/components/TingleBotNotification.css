@@ -36,8 +36,15 @@
 .tinglebot-strip-wrapper {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   padding: 6px 12px 6px 40px;
   pointer-events: none;
+  user-select: none;
+}
+
+/* When owner delete button is present, allow pointer events */
+.tinglebot-strip-wrapper--interactive {
+  pointer-events: auto;
   user-select: none;
 }
 
@@ -141,6 +148,41 @@
 .tinglebot-text strong {
   font-weight: 700;
   color: rgba(109, 40, 217, 0.88);
+}
+
+/* ── Owner delete button ── */
+.tinglebot-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.10);
+  color: rgba(239, 68, 68, 0.65);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  opacity: 0;
+  pointer-events: auto;
+  z-index: 1;
+  position: relative;
+}
+
+.tinglebot-strip:hover .tinglebot-delete-btn {
+  opacity: 1;
+}
+
+.tinglebot-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: rgba(239, 68, 68, 0.90);
+}
+
+.tinglebot-delete-btn svg {
+  display: block;
 }
 
 /* ── Rule variant (slightly different tint) ── */

@@ -1078,6 +1078,11 @@ const HomePage = ({ user }) => {
             noReaction: true,
             noReport: true,
             noUnread: true,
+        }).then(ref => {
+            if (ref?.id) {
+                scheduledTinglebotDeletionsRef.current.add(ref.id);
+                setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+            }
         }).catch(e => console.error('TingleBot join error', e));
         // expose room id for SettingsSidebar announcements
         window._tingleBotRoomId = roomId;
@@ -1095,6 +1100,11 @@ const HomePage = ({ user }) => {
                 noReaction: true,
                 noReport: true,
                 noUnread: true,
+            }).then(ref => {
+                if (ref?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(ref.id);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                }
             }).catch(e => console.error('TingleBot leave error', e));
         };
     }, [roomId, loggedInUserProfile?.uid]);
@@ -1105,7 +1115,7 @@ const HomePage = ({ user }) => {
             const rid = window._tingleBotRoomId;
             if (!rid || !text?.trim()) return;
             try {
-                await addDoc(collection(db, 'rooms', rid, 'messages'), {
+                const ref = await addDoc(collection(db, 'rooms', rid, 'messages'), {
                     text: text.trim(),
                     uid: 'tinglebot_system_official_2024',
                     displayName: 'TingleBot',
@@ -1118,6 +1128,10 @@ const HomePage = ({ user }) => {
                     noReport: true,
                     noUnread: true,
                 });
+                if (ref?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(ref.id);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', rid, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                }
             } catch (e) { console.error('TingleBot announcement error', e); }
         };
         return () => { delete window.handleTingleBotAnnouncement; };
@@ -1157,6 +1171,8 @@ const HomePage = ({ user }) => {
     const lastRuleIndexRef = useRef(-1);
     const lastChatActivityRef = useRef(Date.now());
     const ruleIntervalRef = useRef(null);
+    // Track TingleBot message IDs that already have a deletion scheduled
+    const scheduledTinglebotDeletionsRef = useRef(new Set());
 
     // Update last activity whenever messages change
     useEffect(() => {
@@ -1169,7 +1185,7 @@ const HomePage = ({ user }) => {
         }
     }, [messages]);
 
-    // Community rules auto-posting effect
+    // Community rules auto-posting effect — smart scheduling (once per room via Firestore lock)
     useEffect(() => {
         if (!roomId) return;
 
@@ -1195,6 +1211,19 @@ const HomePage = ({ user }) => {
             const idleMs = Date.now() - lastChatActivityRef.current;
             if (idleMs < IDLE_MIN_MS || idleMs > IDLE_MAX_MS) return;
 
+            // ── Smart scheduling: Firestore coordination lock ──
+            // Only ONE client instance posts the rule every 15 min per room.
+            try {
+                const roomDocRef = doc(db, 'rooms', roomId);
+                const roomSnap = await getDoc(roomDocRef);
+                const roomData = roomSnap.data() || {};
+                const lastRuleAt = roomData.lastRulePostedAt?.toMillis?.() || 0;
+                // Another client already posted within the last 15 minutes — skip
+                if (Date.now() - lastRuleAt < INTERVAL_MS) return;
+                // Claim the slot by writing timestamp first (soft lock)
+                await updateDoc(roomDocRef, { lastRulePostedAt: serverTimestamp() });
+            } catch (_) { return; }
+
             // Pick next rule (no consecutive repeat)
             let nextIdx;
             do {
@@ -1203,7 +1232,7 @@ const HomePage = ({ user }) => {
             lastRuleIndexRef.current = nextIdx;
 
             try {
-                await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                const ruleDocRef = await addDoc(collection(db, 'rooms', roomId, 'messages'), {
                     text: COMMUNITY_RULES[nextIdx],
                     uid: 'tinglebot_system_official_2024',
                     displayName: 'TingleBot',
@@ -1216,6 +1245,13 @@ const HomePage = ({ user }) => {
                     noReport: true,
                     noUnread: true,
                 });
+                // Schedule auto-deletion after 3 minutes
+                if (ruleDocRef?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(ruleDocRef.id);
+                    setTimeout(() => {
+                        deleteDoc(doc(db, 'rooms', roomId, 'messages', ruleDocRef.id)).catch(() => {});
+                    }, 3 * 60 * 1000);
+                }
             } catch (_) {}
         };
 
@@ -2426,10 +2462,10 @@ const HomePage = ({ user }) => {
                 toast.error("Error loading room. Please try again.", { icon: TI.error });
                 navigate('/rooms', { replace: true });
             });
-            const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(30));
+            const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(25));
             let prevMsgCount = 0;
             const unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                const newMessages = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                const newMessages = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id }));
 
                 // Play notification sounds for newly arriving messages (skip initial batch load)
                 if (prevMsgCount > 0 && newMessages.length > prevMsgCount) {
@@ -2454,6 +2490,32 @@ const HomePage = ({ user }) => {
                 prevMsgCount = newMessages.length;
 
                 setMessages(newMessages);
+
+                // ── Auto-delete TingleBot messages after 3 minutes ──
+                // Schedule deletion for any TingleBot message not yet scheduled.
+                newMessages.forEach(msg => {
+                    const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024';
+                    if (!isBot || !msg.id) return;
+                    if (scheduledTinglebotDeletionsRef.current.has(msg.id)) return;
+                    scheduledTinglebotDeletionsRef.current.add(msg.id);
+                    const createdMs = msg.createdAt?.toMillis?.() || Date.now();
+                    const ageMs = Date.now() - createdMs;
+                    const remainingMs = Math.max(0, 3 * 60 * 1000 - ageMs);
+                    setTimeout(() => {
+                        deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
+                    }, remainingMs);
+                });
+
+                // ── Keep only latest 25 user messages (delete extras from Firestore) ──
+                const userMsgs = newMessages.filter(
+                    m => !m.isBot && m.uid !== 'tinglebot_system_official_2024' && !m.systemBot
+                );
+                if (userMsgs.length > 25) {
+                    const toDelete = userMsgs.slice(0, userMsgs.length - 25);
+                    toDelete.forEach(m => {
+                        deleteDoc(doc(db, 'rooms', roomId, 'messages', m.id)).catch(() => {});
+                    });
+                }
             }, (error) => {
                 if (error.code === 'permission-denied') {
                 }
@@ -6398,7 +6460,14 @@ const HomePage = ({ user }) => {
                                 msg.systemBot ||
                                 msg.type?.includes('tinglebot');
                             if (isTingleBot) {
-                                return <TingleBotNotification key={msg.id} message={msg} />;
+                                return (
+                                    <TingleBotNotification
+                                        key={msg.id}
+                                        message={msg}
+                                        onDelete={handleDeleteMessage}
+                                        isOwner={loggedInUserProfile?.role === 'owner'}
+                                    />
+                                );
                             }
                             return (
                             <ChatMessage
