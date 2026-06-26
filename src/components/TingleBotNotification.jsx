@@ -123,6 +123,15 @@ const IconDefault = () => (
   </svg>
 );
 
+const IconAutoMod = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <path d="M9 2L3 4.5v4.8C3 12.9 5.6 15.8 9 17c3.4-1.2 6-4.1 6-7.7V4.5L9 2z"
+      stroke="#f59e0b" strokeWidth="1.4" strokeLinejoin="round"
+      fill="rgba(245,158,11,0.10)"/>
+    <path d="M6.5 9l1.8 1.8 3.2-3.2" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 const DeleteIcon = () => (
   <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -147,6 +156,7 @@ const EVENT_MAP = {
   slow_mode:    { Icon: IconSlowMode,    cls: '' },
   announcement: { Icon: IconAnnouncement, cls: 'tinglebot-announcement' },
   rule:         { Icon: IconRule,        cls: 'tinglebot-rule' },
+  automod:      { Icon: IconAutoMod,     cls: 'tinglebot-automod' },
 };
 
 /* ─────────────────────────────────────────────

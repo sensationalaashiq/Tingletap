@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
+import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
@@ -2486,6 +2487,17 @@ const HomePage = ({ user }) => {
                             }
                         }
                     }
+                    // ── TingleBot AutoMod: scan ALL newly-arrived messages ──
+                    // Staff clients (owner/admin/moderator) run full enforcement;
+                    // non-staff clients run detection only (local tracking, no Firestore writes).
+                    const _autoModIsStaff = ['owner', 'admin', 'moderator'].includes(
+                        loggedInUserProfile?.role
+                    );
+                    newMessages.forEach(m => {
+                        if (!m.isBot && !m.systemBot && m.uid !== 'tinglebot_system_official_2024') {
+                            processAutoMod(m, roomId, myUid, _autoModIsStaff).catch(() => {});
+                        }
+                    });
                 }
                 prevMsgCount = newMessages.length;
 
@@ -2535,6 +2547,7 @@ const HomePage = ({ user }) => {
                     if (window.cleanupHomePageListeners) {
                         delete window.cleanupHomePageListeners;
                     }
+                    resetAutoModState();
                 } catch (error) {
                 }
             };
@@ -7308,7 +7321,15 @@ const HomePage = ({ user }) => {
                     padding: '12px 16px', backdropFilter: 'blur(24px)',
                     alignItems: 'stretch',
                 }}>
-                    {/* Photo — locked for guest & registered */}
+                    {/* ── 1. Audio — always available ── */}
+                    <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#f093fb,#f5576c)'}}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                        <span className="hp-attach-label">Audio</span>
+                    </button>
+
+                    {/* ── 2. Photo — locked for guest & registered ── */}
                     {(_isGuest || _isRegistered) ? (
                         <button className="hp-attach-btn" onClick={lockToast}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#667eea,#764ba2)',opacity:0.55,position:'relative'}}>
@@ -7325,48 +7346,8 @@ const HomePage = ({ user }) => {
                             <span className="hp-attach-label">Photo</span>
                         </button>
                     )}
-                    {/* Audio — always available */}
-                    <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#f093fb,#f5576c)'}}>
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </span>
-                        <span className="hp-attach-label">Audio</span>
-                    </button>
-                    {/* GIF — locked for guest & registered */}
-                    {(_isGuest || _isRegistered) ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>GIF</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-                            </span>
-                            <span className="hp-attach-label">GIF</span>
-                        </button>
-                    )}
-                    {/* Style — locked for guest only, limited for registered */}
-                    {_isGuest ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Style</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
-                            <span className="hp-attach-label">Style</span>
-                        </button>
-                    )}
-                    {/* YouTube — locked for guest & registered */}
+
+                    {/* ── 3. YouTube — locked for guest & registered ── */}
                     {(_isGuest || _isRegistered) ? (
                         <button className="hp-attach-btn" onClick={lockToast}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)',opacity:0.55,position:'relative'}}>
@@ -7387,6 +7368,42 @@ const HomePage = ({ user }) => {
                                 </svg>
                             </span>
                             <span className="hp-attach-label">YouTube</span>
+                        </button>
+                    )}
+
+                    {/* ── 4. Style/Font — locked for guest only ── */}
+                    {_isGuest ? (
+                        <button className="hp-attach-btn" onClick={lockToast}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)',opacity:0.55,position:'relative'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Style</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            <span className="hp-attach-label">Style</span>
+                        </button>
+                    )}
+
+                    {/* ── 5. GIF — locked for guest & registered ── */}
+                    {(_isGuest || _isRegistered) ? (
+                        <button className="hp-attach-btn" onClick={lockToast}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)',opacity:0.55,position:'relative'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>GIF</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                            </span>
+                            <span className="hp-attach-label">GIF</span>
                         </button>
                     )}
                 </div>
