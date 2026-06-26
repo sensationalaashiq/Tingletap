@@ -302,6 +302,28 @@ const RoomListPage = () => {
     return () => { delete window.openStatusModal; };
   }, []);
 
+  // Auto-show kick modal if user was just kicked
+  useEffect(() => {
+    const shouldShow = localStorage.getItem('showKickModal');
+    if (shouldShow === 'true') {
+      localStorage.removeItem('showKickModal');
+      try {
+        const raw = localStorage.getItem('lastKickData');
+        if (raw) {
+          const kd = JSON.parse(raw);
+          setKickModalData({
+            roomName: kd.roomName || 'the room',
+            reason: kd.reason || 'You were removed by a moderator.',
+            kickedBy: kd.kickedBy || 'An administrator',
+            kickedAt: kd.kickedAt ? new Date(kd.kickedAt) : new Date(),
+            duration: kd.duration || null
+          });
+          setShowBanKickModal(true);
+        }
+      } catch {}
+    }
+  }, []);
+
   const enhancedRules = [
     { title: 'Respect & Kindness', description: 'Treat everyone with respect. No harassment, hate speech, or bullying of any kind.' },
     { title: 'No Spam', description: 'Avoid spamming messages, links, or promotional content in chat rooms.' },

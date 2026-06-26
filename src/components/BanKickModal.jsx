@@ -130,12 +130,10 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
     getRoomName();
   }, []);
 
-  // Force modal to show when isVisible becomes true - ULTRA AGGRESSIVE MODE
+  // Force modal to show when isVisible becomes true - ULTRA AGGRESSIVE MODE (ban only)
   useEffect(() => {
-    if (isVisible) {
-      console.log("🚫 BanKickModal: INITIATING ULTRA FORCEFUL LOCKDOWN MODE");
-      
-      // IMMEDIATELY block all user interactions
+    const isBanModal = !!passedBanInfo;
+    if (isVisible && isBanModal) {
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -245,13 +243,11 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
       window.banModalStyleInterval = styleInterval;
       
     } else {
-      // Clear the styling interval when modal is hidden
+      // Clear styling interval and restore body for ban-modal cleanup
       if (window.banModalStyleInterval) {
         clearInterval(window.banModalStyleInterval);
         window.banModalStyleInterval = null;
       }
-      
-      // Remove all event listeners
       if (window.banModalEventHandlers) {
         const handlers = window.banModalEventHandlers;
         document.removeEventListener('keydown', handlers.blockKeyboard, true);
@@ -265,7 +261,6 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
         window.removeEventListener('beforeunload', handlers.blockNavigation, true);
         window.banModalEventHandlers = null;
       }
-      
       document.body.style.overflow = 'auto';
       document.body.style.position = 'static';
       document.body.style.width = 'auto';
@@ -281,8 +276,6 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
         clearInterval(window.banModalStyleInterval);
         window.banModalStyleInterval = null;
       }
-      
-      // Cleanup event listeners
       if (window.banModalEventHandlers) {
         const handlers = window.banModalEventHandlers;
         document.removeEventListener('keydown', handlers.blockKeyboard, true);
@@ -296,19 +289,16 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
         window.removeEventListener('beforeunload', handlers.blockNavigation, true);
         window.banModalEventHandlers = null;
       }
-      
-      if (!isVisible) {
-        document.body.style.overflow = 'auto';
-        document.body.style.position = 'static';
-        document.body.style.width = 'auto';
-        document.body.style.height = 'auto';
-        document.body.style.top = 'auto';
-        document.body.style.left = 'auto';
-        document.body.style.userSelect = 'auto';
-        document.body.style.pointerEvents = 'auto';
-      }
+      document.body.style.overflow = 'auto';
+      document.body.style.position = 'static';
+      document.body.style.width = 'auto';
+      document.body.style.height = 'auto';
+      document.body.style.top = 'auto';
+      document.body.style.left = 'auto';
+      document.body.style.userSelect = 'auto';
+      document.body.style.pointerEvents = 'auto';
     };
-  }, [isVisible]);
+  }, [isVisible, passedBanInfo]);
 
   // Set ban/kick info from props immediately
   useEffect(() => {
@@ -354,14 +344,17 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
   const formatDate = (date) => {
     if (!date) return 'N/A';
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const d = date instanceof Date ? date : new Date(date);
+      if (isNaN(d.getTime())) return 'N/A';
+      return d.toLocaleString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch { return 'N/A'; }
   };
+
+  const isKickOnly = !banInfo && !!kickInfo;
 
   // Only render when visible
   if (!isVisible) {
@@ -522,7 +515,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
             <div className="modal-footer">
               <button className="primary-btn kick-btn" onClick={() => {
-                window.location.href = '/welcome';
+                if (onClose) onClose();
               }}>
                 Back to Room List
               </button>
