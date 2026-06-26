@@ -1,7 +1,7 @@
 
 // Username preferences utility for managing username styling only
 export const USERNAME_DEFAULTS = {
-  usernameFontSize: '12px',
+  usernameFontSize: '10px',
   usernameFontColor: '#000000',
   usernameFontFamily: 'inherit',
   usernameIsBold: false,
@@ -22,44 +22,17 @@ export const USERNAME_DEFAULTS = {
   usernameOutlineSize: '1px'
 };
 
-// Global storage for all users' username styles
+// Global storage for all users' username styles (in-memory only — never localStorage)
 if (typeof window !== 'undefined') {
   window.allUsersUsernameStyles = window.allUsersUsernameStyles || {};
   window.userUsernameStyles = window.userUsernameStyles || {};
-  
-  // Immediately load from localStorage on script load
-  try {
-    const cachedStyles = localStorage.getItem('allUsersUsernameStyles');
-    if (cachedStyles) {
-      const parsed = JSON.parse(cachedStyles);
-      window.allUsersUsernameStyles = parsed;
-      
-      // Extract individual user styles for quick access
-      Object.values(parsed).forEach(userStyle => {
-        if (userStyle.userId && userStyle.styles) {
-          window.userUsernameStyles[userStyle.userId] = userStyle.styles;
-        }
-      });
-      
-      // Loaded cached username styles
-      
-      // Apply all cached styles immediately
-      Object.values(parsed).forEach(userStyle => {
-        if (userStyle.userId && userStyle.userName && userStyle.styles) {
-          applyGlobalUsernameStylesForUser(userStyle.userId, userStyle.userName, userStyle.styles);
-        }
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error loading cached username styles:', error);
-  }
 }
 
-// Save USERNAME font preferences to localStorage and Firebase
+// Save USERNAME font preferences to Firestore only (never localStorage)
 export const saveUsernameFontPreferences = async (preferences) => {
   try {
     const usernamePrefs = {
-      usernameFontSize: preferences.usernameFontSize || '12px',
+      usernameFontSize: preferences.usernameFontSize || '10px',
       usernameFontColor: preferences.usernameFontColor || '#000000',
       usernameFontFamily: preferences.usernameFontFamily || 'inherit',
       usernameIsBold: preferences.usernameIsBold || false,
@@ -80,16 +53,10 @@ export const saveUsernameFontPreferences = async (preferences) => {
       usernameOutlineSize: preferences.usernameOutlineSize || '1px'
     };
 
-    // Save username preferences to localStorage
-    localStorage.setItem('usernameFontPreferences', JSON.stringify(usernamePrefs));
-    Object.entries(usernamePrefs).forEach(([key, value]) => {
-      localStorage.setItem(key, value.toString());
-    });
-
-    // Save to Firebase and apply globally
+    // Save to Firestore and apply globally
     try {
       const { auth, db } = await import('../firebase/config');
-      const { doc, updateDoc, getDoc } = await import('firebase/firestore');
+      const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
 
       if (auth.currentUser && !auth.currentUser.isAnonymous) {
         const userRef = doc(db, 'users', auth.currentUser.uid);
@@ -126,7 +93,16 @@ export const saveUsernameFontPreferences = async (preferences) => {
         const userName = userData.displayName || auth.currentUser.displayName || 'User';
         applyGlobalUsernameStylesForUser(auth.currentUser.uid, userName, usernamePrefs);
 
-        // Store in global object for all users to access
+        // Also write to globalUsernameStyles collection for real-time cross-user sync
+        const globalStyleRef = doc(db, 'globalUsernameStyles', auth.currentUser.uid);
+        await setDoc(globalStyleRef, {
+          userId: auth.currentUser.uid,
+          userName: userName,
+          styles: usernamePrefs,
+          timestamp: Date.now()
+        }, { merge: true });
+
+        // Store in global object for all users to access (in-memory only)
         window.allUsersUsernameStyles[auth.currentUser.uid] = {
           userId: auth.currentUser.uid,
           userName: userName,
@@ -134,9 +110,6 @@ export const saveUsernameFontPreferences = async (preferences) => {
           timestamp: Date.now()
         };
         window.userUsernameStyles[auth.currentUser.uid] = usernamePrefs;
-
-        // Update localStorage cache immediately
-        localStorage.setItem('allUsersUsernameStyles', JSON.stringify(window.allUsersUsernameStyles));
 
         // Broadcast change event for other components
         window.dispatchEvent(new CustomEvent('userSpecificUsernameStylesChanged', {
@@ -164,43 +137,16 @@ export const saveUsernameFontPreferences = async (preferences) => {
   }
 };
 
-// Load USERNAME font preferences
+// Load USERNAME font preferences from in-memory globals (Firestore-sourced) or defaults
 export const getUsernameFontPreferences = () => {
   try {
-    // Priority 1: localStorage 'usernameFontPreferences'
-    const savedPrefs = localStorage.getItem('usernameFontPreferences');
-    if (savedPrefs) {
-      const parsed = JSON.parse(savedPrefs);
-      return parsed;
+    const currentUser = window.auth?.currentUser;
+    if (currentUser && window.userUsernameStyles && window.userUsernameStyles[currentUser.uid]) {
+      return window.userUsernameStyles[currentUser.uid];
     }
-
-    // Priority 2: Individual localStorage items
-    const prefs = {
-      usernameFontSize: localStorage.getItem('usernameFontSize') || '12px',
-      usernameFontColor: localStorage.getItem('usernameFontColor') || '#000000',
-      usernameFontFamily: localStorage.getItem('usernameFontFamily') || 'inherit',
-      usernameIsBold: localStorage.getItem('usernameIsBold') === 'true',
-      usernameIsItalic: localStorage.getItem('usernameIsItalic') === 'true',
-      usernameIsUnderline: localStorage.getItem('usernameIsUnderline') === 'true',
-      usernameIsStrikethrough: localStorage.getItem('usernameIsStrikethrough') === 'true',
-      usernameTextShadow: localStorage.getItem('usernameTextShadow') || 'none',
-      usernameGradientEnabled: localStorage.getItem('usernameGradientEnabled') === 'true',
-      usernameGradientStart: localStorage.getItem('usernameGradientStart') || '#ff0000',
-      usernameGradientEnd: localStorage.getItem('usernameGradientEnd') || '#0000ff',
-      usernameGradientDirection: localStorage.getItem('usernameGradientDirection') || 'to right',
-      usernameLetterSpacing: localStorage.getItem('usernameLetterSpacing') || '0px',
-      usernameAnimationEnabled: localStorage.getItem('usernameAnimationEnabled') === 'true',
-      usernameAnimationType: localStorage.getItem('usernameAnimationType') || 'pulse',
-      usernameAnimationDuration: localStorage.getItem('usernameAnimationDuration') || '2s',
-      usernameOutlineEnabled: localStorage.getItem('usernameOutlineEnabled') === 'true',
-      usernameOutlineColor: localStorage.getItem('usernameOutlineColor') || '#000000',
-      usernameOutlineSize: localStorage.getItem('usernameOutlineSize') || '1px'
-    };
-
-    return prefs;
+    return { ...USERNAME_DEFAULTS };
   } catch (error) {
-    console.error('Error loading username font preferences:', error);
-    return USERNAME_DEFAULTS;
+    return { ...USERNAME_DEFAULTS };
   }
 };
 
@@ -222,18 +168,11 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
       timestamp: Date.now()
     };
     window.userUsernameStyles[userId] = userSettings;
-
-    // Store in localStorage for persistence
-    try {
-      localStorage.setItem('allUsersUsernameStyles', JSON.stringify(window.allUsersUsernameStyles));
-    } catch (error) {
-      console.error('❌ Error storing global username styles:', error);
-    }
   }
 
   // Check if user has custom styles
   const hasCustomStyles = 
-    userSettings.usernameFontSize !== '12px' ||
+    userSettings.usernameFontSize !== '10px' ||
     userSettings.usernameFontColor !== '#000000' ||
     userSettings.usernameFontFamily !== 'inherit' ||
     userSettings.usernameIsBold ||
@@ -520,38 +459,14 @@ export const forceApplyAllUsersStyles = () => {
   }
 };
 
-// Load all users' global username styles with immediate cache loading
+// Load all users' global username styles from in-memory globals (no localStorage)
 export const loadAllGlobalUsernameStyles = () => {
-  try {
-    // Load from localStorage immediately
-    const allGlobalUsernameStyles = JSON.parse(localStorage.getItem('allGlobalUsernameStyles') || '{}');
-    const allUsersUsernameStyles = JSON.parse(localStorage.getItem('allUsersUsernameStyles') || '{}');
-    
-    // Merge both sources
-    const mergedStyles = { ...allGlobalUsernameStyles, ...allUsersUsernameStyles };
-    
-    if (typeof window !== 'undefined') {
-      window.allUsersUsernameStyles = mergedStyles;
-      window.userUsernameStyles = {};
-      
-      // Extract individual user styles for quick access
-      Object.values(mergedStyles).forEach(userStyle => {
-        if (userStyle.userId && userStyle.styles) {
-          window.userUsernameStyles[userStyle.userId] = userStyle.styles;
-        }
-      });
-    }
-    
-    // Apply all cached styles immediately
-    Object.values(mergedStyles).forEach(userStyle => {
+  if (typeof window !== 'undefined' && window.allUsersUsernameStyles) {
+    Object.values(window.allUsersUsernameStyles).forEach(userStyle => {
       if (userStyle.userId && userStyle.userName && userStyle.styles) {
         applyGlobalUsernameStylesForUser(userStyle.userId, userStyle.userName, userStyle.styles);
       }
     });
-    
-    console.log(`✅ Loaded ${Object.keys(mergedStyles).length} users' global username styles`);
-  } catch (error) {
-    console.error('❌ Error loading all global username styles:', error);
   }
 };
 
@@ -600,11 +515,12 @@ export const syncAllUsersStyles = async () => {
           usernameAnimationDuration: userData.settings.usernameAnimationDuration || '2s',
           usernameOutlineEnabled: userData.settings.usernameOutlineEnabled || false,
           usernameOutlineColor: userData.settings.usernameOutlineColor || '#000000',
-          usernameOutlineSize: userData.settings.usernameOutlineSize || '1px'
+          usernameOutlineSize: userData.settings.usernameOutlineSize || '1px',
+          usernameFontSize: userData.settings.usernameFontSize || '10px'
         };
       }
 
-      if (usernameStyles) {
+      if (usernameStyles && usernameStyles.usernameFontSize) {
         allStyles[userId] = {
           userId,
           userName,
@@ -617,16 +533,9 @@ export const syncAllUsersStyles = async () => {
       }
     });
 
-    // Store all styles globally
+    // Store all styles globally (in-memory only)
     if (typeof window !== 'undefined') {
       window.allUsersUsernameStyles = { ...window.allUsersUsernameStyles, ...allStyles };
-      
-      // Update localStorage cache
-      try {
-        localStorage.setItem('allUsersUsernameStyles', JSON.stringify(window.allUsersUsernameStyles));
-      } catch (error) {
-        console.error('Error storing all users styles:', error);
-      }
     }
 
     console.log(`✅ Synced ${syncedCount} users' username styles from Firebase`);
@@ -668,35 +577,46 @@ export const applyGlobalUsernameStyles = () => {
   }
 };
 
-// Initialize username styling with immediate cache loading
+// Clear all username styles — call on logout
+export const clearAllUsernameStyles = () => {
+  document.querySelectorAll('[id^="global-username-styles-"]').forEach(el => el.remove());
+  window.allUsersUsernameStyles = {};
+  window.userUsernameStyles = {};
+  if (window._usernameStylesUnsubscribe) {
+    window._usernameStylesUnsubscribe();
+    window._usernameStylesUnsubscribe = null;
+  }
+};
+
+// Initialize username styling with real-time Firestore listener
 export const initializeUsernameStyles = () => {
   try {
-    // First priority: Load ALL cached styles immediately with NO delay
-    loadAllGlobalUsernameStyles();
-    
-    // Apply current user styles if available
-    if (window.auth?.currentUser) {
-      applyGlobalUsernameStyles();
-    }
-    
-    // Background sync with Firebase (non-blocking) - immediate first sync
-    setTimeout(() => {
-      syncAllUsersStyles();
-    }, 10); // Reduced from 100ms to 10ms for faster initial sync
-    
-    // Set up more frequent initial syncing for better user experience
-    let syncAttempts = 0;
-    const quickSyncInterval = setInterval(() => {
-      syncAllUsersStyles();
-      syncAttempts++;
-      if (syncAttempts >= 3) { // Try 3 quick syncs in first 30 seconds
-        clearInterval(quickSyncInterval);
-        // Then switch to less frequent syncing
-        setInterval(() => {
-          syncAllUsersStyles();
-        }, 60000);
+    // Set up real-time Firestore listener on globalUsernameStyles for instant cross-user sync
+    setTimeout(async () => {
+      try {
+        const { db } = await import('../firebase/config');
+        const { collection, onSnapshot } = await import('firebase/firestore');
+        if (window._usernameStylesUnsubscribe) window._usernameStylesUnsubscribe();
+        window._usernameStylesUnsubscribe = onSnapshot(collection(db, 'globalUsernameStyles'), (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const data = change.doc.data();
+              if (data.userId && data.userName && data.styles) {
+                window.allUsersUsernameStyles = window.allUsersUsernameStyles || {};
+                window.userUsernameStyles = window.userUsernameStyles || {};
+                window.allUsersUsernameStyles[data.userId] = { userId: data.userId, userName: data.userName, styles: data.styles };
+                window.userUsernameStyles[data.userId] = data.styles;
+                applyGlobalUsernameStylesForUser(data.userId, data.userName, data.styles);
+              }
+            }
+          });
+        });
+      } catch (error) {
+        console.error('❌ Error setting up username styles listener:', error);
+        // Fallback to polling
+        syncAllUsersStyles();
       }
-    }, 10000); // Every 10 seconds for first 30 seconds
+    }, 200);
   } catch (error) {
     console.error('❌ Error initializing username styles:', error);
   }

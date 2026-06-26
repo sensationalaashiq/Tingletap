@@ -12,7 +12,7 @@ const StylishFontPopup = ({
 }) => {
   // State management with proper initialization
   const [fontSettings, setFontSettings] = useState({
-    fontSize: '14px',
+    fontSize: '8px',
     fontColor: '#333333',
     fontFamily: 'inherit',
     isBold: false,
@@ -25,7 +25,7 @@ const StylishFontPopup = ({
   useEffect(() => {
     if (isOpen && currentPreferences) {
       const initialSettings = {
-        fontSize: currentPreferences.fontSize || '14px',
+        fontSize: currentPreferences.fontSize || '8px',
         fontColor: currentPreferences.fontColor || '#333333',
         fontFamily: currentPreferences.fontFamily || 'inherit',
         isBold: currentPreferences.isBold || false,
@@ -234,27 +234,6 @@ const StylishFontPopup = ({
       if (!currentUserDisplayName || !currentUserId) {
         console.log('❌ No user info available for message styling');
         return;
-      }
-
-      // Save to localStorage for immediate persistence
-      try {
-        localStorage.setItem('messageFontPreferences', JSON.stringify(fontSettings));
-        localStorage.setItem('chatFontSize', fontSettings.fontSize);
-        localStorage.setItem('chatFontColor', fontSettings.fontColor);
-        localStorage.setItem('chatFontFamily', fontSettings.fontFamily);
-        localStorage.setItem('chatIsBold', fontSettings.isBold.toString());
-        localStorage.setItem('chatIsItalic', fontSettings.isItalic.toString());
-        localStorage.setItem('chatIsUnderline', fontSettings.isUnderline.toString());
-        localStorage.setItem('chatIsStrikethrough', fontSettings.isStrikethrough.toString());
-
-        // Also save as regular font preferences for broader compatibility
-        localStorage.setItem('fontPreferences', JSON.stringify(fontSettings));
-        localStorage.setItem('fontPrefsSource', 'stylishFontPopup');
-        localStorage.setItem('fontPrefsLastUpdate', Date.now().toString());
-
-        console.log('✅ Message preferences saved to localStorage');
-      } catch (error) {
-        console.error('❌ Error saving to localStorage:', error);
       }
 
       // Apply styles immediately with higher specificity

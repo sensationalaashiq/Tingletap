@@ -3,7 +3,7 @@
 // This handles GLOBAL MESSAGE TEXT styling - visible to ALL users (like professional chat apps)
 
 const MESSAGE_DEFAULTS = {
-  fontSize: '10px',
+  fontSize: '8px',
   fontColor: '#333333',
   fontFamily: 'inherit',
   isBold: false,
@@ -12,54 +12,15 @@ const MESSAGE_DEFAULTS = {
   isStrikethrough: false
 };
 
-// Global storage for all users' message styles
+// Global storage for all users' message styles (in-memory only — never localStorage)
 if (typeof window !== 'undefined') {
   window.allUsersMessageStyles = window.allUsersMessageStyles || {};
   window.userMessageStyles = window.userMessageStyles || {};
-  
-  // Immediately load from localStorage on script load
-  try {
-    const cachedMessageStyles = localStorage.getItem('allGlobalMessageStyles');
-    if (cachedMessageStyles) {
-      const parsed = JSON.parse(cachedMessageStyles);
-      window.allUsersMessageStyles = parsed;
-      
-      // Extract individual user styles for quick access
-      Object.values(parsed).forEach(userStyle => {
-        if (userStyle.userId && userStyle.styles) {
-          window.userMessageStyles[userStyle.userId] = userStyle.styles;
-        }
-      });
-      
-      // Loaded cached message styles
-      
-      // Apply all cached styles immediately
-      Object.values(parsed).forEach(userStyle => {
-        if (userStyle.userId && userStyle.userName && userStyle.styles) {
-          applyGlobalMessageStyles(userStyle.userId, userStyle.userName, userStyle.styles);
-        }
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error loading cached message styles:', error);
-  }
 }
 
-// Save message font preferences to localStorage and Firebase
+// Save message font preferences to Firestore only (never localStorage)
 export const saveMessageFontPreferences = async (preferences) => {
   try {
-    // Save to localStorage immediately
-    localStorage.setItem('messageFontPreferences', JSON.stringify(preferences));
-    localStorage.setItem('chatFontSize', preferences.fontSize);
-    localStorage.setItem('chatFontColor', preferences.fontColor);
-    localStorage.setItem('chatFontFamily', preferences.fontFamily);
-    localStorage.setItem('chatIsBold', preferences.isBold.toString());
-    localStorage.setItem('chatIsItalic', preferences.isItalic.toString());
-    localStorage.setItem('chatIsUnderline', preferences.isUnderline.toString());
-    localStorage.setItem('chatIsStrikethrough', preferences.isStrikethrough.toString());
-
-    console.log('✅ Message font preferences saved to localStorage');
-
     // Save to Firebase for persistence
     try {
       const { auth, db } = await import('../firebase/config');
@@ -88,9 +49,6 @@ export const saveMessageFontPreferences = async (preferences) => {
         };
         window.userMessageStyles[auth.currentUser.uid] = preferences;
 
-        // Update localStorage cache immediately
-        localStorage.setItem('allGlobalMessageStyles', JSON.stringify(window.allUsersMessageStyles));
-        
         console.log('✅ Message font preferences saved to Firebase');
       }
     } catch (error) {
@@ -101,32 +59,16 @@ export const saveMessageFontPreferences = async (preferences) => {
   }
 };
 
-// Get message font preferences with fallbacks
+// Get message font preferences from in-memory globals (Firestore-sourced) or defaults
 export const getMessageFontPreferences = () => {
   try {
-    // Priority 1: Specific message font preferences
-    const messagePrefsStr = localStorage.getItem('messageFontPreferences');
-    if (messagePrefsStr) {
-      const messagePrefs = JSON.parse(messagePrefsStr);
-      console.log('✅ Message font preferences loaded from localStorage:', messagePrefs);
-      return messagePrefs;
+    const currentUser = window.auth?.currentUser;
+    if (currentUser && window.userMessageStyles && window.userMessageStyles[currentUser.uid]) {
+      return window.userMessageStyles[currentUser.uid];
     }
-
-    // Priority 2: Individual localStorage keys
-    const individualPrefs = {
-      fontSize: localStorage.getItem('chatFontSize') || MESSAGE_DEFAULTS.fontSize,
-      fontColor: localStorage.getItem('chatFontColor') || MESSAGE_DEFAULTS.fontColor,
-      fontFamily: localStorage.getItem('chatFontFamily') || MESSAGE_DEFAULTS.fontFamily,
-      isBold: localStorage.getItem('chatIsBold') === 'true',
-      isItalic: localStorage.getItem('chatIsItalic') === 'true',
-      isUnderline: localStorage.getItem('chatIsUnderline') === 'true',
-      isStrikethrough: localStorage.getItem('chatIsStrikethrough') === 'true'
-    };
-
-    return individualPrefs;
+    return { ...MESSAGE_DEFAULTS };
   } catch (error) {
-    console.error('❌ Error loading message font preferences:', error);
-    return MESSAGE_DEFAULTS;
+    return { ...MESSAGE_DEFAULTS };
   }
 };
 
@@ -136,19 +78,12 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
   
   console.log(`🎨 Applying GLOBAL message styles for user: ${userName} (${userId}) - visible to ALL users`);
 
-  // Store global message styles for this user
-  try {
-    const allGlobalMessageStyles = JSON.parse(localStorage.getItem('allGlobalMessageStyles') || '{}');
-    allGlobalMessageStyles[userId] = {
-      userId,
-      userName,
-      styles: userSettings,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('allGlobalMessageStyles', JSON.stringify(allGlobalMessageStyles));
-    console.log(`💾 Stored global message styles for ${userName}`);
-  } catch (error) {
-    console.error('❌ Error storing global message styles:', error);
+  // Store in global objects (in-memory only)
+  if (typeof window !== 'undefined') {
+    window.allUsersMessageStyles = window.allUsersMessageStyles || {};
+    window.userMessageStyles = window.userMessageStyles || {};
+    window.allUsersMessageStyles[userId] = { userId, userName, styles: userSettings, timestamp: Date.now() };
+    window.userMessageStyles[userId] = userSettings;
   }
 
   // Remove existing global message style for this user
@@ -325,9 +260,6 @@ export const syncAllUsersMessageStyles = async () => {
       }
     });
 
-    // Save all styles to localStorage
-    localStorage.setItem('allGlobalMessageStyles', JSON.stringify(allGlobalMessageStyles));
-    
     // Update global window objects
     if (typeof window !== 'undefined') {
       window.allUsersMessageStyles = { ...window.allUsersMessageStyles, ...allGlobalMessageStyles };
@@ -347,33 +279,49 @@ export const syncAllUsersMessageStyles = async () => {
   }
 };
 
-// Initialize global message styling system with immediate cache loading
+// Clear all message styles — call on logout
+export const clearAllMessageStyles = () => {
+  document.querySelectorAll('[id^="global-message-styles-"]').forEach(el => el.remove());
+  document.getElementById('global-message-text-styles')?.remove();
+  document.getElementById('immediate-message-styles')?.remove();
+  window.allUsersMessageStyles = {};
+  window.userMessageStyles = {};
+  window.chatFontPreferences = null;
+  if (window._messageStylesUnsubscribe) {
+    window._messageStylesUnsubscribe();
+    window._messageStylesUnsubscribe = null;
+  }
+  if (window.messageTextInterval) {
+    clearInterval(window.messageTextInterval);
+    window.messageTextInterval = null;
+  }
+};
+
+// Initialize global message styling with real-time Firestore listener
 export const initializeGlobalMessageStyles = () => {
   try {
-    // First priority: Apply global text styles immediately
-    applyMessageTextStyles();
-    
-    // Second priority: Load all cached user message styles immediately
-    loadAllGlobalMessageStyles();
-
-    // Background sync with Firebase (non-blocking) - immediate first sync
-    setTimeout(() => {
-      syncAllUsersMessageStyles();
-    }, 10); // Reduced from 100ms to 10ms for faster initial sync
-    
-    // Set up more frequent initial syncing
-    let syncAttempts = 0;
-    const quickSyncInterval = setInterval(() => {
-      syncAllUsersMessageStyles();
-      syncAttempts++;
-      if (syncAttempts >= 3) { // Try 3 quick syncs in first 30 seconds
-        clearInterval(quickSyncInterval);
-        // Then switch to less frequent syncing
-        setInterval(() => {
-          syncAllUsersMessageStyles();
-        }, 60000);
+    // Set up real-time Firestore listener on globalMessageStyles for instant cross-user sync
+    setTimeout(async () => {
+      try {
+        const { db } = await import('../firebase/config');
+        const { collection, onSnapshot } = await import('firebase/firestore');
+        if (window._messageStylesUnsubscribe) window._messageStylesUnsubscribe();
+        window._messageStylesUnsubscribe = onSnapshot(collection(db, 'globalMessageStyles'), (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const data = change.doc.data();
+              if (data.userId && data.userName && data.styles) {
+                applyGlobalMessageStyles(data.userId, data.userName, data.styles);
+              }
+            }
+          });
+        });
+      } catch (error) {
+        console.error('❌ Error setting up message styles listener:', error);
+        // Fallback to one-time sync
+        syncAllUsersMessageStyles();
       }
-    }, 10000); // Every 10 seconds for first 30 seconds
+    }, 200);
   } catch (error) {
     console.error('❌ Error initializing global message styles:', error);
   }
@@ -411,13 +359,6 @@ if (typeof window !== 'undefined') {
     initializeGlobalMessageStyles();
   }
 
-  // Reduce periodic reapplication frequency but keep it for stability
-  if (!window.messageTextInterval) {
-    window.messageTextInterval = setInterval(() => {
-      applyMessageTextStyles();
-      loadAllGlobalMessageStyles();
-    }, 60000); // Every 60 seconds instead of 30
-  }
 }
 
 // Backward compatibility exports
