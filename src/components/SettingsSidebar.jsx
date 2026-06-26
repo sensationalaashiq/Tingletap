@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
-import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -42,6 +42,22 @@ const SettingsSidebar = ({
     const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [showWarningManager, setShowWarningManager] = useState(false);
+
+    // TingleBot settings state
+    const [botEnabled, setBotEnabled] = useState(true);
+    const [botRules, setBotRules] = useState([
+        'Be respectful to everyone. No hate speech, slurs, or personal attacks.',
+        'Keep conversations civil. Disagreements are fine — disrespect is not.',
+        'No spam, flooding, or excessive self-promotion in the chat.',
+        'Protect your privacy. Never share personal info like addresses or phone numbers.',
+        'Follow moderator instructions. Abuse of chat may result in a temporary mute.',
+    ]);
+    const [newRule, setNewRule] = useState('');
+    const [editingRuleIdx, setEditingRuleIdx] = useState(null);
+    const [editingRuleText, setEditingRuleText] = useState('');
+    const [announcementText, setAnnouncementText] = useState('');
+    const [botSaving, setBotSaving] = useState(false);
+    const [botSending, setBotSending] = useState(false);
     const [settings, setSettings] = useState({
         // General Settings
         autoScrollChat: true,
@@ -2561,6 +2577,192 @@ const SettingsSidebar = ({
                     </div>
                 );
 
+            case 'tinglebot':
+                return (
+                    <div className="settings-tab-content">
+                        <h3>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="7" y="10" width="10" height="9" rx="2"/>
+                                <path d="M9 10V8a3 3 0 0 1 6 0v2"/>
+                                <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/>
+                                <circle cx="14" cy="14" r="1" fill="currentColor" stroke="none"/>
+                                <path d="M10 18h4"/><path d="M12 4v2"/>
+                                <path d="M5 13H7M17 13H19"/>
+                            </svg>
+                            TINGLEBOT CONTROL
+                        </h3>
+
+                        {/* Enable / disable toggle */}
+                        <div className="setting-group">
+                            <h4>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                                </svg>
+                                BOT STATUS
+                            </h4>
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>TingleBot Active</span>
+                                    <small>Enable or disable TingleBot in all rooms</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input type="checkbox" checked={botEnabled} onChange={e => setBotEnabled(e.target.checked)} />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Community Rules Editor */}
+                        <div className="setting-group">
+                            <h4>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                COMMUNITY RULES
+                            </h4>
+                            <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'8px'}}>
+                                {botRules.map((rule, idx) => (
+                                    <div key={idx} style={{display:'flex',alignItems:'flex-start',gap:'6px',background:'rgba(139,92,246,0.06)',borderRadius:'8px',padding:'6px 8px',border:'1px solid rgba(139,92,246,0.15)'}}>
+                                        {editingRuleIdx === idx ? (
+                                            <>
+                                                <textarea
+                                                    value={editingRuleText}
+                                                    onChange={e => setEditingRuleText(e.target.value)}
+                                                    rows={2}
+                                                    style={{flex:1,fontSize:'11px',borderRadius:'6px',border:'1px solid rgba(139,92,246,0.35)',padding:'4px 6px',resize:'vertical',fontFamily:'inherit',color:'#374151'}}
+                                                />
+                                                <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (editingRuleText.trim()) {
+                                                                const updated = [...botRules];
+                                                                updated[idx] = editingRuleText.trim();
+                                                                setBotRules(updated);
+                                                            }
+                                                            setEditingRuleIdx(null);
+                                                        }}
+                                                        style={{fontSize:'10px',padding:'3px 7px',background:'#7c3aed',color:'#fff',border:'none',borderRadius:'5px',cursor:'pointer',fontWeight:700}}
+                                                    >Save</button>
+                                                    <button
+                                                        onClick={() => setEditingRuleIdx(null)}
+                                                        style={{fontSize:'10px',padding:'3px 7px',background:'transparent',color:'#6b7280',border:'1px solid #d1d5db',borderRadius:'5px',cursor:'pointer'}}
+                                                    >Cancel</button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span style={{flex:1,fontSize:'11px',color:'#4b5563',lineHeight:'1.4'}}>{idx+1}. {rule}</span>
+                                                <div style={{display:'flex',flexDirection:'column',gap:'3px',flexShrink:0}}>
+                                                    <button
+                                                        onClick={() => { setEditingRuleIdx(idx); setEditingRuleText(rule); }}
+                                                        title="Edit"
+                                                        style={{background:'none',border:'none',cursor:'pointer',padding:'2px',opacity:.7,lineHeight:1}}
+                                                    >
+                                                        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M11 2l3 3L5 14H2v-3L11 2z"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setBotRules(botRules.filter((_,i)=>i!==idx))}
+                                                        title="Delete"
+                                                        style={{background:'none',border:'none',cursor:'pointer',padding:'2px',opacity:.7,lineHeight:1}}
+                                                    >
+                                                        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="2 4 4 4 14 4"/><path d="M5 4V2h6v2"/><path d="M6 7v5M10 7v5"/><path d="M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Add new rule */}
+                            <div style={{display:'flex',gap:'6px',alignItems:'flex-start',marginBottom:'8px'}}>
+                                <input
+                                    type="text"
+                                    placeholder="Add a new community rule…"
+                                    value={newRule}
+                                    onChange={e => setNewRule(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && newRule.trim()) {
+                                            setBotRules([...botRules, newRule.trim()]);
+                                            setNewRule('');
+                                        }
+                                    }}
+                                    style={{flex:1,fontSize:'11px',padding:'6px 8px',borderRadius:'7px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',color:'#374151'}}
+                                />
+                                <button
+                                    onClick={() => { if (newRule.trim()) { setBotRules([...botRules, newRule.trim()]); setNewRule(''); } }}
+                                    style={{padding:'6px 10px',background:'linear-gradient(135deg,#7c3aed,#6366f1)',color:'#fff',border:'none',borderRadius:'7px',fontSize:'11px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}
+                                >+ Add</button>
+                            </div>
+                            {/* Save rules to Firestore */}
+                            <button
+                                disabled={botSaving}
+                                onClick={async () => {
+                                    setBotSaving(true);
+                                    try {
+                                        await setDoc(doc(db, 'config', 'tinglebot'), {
+                                            enabled: botEnabled,
+                                            rules: botRules,
+                                            updatedAt: new Date().toISOString(),
+                                            updatedBy: auth.currentUser?.uid || 'unknown',
+                                        }, { merge: true });
+                                        toast.success('✅ TingleBot rules saved!');
+                                    } catch (err) {
+                                        toast.error('Failed to save rules: ' + err.message);
+                                    }
+                                    setBotSaving(false);
+                                }}
+                                style={{width:'100%',padding:'8px',background:'linear-gradient(135deg,#7c3aed,#6366f1)',color:'#fff',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',opacity: botSaving ? 0.6 : 1,letterSpacing:'.3px'}}
+                            >
+                                {botSaving ? 'Saving…' : '💾 Save Rules to Firestore'}
+                            </button>
+                        </div>
+
+                        {/* Send custom announcement */}
+                        <div className="setting-group">
+                            <h4>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/>
+                                </svg>
+                                SEND ANNOUNCEMENT
+                            </h4>
+                            <small style={{display:'block',marginBottom:'8px',color:'#9ca3af',fontSize:'10px'}}>Sends a TingleBot announcement to the current chat room.</small>
+                            <textarea
+                                rows={3}
+                                placeholder="Type your announcement here…"
+                                value={announcementText}
+                                onChange={e => setAnnouncementText(e.target.value)}
+                                style={{width:'100%',boxSizing:'border-box',fontSize:'12px',padding:'8px',borderRadius:'8px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',color:'#374151',resize:'vertical',marginBottom:'8px'}}
+                            />
+                            <button
+                                disabled={botSending || !announcementText.trim()}
+                                onClick={async () => {
+                                    if (!announcementText.trim()) return;
+                                    if (typeof window.handleTingleBotAnnouncement !== 'function') {
+                                        toast.error('Join a chat room first to send announcements.');
+                                        return;
+                                    }
+                                    setBotSending(true);
+                                    try {
+                                        await window.handleTingleBotAnnouncement(announcementText.trim());
+                                        toast.success('📢 Announcement sent!');
+                                        setAnnouncementText('');
+                                    } catch (err) {
+                                        toast.error('Failed: ' + err.message);
+                                    }
+                                    setBotSending(false);
+                                }}
+                                style={{width:'100%',padding:'8px',background: botSending || !announcementText.trim() ? '#e5e7eb' : 'linear-gradient(135deg,#f59e0b,#fbbf24)',color: botSending || !announcementText.trim() ? '#9ca3af' : '#1f2937',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',letterSpacing:'.3px'}}
+                            >
+                                {botSending ? 'Sending…' : '📢 Send to Current Room'}
+                            </button>
+                        </div>
+                    </div>
+                );
+
             default:
                 return null;
         }
@@ -3041,6 +3243,29 @@ const SettingsSidebar = ({
                             </svg>
                             <span>Account</span>
                         </button>
+
+                        {/* TingleBot tab — staff only */}
+                        {(['owner','admin'].includes(loggedInUserProfile?.role?.toLowerCase())) && (
+                            <button
+                                className={`settings-tab ${activeTab === 'tinglebot' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('tinglebot')}
+                                title="TingleBot Settings"
+                                style={{ position: 'relative' }}
+                            >
+                                {/* Robot SVG icon */}
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="7" y="10" width="10" height="9" rx="2"/>
+                                    <path d="M9 10V8a3 3 0 0 1 6 0v2"/>
+                                    <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/>
+                                    <circle cx="14" cy="14" r="1" fill="currentColor" stroke="none"/>
+                                    <path d="M10 18h4"/>
+                                    <path d="M12 4v2"/>
+                                    <path d="M5 13H7M17 13H19"/>
+                                </svg>
+                                <span>TingleBot</span>
+                                <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#6d28d9',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>
+                            </button>
+                        )}
                     </div>
 
                     <div className="settings-body">

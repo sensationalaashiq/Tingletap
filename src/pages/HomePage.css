@@ -316,10 +316,7 @@
 }
 
 .message-actions {
-  position: absolute !important;
-  right: 8px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
+  position: static !important;
   display: flex !important;
   flex-direction: row !important;
   gap: 2px !important;
@@ -330,11 +327,11 @@
   padding: 0 !important;
   justify-content: flex-end !important;
   align-items: center !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  transition: opacity 0.15s ease, visibility 0.15s ease !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   box-shadow: none !important;
+  transform: none !important;
 }
 
 .dark-mode .message-actions {
@@ -1489,19 +1486,27 @@ html body.theme-sunset .message-body p {
   min-height: 8px;
 }
 
-.message-timestamp-container {
+/* Unified row: action icons LEFT | timestamp RIGHT — appears on hover */
+.msg-ts-row {
   position: absolute !important;
   top: 4px !important;
   right: 8px !important;
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  gap: 2px !important;
-  z-index: 99997 !important;
-  pointer-events: none !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 3px !important;
+  z-index: 99998 !important;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
+  pointer-events: none !important;
 }
+.message-row-wrapper:hover .msg-ts-row {
+  opacity: 1;
+  pointer-events: auto !important;
+}
+
+/* Legacy container kept for compat — hide it since we replaced it */
+.message-timestamp-container { display: none !important; }
 
 .message-timestamp {
   font-size: 8px;
@@ -1513,10 +1518,12 @@ html body.theme-sunset .message-body p {
   border: 1px solid rgba(0, 0, 0, 0.1);
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
-
-.message-row-wrapper:hover .message-timestamp-container {
-  opacity: 1;
+.dark-mode .message-timestamp {
+  background: rgba(30,10,60,0.85);
+  border-color: rgba(139,92,246,0.25);
+  color: #a78bfa;
 }
 
 .message-actions-container {

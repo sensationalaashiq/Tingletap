@@ -732,7 +732,21 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                 </div>
                             )}
                         </div>
-                        <div className="message-timestamp-container">
+                        <div className="msg-ts-row">
+                            {!isBot && (
+                                <div className="message-actions">
+                                    {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
+                                    {!isMyMessage && (
+                                        <>
+                                            {canKick && <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>}
+                                            <button onClick={(e) => { e.stopPropagation(); onReport(message) }} className="message-action-btn" title="Report"><ReportIconSVG /></button>
+                                            {viewerRole !== 'guest' && !currentUser?.isAnonymous && (
+                                                <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                             <span className="message-timestamp">
                                 {message.createdAt?.toDate ? 
                                     message.createdAt.toDate().toLocaleTimeString('en-US', { 
@@ -748,20 +762,6 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                 }
                             </span>
                         </div>
-                        {!isBot && (
-                            <div className="message-actions">
-                                {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
-                                {!isMyMessage && (
-                                    <>
-                                        {canKick && <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>}
-                                        <button onClick={(e) => { e.stopPropagation(); onReport(message) }} className="message-action-btn" title="Report"><ReportIconSVG /></button>
-                                        {viewerRole !== 'guest' && !currentUser?.isAnonymous && (
-                                            <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
                     </div>
                     <div className="message-body">
                         {text && (() => {
@@ -1046,6 +1046,48 @@ const HomePage = ({ user }) => {
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
+
+    // TingleBot — local welcome strip shown when user enters a room
+    const [localWelcome, setLocalWelcome] = useState(null);
+    useEffect(() => {
+        if (!roomId || !loggedInUserProfile) return;
+        const name = loggedInUserProfile.displayName || 'Friend';
+        const room = roomName || 'the room';
+        setLocalWelcome({
+            id: 'local_welcome_' + roomId + '_' + (loggedInUserProfile.uid || ''),
+            text: `Welcome, ${name}! You joined ${room}. Enjoy the conversation and follow the community guidelines.`,
+            tinglebotType: 'joined',
+            isBot: true,
+            uid: 'tinglebot_system_official_2024',
+            local: true,
+        });
+        // expose room + sender for SettingsSidebar announcements
+        window._tingleBotRoomId = roomId;
+    }, [roomId, loggedInUserProfile?.uid]);
+
+    // Expose global function for SettingsSidebar to send TingleBot announcements
+    useEffect(() => {
+        window.handleTingleBotAnnouncement = async (text) => {
+            const rid = window._tingleBotRoomId;
+            if (!rid || !text?.trim()) return;
+            try {
+                await addDoc(collection(db, 'rooms', rid, 'messages'), {
+                    text: text.trim(),
+                    uid: 'tinglebot_system_official_2024',
+                    displayName: 'TingleBot',
+                    isBot: true,
+                    systemBot: true,
+                    tinglebotType: 'announcement',
+                    createdAt: serverTimestamp(),
+                    noReply: true,
+                    noReaction: true,
+                    noReport: true,
+                    noUnread: true,
+                });
+            } catch (e) { console.error('TingleBot announcement error', e); }
+        };
+        return () => { delete window.handleTingleBotAnnouncement; };
+    }, []);
 
     // TingleBot community rules engine refs
     const lastRuleIndexRef = useRef(-1);
@@ -6381,6 +6423,8 @@ const HomePage = ({ user }) => {
                       </header>
 
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
+                        {/* TingleBot welcome strip — shown only to current user on join */}
+                        {localWelcome && <TingleBotNotification key={localWelcome.id} message={localWelcome} />}
                         {messages.filter(msg => {
                             if (!msg.uid) return true;
                             if (blockedUsers.includes(msg.uid)) return false;
