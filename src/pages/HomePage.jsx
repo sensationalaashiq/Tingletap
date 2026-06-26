@@ -1085,9 +1085,15 @@ const HomePage = ({ user }) => {
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
         const name = loggedInUserProfile.displayName || 'Someone';
+        const roleLabel = getRoleDisplayLabel({
+            role: loggedInUserProfile.role,
+            gender: loggedInUserProfile.gender,
+            isGuest: loggedInUserProfile.isGuest,
+            badge: loggedInUserProfile.badge,
+        });
         // Broadcast join message globally
         addDoc(collection(db, 'rooms', roomId, 'messages'), {
-            text: `${name} joined the room.`,
+            text: `${name} (${roleLabel}) joined the room.`,
             uid: 'tinglebot_system_official_2024',
             displayName: 'TingleBot',
             isBot: true,
@@ -1109,7 +1115,7 @@ const HomePage = ({ user }) => {
         return () => {
             // Broadcast leave message globally
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
-                text: `${name} left the room.`,
+                text: `${name} (${roleLabel}) left the room.`,
                 uid: 'tinglebot_system_official_2024',
                 displayName: 'TingleBot',
                 isBot: true,
@@ -3647,6 +3653,21 @@ const HomePage = ({ user }) => {
                     });
                     remove(ref(rtdb, `status/${uid}/currentRoomId`));
                     playNotificationSound('adminAction');
+                    addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                        text: `${displayName} has been kicked from the room.`,
+                        uid: 'tinglebot_system_official_2024',
+                        displayName: 'TingleBot',
+                        isBot: true,
+                        systemBot: true,
+                        tinglebotType: 'kicked',
+                        createdAt: serverTimestamp(),
+                        noReply: true, noReaction: true, noReport: true, noUnread: true,
+                    }).then(r => {
+                        if (r?.id) {
+                            scheduledTinglebotDeletionsRef.current.add(r.id);
+                            setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                        }
+                    }).catch(() => {});
                     setKickUserConfirm({ isOpen: false });
                     toast(
                         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
@@ -3675,7 +3696,21 @@ const HomePage = ({ user }) => {
                     "mutedInfo.isMuted": true,
                     "mutedInfo.mutedByRole": loggedInUserProfile.role
                 });
-                
+                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                    text: `${userToMute.displayName} has been muted.`,
+                    uid: 'tinglebot_system_official_2024',
+                    displayName: 'TingleBot',
+                    isBot: true,
+                    systemBot: true,
+                    tinglebotType: 'muted',
+                    createdAt: serverTimestamp(),
+                    noReply: true, noReaction: true, noReport: true, noUnread: true,
+                }).then(r => {
+                    if (r?.id) {
+                        scheduledTinglebotDeletionsRef.current.add(r.id);
+                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                    }
+                }).catch(() => {});
                 toast(
                     <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#06b6d4,#0284c7)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(6,182,212,.35)'}}>
@@ -3704,7 +3739,21 @@ const HomePage = ({ user }) => {
             try {
                 await updateDoc(userToBanRef, { isBanned: true });
                 remove(ref(rtdb, `status/${userToBan.uid}`));
-                
+                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                    text: `${userToBan.displayName} has been banned.`,
+                    uid: 'tinglebot_system_official_2024',
+                    displayName: 'TingleBot',
+                    isBot: true,
+                    systemBot: true,
+                    tinglebotType: 'banned',
+                    createdAt: serverTimestamp(),
+                    noReply: true, noReaction: true, noReport: true, noUnread: true,
+                }).then(r => {
+                    if (r?.id) {
+                        scheduledTinglebotDeletionsRef.current.add(r.id);
+                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                    }
+                }).catch(() => {});
                 toast(
                     <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#ef4444,#7f1d1d)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(239,68,68,.4)'}}>

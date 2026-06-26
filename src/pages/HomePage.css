@@ -10289,7 +10289,7 @@ body .chat-header .user-count {
   align-items: center !important;
 }
 
-/* Final kill of all header button backgrounds */
+/* Final kill of all header button backgrounds + enforce bigger sizes */
 body .homepage-container .header-action-btn,
 body .homepage-container .header-action-btn:hover,
 body .homepage-container .header-action-btn:focus,
@@ -10302,6 +10302,57 @@ body .homepage-container .menu-trigger {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+}
+
+/* Bigger icons — visible on light lavender header */
+body .homepage-container .header-action-btn svg {
+  width: 24px !important;
+  height: 24px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── Per-icon colour overrides for lavender visibility ── */
+/* Settings gear */
+body .homepage-container .settings-btn svg,
+body .homepage-container .settings-btn svg path {
+  fill: #4c1d95 !important;
+  color: #4c1d95 !important;
+}
+
+/* Delete button — strong red */
+body .homepage-container .clear-chat-btn svg path,
+body .homepage-container .clear-chat-btn svg {
+  stroke: #b91c1c !important;
+  color: #b91c1c !important;
+  fill: none !important;
+}
+
+/* Sidebar menu icon */
+body .homepage-container .menu-trigger svg path {
+  stroke: #4c1d95 !important;
+}
+
+/* Dark mode — keep icons bright white */
+body.dark-mode .homepage-container .header-action-btn svg,
+body.dark-mode .homepage-container .settings-btn svg,
+body.dark-mode .homepage-container .settings-btn svg path {
+  fill: #e9d5ff !important;
+  color: #e9d5ff !important;
+}
+body.dark-mode .homepage-container .clear-chat-btn svg,
+body.dark-mode .homepage-container .clear-chat-btn svg path {
+  stroke: #fca5a5 !important;
+  color: #fca5a5 !important;
+  fill: none !important;
+}
+body.dark-mode .homepage-container .menu-trigger svg path {
+  stroke: #e9d5ff !important;
 }
 
 /* ── 2. FOOTER — transparent strip, no capsule, no background ──────── */
