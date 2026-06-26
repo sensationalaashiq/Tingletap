@@ -1616,9 +1616,9 @@ const SettingsSidebar = ({
 
             case 'team': {
                 const roleConfig = {
-                    owner:     { label: getRoleDisplayLabel('owner', null),     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#f59e0b"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg> },
-                    admin:     { label: getRoleDisplayLabel('admin', null),     color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> },
-                    moderator: { label: getRoleDisplayLabel('moderator', null), color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#3b82f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> },
+                    owner:     { label: getRoleDisplayLabel({ role: 'owner' }),     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#f59e0b"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg> },
+                    admin:     { label: getRoleDisplayLabel({ role: 'admin' }),     color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> },
+                    moderator: { label: getRoleDisplayLabel({ role: 'moderator' }), color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#3b82f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> },
                 };
                 const grouped = { owner: [], admin: [], moderator: [] };
                 teamMembers.forEach(m => { if (grouped[m.role]) grouped[m.role].push(m); });
@@ -1960,20 +1960,33 @@ const SettingsSidebar = ({
 
                                         {/* YouTube Cover Video Section */}
                                         <div className="youtube-cover-section">
-                                            <label className="youtube-cover-label">
-                                                <svg viewBox="0 0 24 24" width="24" height="24" className="youtube-icon">
-                                                    <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
-                                                    <path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                                </svg>
-                                                YouTube Cover Video
-                                            </label>
+                                            <div className="youtube-cover-label">
+                                                <div className="yt-label-icon">
+                                                    <svg viewBox="0 0 24 24" width="18" height="18">
+                                                        <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+                                                        <path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                                    </svg>
+                                                </div>
+                                                <div className="yt-label-text">
+                                                    <span className="yt-label-title">YouTube Cover Video</span>
+                                                    <span className="yt-label-sub">Set a video as your profile cover</span>
+                                                </div>
+                                            </div>
 
                                             <div className="youtube-input-container">
-                                                <input
-                                                    type="url"
-                                                    placeholder="https://www.youtube.com/watch?v=..."
-                                                    className="youtube-url-input"
-                                                />
+                                                <div className="youtube-url-input-wrap">
+                                                    <span className="youtube-url-input-icon">
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#ff4e42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#ff4e42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        </svg>
+                                                    </span>
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://www.youtube.com/watch?v=..."
+                                                        className="youtube-url-input"
+                                                    />
+                                                </div>
 
                                                 <button
                                                     className="youtube-set-button"
@@ -2040,18 +2053,20 @@ const SettingsSidebar = ({
                                                         }
                                                     }}
                                                 >
-                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                                        <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42C1 8.14 1 11.72 1 11.72s0 3.58.46 5.3a2.78 2.78 0 0 0 1.95 1.96C5.12 19.44 12 19.44 12 19.44s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96C23 15.3 23 11.72 23 11.72s0-3.58-.46-5.3z" stroke="white" strokeWidth="1.5" fill="rgba(255,255,255,0.2)"/>
+                                                        <path d="M9.75 15.02l5.75-3.3-5.75-3.3v6.6z" fill="white"/>
                                                     </svg>
-                                                    Set Video
+                                                    <span>Set as Cover Video</span>
                                                 </button>
                                             </div>
 
                                             <div className="youtube-help-text">
-                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                                                <svg viewBox="0 0 24 24" width="13" height="13">
+                                                    <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(255,100,80,.6)" strokeWidth="1.8"/>
+                                                    <path d="M12 8v4M12 16h.01" stroke="rgba(255,100,80,.6)" strokeWidth="1.8" strokeLinecap="round"/>
                                                 </svg>
-                                                Paste any YouTube video URL to set as your profile cover
+                                                Paste any YouTube video URL — it will appear as cover on your profile
                                             </div>
                                         </div>
 

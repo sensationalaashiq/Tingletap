@@ -110,26 +110,30 @@
 .ytm-tab {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
     padding: 8px 6px; border-radius: 10px;
-    border: 1.5px solid rgba(255,78,66,.18);
-    background: #fafafa; color: #9ca3af;
+    border: 1.5px solid rgba(255,78,66,.18) !important;
+    background: #fafafa !important; color: #6b7280 !important;
     font-size: .78rem; font-weight: 700; cursor: pointer;
     transition: all .15s ease; font-family: inherit;
     white-space: nowrap;
+    -webkit-text-fill-color: #6b7280 !important;
 }
-.ytm-tab:hover { border-color: rgba(255,78,66,.38); color: #ff4e42; background: #fff5f5; }
+.ytm-tab:hover { border-color: rgba(255,78,66,.38) !important; color: #ff4e42 !important; background: #fff5f5 !important; -webkit-text-fill-color: #ff4e42 !important; }
 .ytm-tab--active {
-    background: linear-gradient(135deg,rgba(255,78,66,.12),rgba(196,22,42,.07));
-    border-color: #ff4e42; color: #c4162a;
+    background: linear-gradient(135deg,rgba(255,78,66,.12),rgba(196,22,42,.07)) !important;
+    border-color: #ff4e42 !important; color: #c4162a !important;
+    -webkit-text-fill-color: #c4162a !important;
 }
-.ytm-tab--music:hover { border-color: rgba(168,85,247,.38); color: #a855f7; background: #fdf4ff; }
+.ytm-tab--music:hover { border-color: rgba(168,85,247,.38) !important; color: #a855f7 !important; background: #fdf4ff !important; -webkit-text-fill-color: #a855f7 !important; }
 .ytm-tab--music.ytm-tab--active {
-    background: linear-gradient(135deg,rgba(168,85,247,.12),rgba(124,58,237,.07));
-    border-color: #a855f7; color: #7c3aed;
+    background: linear-gradient(135deg,rgba(168,85,247,.12),rgba(124,58,237,.07)) !important;
+    border-color: #a855f7 !important; color: #7c3aed !important;
+    -webkit-text-fill-color: #7c3aed !important;
 }
-.ytm-tab--search:hover { border-color: rgba(245,158,11,.38); color: #f59e0b; background: #fffbeb; }
+.ytm-tab--search:hover { border-color: rgba(245,158,11,.38) !important; color: #f59e0b !important; background: #fffbeb !important; -webkit-text-fill-color: #f59e0b !important; }
 .ytm-tab--search.ytm-tab--active {
-    background: linear-gradient(135deg,rgba(245,158,11,.12),rgba(217,119,6,.07));
-    border-color: #f59e0b; color: #d97706;
+    background: linear-gradient(135deg,rgba(245,158,11,.12),rgba(217,119,6,.07)) !important;
+    border-color: #f59e0b !important; color: #d97706 !important;
+    -webkit-text-fill-color: #d97706 !important;
 }
 
 /* ── Content ── */
@@ -196,23 +200,33 @@
     transition: all .16s ease; font-family: inherit;
 }
 .ytm-btn--cancel {
-    background: #f3f4f6; color: #6b7280; border: 1.5px solid #e5e7eb;
+    background: #f3f4f6 !important; color: #6b7280 !important; border: 1.5px solid #e5e7eb !important;
+    -webkit-text-fill-color: #6b7280 !important;
 }
-.ytm-btn--cancel:hover { background: #e5e7eb; color: #374151; }
+.ytm-btn--cancel:hover { background: #e5e7eb !important; color: #374151 !important; -webkit-text-fill-color: #374151 !important; }
 .ytm-btn--red {
-    background: linear-gradient(135deg, #ff4e42 0%, #c4162a 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #ff4e42 0%, #c4162a 100%) !important;
+    color: #fff !important; -webkit-text-fill-color: #fff !important;
     box-shadow: 0 4px 14px rgba(255,78,66,.34);
 }
 .ytm-btn--red:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,78,66,.42); }
 .ytm-btn--red:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
 .ytm-btn--purple {
-    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important;
+    color: #fff !important; -webkit-text-fill-color: #fff !important;
     box-shadow: 0 4px 14px rgba(168,85,247,.34);
 }
 .ytm-btn--purple:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(168,85,247,.42); }
 .ytm-btn--purple:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+/* Force search button visibility */
+.ytm-search-btn {
+    width: 36px; height: 36px; border-radius: 9px; border: none; flex-shrink: 0;
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all .15s ease;
+    box-shadow: 0 2px 8px rgba(245,158,11,.32);
+    color: #fff !important;
+}
 
 /* ── Search form ── */
 .ytm-search-form { width: 100%; flex-shrink: 0; }

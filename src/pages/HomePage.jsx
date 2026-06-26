@@ -6892,8 +6892,8 @@ const HomePage = ({ user }) => {
                                     </div>
                                 );
                                 if (profileUser.coverPhotoURL) return (
-                                    <div className="vpm-cover-section vpm-cover-image" style={{overflow:'visible'}}>
-                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'auto',objectFit:'contain',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                                    <div className="vpm-cover-section vpm-cover-image">
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={e=>e.target.style.display='none'}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
                                             Cover Photo
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>

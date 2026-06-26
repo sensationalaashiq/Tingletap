@@ -7107,7 +7107,7 @@ html body.theme-sunset .message-body p {
     border-radius: 20px 20px 0 0;
 }
 .vpm-cover-section iframe { display: block; }
-.vpm-cover-image img { width: 100%; height: auto; object-fit: contain; display: block; max-height: none; }
+.vpm-cover-image img { width: 100%; height: 160px; object-fit: cover; object-position: center 20%; display: block; }
 /* YouTube 16:9 wrapper */
 .vpm-cover-youtube-ratio {
     position: relative;
