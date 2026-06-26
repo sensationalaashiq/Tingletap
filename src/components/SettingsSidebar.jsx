@@ -65,6 +65,7 @@ const SettingsSidebar = ({
         compactMode: false,
         darkMode: false,
         selectedTheme: 'light',
+        tinglebotWelcomeEnabled: true,
 
         // Notification Settings
         soundEnabled: true,
@@ -180,6 +181,7 @@ const SettingsSidebar = ({
                         twoFactorAuth: userSettings.twoFactorAuth !== undefined ? userSettings.twoFactorAuth : (localStorage.getItem('twoFactorAuth') === 'true'),
                         contentFilterLevel: userSettings.contentFilterLevel || localStorage.getItem('contentFilterLevel') || 'medium',
                         blockExplicitContent: userSettings.blockExplicitContent !== undefined ? userSettings.blockExplicitContent : (localStorage.getItem('blockExplicitContent') === 'true'),
+                        tinglebotWelcomeEnabled: userSettings.tinglebotWelcomeEnabled !== undefined ? userSettings.tinglebotWelcomeEnabled : (localStorage.getItem('tinglebotWelcomeEnabled') !== 'false'),
 
                         // Additional Notification Settings
                         desktopNotifications: userSettings.desktopNotifications !== undefined ? userSettings.desktopNotifications : (localStorage.getItem('desktopNotifications') === 'true'),
@@ -750,6 +752,20 @@ const SettingsSidebar = ({
                                 </label>
                             </div>
 
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>TingleBot Welcome Message</span>
+                                    <small>Show TingleBot's welcome strip when you join a room (only affects you)</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.tinglebotWelcomeEnabled}
+                                        onChange={(e) => handleSettingChange('tinglebotWelcomeEnabled', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
 
                             </div>
 
@@ -2717,7 +2733,7 @@ const SettingsSidebar = ({
                                 }}
                                 style={{width:'100%',padding:'9px',background:'linear-gradient(135deg,#7c3aed,#6366f1)',color:'#fff',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor:'pointer',opacity: botSaving ? 0.6 : 1,letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow:'0 3px 12px rgba(124,58,237,0.35)'}}
                             >
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                                 {botSaving ? 'Saving…' : 'Save Rules'}
                             </button>
                         </div>
@@ -2749,17 +2765,40 @@ const SettingsSidebar = ({
                                     setBotSending(true);
                                     try {
                                         await window.handleTingleBotAnnouncement(announcementText.trim());
-                                        toast.success('Announcement sent!');
+                                        toast.success('Announcement sent to current room!');
                                         setAnnouncementText('');
                                     } catch (err) {
                                         toast.error('Failed: ' + err.message);
                                     }
                                     setBotSending(false);
                                 }}
-                                style={{width:'100%',padding:'9px',background: botSending || !announcementText.trim() ? '#e5e7eb' : 'linear-gradient(135deg,#f59e0b,#fbbf24)',color: botSending || !announcementText.trim() ? '#9ca3af' : '#1f2937',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow: botSending || !announcementText.trim() ? 'none' : '0 3px 12px rgba(245,158,11,0.35)'}}
+                                style={{width:'100%',padding:'9px',background: botSending || !announcementText.trim() ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : 'linear-gradient(135deg,#f59e0b,#fbbf24)',color:'#1f2937',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',opacity: botSending || !announcementText.trim() ? 0.45 : 1,letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow: botSending || !announcementText.trim() ? 'none' : '0 3px 12px rgba(245,158,11,0.35)',marginBottom:'6px'}}
                             >
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/></svg>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#1f2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/></svg>
                                 {botSending ? 'Sending…' : 'Send to Current Room'}
+                            </button>
+                            <button
+                                disabled={botSending || !announcementText.trim()}
+                                onClick={async () => {
+                                    if (!announcementText.trim()) return;
+                                    if (typeof window.handleTingleBotAnnouncementAllRooms !== 'function') {
+                                        toast.error('Could not reach all rooms. Please try again.');
+                                        return;
+                                    }
+                                    setBotSending(true);
+                                    try {
+                                        await window.handleTingleBotAnnouncementAllRooms(announcementText.trim());
+                                        toast.success('Announcement sent to all rooms!');
+                                        setAnnouncementText('');
+                                    } catch (err) {
+                                        toast.error('Failed: ' + err.message);
+                                    }
+                                    setBotSending(false);
+                                }}
+                                style={{width:'100%',padding:'9px',background: botSending || !announcementText.trim() ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',opacity: botSending || !announcementText.trim() ? 0.45 : 1,letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow: botSending || !announcementText.trim() ? 'none' : '0 3px 12px rgba(99,102,241,0.4)'}}
+                            >
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h9l3-3v10l-3-3H3V7z"/><line x1="16" y1="6" x2="21" y2="6"/><line x1="16" y1="10" x2="21" y2="10"/><line x1="16" y1="14" x2="21" y2="14"/></svg>
+                                {botSending ? 'Sending…' : 'Send to All Rooms'}
                             </button>
                         </div>
                     </div>

@@ -1051,6 +1051,13 @@ const HomePage = ({ user }) => {
     const [localWelcome, setLocalWelcome] = useState(null);
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
+        // Check if user has disabled TingleBot welcome
+        const welcomeEnabled = localStorage.getItem('tinglebotWelcomeEnabled');
+        if (welcomeEnabled === 'false') {
+            setLocalWelcome(null);
+            window._tingleBotRoomId = roomId;
+            return;
+        }
         const name = loggedInUserProfile.displayName || 'Friend';
         const room = roomName || 'the room';
         setLocalWelcome({
@@ -1087,6 +1094,36 @@ const HomePage = ({ user }) => {
             } catch (e) { console.error('TingleBot announcement error', e); }
         };
         return () => { delete window.handleTingleBotAnnouncement; };
+    }, []);
+
+    // Expose global function for SettingsSidebar to send TingleBot announcements to ALL rooms
+    useEffect(() => {
+        window.handleTingleBotAnnouncementAllRooms = async (text) => {
+            if (!text?.trim()) return;
+            try {
+                const roomsSnapshot = await getDocs(collection(db, 'rooms'));
+                const promises = [];
+                roomsSnapshot.forEach((roomDoc) => {
+                    promises.push(
+                        addDoc(collection(db, 'rooms', roomDoc.id, 'messages'), {
+                            text: text.trim(),
+                            uid: 'tinglebot_system_official_2024',
+                            displayName: 'TingleBot',
+                            isBot: true,
+                            systemBot: true,
+                            tinglebotType: 'announcement',
+                            createdAt: serverTimestamp(),
+                            noReply: true,
+                            noReaction: true,
+                            noReport: true,
+                            noUnread: true,
+                        })
+                    );
+                });
+                await Promise.all(promises);
+            } catch (e) { console.error('TingleBot all-rooms announcement error', e); }
+        };
+        return () => { delete window.handleTingleBotAnnouncementAllRooms; };
     }, []);
 
     // TingleBot community rules engine refs
@@ -6423,8 +6460,6 @@ const HomePage = ({ user }) => {
                       </header>
 
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
-                        {/* TingleBot welcome strip — shown only to current user on join */}
-                        {localWelcome && <TingleBotNotification key={localWelcome.id} message={localWelcome} />}
                         {messages.filter(msg => {
                             if (!msg.uid) return true;
                             if (blockedUsers.includes(msg.uid)) return false;
@@ -6460,6 +6495,8 @@ const HomePage = ({ user }) => {
                             />
                             );
                         })}
+                        {/* TingleBot welcome strip — shown only to current user on join, at the bottom */}
+                        {localWelcome && <TingleBotNotification key={localWelcome.id} message={localWelcome} />}
                         </main>
                     
 
@@ -6807,6 +6844,54 @@ const HomePage = ({ user }) => {
                     <div className="vpm-overlay" onClick={() => setProfileUser(null)}>
                         <div className="vpm-modal" onClick={e => e.stopPropagation()}>
 
+                            {/* ── Cover (Spotify / YouTube / Image) ── */}
+                            {(() => {
+                                const convertSpotify = (url) => {
+                                    if (!url) return null;
+                                    const m = url.match(/track\/([a-zA-Z0-9]+)/);
+                                    return m ? `https://open.spotify.com/embed/track/${m[1]}?utm_source=generator&theme=0` : null;
+                                };
+                                const convertYouTube = (url) => {
+                                    if (!url) return null;
+                                    const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                                    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=0&rel=0` : null;
+                                };
+                                const spotifyEmbed = convertSpotify(profileUser.spotifyTrackURL);
+                                const ytEmbed = convertYouTube(profileUser.coverVideoURL);
+                                if (spotifyEmbed) return (
+                                    <div className="vpm-cover-section vpm-cover-spotify">
+                                        <iframe src={spotifyEmbed} width="100%" height="80" frameBorder="0"
+                                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                            allowFullScreen title="Spotify" style={{display:'block',borderRadius:'0'}}/>
+                                        <div className="vpm-cover-badge-inline vpm-cb-spotify">
+                                            <svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/></svg>
+                                            Spotify · Now Playing
+                                        </div>
+                                    </div>
+                                );
+                                if (ytEmbed) return (
+                                    <div className="vpm-cover-section vpm-cover-youtube">
+                                        <iframe src={ytEmbed} width="100%" height="130" frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen title="YouTube" style={{display:'block'}}/>
+                                        <div className="vpm-cover-badge-inline vpm-cb-youtube">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="red"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                            YouTube
+                                        </div>
+                                    </div>
+                                );
+                                if (profileUser.coverPhotoURL) return (
+                                    <div className="vpm-cover-section vpm-cover-image">
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'110px',objectFit:'cover',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                                        <div className="vpm-cover-badge-inline vpm-cb-image">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                            Cover Photo
+                                        </div>
+                                    </div>
+                                );
+                                return null;
+                            })()}
+
                             {/* ── Header ── */}
                             <div className="vpm-header">
                                 <button className="vpm-close" onClick={() => setProfileUser(null)}>
@@ -6861,10 +6946,10 @@ const HomePage = ({ user }) => {
                             </div>
 
                             {/* ── Tabs ── */}
-                            <div className="vpm-tabs">
+                            <div className="vpm-tabs" onClick={e => e.stopPropagation()}>
                                 {/* Info */}
                                 <button className={`vpm-tab ${activeProfileTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('info')}>
+                                    onClick={(e) => { e.stopPropagation(); setActiveProfileTab('info'); }}>
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
                                         <circle cx="12" cy="8" r="3.5" stroke="#6366f1" strokeWidth="1.8"/>
                                         <path d="M4 20c0-4 3.58-6 8-6s8 2 8 6" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round"/>
@@ -6873,7 +6958,7 @@ const HomePage = ({ user }) => {
                                 </button>
                                 {/* Friends */}
                                 <button className={`vpm-tab ${activeProfileTab === 'friends' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('friends')}>
+                                    onClick={(e) => { e.stopPropagation(); setActiveProfileTab('friends'); }}>
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
                                         <circle cx="9" cy="8" r="3" stroke="#10b981" strokeWidth="1.8"/>
                                         <circle cx="16" cy="8" r="2.5" stroke="#10b981" strokeWidth="1.6"/>
@@ -6884,7 +6969,7 @@ const HomePage = ({ user }) => {
                                 </button>
                                 {/* Bio */}
                                 <button className={`vpm-tab ${activeProfileTab === 'bio' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('bio')}>
+                                    onClick={(e) => { e.stopPropagation(); setActiveProfileTab('bio'); }}>
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
                                         <rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#f59e0b" strokeWidth="1.8"/>
                                         <path d="M8 8h8M8 12h6M8 16h4" stroke="#f59e0b" strokeWidth="1.6" strokeLinecap="round"/>
@@ -6893,7 +6978,7 @@ const HomePage = ({ user }) => {
                                 </button>
                                 {/* Activity */}
                                 <button className={`vpm-tab ${activeProfileTab === 'activity' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('activity')}>
+                                    onClick={(e) => { e.stopPropagation(); setActiveProfileTab('activity'); }}>
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
                                         <path d="M2 12h3l2.5-7 3 14 2.5-9L15 14h2.5L20 8l2 4" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
