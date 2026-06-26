@@ -65,7 +65,8 @@ const SettingsSidebar = ({
         compactMode: false,
         darkMode: false,
         selectedTheme: 'light',
-        tinglebotWelcomeEnabled: true,
+        userJoinNotifications: true,
+        userLeaveNotifications: true,
 
         // Notification Settings
         soundEnabled: true,
@@ -181,7 +182,8 @@ const SettingsSidebar = ({
                         twoFactorAuth: userSettings.twoFactorAuth !== undefined ? userSettings.twoFactorAuth : (localStorage.getItem('twoFactorAuth') === 'true'),
                         contentFilterLevel: userSettings.contentFilterLevel || localStorage.getItem('contentFilterLevel') || 'medium',
                         blockExplicitContent: userSettings.blockExplicitContent !== undefined ? userSettings.blockExplicitContent : (localStorage.getItem('blockExplicitContent') === 'true'),
-                        tinglebotWelcomeEnabled: userSettings.tinglebotWelcomeEnabled !== undefined ? userSettings.tinglebotWelcomeEnabled : (localStorage.getItem('tinglebotWelcomeEnabled') !== 'false'),
+                        userJoinNotifications: userSettings.userJoinNotifications !== undefined ? userSettings.userJoinNotifications : (localStorage.getItem('userJoinNotifications') !== 'false'),
+                        userLeaveNotifications: userSettings.userLeaveNotifications !== undefined ? userSettings.userLeaveNotifications : (localStorage.getItem('userLeaveNotifications') !== 'false'),
 
                         // Additional Notification Settings
                         desktopNotifications: userSettings.desktopNotifications !== undefined ? userSettings.desktopNotifications : (localStorage.getItem('desktopNotifications') === 'true'),
@@ -754,14 +756,29 @@ const SettingsSidebar = ({
 
                             <div className="modern-setting-item">
                                 <div className="modern-setting-info">
-                                    <span>TingleBot Welcome Message</span>
-                                    <small>Show TingleBot's welcome strip when you join a room (only affects you)</small>
+                                    <span>Show Join Notifications</span>
+                                    <small>Show TingleBot message when someone joins the room</small>
                                 </div>
                                 <label className="modern-toggle-switch">
                                     <input
                                         type="checkbox"
-                                        checked={settings.tinglebotWelcomeEnabled}
-                                        onChange={(e) => handleSettingChange('tinglebotWelcomeEnabled', e.target.checked)}
+                                        checked={settings.userJoinNotifications}
+                                        onChange={(e) => handleSettingChange('userJoinNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Show Leave Notifications</span>
+                                    <small>Show TingleBot message when someone leaves the room</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userLeaveNotifications}
+                                        onChange={(e) => handleSettingChange('userLeaveNotifications', e.target.checked)}
                                     />
                                     <span className="modern-toggle-slider"></span>
                                 </label>

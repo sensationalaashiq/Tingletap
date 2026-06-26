@@ -438,7 +438,7 @@ const Sidebar = ({
                     </div>
                   </div>
                   <div className="sb-apd-divider" />
-                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setProfileUser(loggedInUserProfile); setDropdownUser(null); }}>
+                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.setProfileUser || setProfileUser)(loggedInUserProfile); setDropdownUser(null); }}>
                     <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                     View Profile
                   </button>
@@ -784,7 +784,7 @@ const Sidebar = ({
                           </div>
                           <div className="sb-apd-divider"/>
 
-                          <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setProfileUser(userItem); setDropdownUser(null); }}>
+                          <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.setProfileUser || setProfileUser)(userItem); setDropdownUser(null); }}>
                             <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                             View Profile
                           </button>

@@ -1049,29 +1049,42 @@ const HomePage = ({ user }) => {
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
 
-    // TingleBot — local welcome strip shown when user enters a room
-    const [localWelcome, setLocalWelcome] = useState(null);
+    // TingleBot — global join/leave broadcasts
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
-        // Check if user has disabled TingleBot welcome
-        const welcomeEnabled = localStorage.getItem('tinglebotWelcomeEnabled');
-        if (welcomeEnabled === 'false') {
-            setLocalWelcome(null);
-            window._tingleBotRoomId = roomId;
-            return;
-        }
-        const name = loggedInUserProfile.displayName || 'Friend';
-        const room = roomName || 'the room';
-        setLocalWelcome({
-            id: 'local_welcome_' + roomId + '_' + (loggedInUserProfile.uid || ''),
-            text: `Welcome, ${name}! You joined ${room}. Enjoy the conversation and follow the community guidelines.`,
-            tinglebotType: 'joined',
-            isBot: true,
+        const name = loggedInUserProfile.displayName || 'Someone';
+        // Broadcast join message globally
+        addDoc(collection(db, 'rooms', roomId, 'messages'), {
+            text: `${name} joined the room.`,
             uid: 'tinglebot_system_official_2024',
-            local: true,
-        });
-        // expose room + sender for SettingsSidebar announcements
+            displayName: 'TingleBot',
+            isBot: true,
+            systemBot: true,
+            tinglebotType: 'join',
+            createdAt: serverTimestamp(),
+            noReply: true,
+            noReaction: true,
+            noReport: true,
+            noUnread: true,
+        }).catch(e => console.error('TingleBot join error', e));
+        // expose room id for SettingsSidebar announcements
         window._tingleBotRoomId = roomId;
+        return () => {
+            // Broadcast leave message globally
+            addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                text: `${name} left the room.`,
+                uid: 'tinglebot_system_official_2024',
+                displayName: 'TingleBot',
+                isBot: true,
+                systemBot: true,
+                tinglebotType: 'leave',
+                createdAt: serverTimestamp(),
+                noReply: true,
+                noReaction: true,
+                noReport: true,
+                noUnread: true,
+            }).catch(e => console.error('TingleBot leave error', e));
+        };
     }, [roomId, loggedInUserProfile?.uid]);
 
     // Expose global function for SettingsSidebar to send TingleBot announcements
@@ -6477,6 +6490,8 @@ const HomePage = ({ user }) => {
                             if (!msg.uid) return true;
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
+                            if (msg.tinglebotType === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
+                            if (msg.tinglebotType === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
                             return true;
                         }).map((msg, index) => {
                             // TingleBot messages render as premium notification strips
@@ -6508,8 +6523,6 @@ const HomePage = ({ user }) => {
                             />
                             );
                         })}
-                        {/* TingleBot welcome strip — shown only to current user on join, at the bottom */}
-                        {localWelcome && <TingleBotNotification key={localWelcome.id} message={localWelcome} />}
                         </main>
                     
 
@@ -6877,28 +6890,28 @@ const HomePage = ({ user }) => {
                                             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                                             allowFullScreen title="Spotify" style={{display:'block',borderRadius:'0'}}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-spotify">
-                                            <svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/></svg>
                                             Spotify · Now Playing
+                                            <svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/></svg>
                                         </div>
                                     </div>
                                 );
                                 if (ytEmbed) return (
                                     <div className="vpm-cover-section vpm-cover-youtube">
-                                        <iframe src={ytEmbed} width="100%" height="130" frameBorder="0"
+                                        <iframe src={ytEmbed} width="100%" height="160" frameBorder="0"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowFullScreen title="YouTube" style={{display:'block'}}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-youtube">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="red"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                                             YouTube
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="red"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                                         </div>
                                     </div>
                                 );
                                 if (profileUser.coverPhotoURL) return (
                                     <div className="vpm-cover-section vpm-cover-image">
-                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'110px',objectFit:'cover',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',maxHeight:'140px',objectFit:'cover',display:'block'}} onError={e=>e.target.style.display='none'}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                                             Cover Photo
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                                         </div>
                                     </div>
                                 );
@@ -6942,14 +6955,22 @@ const HomePage = ({ user }) => {
                                 </div>
 
                                 {/* Status text – fully below name, never on DP */}
-                                {profileUser.status && (
-                                    <div className="vpm-status-text">
-                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="#8b5cf6" style={{flexShrink:0}}>
-                                            <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
-                                        </svg>
-                                        <span>{profileUser.status}</span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const s = profileUser.status;
+                                    if (!s) return null;
+                                    const statusText = typeof s === 'string' ? s : (s?.text || s?.statusText || '');
+                                    const statusEmoji = typeof s === 'object' ? (s?.emoji || s?.statusEmoji || '') : '';
+                                    if (!statusText && !statusEmoji) return null;
+                                    return (
+                                        <div className="vpm-status-text">
+                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="#8b5cf6" style={{flexShrink:0}}>
+                                                <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
+                                            </svg>
+                                            {statusEmoji && <span style={{fontSize:'13px'}}>{statusEmoji}</span>}
+                                            <span>{statusText}</span>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Online pill */}
                                 <div className={`vpm-online-pill ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`}>
@@ -7034,7 +7055,43 @@ const HomePage = ({ user }) => {
                                                 <div className="vpm-ic-label">Profession</div>
                                                 <div className="vpm-ic-value">{profileUser.profession || 'Not Set'}</div>
                                             </div>
+                                            {profileUser.relationship && (
+                                                <div className="vpm-info-card">
+                                                    <div className="vpm-ic-icon" style={{background:'#fce7f3'}}>
+                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#db2777"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                                    </div>
+                                                    <div className="vpm-ic-label">Relationship</div>
+                                                    <div className="vpm-ic-value" style={{textTransform:'capitalize'}}>{profileUser.relationship}</div>
+                                                </div>
+                                            )}
+                                            {profileUser.languages && (
+                                                <div className="vpm-info-card">
+                                                    <div className="vpm-ic-icon" style={{background:'#e0f2fe'}}>
+                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#0284c7"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+                                                    </div>
+                                                    <div className="vpm-ic-label">Languages</div>
+                                                    <div className="vpm-ic-value">{profileUser.languages}</div>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Interests & Hobbies */}
+                                        {(profileUser.interests || profileUser.hobbies) && (
+                                            <div style={{marginTop:'10px',padding:'10px 12px',background:'linear-gradient(135deg,#faf5ff,#f0f9ff)',borderRadius:'10px',border:'1px solid rgba(167,139,250,0.15)'}}>
+                                                {profileUser.interests && (
+                                                    <div style={{marginBottom: profileUser.hobbies ? '8px' : 0}}>
+                                                        <div style={{fontSize:'10px',color:'#9ca3af',fontWeight:600,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'4px'}}>Interests</div>
+                                                        <div style={{fontSize:'12px',color:'#374151',lineHeight:'1.5'}}>{profileUser.interests}</div>
+                                                    </div>
+                                                )}
+                                                {profileUser.hobbies && (
+                                                    <div>
+                                                        <div style={{fontSize:'10px',color:'#9ca3af',fontWeight:600,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'4px'}}>Hobbies</div>
+                                                        <div style={{fontSize:'12px',color:'#374151',lineHeight:'1.5'}}>{profileUser.hobbies}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Message button */}
                                         {(() => {

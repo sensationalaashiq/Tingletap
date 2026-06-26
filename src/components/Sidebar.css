@@ -530,7 +530,7 @@
 /* ── Dropdown portal (Avatar Profile Dropdown) ───────────────────────────── */
 .sb-apd {
   position: fixed;
-  z-index: 99999;
+  z-index: 1000000000 !important;
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 16px 48px rgba(109,40,217,0.22), 0 4px 16px rgba(0,0,0,0.1);
