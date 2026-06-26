@@ -6491,7 +6491,7 @@ const HomePage = ({ user }) => {
                                   <PremiumPrivateBoxIcon />
                                   {(() => {
                                       const total = Object.entries(unreadCounts).reduce((sum, [uid, count]) => {
-                                          if (privateMessageOpen && privateMessageTarget?.uid === uid) return sum;
+                                          if (isPrivateMessageOpen && privateMessageTarget?.uid === uid) return sum;
                                           return sum + count;
                                       }, 0);
                                       return total > 0 ? (
