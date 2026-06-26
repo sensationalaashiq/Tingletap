@@ -3,7 +3,7 @@
 @keyframes tinglebot-slide-in {
   from {
     opacity: 0;
-    transform: translateY(-8px) scaleY(0.92);
+    transform: translateY(8px) scaleY(0.92);
   }
   to {
     opacity: 1;
@@ -35,8 +35,8 @@
 /* ── Wrapper that sits between messages ── */
 .tinglebot-strip-wrapper {
   display: flex;
-  justify-content: center;
-  padding: 6px 16px;
+  justify-content: flex-end;
+  padding: 6px 12px 6px 40px;
   pointer-events: none;
   user-select: none;
 }
@@ -44,10 +44,10 @@
 /* ── Core strip ── */
 .tinglebot-strip {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 6px 14px 6px 10px;
-  border-radius: 20px;
+  padding: 7px 14px 7px 10px;
+  border-radius: 18px;
   border: 1px solid rgba(167, 139, 250, 0.22);
   background: linear-gradient(
     135deg,
@@ -62,7 +62,7 @@
     0 1px 3px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
   animation: tinglebot-slide-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-  max-width: 560px;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
 }
@@ -128,11 +128,13 @@
   font-size: 12.5px;
   font-weight: 500;
   color: rgba(100, 80, 140, 0.92);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 340px;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
 }
 
 /* Highlight actor name inside text */
@@ -272,16 +274,15 @@
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .tinglebot-strip-wrapper {
-    padding: 5px 10px;
+    padding: 5px 8px 5px 24px;
   }
   .tinglebot-strip {
-    max-width: calc(100vw - 40px);
-    padding: 5px 11px 5px 9px;
+    max-width: 100%;
+    padding: 6px 10px 6px 9px;
     gap: 6px;
   }
   .tinglebot-text {
     font-size: 11.5px;
-    max-width: 200px;
   }
   .tinglebot-brand {
     font-size: 9.5px;

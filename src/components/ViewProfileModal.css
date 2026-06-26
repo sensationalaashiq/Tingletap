@@ -20,13 +20,13 @@
 /* ── Container ── */
 .vpm-container {
   background: #f8f5ff;
-  border-radius: 22px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 480px;
-  max-height: 92vh;
+  max-width: 430px;
+  max-height: 90vh;
   overflow-y: auto;
   overflow-x: hidden;
-  box-shadow: 0 32px 80px rgba(109, 40, 217, 0.28), 0 8px 24px rgba(0,0,0,0.14);
+  box-shadow: 0 28px 70px rgba(109, 40, 217, 0.28), 0 6px 20px rgba(0,0,0,0.12);
   border: 1.5px solid rgba(167, 139, 250, 0.35);
   position: relative;
   animation: vpmSlideUp 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -51,7 +51,7 @@
 }
 
 /* Spotify cover */
-.vpm-cover--spotify { height: 160px; background: #0d0d0d; }
+.vpm-cover--spotify { height: 152px; background: #0d0d0d; }
 .vpm-spotify-frame  { position: relative; height: 100%; }
 .vpm-spotify-glow   {
   position: absolute; inset: 0; z-index: 0;
@@ -68,7 +68,7 @@
 }
 
 /* Image cover */
-.vpm-cover--image { height: 220px; background: #1a1428; }
+.vpm-cover--image { height: 195px; background: #1a1428; }
 .vpm-image-frame  { position: relative; height: 100%; }
 .vpm-cover-img    { width: 100%; height: 100%; object-fit: cover; display: block; }
 .vpm-image-gradient {
@@ -77,7 +77,7 @@
 }
 
 /* Default cover */
-.vpm-cover--default { height: 160px; }
+.vpm-cover--default { height: 145px; }
 .vpm-default-cover {
   width: 100%; height: 100%;
   background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 30%, #8b5cf6 60%, #a855f7 100%);
@@ -107,10 +107,10 @@
   font-family: 'Poppins', sans-serif;
 }
 
-/* Cover badges (bottom-left labels) */
+/* Cover badges (top-left labels) */
 .vpm-cover-badge {
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   left: 12px;
   display: flex;
   align-items: center;
@@ -165,8 +165,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 20px 16px;
-  margin-top: -44px;
+  padding: 0 16px 14px;
+  margin-top: -38px;
   position: relative;
   z-index: 5;
   text-align: center;
@@ -175,14 +175,14 @@
 /* Avatar ring */
 .vpm-avatar-ring {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   padding: 3px;
   background: var(--ring-color, #8b5cf6);
-  box-shadow: 0 0 0 4px #f8f5ff, 0 0 0 5px var(--ring-color, #8b5cf6), 0 8px 24px rgba(0,0,0,0.22);
+  box-shadow: 0 0 0 3px #f8f5ff, 0 0 0 4.5px var(--ring-color, #8b5cf6), 0 6px 20px rgba(0,0,0,0.20);
   flex-shrink: 0;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .vpm-avatar {
   width: 100%;
@@ -209,10 +209,10 @@
 
 /* Username */
 .vpm-username {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: #1e1b4b;
-  margin: 0 0 6px;
+  margin: 0 0 5px;
   line-height: 1.2;
   font-family: 'Poppins', sans-serif;
   display: flex;
@@ -434,10 +434,13 @@
   box-shadow: 0 2px 12px rgba(109,40,217,0.08);
 }
 .vpm-info-icon {
-  font-size: 16px;
-  line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .vpm-info-text {
   display: flex;
@@ -521,7 +524,7 @@
   transition: box-shadow 0.15s;
 }
 .vpm-stat-card:hover { box-shadow: 0 3px 14px rgba(109,40,217,0.12); }
-.vpm-stat-icon { font-size: 22px; line-height: 1; }
+.vpm-stat-icon { width: 26px; height: 26px; display:flex; align-items:center; justify-content:center; }
 .vpm-stat-value {
   font-size: 13px;
   font-weight: 800;
@@ -688,10 +691,11 @@
 /* ── Responsive ── */
 @media (max-width: 520px) {
   .vpm-container { max-height: 96vh; border-radius: 18px; }
-  .vpm-cover--youtube { height: 190px; }
-  .vpm-cover--image   { height: 175px; }
-  .vpm-cover--default, .vpm-cover--spotify { height: 140px; }
-  .vpm-avatar-ring { width: 76px; height: 76px; }
-  .vpm-username { font-size: 17px; }
+  .vpm-cover--youtube { height: 175px; }
+  .vpm-cover--image   { height: 165px; }
+  .vpm-cover--default, .vpm-cover--spotify { height: 130px; }
+  .vpm-avatar-ring { width: 70px; height: 70px; }
+  .vpm-username { font-size: 16px; }
   .vpm-activity-grid { grid-template-columns: 1fr 1fr; }
+  .vpm-identity { margin-top: -32px; }
 }

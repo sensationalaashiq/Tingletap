@@ -1059,16 +1059,21 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                         <span className="vpm-role-dot"/>
                         {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
                         {realTimeUser.gender && (
-                            <span className="vpm-gender-chip">
-                                {realTimeUser.gender?.toLowerCase() === 'female' ? ' · ♀' :
-                                 realTimeUser.gender?.toLowerCase() === 'other' ? ' · ⚧' : ' · ♂'}
+                            <span className="vpm-gender-chip" style={{display:'inline-flex',alignItems:'center',gap:'3px',opacity:0.75}}>
+                                &nbsp;·&nbsp;
+                                {realTimeUser.gender?.toLowerCase() === 'female'
+                                    ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="5"/><path d="M12 13v8M9 18h6"/></svg>
+                                    : realTimeUser.gender?.toLowerCase() === 'other'
+                                    ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="12" r="4"/><path d="M14 8l5-5M19 3h-3M19 3v3M16 12h3"/></svg>
+                                    : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="10" r="5"/><path d="M12 15v6M17 21l-5-2-5 2"/></svg>
+                                }
                             </span>
                         )}
                     </div>
 
                     {(realTimeUser.status || realTimeUser.bio) && (
                         <p className="vpm-status user-bio" style={statusStyle}>
-                            ❝{realTimeUser.status || realTimeUser.bio}❞
+                            "{realTimeUser.status || realTimeUser.bio}"
                         </p>
                     )}
                 </div>
@@ -1081,7 +1086,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             <span className="vpm-badge-svg" dangerouslySetInnerHTML={{ __html: badges[realTimeUser.badge].svg }}/>
                         </div>
                         <div className="vpm-badge-meta">
-                            <span className="vpm-badge-label">✦ Special Badge</span>
+                            <span className="vpm-badge-label" style={{display:'flex',alignItems:'center',gap:'4px'}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#7c3aed"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Special Badge</span>
                             <span className="vpm-badge-name">{badges[realTimeUser.badge].name}</span>
                         </div>
                     </div>
@@ -1090,7 +1095,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                 {/* ── ROYAL TRUST ── */}
                 {!realTimeUser.isGuest && (
                     <div className="vpm-trust-section">
-                        <span className="vpm-section-label">✦ Royal Trust Rank</span>
+                        <span className="vpm-section-label" style={{display:'flex',alignItems:'center',gap:'4px'}}><svg width="9" height="9" viewBox="0 0 24 24" fill="#7c3aed"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Royal Trust Rank</span>
                         <div className="vpm-trust-inner">
                             <RoyalTrustBadge
                                 trustScore={realTimeUser.trustScore ?? 10}
@@ -1134,7 +1139,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                         <div className="vpm-info-grid">
                             {realTimeUser.country && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🌍</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Country</span>
                                         <span className="vpm-info-value">{getCountryFlag(realTimeUser.country)} {realTimeUser.country}</span>
@@ -1143,7 +1148,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.age && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🎂</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Age</span>
                                         <span className="vpm-info-value">{realTimeUser.age} years</span>
@@ -1152,7 +1157,14 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.gender && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">{realTimeUser.gender?.toLowerCase()==='female'?'♀':realTimeUser.gender?.toLowerCase()==='other'?'⚧':'♂'}</span>
+                                    <span className="vpm-info-icon">
+                                        {realTimeUser.gender?.toLowerCase()==='female'
+                                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e879f9" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="5"/><path d="M12 13v8M9 18h6"/></svg>
+                                            : realTimeUser.gender?.toLowerCase()==='other'
+                                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="12" r="4"/><path d="M14 8l6-6M20 2h-4M20 2v4M16 12h4a2 2 0 1 1 0 4h-4"/></svg>
+                                            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="10" r="5"/><path d="M12 15v6M17 22l-5-2-5 2"/></svg>
+                                        }
+                                    </span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Gender</span>
                                         <span className="vpm-info-value">{realTimeUser.gender}</span>
@@ -1161,7 +1173,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.relationship && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">💕</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Relationship</span>
                                         <span className="vpm-info-value">{getRelationshipDisplay(realTimeUser.relationship)}</span>
@@ -1169,23 +1181,23 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                                 </div>
                             )}
                             <div className="vpm-info-card">
-                                <span className="vpm-info-icon">⏱</span>
+                                <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg></span>
                                 <div className="vpm-info-text">
                                     <span className="vpm-info-label">Last Seen</span>
-                                    <span className="vpm-info-value" style={{color: isOnlineNow ? '#16a34a' : undefined}}>
-                                        {isOnlineNow ? '🟢 Online now' : formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt || realTimeUser.last_seen)}
+                                    <span className="vpm-info-value" style={{color: isOnlineNow ? '#16a34a' : undefined, display:'flex', alignItems:'center', gap:'4px'}}>
+                                        {isOnlineNow ? (<><span style={{width:'7px',height:'7px',borderRadius:'50%',background:'#22c55e',display:'inline-block',boxShadow:'0 0 0 3px rgba(34,197,94,0.25)'}}></span> Online now</>) : formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt || realTimeUser.last_seen)}
                                     </span>
                                 </div>
                             </div>
                             <div className="vpm-info-card">
-                                <span className="vpm-info-icon">📅</span>
+                                <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
                                 <div className="vpm-info-text">
                                     <span className="vpm-info-label">Member Since</span>
                                     <span className="vpm-info-value">{formatJoinDate(realTimeUser.createdAt || realTimeUser.joinedAt || realTimeUser.registrationDate)}</span>
                                 </div>
                             </div>
                             <div className="vpm-info-card">
-                                <span className="vpm-info-icon">👥</span>
+                                <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
                                 <div className="vpm-info-text">
                                     <span className="vpm-info-label">Friends</span>
                                     <span className="vpm-info-value">{realTimeUser?.friends?.length || friendsData.length || 0} friends</span>
@@ -1193,7 +1205,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             </div>
                             {realTimeUser.profession && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">💼</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4M10 14h4"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Profession</span>
                                         <span className="vpm-info-value">{realTimeUser.profession}</span>
@@ -1202,7 +1214,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.languages && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🗣</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 14h5"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Languages</span>
                                         <span className="vpm-info-value">{realTimeUser.languages}</span>
@@ -1211,7 +1223,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.education && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🎓</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Education</span>
                                         <span className="vpm-info-value">{realTimeUser.education}</span>
@@ -1220,7 +1232,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.interests && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">⭐</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fbbf24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Interests</span>
                                         <span className="vpm-info-value">{realTimeUser.interests}</span>
@@ -1229,7 +1241,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.hobbies && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🎯</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Hobbies</span>
                                         <span className="vpm-info-value">{realTimeUser.hobbies}</span>
@@ -1238,7 +1250,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.location && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">📍</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Location</span>
                                         <span className="vpm-info-value">{realTimeUser.location}</span>
@@ -1247,7 +1259,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.website && (
                                 <div className="vpm-info-card">
-                                    <span className="vpm-info-icon">🔗</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">Website</span>
                                         <span className="vpm-info-value">
@@ -1260,7 +1272,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.bio && (
                                 <div className="vpm-info-card vpm-info-card--about">
-                                    <span className="vpm-info-icon">📝</span>
+                                    <span className="vpm-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
                                     <div className="vpm-info-text">
                                         <span className="vpm-info-label">About</span>
                                         <span className="vpm-info-value vpm-bio-text">{realTimeUser.bio}</span>
@@ -1291,25 +1303,25 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                     {activeTab === 'activity' && (
                         <div className="vpm-activity-grid">
                             <div className="vpm-stat-card">
-                                <span className="vpm-stat-icon">📅</span>
+                                <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
                                 <span className="vpm-stat-value">{formatJoinDate(realTimeUser.createdAt || realTimeUser.joinedAt || realTimeUser.registrationDate)}</span>
                                 <span className="vpm-stat-label">Joined</span>
                             </div>
                             <div className="vpm-stat-card">
-                                <span className="vpm-stat-icon">👁</span>
+                                <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg></span>
                                 <span className="vpm-stat-value" style={{color: isOnlineNow ? '#16a34a' : undefined}}>
                                     {isOnlineNow ? 'Online' : formatLastSeen(realTimeUser.lastSeen || realTimeUser.lastSeenAt)}
                                 </span>
                                 <span className="vpm-stat-label">Last Seen</span>
                             </div>
                             <div className="vpm-stat-card">
-                                <span className="vpm-stat-icon">👥</span>
+                                <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
                                 <span className="vpm-stat-value">{realTimeUser?.friends?.length || friendsData.length || 0}</span>
                                 <span className="vpm-stat-label">Friends</span>
                             </div>
                             {realTimeUser.role && (
                                 <div className="vpm-stat-card">
-                                    <span className="vpm-stat-icon">🌟</span>
+                                    <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
                                     <span className="vpm-stat-value" style={{color: avatarBorderColor}}>
                                         {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
                                     </span>
@@ -1318,14 +1330,14 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )}
                             {realTimeUser.badge && badges[realTimeUser.badge] && (
                                 <div className="vpm-stat-card">
-                                    <span className="vpm-stat-icon">🏅</span>
+                                    <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></span>
                                     <span className="vpm-stat-value">{badges[realTimeUser.badge].name}</span>
                                     <span className="vpm-stat-label">Badge</span>
                                 </div>
                             )}
                             {realTimeUser.profileViews && (
                                 <div className="vpm-stat-card">
-                                    <span className="vpm-stat-icon">👀</span>
+                                    <span className="vpm-stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
                                     <span className="vpm-stat-value">{realTimeUser.profileViews}</span>
                                     <span className="vpm-stat-label">Profile Views</span>
                                 </div>
@@ -1391,7 +1403,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                 {/* ── SELF DANGER ZONE ── */}
                 {isCurrentUser && (
                     <div className="vpm-danger-zone">
-                        <span className="vpm-danger-title">⚠ Danger Zone</span>
+                        <span className="vpm-danger-title" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m10.29 3.86-8.11 14.07A2 2 0 0 0 3.88 21h16.24a2 2 0 0 0 1.7-3.07L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Danger Zone</span>
                         <p className="vpm-danger-desc">Permanently delete your profile (3-day grace period)</p>
                         {realTimeUser?.markedForDeletion ? (
                             <>

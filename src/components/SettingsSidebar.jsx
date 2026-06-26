@@ -2709,15 +2709,16 @@ const SettingsSidebar = ({
                                             updatedAt: new Date().toISOString(),
                                             updatedBy: auth.currentUser?.uid || 'unknown',
                                         }, { merge: true });
-                                        toast.success('✅ TingleBot rules saved!');
+                                        toast.success('TingleBot rules saved!');
                                     } catch (err) {
                                         toast.error('Failed to save rules: ' + err.message);
                                     }
                                     setBotSaving(false);
                                 }}
-                                style={{width:'100%',padding:'8px',background:'linear-gradient(135deg,#7c3aed,#6366f1)',color:'#fff',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',opacity: botSaving ? 0.6 : 1,letterSpacing:'.3px'}}
+                                style={{width:'100%',padding:'9px',background:'linear-gradient(135deg,#7c3aed,#6366f1)',color:'#fff',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor:'pointer',opacity: botSaving ? 0.6 : 1,letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow:'0 3px 12px rgba(124,58,237,0.35)'}}
                             >
-                                {botSaving ? 'Saving…' : '💾 Save Rules to Firestore'}
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                {botSaving ? 'Saving…' : 'Save Rules'}
                             </button>
                         </div>
 
@@ -2748,16 +2749,17 @@ const SettingsSidebar = ({
                                     setBotSending(true);
                                     try {
                                         await window.handleTingleBotAnnouncement(announcementText.trim());
-                                        toast.success('📢 Announcement sent!');
+                                        toast.success('Announcement sent!');
                                         setAnnouncementText('');
                                     } catch (err) {
                                         toast.error('Failed: ' + err.message);
                                     }
                                     setBotSending(false);
                                 }}
-                                style={{width:'100%',padding:'8px',background: botSending || !announcementText.trim() ? '#e5e7eb' : 'linear-gradient(135deg,#f59e0b,#fbbf24)',color: botSending || !announcementText.trim() ? '#9ca3af' : '#1f2937',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',letterSpacing:'.3px'}}
+                                style={{width:'100%',padding:'9px',background: botSending || !announcementText.trim() ? '#e5e7eb' : 'linear-gradient(135deg,#f59e0b,#fbbf24)',color: botSending || !announcementText.trim() ? '#9ca3af' : '#1f2937',border:'none',borderRadius:'9px',fontSize:'12px',fontWeight:700,cursor: botSending || !announcementText.trim() ? 'not-allowed' : 'pointer',letterSpacing:'.3px',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',boxShadow: botSending || !announcementText.trim() ? 'none' : '0 3px 12px rgba(245,158,11,0.35)'}}
                             >
-                                {botSending ? 'Sending…' : '📢 Send to Current Room'}
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/></svg>
+                                {botSending ? 'Sending…' : 'Send to Current Room'}
                             </button>
                         </div>
                     </div>
@@ -3244,8 +3246,8 @@ const SettingsSidebar = ({
                             <span>Account</span>
                         </button>
 
-                        {/* TingleBot tab — staff only */}
-                        {(['owner','admin'].includes(loggedInUserProfile?.role?.toLowerCase())) && (
+                        {/* TingleBot tab — owner only */}
+                        {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && (
                             <button
                                 className={`settings-tab ${activeTab === 'tinglebot' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('tinglebot')}
