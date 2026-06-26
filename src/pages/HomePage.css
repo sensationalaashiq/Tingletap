@@ -1070,28 +1070,27 @@ body.theme-cyberpunk .message-row p {
 
 /* Theme-specific username colors with enforcement */
 
-/* Default username style - 11px bold for all users without custom styling */
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([style*="font-size"]),
-body.theme-light .message-displayname:not([style*="font-size"]) {
-  color: #000000 !important;
-  font-weight: bold !important;
-  font-size: 11px !important;
-  text-shadow: none !important;
-  filter: none !important;
-  backdrop-filter: none !important;
-  background: none !important;
+/* Default username style - 12px bold for all users without custom styling */
+/* NOTE: No !important on color/background so injected custom styles (which use !important) can override */
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([data-has-custom-style="true"]),
+body.theme-light .message-displayname:not([data-has-custom-style="true"]) {
+  color: #000000;
+  font-weight: bold;
+  font-size: 12px;
+  text-shadow: none;
+  filter: none;
+  backdrop-filter: none;
 }
 
-/* Default username style dark theme - 11px bold */
-body.dark-mode .message-displayname:not([style*="font-size"]),
-body.theme-dark .message-displayname:not([style*="font-size"]) {
-  color: #e0e0e0 !important;
-  font-weight: bold !important;
-  font-size: 11px !important;
-  text-shadow: none !important;
-  filter: none !important;
-  backdrop-filter: none !important;
-  background: none !important;
+/* Default username style dark theme - 12px bold */
+body.dark-mode .message-displayname:not([data-has-custom-style="true"]),
+body.theme-dark .message-displayname:not([data-has-custom-style="true"]) {
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 12px;
+  text-shadow: none;
+  filter: none;
+  backdrop-filter: none;
 }
 
 /* Nord theme usernames - Light color for dark background */

@@ -32,7 +32,7 @@ if (typeof window !== 'undefined') {
 export const saveUsernameFontPreferences = async (preferences) => {
   try {
     const usernamePrefs = {
-      usernameFontSize: preferences.usernameFontSize || '11px',
+      usernameFontSize: preferences.usernameFontSize || '12px',
       usernameFontColor: preferences.usernameFontColor || '#000000',
       usernameFontFamily: preferences.usernameFontFamily || 'inherit',
       usernameIsBold: preferences.usernameIsBold || false,
@@ -233,14 +233,16 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
 
     customStyles += `background: ${gradient} !important;\n`;
     customStyles += `-webkit-background-clip: text !important;\n`;
-    customStyles += `-webkit-text-fill-color: transparent !important;\n`;
     customStyles += `background-clip: text !important;\n`;
+    customStyles += `-webkit-text-fill-color: transparent !important;\n`;
+    customStyles += `color: transparent !important;\n`;
   } else {
-    customStyles += `color: ${userSettings.usernameFontColor} !important;\n`;
+    const safeColor = userSettings.usernameFontColor || '#1a1a1a';
+    customStyles += `color: ${safeColor} !important;\n`;
+    customStyles += `-webkit-text-fill-color: ${safeColor} !important;\n`;
     customStyles += `background: none !important;\n`;
-    customStyles += `-webkit-background-clip: initial !important;\n`;
-    customStyles += `-webkit-text-fill-color: initial !important;\n`;
-    customStyles += `background-clip: initial !important;\n`;
+    customStyles += `-webkit-background-clip: unset !important;\n`;
+    customStyles += `background-clip: unset !important;\n`;
   }
 
   // Animation
@@ -251,8 +253,17 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
   }
 
   // Create comprehensive CSS targeting ALL possible username locations
+  // Uses high-specificity selectors (html body prefix) to beat base CSS rules
   const globalStyleRules = `
     /* GLOBAL USERNAME styling for: ${userName} (${userId}) - visible to ALL users */
+
+    /* HIGH-SPECIFICITY chat message selectors - beats base CSS */
+    html body .chat-feed .message-row-wrapper[data-user-id="${userId}"] .message-displayname,
+    html body .chat-feed .message-row-wrapper[data-user-id="${userId}"] .message-username,
+    html body .message-row-wrapper[data-user-id="${userId}"] .message-displayname,
+    html body .message-row-wrapper[data-user-id="${userId}"] .message-username,
+    html body .message-row-wrapper[data-user-id="${userId}"] .displayname,
+    html body .message-row-wrapper[data-user-id="${userId}"] .username,
 
     /* Chat messages - all possible selectors */
     .message-container[data-user-id="${userId}"] .message-displayname,
@@ -442,7 +453,12 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
         usernameSpan.setAttribute('data-user-id', userId);
         usernameSpan.setAttribute('data-user-uid', userId);
         usernameSpan.setAttribute('data-username', userName);
+        usernameSpan.setAttribute('data-has-custom-style', 'true');
       }
+    });
+    // Also mark all direct .message-displayname elements with this userId
+    document.querySelectorAll(`.message-displayname[data-user-id="${userId}"]`).forEach(el => {
+      el.setAttribute('data-has-custom-style', 'true');
     });
   }, 50);
 };
@@ -497,7 +513,7 @@ export const syncAllUsersStyles = async () => {
       } else if (userData.settings) {
         // Extract from settings object
         usernameStyles = {
-          usernameFontSize: userData.settings.usernameFontSize || '11px',
+          usernameFontSize: userData.settings.usernameFontSize || '12px',
           usernameFontColor: userData.settings.usernameFontColor || '#000000',
           usernameFontFamily: userData.settings.usernameFontFamily || 'inherit',
           usernameIsBold: userData.settings.usernameIsBold !== undefined ? userData.settings.usernameIsBold : true,
@@ -516,7 +532,7 @@ export const syncAllUsersStyles = async () => {
           usernameOutlineEnabled: userData.settings.usernameOutlineEnabled || false,
           usernameOutlineColor: userData.settings.usernameOutlineColor || '#000000',
           usernameOutlineSize: userData.settings.usernameOutlineSize || '1px',
-          usernameFontSize: userData.settings.usernameFontSize || '11px'
+          usernameFontSize: userData.settings.usernameFontSize || '12px'
         };
       }
 
