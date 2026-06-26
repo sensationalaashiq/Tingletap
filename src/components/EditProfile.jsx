@@ -415,28 +415,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
         if (window.chatFontPreferences) {
           return window.chatFontPreferences;
         }
-        const localPrefs = {
-          fontSize: localStorage.getItem('chatFontSize'),
-          fontColor: localStorage.getItem('chatFontColor'),
-          fontFamily: localStorage.getItem('chatFontFamily'),
-          isBold: localStorage.getItem('chatIsBold') === 'true',
-          isItalic: localStorage.getItem('chatIsItalic') === 'true',
-          isUnderline: localStorage.getItem('chatIsUnderline') === 'true',
-          isStrikethrough: localStorage.getItem('chatIsStrikethrough') === 'true'
-        };
-        if (localPrefs.fontSize || localPrefs.fontColor || localPrefs.fontFamily) {
-          return {
-            fontSize: localPrefs.fontSize || '14px',
-            fontColor: localPrefs.fontColor || '#333333',
-            fontFamily: localPrefs.fontFamily || 'inherit',
-            isBold: Boolean(localPrefs.isBold),
-            isItalic: Boolean(localPrefs.isItalic),
-            isUnderline: Boolean(localPrefs.isUnderline),
-            isStrikethrough: Boolean(localPrefs.isStrikethrough)
-          };
-        }
-        return currentUserData.fontPreferences || {
-          fontSize: '14px',
+        return currentUserData.messageFontPreferences || currentUserData.fontPreferences || {
+          fontSize: '8px',
           fontColor: '#333333',
           fontFamily: 'inherit',
           isBold: false,

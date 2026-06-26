@@ -3121,24 +3121,21 @@ const SettingsSidebar = ({
             }
         };
 
-        // Load all users' global styles on mount (professional chat style)
+        // Load all users' global styles from in-memory cache (never localStorage)
         const loadAllGlobalUsernameStyles = () => {
-            // Loading all users global username styles
-
             try {
-                const allGlobalStyles = JSON.parse(localStorage.getItem('allGlobalUsernameStyles') || '{}');
-
+                const allGlobalStyles = window.allUsersUsernameStyles || {};
                 Object.values(allGlobalStyles).forEach(userStyle => {
                     if (userStyle.userId && userStyle.userName && userStyle.styles) {
-                        window.applyGlobalUsernameStyles(
-                            userStyle.userId,
-                            userStyle.userName,
-                            userStyle.styles
-                        );
+                        if (window.applyGlobalUsernameStylesForUser) {
+                            window.applyGlobalUsernameStylesForUser(
+                                userStyle.userId,
+                                userStyle.userName,
+                                userStyle.styles
+                            );
+                        }
                     }
                 });
-
-                // Loaded global username styles
             } catch (error) {
                 console.error('Error loading global username styles:', error);
             }

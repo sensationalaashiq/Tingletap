@@ -1685,15 +1685,7 @@ const HomePage = ({ user }) => {
                         setIsUnderline(firebasePrefs.isUnderline);
                         setIsStrikethrough(firebasePrefs.isStrikethrough);
                         
-                        // Update localStorage and global object
-                        localStorage.setItem('chatFontSize', firebasePrefs.fontSize);
-                        localStorage.setItem('chatFontColor', firebasePrefs.fontColor);
-                        localStorage.setItem('chatFontFamily', firebasePrefs.fontFamily);
-                        localStorage.setItem('chatIsBold', firebasePrefs.isBold.toString());
-                        localStorage.setItem('chatIsItalic', firebasePrefs.isItalic.toString());
-                        localStorage.setItem('chatIsUnderline', firebasePrefs.isUnderline.toString());
-                        localStorage.setItem('chatIsStrikethrough', firebasePrefs.isStrikethrough.toString());
-                        
+                        // Update global in-memory object only — never localStorage
                         window.chatFontPreferences = firebasePrefs;
                     }
                     
@@ -1857,61 +1849,28 @@ const HomePage = ({ user }) => {
         }
     }, [user, roomId, navigate]);
 
-    // Initialize font preferences from localStorage on component mount
+    // Initialize font preferences on component mount — use in-memory global or defaults
+    // Per-account styles are loaded from Firestore once auth resolves; never use localStorage
     useEffect(() => {
-        const initializeFontPreferencesFromLocalStorage = () => {
-            try {
-                const localFontPrefs = {
-                    fontSize: localStorage.getItem('chatFontSize') || "14px",
-                    fontColor: localStorage.getItem('chatFontColor') || "#333333",
-                    fontFamily: localStorage.getItem('chatFontFamily') || "inherit",
-                    isBold: localStorage.getItem('chatIsBold') === 'true',
-                    isItalic: localStorage.getItem('chatIsItalic') === 'true',
-                    isUnderline: localStorage.getItem('chatIsUnderline') === 'true',
-                    isStrikethrough: localStorage.getItem('chatIsStrikethrough') === 'true'
-                };
-                
-                // Apply preferences to state immediately
-                setFontSize(localFontPrefs.fontSize);
-                setFontColor(localFontPrefs.fontColor);
-                setFontFamily(localFontPrefs.fontFamily);
-                setIsBold(localFontPrefs.isBold);
-                setIsItalic(localFontPrefs.isItalic);
-                setIsUnderline(localFontPrefs.isUnderline);
-                setIsStrikethrough(localFontPrefs.isStrikethrough);
-                
-                // Update global window object
-                window.chatFontPreferences = localFontPrefs;
-                
-                // Username styling is now handled per user in SettingsSidebar - no global styling needed
-                
-            } catch (error) {
-                // Fallback to defaults on error
-                const defaultPrefs = {
-                    fontSize: "14px",
-                    fontColor: "#333333",
-                    fontFamily: "inherit",
-                    isBold: false,
-                    isItalic: false,
-                    isUnderline: false,
-                    isStrikethrough: false
-                };
-                
-                setFontSize(defaultPrefs.fontSize);
-                setFontColor(defaultPrefs.fontColor);
-                setFontFamily(defaultPrefs.fontFamily);
-                setIsBold(defaultPrefs.isBold);
-                setIsItalic(defaultPrefs.isItalic);
-                setIsUnderline(defaultPrefs.isUnderline);
-                setIsStrikethrough(defaultPrefs.isStrikethrough);
-                
-                window.chatFontPreferences = defaultPrefs;
-            }
+        const defaults = {
+            fontSize: "8px",
+            fontColor: "#333333",
+            fontFamily: "inherit",
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            isStrikethrough: false
         };
-        
-        // Initialize immediately on component mount
-        initializeFontPreferencesFromLocalStorage();
-    }, []); // Empty dependency array - runs only once on mount
+        const prefs = window.chatFontPreferences || defaults;
+        setFontSize(prefs.fontSize);
+        setFontColor(prefs.fontColor);
+        setFontFamily(prefs.fontFamily);
+        setIsBold(prefs.isBold);
+        setIsItalic(prefs.isItalic);
+        setIsUnderline(prefs.isUnderline);
+        setIsStrikethrough(prefs.isStrikethrough);
+        if (!window.chatFontPreferences) window.chatFontPreferences = defaults;
+    }, []); // Runs only once on mount
 
     // ── Kick listener: auto-navigate user out when kicked from this room ──
     useEffect(() => {
@@ -1972,32 +1931,29 @@ const HomePage = ({ user }) => {
     }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration]);
 
     // Font preferences loading effect - runs when user profile changes
+    // Source of truth is always Firestore via the profile; never localStorage
     useEffect(() => {
         const loadAndApplyFontPreferences = () => {
             if (!loggedInUserProfile) return;
             
             let fontPreferencesToApply = null;
             
-            // Priority 1: Check for recent user changes in localStorage (HIGHEST PRIORITY)
-            const lastUpdate = localStorage.getItem('fontPrefsLastUpdate');
-            const prefsSource = localStorage.getItem('fontPrefsSource');
-            const recentUserChange = prefsSource === 'user' && lastUpdate && (Date.now() - parseInt(lastUpdate)) < 30000; // 30 seconds
-            
-            if (recentUserChange) {
+            // Priority 1: messageFontPreferences from Firestore profile (most specific)
+            if (loggedInUserProfile.messageFontPreferences) {
                 fontPreferencesToApply = {
-                    fontSize: localStorage.getItem('chatFontSize') || "14px",
-                    fontColor: localStorage.getItem('chatFontColor') || "#333333",
-                    fontFamily: localStorage.getItem('chatFontFamily') || "inherit",
-                    isBold: localStorage.getItem('chatIsBold') === 'true',
-                    isItalic: localStorage.getItem('chatIsItalic') === 'true',
-                    isUnderline: localStorage.getItem('chatIsUnderline') === 'true',
-                    isStrikethrough: localStorage.getItem('chatIsStrikethrough') === 'true'
+                    fontSize: loggedInUserProfile.messageFontPreferences.fontSize || "8px",
+                    fontColor: loggedInUserProfile.messageFontPreferences.fontColor || "#333333",
+                    fontFamily: loggedInUserProfile.messageFontPreferences.fontFamily || "inherit",
+                    isBold: Boolean(loggedInUserProfile.messageFontPreferences.isBold),
+                    isItalic: Boolean(loggedInUserProfile.messageFontPreferences.isItalic),
+                    isUnderline: Boolean(loggedInUserProfile.messageFontPreferences.isUnderline),
+                    isStrikethrough: Boolean(loggedInUserProfile.messageFontPreferences.isStrikethrough)
                 };
             }
-            // Priority 2: Firebase preferences from user profile
+            // Priority 2: Legacy fontPreferences field
             else if (loggedInUserProfile.fontPreferences) {
                 fontPreferencesToApply = {
-                    fontSize: loggedInUserProfile.fontPreferences.fontSize || "14px",
+                    fontSize: loggedInUserProfile.fontPreferences.fontSize || "8px",
                     fontColor: loggedInUserProfile.fontPreferences.fontColor || "#333333",
                     fontFamily: loggedInUserProfile.fontPreferences.fontFamily || "inherit",
                     isBold: Boolean(loggedInUserProfile.fontPreferences.isBold),
@@ -2006,14 +1962,10 @@ const HomePage = ({ user }) => {
                     isStrikethrough: Boolean(loggedInUserProfile.fontPreferences.isStrikethrough)
                 };
             }
-            // Priority 3: Use global window object as backup
-            else if (window.chatFontPreferences) {
-                fontPreferencesToApply = { ...window.chatFontPreferences };
-            }
-            // Priority 4: Use defaults if nothing is available
+            // Priority 3: Use defaults — this account has no saved preferences
             else {
                 fontPreferencesToApply = {
-                    fontSize: "14px",
+                    fontSize: "8px",
                     fontColor: "#333333",
                     fontFamily: "inherit",
                     isBold: false,
@@ -2023,7 +1975,7 @@ const HomePage = ({ user }) => {
                 };
             }
             
-            // Apply the preferences to state immediately
+            // Apply the preferences to state and in-memory global only
             if (fontPreferencesToApply) {
                 setFontSize(fontPreferencesToApply.fontSize);
                 setFontColor(fontPreferencesToApply.fontColor);
@@ -2033,23 +1985,8 @@ const HomePage = ({ user }) => {
                 setIsUnderline(fontPreferencesToApply.isUnderline);
                 setIsStrikethrough(fontPreferencesToApply.isStrikethrough);
                 
-                // Update global window object and localStorage for consistency
+                // Update global in-memory object only — never localStorage
                 window.chatFontPreferences = fontPreferencesToApply;
-                
-                // Sync to localStorage if not from there
-                if (!recentUserChange) {
-                    try {
-                        localStorage.setItem('chatFontSize', fontPreferencesToApply.fontSize);
-                        localStorage.setItem('chatFontColor', fontPreferencesToApply.fontColor);
-                        localStorage.setItem('chatFontFamily', fontPreferencesToApply.fontFamily);
-                        localStorage.setItem('chatIsBold', fontPreferencesToApply.isBold.toString());
-                        localStorage.setItem('chatIsItalic', fontPreferencesToApply.isItalic.toString());
-                        localStorage.setItem('chatIsUnderline', fontPreferencesToApply.isUnderline.toString());
-                        localStorage.setItem('chatIsStrikethrough', fontPreferencesToApply.isStrikethrough.toString());
-                        localStorage.setItem('fontPrefsSource', 'firebase');
-                    } catch (error) {
-                    }
-                }
                 
                 // Apply styles to existing messages
                 setTimeout(() => {
@@ -3022,34 +2959,15 @@ const HomePage = ({ user }) => {
             setIsUnderline(preferences.isUnderline);
             setIsStrikethrough(preferences.isStrikethrough);
             
-            // Update global window object immediately
+            // Update global in-memory object only — never localStorage
             window.chatFontPreferences = preferences;
             
-            // Save to localStorage immediately - MESSAGE PREFERENCES ONLY
-            try {
-                localStorage.setItem('chatFontSize', preferences.fontSize);
-                localStorage.setItem('chatFontColor', preferences.fontColor);
-                localStorage.setItem('chatFontFamily', preferences.fontFamily);
-                localStorage.setItem('chatIsBold', preferences.isBold.toString());
-                localStorage.setItem('chatIsItalic', preferences.isItalic.toString());
-                localStorage.setItem('chatIsUnderline', preferences.isUnderline.toString());
-                localStorage.setItem('chatIsStrikethrough', preferences.isStrikethrough.toString());
-                localStorage.setItem('fontPreferences', JSON.stringify(preferences));
-                localStorage.setItem('fontPrefsSource', 'message-popup');
-                localStorage.setItem('fontPrefsLastUpdate', Date.now().toString());
-                
-            } catch (localError) {
-            }
-            
-            // Save to Firebase for permanent storage - MESSAGE PREFERENCES ONLY
+            // Save to Firestore for permanent per-account storage
             if (auth.currentUser) {
-                try {
-                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                        fontPreferences: preferences
-                    });
-                } catch (firebaseError) {
-                    // Don't throw error to prevent UI breaks
-                }
+                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                    messageFontPreferences: preferences,
+                    fontPreferences: preferences
+                });
             }
             
             // Apply styles immediately to existing messages ONLY
@@ -3074,14 +2992,13 @@ const HomePage = ({ user }) => {
         }
     };
 
-    // Save font styles to Firestore and localStorage for global access
-    const saveFontPreferences = async (skipFirebase = false, isUserChange = false) => {
+    // Save font styles to Firestore only — never localStorage
+    const saveFontPreferences = async (skipFirebase = false) => {
         if (!auth.currentUser) return;
         
         try {
-            // Use current React state as source of truth for preferences
             const fontPrefs = {
-                fontSize: fontSize || '14px',
+                fontSize: fontSize || '8px',
                 fontColor: fontColor || '#333333',
                 fontFamily: fontFamily || 'inherit',
                 isBold: Boolean(isBold),
@@ -3090,50 +3007,14 @@ const HomePage = ({ user }) => {
                 isStrikethrough: Boolean(isStrikethrough)
             };
             
-            // Save to localStorage for immediate access
-            try {
-                localStorage.setItem('chatFontSize', fontPrefs.fontSize);
-                localStorage.setItem('chatFontColor', fontPrefs.fontColor);
-                localStorage.setItem('chatFontFamily', fontPrefs.fontFamily);
-                localStorage.setItem('chatIsBold', fontPrefs.isBold.toString());
-                localStorage.setItem('chatIsItalic', fontPrefs.isItalic.toString());
-                localStorage.setItem('chatIsUnderline', fontPrefs.isUnderline.toString());
-                localStorage.setItem('chatIsStrikethrough', fontPrefs.isStrikethrough.toString());
-                
-                // Mark user changes with timestamp
-                if (isUserChange) {
-                    localStorage.setItem('fontPrefsSource', 'user');
-                    localStorage.setItem('fontPrefsLastUpdate', Date.now().toString());
-                } else {
-                    localStorage.setItem('fontPrefsSource', 'system');
-                }
-            } catch (localError) {
-            }
-            
-            // Update global window object for other components to access
+            // Update global in-memory object only
             window.chatFontPreferences = fontPrefs;
             
-            // Create sessionStorage backup
-            try {
-                sessionStorage.setItem('chatFontPreferencesBackup', JSON.stringify(fontPrefs));
-            } catch (sessionError) {
-            }
-            
-            // Always save to Firebase unless explicitly skipped
             if (!skipFirebase) {
-                try {
-                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                        fontPreferences: fontPrefs
-                    });
-                    // Mark as successfully saved to Firebase
-                    if (!isUserChange) {
-                        localStorage.setItem('fontPrefsSource', 'firebase');
-                    }
-                } catch (firebaseError) {
-                    // Keep local changes even if Firebase fails
-                    localStorage.setItem('fontPrefsSource', 'local');
-                    throw firebaseError;
-                }
+                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                    messageFontPreferences: fontPrefs,
+                    fontPreferences: fontPrefs
+                });
             }
         } catch (error) {
             // Don't throw error to prevent UI breaks

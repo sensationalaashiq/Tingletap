@@ -21,39 +21,44 @@ if (typeof window !== 'undefined') {
 // Save message font preferences to Firestore only (never localStorage)
 export const saveMessageFontPreferences = async (preferences) => {
   try {
-    // Save to Firebase for persistence
-    try {
-      const { auth, db } = await import('../firebase/config');
-      if (auth.currentUser) {
-        const { doc, updateDoc, getDoc } = await import('firebase/firestore');
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.exists() ? userDoc.data() : {};
-        
-        await updateDoc(userRef, {
-          messageFontPreferences: preferences,
-          'settings.messageFontPreferences': preferences,
-          updatedAt: new Date().toISOString()
-        });
-        
-        // Apply styles globally for ALL users to see
-        const userName = userData.displayName || auth.currentUser.displayName || 'User';
-        applyGlobalMessageStyles(auth.currentUser.uid, userName, preferences);
+    const { auth, db } = await import('../firebase/config');
+    if (!auth.currentUser) return;
 
-        // Store in global object for all users to access
-        window.allUsersMessageStyles[auth.currentUser.uid] = {
-          userId: auth.currentUser.uid,
-          userName: userName,
-          styles: preferences,
-          timestamp: Date.now()
-        };
-        window.userMessageStyles[auth.currentUser.uid] = preferences;
+    const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.exists() ? userDoc.data() : {};
 
-        console.log('✅ Message font preferences saved to Firebase');
-      }
-    } catch (error) {
-      console.error('❌ Error saving to Firebase:', error);
-    }
+    await updateDoc(userRef, {
+      messageFontPreferences: preferences,
+      'settings.messageFontPreferences': preferences,
+      updatedAt: new Date().toISOString()
+    });
+
+    const userName = userData.displayName || auth.currentUser.displayName || 'User';
+
+    // Write to globalMessageStyles for real-time cross-user sync
+    const globalStyleRef = doc(db, 'globalMessageStyles', auth.currentUser.uid);
+    await setDoc(globalStyleRef, {
+      userId: auth.currentUser.uid,
+      userName,
+      styles: preferences,
+      timestamp: Date.now()
+    }, { merge: true });
+
+    // Apply styles globally for ALL users to see
+    applyGlobalMessageStyles(auth.currentUser.uid, userName, preferences);
+
+    // Store in global in-memory object
+    window.allUsersMessageStyles[auth.currentUser.uid] = {
+      userId: auth.currentUser.uid,
+      userName,
+      styles: preferences,
+      timestamp: Date.now()
+    };
+    window.userMessageStyles[auth.currentUser.uid] = preferences;
+
+    console.log('✅ Message font preferences saved to Firebase');
   } catch (error) {
     console.error('❌ Error saving message font preferences:', error);
   }
@@ -194,33 +199,16 @@ export const applyMessageTextStyles = () => {
   }
 };
 
-// Load all users' global message styles with immediate cache loading
+// Load all users' global message styles — in-memory only, never localStorage
 export const loadAllGlobalMessageStyles = () => {
   try {
-    const allGlobalMessageStyles = JSON.parse(localStorage.getItem('allGlobalMessageStyles') || '{}');
-    
     if (typeof window !== 'undefined') {
-      window.allUsersMessageStyles = allGlobalMessageStyles;
-      window.userMessageStyles = {};
-      
-      // Extract individual user styles for quick access
-      Object.values(allGlobalMessageStyles).forEach(userStyle => {
-        if (userStyle.userId && userStyle.styles) {
-          window.userMessageStyles[userStyle.userId] = userStyle.styles;
-        }
-      });
+      window.allUsersMessageStyles = window.allUsersMessageStyles || {};
+      window.userMessageStyles = window.userMessageStyles || {};
     }
-    
-    // Apply all cached styles immediately
-    Object.values(allGlobalMessageStyles).forEach(userStyle => {
-      if (userStyle.userId && userStyle.userName && userStyle.styles) {
-        applyGlobalMessageStyles(userStyle.userId, userStyle.userName, userStyle.styles);
-      }
-    });
-    
-    // Loaded global message styles successfully
+    // Actual styles come from Firestore via initializeGlobalMessageStyles listener
   } catch (error) {
-    console.error('❌ Error loading all global message styles:', error);
+    console.error('❌ Error initializing message styles:', error);
   }
 };
 

@@ -497,7 +497,7 @@ export const syncAllUsersStyles = async () => {
       } else if (userData.settings) {
         // Extract from settings object
         usernameStyles = {
-          usernameFontSize: userData.settings.usernameFontSize || '12px',
+          usernameFontSize: userData.settings.usernameFontSize || '10px',
           usernameFontColor: userData.settings.usernameFontColor || '#000000',
           usernameFontFamily: userData.settings.usernameFontFamily || 'inherit',
           usernameIsBold: userData.settings.usernameIsBold || false,
