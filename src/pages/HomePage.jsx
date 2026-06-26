@@ -6857,51 +6857,74 @@ const HomePage = ({ user }) => {
                                     )}
                                 </div>
 
-                                {/* Role pill with Godfather/role icon */}
+                                {/* Role pill — exact Sidebar getRolePill colors + icons */}
                                 {(() => {
                                     const rl = profileUser.role?.toLowerCase() || 'user';
                                     const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
-                                    const roleColors = { owner: '#FFD700', admin: '#FF4500', moderator: '#32CD32', user: '#7c3aed', guest: '#9ca3af' };
-                                    const roleColor = roleColors[rl] || '#7c3aed';
+                                    const pillMap = {
+                                        owner:     { bg: '#fef3c7', color: '#92400e' },
+                                        admin:     { bg: '#ede9fe', color: '#5b21b6' },
+                                        moderator: { bg: '#dcfce7', color: '#15803d' },
+                                        user:      { bg: '#f1f5f9', color: '#475569' },
+                                        guest:     { bg: '#f9fafb', color: '#6b7280' },
+                                    };
+                                    const pill = pillMap[rl] || pillMap.user;
                                     return (
-                                        <div style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'20px',background:`rgba(${rl==='owner'?'255,215,0':rl==='admin'?'255,69,0':rl==='moderator'?'50,205,50':'124,58,237'},.12)`,border:`1px solid ${roleColor}40`,fontSize:'11px',fontWeight:700,color:roleColor,marginTop:'2px'}}>
+                                        <div style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'20px',background:pill.bg,border:`1px solid ${pill.color}40`,fontSize:'11px',fontWeight:700,color:pill.color,marginTop:'2px'}}>
                                             {rl === 'owner' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#FFD700"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#92400e"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>
                                             ) : rl === 'admin' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#FF4500"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#5b21b6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
                                             ) : rl === 'moderator' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#32CD32"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#15803d"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                                             ) : (
-                                                <span style={{width:7,height:7,borderRadius:'50%',background:roleColor,display:'inline-block',flexShrink:0}}/>
+                                                <span style={{width:7,height:7,borderRadius:'50%',background:pill.color,display:'inline-block',flexShrink:0}}/>
                                             )}
                                             {roleLabel}
                                         </div>
                                     );
                                 })()}
 
-                                {/* Status text — mirrors Sidebar sb-user-status with full statusStyles support */}
+                                {/* Status text — exact Sidebar buildStatusStyle with PREMIUM_STYLE_MAP */}
                                 {(() => {
                                     const statusText = typeof profileUser.status === 'string'
                                         ? profileUser.status
                                         : (profileUser.status?.text || profileUser.status?.statusText || '');
                                     if (!statusText) return null;
                                     const ss = profileUser.statusStyles;
+                                    const PMAP = {
+                                        'gold-foil':    { background: 'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                        'cosmic':       { background: 'linear-gradient(135deg,#8b5cf6,#ec4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                        'ember':        { background: 'linear-gradient(135deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                        'arctic':       { background: 'linear-gradient(135deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                        'rose-gold':    { background: 'linear-gradient(135deg,#f9a8d4,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                        'matte-luxe':   { color: '#2d2d2d', fontWeight: '600', letterSpacing: '0.5px' },
+                                        'royal-script': { fontFamily: 'Playfair Display, serif', color: '#1a1a1a', fontWeight: '700', fontStyle: 'italic' },
+                                        'velvet-shadow':{ color: '#4a4a4a', fontWeight: '600', textShadow: '3px 3px 6px rgba(0,0,0,0.4)' },
+                                        'minimal-mono': { fontFamily: 'JetBrains Mono, monospace', color: '#333333', fontWeight: '500', letterSpacing: '1px' },
+                                        'neon-glow':    { color: '#39ff14', fontWeight: '700', textShadow: '0 0 7px #39ff14,0 0 14px #39ff14,0 0 21px #39ff14' },
+                                        'ocean-wave':   { background: 'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
+                                    };
                                     const buildSS = (ss) => {
                                         if (!ss) return {};
-                                        const s = {};
-                                        if (ss.gradientEnabled) {
-                                            s.background = `linear-gradient(${ss.gradientDirection || 'to right'}, ${ss.gradientStart || '#667eea'}, ${ss.gradientEnd || '#764ba2'})`;
-                                            s.WebkitBackgroundClip = 'text';
-                                            s.WebkitTextFillColor = 'transparent';
-                                            s.backgroundClip = 'text';
-                                        } else if (ss.textColor) { s.color = ss.textColor; }
-                                        if (ss.fontFamily && ss.fontFamily !== 'inherit') s.fontFamily = ss.fontFamily;
+                                        const premBase = (ss.premiumStyle && ss.premiumStyle !== 'none') ? (PMAP[ss.premiumStyle] || {}) : {};
+                                        const s = { ...premBase };
+                                        if (!premBase.color && !premBase.background) {
+                                            if (ss.gradientEnabled) {
+                                                s.background = `linear-gradient(${ss.gradientDirection || 'to right'}, ${ss.gradientStart || '#667eea'}, ${ss.gradientEnd || '#764ba2'})`;
+                                                s.WebkitBackgroundClip = 'text';
+                                                s.backgroundClip = 'text';
+                                                s.color = 'transparent';
+                                                s.display = 'inline-block';
+                                            } else if (ss.textColor) { s.color = ss.textColor; }
+                                        }
+                                        if (!premBase.fontFamily && ss.fontFamily && ss.fontFamily !== 'inherit') s.fontFamily = ss.fontFamily;
                                         if (ss.fontSize) s.fontSize = ss.fontSize;
-                                        if (ss.fontWeight) s.fontWeight = ss.fontWeight;
-                                        if (ss.fontStyle && ss.fontStyle !== 'normal') s.fontStyle = ss.fontStyle;
+                                        if (!premBase.fontWeight && ss.fontWeight) s.fontWeight = ss.fontWeight;
+                                        if (!premBase.fontStyle && ss.fontStyle && ss.fontStyle !== 'normal') s.fontStyle = ss.fontStyle;
                                         if (ss.textDecoration && ss.textDecoration !== 'none') s.textDecoration = ss.textDecoration;
-                                        if (ss.textShadow && ss.textShadow !== 'none') s.textShadow = ss.textShadow;
-                                        if (ss.letterSpacing && ss.letterSpacing !== 'normal') s.letterSpacing = ss.letterSpacing;
+                                        if (!premBase.textShadow && ss.textShadow && ss.textShadow !== 'none') s.textShadow = ss.textShadow;
+                                        if (!premBase.letterSpacing && ss.letterSpacing && ss.letterSpacing !== 'normal') s.letterSpacing = ss.letterSpacing;
                                         if (ss.animation && ss.animation !== 'none') s.animation = ss.animation;
                                         return s;
                                     };
