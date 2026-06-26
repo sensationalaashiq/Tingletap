@@ -1155,8 +1155,8 @@ const SettingsSidebar = ({
 
             case 'friends': {
                 const _frRole = loggedInUserProfile?.role?.toLowerCase();
-                const _frBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                const _frAccess = _frBadge || ['admin','owner','moderator'].includes(_frRole);
+                const _isGuest = loggedInUserProfile?.isGuest === true || _frRole === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous === true;
+                const _frAccess = !_isGuest;
                 if (!_frAccess) {
                     return (
                         <div className="settings-tab-content">
@@ -1167,9 +1167,9 @@ const SettingsSidebar = ({
                                     </svg>
                                 </div>
                                 <div>
-                                    <div style={{fontSize:'1rem',fontWeight:800,color:'#1a1a2e',marginBottom:'5px'}}>Friends — Locked</div>
+                                    <div style={{fontSize:'1rem',fontWeight:800,color:'#1a1a2e',marginBottom:'5px'}}>Friends — Guest Only Lock</div>
                                     <p style={{fontSize:'0.8rem',color:'#6b7280',lineHeight:1.55,margin:0}}>
-                                        Register an account or get a badge to access your friends list and manage connections.
+                                        Register a free account to access your friends list and manage connections.
                                     </p>
                                 </div>
                                 <div style={{background:'linear-gradient(135deg,rgba(99,102,241,.07),rgba(139,92,246,.05))',border:'1px solid rgba(99,102,241,.18)',borderRadius:'12px',padding:'12px 14px',width:'100%',boxSizing:'border-box',textAlign:'left'}}>
@@ -1178,8 +1178,7 @@ const SettingsSidebar = ({
                                         Requires
                                     </div>
                                     {[
-                                        {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>, text:'Registered account'},
-                                        {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M12 1l3.09 6.26L22 8.27l-5 4.87 1.18 6.88L12 17l-6.18 3.02L7 13.14 2 8.27l6.91-1.01z"/></svg>, text:'Badge holder or Staff role'},
+                                        {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>, text:'Registered account (any role)'},
                                     ].map((item,i)=>(
                                         <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',color:'#4b5563',marginBottom:'3px'}}>{item.icon}{item.text}</div>
                                     ))}

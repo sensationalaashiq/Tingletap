@@ -17,6 +17,7 @@ import ChatActionModal from './ChatActionModal';
 import EditProfileModal from './EditProfileModal';
 import StatusModal from './StatusModal';
 import GenderBadge from './GenderBadge';
+import AdultRoomModal from './AdultRoomModal';
 
 /* ─── Room icons ─────────────────────────────────────────────────────────── */
 const getRoomIcon = (roomName) => {
@@ -134,6 +135,12 @@ const Sidebar = ({
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [sidebarKickConfirm, setSidebarKickConfirm] = useState({ isOpen: false, user: null });
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showAdultModal, setShowAdultModal]   = useState(false);
+  const [pendingAdultRoom, setPendingAdultRoom] = useState(null);
+  const [showPwModal, setShowPwModal]         = useState(false);
+  const [pwRoom, setPwRoom]                   = useState(null);
+  const [pwInput, setPwInput]                 = useState('');
+  const [pwError, setPwError]                 = useState('');
   const dropdownRef = useRef(null);
   const { roomId } = useParams();
   const navigate   = useNavigate();
@@ -555,15 +562,27 @@ const Sidebar = ({
           {activeTab === 'rooms' ? (
             <div className="sb-room-grid">
               {rooms.map(room => {
-                const isStaffRoom = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
-                const hasAccess   = loggedInUserProfile && ['owner','admin','moderator'].includes(loggedInUserProfile.role?.toLowerCase());
-                const locked      = isStaffRoom && !hasAccess;
+                const isStaffRoom  = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
+                const isAdultRoom  = room.name.toLowerCase().includes('adult') || room.name.toLowerCase().includes('18+') || room.type === 'adult';
+                const hasStaffAccess = loggedInUserProfile && ['owner','admin','moderator'].includes(loggedInUserProfile.role?.toLowerCase());
+                const locked       = isStaffRoom && !hasStaffAccess;
+                const hasPassword  = room.password && room.password.trim() !== '';
+                const isLocked     = locked || hasPassword;
                 return (
                   <div key={room.id}
-                    className={`sb-room-card ${roomId === room.id ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                    className={`sb-room-card ${roomId === room.id ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
                     onClick={async () => {
                       if (!user?.uid && !localStorage.getItem('guestUser')) { toast.error('Please login.', { icon: TI.lock }); return; }
                       if (locked) { toast.error('Staff only.', { icon: TI.lock }); return; }
+                      if (isAdultRoom) {
+                        const ageKey = `ageVerified_${room.id}`;
+                        const stored = localStorage.getItem(ageKey);
+                        const isVerified = stored && (Date.now() - parseInt(stored)) < 24 * 60 * 60 * 1000;
+                        if (!isVerified) { setPendingAdultRoom(room); setShowAdultModal(true); return; }
+                      }
+                      if (hasPassword) {
+                        setPwRoom(room); setPwInput(''); setPwError(''); setShowPwModal(true); return;
+                      }
                       try {
                         const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
                         if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
@@ -573,7 +592,7 @@ const Sidebar = ({
                   >
                     <div className="sb-room-icon">{getRoomIcon(room.name)}</div>
                     <div className="sb-room-name">{room.name}</div>
-                    {locked && (
+                    {isLocked && (
                       <div className="sb-room-lock">
                         <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                           <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
@@ -918,6 +937,95 @@ const Sidebar = ({
           onClose={() => setShowStatusModal(false)}
           currentUser={loggedInUserProfile}
         />
+      )}
+
+      {showAdultModal && pendingAdultRoom && (
+        <AdultRoomModal
+          isOpen={showAdultModal}
+          roomName={pendingAdultRoom.name}
+          onConfirm={async () => {
+            const ageKey = `ageVerified_${pendingAdultRoom.id}`;
+            localStorage.setItem(ageKey, Date.now().toString());
+            setShowAdultModal(false);
+            const room = pendingAdultRoom;
+            setPendingAdultRoom(null);
+            if (room.password && room.password.trim() !== '') {
+              setPwRoom(room); setPwInput(''); setPwError(''); setShowPwModal(true); return;
+            }
+            try {
+              const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
+              if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+            } catch {}
+            navigate(`/room/${room.id}`); onClose();
+          }}
+          onCancel={() => { setShowAdultModal(false); setPendingAdultRoom(null); }}
+        />
+      )}
+
+      {showPwModal && pwRoom && createPortal(
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100000,padding:'16px',fontFamily:'Inter,-apple-system,sans-serif'}}>
+          <div style={{background:'linear-gradient(150deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)',border:'1.5px solid rgba(99,102,241,0.4)',borderRadius:'20px',width:'100%',maxWidth:'380px',overflow:'hidden',boxShadow:'0 32px 80px rgba(0,0,0,0.6),0 0 60px rgba(99,102,241,0.15)'}}>
+            <div style={{padding:'28px 24px 20px',borderBottom:'1px solid rgba(99,102,241,0.2)',textAlign:'center'}}>
+              <div style={{width:'64px',height:'64px',borderRadius:'50%',background:'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))',border:'2px solid rgba(99,102,241,0.4)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',boxShadow:'0 0 0 8px rgba(99,102,241,0.06)'}}>
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
+                  <defs><linearGradient id="pwLockGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="url(#pwLockGrad)"/>
+                </svg>
+              </div>
+              <div style={{fontSize:'18px',fontWeight:800,color:'#e2e8f0',marginBottom:'6px',letterSpacing:'-0.02em'}}>Password Required</div>
+              <div style={{fontSize:'13px',color:'rgba(255,255,255,0.5)',lineHeight:1.5}}>
+                <span style={{color:'#a5b4fc',fontWeight:600}}>{pwRoom.name}</span> is password-protected
+              </div>
+            </div>
+            <div style={{padding:'20px 24px'}}>
+              <div style={{marginBottom:'12px'}}>
+                <input
+                  type="password"
+                  placeholder="Enter room password…"
+                  value={pwInput}
+                  onChange={e => { setPwInput(e.target.value); setPwError(''); }}
+                  onKeyDown={async e => {
+                    if (e.key === 'Enter') {
+                      if (pwInput.trim() === pwRoom.password) {
+                        setShowPwModal(false);
+                        const room = pwRoom; setPwRoom(null);
+                        try {
+                          const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
+                          if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+                        } catch {}
+                        navigate(`/room/${room.id}`); onClose();
+                      } else { setPwError('Incorrect password. Please try again.'); }
+                    }
+                  }}
+                  autoFocus
+                  style={{width:'100%',padding:'12px 14px',borderRadius:'12px',border:`1.5px solid ${pwError ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.3)'}`,background:'rgba(255,255,255,0.06)',color:'#e2e8f0',fontSize:'14px',outline:'none',boxSizing:'border-box',fontFamily:'inherit'}}
+                />
+                {pwError && <div style={{fontSize:'12px',color:'#f87171',marginTop:'6px',paddingLeft:'4px'}}>{pwError}</div>}
+              </div>
+              <div style={{display:'flex',gap:'10px'}}>
+                <button
+                  onClick={() => { setShowPwModal(false); setPwRoom(null); setPwInput(''); setPwError(''); }}
+                  style={{flex:'0 0 100px',height:'44px',borderRadius:'12px',border:'1.5px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.65)',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}
+                >Cancel</button>
+                <button
+                  onClick={async () => {
+                    if (pwInput.trim() === pwRoom.password) {
+                      setShowPwModal(false);
+                      const room = pwRoom; setPwRoom(null);
+                      try {
+                        const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
+                        if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+                      } catch {}
+                      navigate(`/room/${room.id}`); onClose();
+                    } else { setPwError('Incorrect password. Please try again.'); }
+                  }}
+                  style={{flex:1,height:'44px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#6366f1,#7c3aed)',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 16px rgba(99,102,241,0.4)'}}
+                >Enter Room</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </>
   );

@@ -237,7 +237,7 @@ const AdminPanelPage = () => {
 
   // Real-time rooms data
   useEffect(() => {
-    const roomsQuery = query(collection(db, 'rooms'), orderBy('name'));
+    const roomsQuery = query(collection(db, 'rooms'), orderBy('order'));
     const unsubscribe = onSnapshot(roomsQuery, (snapshot) => {
       const roomsData = snapshot.docs.map(doc => ({
         id: doc.id,
