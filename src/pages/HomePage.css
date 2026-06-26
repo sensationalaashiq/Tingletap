@@ -872,12 +872,14 @@
 
 /* Theme-specific message text colors with proper enforcement */
 
-/* Message text for non-badge users (guests and regular users) - 10px normal weight */
+/* Message text for non-badge users (guests and regular users) - 10px normal weight, no italic, no decoration */
 body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]),
 body.theme-light .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]) {
   color: #1a1a1a !important;
   font-weight: normal !important;
+  font-style: normal !important;
   font-size: 10px !important;
+  text-decoration: none !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
@@ -950,14 +952,14 @@ iframe[src*="youtu.be"] {
   -webkit-filter: none !important;
 }
 
-/* Username for non-badge users (guests and regular users) - 12px, no bold */
+/* Username for non-badge users (guests and regular users) - 11px, bold */
 .message-displayname[data-badge="false"]:not([style*="font-size"]),
 .message-username:not([style*="font-size"]),
 .username:not([style*="font-size"]),
 .user-name:not([style*="font-size"]) {
   color: #1a1a1a !important;
-  font-weight: normal !important;
-  font-size: 12px !important;
+  font-weight: bold !important;
+  font-size: 11px !important;
   opacity: 1 !important;
   text-shadow: none !important;
   filter: none !important;
@@ -1068,24 +1070,24 @@ body.theme-cyberpunk .message-row p {
 
 /* Theme-specific username colors with enforcement */
 
-/* Bold Light theme usernames - 18px font size, black bold for both guest and registered */
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname,
-body.theme-light .message-displayname {
+/* Default username style - 11px bold for all users without custom styling */
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([style*="font-size"]),
+body.theme-light .message-displayname:not([style*="font-size"]) {
   color: #000000 !important;
-  font-weight: 700 !important;
-  font-size: 18px !important;
+  font-weight: bold !important;
+  font-size: 11px !important;
   text-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
   background: none !important;
 }
 
-/* Bold Dark theme usernames - Light color for visibility on dark background */
-body.dark-mode .message-displayname,
-body.theme-dark .message-displayname {
+/* Default username style dark theme - 11px bold */
+body.dark-mode .message-displayname:not([style*="font-size"]),
+body.theme-dark .message-displayname:not([style*="font-size"]) {
   color: #e0e0e0 !important;
-  font-weight: 700 !important;
-  font-size: 18px !important;
+  font-weight: bold !important;
+  font-size: 11px !important;
   text-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
@@ -1539,8 +1541,8 @@ html body.theme-sunset .message-body p {
 }
 
 .message-displayname:not([style*="font-size"]) {
-  font-weight: normal;
-  font-size: 12px;
+  font-weight: bold;
+  font-size: 11px;
   color: #333333;
   letter-spacing: 0px;
   cursor: pointer;

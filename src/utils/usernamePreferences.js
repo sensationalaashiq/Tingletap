@@ -1,10 +1,10 @@
 
 // Username preferences utility for managing username styling only
 export const USERNAME_DEFAULTS = {
-  usernameFontSize: '10px',
+  usernameFontSize: '11px',
   usernameFontColor: '#000000',
   usernameFontFamily: 'inherit',
-  usernameIsBold: false,
+  usernameIsBold: true,
   usernameIsItalic: false,
   usernameIsUnderline: false,
   usernameIsStrikethrough: false,
@@ -32,7 +32,7 @@ if (typeof window !== 'undefined') {
 export const saveUsernameFontPreferences = async (preferences) => {
   try {
     const usernamePrefs = {
-      usernameFontSize: preferences.usernameFontSize || '10px',
+      usernameFontSize: preferences.usernameFontSize || '11px',
       usernameFontColor: preferences.usernameFontColor || '#000000',
       usernameFontFamily: preferences.usernameFontFamily || 'inherit',
       usernameIsBold: preferences.usernameIsBold || false,
@@ -172,7 +172,7 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
 
   // Check if user has custom styles
   const hasCustomStyles = 
-    userSettings.usernameFontSize !== '10px' ||
+    userSettings.usernameFontSize !== '11px' ||
     userSettings.usernameFontColor !== '#000000' ||
     userSettings.usernameFontFamily !== 'inherit' ||
     userSettings.usernameIsBold ||
@@ -497,10 +497,10 @@ export const syncAllUsersStyles = async () => {
       } else if (userData.settings) {
         // Extract from settings object
         usernameStyles = {
-          usernameFontSize: userData.settings.usernameFontSize || '10px',
+          usernameFontSize: userData.settings.usernameFontSize || '11px',
           usernameFontColor: userData.settings.usernameFontColor || '#000000',
           usernameFontFamily: userData.settings.usernameFontFamily || 'inherit',
-          usernameIsBold: userData.settings.usernameIsBold || false,
+          usernameIsBold: userData.settings.usernameIsBold !== undefined ? userData.settings.usernameIsBold : true,
           usernameIsItalic: userData.settings.usernameIsItalic || false,
           usernameIsUnderline: userData.settings.usernameIsUnderline || false,
           usernameIsStrikethrough: userData.settings.usernameIsStrikethrough || false,
@@ -516,7 +516,7 @@ export const syncAllUsersStyles = async () => {
           usernameOutlineEnabled: userData.settings.usernameOutlineEnabled || false,
           usernameOutlineColor: userData.settings.usernameOutlineColor || '#000000',
           usernameOutlineSize: userData.settings.usernameOutlineSize || '1px',
-          usernameFontSize: userData.settings.usernameFontSize || '10px'
+          usernameFontSize: userData.settings.usernameFontSize || '11px'
         };
       }
 
