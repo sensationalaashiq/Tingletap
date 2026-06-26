@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
-import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust } from '../utils/trustSystem';
+import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
@@ -6835,20 +6835,38 @@ const HomePage = ({ user }) => {
                                     )}
                                 </div>
 
-                                {/* Status text – fully below name, never on DP */}
+                                {/* Status text — mirrors Sidebar sb-user-status with full statusStyles support */}
                                 {(() => {
-                                    const s = profileUser.status;
-                                    if (!s) return null;
-                                    const statusText = typeof s === 'string' ? s : (s?.text || s?.statusText || '');
-                                    const statusEmoji = typeof s === 'object' ? (s?.emoji || s?.statusEmoji || '') : '';
-                                    if (!statusText && !statusEmoji) return null;
+                                    const statusText = typeof profileUser.status === 'string'
+                                        ? profileUser.status
+                                        : (profileUser.status?.text || profileUser.status?.statusText || '');
+                                    if (!statusText) return null;
+                                    const ss = profileUser.statusStyles;
+                                    const buildSS = (ss) => {
+                                        if (!ss) return {};
+                                        const s = {};
+                                        if (ss.gradientEnabled) {
+                                            s.background = `linear-gradient(${ss.gradientDirection || 'to right'}, ${ss.gradientStart || '#667eea'}, ${ss.gradientEnd || '#764ba2'})`;
+                                            s.WebkitBackgroundClip = 'text';
+                                            s.WebkitTextFillColor = 'transparent';
+                                            s.backgroundClip = 'text';
+                                        } else if (ss.textColor) { s.color = ss.textColor; }
+                                        if (ss.fontFamily && ss.fontFamily !== 'inherit') s.fontFamily = ss.fontFamily;
+                                        if (ss.fontSize) s.fontSize = ss.fontSize;
+                                        if (ss.fontWeight) s.fontWeight = ss.fontWeight;
+                                        if (ss.fontStyle && ss.fontStyle !== 'normal') s.fontStyle = ss.fontStyle;
+                                        if (ss.textDecoration && ss.textDecoration !== 'none') s.textDecoration = ss.textDecoration;
+                                        if (ss.textShadow && ss.textShadow !== 'none') s.textShadow = ss.textShadow;
+                                        if (ss.letterSpacing && ss.letterSpacing !== 'normal') s.letterSpacing = ss.letterSpacing;
+                                        if (ss.animation && ss.animation !== 'none') s.animation = ss.animation;
+                                        return s;
+                                    };
                                     return (
                                         <div className="vpm-status-text">
                                             <svg viewBox="0 0 24 24" width="10" height="10" fill="#8b5cf6" style={{flexShrink:0}}>
                                                 <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
                                             </svg>
-                                            {statusEmoji && <span style={{fontSize:'13px'}}>{statusEmoji}</span>}
-                                            <span>{statusText}</span>
+                                            <span style={buildSS(ss)}>{statusText}</span>
                                         </div>
                                     );
                                 })()}
@@ -6858,6 +6876,28 @@ const HomePage = ({ user }) => {
                                     <span className="vpm-pill-dot" />
                                     <span>{onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}</span>
                                 </div>
+
+                                {/* Trust Score — shown below online pill */}
+                                {(() => {
+                                    const score = typeof profileUser.trustScore === 'number' ? profileUser.trustScore : 10;
+                                    const rank = getRankFromScore(score);
+                                    const pct = Math.min(100, Math.round((score / 100) * 100));
+                                    return (
+                                        <div className="vpm-trust-section">
+                                            <div className="vpm-trust-top">
+                                                <span className="vpm-trust-emoji">{rank.emoji}</span>
+                                                <div className="vpm-trust-info">
+                                                    <span className="vpm-trust-rank-name">{rank.name}</span>
+                                                    <span className="vpm-trust-desc">{rank.description}</span>
+                                                </div>
+                                                <span className="vpm-trust-score">{score}<span className="vpm-trust-max">/100</span></span>
+                                            </div>
+                                            <div className="vpm-trust-bar-bg">
+                                                <div className="vpm-trust-bar-fill" style={{width:`${pct}%`, background: rank.gradient || rank.color}} />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* ── Tabs ── */}
@@ -6956,9 +6996,50 @@ const HomePage = ({ user }) => {
                                             )}
                                         </div>
 
+                                        {/* Extra details — account age & friends count */}
+                                        {(() => {
+                                            const joinDate = profileUser.createdAt
+                                                ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt)
+                                                : null;
+                                            const ageDays = joinDate
+                                                ? Math.floor((Date.now() - joinDate.getTime()) / 86400000)
+                                                : null;
+                                            const ageLabel = ageDays !== null
+                                                ? ageDays >= 365
+                                                    ? `${Math.floor(ageDays / 365)}y ${Math.floor((ageDays % 365) / 30)}m`
+                                                    : ageDays >= 30
+                                                        ? `${Math.floor(ageDays / 30)} months`
+                                                        : `${ageDays} days`
+                                                : null;
+                                            const friendCount = Array.isArray(profileUser.friends) ? profileUser.friends.length : null;
+                                            if (!ageLabel && friendCount === null) return null;
+                                            return (
+                                                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px',marginTop:'-5px'}}>
+                                                    {ageLabel && (
+                                                        <div className="vpm-info-card">
+                                                            <div className="vpm-ic-icon" style={{background:'#fce7f3'}}>
+                                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#be185d"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .89-2 2v16c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 18H5V8h14v13z"/></svg>
+                                                            </div>
+                                                            <div className="vpm-ic-label">Account Age</div>
+                                                            <div className="vpm-ic-value">{ageLabel}</div>
+                                                        </div>
+                                                    )}
+                                                    {friendCount !== null && (
+                                                        <div className="vpm-info-card">
+                                                            <div className="vpm-ic-icon" style={{background:'#d1fae5'}}>
+                                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#059669"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                                            </div>
+                                                            <div className="vpm-ic-label">Friends</div>
+                                                            <div className="vpm-ic-value">{friendCount}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
                                         {/* Interests & Hobbies */}
                                         {(profileUser.interests || profileUser.hobbies) && (
-                                            <div style={{marginTop:'10px',padding:'10px 12px',background:'linear-gradient(135deg,#faf5ff,#f0f9ff)',borderRadius:'10px',border:'1px solid rgba(167,139,250,0.15)'}}>
+                                            <div style={{marginTop:'2px',padding:'10px 12px',background:'linear-gradient(135deg,#faf5ff,#f0f9ff)',borderRadius:'10px',border:'1px solid rgba(167,139,250,0.15)'}}>
                                                 {profileUser.interests && (
                                                     <div style={{marginBottom: profileUser.hobbies ? '8px' : 0}}>
                                                         <div style={{fontSize:'10px',color:'#9ca3af',fontWeight:600,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:'4px'}}>Interests</div>
@@ -6974,8 +7055,10 @@ const HomePage = ({ user }) => {
                                             </div>
                                         )}
 
-                                        {/* Message button */}
+                                        {/* Send Message — visible only when viewing someone ELSE's profile */}
                                         {(() => {
+                                            const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
+                                            if (isOwnProfile) return null;
                                             const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
                                             const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
                                             const canMsg = !(viewerIsGuest && !targetIsGuest);
@@ -7018,9 +7101,12 @@ const HomePage = ({ user }) => {
                                                             <span className="vpm-friend-name">{fr.displayName}</span>
                                                             <span className="vpm-friend-role">{fr.role || 'User'}</span>
                                                         </div>
-                                                        <button className="vpm-friend-msg" title="Message" onClick={() => handlePrivateMessage(fr)}>
-                                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                                        </button>
+                                                        {/* Friends-list msg button — only shown when viewing own profile */}
+                                                        {profileUser?.uid === loggedInUserProfile?.uid && (
+                                                            <button className="vpm-friend-msg" title="Message" onClick={() => handlePrivateMessage(fr)}>
+                                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -7049,21 +7135,56 @@ const HomePage = ({ user }) => {
                                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="#7c3aed"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .89-2 2v16c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 18H5V8h14v13z"/></svg>
                                             </div>
                                             <div>
-                                                <div className="vpm-act-label">Joined</div>
+                                                <div className="vpm-act-label">Member Since</div>
                                                 <div className="vpm-act-value">
                                                     {profileUser.createdAt ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : 'Unknown'}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="vpm-activity-row">
-                                            <div className="vpm-act-icon" style={{background:'#d1fae5'}}>
-                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#059669"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                                            <div className="vpm-act-icon" style={{background: onlineUsers.has(profileUser.uid) ? '#d1fae5' : '#f3f4f6'}}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill={onlineUsers.has(profileUser.uid) ? '#059669' : '#9ca3af'}><circle cx="12" cy="12" r="10"/></svg>
                                             </div>
                                             <div>
-                                                <div className="vpm-act-label">Last Seen</div>
-                                                <div className="vpm-act-value">{onlineUsers.has(profileUser.uid) ? 'Online Now' : 'Recently'}</div>
+                                                <div className="vpm-act-label">Status</div>
+                                                <div className="vpm-act-value" style={{color: onlineUsers.has(profileUser.uid) ? '#059669' : '#6b7280'}}>
+                                                    {onlineUsers.has(profileUser.uid) ? '🟢 Online Now' : '⚫ Offline'}
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="vpm-activity-row">
+                                            <div className="vpm-act-icon" style={{background:'#fef3c7'}}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#d97706"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                                            </div>
+                                            <div>
+                                                <div className="vpm-act-label">Role</div>
+                                                <div className="vpm-act-value">
+                                                    {getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {typeof profileUser.trustScore === 'number' && (
+                                            <div className="vpm-activity-row">
+                                                <div className="vpm-act-icon" style={{background:'#f0fdf4'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#16a34a"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                                </div>
+                                                <div>
+                                                    <div className="vpm-act-label">Trust Score</div>
+                                                    <div className="vpm-act-value">{getRankFromScore(profileUser.trustScore).emoji} {getRankFromScore(profileUser.trustScore).name} ({profileUser.trustScore}/100)</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {profileUser.uid && (
+                                            <div className="vpm-activity-row">
+                                                <div className="vpm-act-icon" style={{background:'#eff6ff'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#3b82f6"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                                </div>
+                                                <div>
+                                                    <div className="vpm-act-label">Friends</div>
+                                                    <div className="vpm-act-value">{Array.isArray(profileUser.friends) ? profileUser.friends.length : 0} connected</div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

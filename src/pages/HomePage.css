@@ -7059,8 +7059,7 @@ html body.theme-sunset .message-body p {
 .vpm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(60, 30, 120, 0.38);
-    backdrop-filter: blur(6px);
+    background: rgba(15, 8, 40, 0.82);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -7321,6 +7320,82 @@ html body.theme-sunset .message-body p {
 }
 .dark-mode .vpm-online-pill { background: rgba(107,114,128,0.18); }
 .dark-mode .vpm-online-pill.online { background: rgba(16,185,129,0.18); color: #34d399; }
+
+/* ── Trust Score ── */
+.vpm-trust-section {
+    width: 100%;
+    background: rgba(139,92,246,0.07);
+    border: 1px solid rgba(139,92,246,0.22);
+    border-radius: 14px;
+    padding: 9px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 2px;
+}
+.dark-mode .vpm-trust-section {
+    background: rgba(139,92,246,0.13);
+    border-color: rgba(139,92,246,0.32);
+}
+.vpm-trust-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.vpm-trust-emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.vpm-trust-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.vpm-trust-rank-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #5b21b6;
+    letter-spacing: 0.2px;
+}
+.dark-mode .vpm-trust-rank-name { color: #c4b5fd; }
+.vpm-trust-desc {
+    font-size: 0.65rem;
+    color: #7c3aed;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dark-mode .vpm-trust-desc { color: #a78bfa; }
+.vpm-trust-score {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #5b21b6;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.dark-mode .vpm-trust-score { color: #c4b5fd; }
+.vpm-trust-max {
+    font-size: 0.6rem;
+    font-weight: 500;
+    opacity: 0.6;
+}
+.vpm-trust-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(139,92,246,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.vpm-trust-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+    min-width: 6px;
+}
 
 /* ── Tabs ── */
 .vpm-tabs {

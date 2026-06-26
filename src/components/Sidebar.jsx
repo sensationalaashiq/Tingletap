@@ -14,7 +14,6 @@ import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '
 import AdminBanKickModal from './AdminBanKickModal';
 import ChatActionModal from './ChatActionModal';
 import EditProfileModal from './EditProfileModal';
-import ViewProfileModal from './ViewProfileModal';
 import StatusModal from './StatusModal';
 import GenderBadge from './GenderBadge';
 
@@ -160,9 +159,12 @@ const Sidebar = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /* -- expose setProfileUser globally -- */
+  /* -- expose setProfileUser globally — routes through handleViewProfile when available -- */
   useEffect(() => {
-    window.setProfileUser = setProfileUser;
+    window.setProfileUser = (user) => {
+      if (window.handleViewProfile) window.handleViewProfile(user);
+      else setProfileUser(user);
+    };
     return () => { delete window.setProfileUser; };
   }, [setProfileUser]);
 
@@ -336,7 +338,7 @@ const Sidebar = ({
       <div className={`sb-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
 
       {/* Dropdown backdrop */}
-      {(dropdownUser || profileUser) && (
+      {dropdownUser && (
         <div className="sb-dropdown-backdrop" onClick={() => { setDropdownUser(null); setProfileUser(null); }} />
       )}
 
@@ -438,7 +440,7 @@ const Sidebar = ({
                     </div>
                   </div>
                   <div className="sb-apd-divider" />
-                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.setProfileUser || setProfileUser)(loggedInUserProfile); setDropdownUser(null); }}>
+                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.handleViewProfile || setProfileUser)(loggedInUserProfile); setDropdownUser(null); }}>
                     <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                     View Profile
                   </button>
@@ -784,7 +786,7 @@ const Sidebar = ({
                           </div>
                           <div className="sb-apd-divider"/>
 
-                          <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.setProfileUser || setProfileUser)(userItem); setDropdownUser(null); }}>
+                          <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.handleViewProfile || setProfileUser)(userItem); setDropdownUser(null); }}>
                             <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                             View Profile
                           </button>
@@ -906,14 +908,6 @@ const Sidebar = ({
           isOpen={showEditProfileModal}
           onClose={() => setShowEditProfileModal(false)}
           onSuccess={() => setShowEditProfileModal(false)}
-        />
-      )}
-
-      {profileUser && (
-        <ViewProfileModal
-          user={profileUser}
-          currentUser={loggedInUserProfile}
-          onClose={() => setProfileUser(null)}
         />
       )}
 
