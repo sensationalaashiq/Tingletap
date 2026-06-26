@@ -591,30 +591,41 @@ export const clearAllUsernameStyles = () => {
 // Initialize username styling with real-time Firestore listener
 export const initializeUsernameStyles = () => {
   try {
-    // Set up real-time Firestore listener on globalUsernameStyles for instant cross-user sync
     setTimeout(async () => {
       try {
-        const { db } = await import('../firebase/config');
+        const { db, auth } = await import('../firebase/config');
         const { collection, onSnapshot } = await import('firebase/firestore');
+
+        // Only start the listener once a user is authenticated
+        if (!auth.currentUser) return;
+
         if (window._usernameStylesUnsubscribe) window._usernameStylesUnsubscribe();
-        window._usernameStylesUnsubscribe = onSnapshot(collection(db, 'globalUsernameStyles'), (snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added' || change.type === 'modified') {
-              const data = change.doc.data();
-              if (data.userId && data.userName && data.styles) {
-                window.allUsersUsernameStyles = window.allUsersUsernameStyles || {};
-                window.userUsernameStyles = window.userUsernameStyles || {};
-                window.allUsersUsernameStyles[data.userId] = { userId: data.userId, userName: data.userName, styles: data.styles };
-                window.userUsernameStyles[data.userId] = data.styles;
-                applyGlobalUsernameStylesForUser(data.userId, data.userName, data.styles);
+        window._usernameStylesUnsubscribe = onSnapshot(
+          collection(db, 'globalUsernameStyles'),
+          (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === 'added' || change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.userId && data.userName && data.styles) {
+                  window.allUsersUsernameStyles = window.allUsersUsernameStyles || {};
+                  window.userUsernameStyles = window.userUsernameStyles || {};
+                  window.allUsersUsernameStyles[data.userId] = { userId: data.userId, userName: data.userName, styles: data.styles };
+                  window.userUsernameStyles[data.userId] = data.styles;
+                  applyGlobalUsernameStylesForUser(data.userId, data.userName, data.styles);
+                }
               }
-            }
-          });
-        });
+            });
+          },
+          (error) => {
+            // permission-denied is expected until Firestore rules are deployed — skip silently
+            if (error?.code === 'permission-denied') return;
+            console.error('❌ Username styles listener error:', error);
+          }
+        );
       } catch (error) {
-        console.error('❌ Error setting up username styles listener:', error);
-        // Fallback to polling
-        syncAllUsersStyles();
+        if (error?.code !== 'permission-denied') {
+          console.error('❌ Error setting up username styles listener:', error);
+        }
       }
     }, 200);
   } catch (error) {
@@ -675,13 +686,6 @@ if (typeof window !== 'undefined') {
     }, 100);
   });
 
-  // Auto-initialize immediately when this module loads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeUsernameStyles();
-    });
-  } else {
-    // DOM is already loaded - initialize immediately
-    initializeUsernameStyles();
-  }
+  // DO NOT auto-initialize here — listeners require auth and must only start after login.
+  // initializeUsernameStyles() is called by App.jsx once the user is authenticated.
 }

@@ -288,26 +288,37 @@ export const clearAllMessageStyles = () => {
 // Initialize global message styling with real-time Firestore listener
 export const initializeGlobalMessageStyles = () => {
   try {
-    // Set up real-time Firestore listener on globalMessageStyles for instant cross-user sync
     setTimeout(async () => {
       try {
-        const { db } = await import('../firebase/config');
+        const { db, auth } = await import('../firebase/config');
         const { collection, onSnapshot } = await import('firebase/firestore');
+
+        // Only start the listener once a user is authenticated
+        if (!auth.currentUser) return;
+
         if (window._messageStylesUnsubscribe) window._messageStylesUnsubscribe();
-        window._messageStylesUnsubscribe = onSnapshot(collection(db, 'globalMessageStyles'), (snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added' || change.type === 'modified') {
-              const data = change.doc.data();
-              if (data.userId && data.userName && data.styles) {
-                applyGlobalMessageStyles(data.userId, data.userName, data.styles);
+        window._messageStylesUnsubscribe = onSnapshot(
+          collection(db, 'globalMessageStyles'),
+          (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === 'added' || change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.userId && data.userName && data.styles) {
+                  applyGlobalMessageStyles(data.userId, data.userName, data.styles);
+                }
               }
-            }
-          });
-        });
+            });
+          },
+          (error) => {
+            // permission-denied is expected until Firestore rules are deployed — skip silently
+            if (error?.code === 'permission-denied') return;
+            console.error('❌ Message styles listener error:', error);
+          }
+        );
       } catch (error) {
-        console.error('❌ Error setting up message styles listener:', error);
-        // Fallback to one-time sync
-        syncAllUsersMessageStyles();
+        if (error?.code !== 'permission-denied') {
+          console.error('❌ Error setting up message styles listener:', error);
+        }
       }
     }, 200);
   } catch (error) {
@@ -337,16 +348,8 @@ if (typeof window !== 'undefined') {
     applyGlobalMessageStyles(userId, userName, styles);
   });
 
-  // Auto-initialize immediately when this module loads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeGlobalMessageStyles();
-    });
-  } else {
-    // DOM is already loaded - initialize immediately
-    initializeGlobalMessageStyles();
-  }
-
+  // DO NOT auto-initialize here — listeners require auth and must only start after login.
+  // initializeGlobalMessageStyles() is called by App.jsx once the user is authenticated.
 }
 
 // Backward compatibility exports

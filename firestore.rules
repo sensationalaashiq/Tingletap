@@ -89,12 +89,18 @@ service cloud.firestore {
              resource.data.status == 'pending';
     }
 
+    // Fields a user is allowed to update on their own profile.
+    // Includes all preference, styling, device, and session fields written by the app.
     function onlyUpdatingAllowedFields() {
-      let allowedFields = ['friends', 'lastLogin', 'isOnline', 'fontPreferences', 'darkMode',
-                          'selectedTheme', 'displayName', 'photoURL', 'gender', 'country',
-                          'status', 'bio', 'profession', 'blockedUsers', 'settings', 'lastSeen',
-                          'preferences', 'avatar', 'username', 'email', 'createdAt', 'updatedAt'];
-      let staffOnlyFields = ['role', 'isBanned', 'mutedInfo', 'badge'];
+      let allowedFields = [
+        'friends', 'lastLogin', 'isOnline', 'fontPreferences', 'messageFontPreferences',
+        'usernameFontPreferences', 'darkMode', 'selectedTheme', 'displayName', 'photoURL',
+        'gender', 'country', 'status', 'bio', 'profession', 'blockedUsers', 'settings',
+        'lastSeen', 'preferences', 'avatar', 'username', 'email', 'createdAt', 'updatedAt',
+        'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
+        'fcmToken', 'pushToken', 'notificationPreferences'
+      ];
+      let staffOnlyFields = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt'];
       let changedFields = request.resource.data.diff(resource.data).affectedKeys();
 
       return changedFields.hasOnly(allowedFields) ||
@@ -124,7 +130,6 @@ service cloud.firestore {
     // Write: own profile only, staff can update others
     // ============================================
     match /users/{userId} {
-      // Broad read: authenticated users + anonymous auth bridge for username login lookup
       allow read: if request.auth != null &&
         (request.auth.uid == userId ||
          !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
@@ -132,6 +137,7 @@ service cloud.firestore {
          isGuest() ||
          isStaff());
 
+      // Allow create for both registered users (email is string) and guests (email may be null)
       allow create: if request.auth != null &&
         request.auth.uid == userId &&
         request.resource.data.uid == request.auth.uid &&
@@ -194,7 +200,7 @@ service cloud.firestore {
           !isUserKickedFromRoom(request.auth.uid, roomId));
 
         // Staff (owner/admin/moderator) can always send — no bans/mutes apply
-        // All other authenticated users can send unless banned/muted/kicked
+        // All other authenticated users (including guests) can send unless banned/muted/kicked
         allow create: if request.auth != null && (
           request.auth.uid == "tinglebot_system" ||
           isStaff() || (
@@ -216,6 +222,8 @@ service cloud.firestore {
 
       match /kickedUsers/{kickedUserId} {
         allow read, write: if isStaff();
+        // Allow kicked users to read their own kick document so the app can detect and navigate them out
+        allow read: if request.auth != null && request.auth.uid == kickedUserId;
       }
     }
 
@@ -265,15 +273,22 @@ service cloud.firestore {
     // CALLS COLLECTION
     // ============================================
     match /calls/{callId} {
-      allow read, write: if canStaffCommunicate() || (request.auth != null &&
-        (request.auth.uid == resource.data.callerId ||
-         request.auth.uid == resource.data.recipientId) &&
-        !isUserBanned(request.auth.uid));
+      allow read: if request.auth != null && (
+        isStaff() ||
+        request.auth.uid == resource.data.callerId ||
+        request.auth.uid == resource.data.recipientId
+      );
 
       allow create: if request.auth != null &&
         request.resource.data.callerId == request.auth.uid &&
         !isUserBanned(request.auth.uid) &&
         canSendMessageToUser(request.resource.data.recipientId);
+
+      allow update, delete: if request.auth != null && (
+        isStaff() ||
+        request.auth.uid == resource.data.callerId ||
+        request.auth.uid == resource.data.recipientId
+      );
 
       match /offerCandidates/{docId} {
         allow read, write: if request.auth != null && !isUserBanned(request.auth.uid);
@@ -317,9 +332,10 @@ service cloud.firestore {
 
     // ============================================
     // CONVERSATIONS COLLECTION
+    // Guests may DM other guests; registered users may DM anyone not banned/blocked
     // ============================================
     match /conversations/{conversationId} {
-      allow read, write: if isStaff() || (request.auth != null &&
+      allow read: if isStaff() || (request.auth != null &&
         request.auth.uid in resource.data.participants &&
         !isUserBanned(request.auth.uid));
 
@@ -327,23 +343,38 @@ service cloud.firestore {
         request.auth.uid in request.resource.data.participants &&
         !isUserBanned(request.auth.uid) &&
         (
-          (!isGuest()) ||
-          (isGuest() && exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
-           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.size() == 2)
+          !isGuest() ||
+          (isGuest() && request.resource.data.participants.size() == 2 &&
+           getUserRole(request.resource.data.participants[0]) == 'guest' &&
+           getUserRole(request.resource.data.participants[1]) == 'guest')
         );
 
+      allow update: if isStaff() || (request.auth != null &&
+        request.auth.uid in resource.data.participants &&
+        !isUserBanned(request.auth.uid));
+
+      allow delete: if isStaff();
+
       match /messages/{messageId} {
-        allow read, write: if isStaff() || (request.auth != null &&
+        allow read: if isStaff() || (request.auth != null &&
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
           !isUserBanned(request.auth.uid));
 
         allow create: if isStaff() || (request.auth != null &&
           request.resource.data.senderId == request.auth.uid &&
           !isUserBanned(request.auth.uid) &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
           (
-            (!isGuest()) ||
+            !isGuest() ||
             (isGuest() && getUserRole(request.resource.data.receiverId) == 'guest')
           ));
+
+        allow update: if isStaff() || (request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          !isUserBanned(request.auth.uid));
+
+        allow delete: if isStaff() || (request.auth != null &&
+          resource.data.senderId == request.auth.uid);
       }
     }
 
@@ -367,6 +398,22 @@ service cloud.firestore {
     // PRESENCE COLLECTION
     // ============================================
     match /presence/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isStaff());
+    }
+
+    // ============================================
+    // GLOBAL STYLING COLLECTIONS
+    // Any authenticated user can read all styles (to see everyone's custom look).
+    // A user can only write their own style document (keyed by their UID).
+    // Staff can read/write all.
+    // ============================================
+    match /globalUsernameStyles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isStaff());
+    }
+
+    match /globalMessageStyles/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (request.auth.uid == userId || isStaff());
     }
@@ -423,10 +470,11 @@ service cloud.firestore {
       allow read, write: if isOwner() || isAdmin();
     }
 
-    // Guest sessions: staff can read/write all; the guest user themselves can
-    // create and update their OWN session document (keyed by their Firebase UID).
+    // Guest sessions: guests can create/update their own session document.
+    // Staff can read/write all.
     match /guestSessions/{sessionId} {
-      allow read, write: if isOwner() || isAdmin() || isModerator();
+      allow read: if isOwner() || isAdmin() || isModerator() ||
+        (request.auth != null && request.auth.uid == sessionId);
       allow create, update: if request.auth != null && request.auth.uid == sessionId;
       allow delete: if isOwner() || isAdmin();
     }

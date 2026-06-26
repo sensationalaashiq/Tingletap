@@ -31,6 +31,8 @@ import VPNBlockModal from './components/VPNBlockModal';
 // Removed toast notifications
 import { checkUserVPN } from './utils/vpnDetection';
 import { getStoredGuestGender } from './utils/roleUtils';
+import { initializeUsernameStyles, clearAllUsernameStyles } from './utils/usernamePreferences';
+import { initializeGlobalMessageStyles, clearAllMessageStyles } from './utils/messageTextPreferences';
 import BanKickModal from './components/BanKickModal';
 import './App.css';
 
@@ -156,6 +158,11 @@ function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+
+        // Start global style listeners now that the user is authenticated.
+        // These require auth and must never run before login.
+        initializeUsernameStyles();
+        initializeGlobalMessageStyles();
 
         // Capture and store real IP address for admin panel
         try {
@@ -590,16 +597,9 @@ function App() {
 
         // On logout/account-switch: clear ALL style data so the next account starts clean
         // Styles are per-account; they must never bleed across sessions or devices
-        document.querySelectorAll('[id^="global-username-styles-"],[id^="global-message-styles-"]').forEach(el => el.remove());
-        ['global-message-text-styles','immediate-message-styles'].forEach(id => document.getElementById(id)?.remove());
-        window.allUsersUsernameStyles = {};
-        window.userUsernameStyles = {};
-        window.allUsersMessageStyles = {};
-        window.userMessageStyles = {};
+        clearAllUsernameStyles();
+        clearAllMessageStyles();
         window.chatFontPreferences = { fontSize: '8px', fontColor: '#333333', fontFamily: 'inherit', isBold: false, isItalic: false, isUnderline: false, isStrikethrough: false };
-        // Cancel real-time style listeners
-        if (window._usernameStylesUnsubscribe) { window._usernameStylesUnsubscribe(); window._usernameStylesUnsubscribe = null; }
-        if (window._messageStylesUnsubscribe) { window._messageStylesUnsubscribe(); window._messageStylesUnsubscribe = null; }
         // Clear all style-related localStorage keys
         [
           'usernameFontPreferences','messageFontPreferences','fontPreferences',
