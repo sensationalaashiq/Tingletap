@@ -8793,20 +8793,20 @@ html body.theme-sunset .message-body p {
   border-bottom-color: rgba(139, 92, 246, 0.25) !important;
 }
 
-/* --- Header Buttons (light lavender theme) --- */
+/* --- Header Buttons (icon-only, no background) --- */
 .homepage-container .header-action-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  background: rgba(109, 40, 217, 0.1) !important;
-  border: 1.5px solid rgba(109, 40, 217, 0.22) !important;
-  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
   backdrop-filter: none !important;
-  box-shadow: 0 1px 6px rgba(109, 40, 217, 0.1) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  transition: transform 0.18s ease, opacity 0.18s ease !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -8814,95 +8814,111 @@ html body.theme-sunset .message-body p {
 }
 
 .homepage-container .header-action-btn:hover {
-  background: rgba(109, 40, 217, 0.2) !important;
-  transform: scale(1.08) !important;
-  box-shadow: 0 3px 10px rgba(109, 40, 217, 0.25) !important;
+  background: transparent !important;
+  transform: scale(1.15) !important;
+  box-shadow: none !important;
+  opacity: 0.85 !important;
 }
 
 .homepage-container .header-action-btn svg {
-  color: #5b21b6 !important;
-  fill: #5b21b6 !important;
-  width: 18px !important;
-  height: 18px !important;
+  color: #7c3aed !important;
+  fill: #7c3aed !important;
+  width: 20px !important;
+  height: 20px !important;
   flex-shrink: 0 !important;
 }
 
-/* Settings gear icon — ensure icon is always visible */
+/* Settings gear icon */
 .homepage-container .header-action-btn.settings-btn svg,
 .homepage-container .header-action-btn.settings-btn svg path {
-  fill: #5b21b6 !important;
-  color: #5b21b6 !important;
+  fill: #7c3aed !important;
+  color: #7c3aed !important;
 }
 
 /* Dark mode button overrides */
 .dark-mode .homepage-container .header-action-btn {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .dark-mode .homepage-container .header-action-btn:hover {
-  background: rgba(255, 255, 255, 0.22) !important;
+  background: transparent !important;
 }
 .dark-mode .homepage-container .header-action-btn svg {
-  color: #ffffff !important;
-  fill: #ffffff !important;
+  color: #c4b5fd !important;
+  fill: #c4b5fd !important;
 }
 
-/* Special button accent colors — light mode */
+/* Special button icon colors — no backgrounds, just colored icons */
 .homepage-container .clear-chat-btn {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-color: rgba(239, 68, 68, 0.28) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .homepage-container .clear-chat-btn:hover {
-  background: rgba(239, 68, 68, 0.22) !important;
+  background: transparent !important;
 }
 .homepage-container .clear-chat-btn svg {
-  color: #dc2626 !important;
-  fill: #dc2626 !important;
+  color: #ef4444 !important;
+  fill: #ef4444 !important;
 }
 
 .homepage-container .friend-request-btn {
-  background: rgba(16, 185, 129, 0.1) !important;
-  border-color: rgba(16, 185, 129, 0.25) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .homepage-container .friend-request-btn:hover {
-  background: rgba(16, 185, 129, 0.22) !important;
+  background: transparent !important;
 }
 .homepage-container .friend-request-btn svg {
-  color: #047857 !important;
-  fill: #047857 !important;
+  color: #10b981 !important;
+  fill: #10b981 !important;
 }
 
 .homepage-container .radio-header-btn {
-  background: rgba(245, 158, 11, 0.1) !important;
-  border-color: rgba(245, 158, 11, 0.25) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .homepage-container .radio-header-btn:hover {
-  background: rgba(245, 158, 11, 0.22) !important;
+  background: transparent !important;
 }
 .homepage-container .radio-header-btn svg {
-  color: #b45309 !important;
-  fill: #b45309 !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 .homepage-container .pm-header-btn {
-  background: rgba(59, 130, 246, 0.1) !important;
-  border-color: rgba(59, 130, 246, 0.25) !important;
+  background: transparent !important;
+  border: none !important;
 }
 .homepage-container .pm-header-btn:hover {
-  background: rgba(59, 130, 246, 0.22) !important;
+  background: transparent !important;
 }
 .homepage-container .pm-header-btn svg {
-  color: #1d4ed8 !important;
-  fill: #1d4ed8 !important;
+  color: #3b82f6 !important;
+  fill: #3b82f6 !important;
 }
 
-/* Dark mode — all special buttons use white icons */
-.dark-mode .homepage-container .clear-chat-btn svg,
-.dark-mode .homepage-container .friend-request-btn svg,
-.dark-mode .homepage-container .radio-header-btn svg,
+/* menu-trigger: no background */
+.homepage-container .menu-trigger {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.homepage-container .menu-trigger:hover {
+  background: transparent !important;
+}
+
+/* Dark mode — special icons keep their gradient colors */
+.dark-mode .homepage-container .clear-chat-btn svg {
+  color: #f87171 !important;
+  fill: #f87171 !important;
+}
+.dark-mode .homepage-container .friend-request-btn svg {
+  color: #34d399 !important;
+  fill: #34d399 !important;
+}
 .dark-mode .homepage-container .pm-header-btn svg {
-  color: #ffffff !important;
-  fill: #ffffff !important;
+  color: #60a5fa !important;
+  fill: #60a5fa !important;
 }
 
 /* --- Header Title & User Count --- */
@@ -8923,13 +8939,13 @@ html body.theme-sunset .message-body p {
 }
 
 .homepage-container .user-count {
-  background: rgba(109, 40, 217, 0.1) !important;
-  color: #5b21b6 !important;
-  border: 1px solid rgba(109, 40, 217, 0.2) !important;
-  font-weight: 700 !important;
+  background: rgba(109, 40, 217, 0.12) !important;
+  color: #6d28d9 !important;
+  border: 1.5px solid rgba(109, 40, 217, 0.35) !important;
+  font-weight: 800 !important;
   border-radius: 20px !important;
-  padding: 2px 7px !important;
-  font-size: 0.67rem !important;
+  padding: 2px 8px !important;
+  font-size: 0.72rem !important;
   letter-spacing: 0.3px !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
@@ -8938,9 +8954,9 @@ html body.theme-sunset .message-body p {
 }
 
 .dark-mode .homepage-container .user-count {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(167, 139, 250, 0.18) !important;
+  color: #a78bfa !important;
+  border: 1.5px solid rgba(167, 139, 250, 0.4) !important;
 }
 
 /* Mobile: slightly smaller but still comfortable */
@@ -10233,18 +10249,18 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
    ██  FINAL AUTHORITY BLOCK — beats every rule above  ██
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. HEADER TITLE & USER-COUNT: same purple as settings icon #8b5cf6 ─ */
+/* ── 1. HEADER TITLE & USER-COUNT: sharp vivid purple ─ */
 body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
-  color: #8b5cf6 !important;
-  font-weight: 800 !important;
-  font-size: 0.95rem !important;
+  color: #5b21b6 !important;
+  font-weight: 900 !important;
+  font-size: 0.97rem !important;
   background: none !important;
   border: none !important;
   border-radius: 0 !important;
   padding: 0 !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.45) !important;
+  text-shadow: none !important;
   letter-spacing: 0.01em !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -10256,12 +10272,12 @@ body .header-title {
 
 body .homepage-container .chat-header .user-count,
 body .chat-header .user-count {
-  background: rgba(139, 92, 246, 0.18) !important;
-  color: #8b5cf6 !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.5) !important;
-  font-size: 0.7rem !important;
-  font-weight: 700 !important;
-  padding: 2px 7px !important;
+  background: rgba(109, 40, 217, 0.13) !important;
+  color: #5b21b6 !important;
+  border: 1.5px solid rgba(109, 40, 217, 0.4) !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  padding: 2px 8px !important;
   border-radius: 10px !important;
   text-shadow: none !important;
   box-shadow: none !important;
@@ -10271,6 +10287,21 @@ body .chat-header .user-count {
   opacity: 1 !important;
   display: inline-flex !important;
   align-items: center !important;
+}
+
+/* Final kill of all header button backgrounds */
+body .homepage-container .header-action-btn,
+body .homepage-container .header-action-btn:hover,
+body .homepage-container .header-action-btn:focus,
+body .homepage-container .clear-chat-btn,
+body .homepage-container .friend-request-btn,
+body .homepage-container .radio-header-btn,
+body .homepage-container .pm-header-btn,
+body .homepage-container .menu-trigger {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* ── 2. FOOTER — transparent strip, no capsule, no background ──────── */

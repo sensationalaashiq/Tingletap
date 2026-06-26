@@ -6472,14 +6472,14 @@ const HomePage = ({ user }) => {
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRadioOpen(prev => !prev); }}
                                   title="Radio"
                               >
-                                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                  <svg viewBox="0 0 512 512" width="20" height="20" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
                                       <defs>
-                                        <linearGradient id="radioIconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                          <stop offset="0%" stopColor="#f97316"/>
-                                          <stop offset="100%" stopColor="#ef4444"/>
+                                        <linearGradient id="radioIconGradNew" gradientUnits="userSpaceOnUse" x1="95.156" x2="461.289" y1="137.096" y2="503.23">
+                                          <stop offset="0" stopColor="#55d6ff"/>
+                                          <stop offset="1" stopColor="#ce55ff"/>
                                         </linearGradient>
                                       </defs>
-                                      <path fill="url(#radioIconGrad)" d="M20,6H10.83L7.83,3L6.42,4.41L8.83,6.83V7H3A2,2 0 0,0 1,9V19A2,2 0 0,0 3,21H20A2,2 0 0,0 22,19V8A2,2 0 0,0 20,6M13.5,17A2.5,2.5 0 0,1 11,14.5A2.5,2.5 0 0,1 13.5,12A2.5,2.5 0 0,1 16,14.5A2.5,2.5 0 0,1 13.5,17M18,11H3V9H18V11Z"/>
+                                      <path d="m415.5 172.944h-245.4v-23.819c0-.336-.01-.671-.029-1.008l200.035-113.262a18.635 18.635 0 1 0 -18.363-32.433l-226.187 128.067h-16.086a18.657 18.657 0 0 0 -18.636 18.636v24.015c-46.667 2.949-83.855 42.045-83.855 89.33v160.005a89.627 89.627 0 0 0 89.526 89.525h318.995a89.627 89.627 0 0 0 89.526-89.525v-160a89.627 89.627 0 0 0 -89.526-89.531zm-247.724 268.277a98.749 98.749 0 1 1 98.748-98.748 98.861 98.861 0 0 1 -98.748 98.748zm129.855-177.709h-24.22a8.828 8.828 0 1 1 0-17.655h24.22a8.828 8.828 0 1 1 0 17.655zm85.7 168.315a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm0-102.987a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm-215.555-67.462a81.095 81.095 0 1 0 81.093 81.1 81.187 81.187 0 0 0 -81.093-81.1zm0 133.846a52.752 52.752 0 1 1 52.75-52.751 52.811 52.811 0 0 1 -52.75 52.751zm235.758-1.258a20.206 20.206 0 1 1 -20.206-20.2 20.23 20.23 0 0 1 20.206 20.2zm-200.662-51.493a35.1 35.1 0 1 1 -35.1-35.1 35.136 35.136 0 0 1 35.1 35.1zm200.662-51.494a20.206 20.206 0 1 1 -20.206-20.206 20.229 20.229 0 0 1 20.206 20.206z" fill="url(#radioIconGradNew)"/>
                                   </svg>
                               </button>
                               <button 
@@ -6489,11 +6489,15 @@ const HomePage = ({ user }) => {
                                   style={{ position: 'relative' }}
                               >
                                   <PremiumPrivateBoxIcon />
-                                  {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0) > 0 && (
-                                      <span className="pm-notification-badge">
-                                          {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)}
-                                      </span>
-                                  )}
+                                  {(() => {
+                                      const total = Object.entries(unreadCounts).reduce((sum, [uid, count]) => {
+                                          if (privateMessageOpen && privateMessageTarget?.uid === uid) return sum;
+                                          return sum + count;
+                                      }, 0);
+                                      return total > 0 ? (
+                                          <span className="pm-notification-badge">{total}</span>
+                                      ) : null;
+                                  })()}
                               </button>
                               <div 
                                   className="header-action-btn menu-trigger"
