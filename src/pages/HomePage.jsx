@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
@@ -2411,18 +2412,18 @@ const HomePage = ({ user }) => {
                     if ((roomData.name === 'The Olympians(Staff Room)' || roomData.isStaffOnly) && loggedInUserProfile) {
                         const userRole = loggedInUserProfile.role || 'guest';
                         if (!['owner', 'admin', 'moderator'].includes(userRole)) {
-                            toast.error("🚫 Access denied. This room is for staff only.");
+                            toast.error("Access denied. This room is for staff only.", { icon: TI.block });
                             navigate('/rooms', { replace: true });
                             return;
                         }
                     }
                 } else {
-                    toast.error("❌ Room not found.");
+                    toast.error("Room not found.", { icon: TI.error });
                     navigate('/rooms', { replace: true });
                 }
             }).catch(error => {
                 console.error('Room loading error:', error);
-                toast.error("❌ Error loading room. Please try again.");
+                toast.error("Error loading room. Please try again.", { icon: TI.error });
                 navigate('/rooms', { replace: true });
             });
             const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(30));
@@ -3305,7 +3306,7 @@ const HomePage = ({ user }) => {
         const a = videoUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
         const videoId = a ? a[1] : null;
         if (!videoId) {
-            toast.error("❌ Invalid YouTube URL!");
+            toast.error("Invalid YouTube URL!", { icon: TI.error });
             return;
         }
 
@@ -3426,7 +3427,7 @@ const HomePage = ({ user }) => {
 
         const a = youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
         const videoId = a ? a[1] : null;
-        if (!videoId) return toast.error("❌ Invalid YouTube URL!");
+        if (!videoId) return toast.error("Invalid YouTube URL!", { icon: TI.error });
 
         try {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), {
@@ -4432,12 +4433,12 @@ const HomePage = ({ user }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("❌ Audio size must be less than 10MB!");
+            toast.error("Audio size must be less than 10MB!", { icon: TI.error });
             return;
         }
 
         if (!file.type.startsWith('audio/')) {
-            toast.error("❌ Please select a valid audio file!");
+            toast.error("Please select a valid audio file!", { icon: TI.error });
             return;
         }
 
@@ -4549,7 +4550,7 @@ const HomePage = ({ user }) => {
             recorder.start();
             setPrivateIsRecording(true);
         } catch (error) {
-            toast.error("❌ Could not start recording. Please check microphone permissions.");
+            toast.error("Could not start recording. Please check microphone permissions.", { icon: TI.mic });
         }
     };
 
@@ -4972,9 +4973,9 @@ const HomePage = ({ user }) => {
                 await batch.commit();
                 setConversations([]);
                 setUnreadCounts({});
-                toast.success("🧹 All conversations cleared successfully!");
+                toast.success("All conversations cleared successfully!", { icon: TI.clear });
             } catch (error) {
-                toast.error("❌ Failed to clear conversations.");
+                toast.error("Failed to clear conversations.", { icon: TI.error });
             }
         };
         const handleCancel = () => toast.dismiss(toastId);
@@ -5698,12 +5699,12 @@ const HomePage = ({ user }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("❌ Image size must be less than 10MB!");
+            toast.error("Image size must be less than 10MB!", { icon: TI.error });
             return;
         }
 
         if (!file.type.startsWith('image/')) {
-            toast.error("❌ Please select a valid image file!");
+            toast.error("Please select a valid image file!", { icon: TI.error });
             return;
         }
 
@@ -5720,12 +5721,12 @@ const HomePage = ({ user }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("❌ Audio size must be less than 10MB!");
+            toast.error("Audio size must be less than 10MB!", { icon: TI.error });
             return;
         }
 
         if (!file.type.startsWith('audio/')) {
-            toast.error("❌ Please select a valid audio file!");
+            toast.error("Please select a valid audio file!", { icon: TI.error });
             return;
         }
 
@@ -5757,7 +5758,7 @@ const HomePage = ({ user }) => {
             };
 
             recorder.onerror = (e) => {
-                toast.error("❌ Recording error occurred.");
+                toast.error("Recording error occurred.", { icon: TI.error });
                 stream.getTracks().forEach(track => track.stop());
                 setIsRecording(false);
             };
@@ -5766,16 +5767,17 @@ const HomePage = ({ user }) => {
             recorder.start(100); // Collect data every 100ms
             setIsRecording(true);
             
-            toast.info("🎤 Recording started...", {
-                autoClose: 2000
+            toast.info("Recording started...", {
+                autoClose: 2000,
+                icon: TI.mic
             });
         } catch (error) {
             if (error.name === 'NotAllowedError') {
-                toast.error("❌ Microphone access denied. Please allow microphone permissions and try again.");
+                toast.error("Microphone access denied. Please allow microphone permissions and try again.", { icon: TI.mic });
             } else if (error.name === 'NotFoundError') {
-                toast.error("❌ No microphone found. Please connect a microphone and try again.");
+                toast.error("No microphone found. Please connect a microphone and try again.", { icon: TI.mic });
             } else {
-                toast.error("❌ Could not start recording. Please check your microphone and try again.");
+                toast.error("Could not start recording. Please check your microphone and try again.", { icon: TI.mic });
             }
         }
     };
@@ -5785,8 +5787,9 @@ const HomePage = ({ user }) => {
             mediaRecorder.stop();
             setIsRecording(false);
             
-            toast.success("🎤 Recording stopped!", {
-                autoClose: 2000
+            toast.success("Recording stopped!", {
+                autoClose: 2000,
+                icon: TI.mic
             });
         }
     };
@@ -7095,7 +7098,7 @@ const HomePage = ({ user }) => {
                                             <div className="vpm-friends-list">
                                                 {profileFriends.map(fr => (
                                                     <div key={fr.uid} className="vpm-friend-row">
-                                                        <div className={`vpm-friend-av ${getGenderBorderClass(fr)}`}>
+                                                        <div className={`vpm-friend-av ${getGenderBorderClass(fr)}`} style={{ cursor: 'pointer' }} onClick={() => setProfileUser(fr)}>
                                                             <img src={fr.photoURL || getDefaultAvatarUrl(fr.uid, fr.gender)} alt="friend" />
                                                             <span className={`vpm-friend-dot ${onlineUsers.has(fr.uid) ? 'online' : ''}`} />
                                                         </div>
@@ -7216,7 +7219,7 @@ const HomePage = ({ user }) => {
                 const _isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
                 const _isPrivileged = !_isGuest && ((loggedInUserProfile?.badge && loggedInUserProfile?.badge !== '') || ['owner','admin','moderator'].includes(loggedInUserProfile?.role));
                 const _isRegistered = !_isGuest && !_isPrivileged;
-                const lockToast = () => { toast.info('🔒 Register or get a badge to unlock this feature!', { position: 'top-center', autoClose: 3000 }); setIsAttachmentDropdownOpen(false); };
+                const lockToast = () => { toast.info('Register or get a badge to unlock this feature!', { position: 'top-center', autoClose: 3000, icon: TI.lock }); setIsAttachmentDropdownOpen(false); };
                 const LockBadge = () => (
                     <span style={{position:'absolute',bottom:'-3px',right:'-3px',width:'17px',height:'17px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid white',zIndex:2}}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>

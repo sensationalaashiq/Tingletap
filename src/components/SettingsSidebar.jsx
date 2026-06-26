@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { TI } from '../utils/toastIcons';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
-import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -42,6 +43,8 @@ const SettingsSidebar = ({
     const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [showWarningManager, setShowWarningManager] = useState(false);
+    const [teamMembers, setTeamMembers] = useState([]);
+    const teamUnsubRef = useRef(null);
 
     // TingleBot settings state
     const [botEnabled, setBotEnabled] = useState(true);
@@ -284,6 +287,20 @@ const SettingsSidebar = ({
         }
     }, [activeTab]);
 
+    // Load team members (owners, admins, moderators) in real-time — only when logged in
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const q = query(collection(db, 'users'), where('role', 'in', ['owner', 'admin', 'moderator']));
+        const unsub = onSnapshot(q, snap => {
+            const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const roleOrder = { owner: 0, admin: 1, moderator: 2 };
+            members.sort((a, b) => (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3));
+            setTeamMembers(members);
+        }, () => {});
+        teamUnsubRef.current = unsub;
+        return () => unsub();
+    }, [loggedInUserProfile?.uid]);
+
     // Load friends profiles
     useEffect(() => {
         const loadFriendsProfiles = async () => {
@@ -401,11 +418,11 @@ const SettingsSidebar = ({
             }
 
             if (key === 'micVolume') {
-                toast.success(`🎤 Microphone volume set to ${value}%`);
+                toast.success(`Microphone volume set to ${value}%`, { icon: TI.mic });
             }
 
             if (key === 'speakerVolume') {
-                toast.success(`🔊 Speaker volume set to ${value}%`);
+                toast.success(`Speaker volume set to ${value}%`, { icon: TI.soundOn });
             }
 
             // For non-guest users, save to Firebase asynchronously (don't block UI)
@@ -487,7 +504,7 @@ const SettingsSidebar = ({
 
         } catch (error) {
             console.error('Error updating setting:', error);
-            toast.error('❌ Failed to update setting');
+            toast.error('Failed to update setting', { icon: TI.error });
         }
     };
 
@@ -623,7 +640,7 @@ const SettingsSidebar = ({
                 // Update local state
                 setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
 
-                toast.success(`🚫 Removed ${friend.displayName} from friends list`);
+                toast.success(`Removed ${friend.displayName} from friends list`, { icon: TI.remove });
             } catch (error) {
                 console.error('Error removing friend:', error);
                 toast.error('Failed to remove friend. Please try again.');
@@ -1193,6 +1210,8 @@ const SettingsSidebar = ({
                                                 src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
                                                 alt="avatar"
                                                 className="sf-friend-avatar"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => { if (window.setProfileUser) { window.setProfileUser(friend); onClose(); } }}
                                             />
                                             <div className="sf-friend-info">
                                                 <div className="sf-friend-name">{friend.displayName}</div>
@@ -1256,6 +1275,8 @@ const SettingsSidebar = ({
                                                 src={req.senderPhotoURL || `${getDefaultAvatarUrl(req.senderId, req.senderGender)}`}
                                                 alt="avatar"
                                                 className="sf-friend-avatar"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => { if (window.setProfileUser) { window.setProfileUser({ uid: req.senderId, displayName: req.senderName, photoURL: req.senderPhotoURL, gender: req.senderGender }); onClose(); } }}
                                             />
                                             <div className="sf-friend-info">
                                                 <div className="sf-friend-name">{req.senderName || 'Unknown'}</div>
@@ -1593,6 +1614,76 @@ const SettingsSidebar = ({
                     </div>
                 );
 
+            case 'team': {
+                const roleConfig = {
+                    owner:     { label: getRoleDisplayLabel('owner', null),     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#f59e0b"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg> },
+                    admin:     { label: getRoleDisplayLabel('admin', null),     color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> },
+                    moderator: { label: getRoleDisplayLabel('moderator', null), color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#3b82f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> },
+                };
+                const grouped = { owner: [], admin: [], moderator: [] };
+                teamMembers.forEach(m => { if (grouped[m.role]) grouped[m.role].push(m); });
+                return (
+                    <div className="settings-tab-content" style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0 }}>
+                        <div className="sf-section">
+                            <div className="sf-section-header">
+                                <div className="sf-section-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#7c3aed)' }}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                </div>
+                                <span className="sf-section-title">TingleTap Team</span>
+                                <span className="sf-section-badge">{teamMembers.length}</span>
+                            </div>
+
+                            {teamMembers.length === 0 ? (
+                                <div className="sf-empty">
+                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#c4b5fd" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    <div className="sf-empty-title">No team members found</div>
+                                </div>
+                            ) : (
+                                ['owner', 'admin', 'moderator'].map(role => {
+                                    const members = grouped[role];
+                                    if (!members.length) return null;
+                                    const cfg = roleConfig[role];
+                                    return (
+                                        <div key={role} style={{ marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', padding: '0 2px' }}>
+                                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cfg.icon}</div>
+                                                <span style={{ fontSize: '10px', fontWeight: 800, color: cfg.color, letterSpacing: '.08em', textTransform: 'uppercase' }}>{cfg.label}s</span>
+                                                <span style={{ fontSize: '10px', color: '#9ca3af', background: '#f3f4f6', borderRadius: '10px', padding: '1px 6px', fontWeight: 700 }}>{members.length}</span>
+                                            </div>
+                                            <div className="sf-friends-list">
+                                                {members.map(member => (
+                                                    <div key={member.id} className="sf-friend-item">
+                                                        <img
+                                                            src={member.photoURL || getDefaultAvatarUrl(member.id, member.gender)}
+                                                            alt="avatar"
+                                                            className="sf-friend-avatar"
+                                                            style={{ cursor: 'pointer', border: `2px solid ${cfg.color}` }}
+                                                            onClick={() => { if (window.setProfileUser) { window.setProfileUser(member); onClose(); } }}
+                                                        />
+                                                        <div className="sf-friend-info">
+                                                            <div className="sf-friend-name">{member.displayName || 'Unknown'}</div>
+                                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}`, fontSize: '9px', fontWeight: 700, color: cfg.color, marginTop: '2px' }}>
+                                                                {cfg.icon}{cfg.label}
+                                                            </div>
+                                                        </div>
+                                                        <div className="sf-friend-btns">
+                                                            <button className="sf-btn sf-btn-msg" title="Send Message"
+                                                                onClick={() => { if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(member); onClose(); } }}>
+                                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
             case 'account':
                 return (
                     <div className="settings-tab-content">
@@ -1816,7 +1907,7 @@ const SettingsSidebar = ({
                                                                 return;
                                                             }
                                                             try {
-                                                                toast.info('📸 Uploading cover photo...');
+                                                                toast.info('Uploading cover photo...', { icon: TI.camera });
                                                                 const formData = new FormData();
                                                                 formData.append('image', file);
                                                                 formData.append('key', 'bec822839da595fbbc6ffafddca80839');
@@ -1839,18 +1930,18 @@ const SettingsSidebar = ({
                                                                         updatedAt: new Date().toISOString()
                                                                     });
 
-                                                                    toast.success('✅ Cover photo uploaded successfully!');
+                                                                    toast.success('Cover photo uploaded successfully!', { icon: TI.success });
 
                                                                     // Force immediate refresh
                                                                     setTimeout(() => {
                                                                         window.location.reload();
                                                                     }, 1000);
                                                                 } else {
-                                                                    toast.error('❌ Upload failed. Please try again.');
+                                                                    toast.error('Upload failed. Please try again.', { icon: TI.error });
                                                                 }
                                                             } catch (error) {
                                                                 console.error('Cover photo upload error:', error);
-                                                                toast.error('❌ Upload failed. Please try again.');
+                                                                toast.error('Upload failed. Please try again.', { icon: TI.error });
                                                             }
                                                         }
                                                     };
@@ -1900,7 +1991,7 @@ const SettingsSidebar = ({
                                                         const match = youtubeUrl.match(youtubeRegex);
 
                                                         if (!match) {
-                                                            toast.error('❌ Invalid YouTube URL. Please enter a valid YouTube video URL.');
+                                                            toast.error('Invalid YouTube URL. Please enter a valid YouTube video URL.', { icon: TI.error });
                                                             return;
                                                         }
 
@@ -1911,7 +2002,7 @@ const SettingsSidebar = ({
                                                             const testUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
                                                             const response = await fetch(testUrl);
                                                             if (!response.ok) {
-                                                                toast.error('❌ This YouTube video is not available or may be private/restricted.');
+                                                                toast.error('This YouTube video is not available or may be private/restricted.', { icon: TI.error });
                                                                 return;
                                                             }
                                                         } catch (error) {
@@ -1923,7 +2014,7 @@ const SettingsSidebar = ({
                                                         const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&rel=0&modestbranding=1&showinfo=0&fs=1&cc_load_policy=0&iv_load_policy=3&origin=${window.location.origin}`;
 
                                                         try {
-                                                            toast.info('🎥 Setting YouTube cover video...');
+                                                            toast.info('Setting YouTube cover video...', { icon: TI.upload });
 
                                                             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                                                                 coverVideoURL: embedUrl,
@@ -1936,7 +2027,7 @@ const SettingsSidebar = ({
 
                                                             input.value = '';
 
-                                                            toast.success('✅ YouTube cover video set successfully!');
+                                                            toast.success('YouTube cover video set successfully!', { icon: TI.success });
 
                                                             // Force immediate refresh
                                                             setTimeout(() => {
@@ -1945,7 +2036,7 @@ const SettingsSidebar = ({
 
                                                         } catch (error) {
                                                             console.error('Error setting cover video:', error);
-                                                            toast.error('❌ Failed to set cover video. Please try again.');
+                                                            toast.error('Failed to set cover video. Please try again.', { icon: TI.error });
                                                         }
                                                     }}
                                                 >
@@ -1997,7 +2088,7 @@ const SettingsSidebar = ({
                                                         const match = spotifyUrl.match(spotifyRegex);
 
                                                         if (!match) {
-                                                            toast.error('❌ Invalid Spotify URL. Please enter a valid Spotify track URL.');
+                                                            toast.error('Invalid Spotify URL. Please enter a valid Spotify track URL.', { icon: TI.error });
                                                             return;
                                                         }
 
@@ -2006,7 +2097,7 @@ const SettingsSidebar = ({
                                                         const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&view=coverart&show-cover=0`;
 
                                                         try {
-                                                            toast.info('🎵 Setting Spotify cover song...');
+                                                            toast.info('Setting Spotify cover song...', { icon: TI.spotify });
 
                                                             // Prepare Spotify track data
                                                             const spotifyTrackData = {
@@ -2027,7 +2118,7 @@ const SettingsSidebar = ({
 
                                                             input.value = '';
 
-                                                            toast.success('✅ Spotify cover song set successfully!');
+                                                            toast.success('Spotify cover song set successfully!', { icon: TI.success });
 
                                                             // Force immediate refresh
                                                             setTimeout(() => {
@@ -2036,7 +2127,7 @@ const SettingsSidebar = ({
 
                                                         } catch (error) {
                                                             console.error('Error setting Spotify cover song:', error);
-                                                            toast.error('❌ Failed to set Spotify cover song. Please try again.');
+                                                            toast.error('Failed to set Spotify cover song. Please try again.', { icon: TI.error });
                                                         }
                                                     }}
                                                 >
@@ -2174,7 +2265,7 @@ const SettingsSidebar = ({
 
                                                 if (userConfirmed) {
                                                     try {
-                                                        toast.info('🔄 Removing cover media...');
+                                                        toast.info('Removing cover media...', { icon: TI.remove });
 
                                                         // Delete all cover media data from Firebase
                                                         await updateDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -2193,7 +2284,7 @@ const SettingsSidebar = ({
                                                         localStorage.removeItem('coverVideoType');
                                                         localStorage.removeItem('spotifyTrackData');
 
-                                                        toast.success('✅ Cover media removed successfully!');
+                                                        toast.success('Cover media removed successfully!', { icon: TI.remove });
 
                                                         // Close settings modal
                                                         onClose();
@@ -2205,7 +2296,7 @@ const SettingsSidebar = ({
 
                                                     } catch (error) {
                                                         console.error('Error removing cover media:', error);
-                                                        toast.error('❌ Failed to remove cover media. Please try again.');
+                                                        toast.error('Failed to remove cover media. Please try again.', { icon: TI.error });
                                                     }
                                                 }
                                             }}
@@ -2279,7 +2370,7 @@ const SettingsSidebar = ({
                                         try {
                                             navigate('/rooms');
                                             onClose();
-                                            toast.success('🏠 Going to Rooms!');
+                                            toast.success('Going to Rooms!', { icon: TI.home });
                                         } catch (error) {
                                             console.error('Navigation error:', error);
                                             toast.error('Failed to navigate to Rooms');
@@ -2300,7 +2391,7 @@ const SettingsSidebar = ({
                                         try {
                                             navigate('/welcome');
                                             onClose();
-                                            toast.success('🏠 Going to Dashboard!');
+                                            toast.success('Going to Dashboard!', { icon: TI.home });
                                         } catch (error) {
                                             console.error('Navigation error:', error);
                                             toast.error('Failed to navigate to Dashboard');
@@ -2322,19 +2413,19 @@ const SettingsSidebar = ({
                                             if (window.handleViewProfile && typeof window.handleViewProfile === 'function') {
                                                 window.handleViewProfile(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('👤 Profile modal opened!');
+                                                toast.success('Profile modal opened!', { icon: TI.success });
                                                 return;
                                             }
                                             if (window.setProfileUser && typeof window.setProfileUser === 'function') {
                                                 window.setProfileUser(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('👤 Profile modal opened!');
+                                                toast.success('Profile modal opened!', { icon: TI.success });
                                                 return;
                                             }
                                             if (onOpenProfile && typeof onOpenProfile === 'function') {
                                                 onOpenProfile(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('👤 Profile modal opened!');
+                                                toast.success('Profile modal opened!', { icon: TI.success });
                                                 return;
                                             }
                                             console.warn('Profile modal function not found');
@@ -2360,7 +2451,7 @@ const SettingsSidebar = ({
                                             try {
                                                 navigate('/admin-panel');
                                                 onClose();
-                                                toast.success('🛡️ Opening Admin Panel!');
+                                                toast.success('Opening Admin Panel!', { icon: TI.lock });
                                             } catch (error) {
                                                 console.error('Navigation error:', error);
                                                 toast.error('Failed to open Admin Panel');
@@ -2390,7 +2481,7 @@ const SettingsSidebar = ({
                                     className="modern-quick-btn"
                                     onClick={() => {
                                         handleSettingChange('soundEnabled', !settings.soundEnabled);
-                                        toast.success(settings.soundEnabled ? '🔇 Sounds disabled' : '🔊 Sounds enabled');
+                                        toast.success(settings.soundEnabled ? 'Sounds disabled' : 'Sounds enabled', { icon: settings.soundEnabled ? TI.soundOff : TI.soundOn });
                                     }}
                                     title={settings.soundEnabled ? 'Mute Sounds' : 'Enable Sounds'}
                                 >
@@ -2414,7 +2505,7 @@ const SettingsSidebar = ({
                                     className="modern-quick-btn"
                                     onClick={() => {
                                         handleSettingChange('compactMode', !settings.compactMode);
-                                        toast.success(settings.compactMode ? '📱 Normal view enabled' : '🔥 Compact mode enabled');
+                                        toast.success(settings.compactMode ? 'Normal view enabled' : 'Compact mode enabled', { icon: TI.scroll });
                                     }}
                                     title={settings.compactMode ? 'Normal View' : 'Compact View'}
                                 >
@@ -2433,7 +2524,7 @@ const SettingsSidebar = ({
                                     className="modern-quick-btn rectangular"
                                     onClick={() => {
                                         handleSettingChange('autoScrollChat', !settings.autoScrollChat);
-                                        toast.success(settings.autoScrollChat ? '📜 Auto-scroll disabled' : '🚀 Auto-scroll enabled');
+                                        toast.success(settings.autoScrollChat ? 'Auto-scroll disabled' : 'Auto-scroll enabled', { icon: settings.autoScrollChat ? TI.scroll : TI.rocket });
                                     }}
                                     title={settings.autoScrollChat ? 'Disable Auto Scroll' : 'Enable Auto Scroll'}
                                 >
@@ -2447,7 +2538,7 @@ const SettingsSidebar = ({
                                     className="modern-quick-btn"
                                     onClick={() => {
                                         handleSettingChange('showTimestamps', !settings.showTimestamps);
-                                        toast.success(settings.showTimestamps ? '🕐 Timestamps hidden' : '⏰ Timestamps shown');
+                                        toast.success(settings.showTimestamps ? 'Timestamps hidden' : 'Timestamps shown', { icon: TI.info });
                                     }}
                                     title={settings.showTimestamps ? 'Hide Timestamps' : 'Show Timestamps'}
                                 >
@@ -2510,7 +2601,7 @@ const SettingsSidebar = ({
                                         className="modern-nav-btn rectangular feature"
                                         onClick={() => {
                                             setShowWarningModal(true);
-                                            toast.info('📢 Opening Warning/Announcement Creator');
+                                            toast.info('Opening Warning/Announcement Creator', { icon: TI.announce });
                                         }}
                                         title="Create Warning or Announcement"
                                     >
@@ -2525,7 +2616,7 @@ const SettingsSidebar = ({
                                         className="modern-nav-btn admin"
                                         onClick={() => {
                                             setShowWarningManager(true);
-                                            toast.info('📊 Opening Alert Manager');
+                                            toast.info('Opening Alert Manager', { icon: TI.announce });
                                         }}
                                         title="Manage Warnings and Announcements"
                                     >
@@ -2575,7 +2666,7 @@ const SettingsSidebar = ({
                                         onClick={() => {
                                             const confirmed = window.confirm('⚠️ Are you sure you want to clear the entire chat? This action cannot be undone!');
                                             if (confirmed) {
-                                                toast.success('🧹 Chat clearing initiated...');
+                                                toast.success('Chat clearing initiated...', { icon: TI.clear });
                                                 onClose();
                                             }
                                         }}
@@ -2593,7 +2684,7 @@ const SettingsSidebar = ({
                                         onClick={() => {
                                             const confirmed = window.confirm('⚠️ Are you sure you want to perform advanced admin actions?');
                                             if (confirmed) {
-                                                toast.info('🛠️ Advanced admin features coming soon!');
+                                                toast.info('Advanced admin features coming soon!', { icon: TI.info });
                                                 onClose();
                                             }
                                         }}
@@ -3299,6 +3390,23 @@ const SettingsSidebar = ({
                             <span>Account</span>
                         </button>
 
+                        {/* Team tab — visible to all */}
+                        <button
+                            className={`settings-tab ${activeTab === 'team' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('team')}
+                            title="Team"
+                        >
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                <line x1="19" y1="8" x2="19" y2="14"/>
+                                <line x1="22" y1="11" x2="16" y2="11"/>
+                            </svg>
+                            <span>Team</span>
+                        </button>
+
                         {/* TingleBot tab — owner only */}
                         {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && (
                             <button
@@ -3341,7 +3449,7 @@ const SettingsSidebar = ({
                     onClose={() => setShowEditProfileModal(false)}
                     onSuccess={() => {
                         setShowEditProfileModal(false);
-                        toast.success('✅ Profile updated successfully!');
+                        toast.success('Profile updated successfully!', { icon: TI.success });
                         setTimeout(() => {
                             window.location.reload();
                         }, 1000);
