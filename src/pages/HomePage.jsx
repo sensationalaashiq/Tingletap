@@ -31,6 +31,7 @@ import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
 import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
+import TingleBotNotification from '../components/TingleBotNotification';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
@@ -1045,7 +1046,76 @@ const HomePage = ({ user }) => {
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
-    
+
+    // TingleBot community rules engine refs
+    const lastRuleIndexRef = useRef(-1);
+    const lastChatActivityRef = useRef(Date.now());
+    const ruleIntervalRef = useRef(null);
+
+    // Update last activity whenever messages change
+    useEffect(() => {
+        if (messages.length > 0) {
+            const last = messages[messages.length - 1];
+            // Don't count TingleBot messages as "activity"
+            if (!last.isBot && last.uid !== 'tinglebot_system_official_2024' && !last.systemBot) {
+                lastChatActivityRef.current = Date.now();
+            }
+        }
+    }, [messages]);
+
+    // Community rules auto-posting effect
+    useEffect(() => {
+        if (!roomId) return;
+
+        const COMMUNITY_RULES = [
+            'Be respectful to everyone. No hate speech, slurs, or personal attacks.',
+            'Keep conversations civil. Disagreements are fine — disrespect is not.',
+            'No spam, flooding, or excessive self-promotion in the chat.',
+            'Protect your privacy. Never share personal info like addresses or phone numbers.',
+            'Follow moderator instructions. Abuse of chat may result in a temporary mute.',
+        ];
+
+        const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+        const IDLE_MIN_MS = 20 * 1000;       // 20 seconds idle minimum
+        const IDLE_MAX_MS = 30 * 1000;       // 30 seconds idle max check
+        const MIN_ONLINE   = 5;
+
+        const tryPostRule = async () => {
+            // Check 5+ users online in room
+            const usersInRoom = window.onlineUsers ? window.onlineUsers.size : 0;
+            if (usersInRoom < MIN_ONLINE) return;
+
+            // Check idle window (20–30 sec of no user messages)
+            const idleMs = Date.now() - lastChatActivityRef.current;
+            if (idleMs < IDLE_MIN_MS || idleMs > IDLE_MAX_MS) return;
+
+            // Pick next rule (no consecutive repeat)
+            let nextIdx;
+            do {
+                nextIdx = Math.floor(Math.random() * COMMUNITY_RULES.length);
+            } while (nextIdx === lastRuleIndexRef.current && COMMUNITY_RULES.length > 1);
+            lastRuleIndexRef.current = nextIdx;
+
+            try {
+                await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                    text: COMMUNITY_RULES[nextIdx],
+                    uid: 'tinglebot_system_official_2024',
+                    displayName: 'TingleBot',
+                    isBot: true,
+                    systemBot: true,
+                    tinglebotType: 'rule',
+                    createdAt: serverTimestamp(),
+                    noReply: true,
+                    noReaction: true,
+                    noReport: true,
+                    noUnread: true,
+                });
+            } catch (_) {}
+        };
+
+        ruleIntervalRef.current = setInterval(tryPostRule, INTERVAL_MS);
+        return () => clearInterval(ruleIntervalRef.current);
+    }, [roomId]);
 
     // Helper function for private message avatar cache busting - DEFINE FIRST
     const getPrivateMessageAvatarUrl = useCallback((user) => {
@@ -2656,6 +2726,8 @@ const HomePage = ({ user }) => {
                     role: fs.role || p.role,
                     country: fs.country || p.country,
                     friends: fs.friends,
+                    status: fs.status || '',
+                    statusStyles: fs.statusStyles || null,
                     statusMessage: fs.statusMessage,
                     statusColor: fs.statusColor,
                     statusStyle: fs.statusStyle,
@@ -6314,7 +6386,16 @@ const HomePage = ({ user }) => {
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
                             return true;
-                        }).map((msg, index) => (
+                        }).map((msg, index) => {
+                            // TingleBot messages render as premium notification strips
+                            const isTingleBot = msg.isBot ||
+                                msg.uid === 'tinglebot_system_official_2024' ||
+                                msg.systemBot ||
+                                msg.type?.includes('tinglebot');
+                            if (isTingleBot) {
+                                return <TingleBotNotification key={msg.id} message={msg} />;
+                            }
+                            return (
                             <ChatMessage
                                 key={msg.id}
                                 message={msg}
@@ -6333,7 +6414,8 @@ const HomePage = ({ user }) => {
                                 openDropdownId={openDropdownId}
                                 setOpenDropdownId={handleSetOpenDropdownId}
                             />
-                        ))}
+                            );
+                        })}
                         </main>
                     
 
@@ -6676,196 +6758,189 @@ const HomePage = ({ user }) => {
                 />
 
 
-                {/* Ultra Modern Profile Modal */}
+                {/* Premium View Profile Modal */}
                 {profileUser && (
-                    <div className="ultra-modern-profile-overlay" onClick={() => setProfileUser(null)}>
-                        <div className="ultra-modern-profile-modal" onClick={e => e.stopPropagation()}>
-                            {/* Header with gradient background */}
-                            <div className="ultra-profile-header">
-                                <div className="ultra-header-gradient"></div>
-                                <button className="ultra-close-btn" onClick={() => setProfileUser(null)}>
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                    <div className="vpm-overlay" onClick={() => setProfileUser(null)}>
+                        <div className="vpm-modal" onClick={e => e.stopPropagation()}>
+
+                            {/* ── Header ── */}
+                            <div className="vpm-header">
+                                <button className="vpm-close" onClick={() => setProfileUser(null)}>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12Z"/>
                                     </svg>
                                 </button>
 
-                                {/* Profile Main Info - Horizontal Layout */}
-                                <div className="ultra-profile-main">
-                                    {/* Avatar */}
-                                    <div className={`ultra-avatar-container ${getGenderBorderClass(profileUser)}`}>
-                                        <img 
-                                            src={profileUser.photoURL || `${getDefaultAvatarUrl(profileUser.uid, profileUser.gender)}`}
-                                            alt="Profile"
-                                            className="ultra-avatar"
-                                        />
-                                        <div className="ultra-gender-badge">
-                                            {profileUser.gender?.toLowerCase() === 'female' ? 
-                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="#ff69b4">
-                                                    <path d="M12,4A6,6 0 0,1 18,10C18,12.97 15.84,15.44 13,15.92V18H15V20H13V22H11V20H9V18H11V15.92C8.16,15.44 6,12.97 6,10A6,6 0 0,1 12,4Z"/>
-                                                </svg> :
-                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="#4fb3d4">
-                                                    <path d="M9,9C10.29,6.75 12.71,5.25 15.5,5.25C16.97,5.25 18.33,5.69 19.5,6.45C20.95,5.5 21.97,4.12 22,2.5C21.2,2.5 20.37,2.69 19.61,3.06C19.22,3.23 18.84,3.44 18.5,3.69C17.5,2.67 16.23,2 14.81,2C10.23,2 7,5.5 7,10C7,12.96 9.16,15.43 12,15.92V18H9V20H12V22H14V20H17V18H14V15.92C16.84,15.43 19,12.96 19,10C19,8.5 18.5,7.13 17.67,6L16.25,7.42C16.75,8.13 17,8.95 17,10C17,12.21 15.21,14 13,14H11C9.79,14 9,13.21 9,12V9Z"/>
-                                                </svg>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    {/* Name and Badge Section */}
-                                    <div className="ultra-name-section">
-                                        <div className="ultra-name-row">
-                                            <h3 className="ultra-profile-name">{profileUser.displayName || 'Anonymous'}</h3>
-                                            {profileUser.badge && badges[profileUser.badge] && (
-                                                <div className="ultra-badge-container" title={badges[profileUser.badge].name}>
-                                                    <div dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {profileUser.status && (
-                                            <div className="ultra-profile-status">
-                                                {profileUser.status}
-                                            </div>
+                                {/* Avatar – centred, full, no overlaps */}
+                                <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}>
+                                    <img
+                                        className="vpm-avatar"
+                                        src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)}
+                                        alt="Profile"
+                                    />
+                                    <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
+                                    <span className="vpm-gender-badge">
+                                        {profileUser.gender?.toLowerCase() === 'female' ? (
+                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#ec4899"><path d="M12,4A6,6 0 0,1 18,10C18,12.97 15.84,15.44 13,15.92V18H15V20H13V22H11V20H9V18H11V15.92C8.16,15.44 6,12.97 6,10A6,6 0 0,1 12,4Z"/></svg>
+                                        ) : profileUser.gender?.toLowerCase() === 'transgender' ? (
+                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#a78bfa"><path d="M17,2H21V6H19V4.41L16.12,7.29C16.69,8.1 17,9.04 17,10C17,12.08 15.72,13.86 13.91,14.63V17H16V19H13.91C13.44,20.17 12.32,21 11,21C9.68,21 8.56,20.17 8.09,19H6V17H8.09C7.42,15.35 6,14 4,14V12C7.18,12 9.58,14.35 9.95,17H12.09C12.35,16.44 12.76,15.96 13.26,15.62L10.59,12.95C10.4,12.98 10.2,13 10,13C7.24,13 5,10.76 5,8C5,5.24 7.24,3 10,3C12.76,3 15,5.24 15,8C15,8.8 14.8,9.56 14.44,10.22L17,12.78V11H19V15H15V13H15.55L13.17,10.62C12.77,11.15 12.26,11.58 11.67,11.83L14.41,14.57C14.82,14.28 15.28,14.05 15.78,13.92C15.92,12.77 16.35,11.71 17,10.83V8C17,4.69 14.31,2 11,2C7.69,2 5,4.69 5,8H3V6H5V4H3V2H7V4H5V6H5.07C5.35,5.28 5.83,4.65 6.45,4.17C7.4,3.44 8.62,3 10,3Z"/></svg>
+                                        ) : (
+                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#38bdf8"><path d="M9,9C10.29,6.75 12.71,5.25 15.5,5.25C16.97,5.25 18.33,5.69 19.5,6.45C20.95,5.5 21.97,4.12 22,2.5C21.2,2.5 20.37,2.69 19.61,3.06C19.22,3.23 18.84,3.44 18.5,3.69C17.5,2.67 16.23,2 14.81,2C10.23,2 7,5.5 7,10C7,12.96 9.16,15.43 12,15.92V18H9V20H12V22H14V20H17V18H14V15.92C16.84,15.43 19,12.96 19,10C19,8.5 18.5,7.13 17.67,6L16.25,7.42C16.75,8.13 17,8.95 17,10C17,12.21 15.21,14 13,14H11C9.79,14 9,13.21 9,12V9Z"/></svg>
                                         )}
-                                        <div className="ultra-status-row">
-                                            <div className={`ultra-status-indicator ${onlineUsers.has(profileUser.uid) ? 'online' : 'offline'}`}></div>
-                                            <span className="ultra-status-text">
-                                                {onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}
-                                            </span>
-                                        </div>
+                                    </span>
+                                </div>
+
+                                {/* Name + badge – nothing overlaps avatar */}
+                                <div className="vpm-name-row">
+                                    <span className="vpm-name">{profileUser.displayName || 'Anonymous'}</span>
+                                    {profileUser.badge && badges[profileUser.badge] && (
+                                        <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
+                                            dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
+                                    )}
+                                </div>
+
+                                {/* Status text – fully below name, never on DP */}
+                                {profileUser.status && (
+                                    <div className="vpm-status-text">
+                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="#8b5cf6" style={{flexShrink:0}}>
+                                            <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
+                                        </svg>
+                                        <span>{profileUser.status}</span>
                                     </div>
+                                )}
+
+                                {/* Online pill */}
+                                <div className={`vpm-online-pill ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`}>
+                                    <span className="vpm-pill-dot" />
+                                    <span>{onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}</span>
                                 </div>
                             </div>
 
-                            {/* Navigation Tabs */}
-                            <div className="ultra-profile-tabs">
-                                <button 
-                                    className={`ultra-tab ${activeProfileTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('info')}
-                                >
-                                    <svg viewBox="0 0 24 24" width="14" height="14">
-                                        <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                            {/* ── Tabs ── */}
+                            <div className="vpm-tabs">
+                                {/* Info */}
+                                <button className={`vpm-tab ${activeProfileTab === 'info' ? 'active' : ''}`}
+                                    onClick={() => setActiveProfileTab('info')}>
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                        <circle cx="12" cy="8" r="3.5" stroke="#6366f1" strokeWidth="1.8"/>
+                                        <path d="M4 20c0-4 3.58-6 8-6s8 2 8 6" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round"/>
                                     </svg>
-                                    Info
+                                    <span>Info</span>
                                 </button>
-                                <button 
-                                    className={`ultra-tab ${activeProfileTab === 'friends' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('friends')}
-                                >
-                                    <svg viewBox="0 0 24 24" width="14" height="14">
-                                        <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,6H4V4H6V6M10,6H8V4H10V6M6,10H4V8H6V10M10,10H8V8H10V10M6,14H4V12H6V14M10,14H8V12H10V14Z"/>
+                                {/* Friends */}
+                                <button className={`vpm-tab ${activeProfileTab === 'friends' ? 'active' : ''}`}
+                                    onClick={() => setActiveProfileTab('friends')}>
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                        <circle cx="9" cy="8" r="3" stroke="#10b981" strokeWidth="1.8"/>
+                                        <circle cx="16" cy="8" r="2.5" stroke="#10b981" strokeWidth="1.6"/>
+                                        <path d="M2 20c0-3.31 3.13-5 7-5s7 1.69 7 5" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round"/>
+                                        <path d="M18 14c2 .5 4 1.8 4 4" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round"/>
                                     </svg>
-                                    Friends
+                                    <span>Friends</span>
                                 </button>
-                                <button 
-                                    className={`ultra-tab ${activeProfileTab === 'bio' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('bio')}
-                                >
-                                    <svg viewBox="0 0 24 24" width="14" height="14">
-                                        <path d="M19,3H5C3.9,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.9 20.1,3 19,3M19,19H5V5H19V19Z"/>
+                                {/* Bio */}
+                                <button className={`vpm-tab ${activeProfileTab === 'bio' ? 'active' : ''}`}
+                                    onClick={() => setActiveProfileTab('bio')}>
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                        <rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#f59e0b" strokeWidth="1.8"/>
+                                        <path d="M8 8h8M8 12h6M8 16h4" stroke="#f59e0b" strokeWidth="1.6" strokeLinecap="round"/>
                                     </svg>
-                                    Bio
+                                    <span>Bio</span>
                                 </button>
-                                <button 
-                                    className={`ultra-tab ${activeProfileTab === 'activity' ? 'active' : ''}`}
-                                    onClick={() => setActiveProfileTab('activity')}
-                                >
-                                    <svg viewBox="0 0 24 24" width="14" height="14">
-                                        <path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                {/* Activity */}
+                                <button className={`vpm-tab ${activeProfileTab === 'activity' ? 'active' : ''}`}
+                                    onClick={() => setActiveProfileTab('activity')}>
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                        <path d="M2 12h3l2.5-7 3 14 2.5-9L15 14h2.5L20 8l2 4" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
-                                    Activity
+                                    <span>Activity</span>
                                 </button>
                             </div>
 
-                            {/* Content Area */}
-                            <div className="ultra-profile-content">
-                                {/* Info Tab Content */}
+                            {/* ── Content ── */}
+                            <div className="vpm-content">
+
+                                {/* INFO */}
                                 {activeProfileTab === 'info' && (
-                                    <>
-                                        <div className="ultra-info-grid">
-                                            <div className="ultra-info-card">
-                                                <div className="ultra-info-label">Gender</div>
-                                                <div className="ultra-info-value">{profileUser.gender || 'Not Set'}</div>
+                                    <div className="vpm-info-wrap">
+                                        <div className="vpm-info-grid">
+                                            <div className="vpm-info-card">
+                                                <div className="vpm-ic-icon" style={{background:'#ede9fe'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#7c3aed"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                                                </div>
+                                                <div className="vpm-ic-label">Gender</div>
+                                                <div className="vpm-ic-value">{profileUser.gender || 'Not Set'}</div>
                                             </div>
-                                            <div className="ultra-info-card">
-                                                <div className="ultra-info-label">Role</div>
-                                                <div className="ultra-info-value">{profileUser.role || 'User'}</div>
+                                            <div className="vpm-info-card">
+                                                <div className="vpm-ic-icon" style={{background:'#dbeafe'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#2563eb"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
+                                                </div>
+                                                <div className="vpm-ic-label">Role</div>
+                                                <div className="vpm-ic-value" style={{textTransform:'capitalize'}}>{profileUser.role || 'User'}</div>
                                             </div>
-                                            <div className="ultra-info-card">
-                                                <div className="ultra-info-label">Country</div>
-                                                <div className="ultra-info-value">{profileUser.country || 'Unknown'}</div>
+                                            <div className="vpm-info-card">
+                                                <div className="vpm-ic-icon" style={{background:'#d1fae5'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#059669"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                                </div>
+                                                <div className="vpm-ic-label">Country</div>
+                                                <div className="vpm-ic-value">{profileUser.country || 'Unknown'}</div>
                                             </div>
-                                            <div className="ultra-info-card">
-                                                <div className="ultra-info-label">Profession</div>
-                                                <div className="ultra-info-value">{profileUser.profession || 'Not Set'}</div>
+                                            <div className="vpm-info-card">
+                                                <div className="vpm-ic-icon" style={{background:'#fef3c7'}}>
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#d97706"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.35C18 2.54 15.96.5 13.43.5c-1.3 0-2.5.52-3.4 1.36L12 3.85l1.96-1.98c.52-.53 1.2-.87 1.96-.87 1.51 0 2.58 1.22 2.58 2.65 0 1.08-.75 2.03-1.88 2.35L16 6H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+                                                </div>
+                                                <div className="vpm-ic-label">Profession</div>
+                                                <div className="vpm-ic-value">{profileUser.profession || 'Not Set'}</div>
                                             </div>
                                         </div>
-                                        
-                                        <div className="ultra-action-buttons">
-                                            {(() => {
-                                                const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
-                                                const profileTargetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
-                                                const canShowMsg = !(viewerIsGuest && !profileTargetIsGuest);
-                                                return canShowMsg ? (
-                                                    <button 
-                                                        className="ultra-action-btn primary"
-                                                        onClick={() => handlePrivateMessage(profileUser)}
-                                                    >
-                                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                                        </svg>
-                                                        Message
-                                                    </button>
-                                                ) : null;
-                                            })()}
-                                        </div>
-                                    </>
+
+                                        {/* Message button */}
+                                        {(() => {
+                                            const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+                                            const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
+                                            const canMsg = !(viewerIsGuest && !targetIsGuest);
+                                            return canMsg ? (
+                                                <button className="vpm-msg-btn" onClick={() => { handlePrivateMessage(profileUser); setProfileUser(null); }}>
+                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                    Send Message
+                                                </button>
+                                            ) : null;
+                                        })()}
+                                    </div>
                                 )}
 
-                                {/* Friends Tab Content */}
+                                {/* FRIENDS */}
                                 {activeProfileTab === 'friends' && (
-                                    <div className="ultra-friends-section">
-                                        <div className="ultra-friends-header">
-                                            <h4>Friends</h4>
-                                            <span className="ultra-friends-count">{friendsProfiles.length}</span>
+                                    <div className="vpm-friends-wrap">
+                                        <div className="vpm-friends-header">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="#10b981"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                            <span>Friends</span>
+                                            <span className="vpm-friends-count">{friendsProfiles.length}</span>
                                         </div>
                                         {loadingFriends ? (
-                                            <div className="ultra-loading-friends">
-                                                <div className="loading-spinner"></div>
-                                                <p>Loading friends...</p>
-                                            </div>
+                                            <div className="vpm-empty"><div className="loading-spinner" style={{width:24,height:24}} /><p>Loading…</p></div>
                                         ) : friendsProfiles.length === 0 ? (
-                                            <div className="ultra-empty-friends">
-                                                <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor" opacity="0.3">
-                                                    <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,6H4V4H6V6M10,6H8V4H10V6M6,10H4V8H6V10M10,10H8V8H10V10M6,14H4V12H6V14M10,14H8V12H10V14Z"/>
-                                                </svg>
-                                                <p>No Friends Yet</p>
-                                                <small>Friends list will appear here when available</small>
+                                            <div className="vpm-empty">
+                                                <svg viewBox="0 0 24 24" width="36" height="36" fill="#c4b5fd"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                                <p>No friends yet</p>
                                             </div>
                                         ) : (
-                                            <div className="ultra-friends-list">
-                                                {friendsProfiles.map((friend) => (
-                                                    <div key={friend.uid} className="ultra-friend-item">
-                                                        <div className={`ultra-friend-avatar ${getGenderBorderClass(friend)}`}>
-                                                            <img 
-                                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.uid, friend.gender)}`}
-                                                                alt="Friend avatar"
-                                                            />
-                                                            <div className={`ultra-friend-status ${onlineUsers.has(friend.uid) ? 'online' : 'offline'}`}></div>
+                                            <div className="vpm-friends-list">
+                                                {friendsProfiles.map(fr => (
+                                                    <div key={fr.uid} className="vpm-friend-row">
+                                                        <div className={`vpm-friend-av ${getGenderBorderClass(fr)}`}>
+                                                            <img src={fr.photoURL || getDefaultAvatarUrl(fr.uid, fr.gender)} alt="friend" />
+                                                            <span className={`vpm-friend-dot ${onlineUsers.has(fr.uid) ? 'online' : ''}`} />
                                                         </div>
-                                                        <div className="ultra-friend-info">
-                                                            <div className="ultra-friend-name">{friend.displayName}</div>
-                                                            <div className="ultra-friend-role">{friend.role || 'User'}</div>
+                                                        <div className="vpm-friend-info">
+                                                            <span className="vpm-friend-name">{fr.displayName}</span>
+                                                            <span className="vpm-friend-role">{fr.role || 'User'}</span>
                                                         </div>
-                                                        <div className="ultra-friend-actions">
-                                                            <button 
-                                                                className="ultra-friend-action-btn message"
-                                                                onClick={() => handlePrivateMessage(friend)}
-                                                                title="Message"
-                                                            >
-                                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                                                                    <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                                                </svg>
-                                                            </button>
-                                                        </div>
+                                                        <button className="vpm-friend-msg" title="Message" onClick={() => handlePrivateMessage(fr)}>
+                                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
@@ -6873,31 +6948,40 @@ const HomePage = ({ user }) => {
                                     </div>
                                 )}
 
-                                {/* Bio Tab Content */}
+                                {/* BIO */}
                                 {activeProfileTab === 'bio' && (
-                                    <div className="ultra-bio-section">
-                                        <div className="ultra-info-card" style={{textAlign: 'center', marginBottom: '0'}}>
-                                            <div className="ultra-info-label">About Me</div>
-                                            <div className="ultra-info-value" style={{fontStyle: 'italic', fontSize: '0.9rem', lineHeight: '1.5'}}>
-                                                {profileUser.bio || 'No bio available'}
-                                            </div>
+                                    <div className="vpm-bio-wrap">
+                                        <div className="vpm-bio-icon">
+                                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                                                <rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#f59e0b" strokeWidth="1.8"/>
+                                                <path d="M8 8h8M8 12h6M8 16h4" stroke="#f59e0b" strokeWidth="1.6" strokeLinecap="round"/>
+                                            </svg>
                                         </div>
+                                        <p className="vpm-bio-text">{profileUser.bio || 'No bio written yet.'}</p>
                                     </div>
                                 )}
 
-                                {/* Activity Tab Content */}
+                                {/* ACTIVITY */}
                                 {activeProfileTab === 'activity' && (
-                                    <div className="ultra-activity-section">
-                                        <div className="ultra-info-card">
-                                            <div className="ultra-info-label">Join Date</div>
-                                            <div className="ultra-info-value">
-                                                {profileUser.createdAt ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt).toLocaleDateString() : 'Unknown'}
+                                    <div className="vpm-activity-wrap">
+                                        <div className="vpm-activity-row">
+                                            <div className="vpm-act-icon" style={{background:'#ede9fe'}}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#7c3aed"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .89-2 2v16c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 18H5V8h14v13z"/></svg>
+                                            </div>
+                                            <div>
+                                                <div className="vpm-act-label">Joined</div>
+                                                <div className="vpm-act-value">
+                                                    {profileUser.createdAt ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : 'Unknown'}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="ultra-info-card" style={{marginTop: '12px'}}>
-                                            <div className="ultra-info-label">Last Seen</div>
-                                            <div className="ultra-info-value">
-                                                {onlineUsers.has(profileUser.uid) ? 'Online Now' : 'Recently'}
+                                        <div className="vpm-activity-row">
+                                            <div className="vpm-act-icon" style={{background:'#d1fae5'}}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#059669"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                                            </div>
+                                            <div>
+                                                <div className="vpm-act-label">Last Seen</div>
+                                                <div className="vpm-act-value">{onlineUsers.has(profileUser.uid) ? 'Online Now' : 'Recently'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -6905,7 +6989,6 @@ const HomePage = ({ user }) => {
                             </div>
                         </div>
                     </div>
-                
                 )}
 
 
