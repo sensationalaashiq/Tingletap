@@ -586,8 +586,10 @@ const Sidebar = ({
             /* USERS TAB */
             <ul className="sb-user-list">
               {filteredUsers.map(userItem => {
-                const isSelf    = user?.uid === userItem.uid;
-                const isOnline  = window.onlineUsers?.has(userItem.uid) || window.userOnlineStatuses?.[userItem.uid]?.state === 'online' || userItem.isOnline;
+                const isSelf       = user?.uid === userItem.uid;
+                const statusEntry  = window.userOnlineStatuses?.[userItem.uid];
+                const isOnline     = (window.onlineUsers?.has(userItem.uid) || statusEntry?.state === 'online' || userItem.isOnline)
+                                   && statusEntry?.showOnlineStatus !== false;
                 const isGuest   = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous;
                 const tIsGuest  = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
                 const tIsStaff  = ['owner','admin','moderator'].includes(userItem.role?.toLowerCase());

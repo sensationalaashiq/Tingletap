@@ -9,7 +9,7 @@ import {
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust } from '../utils/trustSystem';
-import { ref, set, remove, onValue, onDisconnect, get } from 'firebase/database';
+import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
@@ -1200,74 +1200,101 @@ const HomePage = ({ user }) => {
     
 
 
-    // Audio notification functions - Only for administrative actions
+    // ── Notification Sound Engine ─────────────────────────────────────────────
+    // Each event type has a unique multi-note signature so users can identify
+    // events by ear. Volume obeys the notificationVolume slider (0–100).
     const playNotificationSound = async (soundType) => {
         try {
-            let frequency, duration, type;
-            
-            // Only allow administrative action sounds
-            switch(soundType) {
+            const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+            if (!soundEnabled) return;
+
+            const vol = Math.min(1, Math.max(0,
+                parseInt(localStorage.getItem('notificationVolume') || '70') / 100
+            ));
+            const check = (key) => localStorage.getItem(key) !== 'false';
+
+            // notes: [{f: frequency, t: startOffset, d: duration, w: waveform}]
+            let notes;
+            switch (soundType) {
+                case 'message':
+                    if (!check('messageNotifications')) return;
+                    // Light two-note ascending "pop"
+                    notes = [
+                        { f: 523, t: 0,    d: 0.12, w: 'sine' },
+                        { f: 659, t: 0.10, d: 0.14, w: 'sine' },
+                    ];
+                    break;
+                case 'whisper':
+                    if (!check('whisperNotifications')) return;
+                    // Soft three-note rising chime — mysterious
+                    notes = [
+                        { f: 880,  t: 0,    d: 0.09, w: 'sine' },
+                        { f: 1047, t: 0.08, d: 0.09, w: 'sine' },
+                        { f: 1319, t: 0.16, d: 0.13, w: 'sine' },
+                    ];
+                    break;
+                case 'privateMessage':
+                    if (!check('privateMessageNotifications')) return;
+                    // Warm two-note "bubble" — triangle wave for depth
+                    notes = [
+                        { f: 698, t: 0,    d: 0.13, w: 'triangle' },
+                        { f: 880, t: 0.11, d: 0.15, w: 'triangle' },
+                    ];
+                    break;
                 case 'friendRequest':
-                    // Happy ding for friend requests
-                    frequency = 1000;
-                    duration = 0.4;
-                    type = 'sine';
+                    if (!check('friendRequestNotifications')) return;
+                    // Uplifting three-note ascending fanfare
+                    notes = [
+                        { f: 523, t: 0,    d: 0.11, w: 'sine' },
+                        { f: 659, t: 0.09, d: 0.11, w: 'sine' },
+                        { f: 784, t: 0.18, d: 0.18, w: 'sine' },
+                    ];
+                    break;
+                case 'mention':
+                    if (!check('mentionNotifications')) return;
+                    // Attention-grabbing ping-pong double chime
+                    notes = [
+                        { f: 1047, t: 0,    d: 0.13, w: 'sine' },
+                        { f: 1319, t: 0.11, d: 0.13, w: 'sine' },
+                        { f: 1047, t: 0.22, d: 0.18, w: 'sine' },
+                    ];
                     break;
                 case 'roomEnter':
-                    // Welcome tone for room entry
-                    frequency = 440;
-                    duration = 0.5;
-                    type = 'sine';
-                    break;
-                case 'adminAction':
-                    // Sound for admin actions like kick/ban/mute
-                    frequency = 900;
-                    duration = 0.3;
-                    type = 'square';
+                    // Welcome chime — always plays regardless of individual toggles
+                    notes = [
+                        { f: 440, t: 0,    d: 0.14, w: 'sine' },
+                        { f: 554, t: 0.12, d: 0.14, w: 'sine' },
+                        { f: 659, t: 0.24, d: 0.22, w: 'sine' },
+                    ];
                     break;
                 default:
-                    // No sound for private messages, calls, whispers
                     return;
             }
 
-            // Check if AudioContext is supported
-            if (!window.AudioContext && !window.webkitAudioContext) {
-                return;
-            }
+            if (!window.AudioContext && !window.webkitAudioContext) return;
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') await ctx.resume();
 
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Resume context if suspended (required for autoplay policies)
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
-            
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+            notes.forEach(({ f, t, d, w }) => {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = w;
+                osc.frequency.value = f;
+                const s = ctx.currentTime + t;
+                gain.gain.setValueAtTime(0, s);
+                gain.gain.linearRampToValueAtTime(vol * 0.18, s + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, s + d);
+                osc.start(s);
+                osc.stop(s + d + 0.01);
+            });
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-            oscillator.type = type;
-
-            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + duration);
-            
-            // Clean up after sound finishes
-            setTimeout(() => {
-                try {
-                    audioContext.close();
-                } catch (e) {
-                }
-            }, duration * 1000 + 100);
-        } catch (error) {
-        }
+            setTimeout(() => { try { ctx.close(); } catch (_) {} }, 900);
+        } catch (_) {}
     };
+    // Expose globally so SettingsSidebar preview button can trigger a test sound
+    window.playNotificationSound = playNotificationSound;
 
     
 
@@ -1932,8 +1959,11 @@ const HomePage = ({ user }) => {
                 isGuest: isGuest || false,
                 photoURL: loggedInUserProfile.photoURL || `${getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender)}`,
                 badge: loggedInUserProfile.badge || null,
-                uid: currentUid
+                uid: currentUid,
+                showOnlineStatus: loggedInUserProfile.settings?.showOnlineStatus !== false
             };
+            // Store for the updateOnlineStatusVisibility helper
+            window._currentStatusData = { ...statusData };
             
             // Store comprehensive device info in Firestore for persistence (only for registered users)
             if (!isGuest && user) {
@@ -2107,6 +2137,8 @@ const HomePage = ({ user }) => {
             where('participants', 'array-contains', currentUserId)
         );
 
+        let pmIsInitialLoad = true;
+        let prevPmUnreadTotal = 0;
         const unsubscribe = onSnapshot(
             q, 
             (snapshot) => {
@@ -2114,6 +2146,7 @@ const HomePage = ({ user }) => {
                     if (!snapshot || snapshot.empty) {
                         setConversations([]);
                         setUnreadCounts({});
+                        pmIsInitialLoad = false;
                         return;
                     }
 
@@ -2184,6 +2217,14 @@ const HomePage = ({ user }) => {
                         }
                     });
 
+                    // Play PM notification sound when new unread messages arrive
+                    const newUnreadTotal = Object.values(unreadCountsMap).reduce((a, b) => a + b, 0);
+                    if (!pmIsInitialLoad && newUnreadTotal > prevPmUnreadTotal) {
+                        playNotificationSound('privateMessage');
+                    }
+                    prevPmUnreadTotal = newUnreadTotal;
+                    pmIsInitialLoad = false;
+
                     setConversations(Array.from(conversationsMap.values()));
                     setUnreadCounts(unreadCountsMap);
                 } catch (error) {
@@ -2250,11 +2291,32 @@ const HomePage = ({ user }) => {
                 navigate('/rooms', { replace: true });
             });
             const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(30));
+            let prevMsgCount = 0;
             const unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 const newMessages = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                
-                // Whisper messages - no notifications, just display
-                
+
+                // Play notification sounds for newly arriving messages (skip initial batch load)
+                if (prevMsgCount > 0 && newMessages.length > prevMsgCount) {
+                    const latest = newMessages[newMessages.length - 1];
+                    const myUid = auth.currentUser?.uid ||
+                        (localStorage.getItem('isGuest') === 'true'
+                            ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
+                            : null);
+                    if (latest && latest.uid !== myUid) {
+                        if (latest.isWhisper && latest.whisperTo === myUid) {
+                            playNotificationSound('whisper');
+                        } else if (!latest.isWhisper) {
+                            const myName = loggedInUserProfile?.displayName || '';
+                            if (myName && latest.text?.toLowerCase().includes(`@${myName.toLowerCase()}`)) {
+                                playNotificationSound('mention');
+                            } else {
+                                playNotificationSound('message');
+                            }
+                        }
+                    }
+                }
+                prevMsgCount = newMessages.length;
+
                 setMessages(newMessages);
             }, (error) => {
                 if (error.code === 'permission-denied') {
@@ -2314,6 +2376,10 @@ const HomePage = ({ user }) => {
     // Enhanced auto-scroll functionality with professional chat behavior
     const scrollToBottom = (force = false) => {
         if (!chatFeedRef.current) return;
+        // Respect the auto-scroll toggle unless this is a forced scroll
+        // (initial load, user's own sent message, or manual "scroll to bottom" click)
+        const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
+        if (!force && !autoScrollEnabled) return;
         
         const element = chatFeedRef.current;
         const scrollHeight = element.scrollHeight;
@@ -3550,11 +3616,35 @@ const HomePage = ({ user }) => {
         }
     };
 
-    const handleWhisperUser = (message) => {
+    const handleWhisperUser = async (message) => {
         if (blockedUsers.includes(message.uid) || usersWhoBlockedMe.includes(message.uid)) {
             toast.error("You cannot whisper to a blocked user");
             return;
         }
+        // Check if target has whisper messages disabled
+        try {
+            if (message.uid && !message.isGuest) {
+                const targetDoc = await getDoc(doc(db, 'users', message.uid));
+                if (targetDoc.exists()) {
+                    const targetSettings = targetDoc.data()?.settings || {};
+                    if (targetSettings.allowWhisperMessages === false) {
+                        toast(
+                            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                                <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(99,102,241,.35)'}}>
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>
+                                </div>
+                                <div>
+                                    <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Whispers Disabled</div>
+                                    <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#7c3aed'}}>{message.displayName}</span> has turned off whisper messages</div>
+                                </div>
+                            </div>,
+                            { style:{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',border:'1.5px solid rgba(99,102,241,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(99,102,241,.15)',padding:'10px 14px'},icon:false,autoClose:4000 }
+                        );
+                        return;
+                    }
+                }
+            }
+        } catch (_) {}
         setWhisperTarget({
             uid: message.uid,
             displayName: message.displayName
@@ -3621,6 +3711,29 @@ const HomePage = ({ user }) => {
                 toast.info("You are already friends with this user");
                 return;
             }
+
+            // Check if target has friend requests disabled
+            try {
+                const targetUserDoc = await getDoc(doc(db, 'users', user.uid));
+                if (targetUserDoc.exists()) {
+                    const targetSettings = targetUserDoc.data()?.settings || {};
+                    if (targetSettings.allowFriendRequests === false) {
+                        toast(
+                            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                                <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(245,158,11,.35)'}}>
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/></svg>
+                                </div>
+                                <div>
+                                    <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Friend Requests Off</div>
+                                    <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#d97706'}}>{user.displayName}</span> is not accepting friend requests right now</div>
+                                </div>
+                            </div>,
+                            { style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000 }
+                        );
+                        return;
+                    }
+                }
+            } catch (_) {}
             
             // Create new friend request
             const friendRequestData = {
@@ -3711,6 +3824,18 @@ const HomePage = ({ user }) => {
         window.handleWhisperFromSidebar = (user) => {
             handleWhisperUser({ uid: user.uid, displayName: user.displayName });
         };
+
+        // Allow SettingsSidebar to instantly update RTDB showOnlineStatus
+        window.updateOnlineStatusVisibility = async (show) => {
+            const uid = auth.currentUser?.uid;
+            if (!uid) return;
+            try {
+                await update(ref(rtdb, `status/${uid}`), { showOnlineStatus: show });
+                if (window._currentStatusData) {
+                    window._currentStatusData.showOnlineStatus = show;
+                }
+            } catch (_) {}
+        };
         
         // Cleanup function
         return () => {
@@ -3722,6 +3847,7 @@ const HomePage = ({ user }) => {
             delete window.handleWhisperFromSidebar;
             delete window.updateUserAvatarInHomePage;
             delete window.getPrivateMessageAvatarUrl;
+            delete window.updateOnlineStatusVisibility;
         };
     }, [handleAddFriend, updateUserAvatarInHomePage, getPrivateMessageAvatarUrl]);
 
@@ -3885,12 +4011,44 @@ const HomePage = ({ user }) => {
         // Check if the target user allows private messages from current user
         if (!canSendPrivateMessage(loggedInUserProfile, user)) {
             const userSetting = user.settings?.allowPrivateMessagesLevel || 'all';
+            const toastBody = (icon, title, subtitle, grad, border) => toast(
+                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                    <div style={{width:'36px',height:'36px',borderRadius:'50%',background:grad,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:`0 3px 10px ${border}40`}}>
+                        {icon}
+                    </div>
+                    <div>
+                        <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>{title}</div>
+                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>
+                            <span style={{fontWeight:700,color:border}}>{user.displayName}</span> {subtitle}
+                        </div>
+                    </div>
+                </div>,
+                { style:{background:'linear-gradient(135deg,#fef2f2,#fee2e2)',border:`1.5px solid ${border}50`,borderRadius:'14px',boxShadow:`0 8px 32px ${border}25`,padding:'10px 14px'},icon:false,autoClose:4000 }
+            );
             if (userSetting === 'none') {
-                toast.error(`${user.displayName} has disabled private messages`);
+                toastBody(
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>,
+                    'Messages Disabled',
+                    'has turned off private messages',
+                    'linear-gradient(135deg,#ef4444,#dc2626)',
+                    '#dc2626'
+                );
             } else if (userSetting === 'friends') {
-                toast.error(`${user.displayName} only accepts private messages from friends`);
+                toastBody(
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"/></svg>,
+                    'Friends Only',
+                    'only accepts messages from friends',
+                    'linear-gradient(135deg,#f59e0b,#d97706)',
+                    '#d97706'
+                );
             } else {
-                toast.error(`Cannot send private message to ${user.displayName}`);
+                toastBody(
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>,
+                    'Cannot Send Message',
+                    'cannot receive private messages right now',
+                    'linear-gradient(135deg,#ef4444,#dc2626)',
+                    '#dc2626'
+                );
             }
             return;
         }

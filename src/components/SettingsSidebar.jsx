@@ -368,11 +368,16 @@ const SettingsSidebar = ({
             }
 
             if (key === 'soundEnabled') {
-                console.log(value ? '🔊 Sounds enabled' : '🔇 Sounds disabled');
+                // nothing extra needed
             }
 
             if (key === 'notificationVolume') {
-                console.log(`🔊 Notification volume set to ${value}%`);
+                // nothing extra needed
+            }
+
+            // Immediately propagate Online Status change to RTDB so other users see it right away
+            if (key === 'showOnlineStatus') {
+                window.updateOnlineStatusVisibility?.(value);
             }
 
             if (key === 'micVolume') {
@@ -729,20 +734,6 @@ const SettingsSidebar = ({
                                 </label>
                             </div>
 
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Compact Mode</span>
-                                    <small>Reduce spacing between messages for a denser chat view</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.compactMode}
-                                        onChange={(e) => handleSettingChange('compactMode', e.target.checked)}
-                                    />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
 
                             </div>
 
@@ -877,6 +868,35 @@ const SettingsSidebar = ({
                                     <span className="modern-volume-value">{settings.notificationVolume}%</span>
                                 </div>
                             </div>
+
+                            <div className="modern-setting-item" style={{marginTop:'4px'}}>
+                                <div className="modern-setting-info">
+                                    <span>Test Notification Sound</span>
+                                    <small>Preview the message sound at current volume</small>
+                                </div>
+                                <button
+                                    className="modern-test-sound-btn"
+                                    disabled={!settings.soundEnabled}
+                                    onClick={() => window.playNotificationSound?.('message')}
+                                    style={{
+                                        padding:'6px 16px',
+                                        borderRadius:'8px',
+                                        border:'none',
+                                        background: settings.soundEnabled
+                                            ? 'linear-gradient(135deg,#6366f1,#7c3aed)'
+                                            : '#e5e7eb',
+                                        color: settings.soundEnabled ? '#fff' : '#9ca3af',
+                                        fontWeight:700,
+                                        fontSize:'12px',
+                                        cursor: settings.soundEnabled ? 'pointer' : 'not-allowed',
+                                        letterSpacing:'.3px',
+                                        boxShadow: settings.soundEnabled ? '0 2px 8px rgba(99,102,241,.35)' : 'none',
+                                        transition:'all .2s'
+                                    }}
+                                >
+                                    ▶ Test
+                                </button>
+                            </div>
                         </div>
 
                     </div>
@@ -910,20 +930,6 @@ const SettingsSidebar = ({
                                 </label>
                             </label>
 
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Show Typing Indicator</span>
-                                    <small>Show when you're typing</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.showTyping}
-                                        onChange={(e) => handleSettingChange('showTyping', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
 
                             <label className="setting-item">
                                 <div className="setting-info">
