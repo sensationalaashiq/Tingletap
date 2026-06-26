@@ -1054,6 +1054,8 @@ const HomePage = ({ user }) => {
     const [friends, setFriends] = useState([]);
     const [friendsProfiles, setFriendsProfiles] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
+    const [profileFriends, setProfileFriends] = useState([]);
+    const [loadingProfileFriends, setLoadingProfileFriends] = useState(false);
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
@@ -1483,6 +1485,27 @@ const HomePage = ({ user }) => {
             }
         }
     }, [newMessage]);
+
+    // Load friends for the profile being viewed (independent from logged-in user's friends)
+    useEffect(() => {
+        if (!profileUser?.uid) { setProfileFriends([]); return; }
+        const friendIds = (profileUser.friends || []).filter(Boolean);
+        if (!friendIds.length) { setProfileFriends([]); return; }
+        setLoadingProfileFriends(true);
+        const fetchProfileFriends = async () => {
+            try {
+                const profiles = [];
+                for (let i = 0; i < friendIds.length; i += 10) {
+                    const batch = friendIds.slice(i, i + 10);
+                    const snap = await getDocs(query(collection(db, 'users'), where('uid', 'in', batch)));
+                    snap.forEach(d => { if (d.exists()) profiles.push({ uid: d.id, ...d.data() }); });
+                }
+                setProfileFriends(profiles);
+            } catch { setProfileFriends([]); }
+            finally { setLoadingProfileFriends(false); }
+        };
+        fetchProfileFriends();
+    }, [profileUser?.uid, JSON.stringify(profileUser?.friends)]);
 
     // Real-time profile user updates
     useEffect(() => {
@@ -6782,8 +6805,11 @@ const HomePage = ({ user }) => {
                                 };
                                 const convertYouTube = (url) => {
                                     if (!url) return null;
-                                    const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-                                    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=0&rel=0` : null;
+                                    // Already an embed URL — use it directly
+                                    if (url.includes('youtube.com/embed/')) return url;
+                                    // Extract video ID from watch / short / share URLs
+                                    const m = url.match(/(?:v=|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})/);
+                                    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=0&controls=1&rel=0` : null;
                                 };
                                 const spotifyEmbed = convertSpotify(profileUser.spotifyTrackURL);
                                 const ytEmbed = convertYouTube(profileUser.coverVideoURL);
@@ -6823,7 +6849,7 @@ const HomePage = ({ user }) => {
                                 return null;
                             })()}
 
-                            {/* ── Header ── */}
+                            {/* ── Header: 2-col row — info left, avatar right ── */}
                             <div className="vpm-header">
                                 <button className="vpm-close" onClick={() => setProfileUser(null)}>
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -6831,142 +6857,63 @@ const HomePage = ({ user }) => {
                                     </svg>
                                 </button>
 
-                                {/* Avatar – centred, full, no overlaps */}
+                                {/* Left: all text info */}
+                                <div className="vpm-header-left">
+                                    {/* Name + badge */}
+                                    <div className="vpm-name-row">
+                                        <span className="vpm-name">{profileUser.displayName || 'Anonymous'}</span>
+                                        {profileUser.badge && badges[profileUser.badge] && (
+                                            <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
+                                                dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
+                                        )}
+                                    </div>
+
+                                    {/* Role pill */}
+                                    {(() => {
+                                        const rl = profileUser.role?.toLowerCase() || 'user';
+                                        const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
+                                        const pillMap = { owner:{bg:'#fef3c7',color:'#92400e'}, admin:{bg:'#ede9fe',color:'#5b21b6'}, moderator:{bg:'#dcfce7',color:'#15803d'}, user:{bg:'#f1f5f9',color:'#475569'}, guest:{bg:'#f9fafb',color:'#6b7280'} };
+                                        const pill = pillMap[rl] || pillMap.user;
+                                        return (
+                                            <div style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'2px 9px',borderRadius:'20px',background:pill.bg,border:`1px solid ${pill.color}40`,fontSize:'11px',fontWeight:700,color:pill.color,alignSelf:'flex-start'}}>
+                                                {rl==='owner'?<svg width="10" height="10" viewBox="0 0 24 24" fill="#92400e"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>:rl==='admin'?<svg width="10" height="10" viewBox="0 0 24 24" fill="#5b21b6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>:rl==='moderator'?<svg width="10" height="10" viewBox="0 0 24 24" fill="#15803d"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>:<span style={{width:6,height:6,borderRadius:'50%',background:pill.color,display:'inline-block'}}/>}
+                                                {roleLabel}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Status */}
+                                    {(() => {
+                                        const statusText = typeof profileUser.status === 'string' ? profileUser.status : (profileUser.status?.text || profileUser.status?.statusText || '');
+                                        if (!statusText) return null;
+                                        const ss = profileUser.statusStyles;
+                                        const PMAP = {'gold-foil':{background:'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'},'cosmic':{background:'linear-gradient(135deg,#8b5cf6,#ec4899)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'},'ember':{background:'linear-gradient(135deg,#f97316,#ef4444)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'},'arctic':{background:'linear-gradient(135deg,#38bdf8,#818cf8)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'},'rose-gold':{background:'linear-gradient(135deg,#f9a8d4,#d97706)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'},'matte-luxe':{color:'#2d2d2d',fontWeight:'600',letterSpacing:'0.5px'},'royal-script':{fontFamily:'Playfair Display, serif',color:'#1a1a1a',fontWeight:'700',fontStyle:'italic'},'velvet-shadow':{color:'#4a4a4a',fontWeight:'600',textShadow:'3px 3px 6px rgba(0,0,0,0.4)'},'minimal-mono':{fontFamily:'JetBrains Mono, monospace',color:'#333333',fontWeight:'500',letterSpacing:'1px'},'neon-glow':{color:'#39ff14',fontWeight:'700',textShadow:'0 0 7px #39ff14,0 0 14px #39ff14,0 0 21px #39ff14'},'ocean-wave':{background:'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)',WebkitBackgroundClip:'text',backgroundClip:'text',color:'transparent',fontWeight:'700',display:'inline-block'}};
+                                        const buildSS = (ss) => { if(!ss) return {}; const premBase=(ss.premiumStyle&&ss.premiumStyle!=='none')?(PMAP[ss.premiumStyle]||{}):{};const s={...premBase};if(!premBase.color&&!premBase.background){if(ss.gradientEnabled){s.background=`linear-gradient(${ss.gradientDirection||'to right'},${ss.gradientStart||'#667eea'},${ss.gradientEnd||'#764ba2'})`;s.WebkitBackgroundClip='text';s.backgroundClip='text';s.color='transparent';s.display='inline-block';}else if(ss.textColor){s.color=ss.textColor;}}if(!premBase.fontFamily&&ss.fontFamily&&ss.fontFamily!=='inherit')s.fontFamily=ss.fontFamily;if(ss.fontSize)s.fontSize=ss.fontSize;if(!premBase.fontWeight&&ss.fontWeight)s.fontWeight=ss.fontWeight;if(!premBase.fontStyle&&ss.fontStyle&&ss.fontStyle!=='normal')s.fontStyle=ss.fontStyle;if(ss.textDecoration&&ss.textDecoration!=='none')s.textDecoration=ss.textDecoration;if(!premBase.textShadow&&ss.textShadow&&ss.textShadow!=='none')s.textShadow=ss.textShadow;if(!premBase.letterSpacing&&ss.letterSpacing&&ss.letterSpacing!=='normal')s.letterSpacing=ss.letterSpacing;if(ss.animation&&ss.animation!=='none')s.animation=ss.animation;return s; };
+                                        return <div className="vpm-status-text"><svg viewBox="0 0 24 24" width="9" height="9" fill="#8b5cf6" style={{flexShrink:0}}><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/></svg><span style={buildSS(ss)}>{statusText}</span></div>;
+                                    })()}
+
+                                    {/* Online + Trust compact row */}
+                                    <div style={{display:'flex',alignItems:'center',gap:'5px',flexWrap:'wrap',marginTop:'2px'}}>
+                                        <div className={`vpm-online-pill ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`}>
+                                            <span className="vpm-pill-dot" />
+                                            <span>{onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}</span>
+                                        </div>
+                                        {(() => {
+                                            const score = typeof profileUser.trustScore === 'number' ? profileUser.trustScore : 10;
+                                            const rank = getRankFromScore(score);
+                                            return <div style={{display:'inline-flex',alignItems:'center',gap:'3px',padding:'2px 7px',borderRadius:'20px',background:'rgba(139,92,246,0.08)',border:'1px solid rgba(139,92,246,0.2)',fontSize:'10px',fontWeight:600,color:'#7c3aed'}}><span>{rank.emoji}</span><span>{score}/100</span></div>;
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* Right: avatar */}
                                 <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}>
-                                    <img
-                                        className="vpm-avatar"
-                                        src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)}
-                                        alt="Profile"
-                                    />
+                                    <img className="vpm-avatar" src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)} alt="Profile"/>
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
                                     <span className="vpm-gender-badge">
-                                        {profileUser.gender?.toLowerCase() === 'female' ? (
-                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#ec4899"><path d="M12,4A6,6 0 0,1 18,10C18,12.97 15.84,15.44 13,15.92V18H15V20H13V22H11V20H9V18H11V15.92C8.16,15.44 6,12.97 6,10A6,6 0 0,1 12,4Z"/></svg>
-                                        ) : profileUser.gender?.toLowerCase() === 'transgender' ? (
-                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#a78bfa"><path d="M17,2H21V6H19V4.41L16.12,7.29C16.69,8.1 17,9.04 17,10C17,12.08 15.72,13.86 13.91,14.63V17H16V19H13.91C13.44,20.17 12.32,21 11,21C9.68,21 8.56,20.17 8.09,19H6V17H8.09C7.42,15.35 6,14 4,14V12C7.18,12 9.58,14.35 9.95,17H12.09C12.35,16.44 12.76,15.96 13.26,15.62L10.59,12.95C10.4,12.98 10.2,13 10,13C7.24,13 5,10.76 5,8C5,5.24 7.24,3 10,3C12.76,3 15,5.24 15,8C15,8.8 14.8,9.56 14.44,10.22L17,12.78V11H19V15H15V13H15.55L13.17,10.62C12.77,11.15 12.26,11.58 11.67,11.83L14.41,14.57C14.82,14.28 15.28,14.05 15.78,13.92C15.92,12.77 16.35,11.71 17,10.83V8C17,4.69 14.31,2 11,2C7.69,2 5,4.69 5,8H3V6H5V4H3V2H7V4H5V6H5.07C5.35,5.28 5.83,4.65 6.45,4.17C7.4,3.44 8.62,3 10,3Z"/></svg>
-                                        ) : (
-                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#38bdf8"><path d="M9,9C10.29,6.75 12.71,5.25 15.5,5.25C16.97,5.25 18.33,5.69 19.5,6.45C20.95,5.5 21.97,4.12 22,2.5C21.2,2.5 20.37,2.69 19.61,3.06C19.22,3.23 18.84,3.44 18.5,3.69C17.5,2.67 16.23,2 14.81,2C10.23,2 7,5.5 7,10C7,12.96 9.16,15.43 12,15.92V18H9V20H12V22H14V20H17V18H14V15.92C16.84,15.43 19,12.96 19,10C19,8.5 18.5,7.13 17.67,6L16.25,7.42C16.75,8.13 17,8.95 17,10C17,12.21 15.21,14 13,14H11C9.79,14 9,13.21 9,12V9Z"/></svg>
-                                        )}
+                                        {profileUser.gender?.toLowerCase() === 'female' ? <svg viewBox="0 0 24 24" width="11" height="11" fill="#ec4899"><path d="M12,4A6,6 0 0,1 18,10C18,12.97 15.84,15.44 13,15.92V18H15V20H13V22H11V20H9V18H11V15.92C8.16,15.44 6,12.97 6,10A6,6 0 0,1 12,4Z"/></svg> : profileUser.gender?.toLowerCase() === 'transgender' ? <svg viewBox="0 0 24 24" width="11" height="11" fill="#a78bfa"><path d="M17,2H21V6H19V4.41L16.12,7.29C16.69,8.1 17,9.04 17,10C17,12.08 15.72,13.86 13.91,14.63V17H16V19H13.91C13.44,20.17 12.32,21 11,21C9.68,21 8.56,20.17 8.09,19H6V17H8.09C7.42,15.35 6,14 4,14V12C7.18,12 9.58,14.35 9.95,17H12.09C12.35,16.44 12.76,15.96 13.26,15.62L10.59,12.95C10.4,12.98 10.2,13 10,13C7.24,13 5,10.76 5,8C5,5.24 7.24,3 10,3C12.76,3 15,5.24 15,8C15,8.8 14.8,9.56 14.44,10.22L17,12.78V11H19V15H15V13H15.55L13.17,10.62C12.77,11.15 12.26,11.58 11.67,11.83L14.41,14.57C14.82,14.28 15.28,14.05 15.78,13.92C15.92,12.77 16.35,11.71 17,10.83V8C17,4.69 14.31,2 11,2C7.69,2 5,4.69 5,8H3V6H5V4H3V2H7V4H5V6H5.07C5.35,5.28 5.83,4.65 6.45,4.17C7.4,3.44 8.62,3 10,3Z"/></svg> : <svg viewBox="0 0 24 24" width="11" height="11" fill="#38bdf8"><path d="M9,9C10.29,6.75 12.71,5.25 15.5,5.25C16.97,5.25 18.33,5.69 19.5,6.45C20.95,5.5 21.97,4.12 22,2.5C21.2,2.5 20.37,2.69 19.61,3.06C19.22,3.23 18.84,3.44 18.5,3.69C17.5,2.67 16.23,2 14.81,2C10.23,2 7,5.5 7,10C7,12.96 9.16,15.43 12,15.92V18H9V20H12V22H14V20H17V18H14V15.92C16.84,15.43 19,12.96 19,10C19,8.5 18.5,7.13 17.67,6L16.25,7.42C16.75,8.13 17,8.95 17,10C17,12.21 15.21,14 13,14H11C9.79,14 9,13.21 9,12V9Z"/></svg>}
                                     </span>
                                 </div>
-
-                                {/* Name + badge – nothing overlaps avatar */}
-                                <div className="vpm-name-row">
-                                    <span className="vpm-name">{profileUser.displayName || 'Anonymous'}</span>
-                                    {profileUser.badge && badges[profileUser.badge] && (
-                                        <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
-                                            dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
-                                    )}
-                                </div>
-
-                                {/* Role pill — exact Sidebar getRolePill colors + icons */}
-                                {(() => {
-                                    const rl = profileUser.role?.toLowerCase() || 'user';
-                                    const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
-                                    const pillMap = {
-                                        owner:     { bg: '#fef3c7', color: '#92400e' },
-                                        admin:     { bg: '#ede9fe', color: '#5b21b6' },
-                                        moderator: { bg: '#dcfce7', color: '#15803d' },
-                                        user:      { bg: '#f1f5f9', color: '#475569' },
-                                        guest:     { bg: '#f9fafb', color: '#6b7280' },
-                                    };
-                                    const pill = pillMap[rl] || pillMap.user;
-                                    return (
-                                        <div style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'20px',background:pill.bg,border:`1px solid ${pill.color}40`,fontSize:'11px',fontWeight:700,color:pill.color,marginTop:'2px'}}>
-                                            {rl === 'owner' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#92400e"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>
-                                            ) : rl === 'admin' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#5b21b6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-                                            ) : rl === 'moderator' ? (
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#15803d"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                                            ) : (
-                                                <span style={{width:7,height:7,borderRadius:'50%',background:pill.color,display:'inline-block',flexShrink:0}}/>
-                                            )}
-                                            {roleLabel}
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Status text — exact Sidebar buildStatusStyle with PREMIUM_STYLE_MAP */}
-                                {(() => {
-                                    const statusText = typeof profileUser.status === 'string'
-                                        ? profileUser.status
-                                        : (profileUser.status?.text || profileUser.status?.statusText || '');
-                                    if (!statusText) return null;
-                                    const ss = profileUser.statusStyles;
-                                    const PMAP = {
-                                        'gold-foil':    { background: 'linear-gradient(135deg,#FFD700,#C7A86B,#FFD700)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                        'cosmic':       { background: 'linear-gradient(135deg,#8b5cf6,#ec4899)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                        'ember':        { background: 'linear-gradient(135deg,#f97316,#ef4444)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                        'arctic':       { background: 'linear-gradient(135deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                        'rose-gold':    { background: 'linear-gradient(135deg,#f9a8d4,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                        'matte-luxe':   { color: '#2d2d2d', fontWeight: '600', letterSpacing: '0.5px' },
-                                        'royal-script': { fontFamily: 'Playfair Display, serif', color: '#1a1a1a', fontWeight: '700', fontStyle: 'italic' },
-                                        'velvet-shadow':{ color: '#4a4a4a', fontWeight: '600', textShadow: '3px 3px 6px rgba(0,0,0,0.4)' },
-                                        'minimal-mono': { fontFamily: 'JetBrains Mono, monospace', color: '#333333', fontWeight: '500', letterSpacing: '1px' },
-                                        'neon-glow':    { color: '#39ff14', fontWeight: '700', textShadow: '0 0 7px #39ff14,0 0 14px #39ff14,0 0 21px #39ff14' },
-                                        'ocean-wave':   { background: 'linear-gradient(90deg,#0ea5e9,#38bdf8,#06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', fontWeight: '700', display: 'inline-block' },
-                                    };
-                                    const buildSS = (ss) => {
-                                        if (!ss) return {};
-                                        const premBase = (ss.premiumStyle && ss.premiumStyle !== 'none') ? (PMAP[ss.premiumStyle] || {}) : {};
-                                        const s = { ...premBase };
-                                        if (!premBase.color && !premBase.background) {
-                                            if (ss.gradientEnabled) {
-                                                s.background = `linear-gradient(${ss.gradientDirection || 'to right'}, ${ss.gradientStart || '#667eea'}, ${ss.gradientEnd || '#764ba2'})`;
-                                                s.WebkitBackgroundClip = 'text';
-                                                s.backgroundClip = 'text';
-                                                s.color = 'transparent';
-                                                s.display = 'inline-block';
-                                            } else if (ss.textColor) { s.color = ss.textColor; }
-                                        }
-                                        if (!premBase.fontFamily && ss.fontFamily && ss.fontFamily !== 'inherit') s.fontFamily = ss.fontFamily;
-                                        if (ss.fontSize) s.fontSize = ss.fontSize;
-                                        if (!premBase.fontWeight && ss.fontWeight) s.fontWeight = ss.fontWeight;
-                                        if (!premBase.fontStyle && ss.fontStyle && ss.fontStyle !== 'normal') s.fontStyle = ss.fontStyle;
-                                        if (ss.textDecoration && ss.textDecoration !== 'none') s.textDecoration = ss.textDecoration;
-                                        if (!premBase.textShadow && ss.textShadow && ss.textShadow !== 'none') s.textShadow = ss.textShadow;
-                                        if (!premBase.letterSpacing && ss.letterSpacing && ss.letterSpacing !== 'normal') s.letterSpacing = ss.letterSpacing;
-                                        if (ss.animation && ss.animation !== 'none') s.animation = ss.animation;
-                                        return s;
-                                    };
-                                    return (
-                                        <div className="vpm-status-text">
-                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="#8b5cf6" style={{flexShrink:0}}>
-                                                <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/>
-                                            </svg>
-                                            <span style={buildSS(ss)}>{statusText}</span>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Online pill */}
-                                <div className={`vpm-online-pill ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`}>
-                                    <span className="vpm-pill-dot" />
-                                    <span>{onlineUsers.has(profileUser.uid) ? 'Online' : 'Offline'}</span>
-                                </div>
-
-                                {/* Trust Score — shown below online pill */}
-                                {(() => {
-                                    const score = typeof profileUser.trustScore === 'number' ? profileUser.trustScore : 10;
-                                    const rank = getRankFromScore(score);
-                                    const pct = Math.min(100, Math.round((score / 100) * 100));
-                                    return (
-                                        <div className="vpm-trust-section">
-                                            <div className="vpm-trust-top">
-                                                <span className="vpm-trust-emoji">{rank.emoji}</span>
-                                                <div className="vpm-trust-info">
-                                                    <span className="vpm-trust-rank-name">{rank.name}</span>
-                                                    <span className="vpm-trust-desc">{rank.description}</span>
-                                                </div>
-                                                <span className="vpm-trust-score">{score}<span className="vpm-trust-max">/100</span></span>
-                                            </div>
-                                            <div className="vpm-trust-bar-bg">
-                                                <div className="vpm-trust-bar-fill" style={{width:`${pct}%`, background: rank.gradient || rank.color}} />
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
                             </div>
 
                             {/* ── Tabs ── */}
@@ -7171,18 +7118,18 @@ const HomePage = ({ user }) => {
                                         <div className="vpm-friends-header">
                                             <svg viewBox="0 0 24 24" width="14" height="14" fill="#10b981"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                                             <span>Friends</span>
-                                            <span className="vpm-friends-count">{friendsProfiles.length}</span>
+                                            <span className="vpm-friends-count">{loadingProfileFriends ? '…' : profileFriends.length}</span>
                                         </div>
-                                        {loadingFriends ? (
+                                        {loadingProfileFriends ? (
                                             <div className="vpm-empty"><div className="loading-spinner" style={{width:24,height:24}} /><p>Loading…</p></div>
-                                        ) : friendsProfiles.length === 0 ? (
+                                        ) : profileFriends.length === 0 ? (
                                             <div className="vpm-empty">
                                                 <svg viewBox="0 0 24 24" width="36" height="36" fill="#c4b5fd"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                                                 <p>No friends yet</p>
                                             </div>
                                         ) : (
                                             <div className="vpm-friends-list">
-                                                {friendsProfiles.map(fr => (
+                                                {profileFriends.map(fr => (
                                                     <div key={fr.uid} className="vpm-friend-row">
                                                         <div className={`vpm-friend-av ${getGenderBorderClass(fr)}`}>
                                                             <img src={fr.photoURL || getDefaultAvatarUrl(fr.uid, fr.gender)} alt="friend" />
