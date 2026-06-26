@@ -355,7 +355,9 @@ const LuxuryPrivateMessageWindow = ({
                   <div className={`ultra-pm-status-dot ${getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`} />
                 </div>
                 <div className="ultra-pm-user-info">
-                  <h4 className="ultra-pm-username">{privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}</h4>
+                  <h4 className="ultra-pm-username">
+                    {window.userProfilesCache?.get(privateMessageTarget?.uid)?.displayName || privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
+                  </h4>
                   <span className={`ultra-pm-status-text ${getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`}>
                     {getUserStatus(privateMessageTarget?.uid).status}
                   </span>
@@ -428,7 +430,7 @@ const LuxuryPrivateMessageWindow = ({
                           type: "spring",
                           damping: 25,
                           stiffness: 400,
-                          delay: index * 0.03
+                          delay: 0
                         }}
                       >
                         <div className="ultra-pm-msg-avatar">
