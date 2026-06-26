@@ -472,6 +472,7 @@
 .sb-mod-btn.mute   { color: #f59e0b !important; border-color: rgba(245,158,11,0.35) !important; background: rgba(245,158,11,0.12) !important; }
 .sb-mod-btn.unmute { color: #10b981 !important; border-color: rgba(16,185,129,0.35) !important; background: rgba(16,185,129,0.12) !important; }
 .sb-mod-btn.kick   { color: #f97316 !important; border-color: rgba(249,115,22,0.35) !important; background: rgba(249,115,22,0.12) !important; }
+.sb-mod-btn.unkick { color: #06b6d4 !important; border-color: rgba(6,182,212,0.35) !important;   background: rgba(6,182,212,0.12) !important; }
 .sb-mod-btn.ban    { color: #ef4444 !important; border-color: rgba(239,68,68,0.35) !important;   background: rgba(239,68,68,0.12) !important; }
 .sb-mod-btn.unban  { color: #22c55e !important; border-color: rgba(34,197,94,0.35) !important;   background: rgba(34,197,94,0.12) !important; }
 
@@ -630,6 +631,9 @@
 
 .sb-apd-btn.sb-apd-orange { color: #ea580c; }
 .sb-apd-btn.sb-apd-orange:hover { background: rgba(234,88,12,0.07); color: #c2410c; }
+
+.sb-apd-btn.sb-apd-cyan { color: #0891b2; }
+.sb-apd-btn.sb-apd-cyan:hover { background: rgba(6,182,212,0.07); color: #0e7490; }
 
 /* ── Icon wrap boxes (matching homepage apd-icon-wrap style) ─────────────── */
 .sb-apd-icon {

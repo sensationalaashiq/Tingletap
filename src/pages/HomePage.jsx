@@ -7539,54 +7539,66 @@ const HomePage = ({ user }) => {
                 <div style={{
                     position: 'fixed', bottom: '44px', left: 0, right: 0,
                     zIndex: 1999,
-                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)',
+                    background: 'linear-gradient(90deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
                     backgroundSize: '200% 100%',
-                    animation: 'muteBannerShimmer 3s ease infinite',
-                    borderTop: '1.5px solid rgba(167,139,250,0.4)',
-                    borderBottom: '1.5px solid rgba(124,58,237,0.3)',
-                    padding: '6px 16px',
+                    animation: 'muteBannerSlide 0.28s cubic-bezier(0.34,1.56,0.64,1)',
+                    borderTop: '1.5px solid rgba(139,92,246,0.22)',
+                    padding: '5px 14px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: '0 -4px 20px rgba(109,40,217,0.3)',
+                    boxShadow: '0 -3px 16px rgba(109,40,217,0.1), 0 -1px 4px rgba(109,40,217,0.07)',
                     fontFamily: 'Inter, sans-serif',
                 }}>
+                    {/* Muted mic icon */}
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '24px', height: '24px', borderRadius: '50%',
-                        background: 'rgba(239,68,68,0.2)', border: '1.5px solid rgba(239,68,68,0.5)',
+                        width: '26px', height: '26px', borderRadius: '8px',
+                        background: 'rgba(139,92,246,0.1)', border: '1.5px solid rgba(139,92,246,0.2)',
                         flexShrink: 0,
                     }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z" fill="#ef4444"/>
-                            <path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
-                            <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#7c3aed"/>
                         </svg>
                     </div>
-                    <span style={{ fontWeight: 700, fontSize: '12px', color: '#e9d5ff', letterSpacing: '0.02em' }}>
+                    {/* Label */}
+                    <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#4c1d95', letterSpacing: '0.01em' }}>
                         You are muted
                     </span>
+                    {/* Reason */}
                     {loggedInUserProfile?.mutedInfo?.reason && (
-                        <span style={{ fontSize: '11px', color: '#a78bfa', fontWeight: 500 }}>
+                        <span style={{
+                            fontSize: '11.5px', color: '#7c6fcd', fontWeight: 500,
+                            maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
                             · {loggedInUserProfile.mutedInfo.reason}
                         </span>
                     )}
+                    {/* Divider dot */}
+                    <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'rgba(139,92,246,0.35)', flexShrink: 0 }} />
+                    {/* Countdown or permanent */}
                     {muteTimeLeft ? (
                         <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            background: 'rgba(124,58,237,0.25)', border: '1.5px solid rgba(167,139,250,0.4)',
-                            borderRadius: '8px', padding: '2px 8px',
-                            fontWeight: 800, fontSize: '12px', color: '#c4b5fd',
-                            fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em',
+                            background: 'rgba(139,92,246,0.09)', border: '1.5px solid rgba(139,92,246,0.18)',
+                            borderRadius: '7px', padding: '2px 8px',
+                            fontWeight: 800, fontSize: '11.5px', color: '#6d28d9',
+                            fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
                         }}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="9" stroke="#a78bfa" strokeWidth="2"/>
-                                <path d="M12 7v5l3 2" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round"/>
+                                <circle cx="12" cy="12" r="9" stroke="#7c3aed" strokeWidth="2.2"/>
+                                <path d="M12 7v5l3 2" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"/>
                             </svg>
                             {muteTimeLeft}
                         </span>
                     ) : (
-                        <span style={{ fontSize: '11px', color: '#a78bfa', fontWeight: 500 }}>· Permanent</span>
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.14)',
+                            borderRadius: '7px', padding: '2px 8px',
+                            fontSize: '11px', color: '#7c3aed', fontWeight: 600,
+                        }}>
+                            Permanent
+                        </span>
                     )}
-                    <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 500 }}>remaining</span>
                 </div>
             )}
 

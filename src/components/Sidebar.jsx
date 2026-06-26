@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -141,6 +141,7 @@ const Sidebar = ({
   const [pwRoom, setPwRoom]                   = useState(null);
   const [pwInput, setPwInput]                 = useState('');
   const [pwError, setPwError]                 = useState('');
+  const [kickedUserIds, setKickedUserIds]     = useState(new Set());
   const dropdownRef = useRef(null);
   const { roomId } = useParams();
   const navigate   = useNavigate();
@@ -175,6 +176,15 @@ const Sidebar = ({
     };
     return () => { delete window.setProfileUser; };
   }, [setProfileUser]);
+
+  /* -- kicked users for current room (real-time) -- */
+  useEffect(() => {
+    if (!roomId) { setKickedUserIds(new Set()); return; }
+    const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
+      setKickedUserIds(new Set(snap.docs.map(d => d.id)));
+    }, () => {});
+    return () => unsub();
+  }, [roomId]);
 
   /* -- rooms subscription -- */
   useEffect(() => {
@@ -757,14 +767,30 @@ const Sidebar = ({
                         )}
                         {showKick && (
                           <button
-                            className="sb-mod-btn kick"
-                            title="Kick from Room"
-                            onClick={(e) => { e.stopPropagation(); openKickModal(userItem); }}
+                            className={`sb-mod-btn ${kickedUserIds.has(userItem.uid) ? 'unkick' : 'kick'}`}
+                            title={kickedUserIds.has(userItem.uid) ? 'Unkick User' : 'Kick from Room'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (kickedUserIds.has(userItem.uid)) {
+                                deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', userItem.uid))
+                                  .then(() => toast.success(`Unkicked ${userItem.displayName}`))
+                                  .catch(() => toast.error('Unkick failed.'));
+                              } else {
+                                openKickModal(userItem);
+                              }
+                            }}
                           >
-                            {/* Boot / exit-door kick icon (orange) */}
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
-                              <path fill="#f97316" d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
-                            </svg>
+                            {kickedUserIds.has(userItem.uid) ? (
+                              /* Unkick — return/re-enter icon (cyan) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#06b6d4" d="M16 13v-3l-5 5 5 5v-3h6v-4h-6zm-4 8H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2v2h-2V5H5v14h7v-2h2v2c0 1.1-.9 2-2 2z"/>
+                              </svg>
+                            ) : (
+                              /* Kick — exit-door icon (orange) */
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                                <path fill="#f97316" d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+                              </svg>
+                            )}
                           </button>
                         )}
                         {showBan && (
@@ -888,11 +914,27 @@ const Sidebar = ({
                                 </button>
                               )}
                               {showKick && (
-                                <button className="sb-apd-btn sb-apd-orange" onClick={(e) => { e.stopPropagation(); openKickModal(userItem); }}>
-                                  <svg viewBox="0 0 24 24" width="15" height="15">
-                                    <path fill="#f97316" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
-                                  </svg>
-                                  Kick from Room
+                                <button className={`sb-apd-btn ${kickedUserIds.has(userItem.uid) ? 'sb-apd-cyan' : 'sb-apd-orange'}`} onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (kickedUserIds.has(userItem.uid)) {
+                                    deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', userItem.uid))
+                                      .then(() => toast.success(`Unkicked ${userItem.displayName}`))
+                                      .catch(() => toast.error('Unkick failed.'));
+                                  } else {
+                                    openKickModal(userItem);
+                                  }
+                                  setDropdownUser(null);
+                                }}>
+                                  {kickedUserIds.has(userItem.uid) ? (
+                                    <svg viewBox="0 0 24 24" width="15" height="15">
+                                      <path fill="#06b6d4" d="M16 13v-3l-5 5 5 5v-3h6v-4h-6zm-4 8H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2v2h-2V5H5v14h7v-2h2v2c0 1.1-.9 2-2 2z"/>
+                                    </svg>
+                                  ) : (
+                                    <svg viewBox="0 0 24 24" width="15" height="15">
+                                      <path fill="#f97316" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+                                    </svg>
+                                  )}
+                                  {kickedUserIds.has(userItem.uid) ? 'Unkick User' : 'Kick from Room'}
                                 </button>
                               )}
                               {showBan && (
