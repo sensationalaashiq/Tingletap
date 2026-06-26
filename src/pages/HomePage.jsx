@@ -7366,6 +7366,29 @@ const HomePage = ({ user }) => {
                             <span className="hp-attach-label">Style</span>
                         </button>
                     )}
+                    {/* YouTube — locked for guest & registered */}
+                    {(_isGuest || _isRegistered) ? (
+                        <button className="hp-attach-btn" onClick={lockToast}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)',opacity:0.55,position:'relative'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="white" strokeWidth="1.6" fill="none"/>
+                                    <path d="M9.5 8.5l6 3.5-6 3.5V8.5z" fill="white"/>
+                                </svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>YouTube</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" title="Share YouTube Video" onClick={() => { setIsYouTubeSearchModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)'}}>
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="white" strokeWidth="1.6" fill="none"/>
+                                    <path d="M9.5 8.5l6 3.5-6 3.5V8.5z" fill="white"/>
+                                </svg>
+                            </span>
+                            <span className="hp-attach-label">YouTube</span>
+                        </button>
+                    )}
                 </div>
                 );
             })()}
