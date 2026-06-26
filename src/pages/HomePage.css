@@ -7107,7 +7107,22 @@ html body.theme-sunset .message-body p {
     border-radius: 20px 20px 0 0;
 }
 .vpm-cover-section iframe { display: block; }
-.vpm-cover-image img { width: 100%; height: 110px; object-fit: cover; display: block; }
+.vpm-cover-image img { width: 100%; height: auto; object-fit: contain; display: block; max-height: none; }
+/* YouTube 16:9 wrapper */
+.vpm-cover-youtube-ratio {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+}
+.vpm-cover-youtube-ratio iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: block;
+    border: none;
+}
 .vpm-cover-badge-inline {
     position: absolute;
     top: 6px; left: 8px;
@@ -7122,13 +7137,20 @@ html body.theme-sunset .message-body p {
 .vpm-cb-image   { background: rgba(0,0,0,0.5); color: #fff; }
 
 /* ── Header ── */
+@keyframes vpmHeaderShimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 .vpm-header {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px 16px 12px;
-    background: linear-gradient(160deg, #ede9fe 0%, #f5f3ff 55%, #faf8ff 100%);
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe, #f5f3ff, #c4b5fd33, #ede9fe);
+    background-size: 300% 300%;
+    animation: vpmHeaderShimmer 5s ease infinite;
     border-bottom: 1.5px solid rgba(196,181,253,0.4);
     gap: 0;
 }
@@ -7218,6 +7240,10 @@ html body.theme-sunset .message-body p {
 .dark-mode .vpm-online-dot { border-color: #1e1333; }
 
 /* Gender badge – top-left of avatar */
+@keyframes vpmBadgePulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.45); }
+    50%      { box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+}
 .vpm-gender-badge {
     position: absolute;
     top: 0;
@@ -7225,15 +7251,16 @@ html body.theme-sunset .message-body p {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: white;
-    border: 2px solid rgba(196,181,253,0.6);
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    border: 2px solid rgba(167,139,250,0.7);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(139,92,246,0.15);
+    animation: vpmBadgePulse 2.5s ease-in-out infinite;
 }
-.dark-mode .vpm-gender-badge { background: #2d1b5e; border-color: rgba(139,92,246,0.4); }
+.dark-mode .vpm-gender-badge { background: linear-gradient(135deg, #2d1b5e, #3b1f8c); border-color: rgba(139,92,246,0.5); }
 
 /* Name row */
 .vpm-name-row {

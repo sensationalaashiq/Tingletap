@@ -6799,10 +6799,12 @@ const HomePage = ({ user }) => {
                                     </div>
                                 );
                                 if (ytEmbed) return (
-                                    <div className="vpm-cover-section vpm-cover-youtube">
-                                        <iframe src={ytEmbed} width="100%" height="160" frameBorder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen title="YouTube" style={{display:'block'}}/>
+                                    <div className="vpm-cover-section vpm-cover-youtube" style={{overflow:'visible'}}>
+                                        <div className="vpm-cover-youtube-ratio">
+                                            <iframe src={ytEmbed} frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen title="YouTube"/>
+                                        </div>
                                         <div className="vpm-cover-badge-inline vpm-cb-youtube">
                                             YouTube
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="red"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -6810,8 +6812,8 @@ const HomePage = ({ user }) => {
                                     </div>
                                 );
                                 if (profileUser.coverPhotoURL) return (
-                                    <div className="vpm-cover-section vpm-cover-image">
-                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',maxHeight:'140px',objectFit:'cover',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                                    <div className="vpm-cover-section vpm-cover-image" style={{overflow:'visible'}}>
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'auto',objectFit:'contain',display:'block'}} onError={e=>e.target.style.display='none'}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
                                             Cover Photo
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
@@ -7126,11 +7128,11 @@ const HomePage = ({ user }) => {
                                         {(() => {
                                             const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
                                             if (isOwnProfile) return null;
-                                            const viewerIsGuest = !auth.currentUser || loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true;
+                                            const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
                                             const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
-                                            const canMsg = !(viewerIsGuest && !targetIsGuest);
+                                            const canMsg = !viewerIsGuest;
                                             const canAddFriend = !viewerIsGuest && !targetIsGuest;
-                                            const canReport = !!auth.currentUser && !viewerIsGuest;
+                                            const canReport = !!auth.currentUser;
                                             return (
                                                 <div style={{display:'flex',flexDirection:'column',gap:'7px',marginTop:'4px'}}>
                                                     {canMsg && (
