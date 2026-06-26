@@ -283,24 +283,21 @@ const Sidebar = ({
   };
 
   /* -- filter users -- */
+  // liveUsers is already filtered to the current room by the RTDB listener in HomePage.
+  // We deduplicate by uid, then apply only search/gender UI filters.
   const uniqueUsers = new Map();
-  liveUsers.forEach(u => { if (!uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
+  liveUsers.forEach(u => { if (u?.uid && !uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
 
   const filteredUsers = Array.from(uniqueUsers.values()).filter(u => {
-    const STALE_MS = 5 * 60 * 1000;
-    const now = Date.now();
-    const statusEntry = window.userOnlineStatuses?.[u.uid];
-    const fresh = !statusEntry?.last_changed || (now - statusEntry.last_changed) < STALE_MS;
-    const rtdbHasData = (window.onlineUsers && window.onlineUsers.size > 0) ||
-      (window.userOnlineStatuses && Object.keys(window.userOnlineStatuses).length > 0);
-    const onlineViaRTDB = (window.onlineUsers?.has(u.uid) || statusEntry?.state === 'online') && fresh;
-    const online = rtdbHasData ? onlineViaRTDB : (onlineViaRTDB || u.isOnline);
-    if (!online) return false;
+    if (!u?.uid) return false;
+    // Search filter
     if (searchQuery.trim()) {
       if (!(u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim())) return false;
     }
+    // Gender filter
     if (genderFilter === 'female') return u.gender?.toLowerCase() === 'female';
-    if (genderFilter === 'male')   return u.gender?.toLowerCase() !== 'female';
+    if (genderFilter === 'male')   return u.gender?.toLowerCase() === 'male';
+    // 'all' — show every user type: guest (Stree/Purush/Navrang), member, badge, owner, admin, moderator
     return true;
   });
 

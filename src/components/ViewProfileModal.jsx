@@ -974,9 +974,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
     const vpIsLimited = vpIsViewerGuest || vpIsTargetGuest;
 
     return (
-        <div className="vpm-overlay" onClick={onClose}>
-            <div className="modern-profile-container" onClick={e => e.stopPropagation()}>
-
+        <>
         <div className="vpm-overlay" onClick={onClose}>
             <div className="vpm-container" onClick={e => e.stopPropagation()}>
 
@@ -1426,6 +1424,7 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                 </div>
             </div>
         )}
+        </>
     );
 };
 

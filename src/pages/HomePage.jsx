@@ -1920,7 +1920,7 @@ const HomePage = ({ user }) => {
             const statusData = {
                 state: 'online',
                 currentRoomId: roomId,
-                last_changed: serverTimestamp(),
+                last_changed: Date.now(),
                 userAgent: userAgent,
                 browser: browser,
                 os: os,
@@ -1931,6 +1931,7 @@ const HomePage = ({ user }) => {
                 role: loggedInUserProfile.role || 'guest',
                 isGuest: isGuest || false,
                 photoURL: loggedInUserProfile.photoURL || `${getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender)}`,
+                badge: loggedInUserProfile.badge || null,
                 uid: currentUid
             };
             
@@ -1956,20 +1957,32 @@ const HomePage = ({ user }) => {
                 storeDeviceInfo();
             }
             
-            onDisconnect(userStatusRef).set({ 
-                ...statusData, 
+            // onDisconnect: fires when browser closes / network drops unexpectedly
+            onDisconnect(userStatusRef).update({
                 state: 'offline',
-                lastSeen: serverTimestamp()
+                currentRoomId: null,
+                last_changed: Date.now()
             }).then(() => {
+                // Write online status only AFTER onDisconnect is registered
                 set(userStatusRef, { ...statusData, last_changed: Date.now() });
             });
 
-            // Heartbeat every 55s so ghost entries are filtered out automatically
+            // Heartbeat every 30s — keeps entry fresh; stale threshold is 5 min
             const heartbeatInterval = setInterval(() => {
                 set(userStatusRef, { ...statusData, last_changed: Date.now() }).catch(() => {});
-            }, 55000);
+            }, 30000);
 
-            return () => clearInterval(heartbeatInterval);
+            return () => {
+                clearInterval(heartbeatInterval);
+                // Clean navigation away: immediately mark offline so other users
+                // see the removal in real-time without waiting for Firebase onDisconnect
+                set(userStatusRef, {
+                    ...statusData,
+                    state: 'offline',
+                    currentRoomId: null,
+                    last_changed: Date.now()
+                }).catch(() => {});
+            };
         }
     }, [roomId, user, loggedInUserProfile]);
 
@@ -2518,71 +2531,81 @@ const HomePage = ({ user }) => {
             setLiveUsers([]);
             return;
         }
-        
-        // Separate guest users from registered users
-        const guestUserIds = [];
-        const registeredUserIds = [];
-        
-        // Check user statuses to identify guests
-        onlineUserIds.forEach(uid => {
-            const userStatus = userOnlineStatuses[uid];
-            if (userStatus?.isGuest) {
-                guestUserIds.push(uid);
-            } else {
-                registeredUserIds.push(uid);
-            }
-        });
-        
-        const fullUserProfiles = [];
-        
-        // Add guest users from status data
-        guestUserIds.forEach(uid => {
-            const guestStatus = userOnlineStatuses[uid];
-            if (guestStatus) {
-                // Get guest data from localStorage if it's the current user
-                const isGuest = localStorage.getItem('isGuest') === 'true';
-                const guestData = localStorage.getItem('guestUser');
-                let displayName = guestStatus.displayName || 'Guest';
-                
-                let guestGender = guestStatus.gender || '';
-                // If this is the current guest user, use their chosen username and ensure correct gender
-                if (isGuest && guestData) {
-                    try {
-                        const currentGuestUser = JSON.parse(guestData);
-                        if (currentGuestUser.uid === uid) {
-                            displayName = currentGuestUser.username || currentGuestUser.displayName || 'Guest';
-                            guestGender = currentGuestUser.gender || getStoredGuestGender() || guestStatus.gender || '';
-                        }
-                    } catch (e) {
-                        console.error('Error parsing guest data:', e);
-                    }
-                }
-                
-                fullUserProfiles.push({
-                    uid: uid,
-                    displayName: displayName,
-                    gender: guestGender,
-                    role: 'guest',
-                    isGuest: true,
-                    isOnline: guestStatus.state === 'online',
-                    photoURL: `${getDefaultAvatarUrl(uid, guestGender)}`
-                });
-            }
-        });
-        
-        // Fetch registered users from Firestore
-        if (registeredUserIds.length > 0) {
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', registeredUserIds));
-            const unsubscribe = onSnapshot(usersQuery, (querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    fullUserProfiles.push({ id: doc.id, ...doc.data() });
-                });
-                setLiveUsers([...fullUserProfiles]);
-            });
-            return () => unsubscribe();
-        } else {
-            setLiveUsers([...fullUserProfiles]);
+
+        // ── STEP 1: Instant render from RTDB status data ──────────────────
+        // No Firestore wait — every user type (guest/member/badge/staff) is
+        // visible immediately as soon as the RTDB snapshot arrives.
+        const buildFromStatus = (uid) => {
+            const s = userOnlineStatuses[uid] || {};
+            const gender = s.gender || 'male';
+            return {
+                uid,
+                displayName: s.displayName || 'User',
+                gender,
+                role: s.role || (s.isGuest ? 'guest' : 'user'),
+                isGuest: !!s.isGuest,
+                isOnline: s.state === 'online',
+                photoURL: s.photoURL || getDefaultAvatarUrl(uid, gender),
+                badge: s.badge || null,
+                country: s.country || '',
+            };
+        };
+
+        setLiveUsers(onlineUserIds.map(buildFromStatus));
+
+        // ── STEP 2: Augment registered users with full Firestore profiles ──
+        // Runs async; batched to stay within Firestore's 10-item 'in' limit.
+        // When done, merges richer data (badges, styling, friends, etc.)
+        const registeredUids = onlineUserIds.filter(uid => !userOnlineStatuses[uid]?.isGuest);
+        if (registeredUids.length === 0) return;
+
+        let cancelled = false;
+        const batches = [];
+        for (let i = 0; i < registeredUids.length; i += 10) {
+            batches.push(registeredUids.slice(i, i + 10));
         }
+
+        Promise.all(
+            batches.map(batch =>
+                getDocs(query(collection(db, 'users'), where('uid', 'in', batch)))
+            )
+        ).then(snapshots => {
+            if (cancelled) return;
+            const firestoreMap = {};
+            snapshots.forEach(snap => {
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    firestoreMap[d.uid || docSnap.id] = d;
+                });
+            });
+            setLiveUsers(prev => prev.map(p => {
+                const fs = firestoreMap[p.uid];
+                if (!fs) return p;
+                return {
+                    ...p,
+                    displayName: fs.displayName || p.displayName,
+                    photoURL: fs.photoURL || p.photoURL,
+                    badge: fs.badge || p.badge,
+                    gender: fs.gender || p.gender,
+                    role: fs.role || p.role,
+                    country: fs.country || p.country,
+                    friends: fs.friends,
+                    statusMessage: fs.statusMessage,
+                    statusColor: fs.statusColor,
+                    statusStyle: fs.statusStyle,
+                    usernameColor: fs.usernameColor,
+                    usernameStyle: fs.usernameStyle,
+                    messageColor: fs.messageColor,
+                    messageStyle: fs.messageStyle,
+                    trustScore: fs.trustScore,
+                    isVerified: fs.isVerified,
+                };
+            }));
+        }).catch(err => {
+            console.error('[liveUsers] Firestore augment error:', err);
+        });
+
+        return () => { cancelled = true; };
     }, [onlineUserIds, userOnlineStatuses]);
 
     useEffect(() => {
