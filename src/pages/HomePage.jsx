@@ -13,6 +13,7 @@ import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/d
 import { signOut } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
+import AddFriendConfirmModal from '../components/AddFriendConfirmModal';
 import ChatActionModal from '../components/ChatActionModal';
 import Sidebar from '../components/Sidebar';
 import SettingsSidebar from '../components/SettingsSidebar';
@@ -972,6 +973,7 @@ const HomePage = ({ user }) => {
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [usersWhoBlockedMe, setUsersWhoBlockedMe] = useState([]);
     const [blockConfirmTarget, setBlockConfirmTarget] = useState(null);
+    const [addFriendConfirmTarget, setAddFriendConfirmTarget] = useState(null);
     const [profileUser, setProfileUser] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('info');
   const [userFriends, setUserFriends] = useState([]);
@@ -3807,67 +3809,75 @@ const HomePage = ({ user }) => {
         setProfileUser(user);
     };
 
-    // Move all function declarations to prevent hoisting issues
-    const handleAddFriend = React.useCallback(async (user) => {
+    // handleAddFriend — quick local checks, then show premium confirmation modal
+    const handleAddFriend = React.useCallback((user) => {
         if (!auth.currentUser) {
             toast.error("You must be logged in to send friend requests");
             return;
         }
-        
+        if (!user?.uid) return;
         if (user.uid === auth.currentUser.uid) {
             toast.info("You cannot send a friend request to yourself");
             return;
         }
-
         if (blockedUsers.includes(user.uid) || usersWhoBlockedMe.includes(user.uid)) {
             toast.error("You cannot send a friend request to a blocked user");
             return;
         }
-        
+        if (loggedInUserProfile?.friends?.includes(user.uid)) {
+            toast(
+                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                    <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#8b5cf6,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(139,92,246,.35)'}}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M16 11C17.66 11 18.99 9.66 18.99 8S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0C9.66 11 10.99 9.66 10.99 8S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </div>
+                    <div>
+                        <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Already Friends</div>
+                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>You and <span style={{fontWeight:700,color:'#7c3aed'}}>{user.displayName}</span> are already friends</div>
+                    </div>
+                </div>,
+                {style:{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',border:'1.5px solid rgba(139,92,246,.25)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(139,92,246,.12)',padding:'10px 14px'},icon:false,autoClose:3500}
+            );
+            return;
+        }
+        // All quick checks passed — open the confirmation modal
+        setAddFriendConfirmTarget(user);
+    }, [auth.currentUser, loggedInUserProfile, blockedUsers, usersWhoBlockedMe]);
+
+    // confirmAddFriend — called when user clicks "Send Request" in the modal
+    const confirmAddFriend = React.useCallback(async () => {
+        const user = addFriendConfirmTarget;
+        setAddFriendConfirmTarget(null);
+        if (!user || !auth.currentUser) return;
+
         try {
-            // Check if friend request already exists (both directions)
-            const existingRequestQuery1 = query(
-                collection(db, 'friendRequests'),
-                where('senderId', '==', auth.currentUser.uid),
-                where('receiverId', '==', user.uid)
-            );
-            
-            const existingRequestQuery2 = query(
-                collection(db, 'friendRequests'),
-                where('senderId', '==', user.uid),
-                where('receiverId', '==', auth.currentUser.uid)
-            );
-            
-            const [existingSnapshot1, existingSnapshot2] = await Promise.all([
-                getDocs(existingRequestQuery1),
-                getDocs(existingRequestQuery2)
+            // Check if a pending request already exists (both directions)
+            const [snap1, snap2] = await Promise.all([
+                getDocs(query(
+                    collection(db, 'friendRequests'),
+                    where('senderId', '==', auth.currentUser.uid),
+                    where('receiverId', '==', user.uid)
+                )),
+                getDocs(query(
+                    collection(db, 'friendRequests'),
+                    where('senderId', '==', user.uid),
+                    where('receiverId', '==', auth.currentUser.uid)
+                )),
             ]);
-            
-            // Check for any existing requests regardless of status
-            const pendingRequest1 = existingSnapshot1.docs.find(doc => doc.data().status === 'pending');
-            const pendingRequest2 = existingSnapshot2.docs.find(doc => doc.data().status === 'pending');
-            
-            if (pendingRequest1) {
+
+            if (snap1.docs.find(d => d.data().status === 'pending')) {
                 toast.info("Friend request already sent to this user");
                 return;
             }
-            
-            if (pendingRequest2) {
+            if (snap2.docs.find(d => d.data().status === 'pending')) {
                 toast.info("This user has already sent you a friend request");
-                return;
-            }
-            
-            // Check if they are already friends
-            if (loggedInUserProfile?.friends?.includes(user.uid)) {
-                toast.info("You are already friends with this user");
                 return;
             }
 
             // Check if target has friend requests disabled
             try {
-                const targetUserDoc = await getDoc(doc(db, 'users', user.uid));
-                if (targetUserDoc.exists()) {
-                    const targetSettings = targetUserDoc.data()?.settings || {};
+                const targetDoc = await getDoc(doc(db, 'users', user.uid));
+                if (targetDoc.exists()) {
+                    const targetSettings = targetDoc.data()?.settings || {};
                     if (targetSettings.allowFriendRequests === false) {
                         toast(
                             <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
@@ -3879,39 +3889,42 @@ const HomePage = ({ user }) => {
                                     <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#d97706'}}>{user.displayName}</span> is not accepting friend requests right now</div>
                                 </div>
                             </div>,
-                            { style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000 }
+                            {style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
                         );
                         return;
                     }
                 }
             } catch (_) {}
-            
-            // Create new friend request
-            const friendRequestData = {
+
+            // All clear — create the friend request
+            await addDoc(collection(db, 'friendRequests'), {
                 senderId: auth.currentUser.uid,
                 senderName: loggedInUserProfile?.displayName || auth.currentUser.email?.split('@')[0] || 'Anonymous',
-                senderPhoto: `${getDefaultAvatarUrl(auth.currentUser.uid, loggedInUserProfile?.gender)}`,
+                senderPhoto: getDefaultAvatarUrl(auth.currentUser.uid, loggedInUserProfile?.gender),
                 receiverId: user.uid,
                 receiverName: user.displayName || 'Anonymous',
                 status: 'pending',
-                createdAt: serverTimestamp()
-            };
-            
-            await addDoc(collection(db, 'friendRequests'), friendRequestData);
+                createdAt: serverTimestamp(),
+            });
+
+            // Premium success toast
             toast(
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                  <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#22c55e,#16a34a)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(34,197,94,.35)'}}>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                  </div>
-                  <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>Friend Request Sent</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Sent to <span style={{fontWeight:700,color:'#16a34a'}}>{user.displayName || 'Anonymous'}</span></div></div>
+                <div style={{display:'flex',alignItems:'center',gap:'11px'}}>
+                    <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'linear-gradient(135deg,#10b981,#059669)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 14px rgba(16,185,129,.4)'}}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div>
+                        <div style={{fontWeight:800,fontSize:'13px',color:'#0f172a',letterSpacing:'.1px'}}>Friend Request Sent!</div>
+                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'3px'}}>Waiting for <span style={{fontWeight:700,color:'#059669'}}>{user.displayName || 'Anonymous'}</span> to accept</div>
+                    </div>
                 </div>,
-                {style:{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid rgba(34,197,94,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(34,197,94,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
+                {style:{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid rgba(16,185,129,.28)',borderRadius:'16px',boxShadow:'0 10px 36px rgba(16,185,129,.18)',padding:'12px 16px'},icon:false,autoClose:4500}
             );
-            
-        } catch (error) {
+
+        } catch (err) {
             toast.error("Failed to send friend request. Please try again.");
         }
-    }, [auth.currentUser, loggedInUserProfile]);
+    }, [addFriendConfirmTarget, auth.currentUser, loggedInUserProfile]);
 
     // Helper function to check private message permissions
     const canSendPrivateMessage = (currentUser, targetUser) => {
@@ -7313,6 +7326,13 @@ const HomePage = ({ user }) => {
                 targetUser={blockConfirmTarget}
                 onConfirm={confirmBlockUser}
                 onCancel={() => setBlockConfirmTarget(null)}
+            />
+
+            {/* Add Friend Confirmation Modal */}
+            <AddFriendConfirmModal
+                targetUser={addFriendConfirmTarget}
+                onConfirm={confirmAddFriend}
+                onCancel={() => setAddFriendConfirmTarget(null)}
             />
 
             {/* Toast Notifications */}

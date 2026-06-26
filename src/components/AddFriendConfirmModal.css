@@ -1,0 +1,213 @@
+.afcm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    animation: afcmFadeIn 0.18s ease;
+}
+
+@keyframes afcmFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes afcmSlideUp {
+    from { opacity: 0; transform: translateY(22px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.afcm-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px 24px 22px;
+    width: min(340px, 92vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    box-shadow:
+        0 8px 40px rgba(16, 185, 129, 0.18),
+        0 2px 12px rgba(0, 0, 0, 0.1);
+    animation: afcmSlideUp 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1.5px solid rgba(16, 185, 129, 0.14);
+}
+
+.afcm-icon-ring {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(16,185,129,0.09) 0%, rgba(5,150,105,0.13) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.afcm-main-icon {
+    width: 42px;
+    height: 42px;
+    filter: drop-shadow(0 2px 6px rgba(16, 185, 129, 0.28));
+}
+
+.afcm-title {
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-top: -4px;
+}
+
+.afcm-user-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    border-radius: 13px;
+    padding: 9px 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.afcm-avatar-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2.5px solid rgba(16, 185, 129, 0.35);
+    flex-shrink: 0;
+}
+
+.afcm-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.afcm-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.afcm-username {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.afcm-user-sub {
+    font-size: 0.72rem;
+    color: #059669;
+    font-weight: 500;
+}
+
+.afcm-description {
+    font-size: 0.79rem;
+    color: #6b7280;
+    text-align: center;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.afcm-description strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.afcm-perks {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.afcm-perk-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: 9px;
+    border: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+.afcm-perk-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: rgba(16, 185, 129, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.afcm-perk-item span {
+    font-size: 0.79rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.afcm-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.afcm-btn-cancel {
+    flex: 1;
+    padding: 11px;
+    border-radius: 11px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.afcm-btn-cancel:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.afcm-btn-confirm {
+    flex: 1.4;
+    padding: 11px;
+    border-radius: 11px;
+    border: none;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.38);
+    letter-spacing: 0.01em;
+    font-family: inherit;
+}
+
+.afcm-btn-confirm:hover {
+    background: linear-gradient(135deg, #0ea472 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.48);
+}
+
+.afcm-btn-confirm:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
+}
