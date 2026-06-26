@@ -1,7 +1,7 @@
 
 // Username preferences utility for managing username styling only
 export const USERNAME_DEFAULTS = {
-  usernameFontSize: '11px',
+  usernameFontSize: '12px',
   usernameFontColor: '#000000',
   usernameFontFamily: 'inherit',
   usernameIsBold: true,
@@ -172,7 +172,7 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
 
   // Check if user has custom styles
   const hasCustomStyles = 
-    userSettings.usernameFontSize !== '11px' ||
+    userSettings.usernameFontSize !== '12px' ||
     userSettings.usernameFontColor !== '#000000' ||
     userSettings.usernameFontFamily !== 'inherit' ||
     userSettings.usernameIsBold ||

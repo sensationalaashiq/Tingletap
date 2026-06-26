@@ -938,32 +938,32 @@ iframe[src*="youtu.be"] {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Username - larger for badge holders, smaller for guests and regular users */
+/* Username - default for all users 12px bold */
 .message-displayname[data-badge="true"],
 .message-displayname[data-role="owner"],
 .message-displayname[data-role="admin"],
 .message-displayname[data-role="moderator"] {
-  color: #1a1a1a !important;
-  font-weight: 700 !important;
-  font-size: 18px !important;
-  opacity: 1 !important;
-  text-shadow: none !important;
-  filter: none !important;
-  -webkit-filter: none !important;
+  color: #1a1a1a;
+  font-weight: bold;
+  font-size: 12px;
+  opacity: 1;
+  text-shadow: none;
+  filter: none;
+  -webkit-filter: none;
 }
 
-/* Username for non-badge users (guests and regular users) - 11px, bold */
+/* Username for non-badge users (guests and regular users) - 12px, bold */
 .message-displayname[data-badge="false"]:not([style*="font-size"]),
 .message-username:not([style*="font-size"]),
 .username:not([style*="font-size"]),
 .user-name:not([style*="font-size"]) {
-  color: #1a1a1a !important;
-  font-weight: bold !important;
-  font-size: 11px !important;
-  opacity: 1 !important;
-  text-shadow: none !important;
-  filter: none !important;
-  -webkit-filter: none !important;
+  color: #1a1a1a;
+  font-weight: bold;
+  font-size: 12px;
+  opacity: 1;
+  text-shadow: none;
+  filter: none;
+  -webkit-filter: none;
 }
 
 /* Badge elements - 14px font size and solid colors - NO WHITISH EFFECTS */
@@ -1542,7 +1542,7 @@ html body.theme-sunset .message-body p {
 
 .message-displayname:not([style*="font-size"]) {
   font-weight: bold;
-  font-size: 11px;
+  font-size: 12px;
   color: #333333;
   letter-spacing: 0px;
   cursor: pointer;
@@ -10084,30 +10084,34 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
 .homepage-container::after { height: 64px !important; }
 .homepage-container .chat-feed { bottom: 64px !important; }
 
-/* ── Usernames: vivid role-based colours ─────────────────────────── */
+/* ── Usernames: default 12px bold, custom styles override via JS injection ── */
 .homepage-container .message-displayname[data-role="owner"] {
-  color: #92400e !important; font-weight: 800 !important;
-  text-shadow: 0 0 10px rgba(245, 158, 11, 0.45) !important;
+  font-weight: bold;
+  font-size: 12px;
 }
 .homepage-container .message-displayname[data-role="admin"] {
-  color: #b91c1c !important; font-weight: 800 !important;
+  font-weight: bold;
+  font-size: 12px;
 }
 .homepage-container .message-displayname[data-role="moderator"] {
-  color: #047857 !important; font-weight: 700 !important;
+  font-weight: bold;
+  font-size: 12px;
 }
 .homepage-container .message-displayname[data-badge="true"] {
-  color: #6d28d9 !important; font-weight: 700 !important;
+  font-weight: bold;
+  font-size: 12px;
 }
 .homepage-container .message-displayname[data-badge="false"] {
-  color: #3730a3 !important; font-weight: 600 !important; font-size: 12.5px !important;
+  font-weight: bold;
+  font-size: 12px;
 }
 
-/* ── Message text: deep rich indigo, not washed out ─────────────── */
+/* ── Message text: default 10px, custom styles applied via inline style ── */
 .homepage-container .message-body p {
-  color: #1e1b4b !important;
-  font-size: 13.5px !important;
-  line-height: 1.45 !important;
-  font-weight: 450 !important;
+  color: #2d2d2d;
+  font-size: 10px;
+  line-height: 1.45;
+  font-weight: normal;
 }
 
 /* ── Tighten message content: closer to DP ──────────────────────── */
@@ -10741,27 +10745,19 @@ body .homepage-container .attachment-dropdown {
   flex-shrink: 0;
 }
 
-/* ===== USERNAME FORCE STYLING: GUEST & REGISTERED ===== */
+/* ===== USERNAME DEFAULT STYLING: GUEST & REGISTERED ===== */
+/* These are DEFAULT styles — JS-injected !important custom styles will override */
 .message-row-wrapper[data-sender-role="guest"] .message-displayname,
 .message-row-wrapper[data-sender-role="user"] .message-displayname {
-  color: #1a1a1a !important;
-  font-weight: 700 !important;
-  font-size: 11.5px !important;
-  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
-  background: none !important;
-  background-image: none !important;
-  -webkit-text-fill-color: #1a1a1a !important;
-  -webkit-background-clip: unset !important;
-  background-clip: unset !important;
-  text-shadow: none !important;
-  animation: none !important;
+  color: #1a1a1a;
+  font-weight: bold;
+  font-size: 12px;
 }
 
 /* Dark mode override for guest/user usernames */
 .dark-mode .message-row-wrapper[data-sender-role="guest"] .message-displayname,
 .dark-mode .message-row-wrapper[data-sender-role="user"] .message-displayname {
-  color: #e2e2e2 !important;
-  -webkit-text-fill-color: #e2e2e2 !important;
+  color: #e2e2e2;
 }
 
 /* ===== TAG MENTION STYLES ===== */

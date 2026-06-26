@@ -796,15 +796,24 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                     </div>
                     <div className="message-body">
                         {text && (() => {
-                            const isGuestSender = role === 'guest' || message.isGuest === true;
-                            const isStaffSender = ['owner', 'admin', 'moderator'].includes(role);
-                            const isBadgeSender = badge && badge !== '';
-                            const isPrivileged = isStaffSender || isBadgeSender;
-                            const pStyle = isGuestSender
-                                ? { fontSize: '13px', color: '#2d2d2d', fontFamily: 'inherit', fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', margin: '3px 0', lineHeight: '1.4', wordWrap: 'break-word', overflowWrap: 'break-word' }
-                                : !isPrivileged
-                                    ? { fontSize: '13px', color: message.fontColor || '#2d2d2d', fontFamily: 'inherit', fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', margin: '3px 0', lineHeight: '1.4', wordWrap: 'break-word', overflowWrap: 'break-word' }
-                                    : { fontSize: message.fontSize || '14px', color: message.fontColor || '#333333', fontFamily: message.fontFamily || 'inherit', fontWeight: message.isBold ? 'bold' : 'normal', fontStyle: message.isItalic ? 'italic' : 'normal', textDecoration: `${message.isUnderline ? 'underline ' : ''}${message.isStrikethrough ? 'line-through' : ''}`.trim() || 'none', margin: '4px 0', lineHeight: '1.4', wordWrap: 'break-word', overflowWrap: 'break-word', '--custom-color': message.fontColor || '#333333' };
+                            const savedMsgStyle = (typeof window !== 'undefined' && window.userMessageStyles && uid)
+                                ? window.userMessageStyles[uid]
+                                : null;
+                            const msgDecorations = [];
+                            if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
+                            if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
+                            const pStyle = {
+                                fontSize: savedMsgStyle?.fontSize || '10px',
+                                color: savedMsgStyle?.fontColor || '#2d2d2d',
+                                fontFamily: savedMsgStyle?.fontFamily || 'inherit',
+                                fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
+                                fontStyle: savedMsgStyle?.isItalic ? 'italic' : 'normal',
+                                textDecoration: msgDecorations.length > 0 ? msgDecorations.join(' ') : 'none',
+                                margin: '3px 0',
+                                lineHeight: '1.4',
+                                wordWrap: 'break-word',
+                                overflowWrap: 'break-word'
+                            };
                             const viewerName = auth.currentUser?.displayName;
                             const renderedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
                                 if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {

@@ -31,8 +31,8 @@ import VPNBlockModal from './components/VPNBlockModal';
 // Removed toast notifications
 import { checkUserVPN } from './utils/vpnDetection';
 import { getStoredGuestGender } from './utils/roleUtils';
-import { initializeUsernameStyles, clearAllUsernameStyles } from './utils/usernamePreferences';
-import { initializeGlobalMessageStyles, clearAllMessageStyles } from './utils/messageTextPreferences';
+import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
+import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
 import BanKickModal from './components/BanKickModal';
 import './App.css';
 
@@ -163,6 +163,11 @@ function App() {
         // These require auth and must never run before login.
         initializeUsernameStyles();
         initializeGlobalMessageStyles();
+        // Sync all users' saved styles from the users collection (has proper Firestore permissions)
+        setTimeout(() => {
+          syncAllUsersStyles();
+          syncAllUsersMessageStyles();
+        }, 500);
 
         // Capture and store real IP address for admin panel
         try {
