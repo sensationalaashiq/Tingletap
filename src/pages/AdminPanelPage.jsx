@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast } from 'react-toastify';
@@ -70,7 +70,8 @@ const AdminPanelPage = () => {
   // Edit Room modal
   const [showEditRoom, setShowEditRoom] = useState(false);
   const [editRoomTarget, setEditRoomTarget] = useState(null);
-  const [editRoomData, setEditRoomData] = useState({ name: '', description: '', type: 'public', maxUsers: 50 });
+  const [editRoomData, setEditRoomData] = useState({ name: '', description: '', type: 'public', maxUsers: 50, password: '', order: '' });
+  const [showEditPw, setShowEditPw] = useState(false);
   const [savingRoom, setSavingRoom] = useState(false);
 
   // Assign Badge modal
@@ -87,8 +88,9 @@ const AdminPanelPage = () => {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [createRoomData, setCreateRoomData] = useState({
-    name: '', description: '', type: 'public', maxUsers: 50
+    name: '', description: '', type: 'public', maxUsers: 50, password: '', order: ''
   });
+  const [showCreatePw, setShowCreatePw] = useState(false);
 
   // Change Email modal (Owner only)
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
@@ -119,6 +121,26 @@ const AdminPanelPage = () => {
 
   // Guest Sessions
   const [guestSessions, setGuestSessions] = useState([]);
+
+  // Violations Dashboard (modLogs)
+  const [violations, setViolations] = useState([]);
+  const [violationsFilter, setViolationsFilter] = useState('all');
+  const [violationsShowResolved, setViolationsShowResolved] = useState(false);
+
+  // Unkick modal
+  const [showUnkickModal, setShowUnkickModal] = useState(false);
+  const [unkickTarget, setUnkickTarget] = useState(null);
+  const [unkicking, setUnkicking] = useState(false);
+
+  // Unmute modal
+  const [showUnmuteModal, setShowUnmuteModal] = useState(false);
+  const [unmuteTarget, setUnmuteTarget] = useState(null);
+  const [unmuteLoading, setUnmuteLoading] = useState(false);
+
+  // Resolve violation modal
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState(null);
+  const [resolving, setResolving] = useState(false);
 
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
@@ -323,13 +345,22 @@ const AdminPanelPage = () => {
         }
       });
       setGuestSessions(sessions.sort((a, b) => (b.sessionStarted || '').localeCompare(a.sessionStarted || '')));
-      // Auto-delete expired sessions
       for (const id of expired) {
         try { await deleteDoc(doc(db, 'guestSessions', id)); } catch {}
       }
     });
     return () => unsubscribe();
   }, []);
+
+  // Real-time violations (modLogs from TingleBot AutoMod)
+  useEffect(() => {
+    if (!isRoleReady) return;
+    const q = query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(300));
+    const unsub = onSnapshot(q, snap => {
+      setViolations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => console.error('modLogs listener error:', err.message));
+    return () => unsub();
+  }, [isRoleReady]);
 
   // Moderation functions
   const handleModerateUser = (user, action) => {
@@ -471,6 +502,63 @@ const AdminPanelPage = () => {
     finally { setChangeUsernameLoading(false); }
   };
 
+  // Violations: Unkick
+  const handleUnkick = async () => {
+    if (!unkickTarget?.userId || !unkickTarget?.roomId) return;
+    setUnkicking(true);
+    try {
+      await deleteDoc(doc(db, 'rooms', unkickTarget.roomId, 'kickedUsers', unkickTarget.userId));
+      await updateDoc(doc(db, 'modLogs', unkickTarget.id), {
+        resolved: true,
+        resolvedBy: currentUserProfile?.displayName || 'Admin',
+        resolvedAt: serverTimestamp(),
+        resolveNote: 'Unkicked by admin'
+      });
+      toast.success(`✅ ${unkickTarget.username || 'User'} has been unkicked from ${unkickTarget.roomName || 'the room'}.`);
+      setShowUnkickModal(false); setUnkickTarget(null);
+    } catch (err) {
+      toast.error('Failed to unkick: ' + err.message);
+    } finally { setUnkicking(false); }
+  };
+
+  // Violations: Unmute
+  const handleUnmute = async () => {
+    if (!unmuteTarget?.userId) return;
+    setUnmuteLoading(true);
+    try {
+      await updateDoc(doc(db, 'users', unmuteTarget.userId), {
+        isMuted: false, mutedInfo: null, mutedUntil: null
+      });
+      await updateDoc(doc(db, 'modLogs', unmuteTarget.id), {
+        resolved: true,
+        resolvedBy: currentUserProfile?.displayName || 'Admin',
+        resolvedAt: serverTimestamp(),
+        resolveNote: 'Unmuted by admin'
+      });
+      toast.success(`✅ ${unmuteTarget.username || 'User'} has been unmuted.`);
+      setShowUnmuteModal(false); setUnmuteTarget(null);
+    } catch (err) {
+      toast.error('Failed to unmute: ' + err.message);
+    } finally { setUnmuteLoading(false); }
+  };
+
+  // Violations: Resolve
+  const handleResolveViolation = async () => {
+    if (!resolveTarget) return;
+    setResolving(true);
+    try {
+      await updateDoc(doc(db, 'modLogs', resolveTarget.id), {
+        resolved: true,
+        resolvedBy: currentUserProfile?.displayName || 'Admin',
+        resolvedAt: serverTimestamp()
+      });
+      toast.success('Violation marked as resolved.');
+      setShowResolveModal(false); setResolveTarget(null);
+    } catch (err) {
+      toast.error('Failed to resolve: ' + err.message);
+    } finally { setResolving(false); }
+  };
+
   const handleAssignBadge = (targetUser) => {
     const myRole = currentUserProfile?.role;
     if (!['owner', 'admin'].includes(myRole)) {
@@ -609,19 +697,23 @@ const AdminPanelPage = () => {
     }
     setCreatingRoom(true);
     try {
+      const orderVal = createRoomData.order.toString().trim()
+        ? parseInt(createRoomData.order) 
+        : Date.now();
       await addDoc(collection(db, 'rooms'), {
         name: createRoomData.name.trim(),
         description: createRoomData.description.trim(),
         type: createRoomData.type,
         maxUsers: parseInt(createRoomData.maxUsers) || 50,
+        password: createRoomData.password.trim() || null,
         isActive: true,
-        order: Date.now(),
+        order: orderVal,
         createdAt: serverTimestamp(),
         createdBy: currentUserProfile?.displayName || 'Admin',
         createdByUid: user?.uid
       });
       toast.success(`✅ Room "${createRoomData.name}" created successfully!`);
-      setCreateRoomData({ name: '', description: '', type: 'public', maxUsers: 50 });
+      setCreateRoomData({ name: '', description: '', type: 'public', maxUsers: 50, password: '', order: '' });
       setShowCreateRoom(false);
     } catch (error) {
       console.error('Create room error:', error);
@@ -658,8 +750,11 @@ const AdminPanelPage = () => {
       name: room.name || '',
       description: room.description || '',
       type: room.type || 'public',
-      maxUsers: room.maxUsers || 50
+      maxUsers: room.maxUsers || 50,
+      password: room.password || '',
+      order: room.order !== undefined ? String(room.order) : ''
     });
+    setShowEditPw(false);
     setShowEditRoom(true);
   };
 
@@ -670,11 +765,16 @@ const AdminPanelPage = () => {
     }
     setSavingRoom(true);
     try {
+      const orderVal = editRoomData.order.toString().trim()
+        ? parseInt(editRoomData.order)
+        : (editRoomTarget.order || Date.now());
       await updateDoc(doc(db, 'rooms', editRoomTarget.id), {
         name: editRoomData.name.trim(),
         description: editRoomData.description.trim(),
         type: editRoomData.type,
         maxUsers: parseInt(editRoomData.maxUsers) || 50,
+        password: editRoomData.password.trim() || null,
+        order: orderVal,
         updatedAt: serverTimestamp(),
         updatedBy: currentUserProfile?.displayName || 'Admin'
       });
@@ -1144,6 +1244,16 @@ const AdminPanelPage = () => {
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                  </>
+                )
+              },
+              {
+                id: 'violations', label: 'Violations',
+                badge: violations.filter(v => !v.resolved).length,
+                iconColor: '#f43f5e',
+                renderIcon: (c) => (
+                  <>
+                    <path fill={c} d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z"/>
                   </>
                 )
               }
@@ -1821,6 +1931,49 @@ const AdminPanelPage = () => {
                             onChange={(e) => setCreateRoomData(p => ({ ...p, maxUsers: e.target.value }))}
                           />
                         </div>
+                      </div>
+
+                      {/* Password + Order row */}
+                      <div className="luxury-form-row">
+                        <div className="luxury-form-group">
+                          <label className="luxury-form-label">
+                            <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/></svg>
+                            Room Password (optional)
+                          </label>
+                          <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                            <input
+                              className="luxury-form-input"
+                              type={showCreatePw ? 'text' : 'password'}
+                              placeholder="Leave blank = open room"
+                              value={createRoomData.password}
+                              onChange={(e) => setCreateRoomData(p => ({ ...p, password: e.target.value }))}
+                              style={{ paddingRight: 36 }}
+                            />
+                            <button type="button" onClick={() => setShowCreatePw(p=>!p)} style={{ position:'absolute', right:10, background:'none', border:'none', cursor:'pointer', color:'#7c3aed', padding:0 }}>
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16}}>
+                                {showCreatePw ? <path fill="#7c3aed" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z"/> : <path fill="#7c3aed" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>}
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="luxury-form-group">
+                          <label className="luxury-form-label">
+                            <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M3,3H5V5H3V3M7,5H21V3H7V5M3,7H5V9H3V7M7,9H21V7H7V9M3,11H5V13H3V11M7,13H21V11H7V13M3,15H5V17H3V15M7,17H21V15H7V17M3,19H5V21H3V19M7,21H21V19H7V21Z"/></svg>
+                            Order / Position
+                          </label>
+                          <input
+                            className="luxury-form-input"
+                            type="number"
+                            placeholder="Auto (goes to bottom)"
+                            value={createRoomData.order}
+                            onChange={(e) => setCreateRoomData(p => ({ ...p, order: e.target.value }))}
+                            title="Lower number = higher in list. Leave blank = auto (newest rooms go to bottom)."
+                          />
+                        </div>
+                      </div>
+                      <div style={{ background:'rgba(124,58,237,0.05)', border:'1.5px solid rgba(124,58,237,0.15)', borderRadius:10, padding:'8px 12px', fontSize:11, color:'#6d28d9', fontWeight:600 }}>
+                        💡 <strong>Order tip:</strong> Lower number = higher position. 1 = top, 999 = bottom. Leave blank = auto (newest goes to bottom).
+                        {createRoomData.password && <span style={{marginLeft:8}}>🔒 This room will require a password to enter.</span>}
                       </div>
                     </div>
 
@@ -2620,8 +2773,294 @@ const AdminPanelPage = () => {
             );
           })()}
 
+          {/* ═══════════════════════════════════════════════════════
+              VIOLATIONS DASHBOARD TAB
+          ═══════════════════════════════════════════════════════ */}
+          {activeTab === 'violations' && (() => {
+            const VIOLATION_COLORS = {
+              SPAM:           { bg:'#fff7ed', border:'#fed7aa', badge:'#ea580c', text:'Spam' },
+              PROFANITY:      { bg:'#fff1f2', border:'#fecdd3', badge:'#e11d48', text:'Profanity' },
+              THREAT:         { bg:'#fff1f2', border:'#fecaca', badge:'#dc2626', text:'Threat' },
+              PERSONAL_INFO:  { bg:'#faf5ff', border:'#e9d5ff', badge:'#7c3aed', text:'Personal Info' },
+              EXCESSIVE_CAPS: { bg:'#eff6ff', border:'#bfdbfe', badge:'#2563eb', text:'Caps Abuse' },
+              EMOJI_SPAM:     { bg:'#fefce8', border:'#fde68a', badge:'#d97706', text:'Emoji Spam' },
+              HOMOGLYPH:      { bg:'#fdf4ff', border:'#f0abfc', badge:'#a21caf', text:'Homoglyph' },
+            };
+            const SEV_COLORS = { low:'#6b7280', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' };
+            const ACTION_COLORS = { WARN:'#f59e0b', MUTE:'#f97316', KICK:'#dc2626', AUTO_DELETE:'#7c3aed', NOTICE:'#3b82f6' };
+
+            const filtered = violations.filter(v => {
+              if (!violationsShowResolved && v.resolved) return false;
+              return violationsFilter === 'all' || v.type === violationsFilter;
+            });
+            const unresolved = violations.filter(v => !v.resolved).length;
+
+            return (
+              <div style={{ padding:'0 0 40px 0' }}>
+                {/* Header */}
+                <div className="luxury-section-header">
+                  <h2 style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                      <path fill="#f43f5e" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z"/>
+                    </svg>
+                    Live Violations Feed
+                  </h2>
+                  <p>Real-time AutoMod log — unkick, unmute, or resolve violations from TingleBot</p>
+                </div>
+
+                {/* Stats */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:12, marginBottom:20 }}>
+                  {[
+                    { label:'Unresolved', value:unresolved, color:'#f43f5e', d:'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z' },
+                    { label:'Total Logs', value:violations.length, color:'#7c3aed', d:'M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z' },
+                    { label:'Kicks', value:violations.filter(v=>v.actionTaken==='KICK').length, color:'#dc2626', d:'M13.5,5.5C14.59,5.5 15.5,4.58 15.5,3.5C15.5,2.38 14.59,1.5 13.5,1.5C12.39,1.5 11.5,2.38 11.5,3.5C11.5,4.58 12.39,5.5 13.5,5.5M9.89,19.38L10.89,15L13,17V23H15V15.5L12.89,13.5L13.5,10.5C14.79,12 16.79,13 19,13V11H17C15.5,10 14.69,8.58 13.69,7C13.29,6.38 12.69,6 12,6H11.19L6,8.28V13H8V9.58L9.79,8.88L8.19,17L3.29,16L2.89,18L9.89,19.38Z' },
+                    { label:'Mutes', value:violations.filter(v=>v.actionTaken==='MUTE').length, color:'#f97316', d:'M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background:'#fff', borderRadius:14, padding:'12px 14px', border:'1.5px solid rgba(0,0,0,0.06)', boxShadow:'0 2px 10px rgba(0,0,0,0.05)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,marginBottom:4}}><path fill={s.color} d={s.d}/></svg>
+                      <div style={{ fontSize:22, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
+                      <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:3 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filter bar */}
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16, alignItems:'center' }}>
+                  {['all','SPAM','PROFANITY','THREAT','PERSONAL_INFO','EXCESSIVE_CAPS','EMOJI_SPAM'].map(f => (
+                    <button key={f} onClick={() => setViolationsFilter(f)} style={{
+                      padding:'5px 11px', borderRadius:20, border:'1.5px solid',
+                      borderColor: violationsFilter===f ? '#f43f5e' : 'rgba(0,0,0,0.1)',
+                      background: violationsFilter===f ? '#f43f5e' : '#fff',
+                      color: violationsFilter===f ? '#fff' : '#374151',
+                      fontSize:11.5, fontWeight:700, cursor:'pointer', transition:'all .15s'
+                    }}>
+                      {f === 'all' ? '✦ All' : f.replace(/_/g,' ')}
+                    </button>
+                  ))}
+                  <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#6b7280', cursor:'pointer', marginLeft:'auto' }}>
+                    <input type="checkbox" checked={violationsShowResolved} onChange={e=>setViolationsShowResolved(e.target.checked)} style={{accentColor:'#7c3aed'}}/>
+                    Show Resolved
+                  </label>
+                </div>
+
+                {/* List */}
+                {filtered.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'48px 20px', color:'#9ca3af' }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:40,height:40,margin:'0 auto 12px',display:'block'}}><path fill="#e5e7eb" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M13,17H11V15H13M13,13H11V7H13V13Z"/></svg>
+                    <div style={{fontWeight:700,fontSize:15,color:'#d1d5db',marginBottom:6}}>No violations found</div>
+                    <div style={{fontSize:12}}>AutoMod logs appear here when TingleBot detects rule violations.</div>
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    {filtered.map(v => {
+                      const vc = VIOLATION_COLORS[v.type] || { bg:'#f9fafb', border:'#e5e7eb', badge:'#6b7280', text: v.type || 'Unknown' };
+                      const sevColor = SEV_COLORS[v.severity] || '#6b7280';
+                      const actColor = ACTION_COLORS[v.actionTaken] || '#6b7280';
+                      const ts = v.timestamp?.toDate ? v.timestamp.toDate() : (v.timestamp ? new Date(v.timestamp) : null);
+                      const timeStr = ts ? ts.toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+                      return (
+                        <div key={v.id} style={{
+                          background: v.resolved ? '#f9fafb' : vc.bg,
+                          border: `1.5px solid ${v.resolved ? '#e5e7eb' : vc.border}`,
+                          borderRadius:14, padding:'14px 16px',
+                          opacity: v.resolved ? 0.72 : 1,
+                        }}>
+                          <div style={{ display:'flex', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
+                            {/* Type + Severity */}
+                            <div style={{ display:'flex', flexDirection:'column', gap:5, minWidth:110, flexShrink:0 }}>
+                              <span style={{ fontSize:11, fontWeight:800, background:vc.badge, color:'#fff', borderRadius:6, padding:'2px 8px', textAlign:'center', letterSpacing:'0.04em' }}>
+                                {vc.text}
+                              </span>
+                              <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+                                <span style={{ width:7, height:7, borderRadius:'50%', background:sevColor, flexShrink:0 }}/>
+                                <span style={{ fontSize:10.5, color:sevColor, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{v.severity || 'low'}</span>
+                              </div>
+                            </div>
+
+                            {/* User + message */}
+                            <div style={{ flex:1, minWidth:160 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5, flexWrap:'wrap' }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><path fill="#6b7280" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+                                <span style={{ fontSize:12.5, fontWeight:800, color:'#1e1b4b' }}>{v.username || (v.userId ? v.userId.slice(0,8)+'…' : 'Unknown')}</span>
+                                {v.roomName && (
+                                  <span style={{ fontSize:10.5, color:'#7c3aed', background:'rgba(124,58,237,0.08)', borderRadius:5, padding:'1px 6px', fontWeight:600 }}>#{v.roomName}</span>
+                                )}
+                              </div>
+                              {v.message && (
+                                <div style={{ fontSize:11.5, color:'#4b5563', background:'rgba(0,0,0,0.04)', borderRadius:6, padding:'6px 10px', fontStyle:'italic', marginBottom:4, wordBreak:'break-word', maxHeight:50, overflow:'hidden' }}>
+                                  "{v.message.slice(0, 130)}{v.message.length > 130 ? '…' : ''}"
+                                </div>
+                              )}
+                              {v.reason && <div style={{ fontSize:11, color:'#6b7280' }}><strong>Reason:</strong> {v.reason}</div>}
+                            </div>
+
+                            {/* Actions + time */}
+                            <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end', flexShrink:0 }}>
+                              <span style={{ fontSize:10.5, fontWeight:800, color:actColor, border:`1.5px solid ${actColor}30`, borderRadius:5, padding:'2px 7px', background:`${actColor}12` }}>
+                                {v.actionTaken || 'NOTICE'}
+                              </span>
+                              <span style={{ fontSize:10.5, color:'#9ca3af' }}>{timeStr}</span>
+                              {v.resolved && (
+                                <span style={{ fontSize:10, color:'#10b981', fontWeight:700, display:'flex', alignItems:'center', gap:3 }}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11}}><path fill="#10b981" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                                  Resolved
+                                </span>
+                              )}
+                              {!v.resolved && (
+                                <div style={{ display:'flex', gap:5, flexWrap:'wrap', justifyContent:'flex-end' }}>
+                                  {v.actionTaken === 'KICK' && v.userId && v.roomId && (
+                                    <button onClick={() => { setUnkickTarget(v); setShowUnkickModal(true); }} style={{ fontSize:10.5, padding:'4px 9px', borderRadius:7, border:'1.5px solid #f97316', background:'#fff7ed', color:'#ea580c', fontWeight:700, cursor:'pointer' }}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:10,height:10,marginRight:2,verticalAlign:'middle'}}><path fill="#ea580c" d="M10.09,15.59L11.5,17L16.5,12L11.5,7L10.09,8.41L12.67,11H3V13H12.67L10.09,15.59M19,3H5A2,2 0 0,0 3,5V9H5V5H19V19H5V15H3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z"/></svg>
+                                      Unkick
+                                    </button>
+                                  )}
+                                  {v.actionTaken === 'MUTE' && v.userId && (
+                                    <button onClick={() => { setUnmuteTarget(v); setShowUnmuteModal(true); }} style={{ fontSize:10.5, padding:'4px 9px', borderRadius:7, border:'1.5px solid #3b82f6', background:'#eff6ff', color:'#2563eb', fontWeight:700, cursor:'pointer' }}>
+                                      <svg viewBox="0 0 24 24" fill="none" style={{width:10,height:10,marginRight:2,verticalAlign:'middle'}}><path fill="#2563eb" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
+                                      Unmute
+                                    </button>
+                                  )}
+                                  <button onClick={() => { setResolveTarget(v); setShowResolveModal(true); }} style={{ fontSize:10.5, padding:'4px 9px', borderRadius:7, border:'1.5px solid #10b981', background:'#f0fdf4', color:'#059669', fontWeight:700, cursor:'pointer' }}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:10,height:10,marginRight:2,verticalAlign:'middle'}}><path fill="#059669" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                                    Resolve
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
         </div>
       </div>
+
+      {/* ── Unkick Modal ── */}
+      {showUnkickModal && unkickTarget && (
+        <div className="luxury-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowUnkickModal(false); setUnkickTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#f97316' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#ea580c,#f97316)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#fff" d="M10.09,15.59L11.5,17L16.5,12L11.5,7L10.09,8.41L12.67,11H3V13H12.67L10.09,15.59M19,3H5A2,2 0 0,0 3,5V9H5V5H19V19H5V15H3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Unkick User</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#ea580c', opacity: 0.8 }}>Allow re-entry to room</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowUnkickModal(false); setUnkickTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background:'#fff7ed', border:'1.5px solid #fed7aa', borderRadius:10, padding:'12px 14px', display:'flex', flexDirection:'column', gap:5 }}>
+                <div style={{ fontSize:12.5, fontWeight:800, color:'#c2410c' }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,marginRight:6,verticalAlign:'middle'}}><path fill="#c2410c" d="M13.5,5.5C14.59,5.5 15.5,4.58 15.5,3.5C15.5,2.38 14.59,1.5 13.5,1.5C12.39,1.5 11.5,2.38 11.5,3.5C11.5,4.58 12.39,5.5 13.5,5.5Z"/></svg>
+                  Removing kick for: <strong>{unkickTarget.username || unkickTarget.userId}</strong>
+                </div>
+                <div style={{ fontSize:11.5, color:'#9a3412' }}>Room: <strong>{unkickTarget.roomName || unkickTarget.roomId}</strong></div>
+                <div style={{ fontSize:11, color:'#c2410c', opacity:0.75 }}>This will remove their entry in kickedUsers and allow them back into the room.</div>
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowUnkickModal(false); setUnkickTarget(null); }} disabled={unkicking}>Cancel</button>
+              <button className="luxury-btn-primary" style={{ background:'linear-gradient(135deg,#ea580c,#f97316)' }} onClick={handleUnkick} disabled={unkicking}>
+                {unkicking ? <><div className="luxury-loading-spinner" style={{ width:14, height:14, borderWidth:2 }}></div> Unkicking…</> : <>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15}}><path fill="#fff" d="M10.09,15.59L11.5,17L16.5,12L11.5,7L10.09,8.41L12.67,11H3V13H12.67L10.09,15.59Z"/></svg>
+                  Confirm Unkick
+                </>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Unmute Modal ── */}
+      {showUnmuteModal && unmuteTarget && (
+        <div className="luxury-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowUnmuteModal(false); setUnmuteTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#3b82f6' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#2563eb,#3b82f6)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#fff" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Unmute User</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#2563eb', opacity: 0.8 }}>Restore chat privileges</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowUnmuteModal(false); setUnmuteTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background:'#eff6ff', border:'1.5px solid #bfdbfe', borderRadius:10, padding:'12px 14px', display:'flex', flexDirection:'column', gap:5 }}>
+                <div style={{ fontSize:12.5, fontWeight:800, color:'#1d4ed8' }}>
+                  Restoring voice for: <strong>{unmuteTarget.username || unmuteTarget.userId}</strong>
+                </div>
+                <div style={{ fontSize:11, color:'#1e40af', opacity:0.75 }}>This will clear their isMuted flag and mutedInfo, allowing them to chat again immediately.</div>
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowUnmuteModal(false); setUnmuteTarget(null); }} disabled={unmuteLoading}>Cancel</button>
+              <button className="luxury-btn-primary" style={{ background:'linear-gradient(135deg,#2563eb,#3b82f6)' }} onClick={handleUnmute} disabled={unmuteLoading}>
+                {unmuteLoading ? <><div className="luxury-loading-spinner" style={{ width:14, height:14, borderWidth:2 }}></div> Unmuting…</> : <>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15}}><path fill="#fff" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
+                  Confirm Unmute
+                </>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Resolve Violation Modal ── */}
+      {showResolveModal && resolveTarget && (
+        <div className="luxury-modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowResolveModal(false); setResolveTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#10b981' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#059669,#10b981)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#fff" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Resolve Violation</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#059669', opacity: 0.8 }}>Mark as handled</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowResolveModal(false); setResolveTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:10, padding:'12px 14px', display:'flex', flexDirection:'column', gap:5 }}>
+                <div style={{ fontSize:12.5, fontWeight:800, color:'#065f46' }}>
+                  Marking violation as resolved:
+                </div>
+                <div style={{ fontSize:11.5, color:'#047857' }}>
+                  User: <strong>{resolveTarget.username || resolveTarget.userId}</strong> · Type: <strong>{resolveTarget.type}</strong>
+                </div>
+                <div style={{ fontSize:11, color:'#065f46', opacity:0.75 }}>This action will be logged with your name and timestamp. The violation log will remain visible but marked resolved.</div>
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowResolveModal(false); setResolveTarget(null); }} disabled={resolving}>Cancel</button>
+              <button className="luxury-btn-primary" style={{ background:'linear-gradient(135deg,#059669,#10b981)' }} onClick={handleResolveViolation} disabled={resolving}>
+                {resolving ? <><div className="luxury-loading-spinner" style={{ width:14, height:14, borderWidth:2 }}></div> Resolving…</> : <>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15}}><path fill="#fff" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
+                  Mark Resolved
+                </>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Device Ban Modal */}
       {showDevBanModal && devBanTarget && (
@@ -2883,12 +3322,53 @@ const AdminPanelPage = () => {
                   />
                 </div>
               </div>
+
+              {/* Password + Order row */}
+              <div className="luxury-form-row">
+                <div className="luxury-form-group">
+                  <label className="luxury-form-label">
+                    <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/></svg>
+                    Room Password
+                  </label>
+                  <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                    <input
+                      className="luxury-form-input"
+                      type={showEditPw ? 'text' : 'password'}
+                      placeholder="Leave blank = open room"
+                      value={editRoomData.password}
+                      onChange={(e) => setEditRoomData(p => ({ ...p, password: e.target.value }))}
+                      style={{ paddingRight: 36 }}
+                    />
+                    <button type="button" onClick={() => setShowEditPw(p=>!p)} style={{ position:'absolute', right:10, background:'none', border:'none', cursor:'pointer', color:'#6366f1', padding:0 }}>
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16}}>
+                        {showEditPw ? <path fill="#6366f1" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z"/> : <path fill="#6366f1" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>}
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="luxury-form-group">
+                  <label className="luxury-form-label">
+                    <svg viewBox="0 0 24 24" fill="none"><path fill="#6366f1" d="M3,3H5V5H3V3M7,5H21V3H7V5M3,7H5V9H3V7M7,9H21V7H7V9M3,11H5V13H3V11M7,13H21V11H7V13M3,15H5V17H3V15M7,17H21V15H7V17M3,19H5V21H3V19M7,21H21V19H7V21Z"/></svg>
+                    Order / Position
+                  </label>
+                  <input
+                    className="luxury-form-input"
+                    type="number"
+                    placeholder={editRoomTarget?.order || 'e.g. 1, 2, 100…'}
+                    value={editRoomData.order}
+                    onChange={(e) => setEditRoomData(p => ({ ...p, order: e.target.value }))}
+                    title="Lower number = higher position. 1 = top, large number = bottom."
+                  />
+                </div>
+              </div>
+
               <div style={{ background: 'rgba(99,102,241,0.06)', border: '1.5px solid rgba(99,102,241,0.18)', borderRadius: 11, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 9 }}>
                 <svg viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16, flexShrink: 0 }}>
                   <path fill="#6366f1" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
                 </svg>
                 <span style={{ fontSize: 11.5, color: '#4338ca', fontWeight: 600 }}>
-                  Changes are saved to Firestore and reflected in real-time on the Room List page for all users.
+                  Changes are saved to Firestore and reflected in real-time.
+                  {editRoomData.password ? ' 🔒 Room will be password-protected.' : ' 🌐 Room is open (no password).'}
                 </span>
               </div>
             </div>

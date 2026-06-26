@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db, rtdb } from '../firebase/config';
@@ -108,6 +108,14 @@ const DiamondIcon = () => (
     <path d="M7 1.5L1 6.5 7 13.5 13 6.5 7 1.5z" fill="url(#rl-dg2)"/>
     <path d="M1 6.5h12" stroke="white" strokeWidth="0.7" opacity=".4"/>
   </Ico>
+);
+
+const LockBadgeIcon = () => (
+  <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+    <rect x="3.5" y="9" width="13" height="9" rx="2.2" fill="#7c3aed"/>
+    <rect x="6.5" y="4" width="7" height="7" rx="3.5" fill="none" stroke="#7c3aed" strokeWidth="2.2"/>
+    <circle cx="10" cy="13.5" r="1.5" fill="white"/>
+  </svg>
 );
 
 /* ── Room-specific gradient icons ── */
@@ -225,6 +233,12 @@ const RoomListPage = () => {
   const [pendingAdultRoom, setPendingAdultRoom] = useState(null);
   const [showBanKickModal, setShowBanKickModal] = useState(false);
   const [kickModalData, setKickModalData] = useState(null);
+  // Password room modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pwInput, setPwInput] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwRoom, setPwRoom] = useState(null);
+  const [showPwText, setShowPwText] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -250,13 +264,32 @@ const RoomListPage = () => {
     });
   }, []);
 
+  // Helper: detect OS and browser from userAgent
+  const detectOSAndBrowser = (ua) => {
+    let os = 'Unknown';
+    if (/Android/i.test(ua)) os = 'Android';
+    else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+    else if (/Windows/i.test(ua)) os = 'Windows';
+    else if (/Macintosh|Mac OS X/i.test(ua)) os = 'macOS';
+    else if (/Linux/i.test(ua)) os = 'Linux';
+
+    let browser = 'Other';
+    if (/Edg\//i.test(ua)) browser = 'Edge';
+    else if (/OPR\/|Opera/i.test(ua)) browser = 'Opera';
+    else if (/SamsungBrowser/i.test(ua)) browser = 'Samsung';
+    else if (/Chrome/i.test(ua) && !/Chromium/i.test(ua)) browser = 'Chrome';
+    else if (/Firefox/i.test(ua)) browser = 'Firefox';
+    else if (/Safari/i.test(ua)) browser = 'Safari';
+
+    return { os, browser };
+  };
+
   useEffect(() => {
     const cu = auth.currentUser;
     if (!cu) return;
     getDoc(doc(db, 'users', cu.uid)).then(snap => {
       if (snap.exists()) {
         let role = snap.data().role || 'user';
-        // One-time migration: superowner → owner
         if (role === 'superowner') {
           updateDoc(doc(db, 'users', cu.uid), { role: 'owner' }).catch(() => {});
           role = 'owner';
@@ -265,13 +298,16 @@ const RoomListPage = () => {
         if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
       }
     });
-    // Save device fingerprint so Admin Panel can use it for device bans
+
+    // Save device fingerprint with proper OS detection (not navigator.platform)
+    const ua = navigator.userAgent;
+    const { os: detectedOS, browser: detectedBrowser } = detectOSAndBrowser(ua);
     DeviceFingerprint.generateFingerprint().then(deviceId => {
       if (!deviceId) return;
       const deviceInfo = {
-        browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other',
-        os: navigator.platform || 'Unknown',
-        userAgent: navigator.userAgent,
+        browser: detectedBrowser,
+        os: detectedOS,
+        userAgent: ua,
         lastSeen: new Date().toISOString()
       };
       updateDoc(doc(db, 'users', cu.uid), {
@@ -295,6 +331,45 @@ const RoomListPage = () => {
           }).catch(() => {});
         }
       }).catch(() => {});
+  }, []);
+
+  // Save IP + location + device info for GUEST users → guestSessions collection
+  useEffect(() => {
+    const isGuest = localStorage.getItem('isGuest') === 'true';
+    if (!isGuest) return;
+    const gd = localStorage.getItem('guestUser');
+    if (!gd) return;
+    try {
+      const guestUser = JSON.parse(gd);
+      const guestUid = guestUser?.uid;
+      if (!guestUid) return;
+      const ua = navigator.userAgent;
+      const { os: gOS, browser: gBrowser } = (typeof detectOSAndBrowser === 'function')
+        ? detectOSAndBrowser(ua)
+        : { os: 'Unknown', browser: 'Chrome' };
+      const gDeviceType = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'Mobile' : 'Desktop';
+
+      DeviceFingerprint.generateFingerprint().then(gDeviceId => {
+        fetch('https://ipwho.is/')
+          .then(r => r.json())
+          .then(geo => {
+            if (!geo || !geo.success) return;
+            updateDoc(doc(db, 'guestSessions', guestUid), {
+              ip: geo.ip || '',
+              lat: geo.latitude ?? null,
+              lon: geo.longitude ?? null,
+              city: geo.city || '',
+              region: geo.region || '',
+              country: geo.country || '',
+              os: gOS,
+              browser: gBrowser,
+              deviceType: gDeviceType,
+              deviceId: gDeviceId || '',
+              lastLocationUpdate: new Date().toISOString()
+            }).catch(() => {});
+          }).catch(() => {});
+      }).catch(() => {});
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -353,6 +428,24 @@ const RoomListPage = () => {
     speakNext();
   };
 
+  // Navigate into a room, handling adult rooms
+  const proceedToRoom = (room) => {
+    const name = room.name.toLowerCase();
+    if (name.includes('adult') || name.includes('18+')) {
+      const stored = localStorage.getItem('ageVerified');
+      if (stored) {
+        try {
+          const { expiry } = JSON.parse(stored);
+          if (Date.now() < expiry) { navigate(`/room/${room.id}`); return; }
+          else localStorage.removeItem('ageVerified');
+        } catch { localStorage.removeItem('ageVerified'); }
+      }
+      setPendingAdultRoom(room); setShowAdultModal(true);
+    } else {
+      navigate(`/room/${room.id}`);
+    }
+  };
+
   const handleRoomClick = async (room) => {
     const isGuest = localStorage.getItem('isGuest') === 'true';
     const gd = localStorage.getItem('guestUser');
@@ -392,19 +485,17 @@ const RoomListPage = () => {
       }
     }
 
-    if (name.includes('adult') || name.includes('18+')) {
-      const stored = localStorage.getItem('ageVerified');
-      if (stored) {
-        try {
-          const { expiry } = JSON.parse(stored);
-          if (Date.now() < expiry) { navigate(`/room/${room.id}`); return; }
-          else localStorage.removeItem('ageVerified');
-        } catch { localStorage.removeItem('ageVerified'); }
-      }
-      setPendingAdultRoom(room); setShowAdultModal(true);
-    } else {
-      navigate(`/room/${room.id}`);
+    // Password-protected room check
+    if (room.password) {
+      setPwRoom(room);
+      setPwInput('');
+      setPwError('');
+      setShowPwText(false);
+      setShowPasswordModal(true);
+      return;
     }
+
+    proceedToRoom(room);
   };
 
   if (loading) return (
@@ -488,8 +579,14 @@ const RoomListPage = () => {
                     </div>
                   </div>
 
-                  {/* Right: count + arrow */}
+                  {/* Right: count + lock badge + arrow */}
                   <div className="rl-card-right">
+                    {room.password && (
+                      <div title="Password Protected" style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(124,58,237,0.10)', border:'1.5px solid rgba(124,58,237,0.22)', borderRadius:20, padding:'3px 8px', marginBottom:5 }}>
+                        <LockBadgeIcon />
+                        <span style={{ fontSize:10, fontWeight:700, color:'#7c3aed', letterSpacing:'0.04em' }}>LOCK</span>
+                      </div>
+                    )}
                     <div className="rl-card-badge">
                       <UsersIcon />
                       <span>{roomCounts[room.id] || 0}</span>
@@ -554,6 +651,111 @@ const RoomListPage = () => {
           onClose={() => { setShowBanKickModal(false); setKickModalData(null); }}
           kickInfo={kickModalData}
         />
+      )}
+
+      {/* ── Password Room Modal ── */}
+      {showPasswordModal && pwRoom && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:9999,
+          background:'rgba(15,12,41,0.72)', backdropFilter:'blur(10px)',
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 16px'
+        }} onClick={e => { if (e.target === e.currentTarget) { setShowPasswordModal(false); setPwRoom(null); } }}>
+          <div style={{
+            background:'#fff', borderRadius:22, width:'100%', maxWidth:380,
+            boxShadow:'0 32px 80px rgba(124,58,237,0.22)',
+            overflow:'hidden', border:'1.5px solid rgba(124,58,237,0.15)'
+          }}>
+            {/* Header */}
+            <div style={{ background:'linear-gradient(135deg,#7c3aed,#a855f7)', padding:'22px 24px 18px', textAlign:'center' }}>
+              <svg viewBox="0 0 24 24" fill="none" style={{ width:38, height:38, margin:'0 auto 10px', display:'block' }}>
+                <circle cx="12" cy="12" r="11" fill="rgba(255,255,255,0.15)"/>
+                <path fill="white" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/>
+              </svg>
+              <div style={{ color:'white', fontSize:17, fontWeight:900, letterSpacing:'0.01em' }}>Password Protected</div>
+              <div style={{ color:'rgba(255,255,255,0.75)', fontSize:12.5, marginTop:4 }}>
+                <strong style={{ color:'white' }}>{pwRoom.name}</strong> requires a password to enter
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding:'24px' }}>
+              <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#7c3aed', marginBottom:8, letterSpacing:'0.06em', textTransform:'uppercase' }}>
+                Enter Room Password
+              </label>
+              <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                <input
+                  type={showPwText ? 'text' : 'password'}
+                  value={pwInput}
+                  onChange={e => { setPwInput(e.target.value); setPwError(''); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      if (pwInput.trim() === pwRoom.password) {
+                        setShowPasswordModal(false);
+                        proceedToRoom(pwRoom);
+                      } else {
+                        setPwError('Incorrect password. Please try again.');
+                        setPwInput('');
+                      }
+                    }
+                  }}
+                  placeholder="Type the room password…"
+                  autoFocus
+                  style={{
+                    width:'100%', padding:'12px 44px 12px 14px', borderRadius:12,
+                    border:`2px solid ${pwError ? '#ef4444' : 'rgba(124,58,237,0.25)'}`,
+                    fontSize:14, outline:'none', background:'#f9f7ff', color:'#1e1b4b',
+                    fontFamily:'inherit', boxSizing:'border-box', transition:'border-color .15s'
+                  }}
+                />
+                <button type="button" onClick={() => setShowPwText(p => !p)} style={{
+                  position:'absolute', right:12, background:'none', border:'none', cursor:'pointer', color:'#7c3aed', padding:0, lineHeight:0
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width:18, height:18 }}>
+                    {showPwText
+                      ? <path fill="#7c3aed" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z"/>
+                      : <path fill="#7c3aed" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
+                    }
+                  </svg>
+                </button>
+              </div>
+              {pwError && (
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, padding:'6px 10px', background:'#fef2f2', borderRadius:8, border:'1.5px solid #fecaca' }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width:13, height:13, flexShrink:0 }}><path fill="#dc2626" d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                  <span style={{ fontSize:11.5, color:'#dc2626', fontWeight:600 }}>{pwError}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding:'0 24px 24px', display:'flex', gap:10 }}>
+              <button onClick={() => { setShowPasswordModal(false); setPwRoom(null); }} style={{
+                flex:1, padding:'11px', borderRadius:12, border:'2px solid rgba(124,58,237,0.2)',
+                background:'#f9f7ff', color:'#7c3aed', fontSize:13.5, fontWeight:700, cursor:'pointer'
+              }}>
+                Cancel
+              </button>
+              <button onClick={() => {
+                if (pwInput.trim() === pwRoom.password) {
+                  setShowPasswordModal(false);
+                  proceedToRoom(pwRoom);
+                } else {
+                  setPwError('Incorrect password. Please try again.');
+                  setPwInput('');
+                }
+              }} style={{
+                flex:2, padding:'11px', borderRadius:12, border:'none',
+                background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff',
+                fontSize:13.5, fontWeight:800, cursor:'pointer',
+                boxShadow:'0 4px 16px rgba(124,58,237,0.35)'
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width:15, height:15, marginRight:6, verticalAlign:'middle' }}>
+                  <path fill="white" d="M10.09,15.59L11.5,17L16.5,12L11.5,7L10.09,8.41L12.67,11H3V13H12.67L10.09,15.59Z"/>
+                </svg>
+                Enter Room
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
