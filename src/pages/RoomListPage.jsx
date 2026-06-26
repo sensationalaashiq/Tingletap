@@ -579,12 +579,36 @@ const RoomListPage = () => {
                     </div>
                   </div>
 
-                  {/* Right: count + lock badge + arrow */}
+                  {/* Right: count + badges + arrow */}
                   <div className="rl-card-right">
+                    {(room.name.toLowerCase().includes('adult') || room.name.toLowerCase().includes('18+') || room.type === 'adult') && (
+                      <div title="Adults Only — 18+" style={{
+                        display:'flex', alignItems:'center', gap:4,
+                        background:'linear-gradient(135deg,rgba(236,72,153,0.18),rgba(168,85,247,0.18))',
+                        border:'1.5px solid rgba(236,72,153,0.45)',
+                        borderRadius:20, padding:'3px 9px', marginBottom:5,
+                        boxShadow:'0 0 10px rgba(236,72,153,0.25)',
+                        animation:'rlAdultPulse 2.5s ease-in-out infinite'
+                      }}>
+                        <svg viewBox="0 0 24 24" width="10" height="10" fill="none">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#ec4899" opacity="0.3"/>
+                          <text x="12" y="16" textAnchor="middle" fontSize="8" fontWeight="900" fill="#ec4899" fontFamily="sans-serif">18</text>
+                        </svg>
+                        <span style={{ fontSize:10, fontWeight:800, color:'#ec4899', letterSpacing:'0.06em' }}>18+</span>
+                      </div>
+                    )}
                     {room.password && (
-                      <div title="Password Protected" style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(124,58,237,0.10)', border:'1.5px solid rgba(124,58,237,0.22)', borderRadius:20, padding:'3px 8px', marginBottom:5 }}>
-                        <LockBadgeIcon />
-                        <span style={{ fontSize:10, fontWeight:700, color:'#7c3aed', letterSpacing:'0.04em' }}>LOCK</span>
+                      <div title="Password Protected" style={{
+                        display:'flex', alignItems:'center', gap:4,
+                        background:'linear-gradient(135deg,rgba(124,58,237,0.18),rgba(168,85,247,0.18))',
+                        border:'1.5px solid rgba(124,58,237,0.45)',
+                        borderRadius:20, padding:'3px 9px', marginBottom:5,
+                        boxShadow:'0 0 10px rgba(124,58,237,0.25)'
+                      }}>
+                        <svg viewBox="0 0 24 24" width="10" height="10" fill="#a855f7">
+                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                        <span style={{ fontSize:10, fontWeight:800, color:'#a855f7', letterSpacing:'0.04em' }}>LOCK</span>
                       </div>
                     )}
                     <div className="rl-card-badge">

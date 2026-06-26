@@ -592,13 +592,33 @@ const Sidebar = ({
                   >
                     <div className="sb-room-icon">{getRoomIcon(room.name)}</div>
                     <div className="sb-room-name">{room.name}</div>
-                    {isLocked && (
-                      <div className="sb-room-lock">
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                        </svg>
-                      </div>
-                    )}
+                    <div style={{display:'flex',alignItems:'center',gap:'3px',marginLeft:'auto',flexShrink:0}}>
+                      {isAdultRoom && (
+                        <div title="Adults Only (18+)" style={{
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          width:18, height:18, borderRadius:'50%',
+                          background:'linear-gradient(135deg,#ec4899,#a855f7)',
+                          boxShadow:'0 0 6px rgba(236,72,153,0.7)',
+                          animation:'sbAdultPulse 2.5s ease-in-out infinite',
+                          flexShrink:0
+                        }}>
+                          <span style={{fontSize:'7px',fontWeight:900,color:'#fff',letterSpacing:'-0.03em',lineHeight:1}}>18+</span>
+                        </div>
+                      )}
+                      {isLocked && (
+                        <div title={hasPassword ? 'Password Protected' : 'Staff Only'} style={{
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          width:18, height:18, borderRadius:'50%',
+                          background: hasPassword ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#f59e0b,#ef4444)',
+                          boxShadow: hasPassword ? '0 0 6px rgba(124,58,237,0.7)' : '0 0 6px rgba(245,158,11,0.7)',
+                          flexShrink:0
+                        }}>
+                          <svg viewBox="0 0 24 24" width="10" height="10" fill="white">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

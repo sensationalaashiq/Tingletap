@@ -28,6 +28,7 @@
 @keyframes rlFloat2  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 @keyframes rlAdminPulse { 0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.45)} 60%{box-shadow:0 0 0 12px rgba(251,191,36,0)} }
 @keyframes rlRingPulse { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.18);opacity:.15} }
+@keyframes rlAdultPulse { 0%,100%{box-shadow:0 0 10px rgba(236,72,153,0.25)} 50%{box-shadow:0 0 18px rgba(236,72,153,0.55),0 0 28px rgba(168,85,247,0.3)} }
 @keyframes rlShimmer { 0%{transform:translateX(-200%) skewX(-15deg)} 100%{transform:translateX(300%) skewX(-15deg)} }
 
 /* ══════════════════════════════════════════════════════
