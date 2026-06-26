@@ -126,6 +126,9 @@
   background: rgba(0,0,0,0.7);
   color: #1DB954;
   border: 1px solid rgba(29,185,84,0.4);
+  top: auto;
+  bottom: 8px;
+  left: 10px;
 }
 .vpm-cover-badge--youtube {
   background: rgba(0,0,0,0.7);
@@ -615,6 +618,13 @@
   border: 1.5px solid rgba(239,68,68,0.3);
 }
 .vpm-action-block:hover:not(:disabled) { background: rgba(239,68,68,0.15); box-shadow: 0 3px 12px rgba(239,68,68,0.2); }
+
+.vpm-action-report {
+  background: rgba(217,119,6,0.08);
+  color: #b45309;
+  border: 1.5px solid rgba(217,119,6,0.3);
+}
+.vpm-action-report:hover:not(:disabled) { background: rgba(217,119,6,0.15); box-shadow: 0 3px 12px rgba(217,119,6,0.2); }
 
 .vpm-action-delete {
   background: linear-gradient(135deg, #ef4444, #dc2626);

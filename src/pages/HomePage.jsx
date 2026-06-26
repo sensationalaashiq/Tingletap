@@ -583,12 +583,11 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                             View Profile
                                         </button>
 
-                                        {/* Add Friend — visible to all; guests see locked modal */}
-                                        {(isViewerGuest || !isTargetGuest) && (
-                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('friend'); } else { onAddFriend(message); closeAllDropdowns(); } }}>
+                                        {/* Add Friend — hidden if either side is guest */}
+                                        {!isLimited && (
+                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
                                                 <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ec4899" d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/></svg>
                                                 Add Friend
-                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="9" height="9" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
                                         )}
 
@@ -600,13 +599,23 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                             </button>
                                         )}
 
-                                        {/* Whisper — visible to all; guests see locked modal */}
-                                        {(isViewerGuest || !isTargetGuest) && (
-                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (isViewerGuest) { closeAllDropdowns(); setGuestLockModal('whisper'); } else { onWhisper(message); closeAllDropdowns(); } }}>
+                                        {/* Whisper — hidden if either side is guest */}
+                                        {!isLimited && (
+                                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); onWhisper(message); closeAllDropdowns(); }}>
                                                 <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>
                                                 Whisper
-                                                {isViewerGuest && <svg viewBox="0 0 24 24" width="9" height="9" fill="#9ca3af" style={{marginLeft:'2px',flexShrink:0}}><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>}
                                             </button>
+                                        )}
+
+                                        {/* Report — for logged-in non-guests */}
+                                        {!isViewerGuest && (
+                                            <>
+                                                <div className="sb-apd-divider"/>
+                                                <button className="sb-apd-btn sb-apd-warn" onClick={(e) => { e.stopPropagation(); onReport(message); closeAllDropdowns(); }}>
+                                                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#d97706" d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/></svg>
+                                                    Report User
+                                                </button>
+                                            </>
                                         )}
 
                                         {/* Block — hidden on Owner/Admin/Moderator profiles */}
@@ -5059,6 +5068,19 @@ const HomePage = ({ user }) => {
         window.handlePrivateMessageFromSidebar = handlePrivateMessage;
         window.handleBlockUserFromSidebar = handleBlockUser;
         window.handleAddFriendFromSidebar = handleAddFriend;
+        window.handleReportUserFromProfile = (userObj) => {
+            if (!auth.currentUser) return;
+            setMessageToReport({
+                uid: userObj.uid,
+                displayName: userObj.displayName || 'Unknown',
+                id: null,
+                text: null,
+                role: userObj.role,
+                isGuest: userObj.isGuest || false,
+            });
+            setReportType('User');
+            setReportPopupOpen(true);
+        };
         window.handleWhisperFromSidebar = (user) => {
             handleWhisperUser({ uid: user.uid, displayName: user.displayName });
         };
@@ -6835,6 +6857,28 @@ const HomePage = ({ user }) => {
                                     )}
                                 </div>
 
+                                {/* Role pill with Godfather/role icon */}
+                                {(() => {
+                                    const rl = profileUser.role?.toLowerCase() || 'user';
+                                    const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
+                                    const roleColors = { owner: '#FFD700', admin: '#FF4500', moderator: '#32CD32', user: '#7c3aed', guest: '#9ca3af' };
+                                    const roleColor = roleColors[rl] || '#7c3aed';
+                                    return (
+                                        <div style={{display:'inline-flex',alignItems:'center',gap:'5px',padding:'3px 10px',borderRadius:'20px',background:`rgba(${rl==='owner'?'255,215,0':rl==='admin'?'255,69,0':rl==='moderator'?'50,205,50':'124,58,237'},.12)`,border:`1px solid ${roleColor}40`,fontSize:'11px',fontWeight:700,color:roleColor,marginTop:'2px'}}>
+                                            {rl === 'owner' ? (
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#FFD700"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>
+                                            ) : rl === 'admin' ? (
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#FF4500"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                            ) : rl === 'moderator' ? (
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#32CD32"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                            ) : (
+                                                <span style={{width:7,height:7,borderRadius:'50%',background:roleColor,display:'inline-block',flexShrink:0}}/>
+                                            )}
+                                            {roleLabel}
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Status text — mirrors Sidebar sb-user-status with full statusStyles support */}
                                 {(() => {
                                     const statusText = typeof profileUser.status === 'string'
@@ -7055,21 +7099,43 @@ const HomePage = ({ user }) => {
                                             </div>
                                         )}
 
-                                        {/* Send Message — visible only when viewing someone ELSE's profile */}
+                                        {/* Action buttons — Send Message, Add Friend, Report */}
                                         {(() => {
                                             const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
                                             if (isOwnProfile) return null;
-                                            const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
+                                            const viewerIsGuest = !auth.currentUser || loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true;
                                             const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
                                             const canMsg = !(viewerIsGuest && !targetIsGuest);
-                                            return canMsg ? (
-                                                <button className="vpm-msg-btn" onClick={() => { handlePrivateMessage(profileUser); setProfileUser(null); }}>
-                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
-                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                                                    </svg>
-                                                    Send Message
-                                                </button>
-                                            ) : null;
+                                            const canAddFriend = !viewerIsGuest && !targetIsGuest;
+                                            const canReport = !!auth.currentUser && !viewerIsGuest;
+                                            return (
+                                                <div style={{display:'flex',flexDirection:'column',gap:'7px',marginTop:'4px'}}>
+                                                    {canMsg && (
+                                                        <button className="vpm-msg-btn" onClick={() => { handlePrivateMessage(profileUser); setProfileUser(null); }}>
+                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            </svg>
+                                                            Send Message
+                                                        </button>
+                                                    )}
+                                                    {canAddFriend && (
+                                                        <button className="vpm-msg-btn" style={{background:'linear-gradient(135deg,#10b981,#059669)'}} onClick={() => { handleAddFriend(profileUser); setProfileUser(null); }}>
+                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                                                <path d="M15 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 10H2v2H5v3h2v-3h3v-2H7V7H5v3z" fill="white"/>
+                                                            </svg>
+                                                            Add Friend
+                                                        </button>
+                                                    )}
+                                                    {canReport && (
+                                                        <button className="vpm-msg-btn" style={{background:'linear-gradient(135deg,#ef4444,#b91c1c)'}} onClick={() => { if (window.handleReportUserFromProfile) window.handleReportUserFromProfile(profileUser); setProfileUser(null); }}>
+                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                                                <path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z" fill="white"/>
+                                                            </svg>
+                                                            Report User
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
                                         })()}
                                     </div>
                                 )}

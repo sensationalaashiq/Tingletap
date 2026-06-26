@@ -7117,7 +7117,7 @@ html body.theme-sunset .message-body p {
     font-size: 9px; font-weight: 700; letter-spacing: .3px;
     backdrop-filter: blur(8px);
 }
-.vpm-cb-spotify { background: rgba(0,0,0,0.6); color: #1DB954; }
+.vpm-cb-spotify { background: rgba(0,0,0,0.6); color: #1DB954; top: auto; bottom: 6px; left: 8px; }
 .vpm-cb-youtube { background: rgba(0,0,0,0.6); color: #fff; }
 .vpm-cb-image   { background: rgba(0,0,0,0.5); color: #fff; }
 

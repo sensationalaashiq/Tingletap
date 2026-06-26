@@ -904,17 +904,19 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
         fontFamily: sStyles.fontFamily || 'inherit',
         fontSize: sStyles.fontSize || '11px',
         fontWeight: sStyles.fontWeight || 'normal',
-        fontStyle: 'italic',
+        fontStyle: sStyles.fontStyle || 'italic',
         textDecoration: sStyles.textDecoration || 'none',
         color: hasStatusGradient ? 'transparent' : (sStyles.textColor || '#9370c8'),
         background: hasStatusGradient
             ? `linear-gradient(${sStyles.gradientDirection || 'to right'}, ${sStyles.gradientStart || '#667eea'}, ${sStyles.gradientEnd || '#764ba2'})`
             : 'none',
         WebkitBackgroundClip: hasStatusGradient ? 'text' : 'initial',
+        WebkitTextFillColor: hasStatusGradient ? 'transparent' : 'initial',
         backgroundClip: hasStatusGradient ? 'text' : 'initial',
         display: hasStatusGradient ? 'inline-block' : 'block',
         textShadow: sStyles.textShadow || 'none',
-        animation: sStyles.animation || 'none',
+        animation: sStyles.animation && sStyles.animation !== 'none' ? sStyles.animation : undefined,
+        letterSpacing: sStyles.letterSpacing || 'normal',
     };
 
     const getTrustGradient = (s) => {
@@ -1056,7 +1058,21 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                     </h2>
 
                     <div className={`vpm-role-pill vpm-role-${realTimeUser.role?.toLowerCase() || 'user'}`}>
-                        <span className="vpm-role-dot"/>
+                        {realTimeUser.role?.toLowerCase() === 'owner' ? (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#FFD700" style={{flexShrink:0}}>
+                                <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/>
+                            </svg>
+                        ) : realTimeUser.role?.toLowerCase() === 'admin' ? (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#FF4500" style={{flexShrink:0}}>
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                            </svg>
+                        ) : realTimeUser.role?.toLowerCase() === 'moderator' ? (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#32CD32" style={{flexShrink:0}}>
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        ) : (
+                            <span className="vpm-role-dot"/>
+                        )}
                         {getRoleDisplayLabel({ role: realTimeUser.role, gender: realTimeUser.gender, isGuest: realTimeUser.isGuest, badge: realTimeUser.badge })}
                         {realTimeUser.gender && (
                             <span className="vpm-gender-chip" style={{display:'inline-flex',alignItems:'center',gap:'3px',opacity:0.75}}>
@@ -1373,13 +1389,15 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             )
                         )}
 
-                        <button className="vpm-action-btn vpm-action-msg" onClick={() => {
-                            if (onSendMessage) { onSendMessage(realTimeUser); onClose(); }
-                            else if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(realTimeUser); onClose(); }
-                        }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></svg>
-                            Message
-                        </button>
+                        {!(vpIsViewerGuest && !vpIsTargetGuest) && (
+                            <button className="vpm-action-btn vpm-action-msg" onClick={() => {
+                                if (onSendMessage) { onSendMessage(realTimeUser); onClose(); }
+                                else if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(realTimeUser); onClose(); }
+                            }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/></svg>
+                                Message
+                            </button>
+                        )}
 
                         {!vpIsLimited && (
                             <button className="vpm-action-btn vpm-action-whisper" onClick={() => {
@@ -1395,6 +1413,15 @@ const ViewProfileModal = ({ user, onClose, onOpenProfile, onSendMessage, onWhisp
                             <button className="vpm-action-btn vpm-action-block" onClick={handleBlockUser}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/></svg>
                                 Block
+                            </button>
+                        )}
+
+                        {auth.currentUser && !vpIsViewerGuest && (
+                            <button className="vpm-action-btn vpm-action-report" onClick={() => {
+                                if (window.handleReportUserFromProfile) { window.handleReportUserFromProfile(realTimeUser); onClose(); }
+                            }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/></svg>
+                                Report User
                             </button>
                         )}
                     </div>
