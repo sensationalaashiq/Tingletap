@@ -1025,6 +1025,47 @@ const SettingsSidebar = ({
                                 </label>
                             </div>
 
+                            <div style={{ paddingTop: '10px', paddingBottom: '4px' }}>
+                                <button
+                                    onClick={() => {
+                                        const keys = [
+                                            'tinglebotNotifications',
+                                            'userJoinNotifications',
+                                            'userLeaveNotifications',
+                                            'userMuteNotifications',
+                                            'userUnmuteNotifications',
+                                            'userKickNotifications',
+                                            'userBanNotifications',
+                                            'userUnbanNotifications',
+                                            'userPromoteNotifications',
+                                            'userDemoteNotifications',
+                                            'userRulesNotifications',
+                                            'userAnnouncementNotifications',
+                                            'userAutomodNotifications',
+                                        ];
+                                        keys.forEach(k => handleSettingChange(k, true));
+                                        toast.success('TingleBot notifications reset to defaults!');
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '9px 16px',
+                                        borderRadius: '10px',
+                                        border: '1px solid rgba(167,139,250,0.35)',
+                                        background: 'linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(99,102,241,0.10) 100%)',
+                                        color: '#7c3aed',
+                                        fontWeight: '600',
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.18s',
+                                        letterSpacing: '0.01em',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.22) 0%, rgba(99,102,241,0.18) 100%)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(99,102,241,0.10) 100%)'; }}
+                                >
+                                    ↺ Reset TingleBot Notifications to Default
+                                </button>
+                            </div>
+
                             </div>
 
                     </div>
