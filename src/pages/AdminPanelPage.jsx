@@ -508,6 +508,7 @@ const AdminPanelPage = () => {
     setUnkicking(true);
     try {
       await deleteDoc(doc(db, 'rooms', unkickTarget.roomId, 'kickedUsers', unkickTarget.userId));
+      await updateDoc(doc(db, 'users', unkickTarget.userId), { kickedFrom: null }).catch(() => {});
       await updateDoc(doc(db, 'modLogs', unkickTarget.id), {
         resolved: true,
         resolvedBy: currentUserProfile?.displayName || 'Admin',
@@ -527,7 +528,10 @@ const AdminPanelPage = () => {
     setUnmuteLoading(true);
     try {
       await updateDoc(doc(db, 'users', unmuteTarget.userId), {
-        isMuted: false, mutedInfo: null, mutedUntil: null
+        'mutedInfo.isMuted': false,
+        'mutedInfo.muteUntil': null,
+        'mutedInfo.reason': null,
+        'mutedInfo.mutedBy': null,
       });
       await updateDoc(doc(db, 'modLogs', unmuteTarget.id), {
         resolved: true,
@@ -851,16 +855,28 @@ const AdminPanelPage = () => {
           }
           break;
           
-        case 'mute':
+        case 'mute': {
+          const parseMuteMs = (dur) => {
+            if (!dur || dur === 'permanent') return null;
+            const s = dur.toString().toLowerCase();
+            const n = parseInt(s) || 5;
+            if (s.includes('hour')) return n * 3600000;
+            if (s.includes('day'))  return n * 86400000;
+            return n * 60000;
+          };
+          const muteMs = parseMuteMs(actionData.duration);
+          const muteUntilISO = muteMs ? new Date(Date.now() + muteMs).toISOString() : null;
           await updateDoc(userRef, {
             'mutedInfo.isMuted': true,
             'mutedInfo.mutedAt': new Date().toISOString(),
             'mutedInfo.mutedBy': currentUserProfile?.displayName,
             'mutedInfo.reason': actionData.reason,
-            'mutedInfo.duration': actionData.duration
+            'mutedInfo.duration': actionData.duration,
+            'mutedInfo.muteUntil': muteUntilISO,
           });
           toast.success(`${selectedUser.displayName} has been muted.`);
           break;
+        }
           
         case 'unmute':
           await updateDoc(userRef, {

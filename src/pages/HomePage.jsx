@@ -2000,13 +2000,14 @@ const HomePage = ({ user }) => {
         return () => unsub();
     }, [loggedInUserProfile?.uid, roomId]);
 
-    // ── Mute countdown: live timer shown when user is muted ──
+    // ── Auto-expiry: clear mute/kick when duration has passed ──
     useEffect(() => {
         const mutedInfo = loggedInUserProfile?.mutedInfo;
-        if (!mutedInfo?.isMuted) { setMuteTimeLeft(''); return; }
+        if (!mutedInfo?.isMuted) return;
 
-        const parseDuration = (str) => {
-            if (!str) return 0;
+        const parseDurationMs = (str, durationMs) => {
+            if (typeof durationMs === 'number' && durationMs > 0) return durationMs;
+            if (!str) return 300000;
             const s = str.toString().toLowerCase();
             const n = parseInt(s) || 5;
             if (s.includes('hour')) return n * 3600000;
@@ -2014,14 +2015,68 @@ const HomePage = ({ user }) => {
             return n * 60000;
         };
 
-        const raw = mutedInfo.mutedAt;
-        const mutedAt = raw?.toDate ? raw.toDate().getTime() : (raw?.seconds ? raw.seconds * 1000 : Date.now());
-        const duration = parseDuration(mutedInfo.duration) || 300000;
-        const endTime = mutedAt + duration;
+        let endTime;
+        if (mutedInfo.muteUntil) {
+            endTime = new Date(mutedInfo.muteUntil).getTime();
+        } else {
+            const raw = mutedInfo.mutedAt;
+            const mutedAt = raw?.toDate ? raw.toDate().getTime() :
+                            (raw?.seconds ? raw.seconds * 1000 :
+                            (typeof raw === 'string' ? new Date(raw).getTime() : Date.now()));
+            endTime = mutedAt + parseDurationMs(mutedInfo.duration, mutedInfo.duration);
+        }
+
+        if (!endTime || isNaN(endTime)) return;
+
+        const remaining = endTime - Date.now();
+        if (remaining <= 0 && uid) {
+            updateDoc(doc(db, 'users', uid), {
+                'mutedInfo.isMuted': false,
+                'mutedInfo.muteUntil': null,
+            }).catch(() => {});
+        }
+    }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.muteUntil, loggedInUserProfile?.mutedInfo?.mutedAt, uid]);
+
+    // ── Mute countdown: live timer shown when user is muted ──
+    useEffect(() => {
+        const mutedInfo = loggedInUserProfile?.mutedInfo;
+        if (!mutedInfo?.isMuted) { setMuteTimeLeft(''); return; }
+
+        const parseDurationMs = (str, durationMs) => {
+            if (typeof durationMs === 'number' && durationMs > 0) return durationMs;
+            if (!str) return 300000;
+            const s = str.toString().toLowerCase();
+            const n = parseInt(s) || 5;
+            if (s.includes('hour')) return n * 3600000;
+            if (s.includes('day'))  return n * 86400000;
+            return n * 60000;
+        };
+
+        let endTime;
+        if (mutedInfo.muteUntil) {
+            endTime = new Date(mutedInfo.muteUntil).getTime();
+        } else {
+            const raw = mutedInfo.mutedAt;
+            const mutedAt = raw?.toDate ? raw.toDate().getTime() :
+                            (raw?.seconds ? raw.seconds * 1000 :
+                            (typeof raw === 'string' ? new Date(raw).getTime() : Date.now()));
+            endTime = mutedAt + parseDurationMs(mutedInfo.duration, mutedInfo.duration);
+        }
+
+        if (!endTime || isNaN(endTime)) { setMuteTimeLeft(''); return; }
 
         const tick = () => {
             const remaining = endTime - Date.now();
-            if (remaining <= 0) { setMuteTimeLeft(''); return; }
+            if (remaining <= 0) {
+                setMuteTimeLeft('');
+                if (uid) {
+                    updateDoc(doc(db, 'users', uid), {
+                        'mutedInfo.isMuted': false,
+                        'mutedInfo.muteUntil': null,
+                    }).catch(() => {});
+                }
+                return;
+            }
             const h = Math.floor(remaining / 3600000);
             const m = Math.floor((remaining % 3600000) / 60000);
             const s = Math.floor((remaining % 60000) / 1000);
@@ -2034,7 +2089,7 @@ const HomePage = ({ user }) => {
         tick();
         const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
-    }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration]);
+    }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.muteUntil, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration, uid]);
 
     // Font preferences loading effect - runs when user profile changes
     // Source of truth is always Firestore via the profile; never localStorage
@@ -3685,15 +3740,6 @@ const HomePage = ({ user }) => {
                         }
                     }).catch(() => {});
                     setKickUserConfirm({ isOpen: false });
-                    toast(
-                        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                          <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(245,158,11,.4)'}}>
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
-                          </div>
-                          <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Kicked</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#d97706'}}>{displayName}</span> removed from room</div></div>
-                        </div>,
-                        {style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
-                    );
                 } catch (error) {
                     setKickUserConfirm({ isOpen: false });
                 }
@@ -3727,15 +3773,6 @@ const HomePage = ({ user }) => {
                         setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
                     }
                 }).catch(() => {});
-                toast(
-                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                      <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#06b6d4,#0284c7)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(6,182,212,.35)'}}>
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M3.27 3L2 4.27l6.01 6.01V11c0 2.76 2.24 5 5 5c.65 0 1.27-.13 1.84-.35L16.7 17.6C15.66 18.18 14.37 18.5 13 18.5c-5.25 0-8-4.5-8-8.5H3c0 4.93 3.82 9 9 9c1.69 0 3.26-.48 4.6-1.3L20.73 22 22 20.73 3.27 3zm7.73 1c2.76 0 5 2.24 5 5v.17l1.45 1.45c.35-.51.55-1.12.55-1.62 0-3.08-2.42-5-5-5-.5 0-.98.08-1.44.21L9 4.73C10.07 3.23 11.5 4 13 4z"/></svg>
-                      </div>
-                      <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Muted</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#0284c7'}}>{userToMute.displayName}</span> has been muted</div></div>
-                    </div>,
-                    {style:{background:'linear-gradient(135deg,#f0f9ff,#e0f2fe)',border:'1.5px solid rgba(6,182,212,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(6,182,212,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
-                );
             } catch (error) {
                 toast.error("Could not mute user. Check permissions.");
             }
@@ -3770,15 +3807,6 @@ const HomePage = ({ user }) => {
                         setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
                     }
                 }).catch(() => {});
-                toast(
-                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                      <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#ef4444,#7f1d1d)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(239,68,68,.4)'}}>
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
-                      </div>
-                      <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>User Banned</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#b91c1c'}}>{userToBan.displayName}</span> banned globally</div></div>
-                    </div>,
-                    {style:{background:'linear-gradient(135deg,#fff5f5,#fee2e2)',border:'1.5px solid rgba(239,68,68,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(239,68,68,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
-                );
             } catch (error) {
                 toast.error("Could not ban user. Check permissions.");
             }
