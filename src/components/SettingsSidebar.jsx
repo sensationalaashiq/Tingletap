@@ -68,8 +68,9 @@ const SettingsSidebar = ({
         compactMode: false,
         darkMode: false,
         selectedTheme: 'light',
-        userJoinNotifications: true,
-        userLeaveNotifications: true,
+        tinglebotNotifications: localStorage.getItem('tinglebotNotifications') !== 'false',
+        userJoinNotifications: localStorage.getItem('userJoinNotifications') !== 'false',
+        userLeaveNotifications: localStorage.getItem('userLeaveNotifications') !== 'false',
 
         // Notification Settings
         soundEnabled: true,
@@ -185,6 +186,7 @@ const SettingsSidebar = ({
                         twoFactorAuth: userSettings.twoFactorAuth !== undefined ? userSettings.twoFactorAuth : (localStorage.getItem('twoFactorAuth') === 'true'),
                         contentFilterLevel: userSettings.contentFilterLevel || localStorage.getItem('contentFilterLevel') || 'medium',
                         blockExplicitContent: userSettings.blockExplicitContent !== undefined ? userSettings.blockExplicitContent : (localStorage.getItem('blockExplicitContent') === 'true'),
+                        tinglebotNotifications: userSettings.tinglebotNotifications !== undefined ? userSettings.tinglebotNotifications : (localStorage.getItem('tinglebotNotifications') !== 'false'),
                         userJoinNotifications: userSettings.userJoinNotifications !== undefined ? userSettings.userJoinNotifications : (localStorage.getItem('userJoinNotifications') !== 'false'),
                         userLeaveNotifications: userSettings.userLeaveNotifications !== undefined ? userSettings.userLeaveNotifications : (localStorage.getItem('userLeaveNotifications') !== 'false'),
 
@@ -803,6 +805,21 @@ const SettingsSidebar = ({
                                         type="checkbox"
                                         checked={settings.showTimestamps}
                                         onChange={(e) => handleSettingChange('showTimestamps', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Show TingleBot Notifications</span>
+                                    <small>Show all TingleBot alerts (join, leave, mute, ban, announcements, rules, etc.)</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.tinglebotNotifications}
+                                        onChange={(e) => handleSettingChange('tinglebotNotifications', e.target.checked)}
                                     />
                                     <span className="modern-toggle-slider"></span>
                                 </label>

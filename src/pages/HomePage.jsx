@@ -2537,20 +2537,27 @@ const HomePage = ({ user }) => {
 
                 setMessages(newMessages);
 
-                // ── Auto-delete TingleBot messages after 3 minutes ──
-                // Schedule deletion for any TingleBot message not yet scheduled.
-                newMessages.forEach(msg => {
-                    const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024';
-                    if (!isBot || !msg.id) return;
-                    if (scheduledTinglebotDeletionsRef.current.has(msg.id)) return;
-                    scheduledTinglebotDeletionsRef.current.add(msg.id);
-                    const createdMs = msg.createdAt?.toMillis?.() || Date.now();
-                    const ageMs = Date.now() - createdMs;
-                    const remainingMs = Math.max(0, 3 * 60 * 1000 - ageMs);
-                    setTimeout(() => {
-                        deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
-                    }, remainingMs);
-                });
+                // ── Auto-delete TingleBot messages (owner only, creation-time timers handle other clients) ──
+                // Only the owner client cleans up messages that slipped past the creation-time timer.
+                // We never schedule deletion with <30s remaining to avoid premature disappearance for others.
+                if (loggedInUserProfile?.role === 'owner') {
+                    newMessages.forEach(msg => {
+                        const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024';
+                        if (!isBot || !msg.id) return;
+                        if (scheduledTinglebotDeletionsRef.current.has(msg.id)) return;
+                        scheduledTinglebotDeletionsRef.current.add(msg.id);
+                        const createdMs = msg.createdAt?.toMillis?.() || Date.now();
+                        const ageMs = Date.now() - createdMs;
+                        const remainingMs = 3 * 60 * 1000 - ageMs;
+                        if (remainingMs <= 0) {
+                            deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
+                        } else if (remainingMs > 30 * 1000) {
+                            setTimeout(() => {
+                                deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
+                            }, remainingMs);
+                        }
+                    });
+                }
 
                 // ── Keep only latest 25 user messages (delete extras from Firestore) ──
                 const userMsgs = newMessages.filter(
@@ -6572,8 +6579,12 @@ const HomePage = ({ user }) => {
                             if (!msg.uid) return true;
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
-                            if (msg.tinglebotType === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
-                            if (msg.tinglebotType === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
+                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
+                            if (isTinglebotMsg) {
+                                if (localStorage.getItem('tinglebotNotifications') === 'false') return false;
+                                if (msg.tinglebotType === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
+                                if (msg.tinglebotType === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
+                            }
                             return true;
                         }).map((msg, index) => {
                             // TingleBot messages render as premium notification strips
