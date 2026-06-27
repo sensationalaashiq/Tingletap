@@ -80,6 +80,7 @@ const SettingsSidebar = ({
         userDemoteNotifications: localStorage.getItem('userDemoteNotifications') !== 'false',
         userRulesNotifications: localStorage.getItem('userRulesNotifications') !== 'false',
         userAnnouncementNotifications: localStorage.getItem('userAnnouncementNotifications') !== 'false',
+        userAutomodNotifications: localStorage.getItem('userAutomodNotifications') !== 'false',
 
         // Notification Settings
         soundEnabled: true,
@@ -207,6 +208,7 @@ const SettingsSidebar = ({
                         userDemoteNotifications: userSettings.userDemoteNotifications !== undefined ? userSettings.userDemoteNotifications : (localStorage.getItem('userDemoteNotifications') !== 'false'),
                         userRulesNotifications: userSettings.userRulesNotifications !== undefined ? userSettings.userRulesNotifications : (localStorage.getItem('userRulesNotifications') !== 'false'),
                         userAnnouncementNotifications: userSettings.userAnnouncementNotifications !== undefined ? userSettings.userAnnouncementNotifications : (localStorage.getItem('userAnnouncementNotifications') !== 'false'),
+                        userAutomodNotifications: userSettings.userAutomodNotifications !== undefined ? userSettings.userAutomodNotifications : (localStorage.getItem('userAutomodNotifications') !== 'false'),
 
                         // Additional Notification Settings
                         desktopNotifications: userSettings.desktopNotifications !== undefined ? userSettings.desktopNotifications : (localStorage.getItem('desktopNotifications') === 'true'),
@@ -1003,6 +1005,21 @@ const SettingsSidebar = ({
                                         type="checkbox"
                                         checked={settings.userAnnouncementNotifications}
                                         onChange={(e) => handleSettingChange('userAnnouncementNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>AutoMod Actions</span>
+                                    <small>Show automatic moderation alerts (spam, abuse detection)</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userAutomodNotifications}
+                                        onChange={(e) => handleSettingChange('userAutomodNotifications', e.target.checked)}
                                     />
                                     <span className="modern-toggle-slider"></span>
                                 </label>

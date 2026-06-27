@@ -6594,6 +6594,7 @@ const HomePage = ({ user }) => {
                                 if (tt === 'demoted' && localStorage.getItem('userDemoteNotifications') === 'false') return false;
                                 if (tt === 'rule' && localStorage.getItem('userRulesNotifications') === 'false') return false;
                                 if (tt === 'announcement' && localStorage.getItem('userAnnouncementNotifications') === 'false') return false;
+                                if (tt === 'automod' && localStorage.getItem('userAutomodNotifications') === 'false') return false;
                             }
                             return true;
                         }).map((msg, index) => {
