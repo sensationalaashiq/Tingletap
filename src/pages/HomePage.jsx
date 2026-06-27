@@ -7584,70 +7584,94 @@ const HomePage = ({ user }) => {
                 </div>
                 );
             })()}
-            {/* ── Inline Mute Banner — shown above the message box ── */}
+            {/* ── Premium Mute Banner ── */}
             {loggedInUserProfile?.mutedInfo?.isMuted && (
                 <div style={{
                     position: 'fixed', bottom: '44px', left: 0, right: 0,
                     zIndex: 1999,
-                    background: 'linear-gradient(90deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
-                    backgroundSize: '200% 100%',
-                    animation: 'muteBannerSlide 0.28s cubic-bezier(0.34,1.56,0.64,1)',
-                    borderTop: '1.5px solid rgba(139,92,246,0.22)',
-                    padding: '5px 14px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: '0 -3px 16px rgba(109,40,217,0.1), 0 -1px 4px rgba(109,40,217,0.07)',
+                    background: 'linear-gradient(90deg, rgba(18,8,40,0.97) 0%, rgba(30,12,60,0.99) 50%, rgba(18,8,40,0.97) 100%)',
+                    borderTop: '1.5px solid rgba(139,92,246,0.35)',
+                    padding: '7px 12px',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    boxShadow: '0 -4px 24px rgba(109,40,217,0.22), 0 -1px 6px rgba(109,40,217,0.12)',
                     fontFamily: 'Inter, sans-serif',
+                    animation: 'muteBannerSlide 0.28s cubic-bezier(0.34,1.56,0.64,1)',
                 }}>
-                    {/* Muted mic icon */}
+                    {/* Pulsing mic icon */}
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '26px', height: '26px', borderRadius: '8px',
-                        background: 'rgba(139,92,246,0.1)', border: '1.5px solid rgba(139,92,246,0.2)',
-                        flexShrink: 0,
+                        width: '32px', height: '32px', borderRadius: '10px', flexShrink: 0,
+                        background: 'rgba(139,92,246,0.18)', border: '1.5px solid rgba(139,92,246,0.35)',
+                        boxShadow: '0 0 12px rgba(139,92,246,0.25)',
+                        animation: 'mutePulse 2s ease-in-out infinite',
                     }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#7c3aed"/>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#a78bfa"/>
                         </svg>
                     </div>
-                    {/* Label */}
-                    <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#4c1d95', letterSpacing: '0.01em' }}>
-                        You are muted
-                    </span>
-                    {/* Reason */}
-                    {loggedInUserProfile?.mutedInfo?.reason && (
-                        <span style={{
-                            fontSize: '11.5px', color: '#7c6fcd', fontWeight: 500,
-                            maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                            · {loggedInUserProfile.mutedInfo.reason}
-                        </span>
-                    )}
-                    {/* Divider dot */}
-                    <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'rgba(139,92,246,0.35)', flexShrink: 0 }} />
-                    {/* Countdown or permanent */}
+
+                    {/* Left: label + muted-by + reason */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#e2d9ff', letterSpacing: '-0.01em' }}>
+                                🔇 You are muted
+                            </span>
+                            {/* Muted-by badge */}
+                            {(() => {
+                                const by = loggedInUserProfile?.mutedInfo?.mutedBy || '';
+                                const isBot = by.toLowerCase().includes('tinglebot') || by.toLowerCase().includes('automod') || by.toLowerCase().includes('system');
+                                return (
+                                    <span style={{
+                                        fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+                                        background: isBot ? 'rgba(245,158,11,0.15)' : 'rgba(139,92,246,0.15)',
+                                        color: isBot ? '#fcd34d' : '#c4b5fd',
+                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.28)' : 'rgba(139,92,246,0.28)'}`,
+                                        letterSpacing: '0.02em',
+                                        whiteSpace: 'nowrap',
+                                    }}>
+                                        {isBot ? '🤖 TingleBot' : `👮 ${by || 'Staff'}`}
+                                    </span>
+                                );
+                            })()}
+                        </div>
+                        {loggedInUserProfile?.mutedInfo?.reason && (
+                            <div style={{
+                                fontSize: '11px', color: 'rgba(196,181,253,0.55)', marginTop: '2px',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px',
+                            }}>
+                                {loggedInUserProfile.mutedInfo.reason}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right: timer */}
                     {muteTimeLeft ? (
-                        <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            background: 'rgba(139,92,246,0.09)', border: '1.5px solid rgba(139,92,246,0.18)',
-                            borderRadius: '7px', padding: '2px 8px',
-                            fontWeight: 800, fontSize: '11.5px', color: '#6d28d9',
-                            fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
+                        <div style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
+                            background: 'rgba(139,92,246,0.14)', border: '1.5px solid rgba(139,92,246,0.3)',
+                            borderRadius: '10px', padding: '4px 12px', minWidth: '72px',
                         }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="9" stroke="#7c3aed" strokeWidth="2.2"/>
-                                <path d="M12 7v5l3 2" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"/>
-                            </svg>
-                            {muteTimeLeft}
-                        </span>
+                            <span style={{ fontSize: '9.5px', fontWeight: 600, color: 'rgba(196,181,253,0.55)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1px' }}>
+                                Unmute in
+                            </span>
+                            <span style={{
+                                fontWeight: 900, fontSize: '16px', color: '#c4b5fd',
+                                fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em',
+                                fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                                lineHeight: 1,
+                            }}>
+                                {muteTimeLeft}
+                            </span>
+                        </div>
                     ) : (
-                        <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.14)',
-                            borderRadius: '7px', padding: '2px 8px',
-                            fontSize: '11px', color: '#7c3aed', fontWeight: 600,
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '4px',
+                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.22)',
+                            borderRadius: '8px', padding: '4px 10px', flexShrink: 0,
+                            fontSize: '11px', color: '#f87171', fontWeight: 700,
                         }}>
-                            Permanent
-                        </span>
+                            ∞ Permanent
+                        </div>
                     )}
                 </div>
             )}
