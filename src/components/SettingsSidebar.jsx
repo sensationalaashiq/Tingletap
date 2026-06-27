@@ -71,6 +71,15 @@ const SettingsSidebar = ({
         tinglebotNotifications: localStorage.getItem('tinglebotNotifications') !== 'false',
         userJoinNotifications: localStorage.getItem('userJoinNotifications') !== 'false',
         userLeaveNotifications: localStorage.getItem('userLeaveNotifications') !== 'false',
+        userMuteNotifications: localStorage.getItem('userMuteNotifications') !== 'false',
+        userUnmuteNotifications: localStorage.getItem('userUnmuteNotifications') !== 'false',
+        userKickNotifications: localStorage.getItem('userKickNotifications') !== 'false',
+        userBanNotifications: localStorage.getItem('userBanNotifications') !== 'false',
+        userUnbanNotifications: localStorage.getItem('userUnbanNotifications') !== 'false',
+        userPromoteNotifications: localStorage.getItem('userPromoteNotifications') !== 'false',
+        userDemoteNotifications: localStorage.getItem('userDemoteNotifications') !== 'false',
+        userRulesNotifications: localStorage.getItem('userRulesNotifications') !== 'false',
+        userAnnouncementNotifications: localStorage.getItem('userAnnouncementNotifications') !== 'false',
 
         // Notification Settings
         soundEnabled: true,
@@ -189,6 +198,15 @@ const SettingsSidebar = ({
                         tinglebotNotifications: userSettings.tinglebotNotifications !== undefined ? userSettings.tinglebotNotifications : (localStorage.getItem('tinglebotNotifications') !== 'false'),
                         userJoinNotifications: userSettings.userJoinNotifications !== undefined ? userSettings.userJoinNotifications : (localStorage.getItem('userJoinNotifications') !== 'false'),
                         userLeaveNotifications: userSettings.userLeaveNotifications !== undefined ? userSettings.userLeaveNotifications : (localStorage.getItem('userLeaveNotifications') !== 'false'),
+                        userMuteNotifications: userSettings.userMuteNotifications !== undefined ? userSettings.userMuteNotifications : (localStorage.getItem('userMuteNotifications') !== 'false'),
+                        userUnmuteNotifications: userSettings.userUnmuteNotifications !== undefined ? userSettings.userUnmuteNotifications : (localStorage.getItem('userUnmuteNotifications') !== 'false'),
+                        userKickNotifications: userSettings.userKickNotifications !== undefined ? userSettings.userKickNotifications : (localStorage.getItem('userKickNotifications') !== 'false'),
+                        userBanNotifications: userSettings.userBanNotifications !== undefined ? userSettings.userBanNotifications : (localStorage.getItem('userBanNotifications') !== 'false'),
+                        userUnbanNotifications: userSettings.userUnbanNotifications !== undefined ? userSettings.userUnbanNotifications : (localStorage.getItem('userUnbanNotifications') !== 'false'),
+                        userPromoteNotifications: userSettings.userPromoteNotifications !== undefined ? userSettings.userPromoteNotifications : (localStorage.getItem('userPromoteNotifications') !== 'false'),
+                        userDemoteNotifications: userSettings.userDemoteNotifications !== undefined ? userSettings.userDemoteNotifications : (localStorage.getItem('userDemoteNotifications') !== 'false'),
+                        userRulesNotifications: userSettings.userRulesNotifications !== undefined ? userSettings.userRulesNotifications : (localStorage.getItem('userRulesNotifications') !== 'false'),
+                        userAnnouncementNotifications: userSettings.userAnnouncementNotifications !== undefined ? userSettings.userAnnouncementNotifications : (localStorage.getItem('userAnnouncementNotifications') !== 'false'),
 
                         // Additional Notification Settings
                         desktopNotifications: userSettings.desktopNotifications !== undefined ? userSettings.desktopNotifications : (localStorage.getItem('desktopNotifications') === 'true'),
@@ -827,8 +845,8 @@ const SettingsSidebar = ({
 
                             <div className="modern-setting-item">
                                 <div className="modern-setting-info">
-                                    <span>Show Join Notifications</span>
-                                    <small>Show TingleBot message when someone joins the room</small>
+                                    <span>Joined Room</span>
+                                    <small>Show when someone joins the room</small>
                                 </div>
                                 <label className="modern-toggle-switch">
                                     <input
@@ -842,14 +860,149 @@ const SettingsSidebar = ({
 
                             <div className="modern-setting-item">
                                 <div className="modern-setting-info">
-                                    <span>Show Leave Notifications</span>
-                                    <small>Show TingleBot message when someone leaves the room</small>
+                                    <span>Left Room</span>
+                                    <small>Show when someone leaves the room</small>
                                 </div>
                                 <label className="modern-toggle-switch">
                                     <input
                                         type="checkbox"
                                         checked={settings.userLeaveNotifications}
                                         onChange={(e) => handleSettingChange('userLeaveNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Muted</span>
+                                    <small>Show when a user is muted by staff</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userMuteNotifications}
+                                        onChange={(e) => handleSettingChange('userMuteNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Unmuted</span>
+                                    <small>Show when a user is unmuted by staff</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userUnmuteNotifications}
+                                        onChange={(e) => handleSettingChange('userUnmuteNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Kicked</span>
+                                    <small>Show when a user is kicked from the room</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userKickNotifications}
+                                        onChange={(e) => handleSettingChange('userKickNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Banned</span>
+                                    <small>Show when a user is banned</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userBanNotifications}
+                                        onChange={(e) => handleSettingChange('userBanNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Unbanned</span>
+                                    <small>Show when a user is unbanned</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userUnbanNotifications}
+                                        onChange={(e) => handleSettingChange('userUnbanNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Promoted</span>
+                                    <small>Show when a user is promoted to a higher role</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userPromoteNotifications}
+                                        onChange={(e) => handleSettingChange('userPromoteNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Demoted</span>
+                                    <small>Show when a user is demoted to a lower role</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userDemoteNotifications}
+                                        onChange={(e) => handleSettingChange('userDemoteNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Rules Reminder</span>
+                                    <small>Show periodic community rules posted by TingleBot</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userRulesNotifications}
+                                        onChange={(e) => handleSettingChange('userRulesNotifications', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Announcements</span>
+                                    <small>Show staff announcements posted by TingleBot</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.userAnnouncementNotifications}
+                                        onChange={(e) => handleSettingChange('userAnnouncementNotifications', e.target.checked)}
                                     />
                                     <span className="modern-toggle-slider"></span>
                                 </label>

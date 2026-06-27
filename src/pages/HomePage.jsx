@@ -6582,8 +6582,18 @@ const HomePage = ({ user }) => {
                             const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
                             if (isTinglebotMsg) {
                                 if (localStorage.getItem('tinglebotNotifications') === 'false') return false;
-                                if (msg.tinglebotType === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
-                                if (msg.tinglebotType === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
+                                const tt = msg.tinglebotType || '';
+                                if (tt === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
+                                if (tt === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
+                                if (tt === 'muted' && localStorage.getItem('userMuteNotifications') === 'false') return false;
+                                if (tt === 'unmuted' && localStorage.getItem('userUnmuteNotifications') === 'false') return false;
+                                if (tt === 'kicked' && localStorage.getItem('userKickNotifications') === 'false') return false;
+                                if (tt === 'banned' && localStorage.getItem('userBanNotifications') === 'false') return false;
+                                if (tt === 'unbanned' && localStorage.getItem('userUnbanNotifications') === 'false') return false;
+                                if (tt === 'promoted' && localStorage.getItem('userPromoteNotifications') === 'false') return false;
+                                if (tt === 'demoted' && localStorage.getItem('userDemoteNotifications') === 'false') return false;
+                                if (tt === 'rule' && localStorage.getItem('userRulesNotifications') === 'false') return false;
+                                if (tt === 'announcement' && localStorage.getItem('userAnnouncementNotifications') === 'false') return false;
                             }
                             return true;
                         }).map((msg, index) => {
