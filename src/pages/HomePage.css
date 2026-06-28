@@ -7574,18 +7574,19 @@ html body.theme-sunset .message-body p {
     gap: 5px;
     padding: 9px 6px;
     border-radius: 12px;
-    border: none;
+    border: none !important;
     font-size: 0.75rem;
     font-weight: 700;
-    color: white;
+    color: #fff !important;
     cursor: pointer;
     transition: all 0.18s ease;
     box-shadow: 0 3px 10px rgba(0,0,0,0.15);
 }
 .vpm-action-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
-.vpm-action-msg    { background: linear-gradient(135deg,#7c3aed,#6366f1); }
-.vpm-action-friend { background: linear-gradient(135deg,#10b981,#059669); }
-.vpm-action-report { background: linear-gradient(135deg,#ef4444,#b91c1c); }
+.vpm-action-btn svg { flex-shrink: 0; }
+.vpm-action-msg    { background: linear-gradient(135deg,#7c3aed,#6366f1) !important; }
+.vpm-action-friend { background: linear-gradient(135deg,#10b981,#059669) !important; }
+.vpm-action-report { background: linear-gradient(135deg,#ef4444,#b91c1c) !important; }
 
 /* FRIENDS tab */
 .vpm-friends-wrap { display: flex; flex-direction: column; gap: 10px; }
