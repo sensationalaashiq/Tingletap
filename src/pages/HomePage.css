@@ -5794,42 +5794,41 @@ html body.theme-sunset .message-body p {
     border-radius: 4px;
     height: 4px;
 }
-  /* YouTube Embed Compact Styling - Perfect fit without black space */
+  /* YouTube Embed — Premium Lavender Border */
   .youtube-embed {
-      width: 100%;
-      max-width: 480px;
+      width: 92%;
+      max-width: 360px;
       margin: 8px 0;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow:
+        0 6px 28px rgba(124, 58, 237, 0.22),
+        0 2px 8px rgba(124, 58, 237, 0.12);
       display: inline-block;
       position: relative;
-      background: transparent;
-      border: 3px solid #E6E6FA;
+      background: #0f0f0f;
+      border: 2.5px solid #c4b5fd;
       padding: 0;
   }
 
   .youtube-embed iframe {
       width: 100% !important;
-      height: 270px !important;
+      height: 203px !important;
       border: none !important;
-      border-radius: 9px !important;
+      border-radius: 0 !important;
       display: block !important;
-      object-fit: cover !important;
       background: #000 !important;
 }
 
-/* YouTube Music Player Styling */
+/* YouTube Music Player Styling — Red Theme Wrapper */
 .youtube-music-message {
-    background: linear-gradient(135deg, rgba(230, 230, 250, 0.1) 0%, rgba(200, 200, 255, 0.15) 100%);
-    border: 2px solid #e6e6fa;
-    border-radius: 12px;
-    padding: 6px;
+    background: transparent;
+    border: none;
+    border-radius: 14px;
+    padding: 18px 0 0 0;
     margin: 6px 0;
-    box-shadow: 0 4px 15px rgba(230, 230, 250, 0.3);
-    max-width: 320px;
+    max-width: 290px;
     position: relative;
-  
 }
 
 .music-header {
@@ -5933,56 +5932,43 @@ html body.theme-sunset .message-body p {
 }
 
 .youtube-music-message .compact-btn {
-    background: rgba(192, 132, 252, 0.15);
-    border: 1px solid rgba(192, 132, 252, 0.3);
-    color: #7c3aed;
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
+    color: #ffffff !important;
 }
 
 .youtube-music-message .compact-btn:hover {
-    background: rgba(192, 132, 252, 0.25);
-    transform: scale(1.05);
-}
-
-/* YouTube Music Player Overrides - FORCE WHITE ICONS */
-.youtube-music-message .compact-btn {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid #f3f4f6;
-    color: var(--landing-text-color, #ffffff);
+    background: rgba(255, 255, 255, 0.42) !important;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+    transform: scale(1.1);
 }
 
 .youtube-music-message .compact-btn svg {
-    color: var(--landing-text-color, #ffffff);
+    color: #ffffff !important;
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
 .youtube-music-message .compact-btn svg * {
-    color: var(--landing-text-color, #ffffff);
+    color: #ffffff !important;
     fill: #ffffff !important;
     stroke: #ffffff !important;
-}
-
-.youtube-music-message .compact-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.4);
 }
 
 .youtube-music-message .time-info {
-    color: var(--landing-text-color, #ffffff);
-    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.3);
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .youtube-music-message .time-info span {
-    color: var(--landing-text-color, #ffffff);
-    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.3);
+    color: #ffffff !important;
 }
 
 .youtube-music-message .volume-section svg {
-    color: var(--landing-text-color, #ffffff);
+    color: #ffffff !important;
     fill: #ffffff !important;
     stroke: #ffffff !important;
-    filter: drop-shadow(0 1px 3px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .youtube-music-message .volume-section svg * {
