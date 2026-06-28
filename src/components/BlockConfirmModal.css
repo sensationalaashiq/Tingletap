@@ -7,7 +7,7 @@
     align-items: center;
     justify-content: center;
     z-index: 99999;
-    padding: 16px 16px 4px;
+    padding: 16px 16px 24px;
     box-sizing: border-box;
     animation: bcmFadeIn 0.18s ease;
 }
