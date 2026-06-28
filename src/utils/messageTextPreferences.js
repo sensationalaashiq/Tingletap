@@ -24,16 +24,20 @@ export const saveMessageFontPreferences = async (preferences) => {
     const { auth, db } = await import('../firebase/config');
     if (!auth.currentUser) return;
 
+    const isGuest = auth.currentUser.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
+
     const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
     const userRef = doc(db, 'users', auth.currentUser.uid);
     const userDoc = await getDoc(userRef);
     const userData = userDoc.exists() ? userDoc.data() : {};
 
-    await updateDoc(userRef, {
-      messageFontPreferences: preferences,
-      'settings.messageFontPreferences': preferences,
-      updatedAt: new Date().toISOString()
-    });
+    if (!isGuest) {
+      await updateDoc(userRef, {
+        messageFontPreferences: preferences,
+        'settings.messageFontPreferences': preferences,
+        updatedAt: new Date().toISOString()
+      });
+    }
 
     const userName = userData.displayName || auth.currentUser.displayName || 'User';
 

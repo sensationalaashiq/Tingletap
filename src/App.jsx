@@ -961,8 +961,8 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/faq" element={<FAQPage />} />
 
-        {/* Slug-based room routes — e.g. /indian-chat, /adult-chat, /gaming-room */}
-        <Route path="/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
+        {/* Slug-based room routes — e.g. /r/indian-chat, /r/adult-chat */}
+        <Route path="/r/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
 
         {/* Default route */}
         <Route path="/" element={user

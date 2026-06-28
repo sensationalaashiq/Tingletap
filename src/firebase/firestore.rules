@@ -98,7 +98,9 @@ service cloud.firestore {
         'gender', 'country', 'status', 'bio', 'profession', 'blockedUsers', 'settings',
         'lastSeen', 'preferences', 'avatar', 'username', 'email', 'createdAt', 'updatedAt',
         'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
-        'fcmToken', 'pushToken', 'notificationPreferences'
+        'fcmToken', 'pushToken', 'notificationPreferences',
+        'age', 'relationship', 'isGuest',
+        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt'
       ];
       let staffOnlyFields = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt'];
       let changedFields = request.resource.data.diff(resource.data).affectedKeys();

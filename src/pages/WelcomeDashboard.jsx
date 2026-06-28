@@ -1070,13 +1070,21 @@ const EditProfilePanel = ({ user, onDone }) => {
         if (j.success) photoURL = j.data.url;
       }
       await updateProfile(user, { displayName: form.displayName, photoURL });
-      await setDoc(doc(db, 'users', user.uid), { ...form, photoURL, updatedAt: new Date().toISOString() }, { merge: true });
-      if (localStorage.getItem('isGuest') === 'true') {
+
+      const isGuestUser = user?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
+
+      if (isGuestUser) {
         try {
           const existing = JSON.parse(localStorage.getItem('guestUser') || '{}');
-          localStorage.setItem('guestUser', JSON.stringify({ ...existing, ...form, photoURL }));
+          const updated = { ...existing, ...form, photoURL, role: 'guest', isGuest: true };
+          localStorage.setItem('guestUser', JSON.stringify(updated));
+          if (form.gender) localStorage.setItem('guestGender', form.gender);
         } catch { }
+      } else {
+        const allowedFormFields = { displayName: form.displayName, gender: form.gender, country: form.country, bio: form.bio, status: form.status, age: form.age, relationship: form.relationship };
+        await setDoc(doc(db, 'users', user.uid), { ...allowedFormFields, photoURL, updatedAt: new Date().toISOString() }, { merge: true });
       }
+
       toast.success('Profile updated!');
       onDone();
     } catch (e) { toast.error(e.message); }
