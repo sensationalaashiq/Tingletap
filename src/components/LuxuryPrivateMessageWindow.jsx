@@ -22,7 +22,8 @@ const LuxuryPrivateMessageWindow = ({
   privateFileInputRef,
   loggedInUserProfile,
   getUserStatus,
-  getPrivateMessageAvatarUrl
+  getPrivateMessageAvatarUrl,
+  dmNotice
 }) => {
   const chatAreaRef = useRef(null);
   const attachmentDropdownRef = useRef(null);
@@ -491,6 +492,59 @@ const LuxuryPrivateMessageWindow = ({
                       </motion.div>
                     ))}
                   </div>
+                )}
+              </AnimatePresence>
+
+              {/* DM-off notice — TingleBot style */}
+              <AnimatePresence>
+                {dmNotice && (
+                  <motion.div
+                    key="dm-notice"
+                    initial={{ opacity: 0, scale: 0.88, y: 6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.88, y: 4 }}
+                    transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '5px 10px 6px',
+                    }}
+                  >
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      background: dmNotice.level === 'friends'
+                        ? 'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(217,119,6,0.09))'
+                        : 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(185,28,28,0.08))',
+                      border: dmNotice.level === 'friends'
+                        ? '1px solid rgba(217,119,6,0.30)'
+                        : '1px solid rgba(220,38,38,0.28)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                      maxWidth: '92%',
+                    }}>
+                      <svg viewBox="0 0 24 24" width="11" height="11"
+                        fill={dmNotice.level === 'friends' ? '#d97706' : '#dc2626'}
+                        style={{ flexShrink: 0 }}>
+                        {dmNotice.level === 'friends'
+                          ? <path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"/>
+                          : <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/>}
+                      </svg>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 600,
+                        color: dmNotice.level === 'friends' ? '#92400e' : '#991b1b',
+                        letterSpacing: '0.01em',
+                        lineHeight: 1.3,
+                        textAlign: 'center',
+                      }}>
+                        {dmNotice.text}
+                      </span>
+                    </div>
+                  </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>

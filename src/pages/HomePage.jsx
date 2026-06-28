@@ -1022,6 +1022,7 @@ const HomePage = ({ user }) => {
     const [whisperMessage, setWhisperMessage] = useState('');
     const [isPrivateMessageOpen, setPrivateMessageOpen] = useState(false);
     const [privateMessageTarget, setPrivateMessageTarget] = useState(null);
+    const [pmDmNotice, setPmDmNotice] = useState(null);
     const [privateMessage, setPrivateMessage] = useState('');
     const [privateMessages, setPrivateMessages] = useState([]);
     const [pmHeaderBoxOpen, setPmHeaderBoxOpen] = useState(false);
@@ -5022,6 +5023,22 @@ const HomePage = ({ user }) => {
             return;
         }
 
+        // DM permission check — show in-window notice instead of toast
+        if (!canSendPrivateMessage(loggedInUserProfile, privateMessageTarget)) {
+            const allowLevel = privateMessageTarget?.settings?.allowPrivateMessagesLevel || 'all';
+            let noticeText;
+            if (allowLevel === 'none') {
+                noticeText = `${privateMessageTarget?.displayName || 'This user'} has turned off private messages`;
+            } else if (allowLevel === 'friends') {
+                noticeText = `${privateMessageTarget?.displayName || 'This user'} only accepts messages from friends`;
+            } else {
+                noticeText = `Cannot send message to ${privateMessageTarget?.displayName || 'this user'} right now`;
+            }
+            setPmDmNotice({ text: noticeText, level: allowLevel });
+            setTimeout(() => setPmDmNotice(null), 5000);
+            return;
+        }
+
         try {
             // Create a unique conversation ID based on user IDs
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
@@ -7013,6 +7030,7 @@ const HomePage = ({ user }) => {
                         setPrivateMessageOpen(false);
                         setPrivateMessage('');
                         setIsPrivateMessageMinimized(false);
+                        setPmDmNotice(null);
                     }}
                     isPrivateAttachOpen={isPrivateAttachOpen}
                     setIsPrivateAttachOpen={setIsPrivateAttachOpen}
@@ -7022,6 +7040,7 @@ const HomePage = ({ user }) => {
                     loggedInUserProfile={loggedInUserProfile}
                     getUserStatus={getUserStatus}
                     getPrivateMessageAvatarUrl={getPrivateMessageAvatarUrl}
+                    dmNotice={pmDmNotice}
                 />
 
 
