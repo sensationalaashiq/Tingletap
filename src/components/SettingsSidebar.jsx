@@ -1110,7 +1110,7 @@ const SettingsSidebar = ({
                                         <label className="toggle-switch">
                                             <input
                                                 type="checkbox"
-                                                checked={settings.allowFriendRequests || true}
+                                                checked={settings.allowFriendRequests !== false}
                                                 onChange={(e) => handleSettingChange('allowFriendRequests', e.target.checked)}
                                             />
                                             <span className="toggle-slider"></span>
@@ -1374,7 +1374,7 @@ const SettingsSidebar = ({
                                 <label className="toggle-switch">
                                     <input
                                         type="checkbox"
-                                        checked={settings.allowFriendRequests || true}
+                                        checked={settings.allowFriendRequests !== false}
                                         onChange={(e) => handleSettingChange('allowFriendRequests', e.target.checked)}
                                     />
                                     <span className="toggle-slider"></span>

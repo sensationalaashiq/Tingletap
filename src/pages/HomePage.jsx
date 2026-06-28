@@ -1016,6 +1016,7 @@ const HomePage = ({ user }) => {
     const [addFriendConfirmTarget, setAddFriendConfirmTarget] = useState(null);
     const [profileUser, setProfileUser] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('info');
+    const [vpmEnlarged, setVpmEnlarged] = useState(null); // null | { type:'avatar'|'cover', url:string }
   const [userFriends, setUserFriends] = useState([]);
     const [isWhisperPopupOpen, setWhisperPopupOpen] = useState(false);
     const [whisperTarget, setWhisperTarget] = useState(null);
@@ -7052,7 +7053,7 @@ const HomePage = ({ user }) => {
 
                 {/* Premium View Profile Modal */}
                 {profileUser && (
-                    <div className="vpm-overlay" onClick={() => setProfileUser(null)}>
+                    <div className="vpm-overlay" onClick={() => { setProfileUser(null); setVpmEnlarged(null); }}>
                         <div className="vpm-modal" onClick={e => e.stopPropagation()}>
 
                             {/* ── Cover (Spotify / YouTube / Image) ── */}
@@ -7097,7 +7098,8 @@ const HomePage = ({ user }) => {
                                     </div>
                                 );
                                 if (profileUser.coverPhotoURL) return (
-                                    <div className="vpm-cover-section vpm-cover-image">
+                                    <div className="vpm-cover-section vpm-cover-image" style={{cursor:'zoom-in'}}
+                                        onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'cover', url: profileUser.coverPhotoURL }); }}>
                                         <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={e=>e.target.style.display='none'}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
                                             Cover Photo
@@ -7110,16 +7112,21 @@ const HomePage = ({ user }) => {
 
                             {/* ── Header: compact centred column ── */}
                             <div className="vpm-header">
-                                <button className="vpm-close" onClick={() => setProfileUser(null)}>
+                                <button className="vpm-close" onClick={() => { setProfileUser(null); setVpmEnlarged(null); }}>
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                         <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12Z"/>
                                     </svg>
                                 </button>
 
                                 {/* Avatar — centred at top */}
-                                <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}>
+                                <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}
+                                    style={{ cursor: 'zoom-in' }}
+                                    onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender) }); }}>
                                     <img className="vpm-avatar" src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)} alt="Profile"/>
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
+                                    <span style={{position:'absolute',bottom:2,right:2,width:18,height:18,borderRadius:'50%',background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)',zIndex:3,pointerEvents:'none'}}>
+                                        <svg viewBox="0 0 24 24" width="9" height="9" fill="white"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zM9 21l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zM21 15l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+                                    </span>
                                 </div>
 
                                 {/* Name + badge */}
@@ -7439,6 +7446,60 @@ const HomePage = ({ user }) => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* ── Inline photo enlarge overlay ── */}
+                            {vpmEnlarged && (
+                                <div
+                                    onClick={() => setVpmEnlarged(null)}
+                                    style={{
+                                        position:'absolute', inset:0, zIndex:50,
+                                        background:'rgba(10,5,26,0.92)',
+                                        backdropFilter:'blur(8px)',
+                                        display:'flex', flexDirection:'column',
+                                        alignItems:'center', justifyContent:'center',
+                                        borderRadius:'20px',
+                                        animation:'vpmFadeIn 0.18s ease-out',
+                                    }}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setVpmEnlarged(null); }}
+                                        style={{
+                                            position:'absolute', top:12, right:12,
+                                            width:32, height:32, borderRadius:'50%',
+                                            background:'linear-gradient(135deg,rgba(139,92,246,0.35),rgba(99,102,241,0.25))',
+                                            border:'1.5px solid rgba(196,181,253,0.5)',
+                                            backdropFilter:'blur(8px)',
+                                            display:'flex', alignItems:'center', justifyContent:'center',
+                                            cursor:'pointer', color:'#e9d5ff',
+                                            boxShadow:'0 4px 16px rgba(139,92,246,0.3)',
+                                            transition:'all 0.15s ease',
+                                            zIndex:51,
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background='linear-gradient(135deg,rgba(239,68,68,0.5),rgba(220,38,38,0.4))'; e.currentTarget.style.borderColor='rgba(239,68,68,0.6)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background='linear-gradient(135deg,rgba(139,92,246,0.35),rgba(99,102,241,0.25))'; e.currentTarget.style.borderColor='rgba(196,181,253,0.5)'; }}>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12Z"/>
+                                        </svg>
+                                    </button>
+                                    <img
+                                        src={vpmEnlarged.url}
+                                        alt="Enlarged"
+                                        onClick={e => e.stopPropagation()}
+                                        style={{
+                                            maxWidth:'calc(100% - 24px)',
+                                            maxHeight:'calc(100% - 56px)',
+                                            borderRadius: vpmEnlarged.type === 'avatar' ? '50%' : '14px',
+                                            objectFit:'cover',
+                                            boxShadow: vpmEnlarged.type === 'avatar'
+                                                ? '0 0 0 4px rgba(139,92,246,0.6), 0 16px 48px rgba(109,40,217,0.45)'
+                                                : '0 16px 48px rgba(0,0,0,0.6)',
+                                            animation:'vpmSlideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                                        }}
+                                    />
+                                    <div style={{marginTop:10, fontSize:'10px', color:'rgba(196,181,253,0.6)', letterSpacing:'0.04em', fontWeight:500}}>
+                                        {vpmEnlarged.type === 'avatar' ? '👤 Profile Photo' : '🖼️ Cover Photo'} · Click outside to close
+                                    </div>
+                                </div>
+                            )}
 
                             {/* ── Sticky action footer — always visible ── */}
                             {(() => {
