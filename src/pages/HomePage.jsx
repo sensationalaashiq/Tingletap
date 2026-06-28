@@ -2879,8 +2879,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Close user dropdowns in messages
             const messageDisplayname = e.target.closest('.message-displayname');
             const stylishUserDropdown = e.target.closest('.stylish-user-dropdown');
+            const sbApdDropdown = e.target.closest('.sb-apd');
+            const sbApdBackdrop = e.target.closest('.sidebar-dropdown-backdrop');
             
-            if (!messageDisplayname && !messageAvatar && !stylishUserDropdown) {
+            if (!messageDisplayname && !messageAvatar && !stylishUserDropdown && !sbApdDropdown) {
                 // Close any open dropdowns
                 if (openDropdownId) {
                     closeAllDropdowns();
