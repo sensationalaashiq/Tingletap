@@ -5023,21 +5023,27 @@ const HomePage = ({ user }) => {
             return;
         }
 
-        // DM permission check — show in-window notice instead of toast
-        if (!canSendPrivateMessage(loggedInUserProfile, privateMessageTarget)) {
-            const allowLevel = privateMessageTarget?.settings?.allowPrivateMessagesLevel || 'all';
-            let noticeText;
-            if (allowLevel === 'none') {
-                noticeText = `${privateMessageTarget?.displayName || 'This user'} has turned off private messages`;
-            } else if (allowLevel === 'friends') {
-                noticeText = `${privateMessageTarget?.displayName || 'This user'} only accepts messages from friends`;
-            } else {
-                noticeText = `Cannot send message to ${privateMessageTarget?.displayName || 'this user'} right now`;
+        // DM permission check — always fetch fresh target profile from Firestore
+        // (privateMessageTarget may only have { uid, displayName } when opened from header box)
+        try {
+            const targetDocSnap = await getDoc(doc(db, 'users', privateMessageTarget.uid));
+            const freshTarget = targetDocSnap.exists()
+                ? { ...targetDocSnap.data(), uid: privateMessageTarget.uid }
+                : privateMessageTarget;
+
+            if (!canSendPrivateMessage(loggedInUserProfile, freshTarget)) {
+                const allowLevel = freshTarget?.settings?.allowPrivateMessagesLevel || 'none';
+                let noticeText;
+                if (allowLevel === 'friends') {
+                    noticeText = `${freshTarget?.displayName || 'This user'} only accepts messages from friends`;
+                } else {
+                    noticeText = `${freshTarget?.displayName || 'This user'} has turned off private messages`;
+                }
+                setPmDmNotice({ text: noticeText, level: allowLevel });
+                setTimeout(() => setPmDmNotice(null), 5000);
+                return;
             }
-            setPmDmNotice({ text: noticeText, level: allowLevel });
-            setTimeout(() => setPmDmNotice(null), 5000);
-            return;
-        }
+        } catch (_) { /* network error — allow send to proceed */ }
 
         try {
             // Create a unique conversation ID based on user IDs
