@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    SHARED BASE — IDENTICAL SIZE for both players
-   Layout breakdown (fits in 112px height):
-   padding-top 5 + header 16 + gap 3 + visualizer 11 + gap 3
-   + progress 5 + gap 3 + controls 26 + gap 3 + volume 10
-   + padding-bottom 4  =  ~89px content + 23px padding = 112px
+   Layout: height 91px, padding 6px top+bottom = 79px inner
+   Content: header(16) + visualizer(11) + progress(5)
+            + controls(26) + volume(10) = 68px
+   justify-content: space-between → 11px free split as
+   4 gaps of ~2.75px each, zero slack at bottom
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
@@ -15,13 +16,14 @@
   max-height: 91px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 6px 10px 2px;
+  padding: 6px 10px 6px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  justify-content: space-between;
+  gap: 0;
   flex-shrink: 0;
 }
 
@@ -377,8 +379,9 @@
   height: 118px !important;
   min-height: 118px !important;
   max-height: 118px !important;
-  padding: 5px 6px 5px !important;
-  gap: 3px !important;
+  padding: 6px 6px 6px !important;
+  gap: 0 !important;
+  justify-content: space-between !important;
 }
 
 .pm-conversation .audio-visualizer,
@@ -436,7 +439,7 @@
     height: 91px;
     min-height: 91px;
     max-height: 91px;
-    padding: 6px 8px 2px;
+    padding: 6px 8px 6px;
   }
   .play-btn { width: 24px; height: 24px; }
   .icon-btn { width: 19px; height: 19px; }
