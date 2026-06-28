@@ -2327,13 +2327,20 @@ html body.theme-sunset .message-body p {
 
 .youtube-embed {
   margin-top: 6px;
+  border: 2px solid #c4b5fd;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.2), 0 1px 6px rgba(124, 58, 237, 0.1);
+  background: #0f0f0f;
 }
 
 .youtube-embed iframe {
-  width: 100%;
+  width: 100% !important;
   max-width: 350px;
-  height: 200px;
-  border-radius: 8px;
+  height: 197px;
+  border-radius: 0 !important;
+  display: block;
+  border: none !important;
 }
 
 /* Whisper Messages with Role-based Colors */
@@ -5984,21 +5991,28 @@ html body.theme-sunset .message-body p {
     stroke: #ffffff !important;
 }
 
-/* Base YouTube Embed Styling */
+/* Base YouTube Embed Styling — Premium Lavender Border */
 .youtube-embed {
-    max-width: 320px;
-    width: 85%;
-    border: 2px solid #E6E6FA;
-    border-radius: 12px;
+    max-width: 360px;
+    width: 92%;
+    border: 2.5px solid #c4b5fd;
+    border-radius: 14px;
     overflow: hidden;
     margin: 8px 0;
+    box-shadow:
+      0 6px 28px rgba(124, 58, 237, 0.22),
+      0 2px 8px rgba(124, 58, 237, 0.12),
+      inset 0 0 0 1px rgba(255,255,255,0.15);
+    background: #0f0f0f;
+    position: relative;
 }
 
 .youtube-embed iframe {
     width: 100% !important;
-    height: 180px !important;
-    border-radius: 8px !important;
-    border: none;
+    height: 203px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    display: block;
 }
 
 /* YouTube Music Player Wrapper */
