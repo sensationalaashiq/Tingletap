@@ -971,6 +971,7 @@ const HomePage = ({ user }) => {
             };
         } catch { return null; }
     });
+    const uid = loggedInUserProfile?.uid || null;
     const chatFeedRef = useRef(null);
     const textareaRef = useRef(null);
     const fontPopupRef = useRef(null);
@@ -1978,7 +1979,6 @@ const HomePage = ({ user }) => {
 
     // ── Kick listener: auto-navigate user out when kicked from this room ──
     useEffect(() => {
-        const uid = loggedInUserProfile?.uid;
         if (!uid || !roomId) return;
 
         const kickedRef = doc(db, 'rooms', roomId, 'kickedUsers', uid);
