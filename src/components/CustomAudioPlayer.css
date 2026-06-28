@@ -1,27 +1,27 @@
 /* ═══════════════════════════════════════════════════════════
    SHARED BASE — IDENTICAL SIZE for both players
-   Layout breakdown (fits in 134px height):
-   padding-top 8 + header 18 + gap 4 + visualizer 14 + gap 4
-   + progress 5 + gap 4 + controls 30 + gap 4 + volume 12
-   + padding-bottom 7  =  110px content + 24px padding = 134px
+   Layout breakdown (fits in 112px height):
+   padding-top 5 + header 16 + gap 3 + visualizer 11 + gap 3
+   + progress 5 + gap 3 + controls 26 + gap 3 + volume 10
+   + padding-bottom 4  =  ~89px content + 23px padding = 112px
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
   width: 244px;
   max-width: 244px;
   min-width: 244px;
-  height: 134px;
-  min-height: 134px;
-  max-height: 134px;
+  height: 112px;
+  min-height: 112px;
+  max-height: 112px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 8px 10px 7px;
+  padding: 5px 10px 4px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
@@ -82,12 +82,12 @@
   gap: 5px;
   width: 100%;
   overflow: hidden;
-  padding-bottom: 3px;
+  padding-bottom: 2px;
   border-bottom: 1px solid rgba(0,0,0,0.07);
   flex-shrink: 0;
-  height: 18px;
-  min-height: 18px;
-  max-height: 18px;
+  height: 16px;
+  min-height: 16px;
+  max-height: 16px;
 }
 
 .youtube-music-player .player-header-row {
@@ -134,9 +134,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 14px;
-  min-height: 14px;
-  max-height: 14px;
+  height: 11px;
+  min-height: 11px;
+  max-height: 11px;
   gap: 2px;
   flex-shrink: 0;
 }
@@ -194,9 +194,9 @@
   justify-content: space-between;
   width: 100%;
   flex-shrink: 0;
-  height: 30px;
-  min-height: 30px;
-  max-height: 30px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
 }
 
 /* ── Lavender buttons ── */
@@ -262,9 +262,9 @@
   transform: none !important;
 }
 
-/* ── Button sizes (fit in 30px row) ── */
-.icon-btn { width: 24px; height: 24px; }
-.play-btn { width: 30px; height: 30px; }
+/* ── Button sizes (fit in 26px row) ── */
+.icon-btn { width: 21px; height: 21px; }
+.play-btn { width: 26px; height: 26px; }
 
 /* ── Time display ── */
 .time-info {
@@ -293,9 +293,9 @@
   gap: 5px;
   width: 100%;
   flex-shrink: 0;
-  height: 12px;
-  min-height: 12px;
-  max-height: 12px;
+  height: 10px;
+  min-height: 10px;
+  max-height: 10px;
 }
 
 .vol-icon { flex-shrink: 0; }
@@ -427,13 +427,13 @@
     width: 210px;
     max-width: 210px;
     min-width: 210px;
-    height: 130px;
-    min-height: 130px;
-    max-height: 130px;
-    padding: 7px 8px 6px;
+    height: 108px;
+    min-height: 108px;
+    max-height: 108px;
+    padding: 4px 8px 4px;
   }
-  .play-btn { width: 26px; height: 26px; }
-  .icon-btn { width: 22px; height: 22px; }
+  .play-btn { width: 24px; height: 24px; }
+  .icon-btn { width: 19px; height: 19px; }
 }
 
 /* ═══════════════════════════════════════════════════════════

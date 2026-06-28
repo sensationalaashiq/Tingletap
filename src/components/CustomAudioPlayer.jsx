@@ -8,6 +8,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
   const [volume, setVolume] = useState(0.8);
   const [isLoading, setIsLoading] = useState(false);
   const [audioData, setAudioData] = useState(new Array(14).fill(0));
+  const [fetchedYtTitle, setFetchedYtTitle] = useState('');
   const audioRef = useRef(null);
   const youtubePlayerRef = useRef(null);
   const progressRef = useRef(null);
@@ -48,6 +49,15 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  useEffect(() => {
+    if (isYouTubeMusic && youtubeVideoId) {
+      fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtubeVideoId}&format=json`)
+        .then(r => r.json())
+        .then(d => { if (d && d.title) setFetchedYtTitle(d.title); })
+        .catch(() => {});
+    }
+  }, [isYouTubeMusic, youtubeVideoId]);
 
   useEffect(() => {
     if (isYouTubeMusic && isPlaying) {
@@ -141,7 +151,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
   const displayTitle = isYouTubeMusic
-    ? (audioFileName && audioFileName !== 'YouTube Music' ? audioFileName : 'YouTube Music')
+    ? (fetchedYtTitle || (audioFileName && audioFileName !== 'YouTube Music' ? audioFileName : 'YouTube Music'))
     : (audioFileName || 'Audio Track');
 
   return (
