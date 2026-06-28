@@ -2596,7 +2596,7 @@ const HomePage = ({ user }) => {
                     );
                     newMessages.forEach(m => {
                         if (!m.isBot && !m.systemBot && m.uid !== 'tinglebot_system_official_2024') {
-                            processAutoMod(m, roomId, myUid, _autoModIsStaff).catch(() => {});
+                            processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName).catch(() => {});
                         }
                     });
                 }

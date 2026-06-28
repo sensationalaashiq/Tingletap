@@ -1316,7 +1316,7 @@ export const postNotice = async (roomId, text, tinglebotType) => {
 ════════════════════════════════════════════════════════════════════════════ */
 
 /**
- * processAutoMod(msg, roomId, currentUid, isStaff)
+ * processAutoMod(msg, roomId, currentUid, isStaff, roomName)
  *
  * Call for every incoming message in the snapshot listener (after initial load).
  * processedMsgIds guarantees each message is evaluated exactly once per session.
@@ -1325,8 +1325,9 @@ export const postNotice = async (roomId, text, tinglebotType) => {
  * @param {string}  roomId      Room being moderated
  * @param {string}  currentUid  UID of the viewing client
  * @param {boolean} isStaff     owner/admin/moderator → may write to Firestore
+ * @param {string}  roomName    Room display name — used to detect Adult Room exemptions
  */
-export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = false) => {
+export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = false, roomName = '') => {
     if (!msg?.id || !roomId) return;
     if (processedMsgIds.has(msg.id)) return;
     processedMsgIds.add(msg.id);
@@ -1340,13 +1341,21 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     const { uid, text, displayName = 'User' } = msg;
     const now = Date.now();
 
+    // Detect whether this is an Adult Room
+    const _roomNameLower = (roomName || '').toLowerCase();
+    const isAdultRoom = _roomNameLower.includes('adult') || _roomNameLower.includes('18+');
+
     // Run detection pipeline (all clients)
     const contentHit = detectContent(text);
     const spamHit    = detectSpam(uid, text, now);
 
     // Content violations take priority; fall back to spam
-    const hit = contentHit.detected ? contentHit : (spamHit.detected ? spamHit : null);
+    let hit = contentHit.detected ? contentHit : (spamHit.detected ? spamHit : null);
     if (!hit) return;
+
+    // Adult Room exemption: skip enforcement for profanity/abuse/explicit content.
+    // Spam, scams, doxxing (info), hate speech, and threats are still enforced.
+    if (isAdultRoom && (hit.type === 'abuse' || hit.type === 'explicit')) return;
 
     // Update session violation counters (all clients track locally)
     const sv = getSessionViolations(uid);
