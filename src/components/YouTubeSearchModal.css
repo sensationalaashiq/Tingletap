@@ -29,14 +29,14 @@
 /* ── Card ── */
 .ytm-card {
     background: #fff;
-    border-radius: 24px;
-    padding: 24px 22px 22px;
-    width: min(400px, 96vw);
-    max-height: 88vh;
+    border-radius: 20px;
+    padding: 14px 16px 14px;
+    width: min(340px, 93vw);
+    max-height: 84dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     box-shadow:
         0 12px 56px rgba(255,78,66,.18),
         0 2px 16px rgba(0,0,0,.12);
@@ -44,6 +44,7 @@
     border: 1px solid rgba(255,78,66,.14);
     position: relative;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* Subtle top gradient band */
@@ -70,22 +71,22 @@
 
 /* ── Icon ring ── */
 .ytm-icon-ring {
-    width: 76px; height: 76px; border-radius: 50%;
+    width: 58px; height: 58px; border-radius: 50%;
     background: linear-gradient(135deg,rgba(255,78,66,.09),rgba(196,22,42,.13));
     border: 2px solid rgba(255,78,66,.22);
     display: flex; align-items: center; justify-content: center;
     filter: drop-shadow(0 3px 12px rgba(255,78,66,.28));
-    margin-top: 8px; flex-shrink: 0;
+    margin-top: 4px; flex-shrink: 0;
 }
 
 /* ── Title & subtitle ── */
 .ytm-title {
-    font-size: 1.2rem; font-weight: 800; color: #1a1a2e;
+    font-size: 1rem; font-weight: 800; color: #1a1a2e;
     letter-spacing: -.02em; margin-top: -2px; text-align: center;
 }
 .ytm-subtitle {
-    font-size: .78rem; color: #9ca3af; font-weight: 500;
-    margin-top: -6px; text-align: center;
+    font-size: .73rem; color: #9ca3af; font-weight: 500;
+    margin-top: -4px; text-align: center;
 }
 
 /* ── Error banner ── */

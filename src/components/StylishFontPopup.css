@@ -8,9 +8,9 @@
     left: 50%;
     transform: translate(-50%, -50%);
     background: #fff;
-    border-radius: 22px;
-    width: min(400px, 95vw);
-    max-height: 88vh;
+    border-radius: 20px;
+    width: min(340px, 93vw);
+    max-height: 82vh;
     display: flex;
     flex-direction: column;
     z-index: 10001;
@@ -20,6 +20,7 @@
     border: 1px solid rgba(99,102,241,.14);
     animation: sfpUp .25s cubic-bezier(.34,1.56,.64,1);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 @keyframes sfpUp {
@@ -32,7 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 20px 16px;
+    padding: 13px 16px 12px;
     border-bottom: 1px solid rgba(99,102,241,.1);
     flex-shrink: 0;
 }

@@ -17,22 +17,26 @@
 }
 .sau-card {
     background: #fff;
-    border-radius: 22px;
-    padding: 24px 22px 20px;
-    width: min(360px, 93vw);
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    border-radius: 20px;
+    padding: 14px 16px 12px;
+    width: min(310px, 92vw);
+    max-height: 90dvh;
+    overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
     box-shadow: 0 10px 48px rgba(16,185,129,.16), 0 2px 14px rgba(0,0,0,.11);
     animation: sauUp .24s cubic-bezier(.34,1.56,.64,1);
     border: 1px solid rgba(16,185,129,.14);
+    box-sizing: border-box;
 }
 .sau-icon-ring {
-    width: 72px; height: 72px; border-radius: 50%;
+    width: 54px; height: 54px; border-radius: 50%;
     background: linear-gradient(135deg,rgba(16,185,129,.09),rgba(8,145,178,.13));
     border: 2px solid rgba(16,185,129,.24);
     display: flex; align-items: center; justify-content: center;
     filter: drop-shadow(0 2px 8px rgba(16,185,129,.25));
+    flex-shrink: 0;
 }
-.sau-title { font-size: 1.18rem; font-weight: 800; color: #1a1a2e; letter-spacing: -.02em; margin-top: -4px; }
+.sau-title { font-size: 1rem; font-weight: 800; color: #1a1a2e; letter-spacing: -.02em; margin-top: -2px; }
 
 /* Tabs */
 .sau-tabs { display: flex; gap: 8px; width: 100%; }
@@ -52,9 +56,9 @@
 /* Drop zone */
 .sau-drop-zone {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; padding: 22px 16px;
+    gap: 6px; padding: 14px 12px;
     background: rgba(16,185,129,.04); border: 2px dashed rgba(16,185,129,.28);
-    border-radius: 14px; cursor: pointer; transition: all .18s ease; min-height: 120px;
+    border-radius: 12px; cursor: pointer; transition: all .18s ease; min-height: 86px;
 }
 .sau-drop-zone:hover { background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.5); }
 .sau-drop-text { font-size: .88rem; font-weight: 700; color: #059669; margin: 0; }
@@ -78,9 +82,9 @@
 .sau-reset-btn:hover { background: rgba(16,185,129,.08); }
 
 /* Record section */
-.sau-record-section { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; }
+.sau-record-section { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; }
 .sau-record-btn {
-    width: 72px; height: 72px; border-radius: 50%;
+    width: 60px; height: 60px; border-radius: 50%;
     background: linear-gradient(135deg,#10b981,#0891b2);
     border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -103,14 +107,14 @@
 /* Actions */
 .sau-actions { display: flex; gap: 10px; width: 100%; margin-top: 2px; }
 .sau-btn-cancel {
-    flex: 1; padding: 11px; border-radius: 11px;
+    flex: 1; padding: 9px; border-radius: 10px;
     border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280;
-    font-size: .9rem; font-weight: 600; cursor: pointer;
+    font-size: .85rem; font-weight: 600; cursor: pointer;
     transition: all .15s ease; font-family: inherit;
 }
 .sau-btn-cancel:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; }
 .sau-btn-send {
-    flex: 1.5; padding: 11px; border-radius: 11px;
+    flex: 1.5; padding: 9px; border-radius: 10px;
     border: none; background: linear-gradient(135deg,#10b981,#0891b2);
     color: #fff !important; -webkit-text-fill-color: #fff !important;
     font-size: .9rem; font-weight: 700; cursor: pointer;
