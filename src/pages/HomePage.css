@@ -5913,69 +5913,9 @@ html body.theme-sunset .message-body p {
   
 }
 
-/* Style the custom audio player for YouTube Music */
-.youtube-music-message .compact-audio-player {
-    background: rgba(192, 132, 252, 0.08);
-  
-    border: 1px solid rgba(192, 132, 252, 0.2);
-}
-
-.youtube-music-message .audio-visualizer {
-    background: rgba(192, 132, 252, 0.05);
-}
-
-.youtube-music-message .visualizer-bar {
-    background: linear-gradient(to top, #c084fc, #e879f9);
-}
-
-.youtube-music-message .compact-progress-fill {
-    background: linear-gradient(90deg, #c084fc, #e879f9);
-}
-
-.youtube-music-message .compact-btn {
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
-    color: #ffffff !important;
-}
-
-.youtube-music-message .compact-btn:hover {
-    background: rgba(255, 255, 255, 0.42) !important;
-    border-color: rgba(255, 255, 255, 0.8) !important;
-    transform: scale(1.1);
-}
-
-.youtube-music-message .compact-btn svg {
-    color: #ffffff !important;
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
-}
-
-.youtube-music-message .compact-btn svg * {
-    color: #ffffff !important;
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
-}
-
-.youtube-music-message .time-info {
-    color: #ffffff !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-
-.youtube-music-message .time-info span {
-    color: #ffffff !important;
-}
-
-.youtube-music-message .volume-section svg {
-    color: #ffffff !important;
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-.youtube-music-message .volume-section svg * {
-    color: var(--landing-text-color, #ffffff);
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
+/* YouTube Music message wrapper — no extra styling, player handles it */
+.youtube-music-message .youtube-music-player {
+    display: block;
 }
 
 /* Base YouTube Embed Styling — Premium Lavender Border */
