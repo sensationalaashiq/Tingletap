@@ -28,6 +28,7 @@ import StylishImageUploadModal from '../components/StylishImageUploadModal';
 import StylishAudioUpload from '../components/StylishAudioUpload';
 import StylishReportModal from '../components/StylishReportModal';
 import BlockConfirmModal from '../components/BlockConfirmModal';
+import SendProgressBar from '../components/SendProgressBar';
 
 import MinimizedConversations from '../components/MinimizedConversations';
 import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
@@ -1087,6 +1088,20 @@ const HomePage = ({ user }) => {
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
+    const [sendProgress, setSendProgress] = useState(null);
+    const progressTimerRef = useRef(null);
+
+    const startSendProgress = useCallback(() => {
+        if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+        setSendProgress(5);
+        progressTimerRef.current = setTimeout(() => setSendProgress(88), 60);
+    }, []);
+
+    const completeSendProgress = useCallback(() => {
+        if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+        setSendProgress(100);
+        progressTimerRef.current = setTimeout(() => setSendProgress(null), 650);
+    }, []);
 
     // TingleBot — global join/leave broadcasts
     useEffect(() => {
@@ -3483,6 +3498,9 @@ const HomePage = ({ user }) => {
             return;
         }
 
+        startSendProgress();
+        setIsYouTubeSearchModalOpen(false);
+
         try {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: newMessage || '',
@@ -3505,7 +3523,7 @@ const HomePage = ({ user }) => {
                 photoURL: userProfile.photoURL || null
             });
             setNewMessage('');
-            setIsYouTubeSearchModalOpen(false);
+            completeSendProgress();
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -5683,6 +5701,8 @@ const HomePage = ({ user }) => {
             return;
         }
 
+        startSendProgress();
+
         try {
 
 
@@ -5735,18 +5755,12 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
-            // Reset all modal states
             setSelectedImage(null);
             setImagePreview(null);
             setImageUrl('');
-            setImageTab('upload');
-            setImagePopupOpen(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            completeSendProgress();
             
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-            
-            // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
         } catch (error) {
@@ -5821,18 +5835,14 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
-            // Reset all modal states
             setSelectedImage(null);
             setImagePreview(null);
             setImageUrl('');
             setImageTab('upload');
             setImagePopupOpen(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            completeSendProgress();
             
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-            
-            // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
         } catch (error) {
@@ -5980,6 +5990,12 @@ const HomePage = ({ user }) => {
             return;
         }
 
+        startSendProgress();
+        setAudioPopupOpen(false);
+        setSelectedAudio(null);
+        setRecordedBlob(null);
+        setAudioPreview(null);
+
         try {
             const filename = (audioData && audioData.name) || (selectedAudio && selectedAudio.name) || `voice-note-${Date.now()}.wav`;
             
@@ -6111,12 +6127,8 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
-            // Reset states
-            setSelectedAudio(null);
-            setRecordedBlob(null);
-            setAudioPreview(null);
             setNewMessage('');
-            setAudioPopupOpen(false);
+            completeSendProgress();
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -6200,6 +6212,9 @@ const HomePage = ({ user }) => {
             return;
         }
 
+        startSendProgress();
+        setGiphyStickersModalOpen(false);
+
         try {
             const messageData = {
                 text: `🎬 ${gif.title || 'GIF'}`,
@@ -6234,7 +6249,7 @@ const HomePage = ({ user }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
-            setGiphyStickersModalOpen(false);
+            completeSendProgress();
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -6276,6 +6291,9 @@ const HomePage = ({ user }) => {
             toast.error("You cannot send messages.");
             return;
         }
+
+        startSendProgress();
+        setGiphyStickersModalOpen(false);
 
         try {
             const messageData = {
@@ -6338,7 +6356,7 @@ const HomePage = ({ user }) => {
             }
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
-            setGiphyStickersModalOpen(false);
+            completeSendProgress();
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
@@ -7723,6 +7741,8 @@ const HomePage = ({ user }) => {
                     )}
                 </div>
             )}
+
+            <SendProgressBar progress={sendProgress} />
 
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,

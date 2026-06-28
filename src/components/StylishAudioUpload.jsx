@@ -26,7 +26,10 @@ const StylishAudioUpload = ({
 
     const handleUpload = () => {
         const audioToUpload = selectedAudio || recordedBlob;
-        if (audioToUpload) onUpload(audioToUpload);
+        if (audioToUpload) {
+            handleClose();
+            onUpload(audioToUpload);
+        }
     };
 
     const resetAudio = () => {
