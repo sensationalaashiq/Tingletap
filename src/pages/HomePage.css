@@ -7190,8 +7190,8 @@ html body.theme-sunset .message-body p {
 /* Avatar ring – always on top, centred */
 .vpm-avatar-ring {
     position: relative;
-    width: 60px;
-    height: 60px;
+    width: 82px;
+    height: 82px;
     border-radius: 50%;
     padding: 3px;
     background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6366f1 100%);
@@ -7600,6 +7600,41 @@ html body.theme-sunset .message-body p {
     transform: translateY(-2px);
     box-shadow: 0 8px 22px rgba(109,40,217,0.38);
 }
+
+/* ── Sticky action footer (always visible at bottom of modal) ── */
+.vpm-action-footer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 12px;
+    background: rgba(250,248,255,0.98);
+    border-top: 1.5px solid rgba(196,181,253,0.35);
+    flex-shrink: 0;
+}
+.dark-mode .vpm-action-footer {
+    background: rgba(30,19,51,0.98);
+    border-top-color: rgba(139,92,246,0.22);
+}
+.vpm-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 6px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+.vpm-action-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.vpm-action-msg    { background: linear-gradient(135deg,#7c3aed,#6366f1); }
+.vpm-action-friend { background: linear-gradient(135deg,#10b981,#059669); }
+.vpm-action-report { background: linear-gradient(135deg,#ef4444,#b91c1c); }
 
 /* FRIENDS tab */
 .vpm-friends-wrap { display: flex; flex-direction: column; gap: 10px; }

@@ -7095,9 +7095,6 @@ const HomePage = ({ user }) => {
                                 <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}>
                                     <img className="vpm-avatar" src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)} alt="Profile"/>
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
-                                    <span className="vpm-gender-badge">
-                                        {profileUser.gender?.toLowerCase() === 'female' ? <svg viewBox="0 0 24 24" width="11" height="11" fill="#ec4899"><path d="M12,4A6,6 0 0,1 18,10C18,12.97 15.84,15.44 13,15.92V18H15V20H13V22H11V20H9V18H11V15.92C8.16,15.44 6,12.97 6,10A6,6 0 0,1 12,4Z"/></svg> : profileUser.gender?.toLowerCase() === 'transgender' ? <svg viewBox="0 0 24 24" width="11" height="11" fill="#a78bfa"><path d="M17,2H21V6H19V4.41L16.12,7.29C16.69,8.1 17,9.04 17,10C17,12.08 15.72,13.86 13.91,14.63V17H16V19H13.91C13.44,20.17 12.32,21 11,21C9.68,21 8.56,20.17 8.09,19H6V17H8.09C7.42,15.35 6,14 4,14V12C7.18,12 9.58,14.35 9.95,17H12.09C12.35,16.44 12.76,15.96 13.26,15.62L10.59,12.95C10.4,12.98 10.2,13 10,13C7.24,13 5,10.76 5,8C5,5.24 7.24,3 10,3C12.76,3 15,5.24 15,8C15,8.8 14.8,9.56 14.44,10.22L17,12.78V11H19V15H15V13H15.55L13.17,10.62C12.77,11.15 12.26,11.58 11.67,11.83L14.41,14.57C14.82,14.28 15.28,14.05 15.78,13.92C15.92,12.77 16.35,11.71 17,10.83V8C17,4.69 14.31,2 11,2C7.69,2 5,4.69 5,8H3V6H5V4H3V2H7V4H5V6H5.07C5.35,5.28 5.83,4.65 6.45,4.17C7.4,3.44 8.62,3 10,3Z"/></svg> : <svg viewBox="0 0 24 24" width="11" height="11" fill="#38bdf8"><path d="M9,9C10.29,6.75 12.71,5.25 15.5,5.25C16.97,5.25 18.33,5.69 19.5,6.45C20.95,5.5 21.97,4.12 22,2.5C21.2,2.5 20.37,2.69 19.61,3.06C19.22,3.23 18.84,3.44 18.5,3.69C17.5,2.67 16.23,2 14.81,2C10.23,2 7,5.5 7,10C7,12.96 9.16,15.43 12,15.92V18H9V20H12V22H14V20H17V18H14V15.92C16.84,15.43 19,12.96 19,10C19,8.5 18.5,7.13 17.67,6L16.25,7.42C16.75,8.13 17,8.95 17,10C17,12.21 15.21,14 13,14H11C9.79,14 9,13.21 9,12V9Z"/></svg>}
-                                    </span>
                                 </div>
 
                                 {/* Name + badge */}
@@ -7300,44 +7297,6 @@ const HomePage = ({ user }) => {
                                             </div>
                                         )}
 
-                                        {/* Action buttons — Send Message, Add Friend, Report */}
-                                        {(() => {
-                                            const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
-                                            if (isOwnProfile) return null;
-                                            const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
-                                            const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
-                                            const canMsg = !viewerIsGuest;
-                                            const canAddFriend = !viewerIsGuest && !targetIsGuest;
-                                            const canReport = !!auth.currentUser;
-                                            return (
-                                                <div style={{display:'flex',flexDirection:'column',gap:'7px',marginTop:'4px'}}>
-                                                    {canMsg && (
-                                                        <button className="vpm-msg-btn" onClick={() => { handlePrivateMessage(profileUser); setProfileUser(null); }}>
-                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
-                                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                                                            </svg>
-                                                            Send Message
-                                                        </button>
-                                                    )}
-                                                    {canAddFriend && (
-                                                        <button className="vpm-msg-btn" style={{background:'linear-gradient(135deg,#10b981,#059669)'}} onClick={() => { handleAddFriend(profileUser); setProfileUser(null); }}>
-                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
-                                                                <path d="M15 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 10H2v2H5v3h2v-3h3v-2H7V7H5v3z" fill="white"/>
-                                                            </svg>
-                                                            Add Friend
-                                                        </button>
-                                                    )}
-                                                    {canReport && (
-                                                        <button className="vpm-msg-btn" style={{background:'linear-gradient(135deg,#ef4444,#b91c1c)'}} onClick={() => { if (window.handleReportUserFromProfile) window.handleReportUserFromProfile(profileUser); setProfileUser(null); }}>
-                                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
-                                                                <path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z" fill="white"/>
-                                                            </svg>
-                                                            Report User
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
                                     </div>
                                 )}
 
@@ -7455,6 +7414,46 @@ const HomePage = ({ user }) => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* ── Sticky action footer — always visible ── */}
+                            {(() => {
+                                const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
+                                if (isOwnProfile) return null;
+                                const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
+                                const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
+                                const canMsg = !viewerIsGuest;
+                                const canAddFriend = !viewerIsGuest && !targetIsGuest;
+                                const canReport = !!auth.currentUser;
+                                if (!canMsg && !canAddFriend && !canReport) return null;
+                                return (
+                                    <div className="vpm-action-footer" onClick={e => e.stopPropagation()}>
+                                        {canMsg && (
+                                            <button className="vpm-action-btn vpm-action-msg" onClick={() => { handlePrivateMessage(profileUser); setProfileUser(null); }}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </svg>
+                                                Message
+                                            </button>
+                                        )}
+                                        {canAddFriend && (
+                                            <button className="vpm-action-btn vpm-action-friend" onClick={() => { handleAddFriend(profileUser); setProfileUser(null); }}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                                    <path d="M15 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 10H2v2H5v3h2v-3h3v-2H7V7H5v3z"/>
+                                                </svg>
+                                                Add Friend
+                                            </button>
+                                        )}
+                                        {canReport && (
+                                            <button className="vpm-action-btn vpm-action-report" onClick={() => { if (window.handleReportUserFromProfile) window.handleReportUserFromProfile(profileUser); setProfileUser(null); }}>
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                                                    <path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/>
+                                                </svg>
+                                                Report
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
