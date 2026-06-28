@@ -22,6 +22,7 @@ import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import WelcomeDashboard from './pages/WelcomeDashboard';
+import RoomSlugPage from './pages/RoomSlugPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthRoute from './components/AuthRoute';
@@ -960,12 +961,8 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/faq" element={<FAQPage />} />
 
-        {/* Redirect all room pages to welcome dashboard on reload */}
-        <Route path="/room/*" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/" replace />} />
-        <Route path="/indian-room" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/" replace />} />
-        <Route path="/universal-room" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/" replace />} />
-        <Route path="/indian" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/" replace />} />
-        <Route path="/universal" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/" replace />} />
+        {/* Slug-based room routes — e.g. /indian-chat, /adult-chat, /gaming-room */}
+        <Route path="/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
 
         {/* Default route */}
         <Route path="/" element={user

@@ -4,6 +4,7 @@ import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
+import { nameToSlug } from '../utils/roomSlug';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { toast, ToastContainer } from 'react-toastify';
@@ -747,6 +748,7 @@ const AdminPanelPage = () => {
         : Date.now();
       await addDoc(collection(db, 'rooms'), {
         name: createRoomData.name.trim(),
+        slug: nameToSlug(createRoomData.name.trim()),
         description: createRoomData.description.trim(),
         type: createRoomData.type,
         maxUsers: parseInt(createRoomData.maxUsers) || 50,
@@ -815,6 +817,7 @@ const AdminPanelPage = () => {
         : (editRoomTarget.order || Date.now());
       await updateDoc(doc(db, 'rooms', editRoomTarget.id), {
         name: editRoomData.name.trim(),
+        slug: nameToSlug(editRoomData.name.trim()),
         description: editRoomData.description.trim(),
         type: editRoomData.type,
         maxUsers: parseInt(editRoomData.maxUsers) || 50,

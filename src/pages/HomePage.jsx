@@ -927,8 +927,9 @@ const getGenderBorderClass = (userOrGender) => {
     return 'male-border';
 };
 
-const HomePage = ({ user }) => {
-    const { roomId } = useParams();
+const HomePage = ({ user, roomIdOverride }) => {
+    const { roomId: roomIdParam } = useParams();
+    const roomId = roomIdOverride || roomIdParam;
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');

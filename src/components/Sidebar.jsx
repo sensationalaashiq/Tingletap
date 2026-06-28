@@ -12,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import { getRoomSlug } from '../utils/roomSlug';
 import AdminBanKickModal from './AdminBanKickModal';
 import ChatActionModal from './ChatActionModal';
 import EditProfileModal from './EditProfileModal';
@@ -597,7 +598,7 @@ const Sidebar = ({
                         const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
                         if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
                       } catch {}
-                      navigate(`/room/${room.id}`); onClose();
+                      navigate(`/${getRoomSlug(room)}`); onClose();
                     }}
                   >
                     <div className="sb-room-icon">{getRoomIcon(room.name)}</div>
@@ -1018,7 +1019,7 @@ const Sidebar = ({
               const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
               if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
             } catch {}
-            navigate(`/room/${room.id}`); onClose();
+            navigate(`/${getRoomSlug(room)}`); onClose();
           }}
           onCancel={() => { setShowAdultModal(false); setPendingAdultRoom(null); }}
         />
@@ -1055,7 +1056,7 @@ const Sidebar = ({
                           const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
                           if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
                         } catch {}
-                        navigate(`/room/${room.id}`); onClose();
+                        navigate(`/${getRoomSlug(room)}`); onClose();
                       } else { setPwError('Incorrect password. Please try again.'); }
                     }
                   }}
@@ -1078,7 +1079,7 @@ const Sidebar = ({
                         const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
                         if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
                       } catch {}
-                      navigate(`/room/${room.id}`); onClose();
+                      navigate(`/${getRoomSlug(room)}`); onClose();
                     } else { setPwError('Incorrect password. Please try again.'); }
                   }}
                   style={{flex:1,height:'44px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#6366f1,#7c3aed)',color:'#fff',fontSize:'14px',fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 16px rgba(99,102,241,0.4)'}}
