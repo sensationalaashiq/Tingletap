@@ -838,18 +838,12 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                         {youtubeVideoId && (
                             message.snippet?.isAudioOnly ? (
                                 <div className="youtube-music-message">
-                                    <div className="music-header">
-                                        <YouTubeIconCustom />
-                                        <span>YouTube Music</span>
-                                    </div>
-                                    <div className="youtube-audio-player-wrapper">
-                                        <CustomAudioPlayer 
-                                            audioUrl={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=0&loop=1&playlist=${youtubeVideoId}`}
-                                            audioFileName={message.snippet?.title || 'YouTube Music'}
-                                            isYouTubeMusic={true}
-                                            youtubeVideoId={youtubeVideoId}
-                                        />
-                                    </div>
+                                    <CustomAudioPlayer 
+                                        audioUrl={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=0&loop=1&playlist=${youtubeVideoId}`}
+                                        audioFileName={message.snippet?.title || 'YouTube Music'}
+                                        isYouTubeMusic={true}
+                                        youtubeVideoId={youtubeVideoId}
+                                    />
                                 </div>
                             ) : (
                                 <div className="youtube-embed-container">

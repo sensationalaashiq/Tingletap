@@ -5820,15 +5820,16 @@ html body.theme-sunset .message-body p {
       background: #000 !important;
 }
 
-/* YouTube Music Player Styling — Red Theme Wrapper */
+/* YouTube Music Player Styling — Compact Wrapper, no extra space */
 .youtube-music-message {
     background: transparent;
     border: none;
-    border-radius: 14px;
-    padding: 18px 0 0 0;
-    margin: 6px 0;
-    max-width: 290px;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    max-width: 270px;
     position: relative;
+    display: inline-block;
 }
 
 .music-header {
