@@ -36,8 +36,11 @@ class ErrorBoundary extends React.Component {
           <h2 style={{ color: '#e74c3c', marginBottom: '16px' }}>
             🚨 Something went wrong
           </h2>
-          <p style={{ marginBottom: '20px', color: '#666' }}>
+          <p style={{ marginBottom: '10px', color: '#666' }}>
             The application encountered an unexpected error. Please try reloading the page.
+          </p>
+          <p style={{ marginBottom: '20px', color: '#e74c3c', fontSize: '12px', maxWidth: '500px', wordBreak: 'break-word', background: '#fff0f0', padding: '8px', borderRadius: '4px' }}>
+            {this.state.error?.toString()}
           </p>
           <button 
             onClick={() => window.location.reload()}
