@@ -3,6 +3,7 @@ import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
+import PremiumImageMessage from './PremiumImageMessage';
 import { auth } from '../firebase/config';
 import './LuxuryPrivateMessageWindow.css';
 
@@ -461,16 +462,14 @@ const LuxuryPrivateMessageWindow = ({
                           {msg.text && <p className="ultra-pm-msg-text">{msg.text}</p>}
                           {msg.imageUrl && (
                             <motion.div
-                              className="ultra-pm-image-wrapper"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.1 }}
+                              initial={{ opacity: 0, scale: 0.88, y: 4 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 24 }}
                             >
-                              <img
-                                src={msg.imageUrl}
-                                alt={msg.imageFileName || 'Shared image'}
-                                className="ultra-pm-image"
-                                onClick={() => window.open(msg.imageUrl, '_blank')}
+                              <PremiumImageMessage
+                                imageUrl={msg.imageUrl}
+                                imageFileName={msg.imageFileName}
+                                compact={true}
                               />
                             </motion.div>
                           )}

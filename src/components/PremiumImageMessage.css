@@ -1,0 +1,443 @@
+/* ══════════════════════════════════════════════════════
+   PREMIUM IMAGE MESSAGE — Luxury Glassmorphism Design
+══════════════════════════════════════════════════════ */
+
+@keyframes pimBorderSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes pimPulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%       { transform: scale(1.18); opacity: 0.4; }
+}
+@keyframes pimGlow {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+@keyframes pimFadeUp {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pimReveal {
+  0%   { opacity: 0; transform: scale(0.88); }
+  60%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pimIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-3px); }
+}
+@keyframes pimShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── Root ── */
+.pim {
+  display: inline-flex;
+  flex-direction: column;
+  margin: 6px 0;
+}
+
+/* ────────────────────────────────────────────────────
+   HIDDEN CARD
+──────────────────────────────────────────────────── */
+.pim__card {
+  position: relative;
+  width: 252px;
+  border-radius: 22px;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+
+  /* Deep luxury dark background */
+  background: linear-gradient(
+    145deg,
+    rgba(12, 6, 30, 0.97) 0%,
+    rgba(26, 14, 55, 0.96) 40%,
+    rgba(18, 8, 40, 0.97) 100%
+  );
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+
+  /* Gold glow shadow */
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.22),
+    0 8px 32px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(245, 158, 11, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  animation: pimFadeUp 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Compact version */
+.pim--compact .pim__card {
+  width: 186px;
+  border-radius: 16px;
+  padding: 16px 14px 14px;
+}
+
+/* ── Animated spinning gradient border ── */
+.pim__card-border {
+  position: absolute;
+  inset: -2px;
+  border-radius: 24px;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pim__card-border::before {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(251, 191, 36, 0.9) 60deg,
+    rgba(253, 230, 138, 1) 80deg,
+    rgba(251, 191, 36, 0.9) 100deg,
+    transparent 160deg,
+    rgba(217, 119, 6, 0.5) 200deg,
+    rgba(251, 191, 36, 0.7) 240deg,
+    transparent 300deg,
+    transparent 360deg
+  );
+  animation: pimBorderSpin 4s linear infinite;
+}
+.pim__card-border::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 22px;
+  background: linear-gradient(
+    145deg,
+    rgba(12, 6, 30, 0.97) 0%,
+    rgba(26, 14, 55, 0.96) 40%,
+    rgba(18, 8, 40, 0.97) 100%
+  );
+}
+.pim--compact .pim__card-border { border-radius: 18px; }
+.pim--compact .pim__card-border::after { border-radius: 16px; }
+
+/* ── Icon area ── */
+.pim__icon-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  z-index: 1;
+}
+.pim--compact .pim__icon-area { margin-bottom: 10px; }
+
+.pim__icon-square {
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(20, 10, 45, 0.95), rgba(30, 16, 60, 0.9));
+  border: 1.5px solid rgba(251, 191, 36, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(251, 191, 36, 0.12),
+    inset 0 1px 0 rgba(253, 230, 138, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  animation: pimIconFloat 3s ease-in-out infinite;
+}
+.pim--compact .pim__icon-square {
+  width: 58px;
+  height: 58px;
+  border-radius: 15px;
+}
+
+/* Outer glow pulse ring */
+.pim__icon-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 28px;
+  border: 1.5px solid rgba(251, 191, 36, 0.3);
+  animation: pimPulse 2.4s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+.pim--compact .pim__icon-pulse { inset: -6px; border-radius: 21px; }
+
+/* Soft ambient glow */
+.pim__icon-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.18), transparent 70%);
+  animation: pimGlow 2.4s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Title row ── */
+.pim__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+  margin-bottom: 8px;
+}
+.pim--compact .pim__title-row { margin-bottom: 6px; }
+
+.pim__title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.pim--compact .pim__title { font-size: 14px; }
+
+/* ── Subtitle ── */
+.pim__subtitle {
+  font-size: 12px;
+  color: rgba(200, 190, 230, 0.7);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0 0 18px;
+  z-index: 1;
+  max-width: 200px;
+}
+.pim--compact .pim__subtitle {
+  font-size: 10.5px;
+  margin-bottom: 13px;
+  max-width: 155px;
+}
+
+/* ── Reveal button ── */
+.pim__reveal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 13px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #1a0a35;
+  z-index: 1;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+
+  background: linear-gradient(
+    135deg,
+    #fde68a 0%,
+    #fbbf24 35%,
+    #f59e0b 65%,
+    #d97706 100%
+  );
+  box-shadow:
+    0 4px 16px rgba(245, 158, 11, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.pim__reveal-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: pimShimmer 2.4s ease-in-out infinite;
+}
+
+.pim__reveal-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 22px rgba(245, 158, 11, 0.6),
+    0 3px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.pim__reveal-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.pim--compact .pim__reveal-btn {
+  padding: 9px 12px;
+  font-size: 12px;
+  border-radius: 10px;
+  gap: 6px;
+}
+
+/* ────────────────────────────────────────────────────
+   VISIBLE / VIEWER STATE
+──────────────────────────────────────────────────── */
+.pim__viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 252px;
+  animation: pimReveal 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pim--compact .pim__viewer { width: 186px; gap: 6px; }
+
+.pim__viewer--entering {
+  animation: pimReveal 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Zoom container ── */
+.pim__zoom-wrap {
+  position: relative;
+  width: 100%;
+  height: 252px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(12, 6, 30, 0.9);
+  box-shadow:
+    0 0 0 1.5px rgba(251, 191, 36, 0.22),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pim--compact .pim__zoom-wrap {
+  height: 186px;
+  border-radius: 13px;
+}
+
+/* ── Image inside zoom ── */
+.pim__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  will-change: transform;
+  transform-origin: center center;
+  border-radius: 0;
+  -webkit-user-drag: none;
+}
+
+/* ── Zoom percentage badge ── */
+.pim__zoom-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+/* ── Reset hint ── */
+.pim__reset-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Back to Hidden button ── */
+.pim__hide-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(251, 191, 36, 0.28);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: rgba(251, 191, 36, 0.9);
+  font-family: inherit;
+  transition: all 0.16s ease;
+
+  background: linear-gradient(
+    135deg,
+    rgba(30, 14, 60, 0.92),
+    rgba(20, 8, 40, 0.95)
+  );
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(251, 191, 36, 0.1);
+}
+.pim__hide-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 20, 90, 0.95),
+    rgba(30, 12, 60, 0.98)
+  );
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fbbf24;
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 12px rgba(245, 158, 11, 0.15),
+    inset 0 1px 0 rgba(251, 191, 36, 0.15);
+}
+.pim__hide-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
+.pim--compact .pim__hide-btn {
+  padding: 8px 10px;
+  font-size: 11px;
+  border-radius: 10px;
+  gap: 5px;
+}
+
+/* ────────────────────────────────────────────────────
+   DARK MODE — already dark-first but extra polish
+──────────────────────────────────────────────────── */
+.dark-mode .pim__card,
+[data-theme="dark"] .pim__card,
+.theme-dark .pim__card,
+.theme-dracula .pim__card,
+.theme-cyberpunk .pim__card,
+.theme-ocean .pim__card {
+  background: linear-gradient(
+    145deg,
+    rgba(8, 4, 20, 0.98) 0%,
+    rgba(18, 10, 42, 0.97) 40%,
+    rgba(12, 5, 30, 0.98) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.3),
+    0 8px 40px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
