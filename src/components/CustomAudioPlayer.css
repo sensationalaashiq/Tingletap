@@ -1,105 +1,139 @@
 /* ═══════════════════════════════════════════════════════════
-   SHARED BASE — both players same width/height
+   SHARED BASE — both players exact same width
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
-  width: 248px;
-  max-width: 248px;
-  min-width: 248px;
+  width: 244px;
+  max-width: 244px;
+  min-width: 200px;
   box-sizing: border-box;
-  border-radius: 14px;
-  padding: 10px 12px 9px;
-  margin: 5px 0;
+  border-radius: 13px;
+  padding: 9px 10px 8px;
+  margin: 4px 0;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LAVENDER AUDIO PLAYER
-═══════════════════════════════════════════════════════════ */
+/* ═══ LAVENDER PLAYER ═══ */
 .compact-audio-player {
-  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 60%, #e0d9ff 100%);
+  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 55%, #e4dcff 100%);
   border: 1.5px solid #a78bfa;
   box-shadow:
-    0 4px 18px rgba(109, 40, 217, 0.18),
-    0 1px 4px rgba(109, 40, 217, 0.10),
-    inset 0 1px 0 rgba(255,255,255,0.75);
+    0 4px 16px rgba(109,40,217,0.18),
+    0 1px 4px rgba(109,40,217,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .message-row-wrapper .compact-audio-player,
 .message-body .compact-audio-player,
 .chat-feed .compact-audio-player {
-  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 60%, #e0d9ff 100%) !important;
+  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 55%, #e4dcff 100%) !important;
   border: 1.5px solid #a78bfa !important;
-  box-shadow: 0 4px 18px rgba(109, 40, 217, 0.18) !important;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   YOUTUBE RED PLAYER
-═══════════════════════════════════════════════════════════ */
+/* ═══ YOUTUBE RED PLAYER ═══ */
 .youtube-music-player {
-  background: linear-gradient(150deg, #b91c1c 0%, #dc2626 50%, #c41e1e 100%);
-  border: 1.5px solid rgba(255, 120, 120, 0.6);
+  background: linear-gradient(150deg, #b91c1c 0%, #dc2626 55%, #c41e1e 100%);
+  border: 1.5px solid rgba(252,165,165,0.5);
   box-shadow:
-    0 4px 20px rgba(185, 28, 28, 0.42),
-    0 2px 6px rgba(185, 28, 28, 0.22),
-    inset 0 1px 0 rgba(255,255,255,0.15);
-  overflow: visible;
+    0 4px 18px rgba(185,28,28,0.4),
+    0 2px 6px rgba(185,28,28,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.14);
 }
 
+/* Force all text/icons white inside youtube player
+   EXCEPT the yt icon itself (handled via inline styles) */
+.youtube-music-player { color: #fff !important; }
+.youtube-music-player .visualizer-bar { background: linear-gradient(to top,#fff,rgba(255,255,255,.65)) !important; }
+.youtube-music-player .compact-progress-bar { background: rgba(255,255,255,.2) !important; border-color: rgba(255,255,255,.12) !important; }
+.youtube-music-player .compact-progress-fill { background: linear-gradient(90deg,#fff,rgba(255,255,255,.88)) !important; box-shadow: 0 0 7px rgba(255,255,255,.6) !important; }
+.youtube-music-player .time-info,
+.youtube-music-player .time-info span { color: #fff !important; text-shadow: 0 1px 3px rgba(0,0,0,.3) !important; }
+.youtube-music-player .vol-icon { fill: #fff !important; color: #fff !important; }
+.youtube-music-player .compact-volume-slider { background: rgba(255,255,255,.28) !important; }
+
 /* ═══════════════════════════════════════════════════════════
-   YOUTUBE IN-PLAYER HEADER (title inside red player)
+   HEADER ROW — brand icon + song title
 ═══════════════════════════════════════════════════════════ */
-.yt-player-header {
+.player-header-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 7px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  gap: 5px;
+  width: 100%;
+  overflow: hidden;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  flex-shrink: 0;
 }
 
-.yt-player-title {
+.youtube-music-player .player-header-row {
+  border-bottom-color: rgba(255,255,255,0.18);
+}
+
+.player-brand-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Music icon color for lavender player */
+.compact-audio-player .player-brand-icon svg {
+  fill: #6d28d9 !important;
+  color: #6d28d9 !important;
+}
+
+.player-song-title {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.compact-audio-player .player-song-title {
+  color: #4c1d95;
+}
+
+.youtube-music-player .player-song-title {
   color: #ffffff !important;
-  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  font-size: 10px;
   text-transform: uppercase;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.35);
-  line-height: 1;
+  letter-spacing: 0.5px;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AUDIO VISUALIZER
+   VISUALIZER
 ═══════════════════════════════════════════════════════════ */
 .audio-visualizer {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 20px;
+  height: 16px;
   gap: 2px;
-  margin-bottom: 6px;
-  padding: 0 2px;
+  flex-shrink: 0;
 }
 
-/* Lavender bars — deep purple */
 .compact-audio-player .visualizer-bar {
   width: 5px;
   background: linear-gradient(to top, #5b21b6 0%, #8b5cf6 100%);
   border-radius: 3px 3px 2px 2px;
-  min-height: 4px;
+  min-height: 3px;
   transition: height 0.12s ease;
-  opacity: 0.9;
 }
 
-/* Red player bars — white glow */
 .youtube-music-player .visualizer-bar {
   width: 5px;
-  background: linear-gradient(to top, #ffffff 0%, rgba(255,255,255,0.7) 100%);
+  min-height: 3px;
   border-radius: 3px 3px 2px 2px;
-  min-height: 4px;
   transition: height 0.12s ease;
-  box-shadow: 0 0 4px rgba(255,255,255,0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -110,18 +144,13 @@
   border-radius: 4px;
   position: relative;
   cursor: pointer;
-  margin-bottom: 8px;
+  flex-shrink: 0;
   overflow: hidden;
 }
 
 .compact-audio-player .compact-progress-bar {
-  background: rgba(109, 40, 217, 0.15);
-  border: 1px solid rgba(167, 139, 250, 0.35);
-}
-
-.youtube-music-player .compact-progress-bar {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(109,40,217,0.15);
+  border: 1px solid rgba(167,139,250,0.3);
 }
 
 .compact-progress-fill {
@@ -132,62 +161,34 @@
 
 .compact-audio-player .compact-progress-fill {
   background: linear-gradient(90deg, #5b21b6 0%, #7c3aed 60%, #a78bfa 100%);
-  box-shadow: 0 0 6px rgba(109, 40, 217, 0.5);
-}
-
-.youtube-music-player .compact-progress-fill {
-  background: linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.88) 100%);
-  box-shadow: 0 0 8px rgba(255,255,255,0.65);
-}
-
-.progress-thumb {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  transition: left 0.1s ease;
-  pointer-events: none;
-}
-
-.compact-audio-player .progress-thumb {
-  background: #6d28d9;
-  box-shadow: 0 1px 4px rgba(91, 33, 182, 0.6);
-}
-
-.youtube-music-player .progress-thumb {
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 0 5px rgba(109,40,217,0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CONTROLS ROW — perfectly balanced
+   CONTROLS ROW — 4 buttons + time
 ═══════════════════════════════════════════════════════════ */
 .compact-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0;
   width: 100%;
+  flex-shrink: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BUTTONS — Lavender Player (dark purple, clearly visible)
-═══════════════════════════════════════════════════════════ */
+/* ── Lavender buttons ── */
 .compact-audio-player .compact-btn {
   background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
   border: 1.5px solid #4c1d95;
-  color: #ffffff !important;
+  color: #fff !important;
   cursor: pointer;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.18s ease;
-  box-shadow: 0 2px 6px rgba(76, 29, 149, 0.45);
+  box-shadow: 0 2px 5px rgba(76,29,149,0.42);
   flex-shrink: 0;
+  padding: 0;
 }
 
 .compact-audio-player .compact-btn svg,
@@ -198,25 +199,24 @@
 
 .compact-audio-player .compact-btn:hover {
   background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
-  transform: scale(1.12);
-  box-shadow: 0 4px 14px rgba(76, 29, 149, 0.6);
+  transform: scale(1.13);
+  box-shadow: 0 3px 10px rgba(76,29,149,0.6);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BUTTONS — YouTube Player (semi-white, clearly visible on red)
-═══════════════════════════════════════════════════════════ */
+/* ── YouTube buttons ── */
 .youtube-music-player .compact-btn {
-  background: rgba(255, 255, 255, 0.22) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
-  color: #ffffff !important;
+  background: rgba(255,255,255,0.22) !important;
+  border: 1.5px solid rgba(255,255,255,0.48) !important;
+  color: #fff !important;
   cursor: pointer;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.18s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.18);
   flex-shrink: 0;
+  padding: 0;
 }
 
 .youtube-music-player .compact-btn svg,
@@ -227,162 +227,111 @@
 }
 
 .youtube-music-player .compact-btn:hover {
-  background: rgba(255, 255, 255, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.8) !important;
-  transform: scale(1.12);
+  background: rgba(255,255,255,0.38) !important;
+  border-color: rgba(255,255,255,0.75) !important;
+  transform: scale(1.13);
 }
 
-/* Force ALL youtube player SVG/text white */
-.youtube-music-player * { color: #ffffff !important; }
-.youtube-music-player svg { fill: #ffffff !important; }
-.youtube-music-player svg path,
-.youtube-music-player svg rect,
-.youtube-music-player svg g,
-.youtube-music-player svg circle,
-.youtube-music-player svg polygon { fill: #ffffff !important; }
-/* Exception: YouTube icon rect stays red */
-.yt-player-header svg rect { fill: #FF0000 !important; }
-.yt-player-header svg path { fill: #ffffff !important; }
-
-/* Disabled */
 .compact-btn:disabled {
-  opacity: 0.42;
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none !important;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BUTTON SIZES
-═══════════════════════════════════════════════════════════ */
-.icon-btn {
-  width: 28px;
-  height: 28px;
-}
+/* Button sizes */
+.icon-btn  { width: 26px; height: 26px; }
+.play-btn  { width: 32px; height: 32px; }
 
-.play-btn {
-  width: 34px;
-  height: 34px;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   TIME DISPLAY
-═══════════════════════════════════════════════════════════ */
+/* ── Time display ── */
 .time-info {
   display: flex;
   align-items: center;
   gap: 1px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  flex-shrink: 0;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .compact-audio-player .time-info,
-.compact-audio-player .time-info span {
-  color: #4c1d95 !important;
-}
+.compact-audio-player .time-info span { color: #4c1d95 !important; }
 
-.youtube-music-player .time-info,
-.youtube-music-player .time-info span {
-  color: #ffffff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.35);
-}
-
-.time-sep {
-  opacity: 0.6;
-  margin: 0 1px;
-}
+.time-sep { opacity: 0.55; margin: 0 1px; }
 
 /* ═══════════════════════════════════════════════════════════
-   VOLUME SECTION
+   VOLUME ROW — full width, no overflow
 ═══════════════════════════════════════════════════════════ */
-.volume-section {
+.volume-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  width: 100%;
   flex-shrink: 0;
 }
 
-/* Lavender volume */
-.compact-audio-player .volume-section svg,
-.compact-audio-player .volume-section svg path {
-  color: #5b21b6 !important;
+.vol-icon {
+  flex-shrink: 0;
+}
+
+.compact-audio-player .vol-icon {
   fill: #5b21b6 !important;
+  color: #5b21b6 !important;
+}
+
+.compact-volume-slider {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
 .compact-audio-player .compact-volume-slider {
-  width: 36px;
-  height: 4px;
-  background: rgba(109, 40, 217, 0.2);
-  border-radius: 3px;
-  outline: none;
+  background: rgba(109,40,217,0.2);
+}
+
+.compact-volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   cursor: pointer;
+  border: 2px solid #fff;
 }
 
 .compact-audio-player .compact-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
   background: linear-gradient(135deg, #5b21b6, #7c3aed);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 5px rgba(91, 33, 182, 0.5);
-}
-
-.compact-audio-player .compact-volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(135deg, #5b21b6, #7c3aed);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 5px rgba(91, 33, 182, 0.5);
-}
-
-/* YouTube volume */
-.youtube-music-player .volume-section svg,
-.youtube-music-player .volume-section svg path {
-  color: #ffffff !important;
-  fill: #ffffff !important;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-}
-
-.youtube-music-player .compact-volume-slider {
-  width: 36px;
-  height: 4px;
-  background: rgba(255,255,255,0.28);
-  border-radius: 3px;
-  outline: none;
-  -webkit-appearance: none;
-  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(91,33,182,0.5);
 }
 
 .youtube-music-player .compact-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: none;
+}
+
+.compact-volume-slider::-moz-range-thumb {
   width: 12px;
   height: 12px;
-  background: #ffffff !important;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  border: none;
+  border: 2px solid #fff;
+}
+
+.compact-audio-player .compact-volume-slider::-moz-range-thumb {
+  background: linear-gradient(135deg, #5b21b6, #7c3aed);
 }
 
 .youtube-music-player .compact-volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
   background: #ffffff !important;
-  border-radius: 50%;
-  cursor: pointer;
   border: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PRIVATE MESSAGE — compact override
+   PRIVATE MESSAGE STYLES
 ═══════════════════════════════════════════════════════════ */
 .pm-conversation .compact-audio-player,
 .pm-message .compact-audio-player,
@@ -393,23 +342,13 @@
   width: 155px !important;
   max-width: 155px !important;
   min-width: 140px !important;
-  padding: 5px !important;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1) !important;
+  padding: 5px 6px !important;
+  gap: 3px !important;
 }
 
 .pm-conversation .visualizer-bar,
 .pm-message .visualizer-bar {
   background: linear-gradient(to top, #5b21b6, #7c3aed) !important;
-}
-
-.pm-conversation .compact-progress-bar,
-.pm-message .compact-progress-bar {
-  background: rgba(91,33,182,0.15) !important;
-}
-
-.pm-conversation .compact-progress-fill,
-.pm-message .compact-progress-fill {
-  background: linear-gradient(90deg, #5b21b6, #7c3aed) !important;
 }
 
 .pm-conversation .compact-btn,
@@ -419,19 +358,7 @@
 }
 
 .pm-conversation .compact-btn svg,
-.pm-message .compact-btn svg {
-  fill: #ffffff !important;
-  color: #ffffff !important;
-}
-
-.pm-conversation .time-info span,
-.pm-message .time-info span,
-.pm-conversation .time-info,
-.pm-message .time-info {
-  color: #4c1d95 !important;
-  text-shadow: none !important;
-  font-size: 8px !important;
-}
+.pm-message .compact-btn svg { fill: #fff !important; }
 
 .pm-conversation .icon-btn,
 .pm-message .icon-btn { width: 18px !important; height: 18px !important; }
@@ -439,17 +366,16 @@
 .pm-conversation .play-btn,
 .pm-message .play-btn { width: 22px !important; height: 22px !important; }
 
-.pm-conversation .volume-section,
-.pm-message .volume-section { gap: 2px !important; }
+.pm-conversation .time-info,
+.pm-message .time-info,
+.pm-conversation .time-info span,
+.pm-message .time-info span { color: #4c1d95 !important; font-size: 7.5px !important; }
 
-.pm-conversation .compact-volume-slider,
-.pm-message .compact-volume-slider { width: 22px !important; }
+.pm-conversation .player-song-title,
+.pm-message .player-song-title { font-size: 8.5px !important; }
 
-.pm-conversation .volume-section svg,
-.pm-message .volume-section svg {
-  color: #5b21b6 !important;
-  fill: #5b21b6 !important;
-}
+.pm-conversation .vol-icon,
+.pm-message .vol-icon { fill: #5b21b6 !important; }
 
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE
@@ -457,29 +383,26 @@
 @media (max-width: 480px) {
   .compact-audio-player,
   .youtube-music-player {
-    width: 220px;
-    max-width: 220px;
-    min-width: 200px;
-    padding: 8px 9px 7px;
+    width: 210px;
+    max-width: 210px;
+    min-width: 180px;
+    padding: 7px 8px;
   }
-
-  .play-btn { width: 30px; height: 30px; }
-  .icon-btn { width: 24px; height: 24px; }
-  .compact-volume-slider { width: 28px !important; }
+  .play-btn  { width: 28px; height: 28px; }
+  .icon-btn  { width: 22px; height: 22px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
    DARK MODE
 ═══════════════════════════════════════════════════════════ */
 .dark-mode .compact-audio-player {
-  background: linear-gradient(145deg, #1e1730 0%, #231a3a 60%, #1a1428 100%);
+  background: linear-gradient(145deg, #1e1730 0%, #231a3a 55%, #1a1428 100%);
   border-color: #6d28d9;
 }
 
+.dark-mode .compact-audio-player .player-song-title,
 .dark-mode .compact-audio-player .time-info,
-.dark-mode .compact-audio-player .time-info span {
-  color: #ddd6fe !important;
-}
+.dark-mode .compact-audio-player .time-info span { color: #ddd6fe !important; }
 
-/* Input placeholder */
-.input-container input::placeholder { color: #000000 !important; }
+/* Placeholder fix */
+.input-container input::placeholder { color: #000 !important; }
