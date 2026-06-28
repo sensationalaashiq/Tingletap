@@ -10,12 +10,9 @@
   width: 244px;
   max-width: 244px;
   min-width: 244px;
-  height: 112px;
-  min-height: 112px;
-  max-height: 112px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 5px 10px 4px;
+  padding: 6px 10px 6px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;

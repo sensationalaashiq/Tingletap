@@ -1548,13 +1548,16 @@ body.theme-sunset .message-content-container p:not([style]):not(.user-font-style
 .youtube-embed {
   position: relative;
   width: 100%;
-  max-width: 480px;
-  margin-top: 10px;
+  max-width: 300px;
+  margin: 4px 0;
   overflow: hidden;
-  border-radius: 15px;
-  border: 3px solid #d8b4fe;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background-color: #000;
+  border-radius: 12px;
+  border: 2.5px solid #a78bfa;
+  box-shadow:
+    0 0 0 1px rgba(167,139,250,0.3),
+    0 6px 24px rgba(109,40,217,0.28),
+    0 2px 8px rgba(109,40,217,0.18);
+  background: transparent;
 }
 
 .youtube-embed iframe {
@@ -1563,6 +1566,7 @@ body.theme-sunset .message-content-container p:not([style]):not(.user-font-style
   aspect-ratio: 16 / 9;
   display: block;
   border: none;
+  vertical-align: bottom;
 }
 
 /* Message Form */

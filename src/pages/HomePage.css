@@ -2326,21 +2326,27 @@ html body.theme-sunset .message-body p {
 }
 
 .youtube-embed {
-  margin-top: 6px;
-  border: 2px solid #c4b5fd;
-  border-radius: 14px;
+  margin: 4px 0;
+  border: 2.5px solid #a78bfa;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.2), 0 1px 6px rgba(124, 58, 237, 0.1);
-  background: #0f0f0f;
+  box-shadow:
+    0 0 0 1px rgba(167,139,250,0.3),
+    0 6px 24px rgba(109,40,217,0.28),
+    0 2px 8px rgba(109,40,217,0.18);
+  background: transparent;
+  max-width: 300px;
+  width: 100%;
 }
 
 .youtube-embed iframe {
   width: 100% !important;
-  max-width: 350px;
-  height: 197px;
+  height: auto !important;
+  aspect-ratio: 16 / 9 !important;
   border-radius: 0 !important;
-  display: block;
+  display: block !important;
   border: none !important;
+  vertical-align: bottom;
 }
 
 /* Whisper Messages with Role-based Colors */
@@ -5796,28 +5802,29 @@ html body.theme-sunset .message-body p {
 }
   /* YouTube Embed — Premium Lavender Border */
   .youtube-embed {
-      width: 92%;
-      max-width: 360px;
-      margin: 8px 0;
-      border-radius: 14px;
+      width: 100%;
+      max-width: 300px;
+      margin: 4px 0;
+      border-radius: 12px;
       overflow: hidden;
       box-shadow:
-        0 6px 28px rgba(124, 58, 237, 0.22),
-        0 2px 8px rgba(124, 58, 237, 0.12);
-      display: inline-block;
+        0 0 0 1px rgba(167,139,250,0.3),
+        0 6px 24px rgba(109,40,217,0.28),
+        0 2px 8px rgba(109,40,217,0.18);
       position: relative;
-      background: #0f0f0f;
-      border: 2.5px solid #c4b5fd;
+      background: transparent;
+      border: 2.5px solid #a78bfa;
       padding: 0;
   }
 
   .youtube-embed iframe {
       width: 100% !important;
-      height: 203px !important;
+      height: auto !important;
+      aspect-ratio: 16 / 9 !important;
       border: none !important;
       border-radius: 0 !important;
       display: block !important;
-      background: #000 !important;
+      vertical-align: bottom;
 }
 
 /* YouTube Music Player Styling — Compact Wrapper, no extra space */
@@ -5918,28 +5925,30 @@ html body.theme-sunset .message-body p {
     display: block;
 }
 
-/* Base YouTube Embed Styling — Premium Lavender Border */
+/* Base YouTube Embed Styling — Premium Vibrant Lavender */
 .youtube-embed {
-    max-width: 360px;
-    width: 92%;
-    border: 2.5px solid #c4b5fd;
-    border-radius: 14px;
+    max-width: 300px;
+    width: 100%;
+    border: 2.5px solid #a78bfa;
+    border-radius: 12px;
     overflow: hidden;
-    margin: 8px 0;
+    margin: 4px 0;
     box-shadow:
-      0 6px 28px rgba(124, 58, 237, 0.22),
-      0 2px 8px rgba(124, 58, 237, 0.12),
-      inset 0 0 0 1px rgba(255,255,255,0.15);
-    background: #0f0f0f;
+      0 0 0 1px rgba(167,139,250,0.3),
+      0 6px 24px rgba(109,40,217,0.28),
+      0 2px 8px rgba(109,40,217,0.18);
+    background: transparent;
     position: relative;
 }
 
 .youtube-embed iframe {
     width: 100% !important;
-    height: 203px !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important;
     border-radius: 0 !important;
     border: none !important;
-    display: block;
+    display: block !important;
+    vertical-align: bottom;
 }
 
 /* YouTube Music Player Wrapper */
