@@ -38,6 +38,7 @@ const SettingsSidebar = ({
     const [activeTab, setActiveTab] = useState('general');
     const [blockedUserProfiles, setBlockedUserProfiles] = useState([]);
     const [friendsProfiles, setFriendsProfiles] = useState([]);
+    const [confirmDeleteFriend, setConfirmDeleteFriend] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
     const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
@@ -627,46 +628,31 @@ const SettingsSidebar = ({
     };
 
     const handleRemoveFriend = async (friend) => {
-        const confirmRemove = window.confirm(`Are you sure you want to remove ${friend.displayName} from your friends list?`);
+        try {
+            const currentUserRef = doc(db, 'users', auth.currentUser.uid);
+            const friendUserRef = doc(db, 'users', friend.id);
 
-        if (confirmRemove) {
-            try {
-                const currentUserRef = doc(db, 'users', auth.currentUser.uid);
-                const friendUserRef = doc(db, 'users', friend.id);
+            const currentUserDoc = await getDoc(currentUserRef);
+            const currentUserData = currentUserDoc.data();
+            const currentFriends = currentUserData.friends || [];
 
-                // Get current user's data
-                const currentUserDoc = await getDoc(currentUserRef);
-                const currentUserData = currentUserDoc.data();
-                const currentFriends = currentUserData.friends || [];
+            const friendUserDoc = await getDoc(friendUserRef);
+            const friendUserData = friendUserDoc.data();
+            const friendFriends = friendUserData.friends || [];
 
-                // Get friend's data
-                const friendUserDoc = await getDoc(friendUserRef);
-                const friendUserData = friendUserDoc.data();
-                const friendFriends = friendUserData.friends || [];
+            const updatedCurrentFriends = currentFriends.filter(id => id !== friend.id);
+            const updatedFriendFriends = friendFriends.filter(id => id !== auth.currentUser.uid);
 
-                // Remove friend from current user's friends list
-                const updatedCurrentFriends = currentFriends.filter(id => id !== friend.id);
+            await updateDoc(currentUserRef, { friends: updatedCurrentFriends });
+            await updateDoc(friendUserRef, { friends: updatedFriendFriends });
 
-                // Remove current user from friend's friends list
-                const updatedFriendFriends = friendFriends.filter(id => id !== auth.currentUser.uid);
+            setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
+            setConfirmDeleteFriend(null);
 
-                // Update both users' friends lists
-                await updateDoc(currentUserRef, {
-                    friends: updatedCurrentFriends
-                });
-
-                await updateDoc(friendUserRef, {
-                    friends: updatedFriendFriends
-                });
-
-                // Update local state
-                setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
-
-                toast.success(`Removed ${friend.displayName} from friends list`, { icon: TI.remove });
-            } catch (error) {
-                console.error('Error removing friend:', error);
-                toast.error('Failed to remove friend. Please try again.');
-            }
+            toast.success(`${friend.displayName} removed from friends`, { icon: '🗑️' });
+        } catch (error) {
+            console.error('Error removing friend:', error);
+            toast.error('Failed to remove friend. Please try again.');
         }
     };
 
@@ -1233,38 +1219,71 @@ const SettingsSidebar = ({
                             <div className="sf-friends-list">
                                 {friendsProfiles.length > 0 ? (
                                     friendsProfiles.map(friend => (
-                                        <div key={friend.id} className="sf-friend-item">
-                                            <img
-                                                src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
-                                                alt="avatar"
-                                                className="sf-friend-avatar"
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => { if (window.setProfileUser) { window.setProfileUser(friend); onClose(); } }}
-                                            />
-                                            <div className="sf-friend-info">
-                                                <div className="sf-friend-name">{friend.displayName}</div>
-                                                <div className="sf-friend-role">{friend.role || 'Member'}</div>
+                                        <div key={friend.id} className="sf-friend-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <img
+                                                    src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
+                                                    alt="avatar"
+                                                    className="sf-friend-avatar"
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => { if (window.setProfileUser) { window.setProfileUser(friend); onClose(); } }}
+                                                />
+                                                <div className="sf-friend-info" style={{ flex: 1 }}>
+                                                    <div className="sf-friend-name">{friend.displayName}</div>
+                                                    <div className="sf-friend-role">{friend.role || 'Member'}</div>
+                                                </div>
+                                                <div className="sf-friend-btns">
+                                                    <button className="sf-btn sf-btn-msg" title="Message"
+                                                        onClick={() => { if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(friend); onClose(); }}>
+                                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button className="sf-btn sf-btn-remove" title="Remove Friend"
+                                                        onClick={() => setConfirmDeleteFriend(confirmDeleteFriend?.id === friend.id ? null : friend)}>
+                                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
+                                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="sf-friend-btns">
-                                                <button className="sf-btn sf-btn-msg" title="Message"
-                                                    onClick={() => { if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(friend); onClose(); }}>
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
-                                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                                                    </svg>
-                                                </button>
-                                                <button className="sf-btn sf-btn-remove" title="Remove"
-                                                    onClick={() => handleRemoveFriend(friend)}>
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
-                                                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                                                    </svg>
-                                                </button>
-                                                <button className="sf-btn sf-btn-block" title="Block"
-                                                    onClick={() => handleBlockFriend(friend)}>
-                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
-                                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.68L5.68 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.68L18.32 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            {confirmDeleteFriend?.id === friend.id && (
+                                                <div style={{
+                                                    margin: '8px 0 4px 0',
+                                                    background: 'linear-gradient(135deg,#fff1f2,#ffe4e6)',
+                                                    border: '1px solid #fca5a5',
+                                                    borderRadius: '10px',
+                                                    padding: '10px 12px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    gap: '8px'
+                                                }}>
+                                                    <span style={{ fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>
+                                                        Remove {friend.displayName}?
+                                                    </span>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button
+                                                            onClick={() => setConfirmDeleteFriend(null)}
+                                                            style={{
+                                                                padding: '4px 10px', borderRadius: '6px', border: '1px solid #d1d5db',
+                                                                background: '#fff', color: '#6b7280', fontSize: '11px',
+                                                                fontWeight: 600, cursor: 'pointer'
+                                                            }}>
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveFriend(friend)}
+                                                            style={{
+                                                                padding: '4px 10px', borderRadius: '6px', border: 'none',
+                                                                background: 'linear-gradient(135deg,#ef4444,#b91c1c)',
+                                                                color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer'
+                                                            }}>
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 ) : (
