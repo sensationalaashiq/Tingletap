@@ -12,7 +12,7 @@
   min-width: 244px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 6px 10px 0;
+  padding: 6px 10px 2px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
@@ -30,7 +30,6 @@
     0 4px 16px rgba(109,40,217,0.18),
     0 1px 4px rgba(109,40,217,0.10),
     inset 0 1px 0 rgba(255,255,255,0.8);
-  padding-bottom: 2px;
 }
 
 .message-row-wrapper .compact-audio-player,
@@ -48,7 +47,6 @@
     0 4px 18px rgba(185,28,28,0.4),
     0 2px 6px rgba(185,28,28,0.2),
     inset 0 1px 0 rgba(255,255,255,0.14);
-  padding-bottom: 0px;
 }
 
 /* YouTube player — force white on everything */
@@ -295,6 +293,7 @@
   height: 10px;
   min-height: 10px;
   max-height: 10px;
+  overflow: hidden;
 }
 
 .vol-icon { flex-shrink: 0; }

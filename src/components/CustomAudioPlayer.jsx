@@ -265,6 +265,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
         />
       ) : (
         <audio ref={audioRef} src={audioUrl} preload="metadata"
+          style={{display:'none'}}
           onError={() => { setIsLoading(false); setIsPlaying(false); }}
         />
       )}

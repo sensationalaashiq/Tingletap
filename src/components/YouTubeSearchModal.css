@@ -15,12 +15,14 @@
 
 /* ── Overlay ── */
 .ytm-overlay {
-    position: fixed; inset: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 100dvh;
     background: rgba(0,0,0,0.64);
     display: flex; align-items: center; justify-content: center;
     z-index: 99999;
     animation: ytmFade .18s ease;
-    padding: 16px;
+    padding: 16px 16px 4px;
     box-sizing: border-box;
 }
 

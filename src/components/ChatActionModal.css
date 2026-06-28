@@ -2,13 +2,15 @@
 
 .cam-overlay {
   position: fixed;
-  inset: 0;
+  top: 0; left: 0; right: 0;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 99999;
-  padding: 1rem;
+  padding: 1rem 1rem 4px;
+  box-sizing: border-box;
   font-family: 'Poppins', sans-serif;
   animation: camFadeIn 0.18s ease;
 }
