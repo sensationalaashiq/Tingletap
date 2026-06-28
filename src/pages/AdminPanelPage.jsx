@@ -6,7 +6,7 @@ import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
@@ -15,6 +15,14 @@ import RoyalTrustBadge from '../components/RoyalTrustBadge';
 import { TRUST_RANKS, getRankFromScore, updateTrustScore } from '../utils/trustSystem';
 import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
+
+const aToast = {
+  success: (m, o = {}) => aToast.success(m, { containerId: 'admin-panel', ...o }),
+  error:   (m, o = {}) => aToast.error(m,   { containerId: 'admin-panel', ...o }),
+  warn:    (m, o = {}) => aToast.warn(m,    { containerId: 'admin-panel', ...o }),
+  warning: (m, o = {}) => aToast.warning(m, { containerId: 'admin-panel', ...o }),
+  info:    (m, o = {}) => aToast.info(m,    { containerId: 'admin-panel', ...o }),
+};
 
 const AdminPanelPage = () => {
   const navigate = useNavigate();
@@ -181,7 +189,7 @@ const AdminPanelPage = () => {
         }
         setCurrentUserProfile(userData);
         if (!['owner', 'admin', 'moderator'].includes(userData.role)) {
-          toast.error('Access denied. Admin privileges required.');
+          aToast.error('Access denied. Admin privileges required.');
           navigate('/');
         } else {
           setIsRoleReady(true);
@@ -382,7 +390,7 @@ const AdminPanelPage = () => {
 
   const confirmDeleteProfile = async () => {
     if (deleteConfirmText !== 'DELETE') {
-      toast.error('Type DELETE to confirm.');
+      aToast.error('Type DELETE to confirm.');
       return;
     }
     setDeleting(true);
@@ -408,12 +416,12 @@ const AdminPanelPage = () => {
       }
       remove(ref(rtdb, `status/${deleteTarget.uid}`));
       await deleteDoc(userRef);
-      toast.success(`${deleteTarget.displayName}'s profile permanently deleted.`);
+      aToast.success(`${deleteTarget.displayName}'s profile permanently deleted.`);
       setShowDeleteModal(false);
       setDeleteTarget(null);
     } catch (error) {
       console.error('Profile deletion error:', error);
-      toast.error('Failed to delete profile. Please try again.');
+      aToast.error('Failed to delete profile. Please try again.');
     } finally {
       setDeleting(false);
     }
@@ -422,7 +430,7 @@ const AdminPanelPage = () => {
   const handleDeviceBan = (targetUser) => {
     const deviceId = targetUser.lastDeviceId || targetUser.deviceId;
     if (!deviceId || deviceId === 'Unknown') {
-      toast.warning(`No device fingerprint for ${targetUser.displayName}. They must log in once for fingerprint to register.`);
+      aToast.warning(`No device fingerprint for ${targetUser.displayName}. They must log in once for fingerprint to register.`);
       return;
     }
     setDevBanTarget(targetUser);
@@ -446,12 +454,12 @@ const AdminPanelPage = () => {
         isDeviceBanned: true,
         deviceBanInfo: { bannedAt: new Date().toISOString(), bannedBy: currentUserProfile?.displayName || 'Admin', deviceId }
       });
-      toast.success(`${devBanTarget.displayName}'s device banned successfully!`);
+      aToast.success(`${devBanTarget.displayName}'s device banned successfully!`);
       setShowDevBanModal(false);
       setDevBanTarget(null);
     } catch (error) {
       console.error('Device ban error:', error);
-      toast.error(`Device ban failed: ${error.message}`);
+      aToast.error(`Device ban failed: ${error.message}`);
     } finally {
       setDevBanning(false);
     }
@@ -474,12 +482,12 @@ const AdminPanelPage = () => {
         isDeviceBanned: false,
         deviceBanInfo: null
       });
-      toast.success(`${unDevBanTarget.displayName}'s device ban lifted!`);
+      aToast.success(`${unDevBanTarget.displayName}'s device ban lifted!`);
       setShowUnDevBanModal(false);
       setUnDevBanTarget(null);
     } catch (error) {
       console.error('UnDevBan error:', error);
-      toast.error(`Failed to remove device ban: ${error.message}`);
+      aToast.error(`Failed to remove device ban: ${error.message}`);
     } finally {
       setUnDevBanning(false);
     }
@@ -489,7 +497,7 @@ const AdminPanelPage = () => {
   const handleChangeEmail = async () => {
     if (!changeEmailTarget || !changeEmailValue.trim()) return;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(changeEmailValue.trim())) { toast.error('Invalid email address'); return; }
+    if (!emailRegex.test(changeEmailValue.trim())) { aToast.error('Invalid email address'); return; }
     setChangeEmailLoading(true);
     try {
       const userRef = doc(db, 'users', changeEmailTarget.uid || changeEmailTarget.id);
@@ -498,9 +506,9 @@ const AdminPanelPage = () => {
         emailChangedAt: new Date().toISOString(),
         emailChangedBy: currentUserProfile?.displayName || 'Owner'
       });
-      toast.success(`Email updated to "${changeEmailValue.trim()}" for ${changeEmailTarget.displayName}`);
+      aToast.success(`Email updated to "${changeEmailValue.trim()}" for ${changeEmailTarget.displayName}`);
       setShowChangeEmailModal(false); setChangeEmailTarget(null); setChangeEmailValue('');
-    } catch (err) { toast.error('Failed to update email: ' + err.message); }
+    } catch (err) { aToast.error('Failed to update email: ' + err.message); }
     finally { setChangeEmailLoading(false); }
   };
 
@@ -508,8 +516,8 @@ const AdminPanelPage = () => {
   const handleChangeUsername = async () => {
     if (!changeUsernameTarget || !changeUsernameValue.trim()) return;
     const newName = changeUsernameValue.trim();
-    if (newName.length < 3 || newName.length > 30) { toast.error('Username must be 3–30 characters'); return; }
-    if (/[^a-zA-Z0-9_. ]/.test(newName)) { toast.error('Only letters, numbers, spaces, underscores and dots allowed'); return; }
+    if (newName.length < 3 || newName.length > 30) { aToast.error('Username must be 3–30 characters'); return; }
+    if (/[^a-zA-Z0-9_. ]/.test(newName)) { aToast.error('Only letters, numbers, spaces, underscores and dots allowed'); return; }
     setChangeUsernameLoading(true);
     try {
       const uid = changeUsernameTarget.uid || changeUsernameTarget.id;
@@ -529,9 +537,9 @@ const AdminPanelPage = () => {
       try {
         await rtdbUpdate(ref(rtdb, `status/${uid}`), { displayName: newName });
       } catch {}
-      toast.success(`Username updated to "${newName}" for ${changeUsernameTarget.displayName}`);
+      aToast.success(`Username updated to "${newName}" for ${changeUsernameTarget.displayName}`);
       setShowChangeUsernameModal(false); setChangeUsernameTarget(null); setChangeUsernameValue('');
-    } catch (err) { toast.error('Failed to update username: ' + err.message); }
+    } catch (err) { aToast.error('Failed to update username: ' + err.message); }
     finally { setChangeUsernameLoading(false); }
   };
 
@@ -548,10 +556,10 @@ const AdminPanelPage = () => {
         resolvedAt: serverTimestamp(),
         resolveNote: 'Unkicked by admin'
       });
-      toast.success(`✅ ${unkickTarget.username || 'User'} has been unkicked from ${unkickTarget.roomName || 'the room'}.`);
+      aToast.success(`✅ ${unkickTarget.username || 'User'} has been unkicked from ${unkickTarget.roomName || 'the room'}.`);
       setShowUnkickModal(false); setUnkickTarget(null);
     } catch (err) {
-      toast.error('Failed to unkick: ' + err.message);
+      aToast.error('Failed to unkick: ' + err.message);
     } finally { setUnkicking(false); }
   };
 
@@ -572,10 +580,10 @@ const AdminPanelPage = () => {
         resolvedAt: serverTimestamp(),
         resolveNote: 'Unmuted by admin'
       });
-      toast.success(`✅ ${unmuteTarget.username || 'User'} has been unmuted.`);
+      aToast.success(`✅ ${unmuteTarget.username || 'User'} has been unmuted.`);
       setShowUnmuteModal(false); setUnmuteTarget(null);
     } catch (err) {
-      toast.error('Failed to unmute: ' + err.message);
+      aToast.error('Failed to unmute: ' + err.message);
     } finally { setUnmuteLoading(false); }
   };
 
@@ -589,21 +597,21 @@ const AdminPanelPage = () => {
         resolvedBy: currentUserProfile?.displayName || 'Admin',
         resolvedAt: serverTimestamp()
       });
-      toast.success('Violation marked as resolved.');
+      aToast.success('Violation marked as resolved.');
       setShowResolveModal(false); setResolveTarget(null);
     } catch (err) {
-      toast.error('Failed to resolve: ' + err.message);
+      aToast.error('Failed to resolve: ' + err.message);
     } finally { setResolving(false); }
   };
 
   const handleAssignBadge = (targetUser) => {
     const myRole = currentUserProfile?.role;
     if (!['owner', 'admin'].includes(myRole)) {
-      toast.error('Only Owner and Admin can assign badges.');
+      aToast.error('Only Owner and Admin can assign badges.');
       return;
     }
     if (myRole === 'admin' && targetUser.role === 'owner') {
-      toast.error("Admins cannot modify the Owner's profile.");
+      aToast.error("Admins cannot modify the Owner's profile.");
       return;
     }
     setBadgeTarget(targetUser);
@@ -617,14 +625,14 @@ const AdminPanelPage = () => {
       const userRef = doc(db, 'users', badgeTarget.id);
       await updateDoc(userRef, { badge: badgeKey || null });
       if (badgeKey) {
-        toast.success(`🏅 Badge "${Badges[badgeKey]?.name}" assigned to ${badgeTarget.displayName}!`);
+        aToast.success(`🏅 Badge "${Badges[badgeKey]?.name}" assigned to ${badgeTarget.displayName}!`);
       } else {
-        toast.success(`Badge removed from ${badgeTarget.displayName}.`);
+        aToast.success(`Badge removed from ${badgeTarget.displayName}.`);
       }
       setShowBadgeModal(false);
       setBadgeTarget(null);
     } catch (error) {
-      toast.error('Failed to assign badge: ' + error.message);
+      aToast.error('Failed to assign badge: ' + error.message);
     } finally {
       setAssigningBadge(false);
     }
@@ -637,10 +645,10 @@ const AdminPanelPage = () => {
       const reportRef = doc(db, 'reports', reportId);
       if (action === 'dismiss') {
         await updateDoc(reportRef, { status: 'dismissed', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-        toast.success('Report dismissed.');
+        aToast.success('Report dismissed.');
       } else if (action === 'resolve') {
         await updateDoc(reportRef, { status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-        toast.success('Report resolved.');
+        aToast.success('Report resolved.');
       } else if (action === 'ban') {
         const uid = reportData.reportedUser?.uid;
         const target = users.find(u => u.uid === uid || u.id === uid) || (uid ? {
@@ -655,7 +663,7 @@ const AdminPanelPage = () => {
           setActionType('ban');
           setIsModalVisible(true);
         } else {
-          toast.error('No user UID available in this report.');
+          aToast.error('No user UID available in this report.');
         }
       } else if (action === 'mute') {
         const uid = reportData.reportedUser?.uid;
@@ -671,7 +679,7 @@ const AdminPanelPage = () => {
           setActionType('mute');
           setIsModalVisible(true);
         } else {
-          toast.error('No user UID available in this report.');
+          aToast.error('No user UID available in this report.');
         }
       } else if (action === 'kick') {
         const uid = reportData.reportedUser?.uid;
@@ -687,15 +695,15 @@ const AdminPanelPage = () => {
           setActionType('kick');
           setIsModalVisible(true);
         } else {
-          toast.error('No user UID available in this report.');
+          aToast.error('No user UID available in this report.');
         }
       } else if (action === 'ip_ban') {
         const ip = reportData.reportedUser?.ipAddress;
         if (ip) {
           await IPBanSystem.banIP(ip, { reason: `Reported: ${reportData.category || 'Violation'}`, bannedBy: currentUserProfile?.displayName || 'Admin', reportId });
           await updateDoc(reportRef, { status: 'action_taken', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-          toast.success(`IP ${ip} has been banned.`);
-        } else toast.error('No IP address captured for this report.');
+          aToast.success(`IP ${ip} has been banned.`);
+        } else aToast.error('No IP address captured for this report.');
       } else if (action === 'device_ban') {
         const deviceId = reportData.reportedUser?.deviceId;
         const uid = reportData.reportedUser?.uid;
@@ -706,22 +714,22 @@ const AdminPanelPage = () => {
             deviceBanInfo: { bannedAt: new Date().toISOString(), bannedBy: currentUserProfile?.displayName || 'Admin', deviceId }
           });
           await updateDoc(reportRef, { status: 'action_taken', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-          toast.success(`Device ID …${deviceId.slice(-8)} banned.`);
-        } else toast.error('No device ID captured for this report.');
+          aToast.success(`Device ID …${deviceId.slice(-8)} banned.`);
+        } else aToast.error('No device ID captured for this report.');
       } else if (action === 'appeal_accept') {
         const uid = reportData.reportedUser?.uid || reportData.uid;
         if (uid) {
           const userRef = doc(db, 'users', uid);
           await updateDoc(userRef, { isBanned: false, banInfo: null });
           await updateDoc(reportRef, { status: 'appeal_accepted', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-          toast.success('Appeal accepted — user unbanned.');
+          aToast.success('Appeal accepted — user unbanned.');
         }
       } else if (action === 'appeal_reject') {
         await updateDoc(reportRef, { status: 'appeal_rejected', resolvedAt: new Date().toISOString(), resolvedBy: currentUserProfile?.displayName || 'Admin' });
-        toast.info('Appeal rejected.');
+        aToast.info('Appeal rejected.');
       }
     } catch (err) {
-      toast.error('Action failed: ' + err.message);
+      aToast.error('Action failed: ' + err.message);
     } finally {
       setReportActionLoading(prev => ({ ...prev, [key]: false }));
     }
@@ -729,7 +737,7 @@ const AdminPanelPage = () => {
 
   const handleCreateRoom = async () => {
     if (!createRoomData.name.trim()) {
-      toast.error('Room name is required.');
+      aToast.error('Room name is required.');
       return;
     }
     setCreatingRoom(true);
@@ -749,12 +757,12 @@ const AdminPanelPage = () => {
         createdBy: currentUserProfile?.displayName || 'Admin',
         createdByUid: user?.uid
       });
-      toast.success(`✅ Room "${createRoomData.name}" created successfully!`);
+      aToast.success(`✅ Room "${createRoomData.name}" created successfully!`);
       setCreateRoomData({ name: '', description: '', type: 'public', maxUsers: 50, password: '', order: '' });
       setShowCreateRoom(false);
     } catch (error) {
       console.error('Create room error:', error);
-      toast.error('Failed to create room. Please try again.');
+      aToast.error('Failed to create room. Please try again.');
     } finally {
       setCreatingRoom(false);
     }
@@ -770,12 +778,12 @@ const AdminPanelPage = () => {
     setDeletingRoom(true);
     try {
       await deleteDoc(doc(db, 'rooms', deleteRoomTarget.id));
-      toast.success(`Room "${deleteRoomTarget.name}" deleted successfully.`);
+      aToast.success(`Room "${deleteRoomTarget.name}" deleted successfully.`);
       setShowDeleteRoomModal(false);
       setDeleteRoomTarget(null);
     } catch (error) {
       console.error('Delete room error:', error);
-      toast.error('Failed to delete room. Please try again.');
+      aToast.error('Failed to delete room. Please try again.');
     } finally {
       setDeletingRoom(false);
     }
@@ -797,7 +805,7 @@ const AdminPanelPage = () => {
 
   const confirmEditRoom = async () => {
     if (!editRoomTarget || !editRoomData.name.trim()) {
-      toast.error('Room name is required.');
+      aToast.error('Room name is required.');
       return;
     }
     setSavingRoom(true);
@@ -815,12 +823,12 @@ const AdminPanelPage = () => {
         updatedAt: serverTimestamp(),
         updatedBy: currentUserProfile?.displayName || 'Admin'
       });
-      toast.success(`Room "${editRoomData.name}" updated successfully!`);
+      aToast.success(`Room "${editRoomData.name}" updated successfully!`);
       setShowEditRoom(false);
       setEditRoomTarget(null);
     } catch (error) {
       console.error('Edit room error:', error);
-      toast.error('Failed to update room. Please try again.');
+      aToast.error('Failed to update room. Please try again.');
     } finally {
       setSavingRoom(false);
     }
@@ -861,12 +869,12 @@ const AdminPanelPage = () => {
             );
             
             if (ipBanResults.ipBanned && ipBanResults.bannedIP) {
-              toast.success(`${selectedUser.displayName} has been banned. IP ${ipBanResults.bannedIP} is also banned.`);
+              aToast.success(`${selectedUser.displayName} has been banned. IP ${ipBanResults.bannedIP} is also banned.`);
             } else {
-              toast.success(`${selectedUser.displayName} has been banned.`);
+              aToast.success(`${selectedUser.displayName} has been banned.`);
             }
           } catch (ipError) {
-            toast.warning(`${selectedUser.displayName} has been banned, but IP ban failed: ${ipError.message}`);
+            aToast.warning(`${selectedUser.displayName} has been banned, but IP ban failed: ${ipError.message}`);
           }
           break;
           
@@ -879,12 +887,12 @@ const AdminPanelPage = () => {
           try {
             const unbannedIPs = await IPBanSystem.unbanUserIP(selectedUser.uid);
             if (unbannedIPs && unbannedIPs.length > 0) {
-              toast.success(`${selectedUser.displayName} has been unbanned. IP(s) ${unbannedIPs.join(', ')} are also unbanned.`);
+              aToast.success(`${selectedUser.displayName} has been unbanned. IP(s) ${unbannedIPs.join(', ')} are also unbanned.`);
             } else {
-              toast.success(`${selectedUser.displayName} has been unbanned.`);
+              aToast.success(`${selectedUser.displayName} has been unbanned.`);
             }
           } catch (ipError) {
-            toast.warning(`${selectedUser.displayName} has been unbanned, but IP unban failed: ${ipError.message}`);
+            aToast.warning(`${selectedUser.displayName} has been unbanned, but IP unban failed: ${ipError.message}`);
           }
           break;
           
@@ -907,7 +915,7 @@ const AdminPanelPage = () => {
             'mutedInfo.duration': actionData.duration,
             'mutedInfo.muteUntil': muteUntilISO,
           });
-          toast.success(`${selectedUser.displayName} has been muted.`);
+          aToast.success(`${selectedUser.displayName} has been muted.`);
           break;
         }
           
@@ -918,14 +926,14 @@ const AdminPanelPage = () => {
             'mutedInfo.mutedBy': null,
             'mutedInfo.reason': null
           });
-          toast.success(`${selectedUser.displayName} has been unmuted.`);
+          aToast.success(`${selectedUser.displayName} has been unmuted.`);
           break;
           
         case 'kick':
           if (onlineStatuses[selectedUser.uid]?.currentRoomId) {
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
           }
-          toast.success(`${selectedUser.displayName} has been kicked.`);
+          aToast.success(`${selectedUser.displayName} has been kicked.`);
           break;
 
         case 'unkick': {
@@ -934,13 +942,13 @@ const AdminPanelPage = () => {
             await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid));
           }
           await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
-          toast.success(`${selectedUser.displayName} has been unkicked.`);
+          aToast.success(`${selectedUser.displayName} has been unkicked.`);
           break;
         }
       }
     } catch (error) {
       console.error('Moderation error:', error);
-      toast.error('Action failed. Please try again.');
+      aToast.error('Action failed. Please try again.');
     }
   };
 
@@ -2304,7 +2312,7 @@ const AdminPanelPage = () => {
                                     </svg>
                                     <span style={{fontSize:10,fontWeight:700,color:'#b91c1c',letterSpacing:.3}}>IP:</span>
                                     <code style={{fontSize:11,fontWeight:700,color:'#dc2626',fontFamily:'monospace',background:'rgba(239,68,68,.1)',padding:'1px 6px',borderRadius:4}}>{r.reportedUser.ipAddress}</code>
-                                    <button title="Copy IP" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.ipAddress); toast.info('IP copied');}}
+                                    <button title="Copy IP" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.ipAddress); aToast.info('IP copied');}}
                                       style={{background:'none',border:'none',cursor:'pointer',padding:'2px',color:'#9ca3af',display:'flex'}}>
                                       <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11}}><path fill="#9ca3af" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>
                                     </button>
@@ -2318,7 +2326,7 @@ const AdminPanelPage = () => {
                                     </svg>
                                     <span style={{fontSize:10,fontWeight:700,color:'#5b21b6',letterSpacing:.3}}>Device:</span>
                                     <code style={{fontSize:11,fontWeight:700,color:'#7c3aed',fontFamily:'monospace',background:'rgba(139,92,246,.1)',padding:'1px 6px',borderRadius:4,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={r.reportedUser.deviceId}>…{r.reportedUser.deviceId.slice(-12)}</code>
-                                    <button title="Copy Device ID" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.deviceId); toast.info('Device ID copied');}}
+                                    <button title="Copy Device ID" onClick={() => {navigator.clipboard?.writeText(r.reportedUser.deviceId); aToast.info('Device ID copied');}}
                                       style={{background:'none',border:'none',cursor:'pointer',padding:'2px',color:'#9ca3af',display:'flex'}}>
                                       <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11}}><path fill="#9ca3af" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/></svg>
                                     </button>
@@ -2450,17 +2458,17 @@ const AdminPanelPage = () => {
               });
 
             const handleTrustAdjust = async (targetUid, delta, targetName) => {
-              if (!delta || isNaN(delta)) { toast.error('Enter a valid number'); return; }
+              if (!delta || isNaN(delta)) { aToast.error('Enter a valid number'); return; }
               const d = parseFloat(delta);
               if (d === 0) return;
               setTrustAdjusting(true);
               try {
                 const result = await updateTrustScore(targetUid, 'MESSAGE_SENT', d);
-                toast.success(`Trust score for ${targetName} ${d > 0 ? '+' : ''}${d} → ${result?.newScore ?? '?'}`);
+                aToast.success(`Trust score for ${targetName} ${d > 0 ? '+' : ''}${d} → ${result?.newScore ?? '?'}`);
                 setTrustAdjustTarget(null);
                 setTrustAdjustDelta('');
               } catch (err) {
-                toast.error('Failed to update trust score');
+                aToast.error('Failed to update trust score');
               } finally {
                 setTrustAdjusting(false);
               }
@@ -3844,6 +3852,31 @@ const AdminPanelPage = () => {
         actionType={actionType}
         onConfirm={handleConfirmAction}
         currentUserProfile={currentUserProfile}
+      />
+
+      <ToastContainer
+        containerId="admin-panel"
+        position="bottom-right"
+        autoClose={4000}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="light"
+        toastStyle={{
+          background: 'rgba(255,255,255,0.98)',
+          backdropFilter: 'blur(24px)',
+          border: '1.5px solid rgba(167,139,250,0.2)',
+          borderRadius: '16px',
+          color: '#1e1b4b',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '13px',
+          fontWeight: 600,
+          boxShadow: '0 16px 48px rgba(109,40,217,0.13), 0 4px 12px rgba(0,0,0,0.08)',
+          padding: '10px 14px',
+          minHeight: 'unset',
+        }}
+        style={{ zIndex: 99999 }}
       />
     </>
   );

@@ -39,6 +39,7 @@ import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import { toast, ToastContainer } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -3509,46 +3510,14 @@ const HomePage = ({ user }) => {
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
-            toast.success("YouTube video shared successfully!", {
-                icon: "📺",
-                style: {
-                    background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 184, 148, 0.3)'
-                }
-            });
+            pt.youtube("YouTube video shared successfully!");
         } catch (error) {
             if (error.code === 'permission-denied') {
-                toast.error("Permission denied. Please check your account status.", {
-                    icon: "🚫",
-                    style: {
-                        background: 'linear-gradient(135deg, #e17055 0%, #fd79a8 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(225, 112, 85, 0.3)'
-                    }
-                });
+                pt.error("Permission denied. Please check your account status.");
             } else if (error.code === 'unavailable') {
-                toast.error("Service temporarily unavailable. Please try again.", {
-                    icon: "⚠️",
-                    style: {
-                        background: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(253, 203, 110, 0.3)'
-                    }
-                });
+                pt.warn("Service temporarily unavailable. Please try again.");
             } else {
-                toast.error(`Failed to send YouTube video: ${error.message}`, {
-                    icon: "❌",
-                    style: {
-                        background: 'linear-gradient(135deg, #e17055 0%, #fd79a8 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(225, 112, 85, 0.3)'
-                    }
-                });
+                pt.error(`Failed to send YouTube video: ${error.message}`);
             }
         }
     };
@@ -3628,46 +3597,14 @@ const HomePage = ({ user }) => {
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
-            toast.success("YouTube video shared successfully!", {
-                icon: "📺",
-                style: {
-                    background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 184, 148, 0.3)'
-                }
-            });
+            pt.youtube("YouTube video shared successfully!");
         } catch (error) {
             if (error.code === 'permission-denied') {
-                toast.error("Permission denied. Please check your account status.", {
-                    icon: "🚫",
-                    style: {
-                        background: 'linear-gradient(135deg, #e17055 0%, #fd79a8 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(225, 112, 85, 0.3)'
-                    }
-                });
+                pt.error("Permission denied. Please check your account status.");
             } else if (error.code === 'unavailable') {
-                toast.error("Service temporarily unavailable. Please try again.", {
-                    icon: "⚠️",
-                    style: {
-                        background: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(253, 203, 110, 0.3)'
-                    }
-                });
+                pt.warn("Service temporarily unavailable. Please try again.");
             } else {
-                toast.error(`Failed to send YouTube video: ${error.message}`, {
-                    icon: "❌",
-                    style: {
-                        background: 'linear-gradient(135deg, #e17055 0%, #fd79a8 100%)',
-                        color: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(225, 112, 85, 0.3)'
-                    }
-                });
+                pt.error(`Failed to send YouTube video: ${error.message}`);
             }
         }
     };
@@ -3877,7 +3814,7 @@ const HomePage = ({ user }) => {
             };
 
             await addDoc(collection(db, 'reports'), report);
-            toast.success(`🚩 ${reportData.reportType || 'Content'} reported successfully.`);
+            pt.report(`🚩 ${reportData.reportType || 'Content'} reported successfully.`);
             
         } catch (error) {
             toast.error("Failed to submit report. Please try again.");
@@ -4194,7 +4131,7 @@ const HomePage = ({ user }) => {
             // Commit all operations
             await batch.commit();
             
-            toast.success(`🎉 You are now friends with ${request.senderName}!`);
+            pt.friend(`🎉 You are now friends with ${request.senderName}!`);
             
             // Update logged in user profile to reflect new friend
             if (loggedInUserProfile) {
@@ -4241,7 +4178,7 @@ const HomePage = ({ user }) => {
                 rejectedAt: serverTimestamp()
             });
             
-            toast.info(`Friend request from ${request.senderName} declined`);
+            pt.info(`Friend request from ${request.senderName} declined`);
         } catch (error) {
             toast.error(`Failed to reject friend request: ${error.message}`);
             // Re-add to UI if error occurred
@@ -4703,7 +4640,7 @@ const HomePage = ({ user }) => {
                 roomId: roomId
             });
 
-            toast.success("Audio sent successfully!");
+            pt.audio("Audio sent successfully!");
             
             // Reset file input
             if (privateAudioInputRef.current) {
@@ -4832,9 +4769,9 @@ const HomePage = ({ user }) => {
             setPrivateMessage('');
             setPrivateAudioPopupOpen(false);
 
-                    toast.success("Audio sent successfully!");
+                    pt.audio("Audio sent successfully!");
                 } catch (error) {
-                    toast.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
+                    pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
                 }
             };
 
@@ -5001,9 +4938,9 @@ const HomePage = ({ user }) => {
                     setShowPrivateAudioMiniPopup(false);
                     // Keep attachment dropdown open after sending audio
             
-                    toast.success("Audio sent successfully!");
+                    pt.audio("Audio sent successfully!");
                 } catch (error) {
-                    toast.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
+                    pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
                 }
             };
 
@@ -5635,7 +5572,7 @@ const HomePage = ({ user }) => {
                 }
             } catch (_) {}
 
-            toast.success("User unblocked successfully");
+            pt.success("User unblocked successfully");
         } catch (error) {
             toast.error("Failed to unblock user");
         }
@@ -6187,9 +6124,9 @@ const HomePage = ({ user }) => {
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
-            toast.success("Audio sent successfully!");
+            pt.audio("Audio sent successfully!");
         } catch (error) {
-            toast.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
+            pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
         }
     };
 
@@ -6305,17 +6242,9 @@ const HomePage = ({ user }) => {
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
-            toast.success("GIF sent successfully!", {
-                icon: "🎬",
-                style: {
-                    background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 184, 148, 0.3)'
-                }
-            });
+            pt.gif("GIF sent successfully!");
         } catch (error) {
-            toast.error(`Failed to send GIF: ${error.message || 'Please try again.'}`);
+            pt.error(`Failed to send GIF: ${error.message || 'Please try again.'}`);
         }
     };
 

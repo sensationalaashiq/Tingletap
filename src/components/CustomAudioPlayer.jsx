@@ -150,12 +150,17 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
       {/* ── Top Header ── */}
       <div className="player-header-row">
         {isYouTubeMusic ? (
-          /* YouTube icon — inline styles override CSS white-fill rule */
+          /* YouTube icon — span background avoids any SVG fill CSS override */
           <span className="player-brand-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" style={{display:'block',flexShrink:0}}>
-              <rect width="24" height="24" rx="4" style={{fill:'#FF0000'}}/>
-              <path d="M9.5 7.5l8 4.5-8 4.5z" style={{fill:'#ffffff'}}/>
-            </svg>
+            <span style={{
+              display:'inline-flex', alignItems:'center', justifyContent:'center',
+              width:'15px', height:'11px', background:'#FF0000',
+              borderRadius:'3px', flexShrink:0,
+            }}>
+              <svg viewBox="0 0 10 10" width="7" height="7">
+                <path d="M2 1.5l7 3.5-7 3.5z" fill="#ffffff"/>
+              </svg>
+            </span>
           </span>
         ) : (
           /* Music note icon for MP3 */
