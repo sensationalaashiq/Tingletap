@@ -6064,18 +6064,15 @@ const HomePage = ({ user }) => {
                 }
             ];
 
-            // Try each upload method
-            for (const uploadMethod of uploadMethods) {
-                try {
-                    const result = await uploadMethod();
-                    if (result) {
-                        audioUrl = result;
-                        uploadSuccess = true;
-                        break;
-                    }
-                } catch (error) {
-                    continue;
-                }
+            // Run all upload methods in parallel — use whichever succeeds first
+            try {
+                audioUrl = await Promise.any(uploadMethods.map(fn => fn().then(r => {
+                    if (!r) throw new Error('no url');
+                    return r;
+                })));
+                uploadSuccess = !!audioUrl;
+            } catch {
+                uploadSuccess = false;
             }
 
             if (!uploadSuccess || !audioUrl) {

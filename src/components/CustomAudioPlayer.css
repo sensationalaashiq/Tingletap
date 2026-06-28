@@ -12,7 +12,7 @@
   min-width: 244px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 6px 10px 6px;
+  padding: 6px 10px 0;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
@@ -311,7 +311,11 @@
   border-radius: 3px;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
 }
 
 .compact-audio-player .compact-volume-slider {
