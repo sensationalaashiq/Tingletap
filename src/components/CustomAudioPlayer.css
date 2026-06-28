@@ -1,20 +1,28 @@
 /* ═══════════════════════════════════════════════════════════
-   SHARED BASE — both players exact same width
+   SHARED BASE — IDENTICAL SIZE for both players
+   Layout breakdown (fits in 134px height):
+   padding-top 8 + header 18 + gap 4 + visualizer 14 + gap 4
+   + progress 5 + gap 4 + controls 30 + gap 4 + volume 12
+   + padding-bottom 7  =  110px content + 24px padding = 134px
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
   width: 244px;
   max-width: 244px;
-  min-width: 200px;
+  min-width: 244px;
+  height: 134px;
+  min-height: 134px;
+  max-height: 134px;
   box-sizing: border-box;
   border-radius: 13px;
-  padding: 9px 10px 8px;
+  padding: 8px 10px 7px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 /* ═══ LAVENDER PLAYER ═══ */
@@ -44,19 +52,29 @@
     inset 0 1px 0 rgba(255,255,255,0.14);
 }
 
-/* Force all text/icons white inside youtube player
-   EXCEPT the yt icon itself (handled via inline styles) */
+/* YouTube player — force white on everything */
 .youtube-music-player { color: #fff !important; }
-.youtube-music-player .visualizer-bar { background: linear-gradient(to top,#fff,rgba(255,255,255,.65)) !important; }
-.youtube-music-player .compact-progress-bar { background: rgba(255,255,255,.2) !important; border-color: rgba(255,255,255,.12) !important; }
-.youtube-music-player .compact-progress-fill { background: linear-gradient(90deg,#fff,rgba(255,255,255,.88)) !important; box-shadow: 0 0 7px rgba(255,255,255,.6) !important; }
+.youtube-music-player .visualizer-bar {
+  background: linear-gradient(to top,#fff,rgba(255,255,255,.65)) !important;
+}
+.youtube-music-player .compact-progress-bar {
+  background: rgba(255,255,255,.2) !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+.youtube-music-player .compact-progress-fill {
+  background: linear-gradient(90deg,#fff,rgba(255,255,255,.88)) !important;
+  box-shadow: 0 0 6px rgba(255,255,255,.55) !important;
+}
 .youtube-music-player .time-info,
-.youtube-music-player .time-info span { color: #fff !important; text-shadow: 0 1px 3px rgba(0,0,0,.3) !important; }
+.youtube-music-player .time-info span {
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.3) !important;
+}
 .youtube-music-player .vol-icon { fill: #fff !important; color: #fff !important; }
 .youtube-music-player .compact-volume-slider { background: rgba(255,255,255,.28) !important; }
 
 /* ═══════════════════════════════════════════════════════════
-   HEADER ROW — brand icon + song title
+   ROW 1 — Header: brand icon + song title  (~18px total)
 ═══════════════════════════════════════════════════════════ */
 .player-header-row {
   display: flex;
@@ -64,13 +82,16 @@
   gap: 5px;
   width: 100%;
   overflow: hidden;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
   flex-shrink: 0;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
 }
 
 .youtube-music-player .player-header-row {
-  border-bottom-color: rgba(255,255,255,0.18);
+  border-bottom-color: rgba(255,255,255,0.2);
 }
 
 .player-brand-icon {
@@ -79,14 +100,13 @@
   flex-shrink: 0;
 }
 
-/* Music icon color for lavender player */
 .compact-audio-player .player-brand-icon svg {
   fill: #6d28d9 !important;
   color: #6d28d9 !important;
 }
 
 .player-song-title {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -94,29 +114,29 @@
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
-  line-height: 1.2;
+  line-height: 1;
 }
 
-.compact-audio-player .player-song-title {
-  color: #4c1d95;
-}
+.compact-audio-player .player-song-title { color: #4c1d95; }
 
 .youtube-music-player .player-song-title {
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-size: 9px;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   VISUALIZER
+   ROW 2 — Visualizer  (~14px)
 ═══════════════════════════════════════════════════════════ */
 .audio-visualizer {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 16px;
+  height: 14px;
+  min-height: 14px;
+  max-height: 14px;
   gap: 2px;
   flex-shrink: 0;
 }
@@ -125,22 +145,23 @@
   width: 5px;
   background: linear-gradient(to top, #5b21b6 0%, #8b5cf6 100%);
   border-radius: 3px 3px 2px 2px;
-  min-height: 3px;
+  min-height: 2px;
   transition: height 0.12s ease;
 }
 
 .youtube-music-player .visualizer-bar {
   width: 5px;
-  min-height: 3px;
+  min-height: 2px;
   border-radius: 3px 3px 2px 2px;
   transition: height 0.12s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PROGRESS BAR
+   ROW 3 — Progress bar  (5px)
 ═══════════════════════════════════════════════════════════ */
 .compact-progress-bar {
   height: 5px;
+  min-height: 5px;
   border-radius: 4px;
   position: relative;
   cursor: pointer;
@@ -165,7 +186,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CONTROLS ROW — 4 buttons + time
+   ROW 4 — Controls: 4 buttons + time  (30px)
 ═══════════════════════════════════════════════════════════ */
 .compact-controls {
   display: flex;
@@ -173,6 +194,9 @@
   justify-content: space-between;
   width: 100%;
   flex-shrink: 0;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
 }
 
 /* ── Lavender buttons ── */
@@ -199,7 +223,7 @@
 
 .compact-audio-player .compact-btn:hover {
   background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
-  transform: scale(1.13);
+  transform: scale(1.12);
   box-shadow: 0 3px 10px rgba(76,29,149,0.6);
 }
 
@@ -229,7 +253,7 @@
 .youtube-music-player .compact-btn:hover {
   background: rgba(255,255,255,0.38) !important;
   border-color: rgba(255,255,255,0.75) !important;
-  transform: scale(1.13);
+  transform: scale(1.12);
 }
 
 .compact-btn:disabled {
@@ -238,9 +262,9 @@
   transform: none !important;
 }
 
-/* Button sizes */
-.icon-btn  { width: 26px; height: 26px; }
-.play-btn  { width: 32px; height: 32px; }
+/* ── Button sizes (fit in 30px row) ── */
+.icon-btn { width: 24px; height: 24px; }
+.play-btn { width: 30px; height: 30px; }
 
 /* ── Time display ── */
 .time-info {
@@ -252,6 +276,7 @@
   letter-spacing: 0.3px;
   white-space: nowrap;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .compact-audio-player .time-info,
@@ -260,7 +285,7 @@
 .time-sep { opacity: 0.55; margin: 0 1px; }
 
 /* ═══════════════════════════════════════════════════════════
-   VOLUME ROW — full width, no overflow
+   ROW 5 — Volume row  (12px)
 ═══════════════════════════════════════════════════════════ */
 .volume-row {
   display: flex;
@@ -268,11 +293,12 @@
   gap: 5px;
   width: 100%;
   flex-shrink: 0;
+  height: 12px;
+  min-height: 12px;
+  max-height: 12px;
 }
 
-.vol-icon {
-  flex-shrink: 0;
-}
+.vol-icon { flex-shrink: 0; }
 
 .compact-audio-player .vol-icon {
   fill: #5b21b6 !important;
@@ -295,8 +321,8 @@
 
 .compact-volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -314,8 +340,8 @@
 }
 
 .compact-volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -331,7 +357,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PRIVATE MESSAGE STYLES
+   PRIVATE MESSAGE — smaller version
 ═══════════════════════════════════════════════════════════ */
 .pm-conversation .compact-audio-player,
 .pm-message .compact-audio-player,
@@ -339,12 +365,27 @@
 .private-message-popup .compact-audio-player {
   background: rgba(255,255,255,0.96) !important;
   border: 1px solid #ddd6fe !important;
-  width: 155px !important;
-  max-width: 155px !important;
+  width: 152px !important;
+  max-width: 152px !important;
   min-width: 140px !important;
-  padding: 5px 6px !important;
+  height: 118px !important;
+  min-height: 118px !important;
+  max-height: 118px !important;
+  padding: 5px 6px 5px !important;
   gap: 3px !important;
 }
+
+.pm-conversation .audio-visualizer,
+.pm-message .audio-visualizer { height: 10px !important; min-height: 10px !important; max-height: 10px !important; }
+
+.pm-conversation .compact-controls,
+.pm-message .compact-controls { height: 24px !important; min-height: 24px !important; max-height: 24px !important; }
+
+.pm-conversation .player-header-row,
+.pm-message .player-header-row { height: 15px !important; min-height: 15px !important; max-height: 15px !important; }
+
+.pm-conversation .volume-row,
+.pm-message .volume-row { height: 10px !important; min-height: 10px !important; max-height: 10px !important; }
 
 .pm-conversation .visualizer-bar,
 .pm-message .visualizer-bar {
@@ -369,27 +410,30 @@
 .pm-conversation .time-info,
 .pm-message .time-info,
 .pm-conversation .time-info span,
-.pm-message .time-info span { color: #4c1d95 !important; font-size: 7.5px !important; }
+.pm-message .time-info span { color: #4c1d95 !important; font-size: 7px !important; }
 
 .pm-conversation .player-song-title,
-.pm-message .player-song-title { font-size: 8.5px !important; }
+.pm-message .player-song-title { font-size: 8px !important; }
 
 .pm-conversation .vol-icon,
 .pm-message .vol-icon { fill: #5b21b6 !important; }
 
 /* ═══════════════════════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — mobile
 ═══════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .compact-audio-player,
   .youtube-music-player {
     width: 210px;
     max-width: 210px;
-    min-width: 180px;
-    padding: 7px 8px;
+    min-width: 210px;
+    height: 130px;
+    min-height: 130px;
+    max-height: 130px;
+    padding: 7px 8px 6px;
   }
-  .play-btn  { width: 28px; height: 28px; }
-  .icon-btn  { width: 22px; height: 22px; }
+  .play-btn { width: 26px; height: 26px; }
+  .icon-btn { width: 22px; height: 22px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
