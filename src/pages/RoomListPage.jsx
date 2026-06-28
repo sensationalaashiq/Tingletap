@@ -437,13 +437,13 @@ const RoomListPage = () => {
       if (stored) {
         try {
           const { expiry } = JSON.parse(stored);
-          if (Date.now() < expiry) { navigate(`/r/${getRoomSlug(room)}`); return; }
+          if (Date.now() < expiry) { navigate(`/room/${room.id}`); return; }
           else localStorage.removeItem('ageVerified');
         } catch { localStorage.removeItem('ageVerified'); }
       }
       setPendingAdultRoom(room); setShowAdultModal(true);
     } else {
-      navigate(`/r/${getRoomSlug(room)}`);
+      navigate(`/room/${room.id}`);
     }
   };
 
@@ -665,7 +665,7 @@ const RoomListPage = () => {
       {showAdultModal  && (
         <AdultRoomModal
           isOpen={showAdultModal}
-          onConfirm={() => { navigate(`/r/${getRoomSlug(pendingAdultRoom)}`); setShowAdultModal(false); setPendingAdultRoom(null); }}
+          onConfirm={() => { navigate(`/room/${pendingAdultRoom?.id}`); setShowAdultModal(false); setPendingAdultRoom(null); }}
           onCancel={() => { setShowAdultModal(false); setPendingAdultRoom(null); }}
           roomName={pendingAdultRoom?.name || 'Adult Room'}
         />
