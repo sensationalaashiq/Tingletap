@@ -122,9 +122,8 @@
 .youtube-music-player .player-song-title {
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 9px;
+  font-size: 9.5px;
+  letter-spacing: 0.3px;
 }
 
 /* ═══════════════════════════════════════════════════════════
