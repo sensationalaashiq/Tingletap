@@ -340,7 +340,9 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                     <div className="sb-apd" style={{
                                         top: `${dropdownPos.top}px`,
                                         left: `${dropdownPos.left}px`,
-                                    }}>
+                                    }}
+                                    onMouseDown={(e) => { e.nativeEvent?.stopPropagation(); e.nativeEvent?.stopImmediatePropagation(); }}
+                                    >
                                         <div className="sb-apd-header">
                                             <div className="sb-apd-avatar-wrap">
                                                 <img src={avatarUrl} alt="avatar" className="sb-apd-avatar" />
