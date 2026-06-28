@@ -4,10 +4,10 @@
     height: 100dvh;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     z-index: 99999;
-    padding: 16px 16px 24px;
+    padding: 16px 16px 8px;
     box-sizing: border-box;
     animation: bcmFadeIn 0.18s ease;
 }

@@ -226,6 +226,14 @@
   box-shadow: 0 3px 10px rgba(76,29,149,0.6);
 }
 
+/* ── YouTube player — extra breathing room under title ── */
+.youtube-music-player .audio-visualizer { margin-top: 2px; }
+.youtube-music-player .compact-controls {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+}
+
 /* ── YouTube buttons ── */
 .youtube-music-player .compact-btn {
   background: rgba(255,255,255,0.22) !important;
