@@ -36,13 +36,14 @@ const AdminBanKickModal = ({
   }, [actionType]);
 
   const handleConfirm = async () => {
+    const isReverse = ['unban', 'unmute', 'unkick'].includes(actionType);
     const finalReason = reason === 'custom' ? customReason.trim() : reason;
     const finalDuration = duration === 'custom' ? customDuration.trim() : duration;
-    if (!finalReason) { alert('Please provide a reason'); return; }
+    if (!isReverse && !finalReason) { alert('Please provide a reason'); return; }
     if (actionType === 'kick_all' && selectedRooms.length === 0) { alert('Please select at least one room'); return; }
     setIsLoading(true);
     const actionData = {
-      reason: finalReason,
+      reason: isReverse ? (adminNotes.trim() || `${actionType} by ${currentUserProfile?.displayName || 'Admin'}`) : finalReason,
       duration: finalDuration,
       actionBy: currentUserProfile?.displayName || 'System Administrator',
       actionById: currentUserProfile?.uid || 'system',
@@ -95,9 +96,29 @@ const AdminBanKickModal = ({
         description: 'User will be prevented from sending messages',
         reasons: ['Excessive messaging','Inappropriate language','Disrupting conversation','Warning ignored','Minor rule violation','Emoji/sticker spam','custom']
       };
+      case 'unban': return {
+        title: 'Unban User', color: '#10b981', colorLight: '#f0fdf4', colorBorder: '#a7f3d0',
+        icon: <path fill="#10b981" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>,
+        description: 'User\'s ban will be lifted and they can access the platform again',
+        reasons: []
+      };
+      case 'unmute': return {
+        title: 'Unmute User', color: '#3b82f6', colorLight: '#eff6ff', colorBorder: '#bfdbfe',
+        icon: <path fill="#3b82f6" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>,
+        description: 'User\'s mute will be removed and they can send messages again',
+        reasons: []
+      };
+      case 'unkick': return {
+        title: 'Unkick User', color: '#f59e0b', colorLight: '#fffbeb', colorBorder: '#fde68a',
+        icon: <path fill="#f59e0b" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/>,
+        description: 'User will be allowed back into the room they were kicked from',
+        reasons: []
+      };
       default: return { title: 'Action', color: '#7c3aed', colorLight: '#faf5ff', colorBorder: '#e9d5ff', icon: null, description: '', reasons: [] };
     }
   };
+
+  const isReverseAction = ['unban', 'unmute', 'unkick'].includes(actionType);
 
   const info = getActionInfo();
 
@@ -131,6 +152,22 @@ const AdminBanKickModal = ({
 
         <div className="abk-body">
 
+          {isReverseAction && (
+            <div style={{
+              background: `${info.colorLight}`, border: `1.5px solid ${info.colorBorder}`,
+              borderRadius: '10px', padding: '12px 16px', marginBottom: '12px',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" style={{ width: 20, height: 20, flexShrink: 0 }}>
+                <path fill={info.color} d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+              </svg>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: info.color }}>{info.title}</div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{info.description}</div>
+              </div>
+            </div>
+          )}
+
           <div className="abk-user-strip">
             <img
               src={selectedUser.photoURL || `${getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}`}
@@ -149,6 +186,7 @@ const AdminBanKickModal = ({
             </div>
           </div>
 
+          {!isReverseAction && (
           <div className="abk-field">
             <label className="abk-label">
               <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
@@ -172,6 +210,7 @@ const AdminBanKickModal = ({
               />
             )}
           </div>
+          )}
 
           {(actionType === 'ban' || actionType === 'mute') && (
             <div className="abk-field">
@@ -288,9 +327,9 @@ const AdminBanKickModal = ({
           </button>
           <button
             className="abk-btn-confirm"
-            style={{ background: reason.trim() ? info.color : '#d1d5db', cursor: reason.trim() ? 'pointer' : 'not-allowed' }}
+            style={{ background: (isReverseAction || reason.trim()) ? info.color : '#d1d5db', cursor: (isReverseAction || reason.trim()) ? 'pointer' : 'not-allowed' }}
             onClick={handleConfirm}
-            disabled={isLoading || !reason.trim()}
+            disabled={isLoading || (!isReverseAction && !reason.trim())}
           >
             {isLoading ? (
               <span className="abk-spinner" />

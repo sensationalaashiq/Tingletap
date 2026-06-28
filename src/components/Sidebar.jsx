@@ -941,7 +941,7 @@ const Sidebar = ({
                                 <button className="sb-apd-btn sb-apd-danger" onClick={(e) => {
                                   e.stopPropagation();
                                   if (userItem.isBanned) {
-                                    updateDoc(doc(db, 'users', userItem.uid), { isBanned: false, banReason: null, bannedAt: null, unbannedAt: serverTimestamp(), unbannedBy: loggedInUserProfile?.displayName || 'admin' })
+                                    updateDoc(doc(db, 'users', userItem.uid), { isBanned: false, banInfo: null, banReason: null, bannedAt: null, unbannedAt: serverTimestamp(), unbannedBy: loggedInUserProfile?.displayName || 'admin' })
                                       .then(() => toast.success(`Unbanned ${userItem.displayName}`)).catch(() => toast.error('Failed'));
                                   } else {
                                     setAdminModalUser(userItem); setAdminModalType('ban'); setAdminModalVisible(true);

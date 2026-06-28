@@ -56,6 +56,11 @@ const AdminPanelPage = () => {
   const [devBanReason, setDevBanReason] = useState('');
   const [devBanning, setDevBanning] = useState(false);
 
+  // UnDevBan modal
+  const [showUnDevBanModal, setShowUnDevBanModal] = useState(false);
+  const [unDevBanTarget, setUnDevBanTarget] = useState(null);
+  const [unDevBanning, setUnDevBanning] = useState(false);
+
   // Delete User modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -449,6 +454,34 @@ const AdminPanelPage = () => {
       toast.error(`Device ban failed: ${error.message}`);
     } finally {
       setDevBanning(false);
+    }
+  };
+
+  const handleUnDeviceBan = (targetUser) => {
+    setUnDevBanTarget(targetUser);
+    setShowUnDevBanModal(true);
+  };
+
+  const confirmUnDevBan = async () => {
+    if (!unDevBanTarget) return;
+    const deviceId = unDevBanTarget.lastDeviceId || unDevBanTarget.deviceId;
+    setUnDevBanning(true);
+    try {
+      if (deviceId && deviceId !== 'Unknown') {
+        await DeviceBanSystem.unbanDevice(deviceId).catch(() => {});
+      }
+      await updateDoc(doc(db, 'users', unDevBanTarget.uid), {
+        isDeviceBanned: false,
+        deviceBanInfo: null
+      });
+      toast.success(`${unDevBanTarget.displayName}'s device ban lifted!`);
+      setShowUnDevBanModal(false);
+      setUnDevBanTarget(null);
+    } catch (error) {
+      console.error('UnDevBan error:', error);
+      toast.error(`Failed to remove device ban: ${error.message}`);
+    } finally {
+      setUnDevBanning(false);
     }
   };
 
@@ -894,6 +927,16 @@ const AdminPanelPage = () => {
           }
           toast.success(`${selectedUser.displayName} has been kicked.`);
           break;
+
+        case 'unkick': {
+          const kickedRoomId = selectedUser.kickedFrom?.roomId;
+          if (kickedRoomId) {
+            await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid));
+          }
+          await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
+          toast.success(`${selectedUser.displayName} has been unkicked.`);
+          break;
+        }
       }
     } catch (error) {
       console.error('Moderation error:', error);
@@ -1639,27 +1682,55 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
                                 
-                                <button 
-                                  className="luxury-action-btn kick-btn"
-                                  onClick={() => handleModerateUser(user, 'kick')}
-                                  title="Kick from Room"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none">
-                                    <path fill="#ffffff" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
-                                  </svg>
-                                  <span>Kick</span>
-                                </button>
+                                {user.kickedFrom?.roomId ? (
+                                  <button
+                                    className="luxury-action-btn"
+                                    style={{ background: 'linear-gradient(135deg,#06b6d4,#0891b2)' }}
+                                    onClick={() => handleModerateUser(user, 'unkick')}
+                                    title="Unkick User"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/>
+                                    </svg>
+                                    <span>Unkick</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="luxury-action-btn kick-btn"
+                                    onClick={() => handleModerateUser(user, 'kick')}
+                                    title="Kick from Room"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
+                                    </svg>
+                                    <span>Kick</span>
+                                  </button>
+                                )}
 
-                                <button 
-                                  className="luxury-action-btn device-ban-btn"
-                                  onClick={() => handleDeviceBan(user)}
-                                  title="Ban Device"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none">
-                                    <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
-                                  </svg>
-                                  <span>Dev-Ban</span>
-                                </button>
+                                {!user.isDeviceBanned ? (
+                                  <button
+                                    className="luxury-action-btn device-ban-btn"
+                                    onClick={() => handleDeviceBan(user)}
+                                    title="Ban Device"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M14.12,6.88L12,9L9.88,6.88L8.5,8.28L10.62,10.38L8.5,12.5L9.88,13.88L12,11.78L14.12,13.88L15.5,12.5L13.4,10.38L15.5,8.28L14.12,6.88Z"/>
+                                    </svg>
+                                    <span>Dev-Ban</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="luxury-action-btn"
+                                    style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                                    onClick={() => handleUnDeviceBan(user)}
+                                    title="Remove Device Ban"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                      <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M9,8.41L10.41,7L12,8.58L13.59,7L15,8.41L13.42,10L15,11.59L13.59,13L12,11.41L10.41,13L9,11.59L10.58,10L9,8.41Z"/>
+                                    </svg>
+                                    <span>Un-DevBan</span>
+                                  </button>
+                                )}
                                 
                                 {['owner', 'admin'].includes(currentUserProfile?.role) &&
                                   !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
@@ -3079,6 +3150,50 @@ const AdminPanelPage = () => {
       )}
 
       {/* Device Ban Modal */}
+      {showUnDevBanModal && unDevBanTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowUnDevBanModal(false); setUnDevBanTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 420 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#10b981' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#ffffff" d="M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M9,8.41L10.41,7L12,8.58L13.59,7L15,8.41L13.42,10L15,11.59L13.59,13L12,11.41L10.41,13L9,11.59L10.58,10L9,8.41Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 700 }}>Remove Device Ban</h3>
+                <p style={{ margin: 0, fontSize: 11, color: '#10b981', opacity: 0.8 }}>{unDevBanTarget.displayName}</p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowUnDevBanModal(false); setUnDevBanTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#10b981" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+            <div className="luxury-modal-body">
+              <div style={{ background: '#f0fdf4', border: '1.5px solid #a7f3d0', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: '#065f46', fontWeight: 700, marginBottom: 4 }}>⚠️ This will lift the device ban</div>
+                <div style={{ fontSize: 11, color: '#047857' }}>
+                  <strong>{unDevBanTarget.displayName}</strong>'s device will be unbanned. They will be able to access the platform from this device again.
+                </div>
+                {(unDevBanTarget.lastDeviceId || unDevBanTarget.deviceId) && (
+                  <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#059669', marginTop: 6, wordBreak: 'break-all' }}>
+                    Device ID: {(unDevBanTarget.lastDeviceId || unDevBanTarget.deviceId).substring(0, 24)}…
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowUnDevBanModal(false); setUnDevBanTarget(null); }} disabled={unDevBanning}>Cancel</button>
+              <button className="luxury-btn-primary" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }} onClick={confirmUnDevBan} disabled={unDevBanning}>
+                {unDevBanning ? (
+                  <><div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div> Removing…</>
+                ) : (
+                  <><svg viewBox="0 0 24 24" fill="none" style={{ width: 15, height: 15 }}><path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/></svg> Confirm Un-DevBan</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDevBanModal && devBanTarget && (
         <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDevBanModal(false); setDevBanTarget(null); } }}>
           <div className="luxury-modal-card" style={{ maxWidth: 420 }}>

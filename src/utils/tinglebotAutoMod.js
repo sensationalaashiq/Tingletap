@@ -1296,7 +1296,7 @@ const NOTICE_VARIANTS = {
 
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-const postNotice = async (roomId, text, tinglebotType) => {
+export const postNotice = async (roomId, text, tinglebotType) => {
     try {
         const ref = await addDoc(collection(db, 'rooms', roomId, 'messages'), {
             text, uid:'tinglebot_system_official_2024', displayName:'TingleBot',

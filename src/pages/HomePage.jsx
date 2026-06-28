@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
-import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
+import { processAutoMod, resetAutoModState, postNotice } from '../utils/tinglebotAutoMod';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut } from 'firebase/auth';
@@ -3383,11 +3383,13 @@ const HomePage = ({ user }) => {
                 // Spam check
                 const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
                 if (spamResult.isSpam) {
-                    toast.warn(spamResult.message || 'Slow down! Anti-spam protection activated.', {
-                        toastId: 'spam-warn',
-                        autoClose: 4000,
-                        icon: '🛡️'
-                    });
+                    const spamNoticeVariants = [
+                        `${displayName} was slowed down by anti-spam — sending too fast.`,
+                        `${displayName}'s message was blocked — spam protection activated.`,
+                        `${displayName} hit the speed limit — please slow down.`,
+                    ];
+                    const spamText = spamNoticeVariants[Math.floor(Math.random() * spamNoticeVariants.length)];
+                    postNotice(roomId, spamText, 'automod').catch(() => {});
                     return;
                 }
 
@@ -3398,12 +3400,15 @@ const HomePage = ({ user }) => {
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
                     setNewMessage('');
                     const modResult = await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult);
-                    if (modResult.userMessage) {
-                        toast.error(modResult.userMessage, {
-                            toastId: 'abuse-warn',
-                            autoClose: 6000,
-                            icon: '⚠️'
-                        });
+                    if (modResult?.userMessage) {
+                        const violationLabel = abuseResult.category || 'inappropriate content';
+                        const abuseNoticeVariants = [
+                            `${displayName}'s message was removed — ${violationLabel} detected.`,
+                            `A message from ${displayName} was deleted for: ${violationLabel}. Please follow community guidelines.`,
+                            `${displayName}, your message was removed (${violationLabel}). This is a warning.`,
+                        ];
+                        const abuseText = abuseNoticeVariants[Math.floor(Math.random() * abuseNoticeVariants.length)];
+                        postNotice(roomId, abuseText, 'automod').catch(() => {});
                     }
                     setTimeout(() => scrollToBottom(true), 100);
                     return;
