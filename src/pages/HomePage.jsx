@@ -7,6 +7,7 @@ import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
 } from 'firebase/firestore';
+import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
 import { processAutoMod, resetAutoModState, postNotice } from '../utils/tinglebotAutoMod';
@@ -1803,24 +1804,41 @@ const HomePage = ({ user, roomIdOverride }) => {
     }, []); // Runs only once on mount
 
     // ── Kick listener: auto-navigate user out when kicked from this room ──
+    // Also auto-unkicks if the timed kick has already expired.
     useEffect(() => {
         if (!uid || !roomId) return;
 
         const kickedRef = doc(db, 'rooms', roomId, 'kickedUsers', uid);
-        const unsub = onSnapshot(kickedRef, (snap) => {
-            if (snap.exists()) {
-                const kd = snap.data();
-                const kickData = {
-                    roomName: kd.roomName || roomName || 'this room',
-                    reason: kd.reason || 'You were removed by a moderator.',
-                    kickedBy: kd.kickedBy?.displayName || kd.kickedBy?.name || 'An administrator',
-                    kickedAt: kd.kickedAt?.toDate ? kd.kickedAt.toDate().toISOString() : new Date().toISOString(),
-                    duration: kd.duration || null
-                };
-                localStorage.setItem('lastKickData', JSON.stringify(kickData));
-                localStorage.setItem('showKickModal', 'true');
-                navigate('/welcome');
+        const unsub = onSnapshot(kickedRef, async (snap) => {
+            if (!snap.exists()) return;
+
+            const kd = snap.data();
+
+            /* ── Check if this timed kick has already expired ── */
+            const dur = parseDurationMs(kd.duration);
+            if (dur !== Infinity) {
+                const raw = kd.kickedAt;
+                const kickedAt = raw?.toDate ? raw.toDate().getTime()
+                               : raw?.seconds ? raw.seconds * 1000 : null;
+                if (kickedAt && Date.now() >= kickedAt + dur) {
+                    /* Expired — silently clean up and let user stay */
+                    deleteDoc(kickedRef).catch(() => {});
+                    updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
+                    return;
+                }
             }
+
+            /* ── Still active kick — navigate user out ── */
+            const kickData = {
+                roomName : kd.roomName || roomName || 'this room',
+                reason   : kd.reason   || 'You were removed by a moderator.',
+                kickedBy : kd.kickedBy?.displayName || kd.kickedBy?.name || 'An administrator',
+                kickedAt : kd.kickedAt?.toDate ? kd.kickedAt.toDate().toISOString() : new Date().toISOString(),
+                duration : kd.duration || null,
+            };
+            localStorage.setItem('lastKickData', JSON.stringify(kickData));
+            localStorage.setItem('showKickModal', 'true');
+            navigate('/welcome');
         }, () => {});
         return () => unsub();
     }, [loggedInUserProfile?.uid, roomId]);
@@ -1915,6 +1933,22 @@ const HomePage = ({ user, roomIdOverride }) => {
         const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
     }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.muteUntil, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration, uid]);
+
+    // ── Auto-expiry: clear ban when timed ban duration has passed ──
+    useEffect(() => {
+        if (!uid || !loggedInUserProfile?.isBanned) return;
+        autoCheckUnban(uid, loggedInUserProfile);
+    }, [uid, loggedInUserProfile?.isBanned, loggedInUserProfile?.bannedAt, loggedInUserProfile?.banDuration]);
+
+    // ── Periodic background expiry check (every 60 s) ──
+    // Catches mute/ban/kick that expired while the user was idle in the room.
+    useEffect(() => {
+        if (!uid || !loggedInUserProfile) return;
+        const interval = setInterval(() => {
+            runFullExpiryCheck(uid, loggedInUserProfile, roomId);
+        }, 60_000);
+        return () => clearInterval(interval);
+    }, [uid, loggedInUserProfile, roomId]);
 
     // Font preferences loading effect - runs when user profile changes
     // Source of truth is always Firestore via the profile; never localStorage
@@ -3175,12 +3209,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
-            const kickTime = userProfile.kickedFrom.time;
-            const oneHour = 60 * 60 * 1000;
-            if (Date.now() - kickTime < oneHour) {
+            if (!isKickExpired(userProfile.kickedFrom)) {
                 toast.error("You are temporarily kicked from this room.");
                 return;
             }
+            /* Kick expired — clear it silently */
+            updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
         try {
@@ -3305,12 +3339,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
-            const kickTime = userProfile.kickedFrom.time;
-            const oneHour = 60 * 60 * 1000;
-            if (Date.now() - kickTime < oneHour) {
+            if (!isKickExpired(userProfile.kickedFrom)) {
                 toast.error("You are temporarily kicked from this room.");
                 return;
             }
+            updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
         const a = videoUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
@@ -3398,12 +3431,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
-            const kickTime = userProfile.kickedFrom.time;
-            const oneHour = 60 * 60 * 1000;
-            if (Date.now() - kickTime < oneHour) {
+            if (!isKickExpired(userProfile.kickedFrom)) {
                 toast.error("You are temporarily kicked from this room.");
                 return;
             }
+            updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
         const a = youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
