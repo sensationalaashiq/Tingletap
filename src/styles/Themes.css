@@ -1383,3 +1383,545 @@ html.dark-theme-variant button span { color: inherit !important; }
 /* ── Muted/grey secondary text containers ── */
 html.dark-theme-variant small:not([style*="color"]) { color: var(--text-muted) !important; }
 html.dark-theme-variant label:not([style*="color"]) { color: var(--text-secondary) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPREHENSIVE OVERRIDE PASS — Every visible element, A to Z
+   Goal: no white background, no invisible dark text, in any new theme
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Chat Message Row Wrappers (alternating white / lavender bg) ── */
+html.dark-theme-variant .message-row-wrapper {
+  background: var(--message-bg-light) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .message-row-wrapper:nth-child(odd) {
+  background: var(--message-bg-light) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .message-row-wrapper:nth-child(even) {
+  background: var(--message-bg-dark) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .message-row-wrapper:hover,
+html.dark-theme-variant .message-row-wrapper:nth-child(odd):hover,
+html.dark-theme-variant .message-row-wrapper:nth-child(even):hover {
+  background: var(--sidebar-hover) !important;
+}
+
+/* ── 2. Main Chat Textarea ── */
+html.dark-theme-variant .message-textarea {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant .message-textarea:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+html.dark-theme-variant .message-textarea::placeholder { color: var(--input-placeholder) !important; }
+
+/* ── 3. PM Input Wrapper ── */
+html.dark-theme-variant .pm-input-wrapper {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  box-shadow: none !important;
+}
+html.dark-theme-variant .pm-input-wrapper:focus-within {
+  border-color: var(--accent-color) !important;
+}
+html.dark-theme-variant .pm-input-wrapper input,
+html.dark-theme-variant .pm-input-wrapper textarea {
+  background: transparent !important;
+  color: var(--input-text) !important;
+}
+
+/* ── 4. Font / Colour Popup (Chat input toolbar) ── */
+html.dark-theme-variant .font-popup {
+  background: var(--modal-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.55) !important;
+}
+html.dark-theme-variant .popup-content {
+  background: var(--modal-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .font-popup-content {
+  background: var(--bg-secondary) !important;
+}
+html.dark-theme-variant .font-section {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .font-section label { color: var(--text-primary) !important; }
+html.dark-theme-variant .font-section select,
+html.dark-theme-variant .font-section input {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant .font-section select:focus {
+  border-color: var(--accent-color) !important;
+  background: var(--input-bg) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+
+/* ── 5. StylishFontPopup Component ── */
+html.dark-theme-variant .stylish-font-popup {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+}
+html.dark-theme-variant .font-popup-header {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-elevated)) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .popup-title { color: var(--text-primary) !important; }
+html.dark-theme-variant .popup-title span { color: var(--text-primary) !important; }
+html.dark-theme-variant .font-popup-header .close-btn { color: var(--text-secondary) !important; }
+html.dark-theme-variant .font-popup-header .close-btn:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .font-popup-body { background: var(--bg-secondary) !important; }
+html.dark-theme-variant .section-label { color: var(--text-secondary) !important; }
+html.dark-theme-variant .section-label .label-icon svg { fill: var(--icon-color) !important; }
+html.dark-theme-variant .color-grid { background: transparent !important; }
+
+/* ── 6. Actions Dropdown (Media/attachment toolbar) ── */
+html.dark-theme-variant .actions-dropdown {
+  background: var(--bg-card) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-theme-variant .attachment-option-btn {
+  background: var(--badge-bg) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+html.dark-theme-variant .attachment-option-btn:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .attachment-option-btn svg { stroke: currentColor !important; }
+
+/* ── 7. PM Compact Audio Popup ── */
+html.dark-theme-variant .pm-compact-audio-popup {
+  background: var(--modal-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45) !important;
+}
+html.dark-theme-variant .pm-compact-header {
+  background: var(--bg-tertiary) !important;
+  border-bottom-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .pm-compact-close {
+  background: var(--badge-bg) !important;
+  color: var(--text-secondary) !important;
+  border: none !important;
+}
+html.dark-theme-variant .pm-compact-close:hover { background: var(--sidebar-hover) !important; }
+
+/* ── 8. PM Mini Popup (whisper / file send) ── */
+html.dark-theme-variant .pm-mini-popup {
+  background: var(--modal-bg) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5) !important;
+}
+html.dark-theme-variant .pm-mini-popup * { color: var(--text-primary); }
+html.dark-theme-variant .pm-mini-textarea {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
+}
+html.dark-theme-variant .pm-mini-textarea:focus {
+  background: var(--input-bg) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+html.dark-theme-variant .pm-mini-actions {
+  background: var(--bg-tertiary) !important;
+  border-top-color: var(--border-color) !important;
+}
+html.dark-theme-variant .pm-mini-dropzone {
+  border-color: var(--border-secondary) !important;
+  background: var(--badge-bg) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .pm-mini-dropzone:hover {
+  border-color: var(--accent-color) !important;
+  background: var(--sidebar-hover) !important;
+}
+html.dark-theme-variant .pm-mini-dropzone p { color: var(--accent-hover) !important; }
+
+/* ── 9. Sidebar Component (sb-*) ── */
+html.dark-theme-variant .sb-panel {
+  background: var(--sidebar-bg) !important;
+  border-color: var(--sidebar-border) !important;
+}
+html.dark-theme-variant .sb-profile-card {
+  background: var(--bg-card) !important;
+  border-top-color: var(--accent-color) !important;
+}
+html.dark-theme-variant .sb-close-btn { background: var(--badge-bg) !important; border-color: var(--border-color) !important; }
+html.dark-theme-variant .sb-close-btn svg path { fill: var(--icon-color) !important; }
+html.dark-theme-variant .sb-close-btn:hover { background: var(--sidebar-hover) !important; }
+html.dark-theme-variant .sb-profile-name { color: var(--text-primary) !important; }
+html.dark-theme-variant .sb-profile-status { color: var(--text-secondary) !important; background: var(--badge-bg) !important; }
+html.dark-theme-variant .sb-tabs {
+  background: var(--bg-tertiary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .sb-tab { color: var(--text-muted) !important; }
+html.dark-theme-variant .sb-tab:hover { color: var(--accent-hover) !important; background: var(--sidebar-hover) !important; }
+html.dark-theme-variant .sb-tab.active { color: var(--accent-color) !important; border-bottom-color: var(--accent-color) !important; }
+html.dark-theme-variant .sb-tab-count { background: var(--badge-bg) !important; color: var(--badge-text) !important; }
+html.dark-theme-variant .sb-gender-row {
+  background: var(--bg-tertiary) !important;
+}
+html.dark-theme-variant .sb-gender-btn {
+  border-color: var(--border-accent) !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+html.dark-theme-variant .sb-gender-btn.active {
+  background: var(--sidebar-hover) !important;
+  color: var(--accent-hover) !important;
+  border-color: var(--accent-color) !important;
+}
+html.dark-theme-variant .sb-search {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant .sb-search:focus-within {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+html.dark-theme-variant .sb-search input { background: transparent !important; color: var(--input-text) !important; }
+html.dark-theme-variant .sb-search input::placeholder { color: var(--input-placeholder) !important; }
+html.dark-theme-variant .sb-search-icon { fill: var(--icon-color) !important; }
+html.dark-theme-variant .sb-room-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+html.dark-theme-variant .sb-room-card:hover {
+  border-color: var(--border-secondary) !important;
+  background: var(--sidebar-hover) !important;
+}
+html.dark-theme-variant .sb-room-card.active {
+  border-color: var(--accent-color) !important;
+  background: var(--badge-bg) !important;
+}
+html.dark-theme-variant .sb-room-name { color: var(--text-secondary) !important; }
+html.dark-theme-variant .sb-room-card.active .sb-room-name { color: var(--accent-hover) !important; }
+html.dark-theme-variant .sb-room-lock { color: var(--text-muted) !important; }
+html.dark-theme-variant .sb-role-pill { background: var(--badge-bg) !important; color: var(--badge-text) !important; border-color: var(--border-accent) !important; }
+html.dark-theme-variant .sb-apd {
+  background: var(--bg-card) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55) !important;
+}
+html.dark-theme-variant .sb-apd *:not(img):not(svg):not(path):not([style*="color"]) { color: var(--text-primary); }
+
+/* ── 10. GiphyStickersModal ── */
+html.dark-theme-variant .gsm-card {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+html.dark-theme-variant .gsm-header {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-elevated)) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .gsm-title { color: var(--text-primary) !important; }
+html.dark-theme-variant .gsm-subtitle { color: var(--text-muted) !important; }
+html.dark-theme-variant .gsm-close {
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+html.dark-theme-variant .gsm-close:hover { background: var(--sidebar-hover) !important; border-color: var(--border-secondary) !important; }
+html.dark-theme-variant .gsm-search-wrap { border-bottom-color: var(--border-color) !important; }
+html.dark-theme-variant .gsm-search-box {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant .gsm-search-box:focus-within {
+  border-color: var(--accent-color) !important;
+  background: var(--input-bg) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+html.dark-theme-variant .gsm-search-input { color: var(--input-text) !important; background: transparent !important; }
+html.dark-theme-variant .gsm-search-input::placeholder { color: var(--input-placeholder) !important; }
+html.dark-theme-variant .gsm-search-icon svg { fill: var(--icon-color) !important; }
+html.dark-theme-variant .sticker-item {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-color) !important;
+}
+html.dark-theme-variant .sticker-item:hover {
+  background: var(--sidebar-hover) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* ── 11. AddFriendConfirmModal + BlockConfirmModal ── */
+html.dark-theme-variant .afcm-card,
+html.dark-theme-variant .bcm-card {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.55) !important;
+}
+html.dark-theme-variant .afcm-card *:not(img):not(svg):not(path):not([style*="color"]):not(button),
+html.dark-theme-variant .bcm-card *:not(img):not(svg):not(path):not([style*="color"]):not(button) {
+  color: var(--text-primary);
+}
+html.dark-theme-variant .afcm-title,
+html.dark-theme-variant .bcm-title { color: var(--text-primary) !important; }
+html.dark-theme-variant .afcm-username,
+html.dark-theme-variant .bcm-username { color: var(--username-color) !important; }
+html.dark-theme-variant .afcm-user-preview,
+html.dark-theme-variant .bcm-user-preview { background: var(--badge-bg) !important; border-color: var(--border-color) !important; }
+html.dark-theme-variant .afcm-icon-ring,
+html.dark-theme-variant .bcm-icon-ring { background: var(--bg-elevated) !important; border-color: var(--border-accent) !important; }
+
+/* ── 12. StylishImageUploadModal + StylishAudioUpload ── */
+html.dark-theme-variant .sim-card {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+}
+html.dark-theme-variant .sim-card *:not(img):not(svg):not(path):not([style*="color"]):not(button) { color: var(--text-primary); }
+html.dark-theme-variant .sim-url-input,
+html.dark-theme-variant .sim-caption {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
+}
+html.dark-theme-variant .sim-url-input:focus,
+html.dark-theme-variant .sim-caption:focus {
+  border-color: var(--accent-color) !important;
+  background: var(--input-bg) !important;
+  box-shadow: 0 0 0 3px var(--border-accent) !important;
+}
+html.dark-theme-variant .sau-card,
+html.dark-theme-variant [class*="audio-upload"] {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .sau-card *:not(svg):not(path):not([style*="color"]):not(button) { color: var(--text-primary); }
+html.dark-theme-variant .sau-dropzone,
+html.dark-theme-variant [class*="drop-zone"],
+html.dark-theme-variant [class*="dropzone"] {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .sau-input,
+html.dark-theme-variant [class*="audio-upload"] input,
+html.dark-theme-variant [class*="audio-upload"] textarea {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
+}
+
+/* ── 13. Toggle Controls (track knob stays white — it's intentional) ── */
+html.dark-theme-variant .toggle-label { color: var(--text-primary) !important; }
+html.dark-theme-variant .st3-toggle .st3-track { border-color: var(--border-accent) !important; }
+html.dark-theme-variant .stylish-toggle .toggle-slider { border-color: var(--border-accent) !important; }
+html.dark-theme-variant .stylish-color-picker { background: var(--badge-bg) !important; border-color: var(--border-color) !important; }
+
+/* ── 14. Gender Badge on Avatar ── */
+html.dark-theme-variant .gender-badge-on-avatar {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* ── 15. Sticker / GIF sections inside chat ── */
+html.dark-theme-variant .stickers-section-title { color: var(--text-secondary) !important; }
+html.dark-theme-variant .stickers-grid { background: transparent !important; }
+
+/* ── 16. PM Form elements ── */
+html.dark-theme-variant .pm-form { background: transparent !important; }
+html.dark-theme-variant .pm-attachment-btn {
+  background: var(--badge-bg) !important;
+  color: var(--icon-color) !important;
+  border-color: var(--border-accent) !important;
+}
+html.dark-theme-variant .attachment-btn {
+  background: var(--badge-bg) !important;
+  color: var(--icon-color) !important;
+  border-color: var(--border-accent) !important;
+}
+
+/* ── 17. Dark text override — hardcoded values used across components ──
+   These target specific known class+color combinations.
+   Order: most specific first, catch-all last. ── */
+html.dark-theme-variant .sb-room-name,
+html.dark-theme-variant .message-displayname,
+html.dark-theme-variant .message-username,
+html.dark-theme-variant .displayname,
+html.dark-theme-variant .chat-header-title,
+html.dark-theme-variant .chat-title,
+html.dark-theme-variant .modal-title,
+html.dark-theme-variant .panel-title,
+html.dark-theme-variant .popup-title-text,
+html.dark-theme-variant .setting-title,
+html.dark-theme-variant .section-title { color: var(--text-primary) !important; }
+
+html.dark-theme-variant .message-text:not([style*="color"]),
+html.dark-theme-variant .message-content:not([style*="color"]),
+html.dark-theme-variant .message-body-text:not([style*="color"]) { color: var(--text-primary) !important; }
+
+html.dark-theme-variant .timestamp,
+html.dark-theme-variant .time-label,
+html.dark-theme-variant .message-time,
+html.dark-theme-variant .msg-time { color: var(--text-muted) !important; }
+
+/* ── 18. Catch-all: hardcoded #1f2937 / #374151 / #1a1a1a / #333 ──
+   Target every class that typically uses these dark text shades ── */
+html.dark-theme-variant [class$="-name"]:not([class*="room"]):not([style*="color"]),
+html.dark-theme-variant [class$="-title"]:not([style*="color"]),
+html.dark-theme-variant [class$="-label"]:not([style*="color"]),
+html.dark-theme-variant [class$="-heading"]:not([style*="color"]) { color: var(--text-primary); }
+
+html.dark-theme-variant [class$="-desc"]:not([style*="color"]),
+html.dark-theme-variant [class$="-description"]:not([style*="color"]),
+html.dark-theme-variant [class$="-info"]:not([style*="color"]):not([class*="version"]),
+html.dark-theme-variant [class$="-subtitle"]:not([style*="color"]),
+html.dark-theme-variant [class$="-caption"]:not([style*="color"]) { color: var(--text-secondary); }
+
+html.dark-theme-variant [class$="-time"]:not([style*="color"]),
+html.dark-theme-variant [class$="-date"]:not([style*="color"]),
+html.dark-theme-variant [class$="-meta"]:not([style*="color"]),
+html.dark-theme-variant [class$="-ago"]:not([style*="color"]) { color: var(--text-muted); }
+
+/* ── 19. White / very-light backgrounds: broad catch-all ──
+   Any class ending in -container, -content, -body, -panel, -section
+   that has a white background set inline or via cascade ── */
+html.dark-theme-variant [class$="-container"]:not([class*="emoji"]):not([class*="landing"]):not([class*="homepage"]):not([class*="media-"]):not([class*="color-"]) {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+html.dark-theme-variant [class$="-content"]:not([class*="emoji"]):not([class*="landing"]):not([class*="tab-"]):not([class*="media-"]):not([class*="color-"]) {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+html.dark-theme-variant [class$="-panel"]:not([class*="emoji"]):not([class*="landing"]):not([class*="tab-"]) {
+  background-color: var(--sidebar-bg);
+  color: var(--text-primary);
+}
+/* But let inline overrides and !important CSS rules still win */
+
+/* ── 20. All select / option elements ── */
+html.dark-theme-variant select:not([class*="emoji"]) {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant option {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant select:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px var(--border-accent) !important;
+}
+
+/* ── 21. All input / textarea elements (catch-all for any missed ones) ── */
+html.dark-theme-variant input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class*="emoji"]),
+html.dark-theme-variant textarea:not([class*="emoji"]) {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+html.dark-theme-variant input::placeholder,
+html.dark-theme-variant textarea::placeholder { color: var(--input-placeholder) !important; }
+
+/* ── 22. All white-background scrollable lists ── */
+html.dark-theme-variant [class*="-list"]:not([class*="emoji"]):not([class*="landing"]) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* ── 23. Separator / divider lines ── */
+html.dark-theme-variant hr,
+html.dark-theme-variant [class*="-divider"],
+html.dark-theme-variant [class*="-separator"] {
+  border-color: var(--border-color) !important;
+  background: var(--border-color) !important;
+}
+
+/* ── 24. Scrollbars in dark-theme-variant ── */
+html.dark-theme-variant ::-webkit-scrollbar-track { background: var(--bg-primary) !important; }
+html.dark-theme-variant ::-webkit-scrollbar-thumb { background: var(--border-secondary) !important; }
+html.dark-theme-variant ::-webkit-scrollbar-thumb:hover { background: var(--accent-color) !important; }
+
+/* ── 25. Table elements (Admin panel, any data table) ── */
+html.dark-theme-variant table { background: transparent !important; color: var(--text-primary) !important; }
+html.dark-theme-variant th { background: var(--bg-tertiary) !important; color: var(--text-secondary) !important; border-color: var(--border-color) !important; }
+html.dark-theme-variant td { background: transparent !important; color: var(--text-primary) !important; border-color: var(--border-color) !important; }
+html.dark-theme-variant tr:hover td { background: var(--sidebar-hover) !important; }
+
+/* ── 26. Code / pre blocks ── */
+html.dark-theme-variant pre,
+html.dark-theme-variant code {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* ── 27. Tooltips ── */
+html.dark-theme-variant [class*="tooltip"] {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* ── 28. Color-scheme: dark edge case — force browser native controls ── */
+html.dark-theme-variant {
+  color-scheme: dark;
+}
+
+/* ── 29. Re-assert text-primary on the body so inherited color works ── */
+html.dark-theme-variant body,
+html.dark-theme-variant #root {
+  color: var(--text-primary) !important;
+  background: var(--bg-primary) !important;
+}
+
+/* ── 30. Any remaining hardcoded background: white / #fff via !important ──
+   These elements use !important in their own CSS — must be countered ── */
+html.dark-theme-variant .message-row-wrapper[style],
+html.dark-theme-variant .message-row-wrapper:not([style]) {
+  background: var(--message-bg-light) !important;
+}
+html.dark-theme-variant .message-textarea[style] {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+}
+
+/* ── 31. Global: any SVG that doesn't have an explicit fill/stroke ──
+   Use currentColor so it inherits from text color ── */
+html.dark-theme-variant svg:not([fill]):not([stroke]) { color: var(--icon-color); }
+html.dark-theme-variant svg path:not([fill]):not([stroke]) { fill: var(--icon-color); }
+
+/* ── 32. Ensure no pure-black is used anywhere ──
+   Any element with the explicit color black or #000 from CSS ── */
+html.dark-theme-variant [class*="-text"]:not([style*="color"]) { color: var(--text-primary); }
+html.dark-theme-variant [class*="-msg"]:not([style*="color"]) { color: var(--text-primary); }
+html.dark-theme-variant [class*="-preview"]:not([style*="color"]) { color: var(--text-secondary); }
+
+/* ── Final safety: headings and paragraphs ── */
+html.dark-theme-variant h1:not([style*="color"]),
+html.dark-theme-variant h2:not([style*="color"]),
+html.dark-theme-variant h3:not([style*="color"]),
+html.dark-theme-variant h4:not([style*="color"]),
+html.dark-theme-variant h5:not([style*="color"]),
+html.dark-theme-variant h6:not([style*="color"]) { color: var(--text-primary); }
+html.dark-theme-variant p:not([style*="color"]):not([class*="user-font"]) { color: var(--text-primary); }
+html.dark-theme-variant li:not([style*="color"]) { color: var(--text-primary); }
+html.dark-theme-variant a:not([style*="color"]):not([class*="btn"]):not([class*="button"]) { color: var(--accent-hover); }
+html.dark-theme-variant a:hover:not([style*="color"]):not([class*="btn"]) { color: var(--accent-color); }
