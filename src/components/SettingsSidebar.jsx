@@ -375,6 +375,9 @@ const SettingsSidebar = ({
             // Save to localStorage immediately
             localStorage.setItem(key, value.toString());
 
+            // Notify HomePage so its React-state-based filter updates instantly
+            window.dispatchEvent(new CustomEvent('tbSettingChanged', { detail: { key, value } }));
+
             // Handle theme changes with instant synchronous application
             if (key === 'selectedTheme') {
                 // Synchronous theme switching - no delays, no awaits

@@ -844,7 +844,7 @@ const AdminPanelPage = () => {
       const userRef = doc(db, 'users', selectedUser.uid);
       
       switch (actionType) {
-        case 'ban':
+        case 'ban': {
           await updateDoc(userRef, { 
             isBanned: true,
             banInfo: {
@@ -852,25 +852,23 @@ const AdminPanelPage = () => {
               bannedAt: new Date().toISOString()
             }
           });
-          
           remove(ref(rtdb, `status/${selectedUser.uid}`));
-          
+          const banRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
+          if (banRoomId) {
+            addDoc(collection(db, 'rooms', banRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been banned${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'banned',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
+          }
           try {
             const ipBanResults = await IPBanSystem.banUserWithIP(
               selectedUser.uid,
-              {
-                displayName: selectedUser.displayName,
-                email: selectedUser.email
-              },
-              {
-                reason: actionData.reason || 'User account banned by administrator',
-                bannedBy: currentUserProfile?.displayName || 'Admin',
-                userAgent: navigator.userAgent,
-                location: 'Admin Panel Ban',
-                country: selectedUser.country || 'Unknown'
-              }
+              { displayName: selectedUser.displayName, email: selectedUser.email },
+              { reason: actionData.reason || 'User account banned by administrator', bannedBy: currentUserProfile?.displayName || 'Admin', userAgent: navigator.userAgent, location: 'Admin Panel Ban', country: selectedUser.country || 'Unknown' }
             );
-            
             if (ipBanResults.ipBanned && ipBanResults.bannedIP) {
               aToast.success(`${selectedUser.displayName} has been banned. IP ${ipBanResults.bannedIP} is also banned.`);
             } else {
@@ -880,13 +878,20 @@ const AdminPanelPage = () => {
             aToast.warning(`${selectedUser.displayName} has been banned, but IP ban failed: ${ipError.message}`);
           }
           break;
+        }
           
-        case 'unban':
-          await updateDoc(userRef, { 
-            isBanned: false,
-            banInfo: null
-          });
-          
+        case 'unban': {
+          await updateDoc(userRef, { isBanned: false, banInfo: null });
+          const unbanRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
+          if (unbanRoomId) {
+            addDoc(collection(db, 'rooms', unbanRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been unbanned and can rejoin.`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'unbanned',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
+          }
           try {
             const unbannedIPs = await IPBanSystem.unbanUserIP(selectedUser.uid);
             if (unbannedIPs && unbannedIPs.length > 0) {
@@ -898,6 +903,7 @@ const AdminPanelPage = () => {
             aToast.warning(`${selectedUser.displayName} has been unbanned, but IP unban failed: ${ipError.message}`);
           }
           break;
+        }
           
         case 'mute': {
           const parseMuteMs = (dur) => {
@@ -918,31 +924,83 @@ const AdminPanelPage = () => {
             'mutedInfo.duration': actionData.duration,
             'mutedInfo.muteUntil': muteUntilISO,
           });
+          const muteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
+          if (muteRoomId) {
+            addDoc(collection(db, 'rooms', muteRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been muted${actionData.duration ? ` for ${actionData.duration}` : ''}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'muted',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
+          }
           aToast.success(`${selectedUser.displayName} has been muted.`);
           break;
         }
           
-        case 'unmute':
+        case 'unmute': {
           await updateDoc(userRef, {
             'mutedInfo.isMuted': false,
             'mutedInfo.mutedAt': null,
             'mutedInfo.mutedBy': null,
             'mutedInfo.reason': null
           });
+          const unmuteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
+          if (unmuteRoomId) {
+            addDoc(collection(db, 'rooms', unmuteRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been unmuted and can speak again.`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'unmuted',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
+          }
           aToast.success(`${selectedUser.displayName} has been unmuted.`);
           break;
+        }
           
-        case 'kick':
-          if (onlineStatuses[selectedUser.uid]?.currentRoomId) {
+        case 'kick': {
+          const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || selectedUser.kickedFrom?.roomId;
+          if (kickRoomId) {
+            await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), {
+              reason: actionData?.reason || 'Kicked by admin',
+              kickedBy: currentUserProfile?.displayName || 'Admin',
+              kickedAt: serverTimestamp(),
+            });
+            await updateDoc(userRef, {
+              kickedFrom: {
+                roomId: kickRoomId,
+                kickedAt: new Date().toISOString(),
+                kickedBy: currentUserProfile?.displayName || 'Admin',
+                reason: actionData?.reason || 'Kicked by admin',
+              }
+            }).catch(() => {});
+            addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been kicked${actionData?.reason ? ` — ${actionData.reason}` : '.'}`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'kicked',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
+            remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+          } else {
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
           }
           aToast.success(`${selectedUser.displayName} has been kicked.`);
           break;
+        }
 
         case 'unkick': {
           const kickedRoomId = selectedUser.kickedFrom?.roomId;
           if (kickedRoomId) {
-            await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid));
+            await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid)).catch(() => {});
+            addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
+              text: `${selectedUser.displayName} has been unkicked and can rejoin.`,
+              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+              isBot: true, systemBot: true, tinglebotType: 'unkicked',
+              createdAt: serverTimestamp(),
+              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).catch(() => {});
           }
           await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
           aToast.success(`${selectedUser.displayName} has been unkicked.`);

@@ -123,6 +123,14 @@ const IconDefault = () => (
   </svg>
 );
 
+const IconUnkicked = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <circle cx="7" cy="6" r="3" stroke="#a78bfa" strokeWidth="1.4"/>
+    <path d="M2 15c0-2.761 2.239-5 5-5h2" stroke="#a78bfa" strokeWidth="1.4" strokeLinecap="round"/>
+    <path d="M12 14l2 2 3-3" stroke="#6ee7b7" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 const IconAutoMod = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
     <path d="M9 2L3 4.5v4.8C3 12.9 5.6 15.8 9 17c3.4-1.2 6-4.1 6-7.7V4.5L9 2z"
@@ -147,6 +155,7 @@ const EVENT_MAP = {
   muted:        { Icon: IconMuted,       cls: '' },
   unmuted:      { Icon: IconUnmuted,     cls: '' },
   kicked:       { Icon: IconKicked,      cls: '' },
+  unkicked:     { Icon: IconUnkicked,    cls: '' },
   banned:       { Icon: IconBanned,      cls: '' },
   unbanned:     { Icon: IconUnbanned,    cls: '' },
   promoted:     { Icon: IconPromoted,    cls: '' },
@@ -170,9 +179,10 @@ function detectEventType(message) {
   if (txt.includes('left')) return 'left';
   if (txt.includes('muted')) return txt.includes('unmuted') ? 'unmuted' : 'muted';
   if (txt.includes('unmuted')) return 'unmuted';
+  if (txt.includes('unkicked') || txt.includes('un-kicked')) return 'unkicked';
   if (txt.includes('kicked')) return 'kicked';
-  if (txt.includes('banned')) return txt.includes('unbanned') ? 'unbanned' : 'banned';
   if (txt.includes('unbanned')) return 'unbanned';
+  if (txt.includes('banned')) return 'banned';
   if (txt.includes('promoted')) return 'promoted';
   if (txt.includes('demoted')) return 'demoted';
   if (txt.includes('locked')) return txt.includes('unlocked') ? 'unlocked' : 'locked';

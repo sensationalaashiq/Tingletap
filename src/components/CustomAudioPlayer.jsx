@@ -198,37 +198,37 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
       {/* ── Buttons + Time ── */}
       <div className="compact-controls">
         <button className="compact-btn icon-btn" onClick={replay} title="Replay">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
             <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
           </svg>
         </button>
 
         <button className="compact-btn icon-btn" onClick={skipBackward} title="-10s">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
             <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
           </svg>
         </button>
 
         <button className="compact-btn play-btn" onClick={togglePlay} disabled={isLoading}>
           {isLoading ? (
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
               <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z">
                 <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/>
               </path>
             </svg>
           ) : isPlaying ? (
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
               <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
               <path d="M8 5v14l11-7z"/>
             </svg>
           )}
         </button>
 
         <button className="compact-btn icon-btn" onClick={skipForward} title="+10s">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
             <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
           </svg>
         </button>
@@ -242,7 +242,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
 
       {/* ── Volume Row (full width, no overflow) ── */}
       <div className="volume-row">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" className="vol-icon">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" className="vol-icon">
           <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
         </svg>
         <input

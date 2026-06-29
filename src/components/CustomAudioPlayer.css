@@ -1,22 +1,20 @@
 /* ═══════════════════════════════════════════════════════════
-   SHARED BASE — IDENTICAL SIZE & SPACING for both players
-   Layout: height 112px, padding 9px top+bottom = 94px inner
-   Content: header(18) + visualizer(13) + progress(5)
-            + controls(28) + volume(12) = 76px
-   justify-content: space-between → 18px free / 4 gaps ≈ 4.5px each
-   Extra padding gives the roomy feel matching the MP3 screenshot
+   SHARED BASE — Compact premium player
+   Height: 90px (down from 112px)
+   Layout: header(16) + visualizer(10) + progress(4) + controls(26) + volume(10) = 66px
+   Padding: 8px top + 8px bottom = 82px total with flex gap
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
   width: 244px;
   max-width: 244px;
   min-width: 244px;
-  height: 112px;
-  min-height: 112px;
-  max-height: 112px;
+  height: 90px;
+  min-height: 90px;
+  max-height: 90px;
   box-sizing: border-box;
   border-radius: 14px;
-  padding: 9px 12px 10px;
+  padding: 8px 11px 8px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
@@ -76,20 +74,20 @@
 .youtube-music-player .compact-volume-slider { background: rgba(255,255,255,.28) !important; }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 1 — Header: brand icon + song title  (18px total)
+   ROW 1 — Header: brand icon + song title  (16px)
 ═══════════════════════════════════════════════════════════ */
 .player-header-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
   overflow: hidden;
   padding-bottom: 2px;
   border-bottom: 1px solid rgba(0,0,0,0.07);
   flex-shrink: 0;
-  height: 18px;
-  min-height: 18px;
-  max-height: 18px;
+  height: 16px;
+  min-height: 16px;
+  max-height: 16px;
 }
 
 .youtube-music-player .player-header-row {
@@ -108,7 +106,7 @@
 }
 
 .player-song-title {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -124,26 +122,26 @@
 .youtube-music-player .player-song-title {
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.3px;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 2 — Visualizer  (13px)
+   ROW 2 — Visualizer  (10px)
 ═══════════════════════════════════════════════════════════ */
 .audio-visualizer {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 13px;
-  min-height: 13px;
-  max-height: 13px;
+  height: 10px;
+  min-height: 10px;
+  max-height: 10px;
   gap: 2px;
   flex-shrink: 0;
 }
 
 .compact-audio-player .visualizer-bar {
-  width: 5px;
+  width: 4px;
   background: linear-gradient(to top, #5b21b6 0%, #8b5cf6 100%);
   border-radius: 3px 3px 2px 2px;
   min-height: 2px;
@@ -151,18 +149,18 @@
 }
 
 .youtube-music-player .visualizer-bar {
-  width: 5px;
+  width: 4px;
   min-height: 2px;
   border-radius: 3px 3px 2px 2px;
   transition: height 0.12s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 3 — Progress bar  (5px)
+   ROW 3 — Progress bar  (4px)
 ═══════════════════════════════════════════════════════════ */
 .compact-progress-bar {
-  height: 5px;
-  min-height: 5px;
+  height: 4px;
+  min-height: 4px;
   border-radius: 4px;
   position: relative;
   cursor: pointer;
@@ -187,7 +185,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 4 — Controls: 4 buttons + time  (28px)
+   ROW 4 — Controls: 4 buttons + time  (26px)
 ═══════════════════════════════════════════════════════════ */
 .compact-controls {
   display: flex;
@@ -195,9 +193,9 @@
   justify-content: space-between;
   width: 100%;
   flex-shrink: 0;
-  height: 28px;
-  min-height: 28px;
-  max-height: 28px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
 }
 
 /* ── Lavender buttons ── */
@@ -263,16 +261,16 @@
   transform: none !important;
 }
 
-/* ── Button sizes (fit in 28px row) ── */
-.icon-btn { width: 23px; height: 23px; }
-.play-btn { width: 28px; height: 28px; }
+/* ── Button sizes ── */
+.icon-btn { width: 21px; height: 21px; }
+.play-btn { width: 26px; height: 26px; }
 
 /* ── Time display ── */
 .time-info {
   display: flex;
   align-items: center;
   gap: 1px;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -286,17 +284,17 @@
 .time-sep { opacity: 0.55; margin: 0 1px; }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 5 — Volume row  (12px)
+   ROW 5 — Volume row  (10px)
 ═══════════════════════════════════════════════════════════ */
 .volume-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
   flex-shrink: 0;
-  height: 12px;
-  min-height: 12px;
-  max-height: 12px;
+  height: 10px;
+  min-height: 10px;
+  max-height: 10px;
   overflow: visible;
 }
 
@@ -310,7 +308,7 @@
 .compact-volume-slider {
   flex: 1;
   min-width: 0;
-  height: 4px;
+  height: 3px;
   border-radius: 3px;
   outline: none;
   -webkit-appearance: none;
@@ -327,11 +325,11 @@
 
 .compact-volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #fff;
+  border: 1.5px solid #fff;
 }
 
 .compact-audio-player .compact-volume-slider::-webkit-slider-thumb {
@@ -346,11 +344,11 @@
 }
 
 .compact-volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #fff;
+  border: 1.5px solid #fff;
 }
 
 .compact-audio-player .compact-volume-slider::-moz-range-thumb {
@@ -374,25 +372,25 @@
   width: 152px !important;
   max-width: 152px !important;
   min-width: 140px !important;
-  height: 126px !important;
-  min-height: 126px !important;
-  max-height: 126px !important;
-  padding: 8px 7px 8px !important;
+  height: 100px !important;
+  min-height: 100px !important;
+  max-height: 100px !important;
+  padding: 7px 7px 7px !important;
   gap: 0 !important;
   justify-content: space-between !important;
 }
 
 .pm-conversation .audio-visualizer,
-.pm-message .audio-visualizer { height: 10px !important; min-height: 10px !important; max-height: 10px !important; }
+.pm-message .audio-visualizer { height: 8px !important; min-height: 8px !important; max-height: 8px !important; }
 
 .pm-conversation .compact-controls,
-.pm-message .compact-controls { height: 24px !important; min-height: 24px !important; max-height: 24px !important; }
+.pm-message .compact-controls { height: 22px !important; min-height: 22px !important; max-height: 22px !important; }
 
 .pm-conversation .player-header-row,
-.pm-message .player-header-row { height: 16px !important; min-height: 16px !important; max-height: 16px !important; }
+.pm-message .player-header-row { height: 14px !important; min-height: 14px !important; max-height: 14px !important; }
 
 .pm-conversation .volume-row,
-.pm-message .volume-row { height: 10px !important; min-height: 10px !important; max-height: 10px !important; }
+.pm-message .volume-row { height: 9px !important; min-height: 9px !important; max-height: 9px !important; }
 
 .pm-conversation .visualizer-bar,
 .pm-message .visualizer-bar {
@@ -409,10 +407,10 @@
 .pm-message .compact-btn svg { fill: #fff !important; }
 
 .pm-conversation .icon-btn,
-.pm-message .icon-btn { width: 18px !important; height: 18px !important; }
+.pm-message .icon-btn { width: 17px !important; height: 17px !important; }
 
 .pm-conversation .play-btn,
-.pm-message .play-btn { width: 22px !important; height: 22px !important; }
+.pm-message .play-btn { width: 20px !important; height: 20px !important; }
 
 .pm-conversation .time-info,
 .pm-message .time-info,
@@ -434,13 +432,13 @@
     width: 210px;
     max-width: 210px;
     min-width: 210px;
-    height: 112px;
-    min-height: 112px;
-    max-height: 112px;
-    padding: 9px 9px 10px;
+    height: 90px;
+    min-height: 90px;
+    max-height: 90px;
+    padding: 8px 9px 8px;
   }
-  .play-btn { width: 26px; height: 26px; }
-  .icon-btn { width: 21px; height: 21px; }
+  .play-btn { width: 24px; height: 24px; }
+  .icon-btn { width: 19px; height: 19px; }
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -850,6 +850,25 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
     const [sendProgress, setSendProgress] = useState(null);
+
+    // TingleBot notification filter — use React state so Firestore background sync
+    // doesn't cause a mid-render flash and disappear for registered users.
+    const [tbNotif, setTbNotif] = useState(() => ({
+        enabled:      localStorage.getItem('tinglebotNotifications') !== 'false',
+        join:         localStorage.getItem('userJoinNotifications') !== 'false',
+        leave:        localStorage.getItem('userLeaveNotifications') !== 'false',
+        muted:        localStorage.getItem('userMuteNotifications') !== 'false',
+        unmuted:      localStorage.getItem('userUnmuteNotifications') !== 'false',
+        kicked:       localStorage.getItem('userKickNotifications') !== 'false',
+        banned:       localStorage.getItem('userBanNotifications') !== 'false',
+        unbanned:     localStorage.getItem('userUnbanNotifications') !== 'false',
+        promoted:     localStorage.getItem('userPromoteNotifications') !== 'false',
+        demoted:      localStorage.getItem('userDemoteNotifications') !== 'false',
+        rule:         localStorage.getItem('userRulesNotifications') !== 'false',
+        announcement: localStorage.getItem('userAnnouncementNotifications') !== 'false',
+        automod:      localStorage.getItem('userAutomodNotifications') !== 'false',
+        unkicked:     localStorage.getItem('userKickNotifications') !== 'false',
+    }));
     const progressTimerRef = useRef(null);
 
     const startSendProgress = useCallback(() => {
@@ -862,6 +881,34 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
         setSendProgress(100);
         progressTimerRef.current = setTimeout(() => setSendProgress(null), 650);
+    }, []);
+
+    // Listen for user-initiated notification setting changes from SettingsSidebar
+    useEffect(() => {
+        const tbKeyMap = {
+            'tinglebotNotifications': 'enabled',
+            'userJoinNotifications': 'join',
+            'userLeaveNotifications': 'leave',
+            'userMuteNotifications': 'muted',
+            'userUnmuteNotifications': 'unmuted',
+            'userKickNotifications': 'kicked',
+            'userBanNotifications': 'banned',
+            'userUnbanNotifications': 'unbanned',
+            'userPromoteNotifications': 'promoted',
+            'userDemoteNotifications': 'demoted',
+            'userRulesNotifications': 'rule',
+            'userAnnouncementNotifications': 'announcement',
+            'userAutomodNotifications': 'automod',
+        };
+        const handler = (e) => {
+            const { key, value } = e.detail || {};
+            const mapped = tbKeyMap[key];
+            if (mapped) {
+                setTbNotif(prev => ({ ...prev, [mapped]: Boolean(value), ...(mapped === 'kicked' ? { unkicked: Boolean(value) } : {}) }));
+            }
+        };
+        window.addEventListener('tbSettingChanged', handler);
+        return () => window.removeEventListener('tbSettingChanged', handler);
     }, []);
 
     // TingleBot — global join/leave broadcasts
@@ -6339,20 +6386,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
                             const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
                             if (isTinglebotMsg) {
-                                if (localStorage.getItem('tinglebotNotifications') === 'false') return false;
+                                if (!tbNotif.enabled) return false;
                                 const tt = msg.tinglebotType || '';
-                                if (tt === 'join' && localStorage.getItem('userJoinNotifications') === 'false') return false;
-                                if (tt === 'leave' && localStorage.getItem('userLeaveNotifications') === 'false') return false;
-                                if (tt === 'muted' && localStorage.getItem('userMuteNotifications') === 'false') return false;
-                                if (tt === 'unmuted' && localStorage.getItem('userUnmuteNotifications') === 'false') return false;
-                                if (tt === 'kicked' && localStorage.getItem('userKickNotifications') === 'false') return false;
-                                if (tt === 'banned' && localStorage.getItem('userBanNotifications') === 'false') return false;
-                                if (tt === 'unbanned' && localStorage.getItem('userUnbanNotifications') === 'false') return false;
-                                if (tt === 'promoted' && localStorage.getItem('userPromoteNotifications') === 'false') return false;
-                                if (tt === 'demoted' && localStorage.getItem('userDemoteNotifications') === 'false') return false;
-                                if (tt === 'rule' && localStorage.getItem('userRulesNotifications') === 'false') return false;
-                                if (tt === 'announcement' && localStorage.getItem('userAnnouncementNotifications') === 'false') return false;
-                                if (tt === 'automod' && localStorage.getItem('userAutomodNotifications') === 'false') return false;
+                                if (tt === 'join' && !tbNotif.join) return false;
+                                if (tt === 'leave' && !tbNotif.leave) return false;
+                                if (tt === 'muted' && !tbNotif.muted) return false;
+                                if (tt === 'unmuted' && !tbNotif.unmuted) return false;
+                                if ((tt === 'kicked' || tt === 'unkicked') && !tbNotif.kicked) return false;
+                                if (tt === 'banned' && !tbNotif.banned) return false;
+                                if (tt === 'unbanned' && !tbNotif.unbanned) return false;
+                                if (tt === 'promoted' && !tbNotif.promoted) return false;
+                                if (tt === 'demoted' && !tbNotif.demoted) return false;
+                                if (tt === 'rule' && !tbNotif.rule) return false;
+                                if (tt === 'announcement' && !tbNotif.announcement) return false;
+                                if (tt === 'automod' && !tbNotif.automod) return false;
                             }
                             return true;
                         }).map((msg, index) => {
@@ -6863,8 +6910,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender) }); }}>
                                     <img className="vpm-avatar" src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)} alt="Profile"/>
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
-                                    <span style={{position:'absolute',bottom:2,right:2,width:18,height:18,borderRadius:'50%',background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)',zIndex:3,pointerEvents:'none'}}>
-                                        <svg viewBox="0 0 24 24" width="9" height="9" fill="white"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zM9 21l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zM21 15l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+                                    <span style={{position:'absolute',bottom:2,right:2,width:20,height:20,borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(6px)',zIndex:3,pointerEvents:'none',boxShadow:'0 2px 8px rgba(245,158,11,0.7),0 1px 3px rgba(0,0,0,0.3)',border:'1.5px solid rgba(255,255,255,0.7)'}}>
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none"><path d="M3 8V3h5v2H5v3H3zm13-5h5v5h-2V5h-3V3zM3 16h2v3h3v2H3v-5zm16 3h-3v2h5v-5h-2v3z" fill="white"/></svg>
                                     </span>
                                 </div>
 
