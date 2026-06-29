@@ -10318,14 +10318,14 @@ body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
   color: #5b21b6 !important;
-  font-weight: 900 !important;
-  font-size: 0.97rem !important;
+  font-weight: 700 !important;
+  font-size: 0.76rem !important;
   background: none !important;
   border: none !important;
   border-radius: 0 !important;
   padding: 0 !important;
   text-shadow: none !important;
-  letter-spacing: 0.01em !important;
+  letter-spacing: 0.02em !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -10336,21 +10336,22 @@ body .header-title {
 
 body .homepage-container .chat-header .user-count,
 body .chat-header .user-count {
-  background: rgba(109, 40, 217, 0.13) !important;
-  color: #5b21b6 !important;
-  border: 1.5px solid rgba(109, 40, 217, 0.4) !important;
-  font-size: 0.72rem !important;
-  font-weight: 800 !important;
-  padding: 2px 8px !important;
-  border-radius: 10px !important;
+  background: rgba(109, 40, 217, 0.09) !important;
+  color: #6d28d9 !important;
+  border: 1px solid rgba(109, 40, 217, 0.28) !important;
+  font-size: 0.6rem !important;
+  font-weight: 700 !important;
+  padding: 1px 6px !important;
+  border-radius: 8px !important;
   text-shadow: none !important;
   box-shadow: none !important;
-  margin-left: 5px !important;
+  margin-left: 4px !important;
   white-space: nowrap !important;
   visibility: visible !important;
   opacity: 1 !important;
   display: inline-flex !important;
   align-items: center !important;
+  letter-spacing: 0.3px !important;
 }
 
 /* Final kill of all header button backgrounds + enforce bigger sizes */

@@ -789,11 +789,16 @@ html.dark-theme-variant .srm-type-btn { background: var(--bg-tertiary) !importan
 html.dark-theme-variant .srm-type-btn.active { background: var(--badge-bg) !important; border-color: var(--accent-color) !important; color: var(--accent-hover) !important; }
 html.dark-theme-variant .srm-reason-card { background: var(--bg-tertiary) !important; border-color: var(--border-color) !important; color: var(--text-secondary) !important; }
 html.dark-theme-variant .srm-reason-card.active { background: var(--badge-bg) !important; border-color: var(--accent-color) !important; color: var(--accent-hover) !important; }
-html.dark-theme-variant .bkm2-card { background: var(--modal-bg) !important; border-color: var(--modal-border) !important; }
-html.dark-theme-variant .bkm2-heading { color: var(--text-primary) !important; }
-html.dark-theme-variant .bkm2-subheading { color: var(--text-secondary) !important; }
-html.dark-theme-variant .bkm2-user-card { background: var(--bg-tertiary) !important; border-color: var(--border-color) !important; }
-html.dark-theme-variant .bkm2-username { color: var(--text-primary) !important; }
+html.dark-theme-variant .bkm2-card,
+html.dark-theme-variant .bkm3-card { background: var(--modal-bg) !important; border-color: var(--modal-border) !important; }
+html.dark-theme-variant .bkm2-heading,
+html.dark-theme-variant .bkm3-heading { color: var(--text-primary) !important; }
+html.dark-theme-variant .bkm2-subheading,
+html.dark-theme-variant .bkm3-subheading { color: var(--text-secondary) !important; }
+html.dark-theme-variant .bkm2-user-card,
+html.dark-theme-variant .bkm3-user-card { background: var(--bg-tertiary) !important; border-color: var(--border-color) !important; }
+html.dark-theme-variant .bkm2-username,
+html.dark-theme-variant .bkm3-username { color: var(--text-primary) !important; }
 html.dark-theme-variant .cam-card { background: var(--modal-bg) !important; border-color: var(--modal-border) !important; color: var(--text-primary) !important; }
 html.dark-theme-variant .cam-header { background: var(--bg-tertiary) !important; border-bottom-color: var(--border-color) !important; color: var(--text-primary) !important; }
 html.dark-theme-variant .cam-header *:not(svg):not(path) { color: var(--text-primary) !important; }
