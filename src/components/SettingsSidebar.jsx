@@ -756,33 +756,37 @@ const SettingsSidebar = ({
                         {/* ── APPEARANCE / THEMES ── */}
                         <div className="setting-group" style={{marginBottom:'14px'}}>
                             <h4>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 2a10 10 0 0 1 0 20"/>
-                                    <path d="M8 6l8 6-8 6"/>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                                    <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>
                                 </svg>
                                 APPEARANCE &amp; THEMES
                             </h4>
 
-                            {/* Section subtitle */}
+                            {/* Subtitle banner */}
                             <div style={{
-                                display:'flex', alignItems:'center', gap:'7px',
-                                marginBottom:'12px',
-                                padding:'8px 10px',
-                                background:'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.05))',
-                                borderRadius:'9px',
-                                border:'1px solid rgba(139,92,246,0.12)',
+                                display:'flex', alignItems:'center', gap:'8px',
+                                marginBottom:'11px',
+                                padding:'9px 11px',
+                                background:'linear-gradient(135deg,rgba(99,102,241,0.09),rgba(139,92,246,0.06))',
+                                borderRadius:'10px',
+                                border:'1px solid rgba(139,92,246,0.15)',
                             }}>
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
-                                    <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
-                                    <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                                </svg>
+                                <div style={{
+                                    width:'28px',height:'28px',flexShrink:0,
+                                    borderRadius:'8px',
+                                    background:'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                                    display:'flex',alignItems:'center',justifyContent:'center',
+                                    boxShadow:'0 2px 8px rgba(99,102,241,0.3)',
+                                }}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 2a10 10 0 1 0 10 10c0-5.52-4.48-10-10-10zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+                                        <path d="M12 6v6l4 2"/>
+                                    </svg>
+                                </div>
                                 <div>
-                                    <div style={{fontSize:'11px',fontWeight:700,color:'#3b1f8c',marginBottom:'1px'}}>Interface Theme</div>
-                                    <div style={{fontSize:'9.5px',color:'#7c6aaa',fontWeight:500}}>Select your preferred colour scheme for the entire app</div>
+                                    <div style={{fontSize:'11px',fontWeight:700,color:'#1e1b4b',marginBottom:'1px',letterSpacing:'0.1px'}}>Choose Your Theme</div>
+                                    <div style={{fontSize:'9.5px',color:'#7c6aaa',fontWeight:500,lineHeight:1.3}}>Personalise your entire app interface with a colour theme</div>
                                 </div>
                             </div>
 
@@ -799,94 +803,169 @@ const SettingsSidebar = ({
                                 };
 
                                 const lockMsg = _isGuest
-                                    ? '🔒 Register an account to unlock more themes!'
-                                    : '🔒 Earn a badge or become staff to unlock all themes!';
+                                    ? 'Register an account to unlock more themes!'
+                                    : 'Earn a badge or become staff to unlock all themes!';
+
+                                /* SVG icon components per theme — no emojis */
+                                const ThemeIcons = {
+                                    'light': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="5"/>
+                                            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                        </svg>
+                                    ),
+                                    'dark': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                        </svg>
+                                    ),
+                                    'rose-pink': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                        </svg>
+                                    ),
+                                    'burgundy-wine': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M8 22h8M12 11v11M5 2h14l-3 9a5 5 0 0 1-4 2 5 5 0 0 1-4-2L5 2z"/>
+                                        </svg>
+                                    ),
+                                    'aurora': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                    ),
+                                    'royal-purple': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/>
+                                            <path d="M5 20h14"/>
+                                        </svg>
+                                    ),
+                                    'sunset-orange': (color) => (
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M4.93 19.07l2.83-2.83M12 18a6 6 0 0 0 0-12v12z"/>
+                                            <path d="M2 20h20"/>
+                                            <path d="M7 20a5 5 0 0 1 10 0"/>
+                                        </svg>
+                                    ),
+                                };
 
                                 const allThemes = [
                                     {
                                         value: 'light',
-                                        emoji: '☀️',
                                         label: 'Light',
-                                        desc: 'Clean & bright',
-                                        colors: ['#ffffff','#f1f5f9','#e2e8f0','#6366f1'],
-                                        bg: 'linear-gradient(145deg,#f8fafc 0%,#e2e8f0 100%)',
-                                        accentText: '#4f46e5',
-                                        tagColor: '#6366f1',
-                                        tagBg: 'rgba(99,102,241,0.1)',
+                                        desc: 'Clean & bright interface',
+                                        cardBg: 'linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%)',
+                                        cardBorder: '#c7d2fe',
+                                        panelBg: 'linear-gradient(145deg,#e0e7ff,#c7d2fe)',
+                                        iconColor: '#4f46e5',
+                                        titleColor: '#1e1b4b',
+                                        descColor: '#4338ca',
+                                        accent: '#4f46e5',
+                                        stripColors: ['#ffffff','#e0e7ff','#c7d2fe','#4f46e5'],
+                                        activeBg: 'linear-gradient(135deg,#4f46e5,#6366f1)',
+                                        activeGlow: 'rgba(79,70,229,0.3)',
                                     },
                                     {
                                         value: 'dark',
-                                        emoji: '🌙',
                                         label: 'Dark',
-                                        desc: 'Easy on eyes',
-                                        colors: ['#0f0f1a','#1e1e30','#2d2d45','#818cf8'],
-                                        bg: 'linear-gradient(145deg,#1e1e30 0%,#0f0f1a 100%)',
-                                        accentText: '#818cf8',
-                                        tagColor: '#818cf8',
-                                        tagBg: 'rgba(129,140,248,0.15)',
+                                        desc: 'Easy on the eyes at night',
+                                        cardBg: 'linear-gradient(135deg,#1e1e30 0%,#0f0f1a 100%)',
+                                        cardBorder: '#3d3d6b',
+                                        panelBg: 'linear-gradient(145deg,#2d2d45,#1e1e30)',
+                                        iconColor: '#818cf8',
+                                        titleColor: '#e0e7ff',
+                                        descColor: '#a5b4fc',
+                                        accent: '#818cf8',
+                                        stripColors: ['#0f0f1a','#1e1e30','#3d3d6b','#818cf8'],
+                                        activeBg: 'linear-gradient(135deg,#6366f1,#818cf8)',
+                                        activeGlow: 'rgba(129,140,248,0.35)',
                                     },
                                     {
                                         value: 'rose-pink',
-                                        emoji: '🌸',
                                         label: 'Rose Pink',
-                                        desc: 'Soft & romantic',
-                                        colors: ['#1a0b10','#22111a','#f06292','#fce4ec'],
-                                        bg: 'linear-gradient(145deg,#22111a 0%,#1a0b10 100%)',
-                                        accentText: '#f06292',
-                                        tagColor: '#f06292',
-                                        tagBg: 'rgba(240,98,146,0.12)',
+                                        desc: 'Soft, warm & romantic',
+                                        cardBg: 'linear-gradient(135deg,#22111a 0%,#1a0b10 100%)',
+                                        cardBorder: '#6b2040',
+                                        panelBg: 'linear-gradient(145deg,#3d1828,#22111a)',
+                                        iconColor: '#f48fb1',
+                                        titleColor: '#fce4ec',
+                                        descColor: '#f8bbd9',
+                                        accent: '#f06292',
+                                        stripColors: ['#1a0b10','#3d1828','#f06292','#fce4ec'],
+                                        activeBg: 'linear-gradient(135deg,#f06292,#f48fb1)',
+                                        activeGlow: 'rgba(240,98,146,0.4)',
                                     },
                                     {
                                         value: 'burgundy-wine',
-                                        emoji: '🍷',
-                                        label: 'Burgundy',
-                                        desc: 'Deep & luxurious',
-                                        colors: ['#130508','#1e0c10','#c62828','#fce8ec'],
-                                        bg: 'linear-gradient(145deg,#1e0c10 0%,#130508 100%)',
-                                        accentText: '#c62828',
-                                        tagColor: '#ef5350',
-                                        tagBg: 'rgba(198,40,40,0.12)',
+                                        label: 'Burgundy Wine',
+                                        desc: 'Deep, rich & luxurious',
+                                        cardBg: 'linear-gradient(135deg,#1e0c10 0%,#130508 100%)',
+                                        cardBorder: '#5e1828',
+                                        panelBg: 'linear-gradient(145deg,#2e1018,#1e0c10)',
+                                        iconColor: '#ef5350',
+                                        titleColor: '#fce8ec',
+                                        descColor: '#f0b8c8',
+                                        accent: '#c62828',
+                                        stripColors: ['#130508','#2e1018','#c62828','#fce8ec'],
+                                        activeBg: 'linear-gradient(135deg,#c62828,#ef5350)',
+                                        activeGlow: 'rgba(198,40,40,0.4)',
                                     },
                                     {
                                         value: 'aurora',
-                                        emoji: '🌌',
                                         label: 'Aurora',
-                                        desc: 'Cosmic & vivid',
-                                        colors: ['#030d1a','#071522','#00e5ff','#69ff47'],
-                                        bg: 'linear-gradient(145deg,#071522 0%,#030d1a 100%)',
-                                        accentText: '#00e5ff',
-                                        tagColor: '#00e5ff',
-                                        tagBg: 'rgba(0,229,255,0.1)',
+                                        desc: 'Cosmic, vivid & electric',
+                                        cardBg: 'linear-gradient(135deg,#071522 0%,#030d1a 100%)',
+                                        cardBorder: '#163a50',
+                                        panelBg: 'linear-gradient(145deg,#0c1e30,#071522)',
+                                        iconColor: '#00e5ff',
+                                        titleColor: '#e0f7fa',
+                                        descColor: '#80deea',
+                                        accent: '#00e5ff',
+                                        stripColors: ['#030d1a','#0c1e30','#00e5ff','#69ff47'],
+                                        activeBg: 'linear-gradient(135deg,#00bcd4,#00e5ff)',
+                                        activeGlow: 'rgba(0,229,255,0.4)',
                                     },
                                     {
                                         value: 'royal-purple',
-                                        emoji: '👑',
                                         label: 'Royal Purple',
-                                        desc: 'Regal & bold',
-                                        colors: ['#0d0618','#140a24','#9c27b0','#ede7f6'],
-                                        bg: 'linear-gradient(145deg,#140a24 0%,#0d0618 100%)',
-                                        accentText: '#ce93d8',
-                                        tagColor: '#ce93d8',
-                                        tagBg: 'rgba(156,39,176,0.12)',
+                                        desc: 'Regal, bold & majestic',
+                                        cardBg: 'linear-gradient(135deg,#140a24 0%,#0d0618 100%)',
+                                        cardBorder: '#42186e',
+                                        panelBg: 'linear-gradient(145deg,#1c1032,#140a24)',
+                                        iconColor: '#ce93d8',
+                                        titleColor: '#ede7f6',
+                                        descColor: '#ce93d8',
+                                        accent: '#9c27b0',
+                                        stripColors: ['#0d0618','#1c1032','#9c27b0','#ede7f6'],
+                                        activeBg: 'linear-gradient(135deg,#9c27b0,#ce93d8)',
+                                        activeGlow: 'rgba(156,39,176,0.4)',
                                     },
                                     {
                                         value: 'sunset-orange',
-                                        emoji: '🌅',
-                                        label: 'Sunset',
-                                        desc: 'Warm & energetic',
-                                        colors: ['#120700','#1c1000','#ff5722','#fff3e0'],
-                                        bg: 'linear-gradient(145deg,#1c1000 0%,#120700 100%)',
-                                        accentText: '#ff8a65',
-                                        tagColor: '#ff8a65',
-                                        tagBg: 'rgba(255,87,34,0.12)',
+                                        label: 'Sunset Orange',
+                                        desc: 'Warm, fiery & energetic',
+                                        cardBg: 'linear-gradient(135deg,#1c1000 0%,#120700 100%)',
+                                        cardBorder: '#5a2800',
+                                        panelBg: 'linear-gradient(145deg,#261600,#1c1000)',
+                                        iconColor: '#ff8a65',
+                                        titleColor: '#fff3e0',
+                                        descColor: '#ffcc80',
+                                        accent: '#ff5722',
+                                        stripColors: ['#120700','#261600','#ff5722','#fff3e0'],
+                                        activeBg: 'linear-gradient(135deg,#ff5722,#ff8a65)',
+                                        activeGlow: 'rgba(255,87,34,0.4)',
                                     },
                                 ];
 
                                 return (
-                                    <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>
+                                    <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
                                         {allThemes.map(t => {
                                             const active = settings.selectedTheme === t.value;
                                             const unlocked = themeAccess(t.value);
+                                            const IconSVG = ThemeIcons[t.value];
 
                                             return (
                                                 <button
@@ -898,162 +977,153 @@ const SettingsSidebar = ({
                                                     title={unlocked ? `Switch to ${t.label} theme` : lockMsg}
                                                     style={{
                                                         display:'flex',
-                                                        alignItems:'center',
-                                                        gap:'0',
+                                                        alignItems:'stretch',
                                                         width:'100%',
                                                         borderRadius:'12px',
-                                                        cursor: unlocked ? 'pointer' : 'pointer',
+                                                        cursor:'pointer',
                                                         border: active
-                                                            ? '2px solid #7c3aed'
-                                                            : '2px solid rgba(167,139,250,0.2)',
-                                                        background: active
-                                                            ? 'linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.06))'
-                                                            : 'rgba(255,255,255,0.7)',
+                                                            ? `2px solid ${t.accent}`
+                                                            : `1.5px solid ${t.cardBorder}`,
+                                                        background: t.cardBg,
                                                         outline:'none',
-                                                        transition:'all 0.18s ease',
+                                                        transition:'all 0.2s ease',
                                                         boxShadow: active
-                                                            ? '0 0 0 3px rgba(124,58,237,0.15), 0 4px 16px rgba(109,40,217,0.12)'
-                                                            : '0 1px 4px rgba(109,40,217,0.06)',
+                                                            ? `0 0 0 3px ${t.activeGlow}, 0 6px 20px rgba(0,0,0,0.25)`
+                                                            : '0 2px 10px rgba(0,0,0,0.18)',
                                                         overflow:'hidden',
                                                         position:'relative',
-                                                        opacity: unlocked ? 1 : 0.75,
+                                                        opacity: unlocked ? 1 : 0.72,
                                                         padding:'0',
                                                         textAlign:'left',
                                                         fontFamily:'inherit',
                                                     }}
                                                 >
-                                                    {/* Theme preview panel */}
+                                                    {/* Left icon panel */}
                                                     <div style={{
-                                                        width:'72px',
-                                                        minWidth:'72px',
-                                                        height:'62px',
-                                                        background: t.bg,
+                                                        width:'64px',
+                                                        minWidth:'64px',
+                                                        background: t.panelBg,
                                                         display:'flex',
                                                         flexDirection:'column',
                                                         alignItems:'center',
                                                         justifyContent:'center',
-                                                        gap:'4px',
-                                                        padding:'6px',
+                                                        gap:'5px',
+                                                        padding:'8px 4px',
                                                         flexShrink:0,
-                                                        filter: unlocked ? 'none' : 'grayscale(0.5) brightness(0.8)',
                                                         position:'relative',
+                                                        borderRight:`1px solid ${t.cardBorder}44`,
+                                                        filter: unlocked ? 'none' : 'grayscale(0.6) brightness(0.7)',
                                                     }}>
-                                                        {/* Color dots */}
-                                                        <div style={{display:'flex',gap:'3px',alignItems:'center'}}>
-                                                            {t.colors.map((c,i) => (
+                                                        {/* Theme SVG icon */}
+                                                        <div style={{
+                                                            width:'32px',height:'32px',
+                                                            borderRadius:'8px',
+                                                            background:`${t.accent}22`,
+                                                            border:`1px solid ${t.accent}44`,
+                                                            display:'flex',alignItems:'center',justifyContent:'center',
+                                                            boxShadow: active ? `0 0 10px ${t.accent}55` : 'none',
+                                                        }}>
+                                                            {IconSVG(active ? t.accent : t.iconColor)}
+                                                        </div>
+                                                        {/* Mini colour dots */}
+                                                        <div style={{display:'flex',gap:'2px'}}>
+                                                            {t.stripColors.slice(1).map((c,i) => (
                                                                 <div key={i} style={{
-                                                                    width: i === 3 ? '12px' : '9px',
-                                                                    height: i === 3 ? '12px' : '9px',
+                                                                    width:'7px',height:'7px',
                                                                     borderRadius:'50%',
-                                                                    background: c,
-                                                                    border:'1px solid rgba(255,255,255,0.15)',
-                                                                    flexShrink:0,
-                                                                    boxShadow: i === 3 ? `0 0 6px ${c}88` : 'none',
+                                                                    background:c,
+                                                                    border:`1px solid ${t.cardBorder}66`,
                                                                 }}/>
                                                             ))}
                                                         </div>
-                                                        {/* Mini UI mock */}
-                                                        <div style={{
-                                                            width:'52px',height:'16px',
-                                                            background:'rgba(255,255,255,0.08)',
-                                                            borderRadius:'4px',
-                                                            border:`1px solid ${t.colors[3]}44`,
-                                                            display:'flex',
-                                                            alignItems:'center',
-                                                            paddingLeft:'4px',
-                                                            gap:'3px',
-                                                        }}>
-                                                            <div style={{width:'8px',height:'8px',borderRadius:'50%',background:t.colors[3],flexShrink:0}}/>
-                                                            <div style={{flex:1,height:'3px',background:`${t.colors[3]}66`,borderRadius:'2px'}}/>
-                                                        </div>
-                                                        {/* Emoji */}
-                                                        <div style={{
-                                                            position:'absolute',top:'4px',left:'4px',
-                                                            fontSize:'12px',lineHeight:1,
-                                                        }}>{t.emoji}</div>
                                                         {/* Lock overlay */}
                                                         {!unlocked && (
                                                             <div style={{
                                                                 position:'absolute',inset:0,
                                                                 display:'flex',alignItems:'center',justifyContent:'center',
-                                                                background:'rgba(0,0,0,0.35)',
-                                                                fontSize:'16px',
-                                                            }}>🔒</div>
+                                                                background:'rgba(0,0,0,0.45)',
+                                                                borderRadius:'0',
+                                                            }}>
+                                                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                                </svg>
+                                                            </div>
                                                         )}
                                                     </div>
 
-                                                    {/* Text content */}
+                                                    {/* Text area */}
                                                     <div style={{
                                                         flex:1,
-                                                        padding:'10px 10px 10px 12px',
+                                                        padding:'9px 8px 9px 11px',
                                                         display:'flex',
                                                         flexDirection:'column',
+                                                        justifyContent:'center',
                                                         gap:'3px',
                                                         minWidth:0,
                                                     }}>
-                                                        <div style={{
-                                                            display:'flex',
-                                                            alignItems:'center',
-                                                            gap:'6px',
-                                                        }}>
+                                                        {/* Name + badges row */}
+                                                        <div style={{display:'flex',alignItems:'center',gap:'5px',flexWrap:'wrap'}}>
                                                             <span style={{
                                                                 fontSize:'12px',
                                                                 fontWeight:700,
-                                                                color:'#1e1b4b',
+                                                                color: t.titleColor,
                                                                 lineHeight:1.2,
+                                                                letterSpacing:'0.1px',
                                                             }}>{t.label}</span>
                                                             {active && (
                                                                 <span style={{
-                                                                    background:'linear-gradient(135deg,#7c3aed,#6366f1)',
+                                                                    background: t.activeBg,
                                                                     color:'#fff',
-                                                                    fontSize:'8px',
+                                                                    fontSize:'7.5px',
                                                                     fontWeight:800,
                                                                     padding:'2px 6px',
-                                                                    borderRadius:'10px',
-                                                                    letterSpacing:'0.4px',
-                                                                    lineHeight:1.5,
+                                                                    borderRadius:'8px',
+                                                                    letterSpacing:'0.5px',
+                                                                    lineHeight:1.6,
                                                                     flexShrink:0,
-                                                                }}>ACTIVE</span>
+                                                                    textTransform:'uppercase',
+                                                                    boxShadow:`0 1px 6px ${t.activeGlow}`,
+                                                                }}>Active</span>
                                                             )}
                                                             {!unlocked && (
                                                                 <span style={{
-                                                                    background:'linear-gradient(135deg,#f59e0b,#d97706)',
+                                                                    background:'linear-gradient(135deg,#d97706,#f59e0b)',
                                                                     color:'#fff',
-                                                                    fontSize:'8px',
+                                                                    fontSize:'7.5px',
                                                                     fontWeight:800,
                                                                     padding:'2px 6px',
-                                                                    borderRadius:'10px',
-                                                                    letterSpacing:'0.4px',
-                                                                    lineHeight:1.5,
+                                                                    borderRadius:'8px',
+                                                                    letterSpacing:'0.5px',
+                                                                    lineHeight:1.6,
                                                                     flexShrink:0,
-                                                                }}>PRO</span>
+                                                                    textTransform:'uppercase',
+                                                                }}>Pro</span>
                                                             )}
                                                         </div>
+                                                        {/* Description */}
                                                         <div style={{
                                                             fontSize:'10px',
-                                                            color:'#6b7280',
+                                                            color: t.descColor,
                                                             fontWeight:500,
-                                                            lineHeight:1.3,
+                                                            lineHeight:1.35,
+                                                            opacity: unlocked ? 0.85 : 0.6,
                                                         }}>{t.desc}</div>
-                                                        {/* Color strip */}
-                                                        <div style={{
-                                                            display:'flex',
-                                                            gap:'3px',
-                                                            marginTop:'3px',
-                                                        }}>
-                                                            {t.colors.map((c,i) => (
+                                                        {/* Colour strip */}
+                                                        <div style={{display:'flex',gap:'3px',marginTop:'2px'}}>
+                                                            {t.stripColors.map((c,i) => (
                                                                 <div key={i} style={{
                                                                     flex:1,
-                                                                    height:'4px',
-                                                                    borderRadius:'3px',
+                                                                    height:'3px',
+                                                                    borderRadius:'2px',
                                                                     background:c,
-                                                                    opacity: unlocked ? 1 : 0.5,
+                                                                    opacity: unlocked ? 1 : 0.4,
                                                                 }}/>
                                                             ))}
                                                         </div>
                                                     </div>
 
-                                                    {/* Right check/arrow */}
+                                                    {/* Right selector */}
                                                     <div style={{
                                                         paddingRight:'10px',
                                                         flexShrink:0,
@@ -1062,23 +1132,23 @@ const SettingsSidebar = ({
                                                     }}>
                                                         {active ? (
                                                             <div style={{
-                                                                width:'22px',height:'22px',
+                                                                width:'20px',height:'20px',
                                                                 borderRadius:'50%',
-                                                                background:'linear-gradient(135deg,#7c3aed,#6366f1)',
+                                                                background: t.activeBg,
                                                                 display:'flex',alignItems:'center',justifyContent:'center',
-                                                                boxShadow:'0 2px 8px rgba(124,58,237,0.35)',
+                                                                boxShadow:`0 2px 8px ${t.activeGlow}`,
                                                                 flexShrink:0,
                                                             }}>
-                                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                                     <polyline points="20 6 9 17 4 12"/>
                                                                 </svg>
                                                             </div>
                                                         ) : (
                                                             <div style={{
-                                                                width:'22px',height:'22px',
+                                                                width:'20px',height:'20px',
                                                                 borderRadius:'50%',
-                                                                border:'2px solid rgba(167,139,250,0.3)',
-                                                                background:'rgba(255,255,255,0.6)',
+                                                                border:`1.5px solid ${t.cardBorder}`,
+                                                                background:`${t.cardBorder}22`,
                                                                 flexShrink:0,
                                                             }}/>
                                                         )}
