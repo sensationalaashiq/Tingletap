@@ -731,16 +731,11 @@ html body .theme-light .user-font-styled {
     text-decoration-thickness: 2px !important;
 }
 
-/* SVG theming for dark theme */
+/* SVG theming for dark theme — scoped, no broad fill/stroke override */
 .theme-dark svg {
-    color: var(--icon-color) !important;
-    fill: var(--svg-fill) !important;
-    stroke: var(--svg-stroke) !important;
-}
-.theme-dark svg:hover {
-    color: var(--icon-hover) !important;
-    fill: var(--icon-hover) !important;
-    stroke: var(--icon-hover) !important;
+    color: var(--icon-color);
+    /* fill/stroke intentionally omitted — too broad, kills TI toast icons & colored SVGs */
+    /* Use .dark-mode specific component rules for icon colors instead */
 }
 
 /* General Layout */

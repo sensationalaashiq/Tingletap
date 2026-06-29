@@ -98,11 +98,21 @@ html.dark-mode {
   --badge-bg:        rgba(99,102,241,0.15);
   --badge-text:      #c4b5fd;
 
-  /* ── SVG / Icons ── */
-  --icon-color:   #8892b0;
-  --icon-hover:   #e8eaf0;
-  --svg-fill:     #8892b0;
-  --svg-stroke:   #8892b0;
+  /* ── SVG / Icons — contextual colors ── */
+  --icon-color:      #a78bfa;
+  --icon-hover:      #e9d5ff;
+  --svg-fill:        #a78bfa;
+  --svg-stroke:      #a78bfa;
+
+  /* Icon type variables — used across all components */
+  --icon-nav:        #60a5fa;   /* navigation / blue buttons */
+  --icon-admin:      #f87171;   /* admin / danger / red buttons */
+  --icon-feature:    #a78bfa;   /* feature / purple buttons */
+  --icon-warning:    #fbbf24;   /* warning / amber buttons */
+  --icon-success:    #34d399;   /* success / green icons */
+  --icon-default:    #c4b5fd;   /* default lavender */
+  --icon-muted:      #6b7280;   /* muted / dim icons */
+  --icon-general:    #94a3b8;   /* general / neutral icons */
 
   /* ── Footer ── */
   --footer-bg:    #0f0f1a;
@@ -438,7 +448,13 @@ html.dark-mode .modern-setting-info small { color: #5f6880 !important; }
 html.dark-mode .action-btn { background: rgba(255,255,255,0.04) !important; border-color: rgba(99,102,241,0.25) !important; color: #c4b5fd !important; box-shadow: none !important; }
 html.dark-mode .action-btn:hover { background: rgba(99,102,241,0.12) !important; }
 html.dark-mode .action-btn span { color: #c4b5fd !important; }
-html.dark-mode .action-btn svg { stroke: currentColor !important; fill: none !important; }
+/* Action button SVG — specific color per variant */
+html.dark-mode .action-btn svg { stroke: var(--icon-default) !important; fill: none !important; }
+html.dark-mode .action-btn.primary svg { stroke: var(--icon-nav) !important; fill: none !important; }
+html.dark-mode .action-btn.feature svg { stroke: var(--icon-feature) !important; fill: none !important; }
+html.dark-mode .action-btn.admin svg   { stroke: var(--icon-admin) !important; fill: none !important; }
+html.dark-mode .action-btn.warning svg { stroke: var(--icon-warning) !important; fill: none !important; }
+
 html.dark-mode .action-btn.primary { background: rgba(59,130,246,0.12) !important; border-color: rgba(59,130,246,0.3) !important; color: #60a5fa !important; }
 html.dark-mode .action-btn.primary span { color: #60a5fa !important; }
 html.dark-mode .action-btn.feature { background: rgba(139,92,246,0.12) !important; border-color: rgba(139,92,246,0.3) !important; color: #a78bfa !important; }
@@ -447,10 +463,19 @@ html.dark-mode .action-btn.admin { background: rgba(239,68,68,0.1) !important; b
 html.dark-mode .action-btn.admin span { color: #f87171 !important; }
 html.dark-mode .action-btn.warning { background: rgba(245,158,11,0.1) !important; border-color: rgba(245,158,11,0.25) !important; color: #fbbf24 !important; }
 html.dark-mode .action-btn.warning span { color: #fbbf24 !important; }
+
 html.dark-mode .modern-nav-btn { background: rgba(255,255,255,0.04) !important; border-color: rgba(99,102,241,0.25) !important; color: #c4b5fd !important; box-shadow: none !important; }
 html.dark-mode .modern-nav-btn:hover { background: rgba(99,102,241,0.12) !important; }
 html.dark-mode .modern-nav-btn span { color: #c4b5fd !important; }
-html.dark-mode .modern-nav-btn svg { stroke: currentColor !important; fill: none !important; }
+
+/* Nav button SVG — specific color per variant, matching button accent */
+html.dark-mode .modern-nav-btn svg                { stroke: var(--icon-default) !important; fill: none !important; }
+html.dark-mode .modern-nav-btn.navigation svg     { stroke: var(--icon-nav) !important; fill: none !important; }
+html.dark-mode .modern-nav-btn.admin svg          { stroke: var(--icon-admin) !important; fill: none !important; }
+html.dark-mode .modern-nav-btn.feature svg        { stroke: var(--icon-feature) !important; fill: none !important; }
+html.dark-mode .modern-nav-btn.warning svg        { stroke: var(--icon-warning) !important; fill: none !important; }
+html.dark-mode .modern-nav-btn.general svg        { stroke: var(--icon-general) !important; fill: none !important; }
+
 html.dark-mode .modern-nav-btn.navigation,
 html.dark-mode .modern-nav-btn.navigation span { background: rgba(59,130,246,0.1) !important; border-color: rgba(59,130,246,0.3) !important; color: #60a5fa !important; }
 html.dark-mode .modern-nav-btn.admin,
@@ -459,8 +484,10 @@ html.dark-mode .modern-nav-btn.feature,
 html.dark-mode .modern-nav-btn.feature span { background: rgba(139,92,246,0.1) !important; border-color: rgba(139,92,246,0.3) !important; color: #a78bfa !important; }
 html.dark-mode .modern-nav-btn.warning,
 html.dark-mode .modern-nav-btn.warning span { background: rgba(245,158,11,0.1) !important; border-color: rgba(245,158,11,0.25) !important; color: #fbbf24 !important; }
+
 html.dark-mode .modern-quick-btn { background: rgba(255,255,255,0.04) !important; border-color: rgba(99,102,241,0.25) !important; color: #c4b5fd !important; }
 html.dark-mode .modern-quick-btn span { color: #c4b5fd !important; }
+html.dark-mode .modern-quick-btn svg { stroke: var(--icon-feature) !important; fill: none !important; }
 html.dark-mode .toggle-slider { background: #2d2d4a !important; border-color: #3a3a58 !important; }
 html.dark-mode .toggle-switch input:checked + .toggle-slider { background: linear-gradient(135deg, #10b981, #059669) !important; }
 html.dark-mode .modern-toggle-slider { background: #2d2d4a !important; border-color: #3a3a58 !important; }
@@ -565,6 +592,22 @@ html.dark-mode .Toastify__toast:not([style*="background"]) {
 html.dark-mode .Toastify__close-button { color: rgba(255,255,255,0.85) !important; opacity: 1 !important; }
 html.dark-mode .Toastify__progress-bar--default,
 html.dark-mode .Toastify__progress-bar:not([style]) { background: #6366f1 !important; }
+
+/* ── Toast icon SVG protection: preserve TI icon colors in dark mode ── */
+html.dark-mode .Toastify__toast-icon svg,
+html.dark-mode .Toastify__toast-icon svg *,
+html.dark-mode [class*="toast-icon"] svg,
+html.dark-mode [class*="toast-icon"] svg * {
+  fill: revert-layer !important;
+  stroke: revert-layer !important;
+  color: revert-layer !important;
+}
+/* Force TI icon SVG elements to keep their original attribute colors */
+html.dark-mode .Toastify__toast-icon svg path { fill: inherit; stroke: inherit; }
+html.dark-mode .Toastify__toast-icon svg circle { fill: inherit; stroke: inherit; }
+html.dark-mode .Toastify__toast-icon svg line  { stroke: inherit; }
+html.dark-mode .Toastify__toast-icon svg polygon { fill: inherit; stroke: inherit; }
+html.dark-mode .Toastify__toast-icon svg polyline { stroke: inherit; }
 
 /* ══ 15. VIEW PROFILE MODAL (vpm-*) — full dark coverage ════════════ */
 html.dark-mode .vpm-overlay { background: rgba(0,0,0,0.88) !important; }

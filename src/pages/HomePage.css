@@ -1698,11 +1698,11 @@ html body.theme-sunset .message-body p {
 }
 
 .dark-mode .action-btn svg {
-  color: #9ca3af;
+  color: var(--icon-default, #c4b5fd);
 }
 
 .dark-mode .action-btn:hover svg {
-  color: #e5e7eb;
+  color: var(--icon-hover, #e9d5ff);
 }
 
 /* User Dropdown in Chat Messages - Super High Z-Index */
