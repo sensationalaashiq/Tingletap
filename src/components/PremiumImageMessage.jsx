@@ -3,66 +3,64 @@ import './PremiumImageMessage.css';
 
 /* ── Premium SVG Icons ── */
 const LockImageSVG = ({ compact }) => {
-  const s = compact ? 34 : 44;
+  const s = compact ? 26 : 34;
   return (
     <svg width={s} height={s} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="pimGold1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fbbf24"/>
-          <stop offset="50%" stopColor="#f59e0b"/>
-          <stop offset="100%" stopColor="#d97706"/>
+        <linearGradient id="pimPurp1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#a78bfa"/>
+          <stop offset="50%" stopColor="#7c3aed"/>
+          <stop offset="100%" stopColor="#5b21b6"/>
         </linearGradient>
-        <linearGradient id="pimGold2" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fde68a"/>
-          <stop offset="100%" stopColor="#fbbf24"/>
+        <linearGradient id="pimPurp2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ddd6fe"/>
+          <stop offset="100%" stopColor="#a78bfa"/>
         </linearGradient>
         <filter id="pimGlow">
-          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feGaussianBlur stdDeviation="1.2" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
-      {/* Mountain / landscape */}
-      <path d="M6 34 L16 18 L22 26 L28 20 L38 34 Z" fill="url(#pimGold1)" opacity="0.55"/>
-      <circle cx="11" cy="14" r="3.5" fill="url(#pimGold2)" opacity="0.6"/>
-      {/* Lock body */}
+      <path d="M6 34 L16 18 L22 26 L28 20 L38 34 Z" fill="url(#pimPurp1)" opacity="0.4"/>
+      <circle cx="11" cy="14" r="3.5" fill="url(#pimPurp2)" opacity="0.5"/>
       <g filter="url(#pimGlow)">
-        <rect x="14" y="24" width="16" height="13" rx="3.5" fill="url(#pimGold1)"/>
-        <path d="M17 24 L17 20 C17 16.7 27 16.7 27 20 L27 24" stroke="url(#pimGold1)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
-        <circle cx="22" cy="30" r="2.2" fill="#1a0a35"/>
-        <rect x="21.1" y="30" width="1.8" height="3" rx="0.9" fill="#1a0a35"/>
+        <rect x="14" y="24" width="16" height="13" rx="3.5" fill="url(#pimPurp1)"/>
+        <path d="M17 24 L17 20 C17 16.7 27 16.7 27 20 L27 24" stroke="url(#pimPurp1)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+        <circle cx="22" cy="30" r="2.2" fill="#f5f3ff"/>
+        <rect x="21.1" y="30" width="1.8" height="3" rx="0.9" fill="#f5f3ff"/>
       </g>
     </svg>
   );
 };
 
 const ShieldSVG = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <defs>
       <linearGradient id="pimShield" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fbbf24"/>
-        <stop offset="100%" stopColor="#f59e0b"/>
+        <stop offset="0%" stopColor="#a78bfa"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
       </linearGradient>
     </defs>
     <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="url(#pimShield)"/>
-    <path d="M9.5 12L11.5 14L15.5 10" stroke="#1a0a35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9.5 12L11.5 14L15.5 10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const EyeSlashSVG = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 );
 
 const BackArrowSVG = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const EyeHideSVG = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
@@ -76,6 +74,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
 
+  const rootRef = useRef(null);
   const containerRef = useRef(null);
   const dragStartRef = useRef(null);
   const lastScaleRef = useRef(1);
@@ -89,6 +88,12 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
     setIsEntering(true);
     setState('visible');
     setTimeout(() => setIsEntering(false), 600);
+    /* Auto-scroll chat feed so full expanded card is visible */
+    setTimeout(() => {
+      if (rootRef.current) {
+        rootRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 80);
   }, []);
 
   /* ── Hide ── */
@@ -194,7 +199,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   /* ── HIDDEN STATE ── */
   if (state === 'hidden') {
     return (
-      <div className={`${rootCls} pim__card`}>
+      <div ref={rootRef} className={`${rootCls} pim__card`}>
         <div className="pim__card-border" />
 
         <div className="pim__icon-area">
@@ -224,7 +229,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
 
   /* ── VISIBLE STATE ── */
   return (
-    <div className={`${rootCls} pim__viewer${isEntering ? ' pim__viewer--entering' : ''}`}>
+    <div ref={rootRef} className={`${rootCls} pim__viewer${isEntering ? ' pim__viewer--entering' : ''}`}>
       <div
         ref={containerRef}
         className="pim__zoom-wrap"
