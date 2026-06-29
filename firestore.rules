@@ -557,16 +557,15 @@ service cloud.firestore {
 
     // ================================================================
     // PRESENCE
-    // Guests are NOT allowed to write presence — they cannot appear
-    // as online in the presence system.
-    // Any authenticated registered user can read presence.
+    // All authenticated users (including guests) may write their own
+    // presence document so they appear online in the chat.
+    // Staff may write any user's presence doc (e.g. force-offline on ban).
     // ================================================================
 
     match /presence/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null
-                   && (request.auth.uid == userId || isStaff())
-                   && isRegistered();           // guests cannot update presence
+                   && (request.auth.uid == userId || isStaff());
     }
 
 

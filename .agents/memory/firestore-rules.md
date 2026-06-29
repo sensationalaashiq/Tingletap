@@ -42,7 +42,7 @@ Implemented via `getRole(uid)` which is null-safe (returns `'user'` if doc missi
 | calls | ❌ | ❌ | Registered only |
 | conversations | ❌ | ❌ | Registered only |
 | friendRequests | ❌ | ❌ | Registered only |
-| presence | ✅ | ❌ | No guest presence writes |
+| presence | ✅ | ✅ (own only) | Guests can appear online |
 | globalUsernameStyles | ✅ | ❌ | Registered only |
 | globalMessageStyles | ✅ | ❌ | Registered only |
 | uploads | ✅ | audio only | MIME: `audio/.*` |
