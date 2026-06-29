@@ -6804,11 +6804,49 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={e=>e.target.style.display='none'}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
                                             Cover Photo
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                                         </div>
                                     </div>
                                 );
-                                return null;
+                                {/* ── No-cover colourful placeholder ── */}
+                                return (
+                                    <div style={{
+                                        width:'100%', height:'90px', flexShrink:0,
+                                        borderRadius:'20px 20px 0 0', overflow:'hidden',
+                                        background:'linear-gradient(135deg,#ddd6fe 0%,#c4b5fd 30%,#a78bfa 60%,#7c3aed 100%)',
+                                        display:'flex', alignItems:'center', justifyContent:'center',
+                                        position:'relative',
+                                    }}>
+                                        <svg viewBox="0 0 80 45" width="80" height="45" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <defs>
+                                                <linearGradient id="vpmMtn1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="rgba(255,255,255,0.55)"/>
+                                                    <stop offset="100%" stopColor="rgba(255,255,255,0.25)"/>
+                                                </linearGradient>
+                                                <linearGradient id="vpmMtn2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="rgba(255,255,255,0.35)"/>
+                                                    <stop offset="100%" stopColor="rgba(255,255,255,0.12)"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <circle cx="62" cy="12" r="7" fill="rgba(255,255,255,0.4)"/>
+                                            <path d="M0 45 L18 20 L30 32 L44 15 L58 28 L70 10 L80 22 L80 45 Z" fill="url(#vpmMtn1)"/>
+                                            <path d="M0 45 L22 28 L36 38 L52 22 L64 34 L80 18 L80 45 Z" fill="url(#vpmMtn2)"/>
+                                        </svg>
+                                        <div style={{
+                                            position:'absolute', bottom:6, left:8,
+                                            display:'flex', alignItems:'center', gap:4,
+                                            background:'rgba(255,255,255,0.22)', backdropFilter:'blur(8px)',
+                                            borderRadius:20, padding:'2px 8px',
+                                            fontSize:9, fontWeight:700, color:'#fff',
+                                            letterSpacing:'0.3px',
+                                        }}>
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff">
+                                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+                                            </svg>
+                                            No Cover Set
+                                        </div>
+                                    </div>
+                                );
                             })()}
 
                             {/* ── Header: compact centred column ── */}
