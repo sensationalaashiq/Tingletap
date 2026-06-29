@@ -70,22 +70,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   const [state, setState] = useState('hidden');
   const [showModal, setShowModal] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
-  const [imgSize, setImgSize] = useState({ w: null, h: null });
   const rootRef = useRef(null);
-
-  /* Preload to get natural dimensions */
-  useEffect(() => {
-    if (!imageUrl) return;
-    const img = new Image();
-    img.onload = () => {
-      const maxW = compact ? 140 : 190;
-      const ratio = img.naturalHeight / img.naturalWidth;
-      const w = Math.min(img.naturalWidth, maxW);
-      const h = Math.round(w * ratio);
-      setImgSize({ w, h: Math.min(h, compact ? 130 : 190) });
-    };
-    img.src = imageUrl;
-  }, [imageUrl, compact]);
 
   const handleReveal = useCallback((e) => {
     e?.stopPropagation();
@@ -106,17 +91,12 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   const iconSz = compact ? 34 : 40;
   const lockSz = compact ? 15 : 18;
 
-  const cardStyle = {
-    ...(imgSize.w ? { width: imgSize.w + 'px', minHeight: Math.max(imgSize.h, compact ? 110 : 128) + 'px' } : {}),
-  };
-
   /* ── HIDDEN STATE ── */
   if (state === 'hidden') {
     return (
       <div
         ref={rootRef}
         className={`pim-card${compact ? ' pim-card--compact' : ''}`}
-        style={cardStyle}
       >
         {/* Shield badge */}
         <div className="pim-card__badge">
