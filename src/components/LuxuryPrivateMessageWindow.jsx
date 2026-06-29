@@ -1016,20 +1016,24 @@ const LuxuryPrivateMessageWindow = ({
 
                 <textarea
                   value={privateMessage}
-                  onChange={(e) => setPrivateMessage(e.target.value)}
+                  onChange={(e) => !loggedInUserProfile?.mutedInfo?.isMuted && setPrivateMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type message..."
+                  placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? '🔇 You are muted...' : 'Type message...'}
                   className="ultra-pm-input"
                   rows="1"
+                  disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                  readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                  style={{ opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.55 : 1, cursor: loggedInUserProfile?.mutedInfo?.isMuted ? 'not-allowed' : 'text' }}
                 />
 
                 <motion.button
                   className="ultra-pm-send-btn"
-                  onClick={onSendMessage}
-                  disabled={!privateMessage.trim()}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  title="Send message"
+                  onClick={loggedInUserProfile?.mutedInfo?.isMuted ? undefined : onSendMessage}
+                  disabled={!privateMessage.trim() || !!loggedInUserProfile?.mutedInfo?.isMuted}
+                  whileHover={loggedInUserProfile?.mutedInfo?.isMuted ? {} : { scale: 1.1 }}
+                  whileTap={loggedInUserProfile?.mutedInfo?.isMuted ? {} : { scale: 0.9 }}
+                  title={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted' : 'Send message'}
+                  style={{ opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.4 : 1, cursor: loggedInUserProfile?.mutedInfo?.isMuted ? 'not-allowed' : 'pointer' }}
                 >
                   <svg id="Capa_1" enableBackground="new 0 0 512.019 512.019" viewBox="0 0 512.019 512.019" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
                     <g>

@@ -13,6 +13,7 @@ import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { getRoomSlug } from '../utils/roomSlug';
+import { parseDurationMs } from '../utils/modExpiryService';
 import AdminBanKickModal from './AdminBanKickModal';
 import ChatActionModal from './ChatActionModal';
 import EditProfileModal from './EditProfileModal';
@@ -285,9 +286,12 @@ const Sidebar = ({
         await sendTingleBotMessage(`${adminModalUser.displayName} has been banned — ${actionData.reason || 'No reason provided'}`, 'banned');
 
       } else if (effectiveAction === 'mute') {
+        const muteMs = parseDurationMs(actionData.duration);
+        const muteUntil = muteMs !== Infinity ? new Date(Date.now() + muteMs).toISOString() : null;
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           "mutedInfo.isMuted": true, "mutedInfo.reason": actionData.reason,
           "mutedInfo.duration": actionData.duration, "mutedInfo.mutedAt": serverTimestamp(),
+          "mutedInfo.muteUntil": muteUntil,
           "mutedInfo.mutedBy": actionData.actionBy, "mutedInfo.mutedById": actionData.actionById,
           "mutedInfo.mutedByRole": loggedInUserProfile?.role || 'admin'
         });
@@ -301,6 +305,8 @@ const Sidebar = ({
         await sendTingleBotMessage(`${adminModalUser.displayName} has been unmuted and can speak again.`, 'system');
 
       } else if (effectiveAction === 'kick') {
+        const kickMs = parseDurationMs(actionData.duration);
+        const kickUntil = kickMs !== Infinity ? new Date(Date.now() + kickMs).toISOString() : null;
         const kickData = {
           uid: adminModalUser.uid,
           displayName: adminModalUser.displayName,
@@ -309,6 +315,7 @@ const Sidebar = ({
           kickedById: loggedInUserProfile?.uid || 'system',
           reason: actionData.reason,
           duration: actionData.duration,
+          kickUntil,
         };
         if (actionData.kickScope === 'multiple_rooms' && actionData.selectedRooms?.length > 0) {
           for (const rid of actionData.selectedRooms) {

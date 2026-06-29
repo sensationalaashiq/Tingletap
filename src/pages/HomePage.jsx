@@ -18,6 +18,7 @@ import { signOut } from 'firebase/auth';
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
 import AddFriendConfirmModal from '../components/AddFriendConfirmModal';
 import ChatActionModal from '../components/ChatActionModal';
+import AdminBanKickModal from '../components/AdminBanKickModal';
 import Sidebar from '../components/Sidebar';
 import SettingsSidebar from '../components/SettingsSidebar';
 import CustomAudioPlayer from '../components/CustomAudioPlayer';
@@ -759,6 +760,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [clearChatConfirm, setClearChatConfirm] = useState({ isOpen: false });
     const [deleteMessageConfirm, setDeleteMessageConfirm] = useState({ isOpen: false });
     const [kickUserConfirm, setKickUserConfirm] = useState({ isOpen: false });
+    const [homePageKickModal, setHomePageKickModal] = useState({ visible: false, user: null });
     const [banUserConfirm, setBanUserConfirm] = useState({ isOpen: false });
     const [roomKickedUserIds, setRoomKickedUserIds] = useState(new Set());
     const [muteUserConfirm, setMuteUserConfirm] = useState({ isOpen: false });
@@ -1939,11 +1941,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         /* Tick function ──────────────────────────────────────────────── */
         let fired = false; // guard: only fire expiry logic once
+        let intervalId = null; // declare BEFORE doExpire to prevent TDZ ReferenceError
 
         const doExpire = () => {
             if (fired) return;
             fired = true;
-            clearInterval(intervalId); // stop the interval right away
+            if (intervalId) clearInterval(intervalId); // stop the interval right away
             setMuteTimeLeft('__expired__'); // hide banner immediately
             if (uid) {
                 // Clear ALL muted fields so future renders start clean
@@ -1976,8 +1979,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
 
         tick(); // run immediately — expires banner at once if already past endTime
-        // eslint-disable-next-line prefer-const
-        let intervalId = setInterval(tick, 1_000);
+        intervalId = setInterval(tick, 1_000);
 
         return () => {
             fired = true; // prevent doExpire from firing after unmount
@@ -3568,47 +3570,51 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleKickUser = (uid, displayName, userObj) => {
-        setKickUserConfirm({
-            isOpen: true,
-            user: userObj || { uid, displayName },
-            onConfirm: async () => {
-                try {
-                    const kickedUsersRef = doc(db, 'rooms', roomId, 'kickedUsers', uid);
-                    await setDoc(kickedUsersRef, {
-                        uid: uid,
-                        displayName: displayName,
-                        reason: 'Kicked by a moderator.',
-                        roomName: roomName || '',
-                        kickedAt: serverTimestamp(),
-                        kickedBy: {
-                            uid: auth.currentUser.uid,
-                            displayName: loggedInUserProfile.displayName,
-                        }
-                    });
-                    remove(ref(rtdb, `status/${uid}/currentRoomId`));
-                    playNotificationSound('adminAction');
-                    addDoc(collection(db, 'rooms', roomId, 'messages'), {
-                        text: `${displayName} has been kicked from the room.`,
-                        uid: 'tinglebot_system_official_2024',
-                        displayName: 'TingleBot',
-                        isBot: true,
-                        systemBot: true,
-                        tinglebotType: 'kicked',
-                        createdAt: serverTimestamp(),
-                        noReply: true, noReaction: true, noReport: true, noUnread: true,
-                    }).then(r => {
-                        if (r?.id) {
-                            scheduledTinglebotDeletionsRef.current.add(r.id);
-                            setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
-                        }
-                    }).catch(() => {});
-                    setKickUserConfirm({ isOpen: false });
-                } catch (error) {
-                    setKickUserConfirm({ isOpen: false });
+        setHomePageKickModal({ visible: true, user: userObj || { uid, displayName } });
+    };
+
+    const handleHomepageKickConfirm = async (actionData) => {
+        const target = homePageKickModal.user;
+        if (!target?.uid) return;
+        try {
+            const kickMs = parseDurationMs(actionData.duration);
+            const kickUntil = kickMs !== Infinity ? new Date(Date.now() + kickMs).toISOString() : null;
+            const kickData = {
+                uid: target.uid,
+                displayName: target.displayName,
+                kickedAt: serverTimestamp(),
+                kickedBy: loggedInUserProfile?.displayName || 'Admin',
+                kickedById: auth.currentUser?.uid || 'system',
+                reason: actionData.reason || 'Kicked by a moderator.',
+                duration: actionData.duration,
+                kickUntil,
+            };
+            const targetRooms = actionData.selectedRooms?.length > 0
+                ? actionData.selectedRooms
+                : [roomId];
+            for (const rid of targetRooms) {
+                await setDoc(doc(db, 'rooms', rid, 'kickedUsers', target.uid), { ...kickData, roomId: rid });
+            }
+            remove(ref(rtdb, `status/${target.uid}/currentRoomId`));
+            playNotificationSound('adminAction');
+            const botMsg = `${target.displayName} has been kicked from ${targetRooms.length === 1 ? 'this room' : `${targetRooms.length} rooms`}${actionData.reason ? ` — ${actionData.reason}` : ''}.`;
+            addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                text: botMsg,
+                uid: 'tinglebot_system_official_2024',
+                displayName: 'TingleBot',
+                isBot: true, systemBot: true, tinglebotType: 'kicked',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).then(r => {
+                if (r?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(r.id);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
                 }
-            },
-            onCancel: () => setKickUserConfirm({ isOpen: false })
-        });
+            }).catch(() => {});
+            setHomePageKickModal({ visible: false, user: null });
+        } catch (error) {
+            setHomePageKickModal({ visible: false, user: null });
+        }
     };
 
     const handleUnkickUser = async (targetUid, targetDisplayName) => {
@@ -6339,12 +6345,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onCancel={deleteMessageConfirm.onCancel}
                 />
 
-                <ChatActionModal
-                    isOpen={kickUserConfirm.isOpen}
-                    type="kick"
-                    user={kickUserConfirm.user}
-                    onConfirm={kickUserConfirm.onConfirm}
-                    onCancel={kickUserConfirm.onCancel}
+                <AdminBanKickModal
+                    isVisible={homePageKickModal.visible}
+                    onClose={() => setHomePageKickModal({ visible: false, user: null })}
+                    selectedUser={homePageKickModal.user}
+                    actionType="kick"
+                    onConfirm={handleHomepageKickConfirm}
+                    currentUserProfile={loggedInUserProfile}
+                    currentRoomId={roomId}
+                    currentRoomName={roomName || ''}
                 />
                 
                 <StylishConfirmationDialogue 
@@ -7618,79 +7627,88 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </div>
                 );
             })()}
-            {/* ── Premium Mute Banner ── */}
+            {/* ── Premium Luxury Muted Banner — Light Lavender Glassmorphism ── */}
             {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (
                 <div style={{
                     position: 'fixed', bottom: '44px', left: 0, right: 0,
                     zIndex: 1999,
-                    background: 'linear-gradient(90deg, rgba(18,8,40,0.97) 0%, rgba(30,12,60,0.99) 50%, rgba(18,8,40,0.97) 100%)',
-                    borderTop: '1.5px solid rgba(139,92,246,0.35)',
-                    padding: '7px 12px',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    boxShadow: '0 -4px 24px rgba(109,40,217,0.22), 0 -1px 6px rgba(109,40,217,0.12)',
+                    background: 'linear-gradient(135deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    borderTop: '1.5px solid rgba(139,92,246,0.2)',
+                    padding: '8px 16px',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    boxShadow: '0 -8px 36px rgba(109,40,217,0.1), 0 -2px 8px rgba(139,92,246,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
                     fontFamily: 'Inter, sans-serif',
-                    animation: 'muteBannerSlide 0.28s cubic-bezier(0.34,1.56,0.64,1)',
+                    animation: 'muteBannerSlide 0.32s cubic-bezier(0.34,1.56,0.64,1)',
                 }}>
-                    {/* Pulsing mic icon */}
+                    {/* Premium SVG mute icon */}
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '32px', height: '32px', borderRadius: '10px', flexShrink: 0,
-                        background: 'rgba(139,92,246,0.18)', border: '1.5px solid rgba(139,92,246,0.35)',
-                        boxShadow: '0 0 12px rgba(139,92,246,0.25)',
-                        animation: 'mutePulse 2s ease-in-out infinite',
+                        width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
+                        background: 'linear-gradient(135deg, rgba(139,92,246,0.14), rgba(167,139,250,0.08))',
+                        border: '1.5px solid rgba(139,92,246,0.28)',
+                        boxShadow: '0 4px 14px rgba(109,40,217,0.14), inset 0 1px 0 rgba(255,255,255,0.75)',
+                        animation: 'mutePulse 2.4s ease-in-out infinite',
                     }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#a78bfa"/>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zM15 11.16L9 5.18V5a3 3 0 0 1 6 0v6.16zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#7c3aed"/>
                         </svg>
                     </div>
 
-                    {/* Left: label + muted-by + reason */}
+                    {/* Left: Muted label + moderator role + reason */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#e2d9ff', letterSpacing: '-0.01em' }}>
-                                🔇 You are muted
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#3b0764', letterSpacing: '-0.01em' }}>
+                                Muted
                             </span>
-                            {/* Muted-by badge */}
+                            {/* Role badge — never shows username, only role */}
                             {(() => {
-                                const by = loggedInUserProfile?.mutedInfo?.mutedBy || '';
-                                const isBot = by.toLowerCase().includes('tinglebot') || by.toLowerCase().includes('automod') || by.toLowerCase().includes('system');
+                                const mutedByRole = (loggedInUserProfile?.mutedInfo?.mutedByRole || '').toLowerCase();
+                                const isBot = mutedByRole.includes('automod') || mutedByRole.includes('tinglebot') || mutedByRole.includes('system');
+                                const roleLabel = isBot ? 'TingleBot AutoMod'
+                                    : mutedByRole === 'owner' ? 'Owner'
+                                    : mutedByRole === 'admin' ? 'Admin'
+                                    : mutedByRole === 'moderator' ? 'Moderator'
+                                    : 'Staff';
                                 return (
                                     <span style={{
-                                        fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
-                                        background: isBot ? 'rgba(245,158,11,0.15)' : 'rgba(139,92,246,0.15)',
-                                        color: isBot ? '#fcd34d' : '#c4b5fd',
-                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.28)' : 'rgba(139,92,246,0.28)'}`,
-                                        letterSpacing: '0.02em',
-                                        whiteSpace: 'nowrap',
+                                        fontSize: '10.5px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px',
+                                        background: isBot ? 'rgba(245,158,11,0.1)' : 'rgba(109,40,217,0.09)',
+                                        color: isBot ? '#92400e' : '#5b21b6',
+                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.25)' : 'rgba(109,40,217,0.18)'}`,
+                                        whiteSpace: 'nowrap', letterSpacing: '0.01em',
                                     }}>
-                                        {isBot ? '🤖 TingleBot' : `👮 ${by || 'Staff'}`}
+                                        {isBot ? `🤖 ${roleLabel}` : `by ${roleLabel}`}
                                     </span>
                                 );
                             })()}
                         </div>
                         {loggedInUserProfile?.mutedInfo?.reason && (
                             <div style={{
-                                fontSize: '11px', color: 'rgba(196,181,253,0.55)', marginTop: '2px',
-                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px',
+                                fontSize: '11px', color: 'rgba(91,33,182,0.5)', marginTop: '2px',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px',
                             }}>
                                 {loggedInUserProfile.mutedInfo.reason}
                             </div>
                         )}
                     </div>
 
-                    {/* Right: timer */}
+                    {/* Right: Live countdown timer */}
                     {muteTimeLeft && muteTimeLeft !== '__expired__' ? (
                         <div style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
-                            background: 'rgba(139,92,246,0.14)', border: '1.5px solid rgba(139,92,246,0.3)',
-                            borderRadius: '10px', padding: '4px 12px', minWidth: '72px',
+                            background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.06))',
+                            border: '1.5px solid rgba(139,92,246,0.22)',
+                            borderRadius: '12px', padding: '5px 14px', minWidth: '80px',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
                         }}>
-                            <span style={{ fontSize: '9.5px', fontWeight: 600, color: 'rgba(196,181,253,0.55)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1px' }}>
+                            <span style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(91,33,182,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '1px' }}>
                                 Unmute in
                             </span>
                             <span style={{
-                                fontWeight: 900, fontSize: '16px', color: '#c4b5fd',
-                                fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em',
+                                fontWeight: 900, fontSize: '16px', color: '#5b21b6',
+                                fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
                                 fontFamily: "'JetBrains Mono', 'Courier New', monospace",
                                 lineHeight: 1,
                             }}>
@@ -7699,10 +7717,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </div>
                     ) : (
                         <div style={{
-                            display: 'flex', alignItems: 'center', gap: '4px',
-                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.22)',
-                            borderRadius: '8px', padding: '4px 10px', flexShrink: 0,
-                            fontSize: '11px', color: '#f87171', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
+                            borderRadius: '10px', padding: '5px 12px', flexShrink: 0,
+                            fontSize: '11px', color: '#b91c1c', fontWeight: 700,
                         }}>
                             ∞ Permanent
                         </div>
