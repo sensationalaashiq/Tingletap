@@ -194,7 +194,7 @@ const ImageMessage = ({ imageUrl, imageFileName }) => (
 );
 
 
-const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId }) => {
+const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -532,7 +532,13 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onReport, onWhisper, l
                                     {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                     {!isMyMessage && (
                                         <>
-                                            {canKick && <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>}
+                                            {canKick && (
+                                                kickedUserIds?.has(uid)
+                                                ? <button onClick={(e) => { e.stopPropagation(); onUnkick && onUnkick(uid, displayName) }} className="message-action-btn unkick-btn" title="Unkick User">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#06b6d4" d="M16 13v-3l-5 5 5 5v-3h6v-4h-6zm-4 8H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2v2h-2V5H5v14h7v-2h2v2c0 1.1-.9 2-2 2z"/></svg>
+                                                  </button>
+                                                : <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>
+                                            )}
                                             <button onClick={(e) => { e.stopPropagation(); onReport(message) }} className="message-action-btn" title="Report"><ReportIconSVG /></button>
                                             {viewerRole !== 'guest' && !currentUser?.isAnonymous && (
                                                 <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
@@ -754,6 +760,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [deleteMessageConfirm, setDeleteMessageConfirm] = useState({ isOpen: false });
     const [kickUserConfirm, setKickUserConfirm] = useState({ isOpen: false });
     const [banUserConfirm, setBanUserConfirm] = useState({ isOpen: false });
+    const [roomKickedUserIds, setRoomKickedUserIds] = useState(new Set());
     const [muteUserConfirm, setMuteUserConfirm] = useState({ isOpen: false });
     
 
@@ -1803,6 +1810,16 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!window.chatFontPreferences) window.chatFontPreferences = defaults;
     }, []); // Runs only once on mount
 
+    // ── Real-time listener for all kicked users in the current room ──
+    // Used to show Unkick button on message hover for already-kicked users.
+    useEffect(() => {
+        if (!roomId) { setRoomKickedUserIds(new Set()); return; }
+        const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
+            setRoomKickedUserIds(new Set(snap.docs.map(d => d.id)));
+        });
+        return () => unsub();
+    }, [roomId]);
+
     // ── Kick listener: auto-navigate user out when kicked from this room ──
     // Also auto-unkicks if the timed kick has already expired.
     useEffect(() => {
@@ -2839,6 +2856,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     messageStyle: fs.messageStyle,
                     trustScore: fs.trustScore,
                     isVerified: fs.isVerified,
+                    isBanned: fs.isBanned || false,
+                    mutedInfo: fs.mutedInfo || { isMuted: false },
                 };
             }));
         }).catch(err => {
@@ -3556,6 +3575,31 @@ const HomePage = ({ user, roomIdOverride }) => {
             },
             onCancel: () => setKickUserConfirm({ isOpen: false })
         });
+    };
+
+    const handleUnkickUser = async (targetUid, targetDisplayName) => {
+        try {
+            await deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', targetUid));
+            await updateDoc(doc(db, 'users', targetUid), { kickedFrom: null }).catch(() => {});
+            playNotificationSound('adminAction');
+            addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                text: `${targetDisplayName} has been unkicked and can rejoin the room.`,
+                uid: 'tinglebot_system_official_2024',
+                displayName: 'TingleBot',
+                isBot: true,
+                systemBot: true,
+                tinglebotType: 'system',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+            }).then(r => {
+                if (r?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(r.id);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                }
+            }).catch(() => {});
+        } catch (err) {
+            toast.error('Unkick failed. Please try again.');
+        }
     };
 
     const handleMuteUser = (userToMute) => {
@@ -6467,6 +6511,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 isEven={index % 2 === 0}
                                 onDelete={handleDeleteMessage}
                                 onKick={handleKickUser}
+                                onUnkick={handleUnkickUser}
                                 onReport={handleReportUser}
                                 onWhisper={handleWhisperUser}
                                 onViewProfile={handleViewProfile}
@@ -6478,6 +6523,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 toggleDropdown={toggleDropdown}
                                 openDropdownId={openDropdownId}
                                 setOpenDropdownId={handleSetOpenDropdownId}
+                                kickedUserIds={roomKickedUserIds}
                             />
                             );
                         })}
