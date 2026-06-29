@@ -92,6 +92,11 @@ const AdminPanelPage = () => {
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [badgeTarget, setBadgeTarget] = useState(null);
   const [assigningBadge, setAssigningBadge] = useState(false);
+
+  // Change Role modal
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [roleTarget, setRoleTarget] = useState(null);
+  const [changingRole, setChangingRole] = useState(false);
   
   // Pagination
   const [userPage, setUserPage] = useState(1);
@@ -603,6 +608,98 @@ const AdminPanelPage = () => {
     } catch (err) {
       aToast.error('Failed to resolve: ' + err.message);
     } finally { setResolving(false); }
+  };
+
+  /* ── Role Change ─────────────────────────────────── */
+  const ROLE_DEFS = [
+    {
+      key: 'admin',
+      label: 'High Council',
+      desc: 'Full moderation + admin access',
+      color: '#3b82f6',
+      gradient: 'linear-gradient(135deg,#2563eb,#60a5fa)',
+      ownerOnly: true,
+      svg: <svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path fill="#2563eb" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/></svg>,
+    },
+    {
+      key: 'moderator',
+      label: 'Guardian',
+      desc: 'Kick, mute, manage messages',
+      color: '#10b981',
+      gradient: 'linear-gradient(135deg,#059669,#34d399)',
+      ownerOnly: false,
+      svg: <svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/></svg>,
+    },
+    {
+      key: 'user',
+      label: 'Member',
+      desc: 'Standard registered member',
+      color: '#6b7280',
+      gradient: 'linear-gradient(135deg,#4b5563,#9ca3af)',
+      ownerOnly: false,
+      svg: <svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path fill="#6b7280" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>,
+    },
+  ];
+
+  const ROLE_RANK = { owner: 4, superowner: 4, admin: 3, moderator: 2, user: 1, '': 1 };
+
+  const handleOpenRoleModal = (targetUser) => {
+    const myRole = currentUserProfile?.role;
+    if (!['owner', 'admin'].includes(myRole)) {
+      aToast.error('Only Owner and Admin can change roles.'); return;
+    }
+    if (targetUser.uid === currentUserProfile?.uid) {
+      aToast.error("You cannot change your own role."); return;
+    }
+    if ((targetUser.role === 'owner' || targetUser.role === 'superowner')) {
+      aToast.error("The Owner's role cannot be changed."); return;
+    }
+    if (myRole === 'admin' && targetUser.role === 'admin') {
+      aToast.error("Admins cannot demote other Admins."); return;
+    }
+    setRoleTarget(targetUser);
+    setShowRoleModal(true);
+  };
+
+  const confirmChangeRole = async (newRole) => {
+    if (!roleTarget || !newRole || newRole === roleTarget.role) return;
+    const myRole = currentUserProfile?.role;
+    if (myRole === 'admin' && (newRole === 'owner' || newRole === 'admin')) {
+      aToast.error('Admins cannot assign Owner or Admin roles.'); return;
+    }
+    setChangingRole(true);
+    try {
+      const userRef = doc(db, 'users', roleTarget.id || roleTarget.uid);
+      await updateDoc(userRef, { role: newRole });
+
+      const oldRank = ROLE_RANK[roleTarget.role] || 1;
+      const newRank = ROLE_RANK[newRole] || 1;
+      const isPromotion = newRank > oldRank;
+      const tinglebotType = isPromotion ? 'promoted' : 'demoted';
+      const roleLabelMap = { admin: 'High Council', moderator: 'Guardian', user: 'Member', owner: 'Godfather' };
+      const msgText = isPromotion
+        ? `${roleTarget.displayName} has been promoted to ${roleLabelMap[newRole] || newRole}.`
+        : `${roleTarget.displayName} has been demoted to ${roleLabelMap[newRole] || newRole}.`;
+
+      const targetRoomId = onlineStatuses[roleTarget.uid]?.currentRoomId;
+      if (targetRoomId) {
+        addDoc(collection(db, 'rooms', targetRoomId, 'messages'), {
+          text: msgText,
+          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+          isBot: true, systemBot: true, tinglebotType,
+          createdAt: serverTimestamp(),
+          noReply: true, noReaction: true, noReport: true, noUnread: true,
+        }).catch(() => {});
+      }
+
+      aToast.success(`${roleTarget.displayName} is now ${roleLabelMap[newRole] || newRole}.`);
+      setShowRoleModal(false);
+      setRoleTarget(null);
+    } catch (err) {
+      aToast.error('Failed to change role: ' + err.message);
+    } finally {
+      setChangingRole(false);
+    }
   };
 
   const handleAssignBadge = (targetUser) => {
@@ -1803,17 +1900,33 @@ const AdminPanelPage = () => {
                                 
                                 {['owner', 'admin'].includes(currentUserProfile?.role) &&
                                   !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
-                                  <button
-                                    className="luxury-action-btn"
-                                    style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}
-                                    onClick={() => handleAssignBadge(user)}
-                                    title="Assign Badge"
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
-                                      <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17L6.5,12.5L7.91,11.09L11,14.17L16.09,9.08L17.5,10.5L11,17Z"/>
-                                    </svg>
-                                    <span>Badge</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      className="luxury-action-btn"
+                                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}
+                                      onClick={() => handleAssignBadge(user)}
+                                      title="Assign Badge"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                        <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17L6.5,12.5L7.91,11.09L11,14.17L16.09,9.08L17.5,10.5L11,17Z"/>
+                                      </svg>
+                                      <span>Badge</span>
+                                    </button>
+                                    {!(user.role === 'owner' || user.role === 'superowner') &&
+                                      !(currentUserProfile?.role === 'admin' && user.role === 'admin') && (
+                                      <button
+                                        className="luxury-action-btn"
+                                        style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}
+                                        onClick={() => handleOpenRoleModal(user)}
+                                        title="Change Role"
+                                      >
+                                        <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                                          <path fill="#ffffff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+                                        </svg>
+                                        <span>Role</span>
+                                      </button>
+                                    )}
+                                  </>
                                 )}
 
                                 {currentUserProfile?.role === 'owner' && (
@@ -3671,6 +3784,107 @@ const AdminPanelPage = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 13, fontWeight: 600 }}>
                   <div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: '#7c3aed' }}></div>
                   Assigning…
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {showRoleModal && roleTarget && (
+        <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowRoleModal(false); setRoleTarget(null); } }}>
+          <div className="luxury-modal-card" style={{ maxWidth: 480 }}>
+            <div className="luxury-modal-header" style={{ borderTopColor: '#f59e0b' }}>
+              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
+                  <path fill="#fff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Role</h3>
+                <p style={{ margin: 0, fontSize: 11.5, color: '#b45309', opacity: 0.9 }}>
+                  For: <strong>{roleTarget.displayName}</strong>
+                  <span style={{ marginLeft: 8, background: 'rgba(245,158,11,0.12)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#92400e' }}>
+                    Current: {({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian'}[roleTarget.role]) || 'Member'}
+                  </span>
+                </p>
+              </div>
+              <button className="luxury-modal-close" onClick={() => { setShowRoleModal(false); setRoleTarget(null); }}>
+                <svg viewBox="0 0 24 24" fill="none"><path fill="#f59e0b" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              </button>
+            </div>
+
+            <div className="luxury-modal-body">
+              <div style={{ fontSize: 11.5, color: '#78350f', fontWeight: 700, marginBottom: 12, letterSpacing: 0.4, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Select New Role
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {ROLE_DEFS.filter(rd => {
+                  if (currentUserProfile?.role !== 'owner' && rd.ownerOnly) return false;
+                  return true;
+                }).map((rd) => {
+                  const isCurrent = roleTarget.role === rd.key || (!roleTarget.role && rd.key === 'user');
+                  const isLocked = changingRole;
+                  return (
+                    <button
+                      key={rd.key}
+                      onClick={() => confirmChangeRole(rd.key)}
+                      disabled={isCurrent || isLocked}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 14,
+                        padding: '12px 16px', borderRadius: 14, cursor: isCurrent ? 'default' : 'pointer',
+                        border: isCurrent ? `2px solid ${rd.color}` : '1.5px solid rgba(0,0,0,0.08)',
+                        background: isCurrent
+                          ? `linear-gradient(135deg,${rd.color}18,${rd.color}08)`
+                          : 'rgba(255,255,255,0.85)',
+                        boxShadow: isCurrent ? `0 0 0 3px ${rd.color}22` : '0 1px 4px rgba(0,0,0,0.06)',
+                        transition: 'all .16s', opacity: isLocked && !isCurrent ? 0.55 : 1,
+                        textAlign: 'left',
+                      }}
+                      onMouseEnter={e => { if (!isCurrent && !isLocked) e.currentTarget.style.background = `${rd.color}12`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isCurrent ? `linear-gradient(135deg,${rd.color}18,${rd.color}08)` : 'rgba(255,255,255,0.85)'; }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: isCurrent ? rd.gradient : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .16s' }}>
+                        {React.cloneElement(rd.svg, { style: { width: 22, height: 22, filter: isCurrent ? 'brightness(0) invert(1)' : 'none' } })}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 800, color: isCurrent ? rd.color : '#1e1b4b', letterSpacing: 0.02 }}>{rd.label}</div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{rd.desc}</div>
+                      </div>
+                      {isCurrent && (
+                        <span style={{ fontSize: 9.5, background: rd.color, color: '#fff', borderRadius: 5, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Current</span>
+                      )}
+                      {!isCurrent && !isLocked && (
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={rd.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.6 }}>
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {currentUserProfile?.role !== 'owner' && (
+                <div style={{ marginTop: 12, padding: '9px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span style={{ fontSize: 11, color: '#92400e' }}>High Council (Admin) role assignment requires Owner access.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="luxury-modal-footer">
+              <button className="luxury-btn-secondary" onClick={() => { setShowRoleModal(false); setRoleTarget(null); }} disabled={changingRole}>Cancel</button>
+              {changingRole && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
+                  <div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: '#f59e0b' }}></div>
+                  Changing role…
                 </div>
               )}
             </div>
