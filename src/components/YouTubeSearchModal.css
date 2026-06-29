@@ -342,145 +342,47 @@
 /* ── Dark mode ── */
 .dark-mode .ytm-card,
 [data-theme="dark"] .ytm-card,
-.theme-dark .ytm-card,
-.theme-nord .ytm-card,
-.theme-tokyo .ytm-card,
-.theme-monokai .ytm-card,
-.theme-dracula .ytm-card,
-.theme-cyberpunk .ytm-card,
-.theme-ocean .ytm-card,
-.theme-sunset .ytm-card {
+.theme-dark .ytm-card {
     background: #0f0a1e;
     border-color: rgba(255,78,66,.22);
     box-shadow: 0 12px 56px rgba(255,78,66,.22), 0 2px 16px rgba(0,0,0,.4);
 }
 .dark-mode .ytm-title,
 [data-theme="dark"] .ytm-title,
-.theme-dark .ytm-title,
-.theme-nord .ytm-title,
-.theme-tokyo .ytm-title,
-.theme-monokai .ytm-title,
-.theme-dracula .ytm-title,
-.theme-cyberpunk .ytm-title,
-.theme-ocean .ytm-title,
-.theme-sunset .ytm-title { color: #f3f4f6; }
+.theme-dark .ytm-title { color: #f3f4f6; }
 .dark-mode .ytm-tab,
 [data-theme="dark"] .ytm-tab,
-.theme-dark .ytm-tab,
-.theme-nord .ytm-tab,
-.theme-tokyo .ytm-tab,
-.theme-monokai .ytm-tab,
-.theme-dracula .ytm-tab,
-.theme-cyberpunk .ytm-tab,
-.theme-ocean .ytm-tab,
-.theme-sunset .ytm-tab { background: rgba(255,255,255,.04); }
+.theme-dark .ytm-tab { background: rgba(255,255,255,.04); }
 .dark-mode .ytm-hint-title,
 [data-theme="dark"] .ytm-hint-title,
-.theme-dark .ytm-hint-title,
-.theme-nord .ytm-hint-title,
-.theme-tokyo .ytm-hint-title,
-.theme-monokai .ytm-hint-title,
-.theme-dracula .ytm-hint-title,
-.theme-cyberpunk .ytm-hint-title,
-.theme-ocean .ytm-hint-title,
-.theme-sunset .ytm-hint-title { color: #e5e7eb; }
+.theme-dark .ytm-hint-title { color: #e5e7eb; }
 .dark-mode .ytm-input,
 [data-theme="dark"] .ytm-input,
-.theme-dark .ytm-input,
-.theme-nord .ytm-input,
-.theme-tokyo .ytm-input,
-.theme-monokai .ytm-input,
-.theme-dracula .ytm-input,
-.theme-cyberpunk .ytm-input,
-.theme-ocean .ytm-input,
-.theme-sunset .ytm-input { background: rgba(255,255,255,.06); color: #e5e7eb; }
+.theme-dark .ytm-input { background: rgba(255,255,255,.06); color: #e5e7eb; }
 .dark-mode .ytm-input:focus,
 [data-theme="dark"] .ytm-input:focus,
-.theme-dark .ytm-input:focus,
-.theme-nord .ytm-input:focus,
-.theme-tokyo .ytm-input:focus,
-.theme-monokai .ytm-input:focus,
-.theme-dracula .ytm-input:focus,
-.theme-cyberpunk .ytm-input:focus,
-.theme-ocean .ytm-input:focus,
-.theme-sunset .ytm-input:focus { background: rgba(255,255,255,.1); }
+.theme-dark .ytm-input:focus { background: rgba(255,255,255,.1); }
 .dark-mode .ytm-search-wrap,
 [data-theme="dark"] .ytm-search-wrap,
-.theme-dark .ytm-search-wrap,
-.theme-nord .ytm-search-wrap,
-.theme-tokyo .ytm-search-wrap,
-.theme-monokai .ytm-search-wrap,
-.theme-dracula .ytm-search-wrap,
-.theme-cyberpunk .ytm-search-wrap,
-.theme-ocean .ytm-search-wrap,
-.theme-sunset .ytm-search-wrap { background: rgba(255,255,255,.06); }
+.theme-dark .ytm-search-wrap { background: rgba(255,255,255,.06); }
 .dark-mode .ytm-search-input,
 [data-theme="dark"] .ytm-search-input,
-.theme-dark .ytm-search-input,
-.theme-nord .ytm-search-input,
-.theme-tokyo .ytm-search-input,
-.theme-monokai .ytm-search-input,
-.theme-dracula .ytm-search-input,
-.theme-cyberpunk .ytm-search-input,
-.theme-ocean .ytm-search-input,
-.theme-sunset .ytm-search-input { color: #e5e7eb; }
+.theme-dark .ytm-search-input { color: #e5e7eb; }
 .dark-mode .ytm-result,
 [data-theme="dark"] .ytm-result,
-.theme-dark .ytm-result,
-.theme-nord .ytm-result,
-.theme-tokyo .ytm-result,
-.theme-monokai .ytm-result,
-.theme-dracula .ytm-result,
-.theme-cyberpunk .ytm-result,
-.theme-ocean .ytm-result,
-.theme-sunset .ytm-result { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.07); }
+.theme-dark .ytm-result { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.07); }
 .dark-mode .ytm-result:hover,
 [data-theme="dark"] .ytm-result:hover,
-.theme-dark .ytm-result:hover,
-.theme-nord .ytm-result:hover,
-.theme-tokyo .ytm-result:hover,
-.theme-monokai .ytm-result:hover,
-.theme-dracula .ytm-result:hover,
-.theme-cyberpunk .ytm-result:hover,
-.theme-ocean .ytm-result:hover,
-.theme-sunset .ytm-result:hover { background: rgba(255,78,66,.08); border-color: rgba(255,78,66,.3); }
+.theme-dark .ytm-result:hover { background: rgba(255,78,66,.08); border-color: rgba(255,78,66,.3); }
 .dark-mode .ytm-result-title,
 [data-theme="dark"] .ytm-result-title,
-.theme-dark .ytm-result-title,
-.theme-nord .ytm-result-title,
-.theme-tokyo .ytm-result-title,
-.theme-monokai .ytm-result-title,
-.theme-dracula .ytm-result-title,
-.theme-cyberpunk .ytm-result-title,
-.theme-ocean .ytm-result-title,
-.theme-sunset .ytm-result-title { color: #e5e7eb; }
+.theme-dark .ytm-result-title { color: #e5e7eb; }
 .dark-mode .ytm-btn--cancel,
 [data-theme="dark"] .ytm-btn--cancel,
-.theme-dark .ytm-btn--cancel,
-.theme-nord .ytm-btn--cancel,
-.theme-tokyo .ytm-btn--cancel,
-.theme-monokai .ytm-btn--cancel,
-.theme-dracula .ytm-btn--cancel,
-.theme-cyberpunk .ytm-btn--cancel,
-.theme-ocean .ytm-btn--cancel,
-.theme-sunset .ytm-btn--cancel { background: rgba(255,255,255,.08); color: #9ca3af; border-color: rgba(255,255,255,.1); }
+.theme-dark .ytm-btn--cancel { background: rgba(255,255,255,.08); color: #9ca3af; border-color: rgba(255,255,255,.1); }
 .dark-mode .ytm-empty-title,
 [data-theme="dark"] .ytm-empty-title,
-.theme-dark .ytm-empty-title,
-.theme-nord .ytm-empty-title,
-.theme-tokyo .ytm-empty-title,
-.theme-monokai .ytm-empty-title,
-.theme-dracula .ytm-empty-title,
-.theme-cyberpunk .ytm-empty-title,
-.theme-ocean .ytm-empty-title,
-.theme-sunset .ytm-empty-title { color: #d1d5db; }
+.theme-dark .ytm-empty-title { color: #d1d5db; }
 .dark-mode .ytm-close,
 [data-theme="dark"] .ytm-close,
-.theme-dark .ytm-close,
-.theme-nord .ytm-close,
-.theme-tokyo .ytm-close,
-.theme-monokai .ytm-close,
-.theme-dracula .ytm-close,
-.theme-cyberpunk .ytm-close,
-.theme-ocean .ytm-close,
-.theme-sunset .ytm-close { background: rgba(255,255,255,.1); color: #9ca3af; }
+.theme-dark .ytm-close { background: rgba(255,255,255,.1); color: #9ca3af; }

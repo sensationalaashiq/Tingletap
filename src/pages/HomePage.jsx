@@ -1458,15 +1458,18 @@ const HomePage = ({ user, roomIdOverride }) => {
             const userTheme = loggedInUserProfile.selectedTheme || 'light';
             
             // Remove all theme classes
-            document.body.classList.remove('theme-light', 'theme-dark', 'theme-nord', 'theme-tokyo', 'theme-monokai', 'theme-dracula', 'theme-cyberpunk', 'theme-ocean', 'theme-sunset', 'dark-mode');
+            document.body.classList.remove('theme-light', 'theme-dark', 'dark-mode');
+            document.documentElement.classList.remove('theme-light', 'theme-dark', 'dark-mode');
             
-            // Add the user's theme class
-            document.body.classList.add(`theme-${userTheme}`);
+            // Only light/dark supported
+            const resolvedTheme = userTheme === 'dark' ? 'dark' : 'light';
+            document.body.classList.add(`theme-${resolvedTheme}`);
+            document.documentElement.classList.add(`theme-${resolvedTheme}`);
             
-            // Apply dark-mode class for dark themes
-            const isDarkTheme = ['dark', 'nord', 'tokyo', 'monokai', 'dracula', 'cyberpunk', 'ocean', 'sunset'].includes(userTheme);
+            const isDarkTheme = resolvedTheme === 'dark';
             if (isDarkTheme) {
                 document.body.classList.add('dark-mode');
+                document.documentElement.classList.add('dark-mode');
             }
             
             setIsDarkMode(isDarkTheme);

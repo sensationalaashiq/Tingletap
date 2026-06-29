@@ -236,14 +236,7 @@
 /* ── Dark mode ── */
 .dark-mode .tinglebot-strip,
 [data-theme="dark"] .tinglebot-strip,
-.theme-dark .tinglebot-strip,
-.theme-nord .tinglebot-strip,
-.theme-tokyo .tinglebot-strip,
-.theme-monokai .tinglebot-strip,
-.theme-dracula .tinglebot-strip,
-.theme-cyberpunk .tinglebot-strip,
-.theme-ocean .tinglebot-strip,
-.theme-sunset .tinglebot-strip {
+.theme-dark .tinglebot-strip {
   border-color: rgba(167, 139, 250, 0.28);
   background: linear-gradient(
     135deg,
@@ -260,39 +253,19 @@
 .dark-mode .tinglebot-text,
 [data-theme="dark"] .tinglebot-text,
 .theme-dark .tinglebot-text,
-.theme-nord .tinglebot-text,
-.theme-tokyo .tinglebot-text,
-.theme-monokai .tinglebot-text,
-.theme-dracula .tinglebot-text,
-.theme-cyberpunk .tinglebot-text,
-.theme-ocean .tinglebot-text,
-.theme-sunset .tinglebot-text {
+.theme-dark .tinglebot-text {
   color: rgba(196, 181, 253, 0.85);
 }
 
 .dark-mode .tinglebot-text strong,
 [data-theme="dark"] .tinglebot-text strong,
-.theme-dark .tinglebot-text strong,
-.theme-nord .tinglebot-text strong,
-.theme-tokyo .tinglebot-text strong,
-.theme-monokai .tinglebot-text strong,
-.theme-dracula .tinglebot-text strong,
-.theme-cyberpunk .tinglebot-text strong,
-.theme-ocean .tinglebot-text strong,
-.theme-sunset .tinglebot-text strong {
+.theme-dark .tinglebot-text strong {
   color: rgba(216, 180, 254, 0.95);
 }
 
 /* Dark rule variant */
 .dark-mode .tinglebot-strip.tinglebot-rule,
-.theme-dark .tinglebot-strip.tinglebot-rule,
-.theme-nord .tinglebot-strip.tinglebot-rule,
-.theme-tokyo .tinglebot-strip.tinglebot-rule,
-.theme-monokai .tinglebot-strip.tinglebot-rule,
-.theme-dracula .tinglebot-strip.tinglebot-rule,
-.theme-cyberpunk .tinglebot-strip.tinglebot-rule,
-.theme-ocean .tinglebot-strip.tinglebot-rule,
-.theme-sunset .tinglebot-strip.tinglebot-rule {
+.theme-dark .tinglebot-strip.tinglebot-rule {
   background: linear-gradient(
     135deg,
     rgba(20, 20, 50, 0.60) 0%,
@@ -302,14 +275,7 @@
 }
 
 .dark-mode .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-dark .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-nord .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-tokyo .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-monokai .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-dracula .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-cyberpunk .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-ocean .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-sunset .tinglebot-strip.tinglebot-rule .tinglebot-text {
+.theme-dark .tinglebot-strip.tinglebot-rule .tinglebot-text {
   color: rgba(165, 180, 252, 0.80);
 }
 

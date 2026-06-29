@@ -378,10 +378,9 @@ const SettingsSidebar = ({
             // Notify HomePage so its React-state-based filter updates instantly
             window.dispatchEvent(new CustomEvent('tbSettingChanged', { detail: { key, value } }));
 
-            // Handle theme changes with instant synchronous application
+            // Handle theme changes — only light / dark supported
             if (key === 'selectedTheme') {
-                // Synchronous theme switching - no delays, no awaits
-                const themeClasses = ['theme-light', 'theme-dark', 'theme-nord', 'theme-tokyo', 'theme-monokai', 'theme-dracula', 'theme-cyberpunk', 'theme-ocean', 'theme-sunset', 'dark-mode'];
+                const themeClasses = ['theme-light', 'theme-dark', 'dark-mode'];
 
                 const htmlElement = document.documentElement;
                 const bodyElement = document.body;
@@ -392,21 +391,20 @@ const SettingsSidebar = ({
                     bodyElement.classList.remove(cls);
                 });
 
-                // Add new theme classes immediately
-                const newThemeClass = `theme-${value}`;
-                const isDarkTheme = ['dark', 'nord', 'tokyo', 'monokai', 'dracula', 'cyberpunk', 'ocean', 'sunset'].includes(value);
+                const isDark = value === 'dark';
+                const newThemeClass = isDark ? 'theme-dark' : 'theme-light';
 
                 htmlElement.classList.add(newThemeClass);
                 bodyElement.classList.add(newThemeClass);
 
-                if (isDarkTheme) {
+                if (isDark) {
                     htmlElement.classList.add('dark-mode');
                     bodyElement.classList.add('dark-mode');
                 }
 
                 // Force immediate DOM update
                 document.documentElement.offsetHeight;
-                console.log(`🎨 Theme changed to ${value.charAt(0).toUpperCase() + value.slice(1)}`);
+                console.log(`🎨 Theme: ${isDark ? '🌙 Dark' : '☀️ Light'}`);
             }
 
             // Apply immediate UI changes for various settings
@@ -762,16 +760,15 @@ const SettingsSidebar = ({
                                 </div>
                                 <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                                     <span style={{fontSize:'11px',color:'var(--text-muted,#888)',fontWeight:600}}>
-                                        {(settings.selectedTheme === 'dark' || settings.selectedTheme === 'nord' || settings.selectedTheme === 'tokyo') ? '🌙 Dark' : '☀️ Light'}
+                                        {settings.selectedTheme === 'dark' ? '🌙 Dark' : '☀️ Light'}
                                     </span>
                                     <label className="modern-toggle-switch">
                                         <input
                                             type="checkbox"
-                                            checked={settings.selectedTheme === 'dark' || settings.selectedTheme === 'nord' || settings.selectedTheme === 'tokyo'}
+                                            checked={settings.selectedTheme === 'dark'}
                                             onChange={(e) => {
                                                 const newTheme = e.target.checked ? 'dark' : 'light';
                                                 handleSettingChange('selectedTheme', newTheme);
-                                                document.documentElement.setAttribute('data-theme', newTheme);
                                             }}
                                         />
                                         <span className="modern-toggle-slider"></span>

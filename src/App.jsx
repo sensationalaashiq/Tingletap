@@ -36,6 +36,7 @@ import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } 
 import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
 import BanKickModal from './components/BanKickModal';
 import './App.css';
+import './styles/DarkMode.css';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -125,24 +126,19 @@ function App() {
 
     initializeFontPreferences();
 
-    // Ultra-fast theme application with zero lag
+    // Ultra-fast theme application — only light / dark
     const applyTheme = (theme) => {
-      const themeClasses = ['theme-light', 'theme-dark', 'theme-nord', 'theme-tokyo', 'theme-monokai', 'theme-dracula', 'theme-cyberpunk', 'theme-ocean', 'theme-sunset', 'dark-mode'];
+      const themeClasses = ['theme-light', 'theme-dark', 'dark-mode'];
 
-      // Batch DOM operations for instant switching
+      // Remove all theme classes instantly
       document.documentElement.className = document.documentElement.className
         .split(' ')
         .filter(cls => !themeClasses.includes(cls))
         .join(' ');
 
-      // Apply new theme instantly
-      const newThemeClass = `theme-${theme}`;
-      const isDarkTheme = ['dark', 'nord', 'tokyo', 'monokai', 'dracula', 'cyberpunk', 'ocean', 'sunset'].includes(theme);
-
-      const classesToAdd = [newThemeClass];
-      if (isDarkTheme) {
-        classesToAdd.push('dark-mode');
-      }
+      const isDark = theme === 'dark';
+      const classesToAdd = [`theme-${isDark ? 'dark' : 'light'}`];
+      if (isDark) classesToAdd.push('dark-mode');
 
       document.documentElement.classList.add(...classesToAdd);
       document.body.className = document.body.className
@@ -151,7 +147,7 @@ function App() {
         .concat(classesToAdd)
         .join(' ');
 
-      return isDarkTheme;
+      return isDark;
     };
 
     applyTheme('light');
@@ -640,15 +636,18 @@ function App() {
     const storedTheme = localStorage.getItem('selectedTheme') || 'light';
 
     // Remove all theme classes
-    document.body.classList.remove('theme-light', 'theme-dark', 'theme-nord', 'theme-tokyo', 'theme-monokai', 'theme-dracula', 'theme-cyberpunk', 'theme-ocean', 'theme-sunset');
+    document.body.classList.remove('theme-light', 'theme-dark', 'dark-mode');
+    document.documentElement.classList.remove('theme-light', 'theme-dark', 'dark-mode');
 
-    // Add the stored theme class
-    document.body.classList.add(`theme-${storedTheme}`);
+    // Only light/dark supported
+    const resolvedTheme = storedTheme === 'dark' ? 'dark' : 'light';
+    document.body.classList.add(`theme-${resolvedTheme}`);
+    document.documentElement.classList.add(`theme-${resolvedTheme}`);
 
-    // Apply dark-mode class for dark themes
-    const isDarkTheme = ['dark', 'nord', 'tokyo', 'monokai', 'dracula', 'cyberpunk', 'ocean', 'sunset'].includes(storedTheme);
+    const isDarkTheme = resolvedTheme === 'dark';
     if (isDarkTheme) {
       document.body.classList.add('dark-mode');
+      document.documentElement.classList.add('dark-mode');
     }
 
     // Add global error handler for uncaught Firestore errors
