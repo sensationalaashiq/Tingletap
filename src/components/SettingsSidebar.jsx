@@ -753,22 +753,39 @@ const SettingsSidebar = ({
                     <div className="settings-tab-content">
                         <h3>General Preferences</h3>
 
-                        {/* ── APPEARANCE ── */}
+                        {/* ── APPEARANCE / THEMES ── */}
                         <div className="setting-group" style={{marginBottom:'14px'}}>
                             <h4>
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="5"/>
-                                    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 2a10 10 0 0 1 0 20"/>
+                                    <path d="M8 6l8 6-8 6"/>
                                 </svg>
-                                APPEARANCE
+                                APPEARANCE &amp; THEMES
                             </h4>
-                            <div className="modern-setting-info" style={{marginBottom:'10px'}}>
-                                <span>Theme</span>
-                                <small>Choose your interface colour theme</small>
+
+                            {/* Section subtitle */}
+                            <div style={{
+                                display:'flex', alignItems:'center', gap:'7px',
+                                marginBottom:'12px',
+                                padding:'8px 10px',
+                                background:'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.05))',
+                                borderRadius:'9px',
+                                border:'1px solid rgba(139,92,246,0.12)',
+                            }}>
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+                                    <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+                                    <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                </svg>
+                                <div>
+                                    <div style={{fontSize:'11px',fontWeight:700,color:'#3b1f8c',marginBottom:'1px'}}>Interface Theme</div>
+                                    <div style={{fontSize:'9.5px',color:'#7c6aaa',fontWeight:500}}>Select your preferred colour scheme for the entire app</div>
+                                </div>
                             </div>
+
                             {(() => {
                                 const _role = loggedInUserProfile?.role?.toLowerCase();
                                 const _isGuest = _role === 'guest' || loggedInUserProfile?.isGuest === true || auth.currentUser?.isAnonymous === true;
@@ -786,88 +803,286 @@ const SettingsSidebar = ({
                                     : '🔒 Earn a badge or become staff to unlock all themes!';
 
                                 const allThemes = [
-                                    { value:'light',         label:'☀️ Light',  swatch:'linear-gradient(135deg,#f8fafc,#e2e8f0)' },
-                                    { value:'dark',          label:'🌙 Dark',   swatch:'linear-gradient(135deg,#1e1e30,#0f0f1a)' },
-                                    { value:'rose-pink',     label:'🌸 Rose',   swatch:'linear-gradient(135deg,#f06292,#1a0b10)' },
-                                    { value:'burgundy-wine', label:'🍷 Wine',   swatch:'linear-gradient(135deg,#c62828,#130508)' },
-                                    { value:'aurora',        label:'🌌 Aurora', swatch:'linear-gradient(135deg,#00e5ff,#030d1a)' },
-                                    { value:'royal-purple',  label:'👑 Purple', swatch:'linear-gradient(135deg,#9c27b0,#0d0618)' },
-                                    { value:'sunset-orange', label:'🌅 Sunset', swatch:'linear-gradient(135deg,#ff5722,#120700)' },
+                                    {
+                                        value: 'light',
+                                        emoji: '☀️',
+                                        label: 'Light',
+                                        desc: 'Clean & bright',
+                                        colors: ['#ffffff','#f1f5f9','#e2e8f0','#6366f1'],
+                                        bg: 'linear-gradient(145deg,#f8fafc 0%,#e2e8f0 100%)',
+                                        accentText: '#4f46e5',
+                                        tagColor: '#6366f1',
+                                        tagBg: 'rgba(99,102,241,0.1)',
+                                    },
+                                    {
+                                        value: 'dark',
+                                        emoji: '🌙',
+                                        label: 'Dark',
+                                        desc: 'Easy on eyes',
+                                        colors: ['#0f0f1a','#1e1e30','#2d2d45','#818cf8'],
+                                        bg: 'linear-gradient(145deg,#1e1e30 0%,#0f0f1a 100%)',
+                                        accentText: '#818cf8',
+                                        tagColor: '#818cf8',
+                                        tagBg: 'rgba(129,140,248,0.15)',
+                                    },
+                                    {
+                                        value: 'rose-pink',
+                                        emoji: '🌸',
+                                        label: 'Rose Pink',
+                                        desc: 'Soft & romantic',
+                                        colors: ['#1a0b10','#22111a','#f06292','#fce4ec'],
+                                        bg: 'linear-gradient(145deg,#22111a 0%,#1a0b10 100%)',
+                                        accentText: '#f06292',
+                                        tagColor: '#f06292',
+                                        tagBg: 'rgba(240,98,146,0.12)',
+                                    },
+                                    {
+                                        value: 'burgundy-wine',
+                                        emoji: '🍷',
+                                        label: 'Burgundy',
+                                        desc: 'Deep & luxurious',
+                                        colors: ['#130508','#1e0c10','#c62828','#fce8ec'],
+                                        bg: 'linear-gradient(145deg,#1e0c10 0%,#130508 100%)',
+                                        accentText: '#c62828',
+                                        tagColor: '#ef5350',
+                                        tagBg: 'rgba(198,40,40,0.12)',
+                                    },
+                                    {
+                                        value: 'aurora',
+                                        emoji: '🌌',
+                                        label: 'Aurora',
+                                        desc: 'Cosmic & vivid',
+                                        colors: ['#030d1a','#071522','#00e5ff','#69ff47'],
+                                        bg: 'linear-gradient(145deg,#071522 0%,#030d1a 100%)',
+                                        accentText: '#00e5ff',
+                                        tagColor: '#00e5ff',
+                                        tagBg: 'rgba(0,229,255,0.1)',
+                                    },
+                                    {
+                                        value: 'royal-purple',
+                                        emoji: '👑',
+                                        label: 'Royal Purple',
+                                        desc: 'Regal & bold',
+                                        colors: ['#0d0618','#140a24','#9c27b0','#ede7f6'],
+                                        bg: 'linear-gradient(145deg,#140a24 0%,#0d0618 100%)',
+                                        accentText: '#ce93d8',
+                                        tagColor: '#ce93d8',
+                                        tagBg: 'rgba(156,39,176,0.12)',
+                                    },
+                                    {
+                                        value: 'sunset-orange',
+                                        emoji: '🌅',
+                                        label: 'Sunset',
+                                        desc: 'Warm & energetic',
+                                        colors: ['#120700','#1c1000','#ff5722','#fff3e0'],
+                                        bg: 'linear-gradient(145deg,#1c1000 0%,#120700 100%)',
+                                        accentText: '#ff8a65',
+                                        tagColor: '#ff8a65',
+                                        tagBg: 'rgba(255,87,34,0.12)',
+                                    },
                                 ];
 
                                 return (
-                                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginTop:'2px'}}>
+                                    <div style={{display:'flex',flexDirection:'column',gap:'7px'}}>
                                         {allThemes.map(t => {
                                             const active = settings.selectedTheme === t.value;
                                             const unlocked = themeAccess(t.value);
 
-                                            if (unlocked) {
-                                                return (
-                                                    <button
-                                                        key={t.value}
-                                                        onClick={() => handleSettingChange('selectedTheme', t.value)}
-                                                        style={{
-                                                            display:'flex',flexDirection:'column',alignItems:'center',gap:'5px',
-                                                            padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
-                                                            border: active ? '2px solid var(--accent-color,#6366f1)' : '2px solid rgba(128,128,128,0.25)',
-                                                            background: active ? 'rgba(99,102,241,0.12)' : 'rgba(128,128,128,0.06)',
-                                                            outline:'none',transition:'all 0.15s',
-                                                            boxShadow: active ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
-                                                        }}
-                                                    >
-                                                        <div style={{
-                                                            width:'36px',height:'22px',borderRadius:'6px',
-                                                            background:t.swatch,
-                                                            border:'1px solid rgba(255,255,255,0.12)',
-                                                            flexShrink:0,
-                                                        }}/>
-                                                        <span style={{
-                                                            fontSize:'10px',fontWeight: active ? 700 : 500,
-                                                            color: active ? 'var(--text-primary,#111)' : 'var(--text-muted,#888)',
-                                                            whiteSpace:'nowrap',lineHeight:1.2,
-                                                        }}>{t.label}</span>
-                                                    </button>
-                                                );
-                                            }
-
                                             return (
                                                 <button
                                                     key={t.value}
-                                                    onClick={() => toast.info(lockMsg, { position:'top-center', autoClose:3500 })}
-                                                    title={lockMsg}
+                                                    onClick={() => unlocked
+                                                        ? handleSettingChange('selectedTheme', t.value)
+                                                        : toast.info(lockMsg, { position:'top-center', autoClose:3500 })
+                                                    }
+                                                    title={unlocked ? `Switch to ${t.label} theme` : lockMsg}
                                                     style={{
-                                                        display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
-                                                        padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
-                                                        border:'2px dashed rgba(128,128,128,0.2)',
-                                                        background:'rgba(128,128,128,0.04)',
-                                                        outline:'none',transition:'all 0.15s',
-                                                        position:'relative',overflow:'hidden',
+                                                        display:'flex',
+                                                        alignItems:'center',
+                                                        gap:'0',
+                                                        width:'100%',
+                                                        borderRadius:'12px',
+                                                        cursor: unlocked ? 'pointer' : 'pointer',
+                                                        border: active
+                                                            ? '2px solid #7c3aed'
+                                                            : '2px solid rgba(167,139,250,0.2)',
+                                                        background: active
+                                                            ? 'linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.06))'
+                                                            : 'rgba(255,255,255,0.7)',
+                                                        outline:'none',
+                                                        transition:'all 0.18s ease',
+                                                        boxShadow: active
+                                                            ? '0 0 0 3px rgba(124,58,237,0.15), 0 4px 16px rgba(109,40,217,0.12)'
+                                                            : '0 1px 4px rgba(109,40,217,0.06)',
+                                                        overflow:'hidden',
+                                                        position:'relative',
+                                                        opacity: unlocked ? 1 : 0.75,
+                                                        padding:'0',
+                                                        textAlign:'left',
+                                                        fontFamily:'inherit',
                                                     }}
                                                 >
+                                                    {/* Theme preview panel */}
                                                     <div style={{
-                                                        width:'36px',height:'22px',borderRadius:'6px',
-                                                        background:t.swatch,
-                                                        border:'1px solid rgba(255,255,255,0.08)',
+                                                        width:'72px',
+                                                        minWidth:'72px',
+                                                        height:'62px',
+                                                        background: t.bg,
+                                                        display:'flex',
+                                                        flexDirection:'column',
+                                                        alignItems:'center',
+                                                        justifyContent:'center',
+                                                        gap:'4px',
+                                                        padding:'6px',
                                                         flexShrink:0,
-                                                        filter:'blur(1.5px) grayscale(0.4) brightness(0.75)',
-                                                    }}/>
+                                                        filter: unlocked ? 'none' : 'grayscale(0.5) brightness(0.8)',
+                                                        position:'relative',
+                                                    }}>
+                                                        {/* Color dots */}
+                                                        <div style={{display:'flex',gap:'3px',alignItems:'center'}}>
+                                                            {t.colors.map((c,i) => (
+                                                                <div key={i} style={{
+                                                                    width: i === 3 ? '12px' : '9px',
+                                                                    height: i === 3 ? '12px' : '9px',
+                                                                    borderRadius:'50%',
+                                                                    background: c,
+                                                                    border:'1px solid rgba(255,255,255,0.15)',
+                                                                    flexShrink:0,
+                                                                    boxShadow: i === 3 ? `0 0 6px ${c}88` : 'none',
+                                                                }}/>
+                                                            ))}
+                                                        </div>
+                                                        {/* Mini UI mock */}
+                                                        <div style={{
+                                                            width:'52px',height:'16px',
+                                                            background:'rgba(255,255,255,0.08)',
+                                                            borderRadius:'4px',
+                                                            border:`1px solid ${t.colors[3]}44`,
+                                                            display:'flex',
+                                                            alignItems:'center',
+                                                            paddingLeft:'4px',
+                                                            gap:'3px',
+                                                        }}>
+                                                            <div style={{width:'8px',height:'8px',borderRadius:'50%',background:t.colors[3],flexShrink:0}}/>
+                                                            <div style={{flex:1,height:'3px',background:`${t.colors[3]}66`,borderRadius:'2px'}}/>
+                                                        </div>
+                                                        {/* Emoji */}
+                                                        <div style={{
+                                                            position:'absolute',top:'4px',left:'4px',
+                                                            fontSize:'12px',lineHeight:1,
+                                                        }}>{t.emoji}</div>
+                                                        {/* Lock overlay */}
+                                                        {!unlocked && (
+                                                            <div style={{
+                                                                position:'absolute',inset:0,
+                                                                display:'flex',alignItems:'center',justifyContent:'center',
+                                                                background:'rgba(0,0,0,0.35)',
+                                                                fontSize:'16px',
+                                                            }}>🔒</div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Text content */}
                                                     <div style={{
-                                                        position:'absolute',top:'7px',left:'50%',transform:'translateX(-50%)',
-                                                        fontSize:'12px',lineHeight:1,
-                                                    }}>🔒</div>
-                                                    <span style={{
-                                                        fontSize:'9px',fontWeight:500,
-                                                        color:'var(--text-muted,#aaa)',
-                                                        whiteSpace:'nowrap',lineHeight:1.2,opacity:0.65,
-                                                    }}>{t.label.replace(/^\S+\s/,'')}</span>
-                                                    <span style={{
-                                                        position:'absolute',top:0,right:0,
-                                                        background:'linear-gradient(135deg,#f59e0b,#d97706)',
-                                                        color:'#fff',fontSize:'7px',fontWeight:800,
-                                                        padding:'2px 5px',
-                                                        borderRadius:'0 8px 0 6px',
-                                                        letterSpacing:'0.5px',lineHeight:1.6,
-                                                    }}>PRO</span>
+                                                        flex:1,
+                                                        padding:'10px 10px 10px 12px',
+                                                        display:'flex',
+                                                        flexDirection:'column',
+                                                        gap:'3px',
+                                                        minWidth:0,
+                                                    }}>
+                                                        <div style={{
+                                                            display:'flex',
+                                                            alignItems:'center',
+                                                            gap:'6px',
+                                                        }}>
+                                                            <span style={{
+                                                                fontSize:'12px',
+                                                                fontWeight:700,
+                                                                color:'#1e1b4b',
+                                                                lineHeight:1.2,
+                                                            }}>{t.label}</span>
+                                                            {active && (
+                                                                <span style={{
+                                                                    background:'linear-gradient(135deg,#7c3aed,#6366f1)',
+                                                                    color:'#fff',
+                                                                    fontSize:'8px',
+                                                                    fontWeight:800,
+                                                                    padding:'2px 6px',
+                                                                    borderRadius:'10px',
+                                                                    letterSpacing:'0.4px',
+                                                                    lineHeight:1.5,
+                                                                    flexShrink:0,
+                                                                }}>ACTIVE</span>
+                                                            )}
+                                                            {!unlocked && (
+                                                                <span style={{
+                                                                    background:'linear-gradient(135deg,#f59e0b,#d97706)',
+                                                                    color:'#fff',
+                                                                    fontSize:'8px',
+                                                                    fontWeight:800,
+                                                                    padding:'2px 6px',
+                                                                    borderRadius:'10px',
+                                                                    letterSpacing:'0.4px',
+                                                                    lineHeight:1.5,
+                                                                    flexShrink:0,
+                                                                }}>PRO</span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{
+                                                            fontSize:'10px',
+                                                            color:'#6b7280',
+                                                            fontWeight:500,
+                                                            lineHeight:1.3,
+                                                        }}>{t.desc}</div>
+                                                        {/* Color strip */}
+                                                        <div style={{
+                                                            display:'flex',
+                                                            gap:'3px',
+                                                            marginTop:'3px',
+                                                        }}>
+                                                            {t.colors.map((c,i) => (
+                                                                <div key={i} style={{
+                                                                    flex:1,
+                                                                    height:'4px',
+                                                                    borderRadius:'3px',
+                                                                    background:c,
+                                                                    opacity: unlocked ? 1 : 0.5,
+                                                                }}/>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right check/arrow */}
+                                                    <div style={{
+                                                        paddingRight:'10px',
+                                                        flexShrink:0,
+                                                        display:'flex',
+                                                        alignItems:'center',
+                                                    }}>
+                                                        {active ? (
+                                                            <div style={{
+                                                                width:'22px',height:'22px',
+                                                                borderRadius:'50%',
+                                                                background:'linear-gradient(135deg,#7c3aed,#6366f1)',
+                                                                display:'flex',alignItems:'center',justifyContent:'center',
+                                                                boxShadow:'0 2px 8px rgba(124,58,237,0.35)',
+                                                                flexShrink:0,
+                                                            }}>
+                                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="20 6 9 17 4 12"/>
+                                                                </svg>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{
+                                                                width:'22px',height:'22px',
+                                                                borderRadius:'50%',
+                                                                border:'2px solid rgba(167,139,250,0.3)',
+                                                                background:'rgba(255,255,255,0.6)',
+                                                                flexShrink:0,
+                                                            }}/>
+                                                        )}
+                                                    </div>
                                                 </button>
                                             );
                                         })}
