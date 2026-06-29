@@ -2470,7 +2470,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 toast.error("Error loading room. Please try again.", { icon: TI.error });
                 navigate('/rooms', { replace: true });
             });
-            const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(25));
+            const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(60));
             let prevMsgCount = 0;
             const unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 const newMessages = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id }));
@@ -2566,7 +2566,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             };
         }
-    }, [roomId, loggedInUserProfile, navigate, hasJoinedRoom]);
+    }, [roomId, loggedInUserProfile?.uid, loggedInUserProfile?.role, navigate]);
 
 
     // Real-time friends list updates
@@ -6534,12 +6534,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
                         {messages.filter(msg => {
                             if (!msg.uid) return true;
+                            // TingleBot messages are ALWAYS visible — check before any block list
+                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
+                            if (isTinglebotMsg) return true;
+                            // Block list filters apply only to real user messages
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
-                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
-                            // ALL TingleBot notifications are always visible to every client regardless
-                            // of role, badge, or notification settings — uniform lifecycle for everyone
-                            if (isTinglebotMsg) return true;
                             return true;
                         }).map((msg, index) => {
                             // TingleBot messages render as premium notification strips

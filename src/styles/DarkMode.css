@@ -974,32 +974,49 @@ html.dark-mode .stylish-dismiss-btn:hover {
   color: #e9d5ff !important;
 }
 
-/* ══ 27. MINIMIZED CONVERSATIONS (minimized-*) ══════════════════════ */
-html.dark-mode .minimized-trigger-btn {
-  background: #161625 !important;
+/* ══ 27. MINIMIZED CONVERSATIONS (mc-*) ════════════════════════════ */
+html.dark-mode .mc-panel {
+  background: rgba(15, 12, 35, 0.92) !important;
+  border-color: rgba(167, 139, 250, 0.22) !important;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.35) !important;
+}
+html.dark-mode .mc-panel-header {
+  background: linear-gradient(135deg, rgba(79,70,229,0.18) 0%, rgba(124,58,237,0.1) 100%) !important;
+  border-bottom-color: rgba(167,139,250,0.15) !important;
+}
+html.dark-mode .mc-header-title { color: #e0d9ff !important; }
+html.dark-mode .mc-header-count { background: linear-gradient(135deg, #6366f1, #a855f7) !important; color: #fff !important; }
+html.dark-mode .mc-header-close { color: #a78bfa !important; background: rgba(167,139,250,0.12) !important; }
+html.dark-mode .mc-header-close:hover { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; }
+html.dark-mode .mc-card { background: rgba(255,255,255,0.05) !important; border-color: transparent !important; }
+html.dark-mode .mc-card:hover { background: rgba(255,255,255,0.09) !important; border-color: rgba(99,102,241,0.25) !important; }
+html.dark-mode .mc-name { color: #e0d9ff !important; }
+html.dark-mode .mc-preview-text { color: #94a3b8 !important; }
+html.dark-mode .mc-draft-label { color: #818cf8 !important; }
+html.dark-mode .mc-unread-badge { background: linear-gradient(135deg, #6366f1, #a855f7) !important; color: #fff !important; }
+html.dark-mode .mc-online-dot { border-color: #1e1a3a !important; }
+html.dark-mode .mc-list { scrollbar-color: rgba(167,139,250,0.4) transparent !important; }
+html.dark-mode .mc-trigger { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #ec4899 100%) !important; }
+html.dark-mode .mc-trigger-count { border-color: #1e1a3a !important; }
+html.dark-mode .mc-card-close { color: #6b7280 !important; }
+html.dark-mode .mc-card-close:hover { background: rgba(239,68,68,0.12) !important; color: #f87171 !important; }
+
+/* ── WelcomeDashboard (wd-*) dark mode ── */
+html.dark-mode .wd-root { background: #0f0c1e !important; color: #e0d9ff !important; }
+html.dark-mode .wd-root *:not([style*="color"]):not(img):not(svg):not(path) { color: inherit; }
+
+/* ── RoomListPage (rl-*) dark mode ── */
+html.dark-mode .rl-root { background: #0f0c1e !important; color: #e0d9ff !important; }
+html.dark-mode .rl-root *:not([style*="color"]):not(img):not(svg):not(path) { color: inherit; }
+
+/* ── AdultRoomModal (arm-*) dark mode — already dark-on-dark, reinforce ── */
+html.dark-mode .arm-overlay { backdrop-filter: blur(22px) !important; }
+
+/* ── WarningAnnouncementModal dark mode ── */
+html.dark-mode .warning-modal {
+  background: linear-gradient(135deg, rgba(20,15,50,0.95), rgba(30,20,60,0.9)) !important;
   border-color: rgba(139,92,246,0.3) !important;
-  color: #c4b5fd !important;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+  color: #e0d9ff !important;
 }
-html.dark-mode .minimized-trigger-btn:hover {
-  background: #1e1e30 !important;
-  border-color: rgba(139,92,246,0.5) !important;
-}
-html.dark-mode .minimized-count-badge {
-  background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
-  color: #fff !important;
-}
-html.dark-mode .minimized-dropdown-dps {
-  background: #161625 !important;
-  border-color: rgba(139,92,246,0.25) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-}
-html.dark-mode .minimized-dp-only {
-  background: transparent !important;
-}
-html.dark-mode .minimized-dp-only:hover {
-  background: rgba(99,102,241,0.1) !important;
-}
-html.dark-mode .minimized-dropdown-backdrop {
-  background: transparent !important;
-}
+html.dark-mode .warning-modal-overlay { background: rgba(0,0,0,0.92) !important; }
+html.dark-mode .warning-modal *:not([style*="color"]):not(img):not(svg):not(path):not(button) { color: #e0d9ff; }
