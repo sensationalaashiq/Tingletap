@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
-import './BanKickModal.css';
+import './BanKickModal.css?v=3';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const parseDurationToMs = (dur) => {
