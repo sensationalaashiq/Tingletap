@@ -124,3 +124,59 @@
 }
 .sau-btn-send:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(16,185,129,.48); }
 .sau-btn-send:active { transform: translateY(0); }
+
+/* ── Dark Mode ── */
+html.dark-mode .sau-overlay { background: rgba(0,0,0,0.80) !important; }
+html.dark-mode .sau-card {
+    background: #161625 !important;
+    border-color: rgba(16,185,129,0.2) !important;
+    box-shadow: 0 10px 48px rgba(0,0,0,0.5) !important;
+}
+html.dark-mode .sau-title { color: #e8eaf0 !important; }
+html.dark-mode .sau-tab {
+    background: #1e1e30 !important;
+    border-color: rgba(16,185,129,0.18) !important;
+    color: #6b7280 !important;
+}
+html.dark-mode .sau-tab:hover {
+    border-color: rgba(16,185,129,0.45) !important;
+    color: #34d399 !important;
+    background: rgba(16,185,129,0.08) !important;
+}
+html.dark-mode .sau-tab.active {
+    background: rgba(16,185,129,0.12) !important;
+    border-color: #10b981 !important;
+    color: #34d399 !important;
+}
+html.dark-mode .sau-drop-zone {
+    background: rgba(16,185,129,0.06) !important;
+    border-color: rgba(16,185,129,0.28) !important;
+}
+html.dark-mode .sau-drop-zone:hover {
+    background: rgba(16,185,129,0.10) !important;
+    border-color: rgba(16,185,129,0.5) !important;
+}
+html.dark-mode .sau-drop-text { color: #34d399 !important; }
+html.dark-mode .sau-drop-hint { color: #5f6880 !important; }
+html.dark-mode .sau-audio-preview {
+    background: rgba(16,185,129,0.07) !important;
+    border-color: rgba(16,185,129,0.2) !important;
+}
+html.dark-mode .sau-file-name { color: #9aa3b8 !important; }
+html.dark-mode .sau-reset-btn {
+    border-color: rgba(16,185,129,0.3) !important;
+    color: #34d399 !important;
+    background: transparent !important;
+}
+html.dark-mode .sau-reset-btn:hover { background: rgba(16,185,129,0.1) !important; }
+html.dark-mode .sau-record-hint { color: #9aa3b8 !important; }
+html.dark-mode .sau-btn-cancel {
+    background: #1e1e30 !important;
+    border-color: #2d2d4a !important;
+    color: #9aa3b8 !important;
+}
+html.dark-mode .sau-btn-cancel:hover {
+    background: #252540 !important;
+    border-color: #3a3a58 !important;
+    color: #e8eaf0 !important;
+}

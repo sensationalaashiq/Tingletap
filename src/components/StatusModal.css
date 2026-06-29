@@ -329,3 +329,187 @@
 
 /* ── Legacy ── */
 .status-modal-overlay { display:none; }
+
+/* ══════════════════════════════════════════════════════
+   DARK MODE — full coverage for sm-* classes
+══════════════════════════════════════════════════════ */
+html.dark-mode .sm-overlay,
+.dark-mode .sm-overlay {
+  background: rgba(0,0,0,0.82) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+html.dark-mode .sm-card,
+.dark-mode .sm-card {
+  background: linear-gradient(160deg, #1a1130 0%, #1e1333 55%, #251545 100%) !important;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(167,139,250,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.06) !important;
+}
+
+html.dark-mode .sm-header,
+.dark-mode .sm-header {
+  background: linear-gradient(135deg, #2d1b5e 0%, #3b1f8c 60%, #4c1d95 100%) !important;
+  border-bottom-color: rgba(167,139,250,0.2) !important;
+}
+
+html.dark-mode .sm-title,
+.dark-mode .sm-title { color: #e9d5ff !important; }
+
+html.dark-mode .sm-sub,
+.dark-mode .sm-sub { color: #c4b5fd !important; opacity: 0.85 !important; }
+
+html.dark-mode .sm-close,
+.dark-mode .sm-close {
+  background: rgba(167,139,250,0.18) !important;
+  border-color: rgba(167,139,250,0.3) !important;
+}
+html.dark-mode .sm-close:hover,
+.dark-mode .sm-close:hover { background: rgba(239,68,68,0.2) !important; border-color: rgba(239,68,68,0.4) !important; }
+html.dark-mode .sm-close svg,
+.dark-mode .sm-close svg { color: #e9d5ff !important; stroke: #e9d5ff !important; }
+
+html.dark-mode .sm-body,
+.dark-mode .sm-body { scrollbar-color: rgba(167,139,250,0.3) transparent !important; }
+html.dark-mode .sm-body::-webkit-scrollbar-thumb,
+.dark-mode .sm-body::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3) !important; }
+
+html.dark-mode .sm-section-label,
+.dark-mode .sm-section-label { color: #a78bfa !important; }
+
+/* Input */
+html.dark-mode .sm-input-wrap,
+.dark-mode .sm-input-wrap {
+  background: rgba(15,10,35,0.75) !important;
+  border-color: rgba(167,139,250,0.22) !important;
+}
+html.dark-mode .sm-input-wrap:focus-within,
+.dark-mode .sm-input-wrap:focus-within {
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.14) !important;
+}
+html.dark-mode .sm-input,
+.dark-mode .sm-input { color: #e8eaf0 !important; }
+html.dark-mode .sm-input::placeholder,
+.dark-mode .sm-input::placeholder { color: rgba(167,139,250,0.45) !important; }
+html.dark-mode .sm-char-count,
+.dark-mode .sm-char-count { color: #a78bfa !important; }
+
+/* Preset buttons */
+html.dark-mode .sm-preset-btn,
+.dark-mode .sm-preset-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(167,139,250,0.18) !important;
+}
+html.dark-mode .sm-preset-btn:hover,
+.dark-mode .sm-preset-btn:hover {
+  border-color: var(--pc,#a78bfa) !important;
+  background: rgba(167,139,250,0.1) !important;
+}
+html.dark-mode .sm-preset-btn.selected,
+.dark-mode .sm-preset-btn.selected {
+  background: rgba(124,58,237,0.2) !important;
+  border-color: rgba(196,181,253,0.5) !important;
+}
+html.dark-mode .sm-preset-text,
+.dark-mode .sm-preset-text { color: #e9d5ff !important; }
+
+/* Premium & anim buttons */
+html.dark-mode .sm-premium-btn,
+.dark-mode .sm-premium-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(167,139,250,0.2) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .sm-premium-btn:hover,
+.dark-mode .sm-premium-btn:hover {
+  border-color: #a78bfa !important;
+  color: #e9d5ff !important;
+  background: rgba(167,139,250,0.12) !important;
+}
+html.dark-mode .sm-premium-btn.selected,
+.dark-mode .sm-premium-btn.selected {
+  background: rgba(124,58,237,0.22) !important;
+  color: #e9d5ff !important;
+  border-color: #b197fc !important;
+}
+
+html.dark-mode .sm-anim-btn,
+.dark-mode .sm-anim-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(167,139,250,0.2) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .sm-anim-btn:hover,
+.dark-mode .sm-anim-btn:hover {
+  border-color: #a78bfa !important;
+  background: rgba(167,139,250,0.1) !important;
+}
+html.dark-mode .sm-anim-btn.selected,
+.dark-mode .sm-anim-btn.selected {
+  background: rgba(124,58,237,0.22) !important;
+  color: #e9d5ff !important;
+  border-color: #b197fc !important;
+}
+
+/* Style grid */
+html.dark-mode .sm-style-group label,
+.dark-mode .sm-style-group label { color: #a78bfa !important; }
+html.dark-mode .sm-select,
+.dark-mode .sm-select {
+  background: rgba(15,10,35,0.8) !important;
+  border-color: rgba(167,139,250,0.24) !important;
+  color: #e8eaf0 !important;
+}
+html.dark-mode .sm-select:focus,
+.dark-mode .sm-select:focus { border-color: #a78bfa !important; }
+
+/* Color mode */
+html.dark-mode .sm-color-mode,
+.dark-mode .sm-color-mode {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(167,139,250,0.22) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .sm-color-mode:hover,
+.dark-mode .sm-color-mode:hover {
+  border-color: #a78bfa !important;
+  background: rgba(167,139,250,0.1) !important;
+}
+html.dark-mode .sm-color-mode.active,
+.dark-mode .sm-color-mode.active {
+  background: rgba(124,58,237,0.22) !important;
+  color: #e9d5ff !important;
+  border-color: #b197fc !important;
+}
+html.dark-mode .sm-color-pick label,
+.dark-mode .sm-color-pick label { color: #a78bfa !important; }
+
+/* Preview */
+html.dark-mode .sm-preview,
+.dark-mode .sm-preview {
+  background: rgba(15,10,35,0.6) !important;
+  border-color: rgba(167,139,250,0.18) !important;
+}
+html.dark-mode .sm-preview-label,
+.dark-mode .sm-preview-label { color: rgba(167,139,250,0.7) !important; }
+
+/* Actions footer */
+html.dark-mode .sm-actions,
+.dark-mode .sm-actions {
+  background: rgba(20,10,40,0.96) !important;
+  border-top-color: rgba(167,139,250,0.15) !important;
+}
+html.dark-mode .sm-btn-clear,
+.dark-mode .sm-btn-clear {
+  background: rgba(239,68,68,0.1) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239,68,68,0.25) !important;
+}
+html.dark-mode .sm-btn-cancel,
+.dark-mode .sm-btn-cancel {
+  background: rgba(167,139,250,0.1) !important;
+  color: #c4b5fd !important;
+  border-color: rgba(167,139,250,0.25) !important;
+}

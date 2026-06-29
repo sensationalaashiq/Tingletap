@@ -2691,6 +2691,17 @@ html body.theme-sunset .message-body p {
   flex-shrink: 0;
   width: 10px !important;
   height: 10px !important;
+  overflow: visible !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.whisper-icon svg {
+  width: 10px !important;
+  height: 10px !important;
+  overflow: visible !important;
+  display: block !important;
+  flex-shrink: 0 !important;
 }
 
 .whisper-text {
@@ -5146,6 +5157,54 @@ html body.theme-sunset .message-body p {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
 }
+
+/* ── Friend-request popup dark mode ── */
+html.dark-mode .friend-request-popup-container,
+.dark-mode .friend-request-popup-container {
+  background: #1a1a2e !important;
+  border-color: #2d2d4a !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-mode .friend-request-popup-header,
+.dark-mode .friend-request-popup-header {
+  background: #252540 !important;
+  border-bottom-color: #2d2d4a !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .friend-request-popup-title,
+.dark-mode .friend-request-popup-title { color: #c4b5fd !important; }
+html.dark-mode .friend-request-popup-close-btn,
+.dark-mode .friend-request-popup-close-btn { color: #a78bfa !important; }
+html.dark-mode .friend-request-popup-close-btn:hover,
+.dark-mode .friend-request-popup-close-btn:hover { background: rgba(167,139,250,0.12) !important; color: #e9d5ff !important; }
+html.dark-mode .friend-request-popup-content,
+.dark-mode .friend-request-popup-content { background: #161625 !important; }
+html.dark-mode .friend-request-popup-empty,
+.dark-mode .friend-request-popup-empty { color: #a78bfa !important; }
+html.dark-mode .friend-request-popup-empty p,
+.dark-mode .friend-request-popup-empty p { color: #c4b5fd !important; }
+html.dark-mode .friend-request-popup-empty small,
+.dark-mode .friend-request-popup-empty small { color: #7c8aaa !important; }
+html.dark-mode .friend-request-item,
+.dark-mode .friend-request-item {
+  background: rgba(99,102,241,0.07) !important;
+  border-color: rgba(99,102,241,0.15) !important;
+}
+html.dark-mode .friend-request-item:hover,
+.dark-mode .friend-request-item:hover {
+  background: rgba(99,102,241,0.14) !important;
+  border-color: rgba(99,102,241,0.3) !important;
+}
+html.dark-mode .friend-request-avatar,
+.dark-mode .friend-request-avatar { border-color: #2d2d4a !important; }
+html.dark-mode .friend-request-name,
+.dark-mode .friend-request-name { color: #e9d5ff !important; }
+html.dark-mode .friend-request-time,
+.dark-mode .friend-request-time { color: #a78bfa !important; }
+html.dark-mode .accept-btn,
+.dark-mode .accept-btn { background: rgba(16,185,129,0.2) !important; }
+html.dark-mode .reject-btn,
+.dark-mode .reject-btn { background: rgba(239,68,68,0.15) !important; }
 
 @keyframes fadeIn {
   from {

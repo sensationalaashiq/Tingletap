@@ -431,99 +431,119 @@ body {
     --badge-text: #374151;
 }
 
-/* Dark Theme */
+/* Dark Theme — palette kept in sync with html.dark-mode in DarkMode.css
+   so body.theme-dark and html.dark-mode always resolve to the same values */
 .theme-dark {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-tertiary: #0f172a;
-    --bg-quaternary: #1e293b;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-tertiary: #64748b;
-    --border-color: #374151;
-    --border-secondary: #4b5563;
-    --accent-color: #3b82f6;
-    --accent-hover: #60a5fa;
-    --accent-secondary: #a78bfa;
-    --message-bg-light: #16213e;
-    --message-bg-dark: #1a1a2e;
-    --border-light: #374151;
-    --border-dark: #4b5563;
-    --text-light: #e2e8f0;
-    --text-dark: #94a3b8;
+    /* Backgrounds */
+    --bg-primary:      #0f0f1a;
+    --bg-secondary:    #161625;
+    --bg-tertiary:     #1e1e30;
+    --bg-quaternary:   #252540;
+    --bg-card:         #1a1a2e;
+    --bg-elevated:     #222238;
+    --bg-overlay:      rgba(0,0,0,0.82);
+
+    /* Text */
+    --text-primary:    #e8eaf0;
+    --text-secondary:  #9aa3b8;
+    --text-tertiary:   #5f6880;
+    --text-muted:      #4a5268;
+    --text-light:      #e8eaf0;
+    --text-dark:       #c4c9d9;
+
+    /* Borders */
+    --border-color:    #2d2d4a;
+    --border-secondary:#3a3a58;
+    --border-accent:   rgba(99,102,241,0.35);
+    --border-light:    #2d2d4a;
+    --border-dark:     #3a3a58;
+
+    /* Accent */
+    --accent-color:    #6366f1;
+    --accent-hover:    #818cf8;
+    --accent-secondary:#a78bfa;
 
     /* Message Text Colors by Role - Dark Theme */
-    --msg-owner-male-text: #FFB74D;
-    --msg-owner-female-text: #FFAB40;
-    --msg-admin-male-text: #EF5350;
-    --msg-admin-female-text: #F06292;
+    --msg-owner-male-text:     #FFB74D;
+    --msg-owner-female-text:   #FF8A65;
+    --msg-admin-male-text:     #EF5350;
+    --msg-admin-female-text:   #F06292;
     --msg-moderator-male-text: #66BB6A;
-    --msg-moderator-female-text: #4DB6AC;
-    --msg-badge-male-text: #4FC3F7;
-    --msg-badge-female-text: #BA68C8;
-    --msg-general-male-text: #64B5F6;
+    --msg-moderator-female-text:#4DB6AC;
+    --msg-badge-male-text:     #4FC3F7;
+    --msg-badge-female-text:   #CE93D8;
+    --msg-general-male-text:   #64B5F6;
     --msg-general-female-text: #F48FB1;
 
-    /* Header variables */
-    --header-bg: #16213e;
-    --header-text: #e2e8f0;
-    --header-border: #0f172a;
+    /* Header */
+    --header-bg:       #161625;
+    --header-text:     #e8eaf0;
+    --header-border:   #2d2d4a;
 
-    /* Footer variables */
-    --footer-bg: #16213e;
-    --footer-text: #94a3b8;
-    --footer-border: #374151;
+    /* Footer */
+    --footer-bg:       #0f0f1a;
+    --footer-text:     #5f6880;
+    --footer-border:   #2d2d4a;
 
-    /* Chat variables */
-    --chat-bg: #1a1a2e;
-    --chat-input-bg: #0f172a;
-    --chat-input-border: #374151;
-    --chat-input-text: #e2e8f0;
-    --chat-message-bg: #16213e;
-    --chat-message-text: #e2e8f0;
-    --chat-message-border: #374151;
+    /* Chat */
+    --chat-bg:             #0f0f1a;
+    --chat-input-bg:       #0d0d1e;
+    --chat-input-border:   #2d2d4a;
+    --chat-input-text:     #e8eaf0;
+    --chat-message-bg:     #161625;
+    --chat-message-text:   #e8eaf0;
+    --chat-message-border: #2d2d4a;
+    --message-bg-light:    #161625;
+    --message-bg-dark:     #1e1e30;
 
-    /* Sidebar variables */
-    --sidebar-bg: #1a1a2e;
-    --sidebar-border: #374151;
-    --sidebar-text: #e2e8f0;
-    --sidebar-hover: #16213e;
+    /* Sidebar */
+    --sidebar-bg:      #0f0f1a;
+    --sidebar-border:  #2d2d4a;
+    --sidebar-text:    #e8eaf0;
+    --sidebar-hover:   rgba(99,102,241,0.12);
 
-    /* Button variables */
-    --button-primary-bg: #3b82f6;
-    --button-primary-text: #ffffff;
-    --button-primary-hover: #60a5fa;
-    --button-secondary-bg: #374151;
-    --button-secondary-text: #e2e8f0;
-    --button-secondary-hover: #4b5563;
+    /* Buttons */
+    --button-primary-bg:     #6366f1;
+    --button-primary-text:   #ffffff;
+    --button-primary-hover:  #818cf8;
+    --button-secondary-bg:   rgba(255,255,255,0.06);
+    --button-secondary-text: #c4b5fd;
+    --button-secondary-hover:rgba(99,102,241,0.12);
 
-    /* Input variables */
-    --input-bg: #0f172a;
-    --input-border: #374151;
-    --input-text: #e2e8f0;
-    --input-placeholder: #64748b;
-    --input-focus-border: #3b82f6;
+    /* Inputs */
+    --input-bg:           #0d0d1e;
+    --input-border:       #2d2d4a;
+    --input-text:         #e8eaf0;
+    --input-placeholder:  #4a5268;
+    --input-focus-border: #6366f1;
 
-    /* Modal variables */
-    --modal-bg: #16213e;
-    --modal-overlay: rgba(0, 0, 0, 0.7);
-    --modal-border: #374151;
-    --modal-shadow: rgba(0, 0, 0, 0.3);
+    /* Modals */
+    --modal-bg:      #161625;
+    --modal-overlay: rgba(0,0,0,0.82);
+    --modal-border:  #2d2d4a;
+    --modal-shadow:  rgba(0,0,0,0.5);
 
-    /* Radio player variables */
-    --radio-bg: #16213e;
-    --radio-border: #374151;
-    --radio-text: #e2e8f0;
-    --radio-button-bg: #3b82f6;
-    --radio-button-text: #ffffff;
+    /* Radio */
+    --radio-bg:         #161625;
+    --radio-border:     #2d2d4a;
+    --radio-text:       #e8eaf0;
+    --radio-button-bg:  #6366f1;
+    --radio-button-text:#ffffff;
 
-    /* Legacy variables for compatibility */
-    --username-color: #e2e8f0;
-    --message-text: #e2e8f0 !important;
-    --icon-color: #94a3b8;
-    --icon-hover: #e2e8f0;
-    --badge-bg: #374151;
-    --badge-text: #e2e8f0;
+    /* Toast */
+    --toast-bg:      #1e1e30;
+    --toast-text:    #e8eaf0;
+    --toast-border:  #2d2d4a;
+
+    /* Legacy / badges */
+    --username-color:  #c4b5fd;
+    --message-text:    #e8eaf0;
+    --icon-color:      #8892b0;
+    --icon-hover:      #e8eaf0;
+    --svg-fill:        #8892b0;
+    --svg-stroke:      #8892b0;
+    --badge-bg:        rgba(99,102,241,0.15);
+    --badge-text:      #c4b5fd;
 }
 
 /* Other themes removed — only Light and Dark are supported */
@@ -1149,11 +1169,8 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 .toast-confirm-btn.yes { background-color: #28a745; }
 .toast-confirm-btn.no { background-color: #dc3545; }
 
-/* Toast Container Styling */
+/* Toast Container Styling — NO background/color !important so premium inline styles win */
 .Toastify__toast {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
   cursor: pointer !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -1161,38 +1178,22 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   position: relative !important;
 }
 
-.Toastify__toast--default {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-}
-
-.Toastify__toast--success {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-}
-
-.Toastify__toast--error {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-}
-
-.Toastify__toast--warning {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-}
-
-.Toastify__toast--info {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
+/* Only apply default theme colours when no inline style is set (non-premium toasts) */
+.Toastify__toast:not([style*="background"]) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .modern-toast {
-  background: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
   cursor: pointer !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+.modern-toast:not([style*="background"]) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .modern-toast-body {
@@ -1200,30 +1201,23 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   font-weight: 500 !important;
   padding: 0 !important;
   margin: 0 !important;
-  color: var(--text-primary) !important;
 }
 
 /* Toast close button */
 .Toastify__close-button {
-  color: var(--text-secondary) !important;
-  opacity: 0.7 !important;
+  opacity: 0.8 !important;
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
+  color: inherit !important;
 }
-.Toastify__close-button:hover {
-  opacity: 1 !important;
-}
+.Toastify__close-button:hover { opacity: 1 !important; }
 
 /* Toast progress bar */
-.Toastify__progress-bar {
-  background: var(--accent-color) !important;
-}
+.Toastify__progress-bar { background: var(--accent-color) !important; }
 
 /* Toast container */
-.Toastify__toast-container {
-  font-family: 'Lato', sans-serif !important;
-}
+.Toastify__toast-container { font-family: 'Lato', sans-serif !important; }
 
 /* --- Input Ke Paas Wale (+) Button Aur Uska Menu --- */
 .actions-menu-container {

@@ -442,16 +442,133 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DARK MODE
+   DARK MODE — full coverage
 ═══════════════════════════════════════════════════════════ */
+
+/* ── Main lavender player ── */
+html.dark-mode .compact-audio-player,
 .dark-mode .compact-audio-player {
-  background: linear-gradient(145deg, #1e1730 0%, #231a3a 55%, #1a1428 100%);
-  border-color: #6d28d9;
+  background: linear-gradient(145deg, #1e1730 0%, #231a3a 55%, #1a1428 100%) !important;
+  border-color: #6d28d9 !important;
+  box-shadow:
+    0 4px 16px rgba(109,40,217,0.35),
+    0 1px 4px rgba(109,40,217,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.06) !important;
 }
 
+/* Song title & time */
+html.dark-mode .compact-audio-player .player-song-title,
+html.dark-mode .compact-audio-player .time-info,
+html.dark-mode .compact-audio-player .time-info span,
 .dark-mode .compact-audio-player .player-song-title,
 .dark-mode .compact-audio-player .time-info,
 .dark-mode .compact-audio-player .time-info span { color: #ddd6fe !important; }
+
+/* Header row border */
+html.dark-mode .compact-audio-player .player-header-row,
+.dark-mode .compact-audio-player .player-header-row {
+  border-bottom-color: rgba(167,139,250,0.18) !important;
+}
+
+/* Brand icon */
+html.dark-mode .compact-audio-player .player-brand-icon svg,
+.dark-mode .compact-audio-player .player-brand-icon svg {
+  fill: #a78bfa !important;
+  color: #a78bfa !important;
+}
+
+/* Visualizer bars */
+html.dark-mode .compact-audio-player .visualizer-bar,
+.dark-mode .compact-audio-player .visualizer-bar {
+  background: linear-gradient(to top, #7c3aed 0%, #c4b5fd 100%) !important;
+  opacity: 0.9 !important;
+}
+
+/* Progress bar */
+html.dark-mode .compact-audio-player .compact-progress-bar,
+.dark-mode .compact-audio-player .compact-progress-bar {
+  background: rgba(109,40,217,0.25) !important;
+  border-color: rgba(167,139,250,0.2) !important;
+}
+html.dark-mode .compact-audio-player .compact-progress-fill,
+.dark-mode .compact-audio-player .compact-progress-fill {
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 60%, #c4b5fd 100%) !important;
+  box-shadow: 0 0 7px rgba(167,139,250,0.6) !important;
+}
+
+/* Control buttons */
+html.dark-mode .compact-audio-player .compact-btn,
+.dark-mode .compact-audio-player .compact-btn {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%) !important;
+  border-color: #3b1a7a !important;
+  box-shadow: 0 2px 8px rgba(76,29,149,0.55) !important;
+}
+html.dark-mode .compact-audio-player .compact-btn:hover,
+.dark-mode .compact-audio-player .compact-btn:hover {
+  background: linear-gradient(135deg, #3b1a7a 0%, #5b21b6 100%) !important;
+  box-shadow: 0 3px 12px rgba(76,29,149,0.7) !important;
+}
+html.dark-mode .compact-audio-player .compact-btn svg,
+html.dark-mode .compact-audio-player .compact-btn svg path,
+.dark-mode .compact-audio-player .compact-btn svg,
+.dark-mode .compact-audio-player .compact-btn svg path {
+  fill: #e9d5ff !important;
+  color: #e9d5ff !important;
+}
+
+/* Volume icon */
+html.dark-mode .compact-audio-player .vol-icon,
+.dark-mode .compact-audio-player .vol-icon {
+  fill: #a78bfa !important;
+  color: #a78bfa !important;
+}
+
+/* Volume slider */
+html.dark-mode .compact-audio-player .compact-volume-slider,
+.dark-mode .compact-audio-player .compact-volume-slider {
+  background: rgba(109,40,217,0.35) !important;
+}
+
+/* ── PM version (white → dark) ── */
+html.dark-mode .pm-conversation .compact-audio-player,
+html.dark-mode .pm-message .compact-audio-player,
+html.dark-mode .pm-chat-area .compact-audio-player,
+html.dark-mode .private-message-popup .compact-audio-player,
+.dark-mode .pm-conversation .compact-audio-player,
+.dark-mode .pm-message .compact-audio-player {
+  background: rgba(22,14,48,0.96) !important;
+  border-color: #6d28d9 !important;
+}
+
+html.dark-mode .pm-conversation .time-info,
+html.dark-mode .pm-message .time-info,
+html.dark-mode .pm-conversation .time-info span,
+html.dark-mode .pm-message .time-info span,
+.dark-mode .pm-conversation .time-info,
+.dark-mode .pm-message .time-info,
+.dark-mode .pm-conversation .time-info span,
+.dark-mode .pm-message .time-info span { color: #ddd6fe !important; }
+
+html.dark-mode .pm-conversation .player-song-title,
+html.dark-mode .pm-message .player-song-title,
+.dark-mode .pm-conversation .player-song-title,
+.dark-mode .pm-message .player-song-title { color: #c4b5fd !important; }
+
+html.dark-mode .pm-conversation .vol-icon,
+html.dark-mode .pm-message .vol-icon,
+.dark-mode .pm-conversation .vol-icon,
+.dark-mode .pm-message .vol-icon { fill: #a78bfa !important; }
+
+/* message-row wrapper override */
+html.dark-mode .message-row-wrapper .compact-audio-player,
+html.dark-mode .message-body .compact-audio-player,
+html.dark-mode .chat-feed .compact-audio-player,
+.dark-mode .message-row-wrapper .compact-audio-player,
+.dark-mode .message-body .compact-audio-player,
+.dark-mode .chat-feed .compact-audio-player {
+  background: linear-gradient(145deg, #1e1730 0%, #231a3a 55%, #1a1428 100%) !important;
+  border-color: #6d28d9 !important;
+}
 
 /* Placeholder fix */
 .input-container input::placeholder { color: #000 !important; }

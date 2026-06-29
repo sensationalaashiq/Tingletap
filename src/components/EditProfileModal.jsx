@@ -194,6 +194,53 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
           background: linear-gradient(180deg, #a78bfa, #7c3aed);
           border-radius: 4px;
         }
+
+        /* ── Dark mode overrides ── */
+        html.dark-mode .epm3-overlay,
+        body.dark-mode .epm3-overlay {
+          background: rgba(0,0,0,0.85) !important;
+          backdrop-filter: blur(18px) saturate(1.2) !important;
+        }
+        html.dark-mode .epm3-card,
+        body.dark-mode .epm3-card {
+          background: linear-gradient(160deg, #1a1130 0%, #1e1333 45%, #251545 100%) !important;
+          box-shadow:
+            0 0 0 1px rgba(167,139,250,0.25),
+            0 28px 70px rgba(0,0,0,0.65),
+            0 8px 24px rgba(0,0,0,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.05) !important;
+        }
+        html.dark-mode .epm3-ring::after,
+        body.dark-mode .epm3-ring::after {
+          background: linear-gradient(160deg, #1a1130 0%, #251545 100%) !important;
+        }
+        html.dark-mode .epm3-header,
+        body.dark-mode .epm3-header {
+          background: linear-gradient(135deg, #2d1b5e 0%, #3b1f8c 55%, #4c1d95 100%) !important;
+          border-bottom-color: rgba(167,139,250,0.22) !important;
+        }
+        html.dark-mode .epm3-titles h2,
+        body.dark-mode .epm3-titles h2 { color: #e9d5ff !important; }
+        html.dark-mode .epm3-titles p,
+        body.dark-mode .epm3-titles p { color: #c4b5fd !important; opacity: 0.85 !important; }
+        html.dark-mode .epm3-close,
+        body.dark-mode .epm3-close {
+          background: rgba(167,139,250,0.15) !important;
+          border-color: rgba(167,139,250,0.3) !important;
+          color: #c4b5fd !important;
+        }
+        html.dark-mode .epm3-close:hover,
+        body.dark-mode .epm3-close:hover {
+          background: rgba(239,68,68,0.18) !important;
+          border-color: rgba(239,68,68,0.35) !important;
+          color: #fca5a5 !important;
+        }
+        html.dark-mode .epm3-body,
+        body.dark-mode .epm3-body {
+          scrollbar-color: rgba(167,139,250,0.3) transparent !important;
+        }
+        html.dark-mode .epm3-body::-webkit-scrollbar-track,
+        body.dark-mode .epm3-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.2) !important; }
       `}</style>
 
       <div className="epm3-overlay" onClick={onClose}>

@@ -378,32 +378,37 @@ const SettingsSidebar = ({
             // Notify HomePage so its React-state-based filter updates instantly
             window.dispatchEvent(new CustomEvent('tbSettingChanged', { detail: { key, value } }));
 
-            // Handle theme changes — only light / dark supported
+            // Handle theme changes — instant, zero-flicker, no reload
             if (key === 'selectedTheme') {
-                const themeClasses = ['theme-light', 'theme-dark', 'dark-mode'];
-
                 const htmlElement = document.documentElement;
                 const bodyElement = document.body;
+                const themeClasses = ['theme-light', 'theme-dark', 'dark-mode'];
+                const isDark = value === 'dark';
 
-                // Remove all theme classes instantly
+                // Suppress all CSS transitions for the swap frame
+                htmlElement.classList.add('theme-switching');
+
+                // Atomically swap classes in the same synchronous block
                 themeClasses.forEach(cls => {
                     htmlElement.classList.remove(cls);
                     bodyElement.classList.remove(cls);
                 });
 
-                const isDark = value === 'dark';
                 const newThemeClass = isDark ? 'theme-dark' : 'theme-light';
-
                 htmlElement.classList.add(newThemeClass);
                 bodyElement.classList.add(newThemeClass);
-
                 if (isDark) {
                     htmlElement.classList.add('dark-mode');
                     bodyElement.classList.add('dark-mode');
                 }
 
-                // Force immediate DOM update
-                document.documentElement.offsetHeight;
+                // Re-enable transitions after one paint
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        htmlElement.classList.remove('theme-switching');
+                    });
+                });
+
                 console.log(`🎨 Theme: ${isDark ? '🌙 Dark' : '☀️ Light'}`);
             }
 

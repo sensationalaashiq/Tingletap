@@ -1008,3 +1008,228 @@
 .ultra-pm-attach-dropdown {
   z-index: 10002 !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE — LuxuryPrivateMessageWindow full coverage
+══════════════════════════════════════════════════════════════════ */
+
+html.dark-mode .ultra-luxury-pm-window,
+.dark-mode .ultra-luxury-pm-window {
+  background: linear-gradient(145deg,
+    rgba(22,18,38,0.99) 0%,
+    rgba(18,14,32,0.97) 50%,
+    rgba(15,10,28,0.99) 100%) !important;
+  border-color: rgba(139,92,246,0.28) !important;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.6),
+    0 8px 25px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(139,92,246,0.2) !important;
+}
+
+/* Header */
+html.dark-mode .ultra-pm-header,
+.dark-mode .ultra-pm-header {
+  background: linear-gradient(135deg,
+    rgba(30,22,52,0.95) 0%,
+    rgba(22,16,40,0.9) 100%) !important;
+  border-bottom-color: rgba(139,92,246,0.2) !important;
+}
+html.dark-mode .ultra-pm-header:active,
+.dark-mode .ultra-pm-header:active {
+  background: linear-gradient(135deg,
+    rgba(35,26,58,0.98) 0%,
+    rgba(26,18,46,0.95) 100%) !important;
+}
+html.dark-mode .ultra-pm-header::before,
+.dark-mode .ultra-pm-header::before {
+  background: linear-gradient(90deg,
+    transparent, rgba(167,139,250,0.15), transparent) !important;
+}
+
+/* Username */
+html.dark-mode .ultra-pm-username,
+.dark-mode .ultra-pm-username {
+  color: #e9d5ff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
+}
+
+/* Status text */
+html.dark-mode .ultra-pm-status-text.online,
+.dark-mode .ultra-pm-status-text.online  { color: #34d399 !important; }
+html.dark-mode .ultra-pm-status-text.offline,
+.dark-mode .ultra-pm-status-text.offline { color: #6b7280 !important; }
+
+/* Avatar borders */
+html.dark-mode .ultra-pm-avatar,
+.dark-mode .ultra-pm-avatar { border-color: rgba(139,92,246,0.35) !important; }
+html.dark-mode .ultra-pm-avatar:hover,
+.dark-mode .ultra-pm-avatar:hover { border-color: rgba(139,92,246,0.7) !important; }
+
+/* Status dot border */
+html.dark-mode .ultra-pm-status-dot,
+.dark-mode .ultra-pm-status-dot { border-color: rgba(22,18,38,0.95) !important; }
+
+/* Control buttons */
+html.dark-mode .ultra-pm-control-btn,
+.dark-mode .ultra-pm-control-btn {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #9aa3b8 !important;
+}
+html.dark-mode .ultra-pm-control-btn.minimize-btn:hover,
+.dark-mode .ultra-pm-control-btn.minimize-btn:hover {
+  background: rgba(99,102,241,0.18) !important;
+  color: #818cf8 !important;
+  border-color: rgba(99,102,241,0.35) !important;
+}
+html.dark-mode .ultra-pm-control-btn.close-btn:hover,
+.dark-mode .ultra-pm-control-btn.close-btn:hover {
+  background: rgba(239,68,68,0.18) !important;
+  color: #f87171 !important;
+  border-color: rgba(239,68,68,0.35) !important;
+}
+
+/* Chat container */
+html.dark-mode .ultra-pm-chat-container,
+.dark-mode .ultra-pm-chat-container {
+  background: rgba(0,0,0,0.08) !important;
+  scrollbar-color: rgba(139,92,246,0.3) transparent !important;
+}
+html.dark-mode .ultra-pm-chat-container::-webkit-scrollbar-track,
+.dark-mode .ultra-pm-chat-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.15) !important; }
+html.dark-mode .ultra-pm-chat-container::-webkit-scrollbar-thumb,
+.dark-mode .ultra-pm-chat-container::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3) !important; }
+
+/* Empty state */
+html.dark-mode .ultra-pm-empty-state,
+.dark-mode .ultra-pm-empty-state { color: #5f6880 !important; }
+html.dark-mode .ultra-empty-icon,
+.dark-mode .ultra-empty-icon { color: #4a5268 !important; }
+html.dark-mode .ultra-pm-empty-state p,
+.dark-mode .ultra-pm-empty-state p { color: #5f6880 !important; }
+
+/* Sender name */
+html.dark-mode .ultra-pm-sender,
+.dark-mode .ultra-pm-sender {
+  color: #c4b5fd !important;
+  text-shadow: none !important;
+}
+
+/* Timestamp */
+html.dark-mode .ultra-pm-timestamp,
+.dark-mode .ultra-pm-timestamp { color: #4a5268 !important; }
+
+/* Message bubbles — received */
+html.dark-mode .ultra-pm-msg-text,
+.dark-mode .ultra-pm-msg-text {
+  color: #e2e8f0 !important;
+  background: linear-gradient(135deg,
+    rgba(30,22,52,0.95) 0%,
+    rgba(24,18,44,0.9) 100%) !important;
+  border-color: rgba(139,92,246,0.15) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Message bubbles — sent */
+html.dark-mode .ultra-pm-message.sent .ultra-pm-msg-text,
+.dark-mode .ultra-pm-message.sent .ultra-pm-msg-text {
+  background: linear-gradient(135deg,
+    rgba(91,33,182,0.35) 0%,
+    rgba(76,29,149,0.28) 100%) !important;
+  border-color: rgba(167,139,250,0.25) !important;
+  color: #e9d5ff !important;
+}
+
+/* Avatar borders in messages */
+html.dark-mode .ultra-msg-avatar-img,
+.dark-mode .ultra-msg-avatar-img { border-color: rgba(139,92,246,0.25) !important; }
+html.dark-mode .ultra-pm-message.sent .ultra-msg-avatar-img,
+.dark-mode .ultra-pm-message.sent .ultra-msg-avatar-img { border-color: rgba(139,92,246,0.4) !important; }
+
+/* Input area */
+html.dark-mode .ultra-pm-input-area,
+.dark-mode .ultra-pm-input-area {
+  background: linear-gradient(135deg,
+    rgba(18,14,32,0.96) 0%,
+    rgba(15,10,28,0.94) 100%) !important;
+  border-top-color: rgba(139,92,246,0.18) !important;
+}
+
+/* Attach button */
+html.dark-mode .ultra-pm-attach-btn,
+.dark-mode .ultra-pm-attach-btn {
+  background: linear-gradient(135deg, rgba(91,33,182,0.35) 0%, rgba(76,29,149,0.28) 100%) !important;
+  border-color: rgba(139,92,246,0.35) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .ultra-pm-attach-btn:hover,
+.dark-mode .ultra-pm-attach-btn:hover {
+  background: linear-gradient(135deg, rgba(109,40,217,0.45) 0%, rgba(91,33,182,0.38) 100%) !important;
+  border-color: rgba(167,139,250,0.5) !important;
+}
+
+/* Attachment dropdown */
+html.dark-mode .ultra-pm-attach-dropdown,
+.dark-mode .ultra-pm-attach-dropdown {
+  background: rgba(22,18,38,0.98) !important;
+  border-color: rgba(139,92,246,0.25) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+html.dark-mode .ultra-attach-option,
+.dark-mode .ultra-attach-option {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: #9aa3b8 !important;
+}
+html.dark-mode .ultra-attach-option:hover,
+.dark-mode .ultra-attach-option:hover {
+  background: rgba(99,102,241,0.12) !important;
+  border-color: rgba(99,102,241,0.3) !important;
+}
+html.dark-mode .ultra-attach-option svg,
+.dark-mode .ultra-attach-option svg {
+  color: #8892b0 !important;
+  fill: #8892b0 !important;
+  stroke: #8892b0 !important;
+}
+html.dark-mode .ultra-attach-option:hover svg,
+.dark-mode .ultra-attach-option:hover svg {
+  color: #818cf8 !important;
+  fill: #818cf8 !important;
+  stroke: #818cf8 !important;
+}
+
+/* Text input */
+html.dark-mode .ultra-pm-input,
+.dark-mode .ultra-pm-input {
+  background: rgba(15,10,28,0.85) !important;
+  border-color: rgba(139,92,246,0.2) !important;
+  color: #e8eaf0 !important;
+}
+html.dark-mode .ultra-pm-input::placeholder,
+.dark-mode .ultra-pm-input::placeholder { color: #4a5268 !important; }
+html.dark-mode .ultra-pm-input:focus,
+.dark-mode .ultra-pm-input:focus {
+  border-color: rgba(139,92,246,0.5) !important;
+  background: rgba(18,12,34,0.92) !important;
+  box-shadow: 0 0 0 2px rgba(139,92,246,0.12) !important;
+}
+
+/* Send button */
+html.dark-mode .ultra-pm-send-btn,
+.dark-mode .ultra-pm-send-btn {
+  background: linear-gradient(135deg, rgba(91,33,182,0.4) 0%, rgba(76,29,149,0.32) 100%) !important;
+  border-color: rgba(139,92,246,0.4) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .ultra-pm-send-btn:hover:not(:disabled),
+.dark-mode .ultra-pm-send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(109,40,217,0.55) 0%, rgba(91,33,182,0.45) 100%) !important;
+  border-color: rgba(167,139,250,0.55) !important;
+}
+html.dark-mode .ultra-pm-send-btn:disabled,
+.dark-mode .ultra-pm-send-btn:disabled {
+  background: rgba(40,35,58,0.5) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+  color: #4a5268 !important;
+}

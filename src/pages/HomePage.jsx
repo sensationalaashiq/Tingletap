@@ -6939,11 +6939,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     {(() => {
                                         const rl = profileUser.role?.toLowerCase() || 'user';
                                         const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
-                                        const pillMap = { owner:{bg:'#fef3c7',color:'#92400e'}, admin:{bg:'#ede9fe',color:'#5b21b6'}, moderator:{bg:'#dcfce7',color:'#15803d'}, user:{bg:'#f1f5f9',color:'#475569'}, guest:{bg:'#f9fafb',color:'#6b7280'} };
-                                        const pill = pillMap[rl] || pillMap.user;
                                         return (
-                                            <div style={{display:'inline-flex',alignItems:'center',gap:'3px',padding:'2px 8px',borderRadius:'20px',background:pill.bg,border:`1px solid ${pill.color}40`,fontSize:'10px',fontWeight:700,color:pill.color}}>
-                                                {rl==='owner'?<svg width="9" height="9" viewBox="0 0 24 24" fill="#92400e"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>:rl==='admin'?<svg width="9" height="9" viewBox="0 0 24 24" fill="#5b21b6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>:rl==='moderator'?<svg width="9" height="9" viewBox="0 0 24 24" fill="#15803d"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>:<span style={{width:5,height:5,borderRadius:'50%',background:pill.color,display:'inline-block'}}/>}
+                                            <div className={`vpm-role-pill-badge vpm-role-pill--${rl}`}>
+                                                {rl==='owner'?<svg width="9" height="9" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2 3h10v2H7v-2z"/></svg>:rl==='admin'?<svg width="9" height="9" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>:rl==='moderator'?<svg width="9" height="9" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>:<span className="vpm-role-pill-dot"/>}
                                                 {roleLabel}
                                             </div>
                                         );
