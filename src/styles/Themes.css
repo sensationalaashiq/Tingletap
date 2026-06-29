@@ -1029,3 +1029,357 @@ html.dark-theme-variant .login-page,
 html.dark-theme-variant .signup-page { background: var(--bg-primary) !important; color: var(--text-primary) !important; }
 html.dark-theme-variant .auth-card,
 html.dark-theme-variant .auth-container { background: var(--modal-bg) !important; border-color: var(--modal-border) !important; color: var(--text-primary) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUPPLEMENT — Elements missing from initial pass
+   (friend-request popup, audio player, pm-conversation items,
+    vpm role pills, attachment popup, message actions, svg icons)
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Friend Request Popup ── */
+html.dark-theme-variant .friend-request-popup-container {
+  background: var(--modal-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-theme-variant .friend-request-popup-header {
+  background: var(--bg-tertiary) !important;
+  border-bottom-color: var(--border-color) !important;
+  color: var(--username-color) !important;
+}
+html.dark-theme-variant .friend-request-popup-title { color: var(--username-color) !important; }
+html.dark-theme-variant .friend-request-popup-title svg { stroke: var(--username-color) !important; fill: none !important; }
+html.dark-theme-variant .friend-request-popup-close-btn { color: var(--text-secondary) !important; background: transparent !important; }
+html.dark-theme-variant .friend-request-popup-close-btn:hover { background: rgba(255,255,255,0.1) !important; color: var(--text-primary) !important; }
+html.dark-theme-variant .friend-request-popup-content { background: var(--bg-secondary) !important; }
+html.dark-theme-variant .friend-request-popup-empty { color: var(--accent-hover) !important; }
+html.dark-theme-variant .friend-request-popup-empty p { color: var(--username-color) !important; }
+html.dark-theme-variant .friend-request-popup-empty small { color: var(--text-muted) !important; }
+html.dark-theme-variant .friend-request-popup-empty svg { stroke: var(--text-muted) !important; }
+html.dark-theme-variant .friend-request-item {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+}
+html.dark-theme-variant .friend-request-item:hover {
+  background: var(--sidebar-hover) !important;
+  border-color: var(--border-secondary) !important;
+}
+html.dark-theme-variant .friend-request-avatar { border-color: var(--border-color) !important; }
+html.dark-theme-variant .friend-request-name { color: var(--text-primary) !important; }
+html.dark-theme-variant .friend-request-time { color: var(--accent-color) !important; }
+html.dark-theme-variant .friend-request-role { color: var(--text-tertiary) !important; }
+html.dark-theme-variant .friend-request-message { color: var(--text-secondary) !important; }
+html.dark-theme-variant .accept-btn { background: rgba(16,185,129,0.2) !important; color: #34d399 !important; border-color: rgba(16,185,129,0.3) !important; }
+html.dark-theme-variant .accept-btn:hover { background: rgba(16,185,129,0.35) !important; }
+html.dark-theme-variant .reject-btn { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; border-color: rgba(239,68,68,0.25) !important; }
+html.dark-theme-variant .reject-btn:hover { background: rgba(239,68,68,0.28) !important; }
+html.dark-theme-variant .friend-request-actions { background: transparent !important; }
+
+/* ── Custom Audio Player (compact-audio-player) ── */
+html.dark-theme-variant .compact-audio-player {
+  background: linear-gradient(145deg, var(--bg-elevated) 0%, var(--bg-card) 55%, var(--bg-tertiary) 100%) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 4px 16px var(--border-accent), 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+}
+html.dark-theme-variant .message-row-wrapper .compact-audio-player,
+html.dark-theme-variant .message-body .compact-audio-player,
+html.dark-theme-variant .chat-feed .compact-audio-player {
+  border-color: var(--border-accent) !important;
+}
+html.dark-theme-variant .compact-audio-player .player-header-row {
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .compact-audio-player .player-brand-icon svg {
+  color: var(--accent-color) !important;
+  fill: var(--accent-color) !important;
+  stroke: var(--accent-color) !important;
+}
+html.dark-theme-variant .compact-audio-player .player-song-title {
+  color: var(--username-color) !important;
+}
+html.dark-theme-variant .compact-audio-player .audio-visualizer { background: transparent !important; }
+html.dark-theme-variant .compact-audio-player .visualizer-bar {
+  background: linear-gradient(to top, var(--accent-color), var(--accent-hover)) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-progress-bar {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-progress-fill {
+  background: linear-gradient(90deg, var(--accent-color), var(--accent-hover)) !important;
+  box-shadow: 0 0 5px var(--border-accent) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-controls { background: transparent !important; }
+html.dark-theme-variant .compact-audio-player .compact-btn {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-btn:hover {
+  background: var(--sidebar-hover) !important;
+  border-color: var(--accent-color) !important;
+  transform: scale(1.12);
+}
+html.dark-theme-variant .compact-audio-player .compact-btn svg,
+html.dark-theme-variant .compact-audio-player .compact-btn svg path {
+  fill: var(--icon-color) !important;
+  stroke: none !important;
+}
+html.dark-theme-variant .compact-audio-player .time-info,
+html.dark-theme-variant .compact-audio-player .time-info span {
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .compact-audio-player .time-sep { color: var(--text-muted) !important; }
+html.dark-theme-variant .compact-audio-player .vol-icon {
+  fill: var(--icon-color) !important;
+  color: var(--icon-color) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-volume-slider {
+  background: var(--badge-bg) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-volume-slider::-webkit-slider-thumb {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4) !important;
+  border-color: var(--bg-primary) !important;
+}
+html.dark-theme-variant .compact-audio-player .compact-volume-slider::-moz-range-thumb {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)) !important;
+  border-color: var(--bg-primary) !important;
+}
+/* PrivateAudioMiniPopup inside PM chat — keep it themed too */
+html.dark-theme-variant .pm-chat-area .compact-audio-player,
+html.dark-theme-variant .pm-message .compact-audio-player,
+html.dark-theme-variant .ultra-pm-audio-wrapper .compact-audio-player {
+  background: linear-gradient(145deg, var(--bg-elevated), var(--bg-card)) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25) !important;
+}
+
+/* ── PM Header Popup — conversation list items (supplement) ── */
+html.dark-theme-variant .pm-popup-content {
+  background: var(--bg-secondary) !important;
+}
+html.dark-theme-variant .pm-conversations-list { background: transparent !important; }
+html.dark-theme-variant .pm-conversation-item {
+  background: transparent !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .pm-conversation-item:hover {
+  background: var(--sidebar-hover) !important;
+}
+html.dark-theme-variant .pm-conversation-avatar { border-color: var(--border-accent) !important; }
+html.dark-theme-variant .pm-conversation-details { background: transparent !important; }
+html.dark-theme-variant .pm-conversation-name { color: var(--text-primary) !important; }
+html.dark-theme-variant .pm-conversation-preview { color: var(--text-secondary) !important; }
+html.dark-theme-variant .pm-conversation-meta { background: transparent !important; }
+html.dark-theme-variant .pm-conversation-time { color: var(--text-muted) !important; }
+html.dark-theme-variant .pm-unread-badge { background: #ef4444 !important; color: #fff !important; }
+html.dark-theme-variant .pm-conversation-delete-btn { color: var(--text-muted) !important; }
+html.dark-theme-variant .pm-conversation-delete-btn:hover { background: rgba(239,68,68,0.15) !important; }
+html.dark-theme-variant .pm-conversation-delete-btn svg { stroke: currentColor !important; }
+
+/* ── PM Attachment Popup ── */
+html.dark-theme-variant .pm-attachment-popup {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45) !important;
+}
+html.dark-theme-variant .pm-attachment-popup-header {
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-elevated) 100%) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+html.dark-theme-variant .pm-attachment-popup-title { color: var(--username-color) !important; }
+html.dark-theme-variant .pm-attachment-popup-title svg { stroke: var(--username-color) !important; }
+html.dark-theme-variant .pm-attachment-popup-close { color: var(--text-secondary) !important; }
+html.dark-theme-variant .pm-attachment-popup-close:hover { background: var(--sidebar-hover) !important; }
+html.dark-theme-variant .pm-attachment-popup-content { background: transparent !important; }
+html.dark-theme-variant .pm-attachment-drop-zone {
+  border-color: var(--border-accent) !important;
+  background: var(--badge-bg) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .pm-attachment-drop-zone:hover {
+  border-color: var(--accent-color) !important;
+  background: var(--sidebar-hover) !important;
+}
+html.dark-theme-variant .pm-attachment-drop-zone * { color: var(--text-secondary) !important; }
+html.dark-theme-variant .pm-attachment-popup-actions {
+  background: var(--input-bg) !important;
+  border-top-color: var(--border-color) !important;
+}
+
+/* ── VPM Role Pills (Godfather/owner, admin, mod, user, guest) ── */
+html.dark-theme-variant .vpm-role-pill--owner {
+  background: rgba(245,158,11,0.18) !important;
+  border-color: rgba(245,158,11,0.35) !important;
+  color: #fbbf24 !important;
+}
+html.dark-theme-variant .vpm-role-pill--owner svg { fill: #fbbf24 !important; }
+html.dark-theme-variant .vpm-role-pill--admin {
+  background: rgba(239,68,68,0.18) !important;
+  border-color: rgba(239,68,68,0.35) !important;
+  color: #f87171 !important;
+}
+html.dark-theme-variant .vpm-role-pill--admin svg { fill: #f87171 !important; }
+html.dark-theme-variant .vpm-role-pill--moderator {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+  color: #34d399 !important;
+}
+html.dark-theme-variant .vpm-role-pill--moderator svg { fill: #34d399 !important; }
+html.dark-theme-variant .vpm-role-pill--user {
+  background: rgba(99,102,241,0.12) !important;
+  border-color: rgba(99,102,241,0.25) !important;
+  color: #a5b4fc !important;
+}
+html.dark-theme-variant .vpm-role-pill--user svg { fill: #a5b4fc !important; }
+html.dark-theme-variant .vpm-role-pill--guest {
+  background: rgba(107,114,128,0.15) !important;
+  border-color: rgba(107,114,128,0.3) !important;
+  color: #9ca3af !important;
+}
+html.dark-theme-variant .vpm-role-pill--guest svg { fill: #9ca3af !important; }
+html.dark-theme-variant .vpm-role-pill-dot { background: currentColor !important; }
+
+/* ── Message Action Buttons (hover) ── */
+html.dark-theme-variant .message-action-btn {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border-color) !important;
+  color: var(--icon-color) !important;
+}
+html.dark-theme-variant .message-action-btn:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .message-action-btn svg { stroke: currentColor !important; fill: none !important; }
+html.dark-theme-variant .action-btn:hover { color: var(--text-primary) !important; background: var(--sidebar-hover) !important; }
+html.dark-theme-variant .action-btn:hover svg { stroke: var(--text-primary) !important; }
+
+/* ── Modern Dropdown Buttons (room/media toolbar) ── */
+html.dark-theme-variant .modern-dropdown-btn {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .modern-dropdown-btn:hover { background: var(--sidebar-hover) !important; color: var(--text-primary) !important; }
+html.dark-theme-variant .modern-dropdown-btn .btn-icon svg { stroke: var(--icon-color) !important; fill: none !important; }
+html.dark-theme-variant .modern-dropdown-btn:hover .btn-icon svg { stroke: var(--text-primary) !important; }
+html.dark-theme-variant .btn-label { color: var(--text-secondary) !important; }
+html.dark-theme-variant .modern-dropdown-btn:hover .btn-label { color: var(--text-primary) !important; }
+
+/* ── PM Actions Dropdown (inside chat) ── */
+html.dark-theme-variant .pm-actions-dropdown {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+html.dark-theme-variant .pm-actions-dropdown .pm-popup-btn {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border-color: transparent !important;
+}
+html.dark-theme-variant .pm-actions-dropdown .pm-popup-btn:hover {
+  background: var(--sidebar-hover) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant .pm-actions-dropdown .pm-popup-btn svg { stroke: currentColor !important; fill: none !important; }
+
+/* ── Global SVG protection — stop color-scheme:dark from whitening icons ── */
+html.dark-theme-variant svg:not([style*="stroke"]):not([style*="fill"]):not([class*="logo"]):not([class*="brand"]) {
+  color: currentColor;
+}
+html.dark-theme-variant .message-body svg:not([style*="fill"]) { color: var(--icon-color); }
+html.dark-theme-variant .chat-header svg:not([style*="fill"]):not([style*="stroke"]) {
+  stroke: var(--icon-color) !important;
+  fill: none !important;
+}
+
+/* ── Inline message system / announcement banners ── */
+html.dark-theme-variant .system-message,
+html.dark-theme-variant .system-msg,
+html.dark-theme-variant [class*="system-message"],
+html.dark-theme-variant [class*="system-msg"] {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant .system-message * { color: var(--text-secondary) !important; }
+html.dark-theme-variant .announcement-banner,
+html.dark-theme-variant [class*="announcement"] {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-elevated)) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Header notification badge / user count pill ── */
+html.dark-theme-variant .notification-badge,
+html.dark-theme-variant .user-count-badge,
+html.dark-theme-variant [class*="notif-badge"],
+html.dark-theme-variant [class*="count-badge"] {
+  background: var(--accent-color) !important;
+  color: #fff !important;
+}
+html.dark-theme-variant .header-badge { background: var(--accent-color) !important; color: #fff !important; }
+
+/* ── Context menu / right-click menus ── */
+html.dark-theme-variant [class*="context-menu"],
+html.dark-theme-variant [class*="ctx-menu"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-theme-variant [class*="context-menu"] *:not(svg):not(path),
+html.dark-theme-variant [class*="ctx-menu"] *:not(svg):not(path) { color: var(--text-secondary) !important; }
+html.dark-theme-variant [class*="context-menu-item"]:hover,
+html.dark-theme-variant [class*="ctx-item"]:hover { background: var(--sidebar-hover) !important; color: var(--text-primary) !important; }
+
+/* ── GIF / Sticker picker overlay ── */
+html.dark-theme-variant [class*="gif-picker"],
+html.dark-theme-variant [class*="sticker-picker"],
+html.dark-theme-variant [class*="giphy"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+html.dark-theme-variant [class*="gif-picker"] input,
+html.dark-theme-variant [class*="sticker-picker"] input {
+  background: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--input-text) !important;
+}
+
+/* ── Voice/video call overlay ── */
+html.dark-theme-variant [class*="call-overlay"],
+html.dark-theme-variant [class*="video-call"],
+html.dark-theme-variant [class*="voice-call"] {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Broad fallback for any remaining white-background popup/modal ── */
+html.dark-theme-variant [class*="popup"]:not([class*="emoji"]):not([class*="giphy"]) {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  color: var(--text-primary) !important;
+}
+html.dark-theme-variant [class*="popup"] *:not(img):not(svg):not(path):not(button):not([style*="background"]):not([style*="color"]) {
+  color: var(--text-primary) !important;
+}
+
+/* ── Broad catch-all: any element that still shows white text ── */
+html.dark-theme-variant [style*="color: white"],
+html.dark-theme-variant [style*="color:#fff"],
+html.dark-theme-variant [style*="color: #fff"] { /* leave white as-is — intentional */ }
+
+/* Force text-primary on common text containers that have no explicit color ── */
+html.dark-theme-variant p:not([style*="color"]):not([class*="user-font"]),
+html.dark-theme-variant span:not([style*="color"]):not([class*="username"]):not([class*="badge"]):not([class*="pill"]):not([class*="btn"]):not([class*="icon"]) {
+  color: var(--text-primary);
+}
+/* But let buttons keep their own colors */
+html.dark-theme-variant button span { color: inherit !important; }
+
+/* ── Muted/grey secondary text containers ── */
+html.dark-theme-variant small:not([style*="color"]) { color: var(--text-muted) !important; }
+html.dark-theme-variant label:not([style*="color"]) { color: var(--text-secondary) !important; }
