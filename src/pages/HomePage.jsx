@@ -1464,24 +1464,33 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Initialize theme on component load from user profile
         if (loggedInUserProfile) {
             const userTheme = loggedInUserProfile.selectedTheme || 'light';
-            
+            const colorThemes = ['rose-pink', 'burgundy-wine', 'aurora', 'royal-purple', 'sunset-orange'];
+            const allThemeClasses = [
+                'theme-light', 'theme-dark', 'dark-mode', 'dark-theme-variant',
+                'theme-rose-pink', 'theme-burgundy-wine', 'theme-aurora',
+                'theme-royal-purple', 'theme-sunset-orange'
+            ];
+
             // Remove all theme classes
-            document.body.classList.remove('theme-light', 'theme-dark', 'dark-mode');
-            document.documentElement.classList.remove('theme-light', 'theme-dark', 'dark-mode');
-            
-            // Only light/dark supported
-            const resolvedTheme = userTheme === 'dark' ? 'dark' : 'light';
-            document.body.classList.add(`theme-${resolvedTheme}`);
-            document.documentElement.classList.add(`theme-${resolvedTheme}`);
-            
-            const isDarkTheme = resolvedTheme === 'dark';
-            if (isDarkTheme) {
-                document.body.classList.add('dark-mode');
-                document.documentElement.classList.add('dark-mode');
+            allThemeClasses.forEach(cls => {
+                document.body.classList.remove(cls);
+                document.documentElement.classList.remove(cls);
+            });
+
+            if (userTheme === 'dark') {
+                document.body.classList.add('dark-mode', 'theme-dark');
+                document.documentElement.classList.add('dark-mode', 'theme-dark');
+                setIsDarkMode(true);
+            } else if (colorThemes.includes(userTheme)) {
+                document.body.classList.add(`theme-${userTheme}`, 'dark-theme-variant');
+                document.documentElement.classList.add(`theme-${userTheme}`, 'dark-theme-variant');
+                setIsDarkMode(false);
+            } else {
+                document.body.classList.add('theme-light');
+                document.documentElement.classList.add('theme-light');
+                setIsDarkMode(false);
             }
-            
-            setIsDarkMode(isDarkTheme);
-            
+
             // Also update localStorage
             localStorage.setItem('selectedTheme', userTheme);
         }

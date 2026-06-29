@@ -37,6 +37,7 @@ import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessa
 import BanKickModal from './components/BanKickModal';
 import './App.css';
 import './styles/DarkMode.css';
+import './styles/Themes.css';
 
 function App() {
   const [user, setUser] = useState(null);

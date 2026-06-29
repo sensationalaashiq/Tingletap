@@ -382,24 +382,31 @@ const SettingsSidebar = ({
             if (key === 'selectedTheme') {
                 const htmlElement = document.documentElement;
                 const bodyElement = document.body;
-                const themeClasses = ['theme-light', 'theme-dark', 'dark-mode'];
-                const isDark = value === 'dark';
+                const allThemeClasses = [
+                    'theme-light', 'theme-dark', 'dark-mode', 'dark-theme-variant',
+                    'theme-rose-pink', 'theme-burgundy-wine', 'theme-aurora',
+                    'theme-royal-purple', 'theme-sunset-orange'
+                ];
+                const colorThemes = ['rose-pink', 'burgundy-wine', 'aurora', 'royal-purple', 'sunset-orange'];
 
                 // Suppress all CSS transitions for the swap frame
                 htmlElement.classList.add('theme-switching');
 
-                // Atomically swap classes in the same synchronous block
-                themeClasses.forEach(cls => {
+                // Atomically remove ALL theme classes
+                allThemeClasses.forEach(cls => {
                     htmlElement.classList.remove(cls);
                     bodyElement.classList.remove(cls);
                 });
 
-                const newThemeClass = isDark ? 'theme-dark' : 'theme-light';
-                htmlElement.classList.add(newThemeClass);
-                bodyElement.classList.add(newThemeClass);
-                if (isDark) {
-                    htmlElement.classList.add('dark-mode');
-                    bodyElement.classList.add('dark-mode');
+                if (value === 'dark') {
+                    htmlElement.classList.add('dark-mode', 'theme-dark');
+                    bodyElement.classList.add('dark-mode', 'theme-dark');
+                } else if (colorThemes.includes(value)) {
+                    htmlElement.classList.add(`theme-${value}`, 'dark-theme-variant');
+                    bodyElement.classList.add(`theme-${value}`, 'dark-theme-variant');
+                } else {
+                    htmlElement.classList.add('theme-light');
+                    bodyElement.classList.add('theme-light');
                 }
 
                 // Re-enable transitions after one paint
@@ -409,7 +416,7 @@ const SettingsSidebar = ({
                     });
                 });
 
-                console.log(`🎨 Theme: ${isDark ? '🌙 Dark' : '☀️ Light'}`);
+                console.log(`🎨 Theme changed: ${value}`);
             }
 
             // Apply immediate UI changes for various settings
@@ -758,27 +765,53 @@ const SettingsSidebar = ({
                                 </svg>
                                 APPEARANCE
                             </h4>
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Dark Mode</span>
-                                    <small>Switch between light and dark interface theme</small>
-                                </div>
-                                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                                    <span style={{fontSize:'11px',color:'var(--text-muted,#888)',fontWeight:600}}>
-                                        {settings.selectedTheme === 'dark' ? '🌙 Dark' : '☀️ Light'}
-                                    </span>
-                                    <label className="modern-toggle-switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.selectedTheme === 'dark'}
-                                            onChange={(e) => {
-                                                const newTheme = e.target.checked ? 'dark' : 'light';
-                                                handleSettingChange('selectedTheme', newTheme);
+                            <div className="modern-setting-info" style={{marginBottom:'10px'}}>
+                                <span>Theme</span>
+                                <small>Choose your interface colour theme</small>
+                            </div>
+                            <div style={{
+                                display:'grid',
+                                gridTemplateColumns:'repeat(3,1fr)',
+                                gap:'8px',
+                                marginTop:'2px'
+                            }}>
+                                {[
+                                    { value:'light',         label:'☀️ Light',    swatch:'linear-gradient(135deg,#f8fafc,#e2e8f0)' },
+                                    { value:'dark',          label:'🌙 Dark',     swatch:'linear-gradient(135deg,#1e1e30,#0f0f1a)' },
+                                    { value:'rose-pink',     label:'🌸 Rose',     swatch:'linear-gradient(135deg,#f06292,#1a0b10)' },
+                                    { value:'burgundy-wine', label:'🍷 Wine',     swatch:'linear-gradient(135deg,#c62828,#130508)' },
+                                    { value:'aurora',        label:'🌌 Aurora',   swatch:'linear-gradient(135deg,#00e5ff,#030d1a)' },
+                                    { value:'royal-purple',  label:'👑 Purple',   swatch:'linear-gradient(135deg,#9c27b0,#0d0618)' },
+                                    { value:'sunset-orange', label:'🌅 Sunset',   swatch:'linear-gradient(135deg,#ff5722,#120700)' },
+                                ].map(t => {
+                                    const active = settings.selectedTheme === t.value;
+                                    return (
+                                        <button
+                                            key={t.value}
+                                            onClick={() => handleSettingChange('selectedTheme', t.value)}
+                                            style={{
+                                                display:'flex',flexDirection:'column',alignItems:'center',gap:'5px',
+                                                padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
+                                                border: active ? '2px solid var(--accent-color,#6366f1)' : '2px solid rgba(128,128,128,0.25)',
+                                                background: active ? 'rgba(99,102,241,0.12)' : 'rgba(128,128,128,0.06)',
+                                                outline:'none',transition:'all 0.15s',
+                                                boxShadow: active ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
                                             }}
-                                        />
-                                        <span className="modern-toggle-slider"></span>
-                                    </label>
-                                </div>
+                                        >
+                                            <div style={{
+                                                width:'36px',height:'22px',borderRadius:'6px',
+                                                background:t.swatch,
+                                                border:'1px solid rgba(255,255,255,0.12)',
+                                                flexShrink:0,
+                                            }}/>
+                                            <span style={{
+                                                fontSize:'10px',fontWeight: active ? 700 : 500,
+                                                color: active ? 'var(--text-primary,#111)' : 'var(--text-muted,#888)',
+                                                whiteSpace:'nowrap',lineHeight:1.2,
+                                            }}>{t.label}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
