@@ -1,22 +1,22 @@
 /* ═══════════════════════════════════════════════════════════
-   SHARED BASE — IDENTICAL SIZE for both players
-   Layout: height 91px, padding 6px top+bottom = 79px inner
-   Content: header(16) + visualizer(11) + progress(5)
-            + controls(26) + volume(10) = 68px
-   justify-content: space-between → 11px free split as
-   4 gaps of ~2.75px each, zero slack at bottom
+   SHARED BASE — IDENTICAL SIZE & SPACING for both players
+   Layout: height 112px, padding 9px top+bottom = 94px inner
+   Content: header(18) + visualizer(13) + progress(5)
+            + controls(28) + volume(12) = 76px
+   justify-content: space-between → 18px free / 4 gaps ≈ 4.5px each
+   Extra padding gives the roomy feel matching the MP3 screenshot
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
   width: 244px;
   max-width: 244px;
   min-width: 244px;
-  height: 91px;
-  min-height: 91px;
-  max-height: 91px;
+  height: 112px;
+  min-height: 112px;
+  max-height: 112px;
   box-sizing: border-box;
-  border-radius: 13px;
-  padding: 6px 10px 6px;
+  border-radius: 14px;
+  padding: 9px 12px 10px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
@@ -76,20 +76,20 @@
 .youtube-music-player .compact-volume-slider { background: rgba(255,255,255,.28) !important; }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 1 — Header: brand icon + song title  (~18px total)
+   ROW 1 — Header: brand icon + song title  (18px total)
 ═══════════════════════════════════════════════════════════ */
 .player-header-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   width: 100%;
   overflow: hidden;
   padding-bottom: 2px;
   border-bottom: 1px solid rgba(0,0,0,0.07);
   flex-shrink: 0;
-  height: 16px;
-  min-height: 16px;
-  max-height: 16px;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
 }
 
 .youtube-music-player .player-header-row {
@@ -108,7 +108,7 @@
 }
 
 .player-song-title {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -124,20 +124,20 @@
 .youtube-music-player .player-song-title {
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.3px;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 2 — Visualizer  (~14px)
+   ROW 2 — Visualizer  (13px)
 ═══════════════════════════════════════════════════════════ */
 .audio-visualizer {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 11px;
-  min-height: 11px;
-  max-height: 11px;
+  height: 13px;
+  min-height: 13px;
+  max-height: 13px;
   gap: 2px;
   flex-shrink: 0;
 }
@@ -187,7 +187,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROW 4 — Controls: 4 buttons + time  (30px)
+   ROW 4 — Controls: 4 buttons + time  (28px)
 ═══════════════════════════════════════════════════════════ */
 .compact-controls {
   display: flex;
@@ -195,9 +195,9 @@
   justify-content: space-between;
   width: 100%;
   flex-shrink: 0;
-  height: 26px;
-  min-height: 26px;
-  max-height: 26px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
 }
 
 /* ── Lavender buttons ── */
@@ -227,8 +227,6 @@
   transform: scale(1.12);
   box-shadow: 0 3px 10px rgba(76,29,149,0.6);
 }
-
-/* ── YouTube player — same layout as MP3 player ── */
 
 /* ── YouTube buttons ── */
 .youtube-music-player .compact-btn {
@@ -265,16 +263,16 @@
   transform: none !important;
 }
 
-/* ── Button sizes (fit in 26px row) ── */
-.icon-btn { width: 21px; height: 21px; }
-.play-btn { width: 26px; height: 26px; }
+/* ── Button sizes (fit in 28px row) ── */
+.icon-btn { width: 23px; height: 23px; }
+.play-btn { width: 28px; height: 28px; }
 
 /* ── Time display ── */
 .time-info {
   display: flex;
   align-items: center;
   gap: 1px;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -293,13 +291,13 @@
 .volume-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   width: 100%;
   flex-shrink: 0;
-  height: 10px;
-  min-height: 10px;
-  max-height: 10px;
-  overflow: hidden;
+  height: 12px;
+  min-height: 12px;
+  max-height: 12px;
+  overflow: visible;
 }
 
 .vol-icon { flex-shrink: 0; }
@@ -329,8 +327,8 @@
 
 .compact-volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -348,8 +346,8 @@
 }
 
 .compact-volume-slider::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -376,10 +374,10 @@
   width: 152px !important;
   max-width: 152px !important;
   min-width: 140px !important;
-  height: 118px !important;
-  min-height: 118px !important;
-  max-height: 118px !important;
-  padding: 6px 6px 6px !important;
+  height: 126px !important;
+  min-height: 126px !important;
+  max-height: 126px !important;
+  padding: 8px 7px 8px !important;
   gap: 0 !important;
   justify-content: space-between !important;
 }
@@ -391,7 +389,7 @@
 .pm-message .compact-controls { height: 24px !important; min-height: 24px !important; max-height: 24px !important; }
 
 .pm-conversation .player-header-row,
-.pm-message .player-header-row { height: 15px !important; min-height: 15px !important; max-height: 15px !important; }
+.pm-message .player-header-row { height: 16px !important; min-height: 16px !important; max-height: 16px !important; }
 
 .pm-conversation .volume-row,
 .pm-message .volume-row { height: 10px !important; min-height: 10px !important; max-height: 10px !important; }
@@ -436,13 +434,13 @@
     width: 210px;
     max-width: 210px;
     min-width: 210px;
-    height: 91px;
-    min-height: 91px;
-    max-height: 91px;
-    padding: 6px 8px 6px;
+    height: 112px;
+    min-height: 112px;
+    max-height: 112px;
+    padding: 9px 9px 10px;
   }
-  .play-btn { width: 24px; height: 24px; }
-  .icon-btn { width: 19px; height: 19px; }
+  .play-btn { width: 26px; height: 26px; }
+  .icon-btn { width: 21px; height: 21px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
