@@ -94,6 +94,7 @@ const AdminBanKickModal = ({
   currentUserProfile,
   currentRoomId,
   currentRoomName,
+  hideBanTab = false,
 }) => {
   /* ── local action tracks the modal's current action (may differ from prop after toggle) */
   const [localAction, setLocalAction]       = useState(actionType || 'ban');
@@ -250,11 +251,12 @@ const AdminBanKickModal = ({
   const statusColor = selectedUser.isBanned ? '#ef4444' : selectedUser.mutedInfo?.isMuted ? '#f59e0b' : selectedUser.kickedFrom?.roomId ? '#f97316' : '#10b981';
 
   /* ── Tab definitions ── */
-  const tabs = [
+  const allTabs = [
     { id: 'ban',  action: selectedUser?.isBanned  ? 'unban'  : 'ban',   icon: selectedUser?.isBanned  ? 'unban'  : 'ban',   label: selectedUser?.isBanned  ? 'Unban'  : 'Ban'   },
     { id: 'mute', action: selectedUser?.mutedInfo?.isMuted ? 'unmute' : 'mute', icon: selectedUser?.mutedInfo?.isMuted ? 'unmute' : 'mute', label: selectedUser?.mutedInfo?.isMuted ? 'Unmute' : 'Mute' },
     { id: 'kick', action: selectedUser?.kickedFrom?.roomId ? 'unkick' : 'kick', icon: selectedUser?.kickedFrom?.roomId ? 'unkick' : 'kick', label: selectedUser?.kickedFrom?.roomId ? 'Unkick' : 'Kick' },
   ];
+  const tabs = hideBanTab ? allTabs.filter(t => t.id !== 'ban') : allTabs;
 
   /* ── Expiry display ── */
   const expiryLabel = cfg.hasDuration ? computeExpiry(duration, customDuration) : null;

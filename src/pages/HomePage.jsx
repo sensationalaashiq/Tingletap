@@ -6354,6 +6354,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     currentUserProfile={loggedInUserProfile}
                     currentRoomId={roomId}
                     currentRoomName={roomName || ''}
+                    hideBanTab={loggedInUserProfile?.role === 'moderator'}
                 />
                 
                 <StylishConfirmationDialogue 

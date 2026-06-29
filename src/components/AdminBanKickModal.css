@@ -6,8 +6,6 @@
   position: fixed;
   inset: 0;
   background: rgba(79, 26, 163, 0.18);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
