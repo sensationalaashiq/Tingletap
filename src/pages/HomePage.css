@@ -167,11 +167,11 @@
     right: 140px !important;
   }
   .header-title {
-    font-size: 0.9rem;
+    font-size: 0.78rem;
   }
   .user-count {
-    font-size: 0.65rem !important;
-    padding: 2px 6px !important;
+    font-size: 0.58rem !important;
+    padding: 2px 5px !important;
   }
 }
 
@@ -181,7 +181,7 @@
     right: 120px !important;
   }
   .header-title {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -191,10 +191,10 @@
     right: 110px !important;
   }
   .header-title {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
   }
   .user-count {
-    font-size: 0.6rem !important;
+    font-size: 0.55rem !important;
   }
 }
 
@@ -204,7 +204,7 @@
     right: 100px !important;
   }
   .header-title {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
   }
   .header-action-btn {
     width: 28px !important;
@@ -698,7 +698,7 @@
 }
 
 .header-title {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--header-text, white);
   white-space: nowrap;
@@ -711,9 +711,9 @@
 .user-count {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: var(--header-text, white);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.6rem;
   font-weight: 700;
 
   margin-left: 8px;
@@ -2980,11 +2980,8 @@ html body.theme-sunset .message-body p {
 }
 
 .attachment-btn svg {
-  width: 20px !important;
-  height: 20px !important;
-  color: #8b5cf6 !important;
-  stroke: #8b5cf6 !important;
-  fill: none !important;
+  width: 24px !important;
+  height: 24px !important;
 }
 
 
