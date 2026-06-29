@@ -28,15 +28,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001
-externalPort = 4200
-
-[[ports]]
-localPort = 5174
-externalPort = 3000
-exposeLocalhost = true
-
-[[ports]]
 localPort = 5175
 externalPort = 3001
 exposeLocalhost = true
@@ -66,5 +57,5 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -9 -f vite 2>/dev/null; fuser -k 5000/tcp 2>/dev/null; sleep 3; npm run dev"
+args = "npm run dev"
 waitForPort = 5000

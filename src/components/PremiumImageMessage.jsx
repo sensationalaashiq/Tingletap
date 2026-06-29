@@ -2,85 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import './PremiumImageMessage.css';
 
-/* ── Premium SVG Icons ─────────────────────────────── */
-const LockImageSVG = () => (
-  <svg width="22" height="22" viewBox="0 0 44 44" fill="none">
-    <defs>
-      <linearGradient id="pimPurp1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#a78bfa"/>
-        <stop offset="50%" stopColor="#7c3aed"/>
-        <stop offset="100%" stopColor="#5b21b6"/>
-      </linearGradient>
-      <linearGradient id="pimPurp2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ddd6fe"/>
-        <stop offset="100%" stopColor="#a78bfa"/>
-      </linearGradient>
-      <filter id="pimGlow2">
-        <feGaussianBlur stdDeviation="1" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <path d="M6 34 L16 18 L22 26 L28 20 L38 34 Z" fill="url(#pimPurp1)" opacity="0.35"/>
-    <circle cx="11" cy="14" r="3" fill="url(#pimPurp2)" opacity="0.45"/>
-    <g filter="url(#pimGlow2)">
-      <rect x="14" y="24" width="16" height="13" rx="3.5" fill="url(#pimPurp1)"/>
-      <path d="M17 24 L17 20 C17 16.7 27 16.7 27 20 L27 24" stroke="url(#pimPurp1)" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-      <circle cx="22" cy="30" r="2" fill="#f5f3ff"/>
-      <rect x="21.2" y="30" width="1.6" height="2.8" rx="0.8" fill="#f5f3ff"/>
-    </g>
-  </svg>
-);
-
-const ShieldSVG = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="pimSh2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#a78bfa"/>
-        <stop offset="100%" stopColor="#7c3aed"/>
-      </linearGradient>
-    </defs>
-    <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="url(#pimSh2)"/>
-    <path d="M9.5 12L11.5 14L15.5 10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const EyeSlashSVG = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const BackArrowSVG = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-    <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const EyeHideSVG = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const ExpandSVG = () => (
-  <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
-    <defs>
-      <linearGradient id="expGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#f59e0b"/>
-        <stop offset="50%" stopColor="#ef4444"/>
-        <stop offset="100%" stopColor="#8b5cf6"/>
-      </linearGradient>
-    </defs>
-    <path d="M3 8V3h5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M17 8V3h-5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 12v5h5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M17 12v5h-5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-/* ── Fullscreen Image Modal — renders via portal at document.body ── */
+/* ── Fullscreen Image Modal — no download, always viewport-centered ── */
 const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -97,52 +19,31 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
     <div className="pim-modal-overlay" onClick={onClose}>
       <div className="pim-modal-card" onClick={(e) => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="pim-modal-header">
           <div className="pim-modal-header-left">
             <div className="pim-modal-icon-wrap">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <defs>
                   <linearGradient id="mhGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#a78bfa"/>
-                    <stop offset="100%" stopColor="#7c3aed"/>
+                    <stop offset="0%" stopColor="#f59e0b"/>
+                    <stop offset="100%" stopColor="#d97706"/>
                   </linearGradient>
                 </defs>
                 <rect x="3" y="3" width="18" height="18" rx="3" stroke="url(#mhGrad)" strokeWidth="1.8"/>
-                <circle cx="8.5" cy="8.5" r="1.5" fill="#a78bfa"/>
+                <circle cx="8.5" cy="8.5" r="1.5" fill="#f59e0b"/>
                 <path d="M5 17l4-4 3 3 3-4 4 5" stroke="url(#mhGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <span className="pim-modal-title">{imageFileName || 'Image Preview'}</span>
           </div>
 
-          <div className="pim-modal-header-actions">
-            {/* Download button */}
-            <a
-              href={imageUrl}
-              download={imageFileName || 'image'}
-              className="pim-modal-download-btn"
-              title="Download image"
-              onClick={(e) => e.stopPropagation()}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3v13M7 12l5 5 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M5 20h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-              </svg>
-            </a>
-
-            {/* Close button */}
-            <button className="pim-modal-close-btn" onClick={onClose} title="Close (Esc)">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
+          <button className="pim-modal-close-btn" onClick={onClose} title="Close (Esc)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Image area */}
         <div className="pim-modal-body">
           <img
             src={imageUrl}
@@ -153,11 +54,10 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
           />
         </div>
 
-        {/* Footer */}
         <div className="pim-modal-footer">
           <div className="pim-modal-footer-dot" />
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{opacity:0.45}}>
-            <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="#7c3aed"/>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" style={{opacity:0.5}}>
+            <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="#f59e0b"/>
           </svg>
           <span className="pim-modal-footer-text">Tap outside or press Esc to close</span>
           <div className="pim-modal-footer-dot" />
@@ -174,16 +74,30 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   const [state, setState] = useState('hidden');
   const [showModal, setShowModal] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
+  const [imgSize, setImgSize] = useState({ w: null, h: null });
 
   const rootRef = useRef(null);
 
-  /* ── Reveal: show image + auto-scroll chat to bottom ── */
+  /* Preload to get natural dimensions */
+  useEffect(() => {
+    if (!imageUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      const maxW = compact ? 160 : 220;
+      const ratio = img.naturalHeight / img.naturalWidth;
+      const w = Math.min(img.naturalWidth, maxW);
+      const h = Math.round(w * ratio);
+      setImgSize({ w, h: Math.min(h, compact ? 140 : 220) });
+    };
+    img.src = imageUrl;
+  }, [imageUrl, compact]);
+
+  /* Reveal */
   const handleReveal = useCallback((e) => {
     e?.stopPropagation();
     setIsEntering(true);
     setState('visible');
     setTimeout(() => setIsEntering(false), 600);
-    /* Scroll the chat to bottom so the revealed image is fully visible */
     setTimeout(() => {
       if (typeof window.scrollToBottom === 'function') {
         window.scrollToBottom(true);
@@ -193,37 +107,110 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
     }, 120);
   }, []);
 
-  /* ── Hide ── */
+  /* Hide */
   const handleHide = useCallback((e) => {
     e?.stopPropagation();
     setState('hidden');
   }, []);
 
-  const rootCls = `pim${compact ? ' pim--compact' : ''}`;
+  const cardStyle = imgSize.w
+    ? { width: imgSize.w + 'px', minHeight: Math.max(imgSize.h, compact ? 130 : 160) + 'px' }
+    : {};
 
   /* ── HIDDEN STATE ── */
   if (state === 'hidden') {
     return (
-      <div ref={rootRef} className={`${rootCls} pim__card`}>
-        <div className="pim__card-border" />
+      <div
+        ref={rootRef}
+        className={`pim-card${compact ? ' pim-card--compact' : ''}`}
+        style={cardStyle}
+      >
+        {/* Shield badge top-right */}
+        <div className="pim-card__badge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="#f59e0b"/>
+            <rect x="10.5" y="9" width="3" height="4" rx="1" fill="#111"/>
+            <path d="M10.5 9V7.5C10.5 6.7 13.5 6.7 13.5 7.5V9" stroke="#111" strokeWidth="1.3" fill="none"/>
+          </svg>
+        </div>
 
-        <div className="pim__icon-area">
-          <div className="pim__icon-square">
-            <LockImageSVG />
+        {/* Icon: image + lock */}
+        <div className="pim-card__icon-wrap">
+          <div className="pim-card__img-box">
+            <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
+              <rect width="46" height="46" rx="12" fill="#2a1d00"/>
+              <rect width="46" height="46" rx="12" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.5"/>
+              <path d="M8 36 L18 22 L24 30 L30 24 L38 36 Z" fill="#f59e0b" opacity="0.2"/>
+              <circle cx="13" cy="15" r="3.5" fill="#f59e0b" opacity="0.25"/>
+            </svg>
+            <div className="pim-card__lock">
+              <svg width="22" height="22" viewBox="0 0 44 44" fill="none">
+                <defs>
+                  <linearGradient id="gL1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24"/>
+                    <stop offset="100%" stopColor="#d97706"/>
+                  </linearGradient>
+                  <filter id="gF1">
+                    <feGaussianBlur stdDeviation="1.2" result="b"/>
+                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <g filter="url(#gF1)">
+                  <rect x="12" y="22" width="20" height="15" rx="3.5" fill="url(#gL1)"/>
+                  <path d="M15 22V17C15 12 29 12 29 17V22" stroke="url(#gL1)" strokeWidth="2.8" strokeLinecap="round" fill="none"/>
+                  <circle cx="22" cy="28.5" r="2.2" fill="#1a0f00"/>
+                  <rect x="21.1" y="28.5" width="1.8" height="3" rx="0.9" fill="#1a0f00"/>
+                </g>
+              </svg>
+            </div>
           </div>
-          <div className="pim__icon-pulse" />
-          <div className="pim__icon-glow" />
+          <div className="pim-card__pulse" />
         </div>
 
-        <div className="pim__title-row">
-          <span className="pim__title">Image Hidden</span>
-          <ShieldSVG />
+        {/* Title */}
+        <div className="pim-card__title-row">
+          <span className="pim-card__star">✦</span>
+          <span className="pim-card__title">Image Hidden</span>
+          <span className="pim-card__star">✦</span>
         </div>
 
-        <button className="pim__reveal-btn" onClick={handleReveal}>
-          <EyeSlashSVG />
-          <span>View</span>
+        {/* Subtitle */}
+        <p className="pim-card__sub">Hidden for your privacy.</p>
+
+        {/* Tap to View */}
+        <button className="pim-card__btn" onClick={handleReveal}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <span>Tap to View</span>
         </button>
+
+        {/* Bottom tags */}
+        <div className="pim-card__tags">
+          <span className="pim-card__tag">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="#f59e0b"/>
+            </svg>
+            Private
+          </span>
+          <span className="pim-card__sep" />
+          <span className="pim-card__tag">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
+              <rect x="5" y="11" width="14" height="11" rx="2" stroke="#f59e0b" strokeWidth="2.2"/>
+              <path d="M8 11V7C8 4.79 9.79 3 12 3s4 1.79 4 4v4" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            Secure
+          </span>
+          <span className="pim-card__sep" />
+          <span className="pim-card__tag">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="1" y1="1" x2="23" y2="23" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            Hidden
+          </span>
+        </div>
       </div>
     );
   }
@@ -231,30 +218,33 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
   /* ── VISIBLE STATE ── */
   return (
     <>
-      <div ref={rootRef} className={`${rootCls} pim__viewer${isEntering ? ' pim__viewer--entering' : ''}`}>
-        <div className="pim__img-wrap">
+      <div
+        ref={rootRef}
+        className={`pim-viewer${compact ? ' pim-viewer--compact' : ''}${isEntering ? ' pim-viewer--in' : ''}`}
+      >
+        <div className="pim-viewer__wrap">
           <img
             src={imageUrl}
             alt={imageFileName || 'Shared image'}
-            className="pim__img"
+            className="pim-viewer__img"
             draggable={false}
             onError={(e) => { e.target.alt = 'Image unavailable'; }}
           />
-
-          {/* Zoom button */}
-          <button
-            className="pim__expand-btn"
-            onClick={() => setShowModal(true)}
-            title="View full size"
-          >
-            <ExpandSVG />
+          <button className="pim-viewer__zoom" onClick={() => setShowModal(true)} title="View full size">
+            <svg width="11" height="11" viewBox="0 0 20 20" fill="none">
+              <path d="M3 8V3h5" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17 8V3h-5" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3 12v5h5" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17 12v5h-5" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             <span>Zoom</span>
           </button>
         </div>
 
-        <button className="pim__hide-btn" onClick={handleHide}>
-          <BackArrowSVG />
-          <EyeHideSVG />
+        <button className="pim-viewer__hide" onClick={handleHide}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
+            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <span>Hide</span>
         </button>
       </div>
