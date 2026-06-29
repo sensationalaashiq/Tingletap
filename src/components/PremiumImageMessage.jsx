@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './PremiumImageMessage.css';
 
 /* ── Premium SVG Icons ─────────────────────────────── */
@@ -63,7 +64,6 @@ const EyeHideSVG = () => (
   </svg>
 );
 
-/* Premium expand/zoom icon — colorful gradient */
 const ExpandSVG = () => (
   <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
     <defs>
@@ -77,38 +77,31 @@ const ExpandSVG = () => (
     <path d="M17 8V3h-5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M3 12v5h5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M17 12v5h-5" stroke="url(#expGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 3l4.5 4.5M17 3l-4.5 4.5M3 17l4.5-4.5M17 17l-4.5-4.5" stroke="url(#expGrad)" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
   </svg>
 );
 
-/* Modal close (X) icon */
-const CloseSVG = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <path d="M18 6L6 18M6 6l12 12" stroke="#7c3aed" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-/* ── Fullscreen Image Modal ───────────────────────────── */
+/* ── Fullscreen Image Modal — renders via portal at document.body ── */
 const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      document.body.style.overflow = prev;
     };
   }, [onClose]);
 
-  return (
+  const modal = (
     <div className="pim-modal-overlay" onClick={onClose}>
       <div className="pim-modal-card" onClick={(e) => e.stopPropagation()}>
 
-        {/* Header bar */}
+        {/* Header */}
         <div className="pim-modal-header">
           <div className="pim-modal-header-left">
             <div className="pim-modal-icon-wrap">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                 <defs>
                   <linearGradient id="mhGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#a78bfa"/>
@@ -122,9 +115,31 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
             </div>
             <span className="pim-modal-title">{imageFileName || 'Image Preview'}</span>
           </div>
-          <button className="pim-modal-close-btn" onClick={onClose} title="Close (Esc)">
-            <CloseSVG />
-          </button>
+
+          <div className="pim-modal-header-actions">
+            {/* Download button */}
+            <a
+              href={imageUrl}
+              download={imageFileName || 'image'}
+              className="pim-modal-download-btn"
+              title="Download image"
+              onClick={(e) => e.stopPropagation()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v13M7 12l5 5 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 20h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+              </svg>
+            </a>
+
+            {/* Close button */}
+            <button className="pim-modal-close-btn" onClick={onClose} title="Close (Esc)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Image area */}
@@ -141,12 +156,17 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
         {/* Footer */}
         <div className="pim-modal-footer">
           <div className="pim-modal-footer-dot" />
-          <span className="pim-modal-footer-text">Press Esc or click outside to close</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{opacity:0.45}}>
+            <path d="M12 2L4 5.5V11C4 15.55 7.42 19.74 12 21C16.58 19.74 20 15.55 20 11V5.5L12 2Z" fill="#7c3aed"/>
+          </svg>
+          <span className="pim-modal-footer-text">Tap outside or press Esc to close</span>
           <div className="pim-modal-footer-dot" />
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 };
 
 /* ─────────────────────────── MAIN COMPONENT ─────────────────────────── */
@@ -157,15 +177,20 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
 
   const rootRef = useRef(null);
 
-  /* ── Reveal ── */
+  /* ── Reveal: show image + auto-scroll chat to bottom ── */
   const handleReveal = useCallback((e) => {
     e?.stopPropagation();
     setIsEntering(true);
     setState('visible');
     setTimeout(() => setIsEntering(false), 600);
+    /* Scroll the chat to bottom so the revealed image is fully visible */
     setTimeout(() => {
-      if (rootRef.current) rootRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 80);
+      if (typeof window.scrollToBottom === 'function') {
+        window.scrollToBottom(true);
+      } else if (rootRef.current) {
+        rootRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 120);
   }, []);
 
   /* ── Hide ── */
@@ -216,7 +241,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
             onError={(e) => { e.target.alt = 'Image unavailable'; }}
           />
 
-          {/* Expand / Modal button — bottom-right corner */}
+          {/* Zoom button */}
           <button
             className="pim__expand-btn"
             onClick={() => setShowModal(true)}
@@ -234,7 +259,6 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
         </button>
       </div>
 
-      {/* Inline Fullscreen Modal — no external links */}
       {showModal && (
         <ImageModal
           imageUrl={imageUrl}

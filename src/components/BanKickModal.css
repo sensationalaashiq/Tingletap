@@ -16,9 +16,8 @@
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: all !important;
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
 }
+
 
 /* ── Animations ─────────────────────────────────────────────────── */
 @keyframes bkm2SlideIn {
