@@ -144,6 +144,11 @@ const AdminPanelPage = () => {
   const [unkickTarget, setUnkickTarget] = useState(null);
   const [unkicking, setUnkicking] = useState(false);
 
+  // All kicked users across all rooms
+  const [kickedUsersList, setKickedUsersList] = useState([]);
+  const [kickedUsersLoading, setKickedUsersLoading] = useState(false);
+  const [quickUnkickingId, setQuickUnkickingId] = useState(null);
+
   // Unmute modal
   const [showUnmuteModal, setShowUnmuteModal] = useState(false);
   const [unmuteTarget, setUnmuteTarget] = useState(null);
@@ -300,6 +305,13 @@ const AdminPanelPage = () => {
     
     return () => unsubscribe();
   }, []);
+
+  // Load all kicked users when Rooms tab opens or rooms list changes
+  useEffect(() => {
+    if (activeTab === 'rooms' && rooms.length > 0) {
+      loadAllKickedUsers(rooms);
+    }
+  }, [activeTab, rooms.length]);
 
   // Real-time banned IPs data
   useEffect(() => {
@@ -603,6 +615,68 @@ const AdminPanelPage = () => {
     } catch (err) {
       pt.error('Failed to unkick: ' + err.message);
     } finally { setUnkicking(false); }
+  };
+
+  // Rooms tab: load ALL kicked users from ALL rooms
+  const loadAllKickedUsers = async (roomsList) => {
+    const list = roomsList || rooms;
+    if (!list.length) return;
+    setKickedUsersLoading(true);
+    try {
+      const all = [];
+      await Promise.all(list.map(async (room) => {
+        const snap = await getDocs(collection(db, 'rooms', room.id, 'kickedUsers'));
+        snap.docs.forEach(d => {
+          all.push({ uid: d.id, roomId: room.id, roomName: room.name, ...d.data() });
+        });
+      }));
+      setKickedUsersList(all);
+    } catch (e) {
+      console.error('Failed to load kicked users:', e);
+    } finally {
+      setKickedUsersLoading(false);
+    }
+  };
+
+  // Quick unkick from Rooms tab
+  const handleQuickUnkick = async (kicked) => {
+    const key = kicked.uid + kicked.roomId;
+    setQuickUnkickingId(key);
+    try {
+      await deleteDoc(doc(db, 'rooms', kicked.roomId, 'kickedUsers', kicked.uid));
+      await updateDoc(doc(db, 'users', kicked.uid), { kickedFrom: null }).catch(() => {});
+      addDoc(collection(db, 'rooms', kicked.roomId, 'messages'), {
+        text: `${kicked.displayName || kicked.username || 'User'} has been unkicked and can rejoin.`,
+        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+        isBot: true, systemBot: true, tinglebotType: 'unkicked',
+        createdAt: serverTimestamp(),
+        noReply: true, noReaction: true, noReport: true, noUnread: true,
+      }).catch(() => {});
+      setKickedUsersList(prev => prev.filter(k => !(k.uid === kicked.uid && k.roomId === kicked.roomId)));
+      pt.success(`${kicked.displayName || kicked.username || 'User'} unkicked from ${kicked.roomName}`);
+    } catch (e) {
+      pt.error('Unkick failed: ' + e.message);
+    } finally {
+      setQuickUnkickingId(null);
+    }
+  };
+
+  // Bulk unkick all
+  const handleBulkUnkickAll = async () => {
+    if (!kickedUsersList.length) return;
+    setKickedUsersLoading(true);
+    try {
+      await Promise.all(kickedUsersList.map(async (k) => {
+        await deleteDoc(doc(db, 'rooms', k.roomId, 'kickedUsers', k.uid)).catch(() => {});
+        await updateDoc(doc(db, 'users', k.uid), { kickedFrom: null }).catch(() => {});
+      }));
+      setKickedUsersList([]);
+      pt.success(`All ${kickedUsersList.length} kicked user(s) cleared!`);
+    } catch (e) {
+      pt.error('Bulk unkick failed: ' + e.message);
+    } finally {
+      setKickedUsersLoading(false);
+    }
   };
 
   // Violations: Unmute
@@ -2211,6 +2285,125 @@ const AdminPanelPage = () => {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* ── Kicked Users Management Panel ── */}
+              <div style={{ marginTop: '2rem' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'0.6rem', marginBottom:'0.9rem' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#f97316,#ea580c)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18}}>
+                        <path fill="#fff" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#1e1b4b' }}>
+                        Kicked Users
+                        {kickedUsersList.length > 0 && (
+                          <span style={{ marginLeft:8, background:'#f97316', color:'#fff', fontSize:11, fontWeight:700, borderRadius:20, padding:'1px 8px' }}>
+                            {kickedUsersList.length}
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{ margin:0, fontSize:11, color:'#6b7280' }}>Users currently kicked from any room</p>
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+                    <button
+                      onClick={() => loadAllKickedUsers(rooms)}
+                      disabled={kickedUsersLoading}
+                      style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, padding:'6px 12px', borderRadius:8, border:'1.5px solid #e5e7eb', background:'#fff', color:'#374151', fontWeight:700, cursor:'pointer', opacity: kickedUsersLoading ? 0.6 : 1 }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                        <path fill="#6b7280" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                      </svg>
+                      {kickedUsersLoading ? 'Loading…' : 'Refresh'}
+                    </button>
+                    {kickedUsersList.length > 0 && (
+                      <button
+                        onClick={handleBulkUnkickAll}
+                        disabled={kickedUsersLoading}
+                        style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, padding:'6px 14px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#f97316,#ea580c)', color:'#fff', fontWeight:800, cursor:'pointer', opacity: kickedUsersLoading ? 0.6 : 1 }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                          <path fill="#fff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+                        </svg>
+                        Unkick All ({kickedUsersList.length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {kickedUsersLoading && kickedUsersList.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'2rem', color:'#9ca3af', fontSize:13 }}>
+                    <div className="luxury-loading-spinner" style={{width:22,height:22,borderWidth:3,margin:'0 auto 8px'}}></div>
+                    Loading kicked users…
+                  </div>
+                ) : kickedUsersList.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'2rem 1rem', background:'#f8fafc', borderRadius:14, border:'1.5px dashed #e2e8f0' }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:36,height:36,margin:'0 auto 8px',display:'block'}}>
+                      <path fill="#10b981" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+                    </svg>
+                    <p style={{ margin:0, fontSize:13, fontWeight:700, color:'#059669' }}>No kicked users right now</p>
+                    <p style={{ margin:'4px 0 0', fontSize:11.5, color:'#9ca3af' }}>All rooms are clear</p>
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                    {kickedUsersList.map((kicked) => {
+                      const kickKey = kicked.uid + kicked.roomId;
+                      const isUnkicking = quickUnkickingId === kickKey;
+                      const kickedAtMs = kicked.kickedAt?.toDate ? kicked.kickedAt.toDate().getTime() : (kicked.kickedAt?.seconds ? kicked.kickedAt.seconds * 1000 : null);
+                      const kickedAtStr = kickedAtMs ? new Date(kickedAtMs).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+                      return (
+                        <div key={kickKey} style={{ display:'flex', alignItems:'center', gap:'0.7rem', background:'#fff', border:'1.5px solid #fed7aa', borderRadius:12, padding:'10px 14px', flexWrap:'wrap' }}>
+                          <div style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,#fed7aa,#fb923c)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:900, fontSize:15, color:'#9a3412' }}>
+                            {(kicked.displayName || kicked.username || '?')[0].toUpperCase()}
+                          </div>
+                          <div style={{ flex:1, minWidth:100 }}>
+                            <div style={{ fontWeight:800, fontSize:13, color:'#1e1b4b' }}>{kicked.displayName || kicked.username || kicked.uid}</div>
+                            <div style={{ fontSize:11, color:'#6b7280', display:'flex', gap:'0.5rem', flexWrap:'wrap', marginTop:2 }}>
+                              <span style={{ background:'#ede9fe', color:'#5b21b6', padding:'1px 7px', borderRadius:20, fontWeight:700 }}>
+                                🚪 {kicked.roomName || kicked.roomId}
+                              </span>
+                              {kicked.kickDuration && kicked.kickDuration !== 'permanent' && (
+                                <span style={{ background:'#fef3c7', color:'#92400e', padding:'1px 7px', borderRadius:20, fontWeight:600 }}>
+                                  ⏱ {kicked.kickDuration}
+                                </span>
+                              )}
+                              {kicked.kickDuration === 'permanent' && (
+                                <span style={{ background:'#fee2e2', color:'#991b1b', padding:'1px 7px', borderRadius:20, fontWeight:700 }}>
+                                  🔴 Permanent
+                                </span>
+                              )}
+                              {kicked.reason && (
+                                <span style={{ color:'#9ca3af', fontStyle:'italic' }}>"{kicked.reason}"</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize:10.5, color:'#9ca3af', marginTop:3 }}>
+                              Kicked at {kickedAtStr}{kicked.kickedBy ? ` by ${kicked.kickedBy}` : ''}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleQuickUnkick(kicked)}
+                            disabled={isUnkicking || kickedUsersLoading}
+                            style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, padding:'7px 14px', borderRadius:8, border:'none', background: isUnkicking ? '#e5e7eb' : 'linear-gradient(135deg,#06b6d4,#0891b2)', color: isUnkicking ? '#9ca3af' : '#fff', fontWeight:800, cursor: isUnkicking ? 'default' : 'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                          >
+                            {isUnkicking ? (
+                              <><div className="luxury-loading-spinner" style={{width:12,height:12,borderWidth:2}}></div> Unkicking…</>
+                            ) : (
+                              <>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}>
+                                  <path fill="#fff" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/>
+                                </svg>
+                                Unkick
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Create Room Modal */}
