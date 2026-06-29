@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -147,6 +147,28 @@ const Sidebar = ({
   const { roomId } = useParams();
   const navigate   = useNavigate();
 
+  /* ── TingleBot strip — writes a system message to the current room chat ── */
+  const sendTingleBotMessage = async (text, type = 'system') => {
+    try {
+      if (!roomId) return;
+      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+        text,
+        uid: 'tinglebot_system_official_2024',
+        displayName: 'TingleBot',
+        isBot: true,
+        systemBot: true,
+        tinglebotType: type,
+        createdAt: serverTimestamp(),
+        noReply: true,
+        noReaction: true,
+        noReport: true,
+        noUnread: true,
+      });
+    } catch (err) {
+      console.error('TingleBot message failed:', err);
+    }
+  };
+
   /* -- open dropdown anchored to element -- */
   const openDropdownAt = (uid, e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -259,7 +281,7 @@ const Sidebar = ({
           bannedBy: actionData.actionBy, bannedById: actionData.actionById,
           banDuration: actionData.duration, appealContact: 'admin@tingleapp.com'
         });
-        toast.success(`${adminModalUser.displayName} has been banned.`, { icon: TI.block });
+        await sendTingleBotMessage(`${adminModalUser.displayName} has been banned — ${actionData.reason || 'No reason provided'}`, 'banned');
 
       } else if (adminModalType === 'mute') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
@@ -268,14 +290,14 @@ const Sidebar = ({
           "mutedInfo.mutedBy": actionData.actionBy, "mutedInfo.mutedById": actionData.actionById,
           "mutedInfo.mutedByRole": loggedInUserProfile?.role || 'admin'
         });
-        toast.success(`${adminModalUser.displayName} has been muted.`, { icon: TI.soundOff });
+        await sendTingleBotMessage(`${adminModalUser.displayName} has been muted${actionData.duration ? ` for ${actionData.duration}` : ''} — ${actionData.reason || 'No reason provided'}`, 'muted');
 
       } else if (adminModalType === 'unmute') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           "mutedInfo.isMuted": false, "mutedInfo.reason": '',
           "mutedInfo.unmutedAt": serverTimestamp(), "mutedInfo.unmutedBy": adminName
         });
-        toast.success(`${adminModalUser.displayName} has been unmuted.`, { icon: TI.soundOn });
+        await sendTingleBotMessage(`${adminModalUser.displayName} has been unmuted and can speak again.`, 'system');
 
       } else if (adminModalType === 'kick') {
         const kickData = {
@@ -294,7 +316,7 @@ const Sidebar = ({
               ...kickData, roomId: rid
             });
           }
-          toast.success(`${adminModalUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`, { icon: TI.kick });
+          await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from ${actionData.selectedRooms.length} room(s) — ${actionData.reason || 'No reason provided'}`, 'kicked');
         } else {
           /* Kick from current room */
           const targetRoomId = actionData.currentRoomId || roomId;
@@ -302,7 +324,7 @@ const Sidebar = ({
           await setDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid), {
             ...kickData, roomId: targetRoomId
           });
-          toast.success(`${adminModalUser.displayName} has been kicked.`, { icon: TI.kick });
+          await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from this room — ${actionData.reason || 'No reason provided'}`, 'kicked');
         }
 
       } else if (adminModalType === 'unkick') {
@@ -314,13 +336,13 @@ const Sidebar = ({
           );
           await Promise.all(promises);
           await updateDoc(doc(db, 'users', adminModalUser.uid), { kickedFrom: null }).catch(() => {});
-          toast.success(`${adminModalUser.displayName} unkicked from all rooms.`, { icon: TI.kick });
+          await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked from all rooms and can rejoin.`, 'system');
         } else {
           /* Unkick from current room */
           const targetRoomId = actionData.currentRoomId || roomId;
           if (!targetRoomId) { toast.error('Not in a room — cannot unkick.', { icon: TI.error }); return; }
           await deleteDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid));
-          toast.success(`${adminModalUser.displayName} unkicked from this room.`, { icon: TI.kick });
+          await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked and can rejoin this room.`, 'system');
         }
 
       } else if (adminModalType === 'unban') {
@@ -328,7 +350,7 @@ const Sidebar = ({
           isBanned: false, banInfo: null, banReason: null, bannedAt: null,
           unbannedAt: serverTimestamp(), unbannedBy: adminName
         });
-        toast.success(`${adminModalUser.displayName} has been unbanned.`, { icon: TI.check });
+        await sendTingleBotMessage(`${adminModalUser.displayName} has been unbanned and can rejoin.`, 'system');
       }
     } catch (err) {
       console.error(err);
@@ -792,7 +814,7 @@ const Sidebar = ({
                                   "mutedInfo.isMuted": false, "mutedInfo.reason": "",
                                   "mutedInfo.unmutedAt": serverTimestamp(),
                                   "mutedInfo.unmutedBy": loggedInUserProfile?.displayName || 'admin'
-                                }).then(() => toast.success(`Unmuted ${userItem.displayName}`))
+                                }).then(() => sendTingleBotMessage(`${userItem.displayName} has been unmuted and can speak again.`, 'system'))
                                   .catch(() => toast.error('Unmute failed.'));
                               } else {
                                 setAdminModalUser(userItem);
@@ -851,7 +873,7 @@ const Sidebar = ({
                                   isBanned: false, banReason: null, bannedAt: null,
                                   unbannedAt: serverTimestamp(),
                                   unbannedBy: loggedInUserProfile?.displayName || 'admin'
-                                }).then(() => toast.success(`Unbanned ${userItem.displayName}`))
+                                }).then(() => sendTingleBotMessage(`${userItem.displayName} has been unbanned and can rejoin.`, 'system'))
                                   .catch(() => toast.error('Unban failed.'));
                               } else {
                                 setAdminModalUser(userItem);
@@ -946,7 +968,7 @@ const Sidebar = ({
                                   e.stopPropagation();
                                   if (userItem.mutedInfo?.isMuted) {
                                     updateDoc(doc(db, 'users', userItem.uid), { "mutedInfo.isMuted": false, "mutedInfo.reason": "", "mutedInfo.unmutedAt": serverTimestamp(), "mutedInfo.unmutedBy": loggedInUserProfile?.displayName || 'admin' })
-                                      .then(() => toast.success(`Unmuted ${userItem.displayName}`)).catch(() => toast.error('Failed'));
+                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unmuted and can speak again.`, 'system')).catch(() => toast.error('Failed'));
                                   } else {
                                     setAdminModalUser(userItem); setAdminModalType('mute'); setAdminModalVisible(true);
                                   }
@@ -983,18 +1005,20 @@ const Sidebar = ({
                                 </button>
                               )}
                               {showBan && (
-                                <button className="sb-apd-btn sb-apd-danger" onClick={(e) => {
+                                <button className={`sb-apd-btn ${userItem.isBanned ? 'sb-apd-green' : 'sb-apd-danger'}`} onClick={(e) => {
                                   e.stopPropagation();
                                   if (userItem.isBanned) {
                                     updateDoc(doc(db, 'users', userItem.uid), { isBanned: false, banInfo: null, banReason: null, bannedAt: null, unbannedAt: serverTimestamp(), unbannedBy: loggedInUserProfile?.displayName || 'admin' })
-                                      .then(() => toast.success(`Unbanned ${userItem.displayName}`)).catch(() => toast.error('Failed'));
+                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unbanned and can rejoin.`, 'system')).catch(() => toast.error('Failed'));
                                   } else {
                                     setAdminModalUser(userItem); setAdminModalType('ban'); setAdminModalVisible(true);
                                   }
                                   setDropdownUser(null);
                                 }}>
                                   <svg viewBox="0 0 24 24" width="15" height="15">
-                                    <path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>
+                                    {userItem.isBanned
+                                      ? <path fill="#22c55e" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                      : <path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm4.3 14.3L7.7 7.7C9.14 6.64 10.99 6 13 6c3.87 0 7 3.13 7 7 0 2.01-.64 3.86-1.7 5.3zM5 12c0-2.01.64-3.86 1.7-5.3l8.6 8.6C13.86 16.36 12.01 17 11 17c-3.87 0-7-3.13-7-7z"/>}
                                   </svg>
                                   {userItem.isBanned ? 'Unban User' : 'Ban User'}
                                 </button>

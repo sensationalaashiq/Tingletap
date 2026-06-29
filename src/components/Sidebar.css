@@ -635,6 +635,9 @@
 .sb-apd-btn.sb-apd-cyan { color: #0891b2; }
 .sb-apd-btn.sb-apd-cyan:hover { background: rgba(6,182,212,0.07); color: #0e7490; }
 
+.sb-apd-btn.sb-apd-green { color: #16a34a; }
+.sb-apd-btn.sb-apd-green:hover { background: rgba(22,163,74,0.07); color: #15803d; }
+
 /* ── Icon wrap boxes (matching homepage apd-icon-wrap style) ─────────────── */
 .sb-apd-icon {
   display: flex; align-items: center; justify-content: center;

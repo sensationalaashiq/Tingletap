@@ -50,12 +50,12 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 0 !important;
-  width: 144px !important;
-  min-height: 88px !important;
-  max-height: 88px !important;
-  height: 88px !important;
+  width: 152px !important;
+  min-height: 110px !important;
+  max-height: 110px !important;
+  height: 110px !important;
   border-radius: 11px !important;
-  padding: 10px 8px !important;
+  padding: 8px 8px !important;
   overflow: hidden !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
@@ -65,10 +65,10 @@
 }
 
 .pim-card--compact {
-  width: 138px !important;
-  min-height: 58px !important;
-  max-height: 58px !important;
-  height: 58px !important;
+  width: 150px !important;
+  min-height: 70px !important;
+  max-height: 70px !important;
+  height: 70px !important;
   border-radius: 9px !important;
   padding: 6px 8px !important;
 }
@@ -79,9 +79,12 @@
   flex-wrap: nowrap !important;
   justify-content: center !important;
   align-items: center !important;
-  gap: 5px !important;
+  gap: 4px !important;
 }
-.pim-card .pim-card__icon-wrap,
+.pim-card .pim-card__icon-wrap {
+  display: flex !important;
+  margin-bottom: 2px !important;
+}
 .pim-card .pim-card__sub,
 .pim-card .pim-card__tags {
   display: none !important;
@@ -102,7 +105,7 @@
 .pim-card .pim-card__btn {
   width: auto !important;
   margin-bottom: 0 !important;
-  padding: 5px 12px !important;
+  padding: 4px 12px !important;
   font-size: 8.5px !important;
   flex-shrink: 0 !important;
 }
@@ -119,9 +122,13 @@
   flex-wrap: nowrap !important;
   justify-content: space-between !important;
   align-items: center !important;
-  gap: 0 !important;
+  gap: 5px !important;
 }
-.pim-card--compact .pim-card__icon-wrap,
+.pim-card--compact .pim-card__icon-wrap {
+  display: flex !important;
+  margin-bottom: 0 !important;
+  flex-shrink: 0 !important;
+}
 .pim-card--compact .pim-card__sub,
 .pim-card--compact .pim-card__tags {
   display: none !important;
@@ -141,7 +148,7 @@
 .pim-card--compact .pim-card__btn {
   width: auto !important;
   margin-bottom: 0 !important;
-  padding: 5px 10px !important;
+  padding: 5px 9px !important;
   font-size: 8px !important;
   flex-shrink: 0 !important;
 }
@@ -392,26 +399,27 @@
   gap: 4px;
   width: 100%;
   padding: 5px 8px;
-  border: 1px solid rgba(245,158,11,0.25);
+  border: 1px solid rgba(139,92,246,0.4);
   border-radius: 7px;
   cursor: pointer;
   font-size: 8.5px;
   font-weight: 700;
-  color: rgba(251,191,36,0.85) !important;
+  color: #6d28d9 !important;
   font-family: inherit;
   transition: all 0.12s ease;
-  background: rgba(20,14,3,0.88);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  background: rgba(237,233,254,0.95);
+  box-shadow: 0 1px 3px rgba(109,40,217,0.15);
 }
 .pim-viewer__hide:hover {
-  border-color: rgba(245,158,11,0.55);
-  color: #fbbf24 !important;
+  border-color: rgba(109,40,217,0.6);
+  color: #4c1d95 !important;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(245,158,11,0.18);
+  box-shadow: 0 3px 8px rgba(109,40,217,0.2);
+  background: rgba(221,214,254,0.98);
 }
 .pim-viewer__hide:active { transform: scale(0.97); }
-.pim-viewer__hide svg { stroke: rgba(245,158,11,0.85); }
-.pim-viewer__hide span { color: rgba(251,191,36,0.85) !important; }
+.pim-viewer__hide svg { stroke: #7c3aed; }
+.pim-viewer__hide span { color: #6d28d9 !important; }
 
 .pim-viewer--compact .pim-viewer__hide { padding: 4px 7px; font-size: 7.5px; border-radius: 6px; }
 

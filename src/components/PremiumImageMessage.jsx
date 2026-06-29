@@ -224,7 +224,7 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
           <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
             <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="#fbbf24" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{color:'rgba(251,191,36,0.88)', fontWeight:700}}>Hide</span>
+          <span style={{color:'#ffffff', fontWeight:700}}>Hide</span>
         </button>
       </div>
 
