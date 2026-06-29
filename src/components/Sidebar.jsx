@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -248,9 +248,10 @@ const Sidebar = ({
     return 'male-border';
   };
 
-  /* -- moderation confirm handler (ban / mute via AdminBanKickModal) -- */
+  /* -- moderation confirm handler (ban / mute / kick / unkick via AdminBanKickModal) -- */
   const handleAdminModalConfirm = async (actionData) => {
     if (!adminModalUser) return;
+    const adminName = loggedInUserProfile?.displayName || 'Admin';
     try {
       if (adminModalType === 'ban') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
@@ -259,6 +260,7 @@ const Sidebar = ({
           banDuration: actionData.duration, appealContact: 'admin@tingleapp.com'
         });
         toast.success(`${adminModalUser.displayName} has been banned.`, { icon: TI.block });
+
       } else if (adminModalType === 'mute') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           "mutedInfo.isMuted": true, "mutedInfo.reason": actionData.reason,
@@ -267,6 +269,66 @@ const Sidebar = ({
           "mutedInfo.mutedByRole": loggedInUserProfile?.role || 'admin'
         });
         toast.success(`${adminModalUser.displayName} has been muted.`, { icon: TI.soundOff });
+
+      } else if (adminModalType === 'unmute') {
+        await updateDoc(doc(db, 'users', adminModalUser.uid), {
+          "mutedInfo.isMuted": false, "mutedInfo.reason": '',
+          "mutedInfo.unmutedAt": serverTimestamp(), "mutedInfo.unmutedBy": adminName
+        });
+        toast.success(`${adminModalUser.displayName} has been unmuted.`, { icon: TI.soundOn });
+
+      } else if (adminModalType === 'kick') {
+        const kickData = {
+          uid: adminModalUser.uid,
+          displayName: adminModalUser.displayName,
+          kickedAt: serverTimestamp(),
+          kickedBy: adminName,
+          kickedById: loggedInUserProfile?.uid || 'system',
+          reason: actionData.reason,
+          duration: actionData.duration,
+        };
+        if (actionData.kickScope === 'multiple_rooms' && actionData.selectedRooms?.length > 0) {
+          /* Kick from multiple selected rooms */
+          for (const rid of actionData.selectedRooms) {
+            await setDoc(doc(db, 'rooms', rid, 'kickedUsers', adminModalUser.uid), {
+              ...kickData, roomId: rid
+            });
+          }
+          toast.success(`${adminModalUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`, { icon: TI.kick });
+        } else {
+          /* Kick from current room */
+          const targetRoomId = actionData.currentRoomId || roomId;
+          if (!targetRoomId) { toast.error('Not in a room — cannot kick.', { icon: TI.error }); return; }
+          await setDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid), {
+            ...kickData, roomId: targetRoomId
+          });
+          toast.success(`${adminModalUser.displayName} has been kicked.`, { icon: TI.kick });
+        }
+
+      } else if (adminModalType === 'unkick') {
+        if (actionData.unkickScope === 'all_rooms') {
+          /* Unkick from all rooms */
+          const roomsSnap = await getDocs(collection(db, 'rooms'));
+          const promises = roomsSnap.docs.map(rd =>
+            deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', adminModalUser.uid)).catch(() => {})
+          );
+          await Promise.all(promises);
+          await updateDoc(doc(db, 'users', adminModalUser.uid), { kickedFrom: null }).catch(() => {});
+          toast.success(`${adminModalUser.displayName} unkicked from all rooms.`, { icon: TI.kick });
+        } else {
+          /* Unkick from current room */
+          const targetRoomId = actionData.currentRoomId || roomId;
+          if (!targetRoomId) { toast.error('Not in a room — cannot unkick.', { icon: TI.error }); return; }
+          await deleteDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid));
+          toast.success(`${adminModalUser.displayName} unkicked from this room.`, { icon: TI.kick });
+        }
+
+      } else if (adminModalType === 'unban') {
+        await updateDoc(doc(db, 'users', adminModalUser.uid), {
+          isBanned: false, banInfo: null, banReason: null, bannedAt: null,
+          unbannedAt: serverTimestamp(), unbannedBy: adminName
+        });
+        toast.success(`${adminModalUser.displayName} has been unbanned.`, { icon: TI.check });
       }
     } catch (err) {
       console.error(err);
@@ -274,32 +336,18 @@ const Sidebar = ({
     }
   };
 
-  /* -- kick via ChatActionModal -- */
+  /* -- kick/unkick via AdminBanKickModal -- */
   const openKickModal = (targetUser) => {
-    setSidebarKickConfirm({
-      isOpen: true,
-      user: targetUser,
-      onConfirm: async () => {
-        try {
-          await setDoc(doc(db, 'rooms', roomId, 'kickedUsers', targetUser.uid), {
-            uid: targetUser.uid,
-            displayName: targetUser.displayName,
-            kickedAt: serverTimestamp(),
-            kickedBy: loggedInUserProfile?.displayName || 'Admin',
-            kickedById: loggedInUserProfile?.uid || 'system',
-            roomName: 'Current Room',
-            reason: 'Kicked from sidebar'
-          });
-          toast.success(`${targetUser.displayName} has been kicked.`, { icon: TI.kick });
-          setSidebarKickConfirm({ isOpen: false, user: null });
-        } catch (err) {
-          console.error(err);
-          toast.error('Kick failed.', { icon: TI.error });
-          setSidebarKickConfirm({ isOpen: false, user: null });
-        }
-      },
-      onCancel: () => setSidebarKickConfirm({ isOpen: false, user: null })
-    });
+    setAdminModalUser(targetUser);
+    setAdminModalType('kick');
+    setAdminModalVisible(true);
+    setDropdownUser(null);
+  };
+
+  const openUnkickModal = (targetUser) => {
+    setAdminModalUser(targetUser);
+    setAdminModalType('unkick');
+    setAdminModalVisible(true);
     setDropdownUser(null);
   };
 
@@ -773,9 +821,7 @@ const Sidebar = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (kickedUserIds.has(userItem.uid)) {
-                                deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', userItem.uid))
-                                  .then(() => toast.success(`Unkicked ${userItem.displayName}`))
-                                  .catch(() => toast.error('Unkick failed.'));
+                                openUnkickModal(userItem);
                               } else {
                                 openKickModal(userItem);
                               }
@@ -918,9 +964,7 @@ const Sidebar = ({
                                 <button className={`sb-apd-btn ${kickedUserIds.has(userItem.uid) ? 'sb-apd-cyan' : 'sb-apd-orange'}`} onClick={(e) => {
                                   e.stopPropagation();
                                   if (kickedUserIds.has(userItem.uid)) {
-                                    deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', userItem.uid))
-                                      .then(() => toast.success(`Unkicked ${userItem.displayName}`))
-                                      .catch(() => toast.error('Unkick failed.'));
+                                    openUnkickModal(userItem);
                                   } else {
                                     openKickModal(userItem);
                                   }
@@ -969,14 +1013,6 @@ const Sidebar = ({
       </div>
 
       {/* ── MODALS ───────────────────────────────────────────────────── */}
-      <ChatActionModal
-        isOpen={sidebarKickConfirm.isOpen}
-        type="kick"
-        user={sidebarKickConfirm.user}
-        onConfirm={sidebarKickConfirm.onConfirm}
-        onCancel={sidebarKickConfirm.onCancel}
-      />
-
       <AdminBanKickModal
         isVisible={adminModalVisible}
         onClose={() => setAdminModalVisible(false)}
@@ -984,6 +1020,8 @@ const Sidebar = ({
         actionType={adminModalType}
         onConfirm={handleAdminModalConfirm}
         currentUserProfile={loggedInUserProfile}
+        currentRoomId={roomId}
+        currentRoomName={rooms.find(r => r.id === roomId)?.name || ''}
       />
 
       {showEditProfileModal && (

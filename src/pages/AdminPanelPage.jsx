@@ -1129,34 +1129,55 @@ const AdminPanelPage = () => {
         }
           
         case 'kick': {
-          const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || selectedUser.kickedFrom?.roomId;
           const kickReason = actionData?.reason || 'Kicked by admin';
-          if (kickRoomId) {
-            await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), {
-              reason: kickReason,
-              kickedBy: adminName,
-              kickedAt: serverTimestamp(),
-            });
-            await updateDoc(userRef, {
-              kickedFrom: {
-                roomId: kickRoomId,
-                kickedAt: new Date().toISOString(),
-                kickedBy: adminName,
-                reason: kickReason,
-              }
-            }).catch(() => {});
-            addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
-              text: `${selectedUser.displayName} has been kicked${actionData?.reason ? ` — ${actionData.reason}` : '.'}`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'kicked',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+          const kickEntry = {
+            uid: selectedUser.uid,
+            displayName: selectedUser.displayName,
+            reason: kickReason,
+            kickedBy: adminName,
+            kickedAt: serverTimestamp(),
+            duration: actionData?.duration || null,
+          };
+
+          if (actionData?.kickScope === 'multiple_rooms' && actionData?.selectedRooms?.length > 0) {
+            /* Kick from multiple selected rooms */
+            for (const rid of actionData.selectedRooms) {
+              await setDoc(doc(db, 'rooms', rid, 'kickedUsers', selectedUser.uid), {
+                ...kickEntry, roomId: rid
+              });
+              addDoc(collection(db, 'rooms', rid, 'messages'), {
+                text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
+                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+                isBot: true, systemBot: true, tinglebotType: 'kicked',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+              }).catch(() => {});
+            }
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+            pt.warn(`${selectedUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`);
           } else {
-            remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+            /* Kick from current/single room */
+            const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || selectedUser.kickedFrom?.roomId;
+            if (kickRoomId) {
+              await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), {
+                ...kickEntry, roomId: kickRoomId
+              });
+              await updateDoc(userRef, {
+                kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason }
+              }).catch(() => {});
+              addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
+                text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
+                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+                isBot: true, systemBot: true, tinglebotType: 'kicked',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+              }).catch(() => {});
+              remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+            } else {
+              remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+            }
+            pt.warn(`${selectedUser.displayName} has been kicked.`);
           }
-          pt.warn(`${selectedUser.displayName} has been kicked.`);
           closeModal();
           break;
         }

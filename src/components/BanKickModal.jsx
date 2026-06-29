@@ -4,6 +4,20 @@ import { db, auth } from '../firebase/config';
 import './BanKickModal.css';
 
 /* ── Format helpers ────────────────────────────────────────────── */
+/* ── Parse duration string → milliseconds (e.g. "1h"→3600000, "24h"→86400000) ── */
+const parseDurationToMs = (dur) => {
+  if (!dur || dur === 'permanent') return null;
+  if (typeof dur === 'number') return dur;
+  const s = String(dur).toLowerCase().trim();
+  const n = parseFloat(s) || 1;
+  if (s.includes('d'))  return n * 86400000;
+  if (s.includes('h'))  return n * 3600000;
+  if (s.includes('m'))  return n * 60000;
+  if (s.includes('w'))  return n * 604800000;
+  if (s.includes('y'))  return n * 31536000000;
+  return null;
+};
+
 const fmtDate = (date) => {
   if (!date) return 'N/A';
   try {
@@ -259,9 +273,17 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
   /* -- kick countdown -- */
   useEffect(() => {
     if (!kickInfo) { setKickMsLeft(0); return; }
-    const KICK_DUR = kickInfo.kickDuration || 60 * 60 * 1000;
+    /* Support kickDuration (ms number), duration (string like "1h"), or kickDuration string */
+    const KICK_DUR =
+      (typeof kickInfo.kickDuration === 'number' && kickInfo.kickDuration > 0 ? kickInfo.kickDuration : null) ||
+      parseDurationToMs(kickInfo.kickDuration) ||
+      parseDurationToMs(kickInfo.duration) ||
+      null; /* null = permanent kick — don't show countdown */
+    if (!KICK_DUR) { setKickMsLeft(0); return; }
     const compute = () => {
-      const at = kickInfo.kickedAt instanceof Date ? kickInfo.kickedAt : new Date(kickInfo.kickedAt || kickInfo.time || Date.now());
+      const at = kickInfo.kickedAt instanceof Date
+        ? kickInfo.kickedAt
+        : new Date(kickInfo.kickedAt || kickInfo.time || Date.now());
       return Math.max(0, at.getTime() + KICK_DUR - Date.now());
     };
     setKickMsLeft(compute());
@@ -423,12 +445,31 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
               </div>
             </div>
           )}
+          {/* Show duration info when no countdown (permanent or expired) */}
           {kickMsLeft === 0 && kickInfo.kickedAt && (
-            <div className="bkm2-countdown bkm2-countdown--green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <div className="bkm2-countdown-inner">
-                <div className="bkm2-countdown-label" style={{color:'#34d399'}}>Kick has expired — you may rejoin</div>
-              </div>
+            <div className="bkm2-countdown" style={{
+              background: (!kickInfo.duration || kickInfo.duration === 'permanent')
+                ? 'linear-gradient(135deg,rgba(239,68,68,0.10),rgba(220,38,38,0.06))'
+                : 'linear-gradient(135deg,rgba(52,211,153,0.10),rgba(16,185,129,0.06))',
+              border: `1.5px solid ${(!kickInfo.duration || kickInfo.duration === 'permanent') ? 'rgba(239,68,68,0.22)' : 'rgba(52,211,153,0.22)'}`,
+              margin: '0 16px 14px', padding: '14px 16px', borderRadius: 13,
+              display: 'flex', alignItems: 'center', gap: 12
+            }}>
+              {(!kickInfo.duration || kickInfo.duration === 'permanent') ? (
+                <>
+                  <IconClock color="#f87171" size={18} />
+                  <div className="bkm2-countdown-inner">
+                    <div className="bkm2-countdown-label" style={{color:'#f87171'}}>Permanent kick — contact staff to appeal</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div className="bkm2-countdown-inner">
+                    <div className="bkm2-countdown-label" style={{color:'#34d399'}}>Kick has expired — you may rejoin now</div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -445,6 +486,11 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
             </InfoRow>
             <InfoRow icon={<IconAlert color="#f87171" />} label="Reason" accent="#f87171">
               <span className="bkm2-pill bkm2-pill--red">{kickInfo.reason || 'Kicked by a moderator'}</span>
+            </InfoRow>
+            <InfoRow icon={<IconClock color="#f59e0b" />} label="Duration" accent="#f59e0b">
+              <span className={`bkm2-pill ${kickInfo.duration && kickInfo.duration !== 'permanent' ? 'bkm2-pill--amber' : 'bkm2-pill--red'}`}>
+                {kickInfo.duration && kickInfo.duration !== 'permanent' ? kickInfo.duration : 'Permanent'}
+              </span>
             </InfoRow>
             <InfoRow icon={<IconCalendar color="#34d399" />} label="When" accent="#34d399">
               <span className="bkm2-val">{fmtDate(kickInfo.kickedAt || kickInfo.time)}</span>

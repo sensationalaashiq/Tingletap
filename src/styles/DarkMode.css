@@ -733,3 +733,230 @@ html.dark-mode textarea::placeholder { color: #4a5268 !important; }
 
 /* ══ 22. MISC TEXT/HEADINGS ══════════════════════════════════════════ */
 html.dark-mode hr { border-color: #2d2d4a !important; }
+
+/* ══ 23. PM HEADER POPUP — RECENT MESSAGES DROPDOWN ═════════════════ */
+html.dark-mode .pm-header-popup-container {
+  background: #161625 !important;
+  border-color: rgba(139,92,246,0.35) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35) !important;
+}
+html.dark-mode .pm-popup-header {
+  background: linear-gradient(135deg, #1e1e30 0%, #252540 100%) !important;
+  border-bottom-color: #2d2d4a !important;
+}
+html.dark-mode .pm-popup-title {
+  color: #c4b5fd !important;
+}
+html.dark-mode .pm-popup-title svg {
+  fill: #a78bfa !important;
+}
+html.dark-mode .pm-popup-clear-btn,
+html.dark-mode .pm-popup-close-btn {
+  background: rgba(99,102,241,0.12) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .pm-popup-clear-btn:hover {
+  background: linear-gradient(135deg, rgba(239,68,68,0.25) 0%, rgba(220,38,38,0.35) 100%) !important;
+  color: #f87171 !important;
+}
+html.dark-mode .pm-popup-close-btn:hover {
+  background: linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(124,58,237,0.4) 100%) !important;
+  color: #e9d5ff !important;
+}
+html.dark-mode .pm-popup-content {
+  background: #161625 !important;
+  scrollbar-color: #3a3a58 transparent !important;
+}
+html.dark-mode .pm-popup-content::-webkit-scrollbar-thumb {
+  background: #3a3a58 !important;
+}
+html.dark-mode .pm-popup-empty {
+  color: #5f6880 !important;
+}
+html.dark-mode .pm-popup-empty svg {
+  fill: #3a3a58 !important;
+}
+html.dark-mode .pm-popup-empty p {
+  color: #5f6880 !important;
+}
+html.dark-mode .pm-popup-empty small {
+  color: #4a5268 !important;
+}
+html.dark-mode .pm-conversation-item {
+  border-bottom-color: #1e1e30 !important;
+}
+html.dark-mode .pm-conversation-item:hover {
+  background: rgba(99,102,241,0.08) !important;
+}
+html.dark-mode .pm-conversation-name {
+  color: #e8eaf0 !important;
+}
+html.dark-mode .pm-conversation-preview {
+  color: #6b7280 !important;
+}
+html.dark-mode .pm-conversation-time {
+  color: #4a5268 !important;
+}
+html.dark-mode .pm-unread-badge {
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+html.dark-mode .pm-conversation-delete-btn {
+  color: #4a5268 !important;
+}
+html.dark-mode .pm-conversation-delete-btn:hover {
+  color: #f87171 !important;
+  background: rgba(239,68,68,0.12) !important;
+}
+html.dark-mode .pm-conversation-delete-btn svg {
+  stroke: currentColor !important;
+}
+
+/* ══ 24. ADD FRIEND CONFIRM MODAL (afcm-*) ══════════════════════════ */
+html.dark-mode .afcm-card {
+  background: #161625 !important;
+  border-color: rgba(16,185,129,0.2) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+html.dark-mode .afcm-icon-ring {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.2)) !important;
+  border-color: rgba(16,185,129,0.3) !important;
+}
+html.dark-mode .afcm-title {
+  color: #e8eaf0 !important;
+}
+html.dark-mode .afcm-user-preview {
+  background: linear-gradient(135deg, #1a1a2e 0%, #1e1e30 100%) !important;
+  border-color: rgba(16,185,129,0.2) !important;
+}
+html.dark-mode .afcm-username {
+  color: #e8eaf0 !important;
+}
+html.dark-mode .afcm-user-sub {
+  color: #6b7280 !important;
+}
+html.dark-mode .afcm-description {
+  color: #9aa3b8 !important;
+}
+html.dark-mode .afcm-description strong {
+  color: #c4b5fd !important;
+}
+html.dark-mode .afcm-perks {
+  background: rgba(16,185,129,0.06) !important;
+  border-color: rgba(16,185,129,0.12) !important;
+}
+html.dark-mode .afcm-perk-icon {
+  background: rgba(16,185,129,0.15) !important;
+}
+html.dark-mode .afcm-perk-item span {
+  color: #9aa3b8 !important;
+}
+html.dark-mode .afcm-btn-cancel {
+  background: #1e1e30 !important;
+  border-color: #2d2d4a !important;
+  color: #9aa3b8 !important;
+}
+html.dark-mode .afcm-btn-cancel:hover {
+  background: #252540 !important;
+  border-color: #3a3a58 !important;
+  color: #e8eaf0 !important;
+}
+
+/* ══ 25. BLOCK CONFIRM MODAL (bcm-*) ════════════════════════════════ */
+html.dark-mode .bcm-card {
+  background: #161625 !important;
+  border-color: rgba(239,68,68,0.15) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55) !important;
+}
+html.dark-mode .bcm-icon-ring {
+  background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(192,57,43,0.18)) !important;
+  border-color: rgba(239,68,68,0.25) !important;
+}
+html.dark-mode .bcm-title {
+  color: #e8eaf0 !important;
+}
+html.dark-mode .bcm-user-preview {
+  background: linear-gradient(135deg, #1a1a2e 0%, #1e1e30 100%) !important;
+  border-color: rgba(239,68,68,0.15) !important;
+}
+html.dark-mode .bcm-username {
+  color: #e8eaf0 !important;
+}
+html.dark-mode .bcm-description {
+  color: #9aa3b8 !important;
+}
+html.dark-mode .bcm-effects {
+  background: rgba(239,68,68,0.04) !important;
+  border-color: rgba(239,68,68,0.1) !important;
+}
+html.dark-mode .bcm-effect-item {
+  color: #9aa3b8 !important;
+}
+html.dark-mode .bcm-effect-item span {
+  color: #9aa3b8 !important;
+}
+html.dark-mode .bcm-btn-cancel {
+  background: #1e1e30 !important;
+  border-color: #2d2d4a !important;
+  color: #9aa3b8 !important;
+}
+html.dark-mode .bcm-btn-cancel:hover {
+  background: #252540 !important;
+  border-color: #3a3a58 !important;
+  color: #e8eaf0 !important;
+}
+
+/* ══ 26. WARNING ANNOUNCEMENT POPUP (stylish-announcement*) ════════ */
+html.dark-mode .stylish-announcements-container { background: transparent !important; }
+html.dark-mode .stylish-announcement {
+  background: linear-gradient(135deg, #1a1030 0%, #0f0f1a 50%, #1a1030 100%) !important;
+  border-color: rgba(139,92,246,0.3) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-mode .stylish-announcement.urgent {
+  background: linear-gradient(135deg, #2d0a0a 0%, #1a0a0a 50%, #2d0a0a 100%) !important;
+  border-color: rgba(239,68,68,0.4) !important;
+}
+html.dark-mode .announcement-content { background: transparent !important; }
+html.dark-mode .announcement-title { color: #e9d5ff !important; }
+html.dark-mode .announcement-message p { color: #c4b5fd !important; }
+html.dark-mode .announcement-footer { color: #6b7280 !important; }
+html.dark-mode .stylish-dismiss-btn {
+  background: rgba(139,92,246,0.15) !important;
+  border-color: rgba(139,92,246,0.3) !important;
+  color: #c4b5fd !important;
+}
+html.dark-mode .stylish-dismiss-btn:hover {
+  background: rgba(139,92,246,0.25) !important;
+  color: #e9d5ff !important;
+}
+
+/* ══ 27. MINIMIZED CONVERSATIONS (minimized-*) ══════════════════════ */
+html.dark-mode .minimized-trigger-btn {
+  background: #161625 !important;
+  border-color: rgba(139,92,246,0.3) !important;
+  color: #c4b5fd !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+}
+html.dark-mode .minimized-trigger-btn:hover {
+  background: #1e1e30 !important;
+  border-color: rgba(139,92,246,0.5) !important;
+}
+html.dark-mode .minimized-count-badge {
+  background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+  color: #fff !important;
+}
+html.dark-mode .minimized-dropdown-dps {
+  background: #161625 !important;
+  border-color: rgba(139,92,246,0.25) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+html.dark-mode .minimized-dp-only {
+  background: transparent !important;
+}
+html.dark-mode .minimized-dp-only:hover {
+  background: rgba(99,102,241,0.1) !important;
+}
+html.dark-mode .minimized-dropdown-backdrop {
+  background: transparent !important;
+}

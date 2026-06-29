@@ -5,52 +5,66 @@ import { db } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import './AdminBanKickModal.css';
 
-const AdminBanKickModal = ({ 
-  isVisible, 
-  onClose, 
-  selectedUser, 
+const AdminBanKickModal = ({
+  isVisible,
+  onClose,
+  selectedUser,
   actionType,
   onConfirm,
-  currentUserProfile 
+  currentUserProfile,
+  currentRoomId,
+  currentRoomName
 }) => {
-  const [reason, setReason] = useState('');
-  const [customReason, setCustomReason] = useState('');
-  const [duration, setDuration] = useState('permanent');
+  const [reason, setReason]               = useState('');
+  const [customReason, setCustomReason]   = useState('');
+  const [duration, setDuration]           = useState('permanent');
   const [customDuration, setCustomDuration] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [rooms, setRooms] = useState([]);
+  const [isLoading, setIsLoading]         = useState(false);
+  const [rooms, setRooms]                 = useState([]);
   const [selectedRooms, setSelectedRooms] = useState([]);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [adminNotes, setAdminNotes]       = useState('');
   const [appealAllowed, setAppealAllowed] = useState(true);
 
+  /* kick / unkick scope */
+  const [kickScope, setKickScope]   = useState('this_room');   /* 'this_room' | 'multiple_rooms' */
+  const [unkickScope, setUnkickScope] = useState('all_rooms'); /* 'all_rooms' | 'this_room' */
+
+  /* Load rooms whenever we need the room picker */
+  const needsRoomPicker =
+    actionType === 'kick_all' ||
+    (actionType === 'kick' && kickScope === 'multiple_rooms');
+
   useEffect(() => {
-    if (actionType === 'kick_all') {
-      const q = query(collection(db, 'rooms'), orderBy('name'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const roomsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRooms(roomsList);
-        setSelectedRooms(roomsList.map(room => room.id));
-      });
-      return () => unsubscribe();
-    }
-  }, [actionType]);
+    if (!needsRoomPicker) { setRooms([]); setSelectedRooms([]); return; }
+    const q = query(collection(db, 'rooms'), orderBy('name'));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setRooms(list);
+      setSelectedRooms(list.map(r => r.id));
+    });
+    return () => unsub();
+  }, [needsRoomPicker]);
 
   const handleConfirm = async () => {
     const isReverse = ['unban', 'unmute', 'unkick'].includes(actionType);
-    const finalReason = reason === 'custom' ? customReason.trim() : reason;
+    const finalReason   = reason   === 'custom' ? customReason.trim() : reason;
     const finalDuration = duration === 'custom' ? customDuration.trim() : duration;
     if (!isReverse && !finalReason) { alert('Please provide a reason'); return; }
-    if (actionType === 'kick_all' && selectedRooms.length === 0) { alert('Please select at least one room'); return; }
+    if (needsRoomPicker && selectedRooms.length === 0) { alert('Please select at least one room'); return; }
+
     setIsLoading(true);
     const actionData = {
-      reason: isReverse ? (adminNotes.trim() || `${actionType} by ${currentUserProfile?.displayName || 'Admin'}`) : finalReason,
-      duration: finalDuration,
-      actionBy: currentUserProfile?.displayName || 'System Administrator',
-      actionById: currentUserProfile?.uid || 'system',
-      adminNotes: adminNotes.trim(),
+      reason:       isReverse ? (adminNotes.trim() || `${actionType} by ${currentUserProfile?.displayName || 'Admin'}`) : finalReason,
+      duration:     finalDuration,
+      actionBy:     currentUserProfile?.displayName || 'System Administrator',
+      actionById:   currentUserProfile?.uid          || 'system',
+      adminNotes:   adminNotes.trim(),
       appealAllowed,
-      selectedRooms: actionType === 'kick_all' ? selectedRooms : null,
-      timestamp: new Date().toISOString()
+      selectedRooms: needsRoomPicker ? selectedRooms : null,
+      kickScope:    actionType === 'kick' ? kickScope : null,
+      unkickScope:  actionType === 'unkick' ? unkickScope : null,
+      currentRoomId: currentRoomId || null,
+      timestamp:    new Date().toISOString()
     };
     try {
       await onConfirm(actionData);
@@ -65,7 +79,9 @@ const AdminBanKickModal = ({
   const handleClose = () => {
     setReason(''); setCustomReason(''); setDuration('permanent');
     setCustomDuration(''); setAdminNotes(''); setAppealAllowed(true);
-    setSelectedRooms([]); setIsLoading(false); onClose();
+    setSelectedRooms([]); setIsLoading(false);
+    setKickScope('this_room'); setUnkickScope('all_rooms');
+    onClose();
   };
 
   if (!isVisible || !selectedUser) return null;
@@ -79,9 +95,12 @@ const AdminBanKickModal = ({
         reasons: ['Violation of community guidelines','Harassment or bullying','Inappropriate content','Spam or promotional content','Impersonation','Hate speech or discrimination','Doxxing or sharing personal info','Circumventing previous bans','custom']
       };
       case 'kick': return {
-        title: 'Kick from Room', color: '#f59e0b', colorLight: '#fffbeb', colorBorder: '#fde68a',
+        title: kickScope === 'multiple_rooms' ? 'Kick from Multiple Rooms' : 'Kick from Room',
+        color: '#f59e0b', colorLight: '#fffbeb', colorBorder: '#fde68a',
         icon: <path fill="#f59e0b" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>,
-        description: 'User will be removed from the current room',
+        description: kickScope === 'multiple_rooms'
+          ? 'User will be removed from the selected rooms'
+          : `User will be removed from ${currentRoomName || 'the current room'}`,
         reasons: ['Disruptive behavior','Off-topic conversation','Inappropriate language','Spamming messages','Room rule violation','Trolling or baiting','Ignoring warnings','custom']
       };
       case 'kick_all': return {
@@ -93,25 +112,27 @@ const AdminBanKickModal = ({
       case 'mute': return {
         title: 'Mute User', color: '#6b7280', colorLight: '#f9fafb', colorBorder: '#d1d5db',
         icon: <path fill="#6b7280" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.45 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L4.27,3Z"/>,
-        description: 'User will be prevented from sending messages',
+        description: 'User will be prevented from sending messages (platform-wide)',
         reasons: ['Excessive messaging','Inappropriate language','Disrupting conversation','Warning ignored','Minor rule violation','Emoji/sticker spam','custom']
       };
       case 'unban': return {
         title: 'Unban User', color: '#10b981', colorLight: '#f0fdf4', colorBorder: '#a7f3d0',
         icon: <path fill="#10b981" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>,
-        description: 'User\'s ban will be lifted and they can access the platform again',
+        description: "User's ban will be lifted and they can access the platform again",
         reasons: []
       };
       case 'unmute': return {
         title: 'Unmute User', color: '#3b82f6', colorLight: '#eff6ff', colorBorder: '#bfdbfe',
         icon: <path fill="#3b82f6" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>,
-        description: 'User\'s mute will be removed and they can send messages again',
+        description: "User's mute will be removed and they can send messages again",
         reasons: []
       };
       case 'unkick': return {
-        title: 'Unkick User', color: '#f59e0b', colorLight: '#fffbeb', colorBorder: '#fde68a',
-        icon: <path fill="#f59e0b" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/>,
-        description: 'User will be allowed back into the room they were kicked from',
+        title: 'Unkick User', color: '#06b6d4', colorLight: '#ecfeff', colorBorder: '#a5f3fc',
+        icon: <path fill="#06b6d4" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/>,
+        description: unkickScope === 'all_rooms'
+          ? 'User will be allowed back into all rooms they were kicked from'
+          : `User will be unkicked from ${currentRoomName || 'the current room'}`,
         reasons: []
       };
       default: return { title: 'Action', color: '#7c3aed', colorLight: '#faf5ff', colorBorder: '#e9d5ff', icon: null, description: '', reasons: [] };
@@ -119,13 +140,21 @@ const AdminBanKickModal = ({
   };
 
   const isReverseAction = ['unban', 'unmute', 'unkick'].includes(actionType);
-
   const info = getActionInfo();
+
+  /* ── Scope toggle button style ── */
+  const scopeBtn = (active) => ({
+    flex: 1, padding: '7px 10px', border: `1.5px solid ${active ? info.color : '#e5e7eb'}`,
+    borderRadius: 8, background: active ? `${info.color}14` : '#fff',
+    color: active ? info.color : '#6b7280', fontWeight: active ? 700 : 400,
+    fontSize: 12, cursor: 'pointer', transition: 'all .18s', outline: 'none'
+  });
 
   return (
     <div className="abk-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="abk-card">
 
+        {/* Header */}
         <div className="abk-header" style={{ borderTopColor: info.color }}>
           <div className="abk-header-icon" style={{ background: info.colorLight, border: `2px solid ${info.colorBorder}` }}>
             <svg viewBox="0 0 24 24" fill="none" style={{ width: 26, height: 26 }}>{info.icon}</svg>
@@ -143,6 +172,7 @@ const AdminBanKickModal = ({
           </button>
         </div>
 
+        {/* Description bar */}
         <div className="abk-desc-bar" style={{ background: info.colorLight, borderBottom: `1px solid ${info.colorBorder}` }}>
           <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14, flexShrink: 0 }}>
             <path fill={info.color} d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
@@ -152,9 +182,10 @@ const AdminBanKickModal = ({
 
         <div className="abk-body">
 
+          {/* Reverse action banner */}
           {isReverseAction && (
             <div style={{
-              background: `${info.colorLight}`, border: `1.5px solid ${info.colorBorder}`,
+              background: info.colorLight, border: `1.5px solid ${info.colorBorder}`,
               borderRadius: '10px', padding: '12px 16px', marginBottom: '12px',
               display: 'flex', alignItems: 'center', gap: '10px'
             }}>
@@ -168,11 +199,11 @@ const AdminBanKickModal = ({
             </div>
           )}
 
+          {/* User strip */}
           <div className="abk-user-strip">
             <img
               src={selectedUser.photoURL || `${getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}`}
-              alt=""
-              className="abk-user-avatar"
+              alt="" className="abk-user-avatar"
             />
             <div className="abk-user-meta">
               <span className="abk-user-name">{selectedUser.displayName || 'Unknown'}</span>
@@ -186,39 +217,81 @@ const AdminBanKickModal = ({
             </div>
           </div>
 
-          {!isReverseAction && (
-          <div className="abk-field">
-            <label className="abk-label">
-              <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
-                <path fill="#7c3aed" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
-              </svg>
-              Reason *
-            </label>
-            <select className="abk-select" value={reason} onChange={(e) => setReason(e.target.value)}>
-              <option value="">Select a reason…</option>
-              {info.reasons.map((r, i) => (
-                <option key={i} value={r}>{r === 'custom' ? 'Custom reason…' : r}</option>
-              ))}
-            </select>
-            {reason === 'custom' && (
-              <textarea
-                className="abk-textarea"
-                placeholder="Describe the reason in detail…"
-                value={customReason}
-                onChange={(e) => setCustomReason(e.target.value)}
-                rows={3}
-              />
-            )}
-          </div>
+          {/* ── KICK SCOPE TOGGLE ── */}
+          {actionType === 'kick' && (
+            <div className="abk-field">
+              <label className="abk-label">
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
+                  <path fill="#7c3aed" d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z"/>
+                </svg>
+                Kick Scope
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="button" style={scopeBtn(kickScope === 'this_room')} onClick={() => setKickScope('this_room')}>
+                  🏠 This Room Only {currentRoomName ? `(${currentRoomName})` : ''}
+                </button>
+                <button type="button" style={scopeBtn(kickScope === 'multiple_rooms')} onClick={() => setKickScope('multiple_rooms')}>
+                  🌐 Multiple Rooms
+                </button>
+              </div>
+            </div>
           )}
 
-          {(actionType === 'ban' || actionType === 'mute') && (
+          {/* ── UNKICK SCOPE TOGGLE ── */}
+          {actionType === 'unkick' && (
+            <div className="abk-field">
+              <label className="abk-label">
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
+                  <path fill="#7c3aed" d="M17,12V3A1,1 0 0,0 16,2H3A1,1 0 0,0 2,3V17L6,13H16A1,1 0 0,0 17,12M21,6H19V15H6V17A1,1 0 0,0 7,18H18L22,22V7A1,1 0 0,0 21,6Z"/>
+                </svg>
+                Unkick Scope
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="button" style={scopeBtn(unkickScope === 'all_rooms')} onClick={() => setUnkickScope('all_rooms')}>
+                  🌐 All Rooms
+                </button>
+                <button type="button" style={scopeBtn(unkickScope === 'this_room')} onClick={() => setUnkickScope('this_room')}>
+                  🏠 This Room Only {currentRoomName ? `(${currentRoomName})` : ''}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Reason selector */}
+          {!isReverseAction && (
+            <div className="abk-field">
+              <label className="abk-label">
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
+                  <path fill="#7c3aed" d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
+                </svg>
+                Reason *
+              </label>
+              <select className="abk-select" value={reason} onChange={(e) => setReason(e.target.value)}>
+                <option value="">Select a reason…</option>
+                {info.reasons.map((r, i) => (
+                  <option key={i} value={r}>{r === 'custom' ? 'Custom reason…' : r}</option>
+                ))}
+              </select>
+              {reason === 'custom' && (
+                <textarea
+                  className="abk-textarea"
+                  placeholder="Describe the reason in detail…"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  rows={3}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Duration (ban / mute / kick) */}
+          {(actionType === 'ban' || actionType === 'mute' || actionType === 'kick' || actionType === 'kick_all') && (
             <div className="abk-field">
               <label className="abk-label">
                 <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
                   <path fill="#7c3aed" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/>
                 </svg>
-                {actionType === 'ban' ? 'Ban Duration' : 'Mute Duration'}
+                {actionType === 'ban' ? 'Ban Duration' : actionType === 'mute' ? 'Mute Duration' : 'Kick Duration'}
               </label>
               <select className="abk-select" value={duration} onChange={(e) => setDuration(e.target.value)}>
                 {actionType === 'ban' ? (
@@ -233,13 +306,25 @@ const AdminBanKickModal = ({
                     <option value="1y">1 Year</option>
                     <option value="custom">Custom…</option>
                   </>
-                ) : (
+                ) : actionType === 'mute' ? (
                   <>
                     <option value="5m">5 Minutes</option>
                     <option value="15m">15 Minutes</option>
                     <option value="30m">30 Minutes</option>
                     <option value="1h">1 Hour</option>
                     <option value="6h">6 Hours</option>
+                    <option value="24h">24 Hours</option>
+                    <option value="3d">3 Days</option>
+                    <option value="7d">7 Days</option>
+                    <option value="permanent">Permanent</option>
+                    <option value="custom">Custom…</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="1h">1 Hour</option>
+                    <option value="3h">3 Hours</option>
+                    <option value="6h">6 Hours</option>
+                    <option value="12h">12 Hours</option>
                     <option value="24h">24 Hours</option>
                     <option value="3d">3 Days</option>
                     <option value="7d">7 Days</option>
@@ -260,7 +345,8 @@ const AdminBanKickModal = ({
             </div>
           )}
 
-          {actionType === 'kick_all' && (
+          {/* Room picker — kick_all or kick+multiple_rooms */}
+          {needsRoomPicker && (
             <div className="abk-field">
               <label className="abk-label">
                 <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
@@ -292,6 +378,7 @@ const AdminBanKickModal = ({
             </div>
           )}
 
+          {/* Internal note */}
           <div className="abk-field">
             <label className="abk-label">
               <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
@@ -308,6 +395,7 @@ const AdminBanKickModal = ({
             />
           </div>
 
+          {/* Appeal allowed (ban only) */}
           {actionType === 'ban' && (
             <label className="abk-appeal-check">
               <input
@@ -321,6 +409,7 @@ const AdminBanKickModal = ({
 
         </div>
 
+        {/* Footer */}
         <div className="abk-footer">
           <button className="abk-btn-cancel" onClick={handleClose} disabled={isLoading}>
             Cancel

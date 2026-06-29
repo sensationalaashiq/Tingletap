@@ -361,67 +361,97 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PRIVATE MESSAGE — smaller version
+   PRIVATE MESSAGE — Mini Player
 ═══════════════════════════════════════════════════════════ */
 .pm-conversation .compact-audio-player,
 .pm-message .compact-audio-player,
 .pm-chat-area .compact-audio-player,
-.private-message-popup .compact-audio-player {
-  background: rgba(255,255,255,0.96) !important;
+.private-message-popup .compact-audio-player,
+.ultra-pm-audio-wrapper .compact-audio-player {
+  background: rgba(255,255,255,0.97) !important;
   border: 1px solid #ddd6fe !important;
-  width: 152px !important;
-  max-width: 152px !important;
-  min-width: 140px !important;
-  height: 100px !important;
-  min-height: 100px !important;
-  max-height: 100px !important;
-  padding: 7px 7px 7px !important;
+  box-shadow: 0 2px 10px rgba(109,40,217,0.12) !important;
+  width: 148px !important;
+  max-width: 148px !important;
+  min-width: 130px !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  max-height: 76px !important;
+  padding: 5px 6px !important;
   gap: 0 !important;
   justify-content: space-between !important;
+  border-radius: 11px !important;
 }
 
 .pm-conversation .audio-visualizer,
-.pm-message .audio-visualizer { height: 8px !important; min-height: 8px !important; max-height: 8px !important; }
+.pm-message .audio-visualizer,
+.ultra-pm-audio-wrapper .audio-visualizer { height: 6px !important; min-height: 6px !important; max-height: 6px !important; }
 
 .pm-conversation .compact-controls,
-.pm-message .compact-controls { height: 22px !important; min-height: 22px !important; max-height: 22px !important; }
+.pm-message .compact-controls,
+.ultra-pm-audio-wrapper .compact-controls { height: 20px !important; min-height: 20px !important; max-height: 20px !important; }
 
 .pm-conversation .player-header-row,
-.pm-message .player-header-row { height: 14px !important; min-height: 14px !important; max-height: 14px !important; }
+.pm-message .player-header-row,
+.ultra-pm-audio-wrapper .player-header-row { height: 13px !important; min-height: 13px !important; max-height: 13px !important; }
 
 .pm-conversation .volume-row,
-.pm-message .volume-row { height: 9px !important; min-height: 9px !important; max-height: 9px !important; }
+.pm-message .volume-row,
+.ultra-pm-audio-wrapper .volume-row { height: 8px !important; min-height: 8px !important; max-height: 8px !important; }
 
 .pm-conversation .visualizer-bar,
-.pm-message .visualizer-bar {
+.pm-message .visualizer-bar,
+.ultra-pm-audio-wrapper .visualizer-bar {
   background: linear-gradient(to top, #5b21b6, #7c3aed) !important;
+  width: 3px !important;
 }
 
 .pm-conversation .compact-btn,
-.pm-message .compact-btn {
+.pm-message .compact-btn,
+.ultra-pm-audio-wrapper .compact-btn {
   background: linear-gradient(135deg, #5b21b6, #6d28d9) !important;
   border: 1px solid #4c1d95 !important;
 }
 
 .pm-conversation .compact-btn svg,
-.pm-message .compact-btn svg { fill: #fff !important; }
+.pm-message .compact-btn svg,
+.ultra-pm-audio-wrapper .compact-btn svg { fill: #fff !important; }
 
 .pm-conversation .icon-btn,
-.pm-message .icon-btn { width: 17px !important; height: 17px !important; }
+.pm-message .icon-btn,
+.ultra-pm-audio-wrapper .icon-btn { width: 14px !important; height: 14px !important; }
 
 .pm-conversation .play-btn,
-.pm-message .play-btn { width: 20px !important; height: 20px !important; }
+.pm-message .play-btn,
+.ultra-pm-audio-wrapper .play-btn { width: 18px !important; height: 18px !important; }
 
 .pm-conversation .time-info,
 .pm-message .time-info,
+.ultra-pm-audio-wrapper .time-info,
 .pm-conversation .time-info span,
-.pm-message .time-info span { color: #4c1d95 !important; font-size: 7px !important; }
+.pm-message .time-info span,
+.ultra-pm-audio-wrapper .time-info span { color: #4c1d95 !important; font-size: 6.5px !important; }
 
 .pm-conversation .player-song-title,
-.pm-message .player-song-title { font-size: 8px !important; }
+.pm-message .player-song-title,
+.ultra-pm-audio-wrapper .player-song-title { font-size: 7.5px !important; color: #4c1d95 !important; }
 
 .pm-conversation .vol-icon,
-.pm-message .vol-icon { fill: #5b21b6 !important; }
+.pm-message .vol-icon,
+.ultra-pm-audio-wrapper .vol-icon { fill: #5b21b6 !important; }
+
+.pm-conversation .compact-progress-bar,
+.pm-message .compact-progress-bar,
+.ultra-pm-audio-wrapper .compact-progress-bar {
+  height: 3px !important;
+  min-height: 3px !important;
+}
+
+.pm-conversation .compact-volume-slider,
+.pm-message .compact-volume-slider,
+.ultra-pm-audio-wrapper .compact-volume-slider {
+  height: 2px !important;
+}
 
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE — mobile
@@ -534,30 +564,78 @@ html.dark-mode .pm-conversation .compact-audio-player,
 html.dark-mode .pm-message .compact-audio-player,
 html.dark-mode .pm-chat-area .compact-audio-player,
 html.dark-mode .private-message-popup .compact-audio-player,
+html.dark-mode .ultra-pm-audio-wrapper .compact-audio-player,
 .dark-mode .pm-conversation .compact-audio-player,
-.dark-mode .pm-message .compact-audio-player {
-  background: rgba(22,14,48,0.96) !important;
+.dark-mode .pm-message .compact-audio-player,
+.dark-mode .ultra-pm-audio-wrapper .compact-audio-player {
+  background: linear-gradient(145deg, #160e30 0%, #1a1030 55%, #100a22 100%) !important;
   border-color: #6d28d9 !important;
+  box-shadow: 0 2px 12px rgba(109,40,217,0.35) !important;
 }
 
 html.dark-mode .pm-conversation .time-info,
 html.dark-mode .pm-message .time-info,
+html.dark-mode .ultra-pm-audio-wrapper .time-info,
 html.dark-mode .pm-conversation .time-info span,
 html.dark-mode .pm-message .time-info span,
+html.dark-mode .ultra-pm-audio-wrapper .time-info span,
 .dark-mode .pm-conversation .time-info,
 .dark-mode .pm-message .time-info,
+.dark-mode .ultra-pm-audio-wrapper .time-info,
 .dark-mode .pm-conversation .time-info span,
-.dark-mode .pm-message .time-info span { color: #ddd6fe !important; }
+.dark-mode .pm-message .time-info span,
+.dark-mode .ultra-pm-audio-wrapper .time-info span { color: #ddd6fe !important; }
 
 html.dark-mode .pm-conversation .player-song-title,
 html.dark-mode .pm-message .player-song-title,
+html.dark-mode .ultra-pm-audio-wrapper .player-song-title,
 .dark-mode .pm-conversation .player-song-title,
-.dark-mode .pm-message .player-song-title { color: #c4b5fd !important; }
+.dark-mode .pm-message .player-song-title,
+.dark-mode .ultra-pm-audio-wrapper .player-song-title { color: #c4b5fd !important; }
 
 html.dark-mode .pm-conversation .vol-icon,
 html.dark-mode .pm-message .vol-icon,
+html.dark-mode .ultra-pm-audio-wrapper .vol-icon,
 .dark-mode .pm-conversation .vol-icon,
-.dark-mode .pm-message .vol-icon { fill: #a78bfa !important; }
+.dark-mode .pm-message .vol-icon,
+.dark-mode .ultra-pm-audio-wrapper .vol-icon { fill: #a78bfa !important; }
+
+html.dark-mode .ultra-pm-audio-wrapper .compact-btn,
+.dark-mode .ultra-pm-audio-wrapper .compact-btn {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%) !important;
+  border-color: #3b1a7a !important;
+  box-shadow: 0 2px 6px rgba(76,29,149,0.55) !important;
+}
+html.dark-mode .ultra-pm-audio-wrapper .compact-btn svg,
+.dark-mode .ultra-pm-audio-wrapper .compact-btn svg { fill: #e9d5ff !important; }
+
+html.dark-mode .ultra-pm-audio-wrapper .compact-progress-bar,
+.dark-mode .ultra-pm-audio-wrapper .compact-progress-bar {
+  background: rgba(109,40,217,0.25) !important;
+  border-color: rgba(167,139,250,0.2) !important;
+}
+html.dark-mode .ultra-pm-audio-wrapper .compact-progress-fill,
+.dark-mode .ultra-pm-audio-wrapper .compact-progress-fill {
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%) !important;
+}
+
+html.dark-mode .ultra-pm-audio-wrapper .compact-volume-slider,
+.dark-mode .ultra-pm-audio-wrapper .compact-volume-slider {
+  background: rgba(109,40,217,0.35) !important;
+}
+html.dark-mode .ultra-pm-audio-wrapper .visualizer-bar,
+.dark-mode .ultra-pm-audio-wrapper .visualizer-bar {
+  background: linear-gradient(to top, #7c3aed 0%, #c4b5fd 100%) !important;
+}
+html.dark-mode .ultra-pm-audio-wrapper .player-header-row,
+.dark-mode .ultra-pm-audio-wrapper .player-header-row {
+  border-bottom-color: rgba(167,139,250,0.18) !important;
+}
+html.dark-mode .ultra-pm-audio-wrapper .player-brand-icon svg,
+.dark-mode .ultra-pm-audio-wrapper .player-brand-icon svg {
+  fill: #a78bfa !important;
+  color: #a78bfa !important;
+}
 
 /* message-row wrapper override */
 html.dark-mode .message-row-wrapper .compact-audio-player,
