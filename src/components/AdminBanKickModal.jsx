@@ -59,6 +59,30 @@ const DURATIONS = {
 };
 
 /* ─────────────────────────────────────────────────────────
+   Duration → human expiry string
+───────────────────────────────────────────────────────── */
+function computeExpiry(durVal, customStr) {
+  const raw = durVal === 'custom' ? customStr : durVal;
+  if (!raw || raw === 'permanent') return 'Never expires';
+  const now = new Date();
+  const m = raw.match(/^(\d+(?:\.\d+)?)\s*(m|min|h|hr|d|day|w|week|mo|month|y|year)s?$/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const unit = m[2].toLowerCase();
+  const ms = unit.startsWith('m') && unit.length <= 3 && !unit.startsWith('mo')
+    ? n * 60000
+    : unit.startsWith('h') ? n * 3600000
+    : unit.startsWith('d') ? n * 86400000
+    : unit.startsWith('w') ? n * 7 * 86400000
+    : unit.startsWith('mo') ? n * 30 * 86400000
+    : unit.startsWith('y') ? n * 365 * 86400000
+    : null;
+  if (!ms) return null;
+  const exp = new Date(now.getTime() + ms);
+  return exp.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+/* ─────────────────────────────────────────────────────────
    AdminBanKickModal Component
 ───────────────────────────────────────────────────────── */
 const AdminBanKickModal = ({
@@ -232,42 +256,47 @@ const AdminBanKickModal = ({
     { id: 'kick', action: selectedUser?.kickedFrom?.roomId ? 'unkick' : 'kick', icon: selectedUser?.kickedFrom?.roomId ? 'unkick' : 'kick', label: selectedUser?.kickedFrom?.roomId ? 'Unkick' : 'Kick' },
   ];
 
+  /* ── Expiry display ── */
+  const expiryLabel = cfg.hasDuration ? computeExpiry(duration, customDuration) : null;
+
   return (
     <div className="luxmod-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className="luxmod-card" style={{ '--action-color': cfg.color, '--action-glow': cfg.glow }}>
+      <div className="luxmod-card" style={{ '--action-color': cfg.color }}>
 
         {/* ── Top color bar ── */}
-        <div className="luxmod-topbar" style={{ background: `linear-gradient(90deg, ${cfg.color}88, ${cfg.color}, ${cfg.color}88)` }} />
+        <div className="luxmod-topbar" style={{ background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }} />
 
         {/* ── Header ── */}
         <div className="luxmod-header">
-          <div className="luxmod-header-icon" style={{ background: `${cfg.color}14`, border: `1.5px solid ${cfg.color}35`, boxShadow: `0 0 12px ${cfg.color}22` }}>
-            <Ico name={localAction} color={cfg.color} size={19} />
+          <div className="luxmod-header-icon" style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}30` }}>
+            <Ico name={localAction} color={cfg.color} size={17} />
           </div>
           <div className="luxmod-header-text">
             <div className="luxmod-title">{cfg.label}</div>
             <div className="luxmod-subtitle">
-              Moderating{' '}
               <span style={{ color: cfg.color, fontWeight: 800 }}>
                 {selectedUser.displayName || selectedUser.email || 'User'}
               </span>
+              {selectedUser.email && selectedUser.displayName && (
+                <span> · {selectedUser.email}</span>
+              )}
             </div>
           </div>
           <button className="luxmod-close" onClick={handleClose}>
-            <Ico name="close" color="rgba(91,33,182,0.45)" size={12} />
+            <Ico name="close" color="rgba(91,33,182,0.4)" size={11} />
           </button>
         </div>
 
         {/* ── Success Banner ── */}
         {successBanner && (
-          <div className="luxmod-success-banner" style={{ background: `${successBanner.prevColor}12`, borderColor: `${successBanner.prevColor}30` }}>
-            <div className="luxmod-success-icon" style={{ background: `${successBanner.prevColor}18`, boxShadow: `0 0 8px ${successBanner.prevColor}30` }}>
-              <Ico name="check" color={successBanner.prevColor} size={12} />
+          <div className="luxmod-success-banner" style={{ background: `${successBanner.prevColor}0e`, borderColor: `${successBanner.prevColor}28` }}>
+            <div className="luxmod-success-icon" style={{ background: `${successBanner.prevColor}15` }}>
+              <Ico name="check" color={successBanner.prevColor} size={11} />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 10, color: successBanner.prevColor }}>{successBanner.message}</div>
-              <div style={{ fontSize: 9, color: 'rgba(91,33,182,0.5)', marginTop: 2 }}>
-                You can now perform the reverse action below, or close this panel.
+              <div style={{ fontWeight: 800, fontSize: 9.5, color: successBanner.prevColor }}>{successBanner.message}</div>
+              <div style={{ fontSize: 8.5, color: 'rgba(91,33,182,0.48)', marginTop: 1 }}>
+                Reverse action ready below.
               </div>
             </div>
           </div>
@@ -282,10 +311,10 @@ const AdminBanKickModal = ({
               <button
                 key={tab.id}
                 className={`luxmod-tab ${isActive ? 'luxmod-tab--active' : ''}`}
-                style={isActive ? { borderColor: `${tabCfg.color}70`, color: tabCfg.color, background: `${tabCfg.color}12`, boxShadow: `0 0 8px ${tabCfg.color}22` } : {}}
+                style={isActive ? { borderColor: `${tabCfg.color}55`, color: tabCfg.color, background: `${tabCfg.color}10` } : {}}
                 onClick={() => handleTabClick(tab.id)}
               >
-                <Ico name={tab.icon} color={isActive ? tabCfg.color : 'rgba(91,33,182,0.4)'} size={11} />
+                <Ico name={tab.icon} color={isActive ? tabCfg.color : 'rgba(91,33,182,0.38)'} size={10} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -301,17 +330,17 @@ const AdminBanKickModal = ({
               className="luxmod-user-avatar"
               onError={e => { e.target.src = getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender); }}
             />
-            <div className="luxmod-user-status-dot" style={{ background: statusColor, boxShadow: `0 0 5px ${statusColor}` }} />
+            <div className="luxmod-user-status-dot" style={{ background: statusColor }} />
           </div>
           <div className="luxmod-user-meta">
             <span className="luxmod-user-name">{selectedUser.displayName || 'Unknown User'}</span>
             <span className="luxmod-user-email">{selectedUser.email || 'No email'}</span>
           </div>
           <div className="luxmod-user-badges">
-            <span className="luxmod-badge" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', color: '#6d28d9' }}>
-              {getRoleDisplayLabel ? getRoleDisplayLabel(selectedUser) : userRole.toUpperCase()}
+            <span className="luxmod-badge" style={{ background: 'rgba(109,40,217,0.09)', border: '1px solid rgba(109,40,217,0.22)', color: '#6d28d9' }}>
+              {getRoleDisplayLabel ? getRoleDisplayLabel(selectedUser) : userRole}
             </span>
-            <span className="luxmod-badge" style={{ background: `${statusColor}14`, border: `1px solid ${statusColor}30`, color: statusColor }}>
+            <span className="luxmod-badge" style={{ background: `${statusColor}12`, border: `1px solid ${statusColor}28`, color: statusColor }}>
               {statusLabel}
             </span>
           </div>
@@ -322,26 +351,24 @@ const AdminBanKickModal = ({
 
           {/* ── Reverse action: info panel ── */}
           {isReverse && (
-            <div className="luxmod-info-panel" style={{ borderColor: `${cfg.color}30`, background: `${cfg.color}09` }}>
-              <Ico name="info" color={cfg.color} size={14} />
+            <div className="luxmod-info-panel" style={{ borderColor: `${cfg.color}28`, background: `${cfg.color}07` }}>
+              <Ico name="info" color={cfg.color} size={13} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 10.5, color: cfg.color }}>{cfg.label} Confirmation</div>
-                <div style={{ fontSize: 9.5, color: 'rgba(91,33,182,0.55)', marginTop: 3 }}>
-                  {localAction === 'unban'  && "This will lift the user's ban and restore full platform access."}
-                  {localAction === 'unmute' && "This will allow the user to send messages again across all rooms."}
-                  {localAction === 'unkick' && (unkickScope === 'all_rooms' ? "This will remove all kicks and allow the user to rejoin any room." : `This will remove the kick from ${currentRoomName || 'the current room'}.`)}
+                <div style={{ fontWeight: 800, fontSize: 10, color: cfg.color, marginBottom: 2 }}>{cfg.label}</div>
+                <div style={{ fontSize: 8.5, color: 'rgba(91,33,182,0.52)', lineHeight: 1.4 }}>
+                  {localAction === 'unban'  && "Lifts the ban — restores full platform access."}
+                  {localAction === 'unmute' && "Allows the user to send messages again."}
+                  {localAction === 'unkick' && (unkickScope === 'all_rooms' ? "Removes all kicks — user can rejoin any room." : `Removes kick from ${currentRoomName || 'the current room'}.`)}
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Kick Scope: Selected Rooms only ── */}
+          {/* ── Kick Scope label ── */}
           {localAction === 'kick' && (
-            <div className="luxmod-field">
-              <div className="luxmod-field-label">
-                <Ico name="global" color="#7c3aed" size={9} />
-                Kick Scope — Selected Rooms
-              </div>
+            <div className="luxmod-field-label" style={{ marginBottom: -4 }}>
+              <Ico name="global" color="#7c3aed" size={8} />
+              Kick Scope — Selected Rooms
             </div>
           )}
 
@@ -349,27 +376,27 @@ const AdminBanKickModal = ({
           {localAction === 'unkick' && (
             <div className="luxmod-field">
               <div className="luxmod-field-label">
-                <Ico name="scope" color="#7c3aed" size={9} />
+                <Ico name="scope" color="#7c3aed" size={8} />
                 Unkick Scope
               </div>
               <div className="luxmod-scope-row">
                 <button
                   type="button"
                   className={`luxmod-scope-btn ${unkickScope === 'all_rooms' ? 'luxmod-scope-btn--active' : ''}`}
-                  style={unkickScope === 'all_rooms' ? { borderColor: `${cfg.color}70`, color: cfg.color, background: `${cfg.color}12` } : {}}
+                  style={unkickScope === 'all_rooms' ? { borderColor: `${cfg.color}50`, color: cfg.color, background: `${cfg.color}0e` } : {}}
                   onClick={() => setUnkickScope('all_rooms')}
                 >
-                  <Ico name="global" color={unkickScope === 'all_rooms' ? cfg.color : 'rgba(91,33,182,0.4)'} size={10} />
+                  <Ico name="global" color={unkickScope === 'all_rooms' ? cfg.color : 'rgba(91,33,182,0.36)'} size={9} />
                   All Rooms
                 </button>
                 <button
                   type="button"
                   className={`luxmod-scope-btn ${unkickScope === 'this_room' ? 'luxmod-scope-btn--active' : ''}`}
-                  style={unkickScope === 'this_room' ? { borderColor: `${cfg.color}70`, color: cfg.color, background: `${cfg.color}12` } : {}}
+                  style={unkickScope === 'this_room' ? { borderColor: `${cfg.color}50`, color: cfg.color, background: `${cfg.color}0e` } : {}}
                   onClick={() => setUnkickScope('this_room')}
                 >
-                  <Ico name="room" color={unkickScope === 'this_room' ? cfg.color : 'rgba(91,33,182,0.4)'} size={10} />
-                  This Room{currentRoomName ? ` — ${currentRoomName}` : ' Only'}
+                  <Ico name="room" color={unkickScope === 'this_room' ? cfg.color : 'rgba(91,33,182,0.36)'} size={9} />
+                  {currentRoomName || 'This Room'}
                 </button>
               </div>
             </div>
@@ -379,16 +406,16 @@ const AdminBanKickModal = ({
           {needsRoomPicker && (
             <div className="luxmod-field">
               <div className="luxmod-field-label">
-                <Ico name="room" color="#7c3aed" size={9} />
+                <Ico name="room" color="#7c3aed" size={8} />
                 Select Rooms
-                <span className="luxmod-field-count">{selectedRooms.length}/{rooms.length} selected</span>
+                <span className="luxmod-field-count">{selectedRooms.length}/{rooms.length}</span>
               </div>
               <div className="luxmod-rooms-header">
                 <button className="luxmod-rooms-quick" onClick={() => setSelectedRooms(rooms.map(r => r.id))}>
-                  <Ico name="check" color="#7c3aed" size={9} /> Select All
+                  <Ico name="check" color="#7c3aed" size={8} /> All
                 </button>
                 <button className="luxmod-rooms-quick" onClick={() => setSelectedRooms([])}>
-                  <Ico name="close" color="rgba(91,33,182,0.5)" size={9} /> Clear
+                  <Ico name="close" color="rgba(91,33,182,0.45)" size={8} /> Clear
                 </button>
               </div>
               <div className="luxmod-rooms-grid">
@@ -401,16 +428,16 @@ const AdminBanKickModal = ({
                       key={room.id}
                       type="button"
                       className={`luxmod-room-chip ${isSelected ? 'luxmod-room-chip--selected' : ''}`}
-                      style={isSelected ? { borderColor: `${cfg.color}55`, background: `${cfg.color}10`, color: cfg.color } : {}}
+                      style={isSelected ? { borderColor: `${cfg.color}48`, background: `${cfg.color}0e`, color: cfg.color } : {}}
                       onClick={() => setSelectedRooms(prev =>
                         isSelected ? prev.filter(id => id !== room.id) : [...prev, room.id]
                       )}
                     >
-                      <Ico name="room" color={isSelected ? cfg.color : 'rgba(91,33,182,0.4)'} size={10} />
+                      <Ico name="room" color={isSelected ? cfg.color : 'rgba(91,33,182,0.36)'} size={9} />
                       <span>{room.name || room.id}</span>
                       {isSelected && (
                         <div className="luxmod-room-chip-check">
-                          <Ico name="check" color="#fff" size={8} />
+                          <Ico name="check" color="#fff" size={7} />
                         </div>
                       )}
                     </button>
@@ -424,7 +451,7 @@ const AdminBanKickModal = ({
           {!isReverse && (
             <div className="luxmod-field">
               <div className="luxmod-field-label">
-                <Ico name="reason" color="#7c3aed" size={9} />
+                <Ico name="reason" color="#7c3aed" size={8} />
                 Reason <span className="luxmod-required">*</span>
               </div>
               <div className="luxmod-reasons-list">
@@ -433,27 +460,27 @@ const AdminBanKickModal = ({
                     key={r}
                     type="button"
                     className={`luxmod-reason-btn ${reason === r ? 'luxmod-reason-btn--active' : ''}`}
-                    style={reason === r ? { borderColor: `${cfg.color}55`, background: `${cfg.color}10`, color: cfg.color } : {}}
+                    style={reason === r ? { borderColor: `${cfg.color}48`, background: `${cfg.color}0e`, color: cfg.color } : {}}
                     onClick={() => setReason(r)}
                   >
-                    {reason === r && <Ico name="check" color={cfg.color} size={9} />}
+                    {reason === r && <Ico name="check" color={cfg.color} size={8} />}
                     {r}
                   </button>
                 ))}
                 <button
                   type="button"
                   className={`luxmod-reason-btn luxmod-reason-btn--custom ${reason === 'custom' ? 'luxmod-reason-btn--active' : ''}`}
-                  style={reason === 'custom' ? { borderColor: `${cfg.color}55`, background: `${cfg.color}10`, color: cfg.color } : {}}
+                  style={reason === 'custom' ? { borderColor: `${cfg.color}48`, background: `${cfg.color}0e`, color: cfg.color } : {}}
                   onClick={() => setReason('custom')}
                 >
-                  {reason === 'custom' && <Ico name="check" color={cfg.color} size={9} />}
-                  Custom reason…
+                  {reason === 'custom' && <Ico name="check" color={cfg.color} size={8} />}
+                  Custom…
                 </button>
               </div>
               {reason === 'custom' && (
                 <textarea
                   className="luxmod-textarea"
-                  placeholder="Describe the reason in detail…"
+                  placeholder="Enter reason…"
                   value={customReason}
                   onChange={e => setCustomReason(e.target.value)}
                   rows={2}
@@ -467,7 +494,7 @@ const AdminBanKickModal = ({
           {cfg.hasDuration && (
             <div className="luxmod-field">
               <div className="luxmod-field-label">
-                <Ico name="clock" color="#7c3aed" size={9} />
+                <Ico name="clock" color="#7c3aed" size={8} />
                 {localAction === 'ban' ? 'Ban Duration' : localAction === 'mute' ? 'Mute Duration' : 'Kick Duration'}
               </div>
               <div className="luxmod-duration-pills">
@@ -476,7 +503,7 @@ const AdminBanKickModal = ({
                     key={v}
                     type="button"
                     className={`luxmod-dur-pill ${duration === v ? 'luxmod-dur-pill--active' : ''}`}
-                    style={duration === v ? { borderColor: `${cfg.color}70`, background: `${cfg.color}14`, color: cfg.color, boxShadow: `0 0 6px ${cfg.color}25` } : {}}
+                    style={duration === v ? { borderColor: `${cfg.color}60`, background: `${cfg.color}12`, color: cfg.color } : {}}
                     onClick={() => setDuration(v)}
                   >
                     {l}
@@ -487,11 +514,20 @@ const AdminBanKickModal = ({
                 <input
                   type="text"
                   className="luxmod-input"
-                  placeholder="e.g. 2 weeks, 6 months, 45 minutes"
+                  placeholder="e.g. 2h, 7d, 3 weeks"
                   value={customDuration}
                   onChange={e => setCustomDuration(e.target.value)}
                   style={{ '--focus-color': cfg.color }}
                 />
+              )}
+              {expiryLabel && (
+                <div className="luxmod-expiry-preview">
+                  <Ico name="clock" color="rgba(109,40,217,0.5)" size={8} />
+                  {expiryLabel === 'Never expires'
+                    ? <span style={{ color: '#dc2626', fontWeight: 800 }}>Never expires</span>
+                    : <><span>Expires: </span><strong>{expiryLabel}</strong></>
+                  }
+                </div>
               )}
             </div>
           )}
@@ -499,13 +535,13 @@ const AdminBanKickModal = ({
           {/* ── Internal Note ── */}
           <div className="luxmod-field">
             <div className="luxmod-field-label">
-              <Ico name="note" color="#7c3aed" size={9} />
+              <Ico name="note" color="#7c3aed" size={8} />
               Staff Note
               <span className="luxmod-field-optional">(optional)</span>
             </div>
             <textarea
               className="luxmod-textarea"
-              placeholder="Internal note visible only to moderators…"
+              placeholder="Internal note for moderators only…"
               value={adminNotes}
               onChange={e => setAdminNotes(e.target.value)}
               rows={2}
@@ -521,11 +557,11 @@ const AdminBanKickModal = ({
               onClick={() => setAppealAllowed(v => !v)}
             >
               <div className={`luxmod-toggle-track ${appealAllowed ? 'luxmod-toggle-track--on' : ''}`}
-                style={appealAllowed ? { background: cfg.color } : {}}>
+                style={appealAllowed ? { background: '#10b981' } : {}}>
                 <div className="luxmod-toggle-thumb" />
               </div>
-              <Ico name="shield" color={appealAllowed ? cfg.color : 'rgba(91,33,182,0.35)'} size={11} />
-              <span style={{ color: appealAllowed ? cfg.color : 'rgba(91,33,182,0.55)' }}>
+              <Ico name="shield" color={appealAllowed ? '#10b981' : 'rgba(91,33,182,0.32)'} size={10} />
+              <span style={{ color: appealAllowed ? '#059669' : 'rgba(91,33,182,0.52)', fontSize: 9 }}>
                 {appealAllowed ? 'Appeal allowed' : 'No appeal'}
               </span>
             </button>
@@ -534,7 +570,7 @@ const AdminBanKickModal = ({
           {/* ── Error message ── */}
           {error && (
             <div className="luxmod-error">
-              <Ico name="warning" color="#dc2626" size={11} />
+              <Ico name="warning" color="#dc2626" size={10} />
               {error}
             </div>
           )}
@@ -549,11 +585,13 @@ const AdminBanKickModal = ({
           <button
             className="luxmod-btn-confirm"
             style={{
-              background: (isReverse || reason) ? `linear-gradient(135deg, ${cfg.color}cc, ${cfg.color})` : 'rgba(139,92,246,0.18)',
-              boxShadow: (isReverse || reason) ? `0 4px 14px ${cfg.color}40` : 'none',
+              background: (isReverse || reason)
+                ? `linear-gradient(135deg, ${cfg.color}dd, ${cfg.color})`
+                : 'rgba(139,92,246,0.1)',
+              boxShadow: (isReverse || reason) ? `0 3px 12px ${cfg.color}38` : 'none',
+              opacity: (!isReverse && !reason) || isLoading ? 0.5 : 1,
+              color: (isReverse || reason) ? '#fff' : 'rgba(91,33,182,0.45)',
               cursor: (isReverse || reason) && !isLoading ? 'pointer' : 'not-allowed',
-              opacity: (!isReverse && !reason) || isLoading ? 0.55 : 1,
-              color: (isReverse || reason) ? '#fff' : 'rgba(91,33,182,0.5)',
             }}
             onClick={handleConfirm}
             disabled={isLoading || (!isReverse && !reason)}
@@ -562,8 +600,8 @@ const AdminBanKickModal = ({
               <span className="luxmod-spinner" />
             ) : (
               <>
-                <Ico name={localAction} color={(isReverse || reason) ? '#fff' : 'rgba(91,33,182,0.5)'} size={12} />
-                Confirm {cfg.tabLabel}
+                <Ico name={localAction} color={(isReverse || reason) ? '#fff' : 'rgba(91,33,182,0.45)'} size={11} />
+                {cfg.tabLabel} User
               </>
             )}
           </button>
