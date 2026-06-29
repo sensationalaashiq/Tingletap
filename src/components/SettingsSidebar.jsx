@@ -769,50 +769,111 @@ const SettingsSidebar = ({
                                 <span>Theme</span>
                                 <small>Choose your interface colour theme</small>
                             </div>
-                            <div style={{
-                                display:'grid',
-                                gridTemplateColumns:'repeat(3,1fr)',
-                                gap:'8px',
-                                marginTop:'2px'
-                            }}>
-                                {[
-                                    { value:'light',         label:'☀️ Light',    swatch:'linear-gradient(135deg,#f8fafc,#e2e8f0)' },
-                                    { value:'dark',          label:'🌙 Dark',     swatch:'linear-gradient(135deg,#1e1e30,#0f0f1a)' },
-                                    { value:'rose-pink',     label:'🌸 Rose',     swatch:'linear-gradient(135deg,#f06292,#1a0b10)' },
-                                    { value:'burgundy-wine', label:'🍷 Wine',     swatch:'linear-gradient(135deg,#c62828,#130508)' },
-                                    { value:'aurora',        label:'🌌 Aurora',   swatch:'linear-gradient(135deg,#00e5ff,#030d1a)' },
-                                    { value:'royal-purple',  label:'👑 Purple',   swatch:'linear-gradient(135deg,#9c27b0,#0d0618)' },
-                                    { value:'sunset-orange', label:'🌅 Sunset',   swatch:'linear-gradient(135deg,#ff5722,#120700)' },
-                                ].map(t => {
-                                    const active = settings.selectedTheme === t.value;
-                                    return (
-                                        <button
-                                            key={t.value}
-                                            onClick={() => handleSettingChange('selectedTheme', t.value)}
-                                            style={{
-                                                display:'flex',flexDirection:'column',alignItems:'center',gap:'5px',
-                                                padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
-                                                border: active ? '2px solid var(--accent-color,#6366f1)' : '2px solid rgba(128,128,128,0.25)',
-                                                background: active ? 'rgba(99,102,241,0.12)' : 'rgba(128,128,128,0.06)',
-                                                outline:'none',transition:'all 0.15s',
-                                                boxShadow: active ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
-                                            }}
-                                        >
-                                            <div style={{
-                                                width:'36px',height:'22px',borderRadius:'6px',
-                                                background:t.swatch,
-                                                border:'1px solid rgba(255,255,255,0.12)',
-                                                flexShrink:0,
-                                            }}/>
-                                            <span style={{
-                                                fontSize:'10px',fontWeight: active ? 700 : 500,
-                                                color: active ? 'var(--text-primary,#111)' : 'var(--text-muted,#888)',
-                                                whiteSpace:'nowrap',lineHeight:1.2,
-                                            }}>{t.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {(() => {
+                                const _role = loggedInUserProfile?.role?.toLowerCase();
+                                const _isGuest = _role === 'guest' || loggedInUserProfile?.isGuest === true || auth.currentUser?.isAnonymous === true;
+                                const _hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
+                                const _isPrivileged = _hasBadge || ['owner', 'admin', 'moderator'].includes(_role);
+
+                                const themeAccess = (v) => {
+                                    if (_isPrivileged) return true;
+                                    if (_isGuest) return v === 'light' || v === 'dark';
+                                    return v === 'light' || v === 'dark' || v === 'rose-pink';
+                                };
+
+                                const lockMsg = _isGuest
+                                    ? '🔒 Register an account to unlock more themes!'
+                                    : '🔒 Earn a badge or become staff to unlock all themes!';
+
+                                const allThemes = [
+                                    { value:'light',         label:'☀️ Light',  swatch:'linear-gradient(135deg,#f8fafc,#e2e8f0)' },
+                                    { value:'dark',          label:'🌙 Dark',   swatch:'linear-gradient(135deg,#1e1e30,#0f0f1a)' },
+                                    { value:'rose-pink',     label:'🌸 Rose',   swatch:'linear-gradient(135deg,#f06292,#1a0b10)' },
+                                    { value:'burgundy-wine', label:'🍷 Wine',   swatch:'linear-gradient(135deg,#c62828,#130508)' },
+                                    { value:'aurora',        label:'🌌 Aurora', swatch:'linear-gradient(135deg,#00e5ff,#030d1a)' },
+                                    { value:'royal-purple',  label:'👑 Purple', swatch:'linear-gradient(135deg,#9c27b0,#0d0618)' },
+                                    { value:'sunset-orange', label:'🌅 Sunset', swatch:'linear-gradient(135deg,#ff5722,#120700)' },
+                                ];
+
+                                return (
+                                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginTop:'2px'}}>
+                                        {allThemes.map(t => {
+                                            const active = settings.selectedTheme === t.value;
+                                            const unlocked = themeAccess(t.value);
+
+                                            if (unlocked) {
+                                                return (
+                                                    <button
+                                                        key={t.value}
+                                                        onClick={() => handleSettingChange('selectedTheme', t.value)}
+                                                        style={{
+                                                            display:'flex',flexDirection:'column',alignItems:'center',gap:'5px',
+                                                            padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
+                                                            border: active ? '2px solid var(--accent-color,#6366f1)' : '2px solid rgba(128,128,128,0.25)',
+                                                            background: active ? 'rgba(99,102,241,0.12)' : 'rgba(128,128,128,0.06)',
+                                                            outline:'none',transition:'all 0.15s',
+                                                            boxShadow: active ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            width:'36px',height:'22px',borderRadius:'6px',
+                                                            background:t.swatch,
+                                                            border:'1px solid rgba(255,255,255,0.12)',
+                                                            flexShrink:0,
+                                                        }}/>
+                                                        <span style={{
+                                                            fontSize:'10px',fontWeight: active ? 700 : 500,
+                                                            color: active ? 'var(--text-primary,#111)' : 'var(--text-muted,#888)',
+                                                            whiteSpace:'nowrap',lineHeight:1.2,
+                                                        }}>{t.label}</span>
+                                                    </button>
+                                                );
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={t.value}
+                                                    onClick={() => toast.info(lockMsg, { position:'top-center', autoClose:3500 })}
+                                                    title={lockMsg}
+                                                    style={{
+                                                        display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
+                                                        padding:'8px 4px',borderRadius:'10px',cursor:'pointer',
+                                                        border:'2px dashed rgba(128,128,128,0.2)',
+                                                        background:'rgba(128,128,128,0.04)',
+                                                        outline:'none',transition:'all 0.15s',
+                                                        position:'relative',overflow:'hidden',
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width:'36px',height:'22px',borderRadius:'6px',
+                                                        background:t.swatch,
+                                                        border:'1px solid rgba(255,255,255,0.08)',
+                                                        flexShrink:0,
+                                                        filter:'blur(1.5px) grayscale(0.4) brightness(0.75)',
+                                                    }}/>
+                                                    <div style={{
+                                                        position:'absolute',top:'7px',left:'50%',transform:'translateX(-50%)',
+                                                        fontSize:'12px',lineHeight:1,
+                                                    }}>🔒</div>
+                                                    <span style={{
+                                                        fontSize:'9px',fontWeight:500,
+                                                        color:'var(--text-muted,#aaa)',
+                                                        whiteSpace:'nowrap',lineHeight:1.2,opacity:0.65,
+                                                    }}>{t.label.replace(/^\S+\s/,'')}</span>
+                                                    <span style={{
+                                                        position:'absolute',top:0,right:0,
+                                                        background:'linear-gradient(135deg,#f59e0b,#d97706)',
+                                                        color:'#fff',fontSize:'7px',fontWeight:800,
+                                                        padding:'2px 5px',
+                                                        borderRadius:'0 8px 0 6px',
+                                                        letterSpacing:'0.5px',lineHeight:1.6,
+                                                    }}>PRO</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <div className="setting-group">
