@@ -562,7 +562,16 @@ const AdminPanelPage = () => {
         resolvedAt: serverTimestamp(),
         resolveNote: 'Unkicked by admin'
       });
-      aToast.success(`✅ ${unkickTarget.username || 'User'} has been unkicked from ${unkickTarget.roomName || 'the room'}.`);
+      // TingleBot strip in the room (visible to all)
+      if (unkickTarget.roomId) {
+        addDoc(collection(db, 'rooms', unkickTarget.roomId, 'messages'), {
+          text: `${unkickTarget.username || 'User'} has been unkicked and can rejoin.`,
+          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+          isBot: true, systemBot: true, tinglebotType: 'unkicked',
+          createdAt: serverTimestamp(),
+          noReply: true, noReaction: true, noReport: true, noUnread: true,
+        }).catch(() => {});
+      }
       setShowUnkickModal(false); setUnkickTarget(null);
     } catch (err) {
       aToast.error('Failed to unkick: ' + err.message);
@@ -586,7 +595,17 @@ const AdminPanelPage = () => {
         resolvedAt: serverTimestamp(),
         resolveNote: 'Unmuted by admin'
       });
-      aToast.success(`✅ ${unmuteTarget.username || 'User'} has been unmuted.`);
+      // TingleBot strip in the user's current room (visible to all)
+      const unmuteViolRoomId = onlineStatuses[unmuteTarget.userId]?.currentRoomId;
+      if (unmuteViolRoomId) {
+        addDoc(collection(db, 'rooms', unmuteViolRoomId, 'messages'), {
+          text: `${unmuteTarget.username || 'User'} has been unmuted and can speak again.`,
+          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+          isBot: true, systemBot: true, tinglebotType: 'unmuted',
+          createdAt: serverTimestamp(),
+          noReply: true, noReaction: true, noReport: true, noUnread: true,
+        }).catch(() => {});
+      }
       setShowUnmuteModal(false); setUnmuteTarget(null);
     } catch (err) {
       aToast.error('Failed to unmute: ' + err.message);
@@ -692,7 +711,6 @@ const AdminPanelPage = () => {
         }).catch(() => {});
       }
 
-      aToast.success(`${roleTarget.displayName} is now ${roleLabelMap[newRole] || newRole}.`);
       setShowRoleModal(false);
       setRoleTarget(null);
     } catch (err) {
@@ -966,13 +984,11 @@ const AdminPanelPage = () => {
               { displayName: selectedUser.displayName, email: selectedUser.email },
               { reason: actionData.reason || 'User account banned by administrator', bannedBy: currentUserProfile?.displayName || 'Admin', userAgent: navigator.userAgent, location: 'Admin Panel Ban', country: selectedUser.country || 'Unknown' }
             );
-            if (ipBanResults.ipBanned && ipBanResults.bannedIP) {
-              aToast.success(`${selectedUser.displayName} has been banned. IP ${ipBanResults.bannedIP} is also banned.`);
-            } else {
-              aToast.success(`${selectedUser.displayName} has been banned.`);
+            if (ipBanResults?.ipBanned && ipBanResults?.bannedIP) {
+              aToast.info(`IP ${ipBanResults.bannedIP} also banned.`);
             }
           } catch (ipError) {
-            aToast.warning(`${selectedUser.displayName} has been banned, but IP ban failed: ${ipError.message}`);
+            aToast.warning(`Account banned — IP ban failed: ${ipError.message}`);
           }
           break;
         }
@@ -991,13 +1007,11 @@ const AdminPanelPage = () => {
           }
           try {
             const unbannedIPs = await IPBanSystem.unbanUserIP(selectedUser.uid);
-            if (unbannedIPs && unbannedIPs.length > 0) {
-              aToast.success(`${selectedUser.displayName} has been unbanned. IP(s) ${unbannedIPs.join(', ')} are also unbanned.`);
-            } else {
-              aToast.success(`${selectedUser.displayName} has been unbanned.`);
+            if (unbannedIPs?.length > 0) {
+              aToast.info(`IP(s) ${unbannedIPs.join(', ')} also unbanned.`);
             }
           } catch (ipError) {
-            aToast.warning(`${selectedUser.displayName} has been unbanned, but IP unban failed: ${ipError.message}`);
+            aToast.warning(`Account unbanned — IP unban failed: ${ipError.message}`);
           }
           break;
         }
@@ -1031,7 +1045,6 @@ const AdminPanelPage = () => {
               noReply: true, noReaction: true, noReport: true, noUnread: true,
             }).catch(() => {});
           }
-          aToast.success(`${selectedUser.displayName} has been muted.`);
           break;
         }
           
@@ -1052,7 +1065,6 @@ const AdminPanelPage = () => {
               noReply: true, noReaction: true, noReport: true, noUnread: true,
             }).catch(() => {});
           }
-          aToast.success(`${selectedUser.displayName} has been unmuted.`);
           break;
         }
           
@@ -1083,7 +1095,6 @@ const AdminPanelPage = () => {
           } else {
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
           }
-          aToast.success(`${selectedUser.displayName} has been kicked.`);
           break;
         }
 
@@ -1100,7 +1111,6 @@ const AdminPanelPage = () => {
             }).catch(() => {});
           }
           await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
-          aToast.success(`${selectedUser.displayName} has been unkicked.`);
           break;
         }
       }

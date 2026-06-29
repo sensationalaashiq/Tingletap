@@ -5935,7 +5935,7 @@ html body.theme-sunset .message-body p {
 
 /* YouTube Music message wrapper — no extra styling, player handles it */
 .youtube-music-message .youtube-music-player {
-    display: block;
+    display: flex;
 }
 
 /* Base YouTube Embed Styling — Premium Vibrant Lavender */

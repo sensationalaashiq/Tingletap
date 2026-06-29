@@ -100,7 +100,8 @@ service cloud.firestore {
         'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
         'fcmToken', 'pushToken', 'notificationPreferences',
         'age', 'relationship', 'isGuest',
-        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt'
+        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt',
+        'trustScore', 'trustRank', 'trustData'
       ];
       let staffOnlyFields = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt'];
       let changedFields = request.resource.data.diff(resource.data).affectedKeys();
@@ -202,20 +203,22 @@ service cloud.firestore {
           !isUserKickedFromRoom(request.auth.uid, roomId));
 
         // Staff (owner/admin/moderator) can always send — no bans/mutes apply
-        // TingleBot system messages (join/leave/mute/ban events) — any authenticated user can create
         // All other authenticated users (including guests) can send unless banned/muted/kicked
         allow create: if request.auth != null && (
+          // TingleBot official system UID
+          request.auth.uid == "tinglebot_system_official_2024" ||
+          // Staff (owner/admin/moderator) bypass all restrictions
           isStaff() ||
-          (
-            request.resource.data.uid == 'tinglebot_system_official_2024' &&
-            request.resource.data.isBot == true &&
-            request.resource.data.systemBot == true
-          ) || (
-            request.resource.data.uid == request.auth.uid &&
-            !isUserBanned(request.auth.uid) &&
-            !isUserMuted(request.auth.uid) &&
-            !isUserKickedFromRoom(request.auth.uid, roomId) &&
-            validateBasicMessageContent()
+          // System/bot messages (join, leave, automod notices) written by any authenticated non-banned user
+          (request.resource.data.isBot == true &&
+           request.resource.data.systemBot == true &&
+           !isUserBanned(request.auth.uid)) ||
+          // Regular user messages (registered, guest, badge holders — all roles)
+          (request.resource.data.uid == request.auth.uid &&
+           !isUserBanned(request.auth.uid) &&
+           !isUserMuted(request.auth.uid) &&
+           !isUserKickedFromRoom(request.auth.uid, roomId) &&
+           validateBasicMessageContent()
           )
         );
 

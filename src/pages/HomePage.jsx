@@ -1029,6 +1029,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     const ruleIntervalRef = useRef(null);
     // Track TingleBot message IDs that already have a deletion scheduled
     const scheduledTinglebotDeletionsRef = useRef(new Set());
+    // Holds latest profile data so presence effect can read it WITHOUT being in its dep array
+    const loggedInUserProfileRef = useRef(null);
 
     // Update last activity whenever messages change
     useEffect(() => {
@@ -1984,119 +1986,125 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [loggedInUserProfile]);
 
+    // ── Keep ref always current so heartbeat can read latest profile ─────────
+    useEffect(() => {
+        loggedInUserProfileRef.current = loggedInUserProfile;
+    }, [loggedInUserProfile]);
+
+    // ── PRESENCE PART 1: Write online status whenever profile or room is ready ─
+    // loggedInUserProfile IS in deps here — safe because RTDB writes don't trigger
+    // Firestore listeners, so there is zero write→listen→re-run loop risk.
+    // storeDeviceInfo is in a separate effect below to keep this clean.
     useEffect(() => {
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
-        
-        if ((user || (isGuest && guestData)) && roomId && loggedInUserProfile) {
-            const currentUid = user?.uid || (isGuest && guestData ? JSON.parse(guestData).uid : null);
-            if (!currentUid) return;
-            
-            const userStatusRef = ref(rtdb, `status/${currentUid}`);
-            
-            // Collect device information
-            const userAgent = navigator.userAgent || 'Unknown';
-            const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent);
-            const isTablet = /iPad|Tablet/i.test(userAgent);
-            
-            let browser = 'Unknown';
-            if (userAgent.includes('Edg/')) browser = 'Edge';
-            else if (userAgent.includes('Chrome/') && !userAgent.includes('Edg/')) browser = 'Chrome';
-            else if (userAgent.includes('Firefox/')) browser = 'Firefox';
-            else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) browser = 'Safari';
-            else if (userAgent.includes('Opera/') || userAgent.includes('OPR/')) browser = 'Opera';
-            
-            let os = 'Unknown';
-            if (userAgent.includes('Windows')) os = 'Windows';
-            else if (userAgent.includes('Mac')) os = 'macOS';
-            else if (userAgent.includes('Linux')) os = 'Linux';
-            else if (userAgent.includes('Android')) os = 'Android';
-            else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
-            
-            const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
-            
-            // Get proper display name for guests
-            let displayNameForStatus = loggedInUserProfile.displayName || 'Guest';
-            if (isGuest && guestData) {
-                try {
-                    const guestUser = JSON.parse(guestData);
-                    displayNameForStatus = guestUser.username || guestUser.displayName || 'Guest';
-                } catch (e) {
-                    console.error('Error parsing guest data for status:', e);
-                }
-            }
-            
-            const statusData = {
-                state: 'online',
-                currentRoomId: roomId,
-                last_changed: Date.now(),
-                userAgent: userAgent,
-                browser: browser,
-                os: os,
-                deviceType: deviceType,
-                country: loggedInUserProfile.country || 'Unknown',
-                displayName: displayNameForStatus,
-                gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
-                role: loggedInUserProfile.role || 'guest',
-                isGuest: isGuest || false,
-                photoURL: loggedInUserProfile.photoURL || `${getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender)}`,
-                badge: loggedInUserProfile.badge || null,
-                uid: currentUid,
-                showOnlineStatus: loggedInUserProfile.settings?.showOnlineStatus !== false
-            };
-            // Store for the updateOnlineStatusVisibility helper
-            window._currentStatusData = { ...statusData };
-            
-            // Store comprehensive device info in Firestore for persistence (only for registered users)
-            if (!isGuest && user) {
-                const storeDeviceInfo = async () => {
-                    try {
-                        const deviceProfile = await DeviceFingerprint.getDeviceProfile();
-                        await updateDoc(doc(db, 'users', user.uid), {
-                            lastUserAgent: userAgent,
-                            lastBrowser: browser,
-                            lastOS: os,
-                            lastDeviceType: deviceType,
-                            lastDeviceId: deviceProfile.deviceId,
-                            lastDeviceInfo: deviceProfile,
-                            lastSeenAt: new Date().toISOString(),
-                            lastIP: ip || 'Unknown'
-                        });
-                    } catch (err) {
-                        console.error('Error updating device info:', err);
-                    }
-                };
-                storeDeviceInfo();
-            }
-            
-            // onDisconnect: fires when browser closes / network drops unexpectedly
-            onDisconnect(userStatusRef).update({
-                state: 'offline',
-                currentRoomId: null,
-                last_changed: Date.now()
-            }).then(() => {
-                // Write online status only AFTER onDisconnect is registered
-                set(userStatusRef, { ...statusData, last_changed: Date.now() });
-            });
+        if ((!user && !(isGuest && guestData)) || !roomId || !loggedInUserProfile) return;
 
-            // Heartbeat every 30s — keeps entry fresh; stale threshold is 5 min
-            const heartbeatInterval = setInterval(() => {
-                set(userStatusRef, { ...statusData, last_changed: Date.now() }).catch(() => {});
-            }, 30000);
+        const currentUid = user?.uid || (() => {
+            try { return JSON.parse(guestData).uid; } catch { return null; }
+        })();
+        if (!currentUid) return;
 
-            return () => {
-                clearInterval(heartbeatInterval);
-                // Clean navigation away: immediately mark offline so other users
-                // see the removal in real-time without waiting for Firebase onDisconnect
-                set(userStatusRef, {
-                    ...statusData,
-                    state: 'offline',
-                    currentRoomId: null,
-                    last_changed: Date.now()
-                }).catch(() => {});
-            };
+        // Display name
+        let displayNameForStatus = loggedInUserProfile.displayName || 'Guest';
+        if (isGuest && guestData) {
+            try { const g = JSON.parse(guestData); displayNameForStatus = g.username || g.displayName || 'Guest'; } catch {}
         }
-    }, [roomId, user, loggedInUserProfile]);
+
+        const ua = navigator.userAgent || 'Unknown';
+        const statusData = {
+            state: 'online',
+            currentRoomId: roomId,
+            last_changed: Date.now(),
+            userAgent: ua,
+            country: loggedInUserProfile.country || 'Unknown',
+            displayName: displayNameForStatus,
+            gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
+            role: loggedInUserProfile.role || 'guest',
+            isGuest: isGuest || false,
+            photoURL: loggedInUserProfile.photoURL || getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender),
+            badge: loggedInUserProfile.badge || null,
+            uid: currentUid,
+            showOnlineStatus: loggedInUserProfile.settings?.showOnlineStatus !== false,
+        };
+        window._currentStatusData = { ...statusData };
+
+        const userStatusRef = ref(rtdb, `status/${currentUid}`);
+        set(userStatusRef, statusData).catch(() => {});
+        // No cleanup — offline transition is handled by the stable effect below
+    }, [roomId, user?.uid, loggedInUserProfile]);
+
+    // ── PRESENCE PART 2: Stable setup — onDisconnect + heartbeat ─────────────
+    // Narrow deps [roomId, user?.uid] so cleanup (offline) ONLY fires on room
+    // change or logout — NOT on every font-pref save / profile field update.
+    // Heartbeat uses the ref so it always sends fresh data without re-running.
+    useEffect(() => {
+        const isGuest = localStorage.getItem('isGuest') === 'true';
+        const guestData = localStorage.getItem('guestUser');
+        if ((!user && !(isGuest && guestData)) || !roomId) return;
+
+        const currentUid = user?.uid || (() => {
+            try { return JSON.parse(guestData).uid; } catch { return null; }
+        })();
+        if (!currentUid) return;
+
+        const userStatusRef = ref(rtdb, `status/${currentUid}`);
+        onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: Date.now() });
+
+        const heartbeatInterval = setInterval(() => {
+            const cached = window._currentStatusData;
+            if (!cached) return;
+            const fresh = { ...cached, last_changed: Date.now() };
+            window._currentStatusData = fresh;
+            set(userStatusRef, fresh).catch(() => {});
+        }, 30000);
+
+        return () => {
+            clearInterval(heartbeatInterval);
+            set(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+        };
+    }, [roomId, user?.uid]);
+
+    // ── PRESENCE PART 3: Store device info in Firestore once per login ────────
+    // Isolated so its Firestore write never triggers loggedInUserProfile listener
+    // chain and causes presence to go offline→online.
+    useEffect(() => {
+        const isGuest = localStorage.getItem('isGuest') === 'true';
+        if (!user?.uid || isGuest) return;
+        const storeDeviceInfo = async () => {
+            try {
+                const ua = navigator.userAgent || 'Unknown';
+                const isTablet = /iPad|Tablet/i.test(ua);
+                const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+                let browser = 'Unknown';
+                if (ua.includes('Edg/')) browser = 'Edge';
+                else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
+                else if (ua.includes('Firefox/')) browser = 'Firefox';
+                else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+                else if (ua.includes('Opera/') || ua.includes('OPR/')) browser = 'Opera';
+                let os = 'Unknown';
+                if (ua.includes('Windows')) os = 'Windows';
+                else if (ua.includes('Mac')) os = 'macOS';
+                else if (ua.includes('Linux')) os = 'Linux';
+                else if (ua.includes('Android')) os = 'Android';
+                else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+                const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+                const deviceProfile = await DeviceFingerprint.getDeviceProfile();
+                await updateDoc(doc(db, 'users', user.uid), {
+                    lastUserAgent: ua,
+                    lastBrowser: browser,
+                    lastOS: os,
+                    lastDeviceType: deviceType,
+                    lastDeviceId: deviceProfile.deviceId,
+                    lastDeviceInfo: deviceProfile,
+                    lastSeenAt: new Date().toISOString(),
+                });
+            } catch (err) {
+                // Non-critical — ignore failures (e.g. permission issues on old rules)
+            }
+        };
+        storeDeviceInfo();
+    }, [user?.uid]);
 
     // Load user's private message conversations
     // Load friends function
@@ -3205,6 +3213,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // Spam check
                 const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
                 if (spamResult.isSpam) {
+                    setNewMessage(''); // Always clear input even on spam block
                     const spamNoticeVariants = [
                         `${displayName} was slowed down by anti-spam — sending too fast.`,
                         `${displayName}'s message was blocked — spam protection activated.`,
@@ -3515,10 +3524,9 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleMuteUser = (userToMute) => {
-        const toastId = `mute-confirm-${userToMute.uid}`;
         const userToMuteRef = doc(db, 'users', userToMute.uid);
         const performMute = async () => {
-            toast.dismiss(toastId);
+            setMuteUserConfirm({ isOpen: false });
             try {
                 await updateDoc(userToMuteRef, {
                     "mutedInfo.isMuted": true,
@@ -3543,18 +3551,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                 toast.error("Could not mute user. Check permissions.");
             }
         };
-        const handleCancel = () => toast.dismiss(toastId);
-        toast.warn(
-            <ConfirmationToast message={`Mute ${userToMute.displayName}?`} onConfirm={performMute} onCancel={handleCancel} />,
-            { toastId, closeOnClick: false, closeButton: true }
-        );
+        setMuteUserConfirm({
+            isOpen: true,
+            title: "Mute User",
+            message: `Are you sure you want to mute ${userToMute.displayName}?`,
+            user: userToMute,
+            onConfirm: performMute,
+            onCancel: () => setMuteUserConfirm({ isOpen: false }),
+        });
     };
 
     const handleBanUser = (userToBan) => {
-        const toastId = `ban-confirm-${userToBan.uid}`;
         const userToBanRef = doc(db, 'users', userToBan.uid);
         const performBan = async () => {
-            toast.dismiss(toastId);
+            setBanUserConfirm({ isOpen: false });
             try {
                 await updateDoc(userToBanRef, { isBanned: true });
                 remove(ref(rtdb, `status/${userToBan.uid}`));
@@ -3577,11 +3587,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                 toast.error("Could not ban user. Check permissions.");
             }
         };
-        const handleCancel = () => toast.dismiss(toastId);
-        toast.warn(
-            <ConfirmationToast message={`Ban ${userToBan.displayName}? This is global.`} onConfirm={performBan} onCancel={handleCancel} />,
-            { toastId, closeOnClick: false, closeButton: true }
-        );
+        setBanUserConfirm({
+            isOpen: true,
+            title: "Ban User",
+            message: `Ban ${userToBan.displayName}? This is a global ban.`,
+            user: userToBan,
+            onConfirm: performBan,
+            onCancel: () => setBanUserConfirm({ isOpen: false }),
+        });
     };
 
     const handleReportUser = (message) => {
