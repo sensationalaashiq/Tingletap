@@ -888,13 +888,13 @@
 
 /* Theme-specific message text colors with proper enforcement */
 
-/* Message text for non-badge users (guests and regular users) - 10px normal weight, no italic, no decoration */
+/* Message text for non-badge users (guests and regular users) - 11px normal weight, no italic, no decoration */
 body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]),
 body.theme-light .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]) {
   color: #1a1a1a !important;
   font-weight: normal !important;
   font-style: normal !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   text-decoration: none !important;
   opacity: 1 !important;
   text-shadow: none !important;

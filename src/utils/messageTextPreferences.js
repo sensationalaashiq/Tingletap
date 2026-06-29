@@ -3,7 +3,7 @@
 // This handles GLOBAL MESSAGE TEXT styling - visible to ALL users (like professional chat apps)
 
 const MESSAGE_DEFAULTS = {
-  fontSize: '10px',
+  fontSize: '11px',
   fontColor: '#333333',
   fontFamily: 'inherit',
   isBold: false,

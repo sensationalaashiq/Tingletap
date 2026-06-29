@@ -573,7 +573,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, on
                             if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
                             if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
                             const pStyle = {
-                                fontSize: savedMsgStyle?.fontSize || '10px',
+                                fontSize: savedMsgStyle?.fontSize || '11px',
                                 color: savedMsgStyle?.fontColor || '#2d2d2d',
                                 fontFamily: savedMsgStyle?.fontFamily || 'inherit',
                                 fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
@@ -1802,7 +1802,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Per-account styles are loaded from Firestore once auth resolves; never use localStorage
     useEffect(() => {
         const defaults = {
-            fontSize: "8px",
+            fontSize: "11px",
             fontColor: "#333333",
             fontFamily: "inherit",
             isBold: false,
@@ -2014,7 +2014,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Priority 1: messageFontPreferences from Firestore profile (most specific)
             if (loggedInUserProfile.messageFontPreferences) {
                 fontPreferencesToApply = {
-                    fontSize: loggedInUserProfile.messageFontPreferences.fontSize || "8px",
+                    fontSize: loggedInUserProfile.messageFontPreferences.fontSize || "11px",
                     fontColor: loggedInUserProfile.messageFontPreferences.fontColor || "#333333",
                     fontFamily: loggedInUserProfile.messageFontPreferences.fontFamily || "inherit",
                     isBold: Boolean(loggedInUserProfile.messageFontPreferences.isBold),
@@ -2026,7 +2026,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Priority 2: Legacy fontPreferences field
             else if (loggedInUserProfile.fontPreferences) {
                 fontPreferencesToApply = {
-                    fontSize: loggedInUserProfile.fontPreferences.fontSize || "8px",
+                    fontSize: loggedInUserProfile.fontPreferences.fontSize || "11px",
                     fontColor: loggedInUserProfile.fontPreferences.fontColor || "#333333",
                     fontFamily: loggedInUserProfile.fontPreferences.fontFamily || "inherit",
                     isBold: Boolean(loggedInUserProfile.fontPreferences.isBold),
@@ -2038,7 +2038,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Priority 3: Use defaults — this account has no saved preferences
             else {
                 fontPreferencesToApply = {
-                    fontSize: "8px",
+                    fontSize: "11px",
                     fontColor: "#333333",
                     fontFamily: "inherit",
                     isBold: false,
@@ -3126,7 +3126,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         
         try {
             const fontPrefs = {
-                fontSize: fontSize || '8px',
+                fontSize: fontSize || '11px',
                 fontColor: fontColor || '#333333',
                 fontFamily: fontFamily || 'inherit',
                 isBold: Boolean(isBold),
@@ -4977,11 +4977,13 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleOpenConversation = async (conversation) => {
-        setPrivateMessageTarget({
-            uid: conversation.otherUserId,
-            displayName: conversation.otherUserName
-        });
-        setPrivateMessage('');
+        setPrivateMessageTarget(
+            conversation.otherUser
+                ? { ...conversation.otherUser, uid: conversation.otherUserId, displayName: conversation.otherUserName }
+                : { uid: conversation.otherUserId, displayName: conversation.otherUserName }
+        );
+        // Restore preserved draft text (if any) from when it was minimized
+        setPrivateMessage(conversation.draftMessage || '');
         setPrivateMessageOpen(true);
         setPmHeaderBoxOpen(false);
         
@@ -5584,13 +5586,27 @@ const HomePage = ({ user, roomIdOverride }) => {
     const handleMinimizeConversation = (conversation) => {
         if (!conversation) return;
         
-        // Check if conversation is already minimized
+        // Preserve current draft text and scroll position before minimizing
+        const conversationWithState = {
+            ...conversation,
+            draftMessage: privateMessage || '',
+            minimizedAt: Date.now(),
+        };
+
+        // Check if conversation is already minimized — update it if so
         const isAlreadyMinimized = minimizedConversations.some(
             conv => conv.conversationId === conversation.conversationId
         );
         
         if (!isAlreadyMinimized) {
-            setMinimizedConversations(prev => [...prev, conversation]);
+            setMinimizedConversations(prev => [...prev, conversationWithState]);
+        } else {
+            // Update existing entry with latest state (draft, last message, etc.)
+            setMinimizedConversations(prev => prev.map(conv =>
+                conv.conversationId === conversation.conversationId
+                    ? { ...conv, ...conversationWithState }
+                    : conv
+            ));
         }
         
         // Close the private message popup
@@ -6521,16 +6537,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
                             const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
-                            if (isTinglebotMsg) {
-                                const tt = msg.tinglebotType || '';
-                                // Mod-action strips ALWAYS show to every role — cannot be filtered
-                                const MOD_ACTIONS = ['kicked','unkicked','banned','unbanned','muted','unmuted','promoted','demoted','rule','announcement','automod','locked','unlocked','slow_mode'];
-                                if (MOD_ACTIONS.includes(tt)) return true;
-                                // Join / Leave respect user's own notification preference
-                                if (!tbNotif.enabled) return false;
-                                if (tt === 'join' && !tbNotif.join) return false;
-                                if (tt === 'leave' && !tbNotif.leave) return false;
-                            }
+                            // ALL TingleBot notifications are always visible to every client regardless
+                            // of role, badge, or notification settings — uniform lifecycle for everyone
+                            if (isTinglebotMsg) return true;
                             return true;
                         }).map((msg, index) => {
                             // TingleBot messages render as premium notification strips
@@ -7820,6 +7829,18 @@ const HomePage = ({ user, roomIdOverride }) => {
             </div>
 
             </div>{/* end homepage-container */}
+
+            {/* Minimized Conversations — floating dock, rendered via portal */}
+            <MinimizedConversations
+                minimizedConversations={minimizedConversations}
+                onOpenConversation={(conv) => {
+                    handleOpenConversation(conv);
+                    handleRemoveConversation(conv.conversationId);
+                }}
+                onRemoveConversation={handleRemoveConversation}
+                unreadCounts={unreadCounts}
+                onlineUserIds={onlineUserIds}
+            />
 
             {/* Block Confirmation Modal */}
             <BlockConfirmModal
