@@ -188,7 +188,7 @@ function detectEventType(message) {
   if (txt.includes('locked')) return txt.includes('unlocked') ? 'unlocked' : 'locked';
   if (txt.includes('unlocked')) return 'unlocked';
   if (txt.includes('slow mode')) return 'slow_mode';
-  if (txt.includes('announcement') || txt.includes('📢')) return 'announcement';
+  if (txt.includes('announcement')) return 'announcement';
   if (txt.includes('rule') || txt.includes('please') || txt.includes('reminder')) return 'rule';
   return 'default';
 }

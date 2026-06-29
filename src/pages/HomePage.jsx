@@ -6386,20 +6386,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
                             const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
                             if (isTinglebotMsg) {
-                                if (!tbNotif.enabled) return false;
                                 const tt = msg.tinglebotType || '';
+                                // Mod-action strips ALWAYS show to every role — cannot be filtered
+                                const MOD_ACTIONS = ['kicked','unkicked','banned','unbanned','muted','unmuted','promoted','demoted','rule','announcement','automod','locked','unlocked','slow_mode'];
+                                if (MOD_ACTIONS.includes(tt)) return true;
+                                // Join / Leave respect user's own notification preference
+                                if (!tbNotif.enabled) return false;
                                 if (tt === 'join' && !tbNotif.join) return false;
                                 if (tt === 'leave' && !tbNotif.leave) return false;
-                                if (tt === 'muted' && !tbNotif.muted) return false;
-                                if (tt === 'unmuted' && !tbNotif.unmuted) return false;
-                                if ((tt === 'kicked' || tt === 'unkicked') && !tbNotif.kicked) return false;
-                                if (tt === 'banned' && !tbNotif.banned) return false;
-                                if (tt === 'unbanned' && !tbNotif.unbanned) return false;
-                                if (tt === 'promoted' && !tbNotif.promoted) return false;
-                                if (tt === 'demoted' && !tbNotif.demoted) return false;
-                                if (tt === 'rule' && !tbNotif.rule) return false;
-                                if (tt === 'announcement' && !tbNotif.announcement) return false;
-                                if (tt === 'automod' && !tbNotif.automod) return false;
                             }
                             return true;
                         }).map((msg, index) => {

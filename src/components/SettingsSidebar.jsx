@@ -2763,135 +2763,42 @@ const SettingsSidebar = ({
                                 </label>
                             </div>
 
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Muted</span>
-                                    <small>Show when a user is muted by staff</small>
+                            <div style={{
+                                margin: '14px 0 6px',
+                                borderRadius: '12px',
+                                background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(167,139,250,0.10) 100%)',
+                                border: '1.5px solid rgba(167,139,250,0.22)',
+                                padding: '13px 15px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                    <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#7c3aed', letterSpacing: '0.03em' }}>Moderation Actions — Always Visible</span>
                                 </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userMuteNotifications} onChange={(e) => handleSettingChange('userMuteNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Unmuted</span>
-                                    <small>Show when a user is unmuted by staff</small>
+                                <p style={{ fontSize: '11.5px', color: '#6b7280', margin: 0, lineHeight: '1.55' }}>
+                                    The following events are always shown to <strong>all users</strong> regardless of settings — they cannot be hidden individually:
+                                </p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '9px' }}>
+                                    {['Muted','Unmuted','Kicked','Unkicked','Banned','Unbanned','Promoted','Demoted','Rules Reminder','Announcements','AutoMod'].map(label => (
+                                        <span key={label} style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                            padding: '3px 9px', borderRadius: '20px', fontSize: '11px',
+                                            fontWeight: '600', color: '#7c3aed',
+                                            background: 'rgba(167,139,250,0.13)',
+                                            border: '1px solid rgba(167,139,250,0.28)',
+                                        }}>
+                                            <svg viewBox="0 0 8 8" width="6" height="6" fill="#6ee7b7"><circle cx="4" cy="4" r="4"/></svg>
+                                            {label}
+                                        </span>
+                                    ))}
                                 </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userUnmuteNotifications} onChange={(e) => handleSettingChange('userUnmuteNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Kicked</span>
-                                    <small>Show when a user is kicked from the room</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userKickNotifications} onChange={(e) => handleSettingChange('userKickNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Banned</span>
-                                    <small>Show when a user is banned</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userBanNotifications} onChange={(e) => handleSettingChange('userBanNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Unbanned</span>
-                                    <small>Show when a user is unbanned</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userUnbanNotifications} onChange={(e) => handleSettingChange('userUnbanNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Promoted</span>
-                                    <small>Show when a user is promoted to a higher role</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userPromoteNotifications} onChange={(e) => handleSettingChange('userPromoteNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Demoted</span>
-                                    <small>Show when a user is demoted to a lower role</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userDemoteNotifications} onChange={(e) => handleSettingChange('userDemoteNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Rules Reminder</span>
-                                    <small>Show periodic community rules posted by TingleBot</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userRulesNotifications} onChange={(e) => handleSettingChange('userRulesNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>Announcements</span>
-                                    <small>Show staff announcements posted by TingleBot</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userAnnouncementNotifications} onChange={(e) => handleSettingChange('userAnnouncementNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="modern-setting-item">
-                                <div className="modern-setting-info">
-                                    <span>AutoMod Actions</span>
-                                    <small>Show automatic moderation alerts (spam, abuse detection)</small>
-                                </div>
-                                <label className="modern-toggle-switch">
-                                    <input type="checkbox" checked={settings.userAutomodNotifications} onChange={(e) => handleSettingChange('userAutomodNotifications', e.target.checked)} />
-                                    <span className="modern-toggle-slider"></span>
-                                </label>
                             </div>
 
                             <div style={{ paddingTop: '10px', paddingBottom: '4px' }}>
                                 <button
                                     onClick={() => {
-                                        const keys = [
-                                            'tinglebotNotifications',
-                                            'userJoinNotifications',
-                                            'userLeaveNotifications',
-                                            'userMuteNotifications',
-                                            'userUnmuteNotifications',
-                                            'userKickNotifications',
-                                            'userBanNotifications',
-                                            'userUnbanNotifications',
-                                            'userPromoteNotifications',
-                                            'userDemoteNotifications',
-                                            'userRulesNotifications',
-                                            'userAnnouncementNotifications',
-                                            'userAutomodNotifications',
-                                        ];
-                                        keys.forEach(k => handleSettingChange(k, true));
+                                        ['tinglebotNotifications','userJoinNotifications','userLeaveNotifications'].forEach(k => handleSettingChange(k, true));
                                         toast.success('TingleBot notifications reset to defaults!');
                                     }}
                                     style={{
@@ -2910,7 +2817,7 @@ const SettingsSidebar = ({
                                     onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.22) 0%, rgba(99,102,241,0.18) 100%)'; }}
                                     onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(99,102,241,0.10) 100%)'; }}
                                 >
-                                    ↺ Reset TingleBot Notifications to Default
+                                    ↺ Reset Join/Leave Notifications to Default
                                 </button>
                             </div>
                         </div>
