@@ -1907,57 +1907,82 @@ const HomePage = ({ user, roomIdOverride }) => {
     }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.muteUntil, loggedInUserProfile?.mutedInfo?.mutedAt, uid]);
 
     // ── Mute countdown: live timer shown when user is muted ──
+    // Uses parseDurationMs from modExpiryService (handles 5m / 1h / 3d / 30m etc. correctly)
     useEffect(() => {
         const mutedInfo = loggedInUserProfile?.mutedInfo;
         if (!mutedInfo?.isMuted) { setMuteTimeLeft(''); return; }
 
-        const parseDurationMs = (str, durationMs) => {
-            if (typeof durationMs === 'number' && durationMs > 0) return durationMs;
-            if (!str) return 300000;
-            const s = str.toString().toLowerCase();
-            const n = parseInt(s) || 5;
-            if (s.includes('hour')) return n * 3600000;
-            if (s.includes('day'))  return n * 86400000;
-            return n * 60000;
-        };
+        /* Compute the absolute expiry timestamp ─────────────────────── */
+        let endTime = null;
 
-        let endTime;
         if (mutedInfo.muteUntil) {
-            endTime = new Date(mutedInfo.muteUntil).getTime();
-        } else {
-            const raw = mutedInfo.mutedAt;
-            const mutedAt = raw?.toDate ? raw.toDate().getTime() :
-                            (raw?.seconds ? raw.seconds * 1000 :
-                            (typeof raw === 'string' ? new Date(raw).getTime() : Date.now()));
-            endTime = mutedAt + parseDurationMs(mutedInfo.duration, mutedInfo.duration);
+            // muteUntil is an ISO string set by admin/automod at time of mute
+            const d = new Date(mutedInfo.muteUntil);
+            if (!isNaN(d)) endTime = d.getTime();
         }
 
+        if (!endTime) {
+            // Fallback: mutedAt + duration (handles Firestore Timestamp, ISO string, epoch)
+            const raw = mutedInfo.mutedAt;
+            const mutedAt = raw?.toDate  ? raw.toDate().getTime()
+                          : raw?.seconds ? raw.seconds * 1_000
+                          : typeof raw === 'string' ? new Date(raw).getTime()
+                          : null;
+            // parseDurationMs (imported from modExpiryService) correctly handles
+            // '5m', '15m', '30m', '1h', '6h', '24h', '3d', '7d', 'permanent'
+            const dur = parseDurationMs(mutedInfo.duration);
+            if (mutedAt && dur !== Infinity) endTime = mutedAt + dur;
+        }
+
+        // No computable end → permanent mute (banner shows "∞ Permanent")
         if (!endTime || isNaN(endTime)) { setMuteTimeLeft(''); return; }
 
-        const tick = () => {
-            const remaining = endTime - Date.now();
-            if (remaining <= 0) {
-                setMuteTimeLeft('');
-                if (uid) {
-                    updateDoc(doc(db, 'users', uid), {
-                        'mutedInfo.isMuted': false,
-                        'mutedInfo.muteUntil': null,
-                    }).catch(() => {});
-                }
-                return;
+        /* Tick function ──────────────────────────────────────────────── */
+        let fired = false; // guard: only fire expiry logic once
+
+        const doExpire = () => {
+            if (fired) return;
+            fired = true;
+            clearInterval(intervalId); // stop the interval right away
+            setMuteTimeLeft('__expired__'); // hide banner immediately
+            if (uid) {
+                // Clear ALL muted fields so future renders start clean
+                updateDoc(doc(db, 'users', uid), {
+                    'mutedInfo.isMuted'   : false,
+                    'mutedInfo.muteUntil' : null,
+                    'mutedInfo.mutedAt'   : null,
+                    'mutedInfo.duration'  : null,
+                    'mutedInfo.reason'    : null,
+                    'mutedInfo.mutedBy'   : null,
+                    'mutedInfo.unmutedAt' : new Date().toISOString(),
+                    'mutedInfo.unmutedBy' : 'System (timer expired)',
+                }).catch(err => console.error('[mute-timer] unmute write failed:', err));
             }
-            const h = Math.floor(remaining / 3600000);
-            const m = Math.floor((remaining % 3600000) / 60000);
-            const s = Math.floor((remaining % 60000) / 1000);
-            setMuteTimeLeft(h > 0
-                ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
-                : `${m}:${s.toString().padStart(2,'0')}`
+        };
+
+        const tick = () => {
+            if (fired) return;
+            const remaining = endTime - Date.now();
+            if (remaining <= 0) { doExpire(); return; }
+
+            const h = Math.floor(remaining / 3_600_000);
+            const m = Math.floor((remaining % 3_600_000) / 60_000);
+            const s = Math.floor((remaining % 60_000) / 1_000);
+            setMuteTimeLeft(
+                h > 0
+                    ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
+                    : `${m}:${s.toString().padStart(2,'0')}`
             );
         };
 
-        tick();
-        const interval = setInterval(tick, 1000);
-        return () => clearInterval(interval);
+        tick(); // run immediately — expires banner at once if already past endTime
+        // eslint-disable-next-line prefer-const
+        let intervalId = setInterval(tick, 1_000);
+
+        return () => {
+            fired = true; // prevent doExpire from firing after unmount
+            clearInterval(intervalId);
+        };
     }, [loggedInUserProfile?.mutedInfo?.isMuted, loggedInUserProfile?.mutedInfo?.muteUntil, loggedInUserProfile?.mutedInfo?.mutedAt, loggedInUserProfile?.mutedInfo?.duration, uid]);
 
     // ── Auto-expiry: clear ban when timed ban duration has passed ──
@@ -7594,7 +7619,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 );
             })()}
             {/* ── Premium Mute Banner ── */}
-            {loggedInUserProfile?.mutedInfo?.isMuted && (
+            {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (
                 <div style={{
                     position: 'fixed', bottom: '44px', left: 0, right: 0,
                     zIndex: 1999,
@@ -7654,7 +7679,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     </div>
 
                     {/* Right: timer */}
-                    {muteTimeLeft ? (
+                    {muteTimeLeft && muteTimeLeft !== '__expired__' ? (
                         <div style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
                             background: 'rgba(139,92,246,0.14)', border: '1.5px solid rgba(139,92,246,0.3)',

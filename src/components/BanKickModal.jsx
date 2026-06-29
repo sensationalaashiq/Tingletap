@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
+import { signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import './BanKickModal.css?v=3';
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -179,6 +181,7 @@ const InfoRow = ({ icon, label, children, accent = '#a78bfa' }) => (
 
 /* ── Component ────────────────────────────────────────────── */
 const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: passedKickInfo }) => {
+  const navigate = useNavigate();
   const [banInfo, setBanInfo]               = useState(null);
   const [kickInfo, setKickInfo]             = useState(null);
   const [isLoading, setIsLoading]           = useState(true);
@@ -450,9 +453,15 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
           <div className="bkm3-footer">
             <button
               className={`bkm3-btn bkm3-btn--ban-primary ${understood ? 'bkm3-btn--understood' : ''}`}
-              onClick={() => setUnderstood(true)}
+              onClick={async () => {
+                setUnderstood(true);
+                try { await signOut(auth); } catch {}
+                localStorage.clear();
+                sessionStorage.clear();
+                setTimeout(() => navigate('/'), 400);
+              }}
             >
-              {understood ? <><IcoCheck /> Acknowledged</> : 'I Understand'}
+              {understood ? <><IcoCheck /> Redirecting…</> : 'I Understand'}
             </button>
             <button
               className="bkm3-btn bkm3-btn--ghost"

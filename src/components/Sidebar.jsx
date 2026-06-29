@@ -271,11 +271,12 @@ const Sidebar = ({
   };
 
   /* -- moderation confirm handler (ban / mute / kick / unkick via AdminBanKickModal) -- */
-  const handleAdminModalConfirm = async (actionData) => {
+  const handleAdminModalConfirm = async (actionData, resolvedAction) => {
     if (!adminModalUser) return;
     const adminName = loggedInUserProfile?.displayName || 'Admin';
+    const effectiveAction = resolvedAction || actionData._resolvedAction || adminModalType;
     try {
-      if (adminModalType === 'ban') {
+      if (effectiveAction === 'ban') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           isBanned: true, banReason: actionData.reason, bannedAt: serverTimestamp(),
           bannedBy: actionData.actionBy, bannedById: actionData.actionById,
@@ -283,7 +284,7 @@ const Sidebar = ({
         });
         await sendTingleBotMessage(`${adminModalUser.displayName} has been banned — ${actionData.reason || 'No reason provided'}`, 'banned');
 
-      } else if (adminModalType === 'mute') {
+      } else if (effectiveAction === 'mute') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           "mutedInfo.isMuted": true, "mutedInfo.reason": actionData.reason,
           "mutedInfo.duration": actionData.duration, "mutedInfo.mutedAt": serverTimestamp(),
@@ -292,14 +293,14 @@ const Sidebar = ({
         });
         await sendTingleBotMessage(`${adminModalUser.displayName} has been muted${actionData.duration ? ` for ${actionData.duration}` : ''} — ${actionData.reason || 'No reason provided'}`, 'muted');
 
-      } else if (adminModalType === 'unmute') {
+      } else if (effectiveAction === 'unmute') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           "mutedInfo.isMuted": false, "mutedInfo.reason": '',
           "mutedInfo.unmutedAt": serverTimestamp(), "mutedInfo.unmutedBy": adminName
         });
         await sendTingleBotMessage(`${adminModalUser.displayName} has been unmuted and can speak again.`, 'system');
 
-      } else if (adminModalType === 'kick') {
+      } else if (effectiveAction === 'kick') {
         const kickData = {
           uid: adminModalUser.uid,
           displayName: adminModalUser.displayName,
@@ -310,7 +311,6 @@ const Sidebar = ({
           duration: actionData.duration,
         };
         if (actionData.kickScope === 'multiple_rooms' && actionData.selectedRooms?.length > 0) {
-          /* Kick from multiple selected rooms */
           for (const rid of actionData.selectedRooms) {
             await setDoc(doc(db, 'rooms', rid, 'kickedUsers', adminModalUser.uid), {
               ...kickData, roomId: rid
@@ -318,7 +318,6 @@ const Sidebar = ({
           }
           await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from ${actionData.selectedRooms.length} room(s) — ${actionData.reason || 'No reason provided'}`, 'kicked');
         } else {
-          /* Kick from current room */
           const targetRoomId = actionData.currentRoomId || roomId;
           if (!targetRoomId) { toast.error('Not in a room — cannot kick.', { icon: TI.error }); return; }
           await setDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid), {
@@ -327,9 +326,8 @@ const Sidebar = ({
           await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from this room — ${actionData.reason || 'No reason provided'}`, 'kicked');
         }
 
-      } else if (adminModalType === 'unkick') {
+      } else if (effectiveAction === 'unkick') {
         if (actionData.unkickScope === 'all_rooms') {
-          /* Unkick from all rooms */
           const roomsSnap = await getDocs(collection(db, 'rooms'));
           const promises = roomsSnap.docs.map(rd =>
             deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', adminModalUser.uid)).catch(() => {})
@@ -338,14 +336,13 @@ const Sidebar = ({
           await updateDoc(doc(db, 'users', adminModalUser.uid), { kickedFrom: null }).catch(() => {});
           await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked from all rooms and can rejoin.`, 'system');
         } else {
-          /* Unkick from current room */
           const targetRoomId = actionData.currentRoomId || roomId;
           if (!targetRoomId) { toast.error('Not in a room — cannot unkick.', { icon: TI.error }); return; }
           await deleteDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid));
           await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked and can rejoin this room.`, 'system');
         }
 
-      } else if (adminModalType === 'unban') {
+      } else if (effectiveAction === 'unban') {
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           isBanned: false, banInfo: null, banReason: null, bannedAt: null,
           unbannedAt: serverTimestamp(), unbannedBy: adminName
@@ -355,6 +352,7 @@ const Sidebar = ({
     } catch (err) {
       console.error(err);
       toast.error(`Action failed.`, { icon: TI.error });
+      throw err; /* Re-throw so modal shows error state */
     }
   };
 

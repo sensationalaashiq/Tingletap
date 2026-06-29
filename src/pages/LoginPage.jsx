@@ -444,6 +444,23 @@ const LoginPage = () => {
     if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) { setError('Age must be between 18 and 100'); return; }
     if (!guestFormData.gender) { setError('Please select your gender'); return; }
     if (!captchaToken) { setError('Please complete the captcha verification'); return; }
+
+    // ── Name uniqueness: block guest names that match a registered user (fail-closed) ──
+    try {
+      const nameKey = guestFormData.displayName.trim().toLowerCase().replace(/\s+/g, '_');
+      // Primary check: usernames collection (works without auth)
+      const nameSnap = await getDoc(doc(db, 'usernames', nameKey));
+      if (nameSnap.exists()) {
+        setError('This name is already taken. Please choose a different name.');
+        return;
+      }
+    } catch (nameCheckErr) {
+      // If we cannot verify uniqueness, refuse to proceed (fail-closed)
+      console.error('Name uniqueness check failed:', nameCheckErr);
+      setError('Unable to verify name availability. Please try again.');
+      return;
+    }
+
     // Store gender IMMEDIATELY — synchronously before any Firebase calls.
     // This survives any auth-state-change race conditions during signInAnonymously.
     localStorage.setItem('guestGender', guestFormData.gender);

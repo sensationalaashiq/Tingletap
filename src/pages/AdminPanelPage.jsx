@@ -1108,31 +1108,33 @@ const AdminPanelPage = () => {
     return n * 60000;
   };
 
-  const handleConfirmAction = async (actionData) => {
+  const handleConfirmAction = async (actionData, resolvedAction) => {
     if (!selectedUser) return;
-    const closeModal = () => {
-      setIsModalVisible(false);
-      setSelectedUser(null);
-      setActionType('');
-    };
+    /* resolvedAction is passed from the modal's localAction state (supports toggle) */
+    const effectiveAction = resolvedAction || actionData._resolvedAction || actionType;
+
+    /* After success we update selectedUser locally so the modal tabs reflect new status */
+    const updateSelectedUser = (patch) =>
+      setSelectedUser(prev => prev ? { ...prev, ...patch } : prev);
+
     try {
       const userRef = doc(db, 'users', selectedUser.uid);
       const adminName = currentUserProfile?.displayName || 'Admin';
       
-      switch (actionType) {
+      switch (effectiveAction) {
         case 'ban': {
           const banMs = parseDurationMs(actionData.duration);
           const banUntil = banMs ? new Date(Date.now() + banMs).toISOString() : null;
-          await updateDoc(userRef, { 
-            isBanned: true,
-            banInfo: {
-              ...actionData,
-              reason: actionData.reason || '',
-              bannedBy: adminName,
-              bannedAt: new Date().toISOString(),
-              banUntil,
-            }
-          });
+          const banInfo = {
+            reason: actionData.reason || '',
+            bannedBy: adminName,
+            bannedAt: new Date().toISOString(),
+            banUntil,
+            duration: actionData.duration,
+            adminNotes: actionData.adminNotes || '',
+            appealAllowed: actionData.appealAllowed,
+          };
+          await updateDoc(userRef, { isBanned: true, banInfo });
           remove(ref(rtdb, `status/${selectedUser.uid}`));
           const banRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (banRoomId) {
@@ -1150,7 +1152,7 @@ const AdminPanelPage = () => {
             const ipBanResults = await IPBanSystem.banUserWithIP(
               selectedUser.uid,
               { displayName: selectedUser.displayName, email: selectedUser.email },
-              { reason: actionData.reason || 'User account banned by administrator', bannedBy: adminName, userAgent: navigator.userAgent, location: 'Admin Panel Ban', country: selectedUser.country || 'Unknown' }
+              { reason: actionData.reason || 'Banned by administrator', bannedBy: adminName, userAgent: navigator.userAgent, location: 'Admin Panel', country: selectedUser.country || 'Unknown' }
             );
             if (ipBanResults?.ipBanned && ipBanResults?.bannedIP) {
               pt.info(`IP ${ipBanResults.bannedIP} also banned.`);
@@ -1158,7 +1160,8 @@ const AdminPanelPage = () => {
           } catch (ipError) {
             pt.warn(`Account banned — IP ban failed: ${ipError.message}`);
           }
-          closeModal();
+          /* Update local snapshot so modal tabs reflect new state */
+          updateSelectedUser({ isBanned: true, banInfo });
           break;
         }
           
@@ -1183,16 +1186,24 @@ const AdminPanelPage = () => {
           } catch (ipError) {
             pt.warn(`Account unbanned — IP unban failed: ${ipError.message}`);
           }
-          closeModal();
+          updateSelectedUser({ isBanned: false, banInfo: null });
           break;
         }
           
         case 'mute': {
           const muteMs = parseDurationMs(actionData.duration);
           const muteUntil = muteMs ? new Date(Date.now() + muteMs).toISOString() : null;
+          const mutedInfo = {
+            isMuted: true,
+            mutedAt: new Date().toISOString(),
+            mutedBy: adminName,
+            reason: actionData.reason || '',
+            duration: actionData.duration,
+            muteUntil,
+          };
           await updateDoc(userRef, {
             'mutedInfo.isMuted': true,
-            'mutedInfo.mutedAt': new Date().toISOString(),
+            'mutedInfo.mutedAt': mutedInfo.mutedAt,
             'mutedInfo.mutedBy': adminName,
             'mutedInfo.reason': actionData.reason || '',
             'mutedInfo.duration': actionData.duration,
@@ -1210,7 +1221,7 @@ const AdminPanelPage = () => {
           }
           const muteLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
           pt.warn(`${selectedUser.displayName} muted ${muteLabel}.`);
-          closeModal();
+          updateSelectedUser({ mutedInfo });
           break;
         }
           
@@ -1233,7 +1244,7 @@ const AdminPanelPage = () => {
             }).catch(() => {});
           }
           pt.success(`${selectedUser.displayName} has been unmuted.`);
-          closeModal();
+          updateSelectedUser({ mutedInfo: { isMuted: false } });
           break;
         }
           
@@ -1249,7 +1260,6 @@ const AdminPanelPage = () => {
           };
 
           if (actionData?.kickScope === 'multiple_rooms' && actionData?.selectedRooms?.length > 0) {
-            /* Kick from multiple selected rooms */
             for (const rid of actionData.selectedRooms) {
               await setDoc(doc(db, 'rooms', rid, 'kickedUsers', selectedUser.uid), {
                 ...kickEntry, roomId: rid
@@ -1264,9 +1274,11 @@ const AdminPanelPage = () => {
             }
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             pt.warn(`${selectedUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`);
+            /* Reflect kick in local snapshot using first selected room */
+            const firstRid = actionData.selectedRooms[0];
+            updateSelectedUser({ kickedFrom: { roomId: firstRid, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason } });
           } else {
-            /* Kick from current/single room */
-            const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || selectedUser.kickedFrom?.roomId;
+            const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || currentRoomId || selectedUser.kickedFrom?.roomId;
             if (kickRoomId) {
               await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), {
                 ...kickEntry, roomId: kickRoomId
@@ -1282,12 +1294,12 @@ const AdminPanelPage = () => {
                 noReply: true, noReaction: true, noReport: true, noUnread: true,
               }).catch(() => {});
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
+              updateSelectedUser({ kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason } });
             } else {
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             }
             pt.warn(`${selectedUser.displayName} has been kicked.`);
           }
-          closeModal();
           break;
         }
 
@@ -1305,13 +1317,17 @@ const AdminPanelPage = () => {
           }
           await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
           pt.success(`${selectedUser.displayName} can now rejoin.`);
-          closeModal();
+          updateSelectedUser({ kickedFrom: null });
           break;
         }
+
+        default:
+          break;
       }
     } catch (error) {
       console.error('Moderation error:', error);
       pt.error('Action failed. Please try again.');
+      throw error; /* Re-throw so modal shows error state */
     }
   };
 
@@ -3295,9 +3311,9 @@ const AdminPanelPage = () => {
               return `${Math.floor(mins / 60)}h ${mins % 60}m`;
             };
             const GENDER_META = {
-              female: { emoji: '👩', color: '#ec4899', bg: '#fdf2f8', label: 'Female' },
-              trans:  { emoji: '🌈', color: '#8b5cf6', bg: '#f5f3ff', label: 'Trans' },
-              male:   { emoji: '👨', color: '#3b82f6', bg: '#eff6ff', label: 'Male'   },
+              female: { svgPath:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z', color: '#ec4899', bg: '#fdf2f8', label: 'Female' },
+              trans:  { svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 15.2a7.2 7.2 0 0 1-6-3.22c.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08a7.2 7.2 0 0 1-6 3.22z', color: '#8b5cf6', bg: '#f5f3ff', label: 'Trans' },
+              male:   { svgPath:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z', color: '#3b82f6', bg: '#eff6ff', label: 'Male'   },
             };
             return (
               <div style={{ padding: '4px 0 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -3361,15 +3377,17 @@ const AdminPanelPage = () => {
                           {/* Card Header */}
                           <div style={{ background: isActive ? 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(20,184,166,0.05))' : '#f8fafc', padding:'12px 16px', display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', borderBottom:`1px solid ${isActive ? 'rgba(16,185,129,0.15)' : '#e2e8f0'}` }}>
                             {/* Avatar */}
-                            <div style={{ width:44, height:44, borderRadius:'50%', background: `linear-gradient(135deg,${gm.color}22,${gm.color}44)`, border:`2.5px solid ${gm.color}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
-                              {gm.emoji}
+                            <div style={{ width:44, height:44, borderRadius:'50%', background: `linear-gradient(135deg,${gm.color}22,${gm.color}44)`, border:`2.5px solid ${gm.color}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:24,height:24}}><path fill={gm.color} d={gm.svgPath}/></svg>
                             </div>
                             {/* Name + badges */}
                             <div style={{ flex:1, minWidth:120 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
                                 <span style={{ fontSize:15, fontWeight:900, color:'#1e1b4b' }}>{s.displayName || 'Guest'}</span>
-                                <span style={{ fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background: isActive ? '#dcfce7' : '#fef3c7', color: isActive ? '#059669' : '#b45309', border: `1px solid ${isActive ? '#86efac' : '#fcd34d'}`, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                                  {isActive ? '● Live' : '✓ Ended'}
+                                <span style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background: isActive ? '#dcfce7' : '#fef3c7', color: isActive ? '#059669' : '#b45309', border: `1px solid ${isActive ? '#86efac' : '#fcd34d'}`, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                                  {isActive
+                                    ? <><svg viewBox="0 0 10 10" fill="none" style={{width:8,height:8,flexShrink:0}}><circle cx="5" cy="5" r="4" fill="#059669"/></svg>Live</>
+                                    : <><svg viewBox="0 0 24 24" fill="none" style={{width:9,height:9,flexShrink:0}}><path fill="#b45309" d="M21 7L9 19l-5.5-5.5 1.41-1.41L9 16.17 19.59 5.59 21 7z"/></svg>Ended</>}
                                 </span>
                                 <span style={{ fontSize:11, padding:'1px 8px', borderRadius:20, background:gm.bg, color:gm.color, fontWeight:700, border:`1px solid ${gm.color}33` }}>
                                   {gm.label}
@@ -3392,7 +3410,10 @@ const AdminPanelPage = () => {
                           <div style={{ padding:'12px 16px', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'10px 20px' }}>
                             {/* Device */}
                             <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>📱 Device Info</div>
+                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><rect x="5" y="2" width="14" height="20" rx="2" stroke="#9ca3af" strokeWidth="2"/><circle cx="12" cy="17" r="1" fill="#9ca3af"/></svg>
+                                Device Info
+                              </div>
                               <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
                                 {s.deviceType && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Type:</span> {s.deviceType}</div>}
                                 {s.browser   && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Browser:</span> {s.browser}</div>}
@@ -3403,7 +3424,10 @@ const AdminPanelPage = () => {
 
                             {/* Location */}
                             <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>📍 Location & Network</div>
+                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#9ca3af"/></svg>
+                                Location &amp; Network
+                              </div>
                               <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
                                 <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>IP:</span> <span style={{ fontFamily:'monospace' }}>{s.ip || 'Unknown'}</span></div>
                                 {location && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Location:</span> {location}</div>}
@@ -3413,11 +3437,19 @@ const AdminPanelPage = () => {
 
                             {/* Timing */}
                             <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>⏱ Session Timing</div>
+                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><circle cx="12" cy="12" r="9" stroke="#9ca3af" strokeWidth="2"/><path d="M12 7v5l3 2" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/></svg>
+                                Session Timing
+                              </div>
                               <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
                                 <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Started:</span> {startedStr}</div>
                                 {endedStr && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Ended:</span> {endedStr}</div>}
-                                {s.deleteAt && <div style={{ fontSize:11, color:'#ef4444', fontWeight:600 }}>🗑 Auto-del: {new Date(s.deleteAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>}
+                                {s.deleteAt && (
+                                  <div style={{ fontSize:11, color:'#ef4444', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#ef4444" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                    Auto-del: {new Date(s.deleteAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -3435,22 +3467,22 @@ const AdminPanelPage = () => {
           ═══════════════════════════════════════════════════════ */}
           {activeTab === 'violations' && (() => {
             const VC = {
-              SPAM:           { bg:'#fff7ed', border:'#fed7aa', badge:'#ea580c', text:'🚫 Spam',         rule:'User was sending repetitive or bulk messages.' },
-              PROFANITY:      { bg:'#fff1f2', border:'#fecdd3', badge:'#e11d48', text:'🤬 Profanity',    rule:'User used abusive or offensive language.' },
-              THREAT:         { bg:'#fef2f2', border:'#fecaca', badge:'#dc2626', text:'⚠️ Threat',       rule:'User made threatening statements toward another user.' },
-              PERSONAL_INFO:  { bg:'#faf5ff', border:'#e9d5ff', badge:'#7c3aed', text:'🔒 Personal Info',rule:'User shared private personal information publicly.' },
-              EXCESSIVE_CAPS: { bg:'#eff6ff', border:'#bfdbfe', badge:'#2563eb', text:'🔠 Caps Abuse',  rule:'User sent messages in excessive capital letters.' },
-              EMOJI_SPAM:     { bg:'#fefce8', border:'#fde68a', badge:'#d97706', text:'😵 Emoji Spam',  rule:'User flooded chat with excessive emojis.' },
-              HOMOGLYPH:      { bg:'#fdf4ff', border:'#f0abfc', badge:'#a21caf', text:'🔡 Homoglyph',   rule:'User used lookalike characters to bypass filters.' },
+              SPAM:           { bg:'#fff7ed', border:'#fed7aa', badge:'#ea580c', text:'Spam',         svgPath:'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-1 11H5v-2h14v2zm0-4H5V9h14v2z', rule:'User was sending repetitive or bulk messages.' },
+              PROFANITY:      { bg:'#fff1f2', border:'#fecdd3', badge:'#e11d48', text:'Profanity',    svgPath:'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'User used abusive or offensive language.' },
+              THREAT:         { bg:'#fef2f2', border:'#fecaca', badge:'#dc2626', text:'Threat',       svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', rule:'User made threatening statements toward another user.' },
+              PERSONAL_INFO:  { bg:'#faf5ff', border:'#e9d5ff', badge:'#7c3aed', text:'Personal Info',svgPath:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08A7.23 7.23 0 0 1 12 19z', rule:'User shared private personal information publicly.' },
+              EXCESSIVE_CAPS: { bg:'#eff6ff', border:'#bfdbfe', badge:'#2563eb', text:'Caps Abuse',  svgPath:'M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z', rule:'User sent messages in excessive capital letters.' },
+              EMOJI_SPAM:     { bg:'#fefce8', border:'#fde68a', badge:'#d97706', text:'Emoji Spam',  svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm-2 14.5c-1.38 0-2.5-1.12-2.5-2.5S8.62 11.5 10 11.5s2.5 1.12 2.5 2.5S11.38 16.5 10 16.5zm0-6C8.62 10.5 7.5 9.38 7.5 8S8.62 5.5 10 5.5 12.5 6.62 12.5 8 11.38 10.5 10 10.5zm4 6c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zm0-6c-1.38 0-2.5-1.12-2.5-2.5S12.62 5.5 14 5.5 16.5 6.62 16.5 8 15.38 10.5 14 10.5z', rule:'User flooded chat with excessive emojis.' },
+              HOMOGLYPH:      { bg:'#fdf4ff', border:'#f0abfc', badge:'#a21caf', text:'Homoglyph',   svgPath:'M5 4v3h5.5v12h3V7H19V4H5z', rule:'User used lookalike characters to bypass filters.' },
             };
             const SEV = { low:'#6b7280', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' };
             const SEV_BG = { low:'#f3f4f6', medium:'#fef3c7', high:'#fff7ed', critical:'#fee2e2' };
             const ACT = {
-              WARN:        { color:'#f59e0b', bg:'#fef3c7', label:'⚡ Warning',     desc:'User received a warning message from TingleBot.' },
-              MUTE:        { color:'#f97316', bg:'#fff7ed', label:'🔇 Muted',       desc:'User was temporarily muted and cannot send messages.' },
-              KICK:        { color:'#dc2626', bg:'#fee2e2', label:'👢 Kicked',       desc:'User was kicked out of the room.' },
-              AUTO_DELETE: { color:'#7c3aed', bg:'#f5f3ff', label:'🗑 Auto-deleted', desc:'Offending message was automatically deleted.' },
-              NOTICE:      { color:'#3b82f6', bg:'#eff6ff', label:'📢 Notice',       desc:'TingleBot sent an informational notice.' },
+              WARN:        { color:'#f59e0b', bg:'#fef3c7', label:'Warning',     svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', desc:'User received a warning message from TingleBot.' },
+              MUTE:        { color:'#f97316', bg:'#fff7ed', label:'Muted',       svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was temporarily muted and cannot send messages.' },
+              KICK:        { color:'#dc2626', bg:'#fee2e2', label:'Kicked',       svgPath:'M16 17V14H9V10H16V7L21 12L16 17M14 2A2 2 0 0 1 16 4V6H14V4H5V20H14V18H16V20A2 2 0 0 1 14 22H5A2 2 0 0 1 3 20V4A2 2 0 0 1 5 2H14Z', desc:'User was kicked out of the room.' },
+              AUTO_DELETE: { color:'#7c3aed', bg:'#f5f3ff', label:'Auto-deleted', svgPath:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z', desc:'Offending message was automatically deleted.' },
+              NOTICE:      { color:'#3b82f6', bg:'#eff6ff', label:'Notice',       svgPath:'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z', desc:'TingleBot sent an informational notice.' },
             };
 
             const filtered = violations.filter(v => {
@@ -3502,13 +3534,16 @@ const AdminPanelPage = () => {
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16, alignItems:'center' }}>
                   {['all','SPAM','PROFANITY','THREAT','PERSONAL_INFO','EXCESSIVE_CAPS','EMOJI_SPAM','HOMOGLYPH'].map(f => (
                     <button key={f} onClick={() => setViolationsFilter(f)} style={{
+                      display:'flex', alignItems:'center', gap:5,
                       padding:'5px 12px', borderRadius:20, border:'1.5px solid',
                       borderColor: violationsFilter===f ? '#f43f5e' : '#e5e7eb',
                       background:  violationsFilter===f ? '#f43f5e' : '#fff',
                       color:       violationsFilter===f ? '#fff' : '#374151',
                       fontSize:11.5, fontWeight:700, cursor:'pointer',
                     }}>
-                      {f === 'all' ? '✦ All Types' : (VC[f]?.text || f.replace(/_/g,' '))}
+                      {f === 'all'
+                        ? <><svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12,flexShrink:0}}><path fill={violationsFilter===f?'#fff':'#374151'} d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>All Types</>
+                        : <><svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12,flexShrink:0}}><path fill={violationsFilter===f?'#fff':(VC[f]?.badge||'#374151')} d={VC[f]?.svgPath||'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z'}/></svg>{VC[f]?.text||f.replace(/_/g,' ')}</>}
                     </button>
                   ))}
                   <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#6b7280', cursor:'pointer', marginLeft:'auto' }}>
@@ -3527,7 +3562,7 @@ const AdminPanelPage = () => {
                 ) : (
                   <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                     {filtered.map(v => {
-                      const vc = VC[v.type] || { bg:'#f9fafb', border:'#e5e7eb', badge:'#6b7280', text: v.type || 'Unknown', rule:'Unknown violation type.' };
+                      const vc = VC[v.type] || { bg:'#f9fafb', border:'#e5e7eb', badge:'#6b7280', text: v.type ? v.type.replace(/_/g,' ') : 'Violation', svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'A rule violation was detected.' };
                       const sevColor = SEV[v.severity] || '#6b7280';
                       const sevBg    = SEV_BG[v.severity] || '#f3f4f6';
                       const act = ACT[v.actionTaken] || { color:'#6b7280', bg:'#f3f4f6', label: v.actionTaken || 'NOTICE', desc:'Automated action was taken.' };
@@ -3536,6 +3571,9 @@ const AdminPanelPage = () => {
                       const matchedUser = users.find(u => u.uid === v.userId);
                       const userEmail = matchedUser?.email || v.email || null;
 
+                      const resolvedUsername = v.username && v.username !== 'Unknown User' && v.username !== 'Unknown'
+                        ? v.username
+                        : (matchedUser?.displayName || (v.userId ? `UID:${v.userId.slice(0,10)}` : 'Unknown User'));
                       return (
                         <div key={v.id} style={{
                           background: v.resolved ? '#f8fafc' : '#fff',
@@ -3546,13 +3584,15 @@ const AdminPanelPage = () => {
                         }}>
                           {/* ── Card Header: Violation type + severity strip ── */}
                           <div style={{ background: v.resolved ? '#f1f5f9' : vc.bg, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', borderBottom:`1px solid ${v.resolved ? '#e2e8f0' : vc.border}` }}>
-                            <span style={{ fontSize:12, fontWeight:900, background: v.resolved ? '#94a3b8' : vc.badge, color:'#fff', borderRadius:8, padding:'3px 10px', letterSpacing:'0.04em', flexShrink:0 }}>
+                            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:900, background: v.resolved ? '#94a3b8' : vc.badge, color:'#fff', borderRadius:8, padding:'3px 10px', letterSpacing:'0.04em', flexShrink:0 }}>
+                              {vc.svgPath && <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12,flexShrink:0}}><path fill="white" d={vc.svgPath}/></svg>}
                               {vc.text}
                             </span>
                             <span style={{ fontSize:11, fontWeight:700, background:sevBg, color:sevColor, borderRadius:20, padding:'2px 9px', textTransform:'uppercase', letterSpacing:'0.05em', border:`1px solid ${sevColor}33` }}>
                               {v.severity || 'low'} severity
                             </span>
-                            <span style={{ fontSize:11.5, fontWeight:800, background:act.bg, color:act.color, borderRadius:8, padding:'3px 10px', marginLeft:'auto', flexShrink:0, border:`1px solid ${act.color}33` }}>
+                            <span style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:800, background:act.bg, color:act.color, borderRadius:8, padding:'3px 10px', marginLeft:'auto', flexShrink:0, border:`1px solid ${act.color}33` }}>
+                              {act.svgPath && <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12,flexShrink:0}}><path fill={act.color} d={act.svgPath}/></svg>}
                               {act.label}
                             </span>
                             {v.resolved && (
@@ -3569,11 +3609,11 @@ const AdminPanelPage = () => {
                             {/* User identity */}
                             <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
                               <div style={{ width:42, height:42, borderRadius:'50%', background:`linear-gradient(135deg,${vc.badge}22,${vc.badge}44)`, border:`2px solid ${vc.badge}66`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:900, color:vc.badge, flexShrink:0 }}>
-                                {(v.username || v.userId || '?')[0].toUpperCase()}
+                                {resolvedUsername[0].toUpperCase()}
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
-                                  <span style={{ fontSize:15, fontWeight:900, color:'#1e1b4b' }}>{v.username || (v.userId ? v.userId.slice(0,12)+'…' : 'Unknown User')}</span>
+                                  <span style={{ fontSize:15, fontWeight:900, color:'#1e1b4b' }}>{resolvedUsername}</span>
                                   {v.roomName && (
                                     <span style={{ fontSize:11, color:'#7c3aed', background:'#f5f3ff', borderRadius:6, padding:'2px 8px', fontWeight:700, border:'1px solid #ede9fe' }}>
                                       #{v.roomName}
@@ -3596,7 +3636,10 @@ const AdminPanelPage = () => {
                             {/* Offending message */}
                             {v.message && (
                               <div style={{ background:'rgba(0,0,0,0.04)', borderLeft:`3px solid ${vc.badge}`, borderRadius:'0 8px 8px 0', padding:'8px 12px' }}>
-                                <div style={{ fontSize:10, fontWeight:800, color:vc.badge, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>💬 Offending Message</div>
+                                <div style={{ fontSize:10, fontWeight:800, color:vc.badge, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4, display:'flex', alignItems:'center', gap:5 }}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill={vc.badge} d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
+                                  Offending Message
+                                </div>
                                 <div style={{ fontSize:12.5, color:'#1e1b4b', fontStyle:'italic', wordBreak:'break-word', lineHeight:1.5 }}>
                                   "{v.message.slice(0, 300)}{v.message.length > 300 ? '…' : ''}"
                                 </div>
@@ -3606,16 +3649,25 @@ const AdminPanelPage = () => {
                             {/* Fault + Reason + Action grid */}
                             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:10 }}>
                               <div style={{ background:'#f8fafc', borderRadius:10, padding:'10px 12px', border:'1px solid #e2e8f0' }}>
-                                <div style={{ fontSize:10, fontWeight:800, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>⚠️ What Was the Fault</div>
+                                <div style={{ fontSize:10, fontWeight:800, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:4 }}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#94a3b8" d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z"/></svg>
+                                  What Was the Fault
+                                </div>
                                 <div style={{ fontSize:12.5, color:'#374151', fontWeight:600, lineHeight:1.4 }}>{vc.rule}</div>
                               </div>
                               <div style={{ background: act.bg, borderRadius:10, padding:'10px 12px', border:`1px solid ${act.color}22` }}>
-                                <div style={{ fontSize:10, fontWeight:800, color:act.color, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>⚡ Action Taken</div>
+                                <div style={{ fontSize:10, fontWeight:800, color:act.color, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:4 }}>
+                                  {act.svgPath && <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill={act.color} d={act.svgPath}/></svg>}
+                                  Action Taken
+                                </div>
                                 <div style={{ fontSize:12.5, color:'#374151', fontWeight:600, lineHeight:1.4 }}>{act.desc}</div>
                               </div>
                               {(v.reason || v.autoModReason) && (
                                 <div style={{ background:'#fefce8', borderRadius:10, padding:'10px 12px', border:'1px solid #fde68a' }}>
-                                  <div style={{ fontSize:10, fontWeight:800, color:'#d97706', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5 }}>📋 Reason / Details</div>
+                                  <div style={{ fontSize:10, fontWeight:800, color:'#d97706', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:4 }}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#d97706" d="M14 17H7v-2h7m3-4H7v-2h10m0-4H7V5h10M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                                    Reason / Details
+                                  </div>
                                   <div style={{ fontSize:12.5, color:'#374151', fontWeight:600, lineHeight:1.4 }}>{v.reason || v.autoModReason}</div>
                                 </div>
                               )}

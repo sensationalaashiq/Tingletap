@@ -55,15 +55,22 @@ export const autoCheckUnmute = async (uid, mutedInfo) => {
   if (Date.now() < endTime) return false; // not yet
 
   try {
+    /* Clear ALL muted fields so no dirty data is left for next render */
     await updateDoc(doc(db, 'users', uid), {
       'mutedInfo.isMuted'   : false,
       'mutedInfo.muteUntil' : null,
-      'mutedInfo.reason'    : '',
+      'mutedInfo.mutedAt'   : null,
+      'mutedInfo.duration'  : null,
+      'mutedInfo.reason'    : null,
+      'mutedInfo.mutedBy'   : null,
       'mutedInfo.unmutedAt' : serverTimestamp(),
       'mutedInfo.unmutedBy' : 'System (timer expired)',
     });
     return true;
-  } catch { return false; }
+  } catch (e) {
+    console.error('[modExpiryService] auto-unmute failed:', e);
+    return false;
+  }
 };
 
 /* ─── 2. Auto-unban ──────────────────────────────────────── */
