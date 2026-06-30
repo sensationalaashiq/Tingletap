@@ -5202,9 +5202,27 @@ html.dark-mode .friend-request-name,
 html.dark-mode .friend-request-time,
 .dark-mode .friend-request-time { color: #a78bfa !important; }
 html.dark-mode .accept-btn,
-.dark-mode .accept-btn { background: rgba(16,185,129,0.2) !important; }
+.dark-mode .accept-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  border-color: rgba(16,185,129,0.5) !important;
+  box-shadow: 0 2px 8px rgba(5,150,105,0.4) !important;
+}
+html.dark-mode .accept-btn:hover,
+.dark-mode .accept-btn:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.55) !important;
+}
 html.dark-mode .reject-btn,
-.dark-mode .reject-btn { background: rgba(239,68,68,0.15) !important; }
+.dark-mode .reject-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  border-color: rgba(239,68,68,0.5) !important;
+  box-shadow: 0 2px 8px rgba(220,38,38,0.4) !important;
+}
+html.dark-mode .reject-btn:hover,
+.dark-mode .reject-btn:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 4px 14px rgba(239,68,68,0.55) !important;
+}
 
 @keyframes fadeIn {
   from {
@@ -5344,42 +5362,52 @@ html.dark-mode .reject-btn,
 
 .friend-request-actions {
   display: flex;
-  gap: 8px;
+  gap: 7px;
+  align-items: center;
 }
 
 .accept-btn, .reject-btn {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: none;
+  border: 2px solid transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  font-size: 11px;
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .accept-btn {
-  background: #10b981;
-  color: var(--header-text, white);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: rgba(16,185,129,0.4);
+  color: #ffffff;
 }
 
 .accept-btn:hover {
-  background: #059669;
-  transform: scale(1.1);
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 4px 16px rgba(16,185,129,0.5);
+  transform: scale(1.14) translateY(-1px);
 }
 
+.accept-btn svg { stroke: #ffffff; }
+
 .reject-btn {
-  background: #ef4444;
-  color: var(--header-text, white);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: rgba(239,68,68,0.4);
+  color: #ffffff;
 }
 
 .reject-btn:hover {
-  background: #dc2626;
-  transform: scale(1.1);
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 4px 16px rgba(239,68,68,0.5);
+  transform: scale(1.14) translateY(-1px);
 }
+
+.reject-btn svg { stroke: #ffffff; }
 
 /* Profile Modal Friends Section */
 .profile-friends {
@@ -7939,13 +7967,16 @@ html.dark-mode .reject-btn,
 
 .pm-popup-clear-btn:hover {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: #dc2626;
-    transform: scale(1.05);
+    color: #ffffff;
+    transform: scale(1.08);
+    box-shadow: 0 3px 10px rgba(239,68,68,0.35);
 }
 
 .pm-popup-close-btn:hover {
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    transform: scale(1.05);
+    color: #ffffff;
+    transform: scale(1.08);
+    box-shadow: 0 3px 10px rgba(139,92,246,0.35);
 }
 
 .pm-popup-content {
@@ -8084,24 +8115,30 @@ html.dark-mode .reject-btn,
     border: none;
     cursor: pointer;
     padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    opacity: 0.6;
-    margin-top: 2px;
+    border-radius: 5px;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    opacity: 0;
+    margin-top: 1px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pm-conversation-item:hover .pm-conversation-delete-btn {
+    opacity: 0.75;
 }
 
 .pm-conversation-delete-btn:hover {
-    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-    opacity: 1;
-    transform: scale(1.1);
+    background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.18) 100%);
+    opacity: 1 !important;
+    transform: scale(1.18);
+    color: #ef4444;
 }
 
 .pm-conversation-delete-btn svg {
     transition: all 0.2s ease;
-}
-
-.pm-conversation-delete-btn:hover svg {
-    filter: brightness(1.2);
+    stroke: currentColor;
 }
 
 /* Compact PM attachment popup styles */

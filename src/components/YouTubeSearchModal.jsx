@@ -175,24 +175,60 @@ const YouTubeSearchModal = ({ isOpen, onClose, onVideoSelect, apiKey }) => {
         if (!query.trim()) return;
         setLoading(true);
         setError('');
-        try {
-            const key = apiKey || '';
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(query)}&type=video&key=${key}`;
-            const res = await fetch(url);
-            if (!res.ok) {
-                const d = await res.json().catch(() => ({}));
-                throw new Error(d.error?.message || `Error ${res.status}`);
-            }
-            const data = await res.json();
-            if (data.error) throw new Error(data.error.message);
-            setResults(data.items || []);
-            if (!data.items?.length) setError('No videos found. Try different keywords.');
-        } catch (err) {
-            setError(err.message || 'Search failed. Check your API key.');
-            setResults(MOCK_RESULTS);
-        } finally {
-            setLoading(false);
+
+        /* 1️⃣  Try official YouTube Data API v3 */
+        if (apiKey && apiKey.length > 10) {
+            try {
+                const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
+                const res = await fetch(ytUrl);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.error && data.items?.length > 0) {
+                        setResults(data.items);
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch { /* fall through */ }
         }
+
+        /* 2️⃣  Fallback: Piped open API (no key required) */
+        try {
+            const pipedRes = await fetch(
+                `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=videos`,
+                { signal: AbortSignal.timeout(8000) }
+            );
+            if (pipedRes.ok) {
+                const pipedData = await pipedRes.json();
+                const items = (pipedData.items || [])
+                    .filter(v => v.url && v.type === 'stream')
+                    .map(v => {
+                        const videoId = v.url.split('?v=')[1] || v.url.replace('/watch?v=', '');
+                        return {
+                            id: { videoId },
+                            snippet: {
+                                title: v.title || 'Unknown Title',
+                                channelTitle: v.uploaderName || 'Unknown',
+                                thumbnails: {
+                                    default: { url: v.thumbnail || `https://i.ytimg.com/vi/${videoId}/default.jpg` },
+                                    medium:  { url: v.thumbnail || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` }
+                                }
+                            }
+                        };
+                    })
+                    .filter(v => v.id.videoId?.length === 11);
+                if (items.length > 0) {
+                    setResults(items);
+                    setLoading(false);
+                    return;
+                }
+            }
+        } catch { /* fall through */ }
+
+        /* 3️⃣  Both failed — inform user */
+        setError('Search is temporarily unavailable. Try pasting a YouTube URL in the Video URL tab instead.');
+        setResults([]);
+        setLoading(false);
     };
 
     const handleVideoSelect = (video) => {

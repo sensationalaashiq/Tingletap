@@ -5214,6 +5214,31 @@ const HomePage = ({ user, roomIdOverride }) => {
         );
     };
 
+    const handleDeleteConversation = async (e, conversation) => {
+        e.stopPropagation();
+        try {
+            if (!auth.currentUser) return;
+            const msgQuery = query(
+                collection(db, 'privateMessages'),
+                where('participants', 'array-contains', auth.currentUser.uid)
+            );
+            const snap = await getDocs(msgQuery);
+            const batch = writeBatch(db);
+            snap.docs.forEach((docSnap) => {
+                const d = docSnap.data();
+                if (d.participants?.includes(conversation.otherUserId)) {
+                    batch.delete(docSnap.ref);
+                }
+            });
+            await batch.commit();
+            setConversations(prev => prev.filter(c => c.otherUserId !== conversation.otherUserId));
+            setUnreadCounts(prev => { const u = { ...prev }; delete u[conversation.otherUserId]; return u; });
+            toast.success(`Conversation deleted`, { icon: TI.clear });
+        } catch {
+            toast.error("Failed to delete conversation.", { icon: TI.error });
+        }
+    };
+
     // Debounced save to prevent excessive saves
     const saveTimeoutRef = useRef(null);
     
@@ -6831,14 +6856,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                     <button 
                                                         className="accept-btn"
                                                         onClick={() => handleAcceptFriendRequest(request)}
+                                                        title="Accept"
                                                     >
-                                                        ✓
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="20 6 9 17 4 12"/>
+                                                        </svg>
                                                     </button>
                                                     <button 
                                                         className="reject-btn"
                                                         onClick={() => handleRejectFriendRequest(request)}
+                                                        title="Decline"
                                                     >
-                                                        ✕
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                                        </svg>
                                                     </button>
                                                 </div>
                                             </div>
@@ -6958,6 +6989,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                             'Now'
                                                         }
                                                     </div>
+                                                    <button
+                                                        className="pm-conversation-delete-btn"
+                                                        onClick={(e) => handleDeleteConversation(e, conversation)}
+                                                        title="Delete conversation"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                                        </svg>
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
