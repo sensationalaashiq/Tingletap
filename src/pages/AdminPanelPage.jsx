@@ -825,7 +825,19 @@ const AdminPanelPage = () => {
     setChangingRole(true);
     try {
       const userRef = doc(db, 'users', roleTarget.id || roleTarget.uid);
-      await updateDoc(userRef, { role: newRole });
+      // Badge sync: admin ↔ titans badge, moderator ↔ spartans badge
+      const ROLE_BADGE_MAP = { admin: 'titans', moderator: 'spartans' };
+      const newRoleBadge = ROLE_BADGE_MAP[newRole];
+      const oldRoleBadge = ROLE_BADGE_MAP[roleTarget.role];
+      const updateObj = { role: newRole };
+      if (newRoleBadge) {
+        // Promoting to a role that carries a badge — set it automatically
+        updateObj.badge = newRoleBadge;
+      } else if (oldRoleBadge && roleTarget.badge === oldRoleBadge) {
+        // Demoting from a role whose badge was auto-assigned — remove it
+        updateObj.badge = null;
+      }
+      await updateDoc(userRef, updateObj);
 
       const oldRank = ROLE_RANK[roleTarget.role] || 1;
       const newRank = ROLE_RANK[newRole] || 1;
@@ -837,14 +849,20 @@ const AdminPanelPage = () => {
         : `${roleTarget.displayName} has been demoted to ${roleLabelMap[newRole] || newRole}.`;
 
       const targetRoomId = onlineStatuses[roleTarget.uid]?.currentRoomId;
+      const adminRoomId  = onlineStatuses[currentUserProfile?.uid]?.currentRoomId;
+      const botMsg = {
+        text: msgText,
+        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+        isBot: true, systemBot: true, tinglebotType,
+        createdAt: serverTimestamp(),
+        noReply: true, noReaction: true, noReport: true, noUnread: true,
+      };
       if (targetRoomId) {
-        addDoc(collection(db, 'rooms', targetRoomId, 'messages'), {
-          text: msgText,
-          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-          isBot: true, systemBot: true, tinglebotType,
-          createdAt: serverTimestamp(),
-          noReply: true, noReaction: true, noReport: true, noUnread: true,
-        }).catch(() => {});
+        addDoc(collection(db, 'rooms', targetRoomId, 'messages'), botMsg).catch(() => {});
+      }
+      // Also broadcast to the admin's current room (if different) so staff in that room see it
+      if (adminRoomId && adminRoomId !== targetRoomId) {
+        addDoc(collection(db, 'rooms', adminRoomId, 'messages'), botMsg).catch(() => {});
       }
 
       const roleLabelMap2 = { admin: 'High Council', moderator: 'Guardian', user: 'Member', owner: 'Godfather' };
@@ -882,8 +900,29 @@ const AdminPanelPage = () => {
     try {
       const userRef = doc(db, 'users', badgeTarget.id);
       await updateDoc(userRef, { badge: badgeKey || null });
+
+      // TingleBot broadcast — fires to the target's current room (and admin room if different)
+      const badgeName = Badges[badgeKey]?.name;
+      const msgText = badgeKey
+        ? `${badgeTarget.displayName} has been awarded the "${badgeName}" badge!`
+        : `${badgeTarget.displayName}'s badge has been removed.`;
+      const botMsg = {
+        text: msgText,
+        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+        isBot: true, systemBot: true,
+        tinglebotType: badgeKey ? 'badge_awarded' : 'demoted',
+        createdAt: serverTimestamp(),
+        noReply: true, noReaction: true, noReport: true, noUnread: true,
+      };
+      const targetRoomId = onlineStatuses[badgeTarget.uid || badgeTarget.id]?.currentRoomId;
+      const adminRoomId  = onlineStatuses[currentUserProfile?.uid]?.currentRoomId;
+      if (targetRoomId) addDoc(collection(db, 'rooms', targetRoomId, 'messages'), botMsg).catch(() => {});
+      if (adminRoomId && adminRoomId !== targetRoomId) {
+        addDoc(collection(db, 'rooms', adminRoomId, 'messages'), botMsg).catch(() => {});
+      }
+
       if (badgeKey) {
-        pt.success(`🏅 Badge "${Badges[badgeKey]?.name}" assigned to ${badgeTarget.displayName}!`);
+        pt.success(`Badge "${badgeName}" assigned to ${badgeTarget.displayName}!`);
       } else {
         pt.success(`Badge removed from ${badgeTarget.displayName}.`);
       }
@@ -4252,69 +4291,124 @@ const AdminPanelPage = () => {
       {/* Assign Badge Modal */}
       {showBadgeModal && badgeTarget && (
         <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowBadgeModal(false); setBadgeTarget(null); } }}>
-          <div className="luxury-modal-card" style={{ maxWidth: 560 }}>
-            <div className="luxury-modal-header" style={{ borderTopColor: '#7c3aed' }}>
-              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)' }}>
-                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
-                  <path fill="#ffffff" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,17L6.5,12.5L7.91,11.09L11,14.17L16.09,9.08L17.5,10.5L11,17Z"/>
+          <div className="luxury-modal-card" style={{ maxWidth: 580, background: '#faf7ff' }}>
+            {/* Premium lavender gradient header strip */}
+            <div style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#c084fc 100%)', borderRadius: '18px 18px 0 0', padding: '20px 22px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.32)', boxShadow: '0 2px 8px rgba(124,58,237,0.25)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 26, height: 26 }}>
+                  <path fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                  <circle cx="12" cy="12" r="2.5" fill="#fbbf24"/>
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Assign Badge</h3>
-                <p style={{ margin: 0, fontSize: 11.5, color: '#7c3aed', opacity: 0.8 }}>
-                  To: <strong>{badgeTarget.displayName}</strong>
-                  {badgeTarget.badge && <span style={{ marginLeft: 8, background: 'rgba(124,58,237,0.1)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#6d28d9' }}>Current: {Badges[badgeTarget.badge]?.name || badgeTarget.badge}</span>}
-                </p>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>Assign Badge</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.82)', marginTop: 2 }}>
+                  Assigning to <strong style={{ color: '#fff' }}>{badgeTarget.displayName}</strong>
+                  {badgeTarget.badge && (
+                    <span style={{ marginLeft: 8, background: 'rgba(255,255,255,0.18)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#fff', fontWeight: 600 }}>
+                      Current: {Badges[badgeTarget.badge]?.name || badgeTarget.badge}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button className="luxury-modal-close" onClick={() => { setShowBadgeModal(false); setBadgeTarget(null); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              <button
+                onClick={() => { setShowBadgeModal(false); setBadgeTarget(null); }}
+                style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background .15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}><path fill="#fff" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
               </button>
             </div>
-            <div className="luxury-modal-body">
-              <div style={{ fontSize: 12, color: '#6d28d9', fontWeight: 700, marginBottom: 10, letterSpacing: 0.4, textTransform: 'uppercase' }}>Choose a Badge</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                {Object.entries(Badges).map(([key, badge]) => (
-                  <button
-                    key={key}
-                    onClick={() => confirmAssignBadge(key)}
-                    disabled={assigningBadge}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-                      padding: '12px 8px', borderRadius: 14, cursor: 'pointer',
-                      border: badgeTarget.badge === key ? '2px solid #7c3aed' : '1.5px solid rgba(124,58,237,0.18)',
-                      background: badgeTarget.badge === key ? 'rgba(124,58,237,0.1)' : 'rgba(249,247,255,0.9)',
-                      boxShadow: badgeTarget.badge === key ? '0 0 0 3px rgba(124,58,237,0.12)' : '0 1px 4px rgba(124,58,237,0.06)',
-                      transition: 'all .15s', opacity: assigningBadge ? 0.6 : 1
-                    }}
-                    onMouseEnter={e => { if (!assigningBadge) e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = badgeTarget.badge === key ? 'rgba(124,58,237,0.1)' : 'rgba(249,247,255,0.9)'; }}
-                  >
-                    <div style={{ width: 42, height: 42, flexShrink: 0 }}
-                      dangerouslySetInnerHTML={{ __html: badge.svg.replace(/\{\.\.\.props\}/g, '') }}
-                    />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: badgeTarget.badge === key ? '#6d28d9' : '#4c1d95', textAlign: 'center', lineHeight: 1.3 }}>{badge.name}</span>
-                    {badgeTarget.badge === key && (
-                      <span style={{ fontSize: 9.5, background: '#7c3aed', color: 'white', borderRadius: 5, padding: '1px 6px', fontWeight: 700 }}>Active</span>
-                    )}
-                  </button>
-                ))}
+
+            <div style={{ padding: '18px 20px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
+                  <path fill="#7c3aed" d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                </svg>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#6d28d9', letterSpacing: 0.5, textTransform: 'uppercase' }}>Select a Badge</span>
               </div>
-              {badgeTarget.badge && (
+
+              {/* Badge grid — excludes role-reserved badges */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
+                {Object.entries(Badges)
+                  .filter(([key]) => !['the_olympian', 'titans', 'spartans'].includes(key))
+                  .map(([key, badge]) => {
+                    const isActive = badgeTarget.badge === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => confirmAssignBadge(key)}
+                        disabled={assigningBadge}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                          padding: '14px 8px 12px', borderRadius: 16, cursor: assigningBadge ? 'default' : 'pointer',
+                          border: isActive ? '2px solid #7c3aed' : '1.5px solid rgba(124,58,237,0.15)',
+                          background: isActive
+                            ? 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(168,85,247,0.08))'
+                            : 'rgba(255,255,255,0.88)',
+                          boxShadow: isActive
+                            ? '0 0 0 3px rgba(124,58,237,0.15), 0 4px 12px rgba(124,58,237,0.12)'
+                            : '0 2px 6px rgba(124,58,237,0.06)',
+                          transition: 'all .18s cubic-bezier(.34,1.56,.64,1)',
+                          transform: 'scale(1)',
+                          opacity: assigningBadge ? 0.6 : 1,
+                          position: 'relative',
+                        }}
+                        onMouseEnter={e => {
+                          if (!assigningBadge) {
+                            e.currentTarget.style.transform = 'scale(1.04) translateY(-2px)';
+                            e.currentTarget.style.boxShadow = isActive
+                              ? '0 0 0 3px rgba(124,58,237,0.18), 0 8px 20px rgba(124,58,237,0.18)'
+                              : '0 6px 18px rgba(124,58,237,0.14)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.boxShadow = isActive
+                            ? '0 0 0 3px rgba(124,58,237,0.15), 0 4px 12px rgba(124,58,237,0.12)'
+                            : '0 2px 6px rgba(124,58,237,0.06)';
+                        }}
+                      >
+                        {isActive && (
+                          <div style={{ position: 'absolute', top: 7, right: 7, width: 16, height: 16, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{ width: 10, height: 10 }}><path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </div>
+                        )}
+                        <div style={{ width: 48, height: 48, flexShrink: 0, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.12))' }}
+                          dangerouslySetInnerHTML={{ __html: badge.svg.replace(/\{\.\.\.props\}/g, '') }}
+                        />
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: isActive ? '#6d28d9' : '#4c1d95', textAlign: 'center', lineHeight: 1.3 }}>{badge.name}</span>
+                        {isActive && (
+                          <span style={{ fontSize: 9, background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', borderRadius: 5, padding: '2px 7px', fontWeight: 700, letterSpacing: 0.3 }}>Active</span>
+                        )}
+                      </button>
+                    );
+                })}
+              </div>
+
+              {/* Remove badge */}
+              {badgeTarget.badge && !['the_olympian','titans','spartans'].includes(badgeTarget.badge) && (
                 <button
                   onClick={() => confirmAssignBadge(null)}
                   disabled={assigningBadge}
                   style={{
-                    marginTop: 12, width: '100%', padding: '9px 14px', borderRadius: 10,
-                    border: '1.5px dashed #d1d5db', background: 'rgba(255,255,255,0.7)',
-                    color: '#9ca3af', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                    marginTop: 12, width: '100%', padding: '10px 14px', borderRadius: 12,
+                    border: '1.5px dashed rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.04)',
+                    color: '#7c3aed', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    transition: 'all .15s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.4)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.04)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.25)'; }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}><path fill="#9ca3af" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-                  Remove Badge
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}><path fill="#7c3aed" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+                  Remove Current Badge
                 </button>
               )}
             </div>
-            <div className="luxury-modal-footer">
+
+            <div className="luxury-modal-footer" style={{ marginTop: 16 }}>
               <button className="luxury-btn-secondary" onClick={() => { setShowBadgeModal(false); setBadgeTarget(null); }} disabled={assigningBadge}>
                 Cancel
               </button>
@@ -4332,36 +4426,43 @@ const AdminPanelPage = () => {
       {/* Change Role Modal */}
       {showRoleModal && roleTarget && (
         <div className="luxury-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowRoleModal(false); setRoleTarget(null); } }}>
-          <div className="luxury-modal-card" style={{ maxWidth: 480 }}>
-            <div className="luxury-modal-header" style={{ borderTopColor: '#f59e0b' }}>
-              <div className="luxury-modal-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}>
-                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
-                  <path fill="#fff" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L19.37,4.29C19,3.9 18.35,3.9 17.96,4.29L17,5.25L18.75,7L20.71,7.04M11,13.92V16H13.08L19.17,9.91L17.42,8.16L11,13.92Z"/>
+          <div className="luxury-modal-card" style={{ maxWidth: 500, background: '#faf7ff' }}>
+            {/* Premium lavender gradient header — same language as badge modal */}
+            <div style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#c084fc 100%)', borderRadius: '18px 18px 0 0', padding: '20px 22px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.32)', boxShadow: '0 2px 8px rgba(124,58,237,0.25)' }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 26, height: 26 }}>
+                  <path d="M12 2l9 4v6c0 5-4 9-9 10C3 21 3 16 3 12V6l9-4z" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <path d="M9 12l2 2 4-4" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, fontSize: 15, color: '#1e1b4b', fontWeight: 800 }}>Change Role</h3>
-                <p style={{ margin: 0, fontSize: 11.5, color: '#b45309', opacity: 0.9 }}>
-                  For: <strong>{roleTarget.displayName}</strong>
-                  <span style={{ marginLeft: 8, background: 'rgba(245,158,11,0.12)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#92400e' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>Assign Role</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.82)', marginTop: 2 }}>
+                  Assigning to <strong style={{ color: '#fff' }}>{roleTarget.displayName}</strong>
+                  <span style={{ marginLeft: 8, background: 'rgba(255,255,255,0.18)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#fff', fontWeight: 600 }}>
                     Current: {({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian'}[roleTarget.role]) || 'Member'}
                   </span>
-                </p>
+                </div>
               </div>
-              <button className="luxury-modal-close" onClick={() => { setShowRoleModal(false); setRoleTarget(null); }}>
-                <svg viewBox="0 0 24 24" fill="none"><path fill="#f59e0b" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+              <button
+                onClick={() => { setShowRoleModal(false); setRoleTarget(null); }}
+                style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background .15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}><path fill="#fff" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
               </button>
             </div>
 
-            <div className="luxury-modal-body">
-              <div style={{ fontSize: 11.5, color: '#78350f', fontWeight: 700, marginBottom: 12, letterSpacing: 0.4, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <div style={{ padding: '18px 20px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 13, height: 13 }}>
+                  <path d="M12 2l9 4v6c0 5-4 9-9 10C3 21 3 16 3 12V6l9-4z" fill="#7c3aed"/>
                 </svg>
-                Select New Role
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#6d28d9', letterSpacing: 0.5, textTransform: 'uppercase' }}>Select New Role</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {ROLE_DEFS.filter(rd => {
                   if (currentUserProfile?.role !== 'owner' && rd.ownerOnly) return false;
                   return true;
@@ -4375,32 +4476,61 @@ const AdminPanelPage = () => {
                       disabled={isCurrent || isLocked}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14,
-                        padding: '12px 16px', borderRadius: 14, cursor: isCurrent ? 'default' : 'pointer',
-                        border: isCurrent ? `2px solid ${rd.color}` : '1.5px solid rgba(0,0,0,0.08)',
+                        padding: '13px 16px', borderRadius: 15, cursor: isCurrent ? 'default' : (isLocked ? 'not-allowed' : 'pointer'),
+                        border: isCurrent ? `2px solid ${rd.color}` : '1.5px solid rgba(124,58,237,0.13)',
                         background: isCurrent
-                          ? `linear-gradient(135deg,${rd.color}18,${rd.color}08)`
-                          : 'rgba(255,255,255,0.85)',
-                        boxShadow: isCurrent ? `0 0 0 3px ${rd.color}22` : '0 1px 4px rgba(0,0,0,0.06)',
-                        transition: 'all .16s', opacity: isLocked && !isCurrent ? 0.55 : 1,
+                          ? `linear-gradient(135deg,${rd.color}18,${rd.color}09)`
+                          : 'rgba(255,255,255,0.9)',
+                        boxShadow: isCurrent
+                          ? `0 0 0 3px ${rd.color}1a, 0 4px 12px ${rd.color}10`
+                          : '0 2px 6px rgba(124,58,237,0.06)',
+                        transition: 'all .18s cubic-bezier(.34,1.56,.64,1)',
+                        opacity: isLocked && !isCurrent ? 0.5 : 1,
                         textAlign: 'left',
                       }}
-                      onMouseEnter={e => { if (!isCurrent && !isLocked) e.currentTarget.style.background = `${rd.color}12`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isCurrent ? `linear-gradient(135deg,${rd.color}18,${rd.color}08)` : 'rgba(255,255,255,0.85)'; }}
+                      onMouseEnter={e => {
+                        if (!isCurrent && !isLocked) {
+                          e.currentTarget.style.background = `linear-gradient(135deg,${rd.color}10,${rd.color}06)`;
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = `0 6px 16px ${rd.color}18`;
+                          e.currentTarget.style.borderColor = `${rd.color}40`;
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isCurrent) {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.9)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(124,58,237,0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(124,58,237,0.13)';
+                        }
+                      }}
                     >
-                      <div style={{ width: 40, height: 40, borderRadius: 12, background: isCurrent ? rd.gradient : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .16s' }}>
-                        {React.cloneElement(rd.svg, { style: { width: 22, height: 22, filter: isCurrent ? 'brightness(0) invert(1)' : 'none' } })}
+                      {/* Role icon with gradient background */}
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 13,
+                        background: isCurrent ? rd.gradient : `linear-gradient(135deg,${rd.color}15,${rd.color}08)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, transition: 'all .18s',
+                        border: `1.5px solid ${rd.color}25`,
+                        boxShadow: isCurrent ? `0 2px 8px ${rd.color}30` : 'none',
+                      }}>
+                        {React.cloneElement(rd.svg, {
+                          style: { width: 24, height: 24 },
+                          ...(isCurrent ? { fill: undefined } : {}),
+                        })}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 800, color: isCurrent ? rd.color : '#1e1b4b', letterSpacing: 0.02 }}>{rd.label}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{rd.desc}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: isCurrent ? rd.color : '#1e1b4b', letterSpacing: 0.1 }}>{rd.label}</div>
+                        <div style={{ fontSize: 11, color: '#7c6b9e', marginTop: 2, lineHeight: 1.4 }}>{rd.desc}</div>
                       </div>
-                      {isCurrent && (
-                        <span style={{ fontSize: 9.5, background: rd.color, color: '#fff', borderRadius: 5, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Current</span>
-                      )}
-                      {!isCurrent && !isLocked && (
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={rd.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.6 }}>
-                          <path d="M9 18l6-6-6-6"/>
-                        </svg>
+                      {isCurrent ? (
+                        <span style={{ fontSize: 9.5, background: rd.gradient, color: '#fff', borderRadius: 6, padding: '3px 9px', fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>Current</span>
+                      ) : (
+                        !isLocked && (
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
+                            <path d="M9 18l6-6-6-6" stroke={rd.color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )
                       )}
                     </button>
                   );
@@ -4408,20 +4538,20 @@ const AdminPanelPage = () => {
               </div>
 
               {currentUserProfile?.role !== 'owner' && (
-                <div style={{ marginTop: 12, padding: '9px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div style={{ marginTop: 12, padding: '10px 13px', borderRadius: 11, background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
-                  <span style={{ fontSize: 11, color: '#92400e' }}>High Council (Admin) role assignment requires Owner access.</span>
+                  <span style={{ fontSize: 11, color: '#5b21b6', fontWeight: 500 }}>High Council role assignment requires Owner access.</span>
                 </div>
               )}
             </div>
 
-            <div className="luxury-modal-footer">
+            <div className="luxury-modal-footer" style={{ marginTop: 16 }}>
               <button className="luxury-btn-secondary" onClick={() => { setShowRoleModal(false); setRoleTarget(null); }} disabled={changingRole}>Cancel</button>
               {changingRole && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
-                  <div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: '#f59e0b' }}></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 13, fontWeight: 600 }}>
+                  <div className="luxury-loading-spinner" style={{ width: 14, height: 14, borderWidth: 2, borderTopColor: '#7c3aed' }}></div>
                   Changing role…
                 </div>
               )}

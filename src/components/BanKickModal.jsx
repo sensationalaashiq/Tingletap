@@ -396,6 +396,16 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
     return () => clearInterval(iv);
   }, [banInfo]);
 
+  /* Auto-close when kick expires — clean up Firestore first, then dismiss immediately */
+  useEffect(() => {
+    if (!kickExpired) return;
+    // Firestore cleanup already done in countdown effect — just close the modal promptly
+    const timer = setTimeout(() => {
+      if (onClose) onClose();
+    }, 1200); // short enough to feel instant, long enough to see the green banner
+    return () => clearTimeout(timer);
+  }, [kickExpired, onClose]);
+
   if (!isVisible) return null;
 
   /* derived duration label — NEVER show "Permanent" for timed kicks */
@@ -471,7 +481,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
               {isByBot(banInfo.bannedBy) ? (
                 <span className="bkm3-pill bkm3-pill--amber"><IcoBot /> TingleBot AutoMod</span>
               ) : (
-                <span className="bkm3-val">{banInfo.bannedBy || 'Administrator'}</span>
+                <span className="bkm3-val">Administrator</span>
               )}
             </InfoRow>
             <InfoRow icon={<IcoCalendar c="#34d399" />} label="Date" accent="#34d399">
@@ -532,7 +542,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
             </div>
             <div className="bkm3-header-text">
               <div className="bkm3-heading bkm3-heading--kick">Removed from Room</div>
-              <div className="bkm3-subheading">You were kicked from <strong style={{color:'#fcd34d'}}>{kickInfo.roomName || currentRoomName}</strong></div>
+              <div className="bkm3-subheading">You were kicked from <strong style={{color:'#b45309'}}>{kickInfo.roomName || currentRoomName}</strong></div>
             </div>
           </div>
 
@@ -547,7 +557,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
               <div className="bkm3-username">{displayName}</div>
               {email && (
                 <div className="bkm3-user-meta">
-                  <IcoMail c="#fbbf24" /> {email}
+                  <IcoMail c="#a16207" /> {email}
                 </div>
               )}
             </div>
@@ -558,7 +568,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
           {hasCountdown && !kickExpired && (
             <div className="bkm3-timer bkm3-timer--kick">
               <div className="bkm3-timer-left">
-                <IcoClock c="#fbbf24" sz={20} />
+                <IcoClock c="#c2410c" sz={20} />
                 <div>
                   <div className="bkm3-timer-label">You can rejoin in</div>
                   <div className="bkm3-timer-ring bkm3-timer-ring--kick">
@@ -573,7 +583,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
             </div>
           )}
 
-          {/* Kick expired — auto-removed, can rejoin */}
+          {/* Kick expired — auto-removed, can rejoin (also triggers auto-close via useEffect) */}
           {kickExpired && (
             <div className="bkm3-status-banner bkm3-status-banner--green">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -599,14 +609,14 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
           {/* Info rows */}
           <div className="bkm3-body">
-            <InfoRow icon={<IcoRoom c="#fbbf24" />} label="Room" accent="#fbbf24">
+            <InfoRow icon={<IcoRoom c="#b45309" />} label="Room" accent="#d97706">
               <span className="bkm3-pill bkm3-pill--amber">{kickInfo.roomName || currentRoomName}</span>
             </InfoRow>
             <InfoRow icon={<IcoUser c="#a78bfa" />} label="Kicked By" accent="#a78bfa">
               {isByBot(kickInfo.kickedBy) ? (
                 <span className="bkm3-pill bkm3-pill--amber"><IcoBot /> TingleBot AutoMod</span>
               ) : (
-                <span className="bkm3-val">{kickInfo.kickedBy || 'A Moderator'}</span>
+                <span className="bkm3-val">Administrator</span>
               )}
             </InfoRow>
             <InfoRow icon={<IcoAlert c="#f87171" />} label="Reason" accent="#f87171">

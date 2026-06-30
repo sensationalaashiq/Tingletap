@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db, rtdb } from '../firebase/config';
-import { doc, setDoc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { ref, onValue } from 'firebase/database';
 import { toast } from 'react-toastify';
@@ -11,6 +11,7 @@ import StatusModal from '../components/StatusModal';
 import AdultRoomModal from '../components/AdultRoomModal';
 import { getRoomSlug } from '../utils/roomSlug';
 import BanKickModal from '../components/BanKickModal';
+import { isKickExpired, autoCheckUnkick } from '../utils/modExpiryService';
 import './RoomListPage.css';
 
 /* ══════════════════════════════════════════════════════
@@ -470,18 +471,26 @@ const RoomListPage = () => {
         const kick = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', userId));
         if (kick.exists()) {
           const kd = kick.data();
-          setKickModalData({
-            roomName:     room.name,
-            reason:       kd.reason       || 'No reason specified',
-            kickedBy:     kd.kickedBy?.name || kd.kickedBy || kd.kickedByName || 'An administrator',
-            kickedAt:     kd.kickedAt?.toDate ? kd.kickedAt.toDate() : (kd.kickedAt?.seconds ? new Date(kd.kickedAt.seconds * 1000) : new Date()),
-            duration:     kd.kickDuration || kd.duration || null,
-            kickDuration: kd.kickDuration || kd.duration || null,
-            kickUntil:    kd.kickUntil    || null,
-            roomId:       kd.roomId       || room.id,
-          });
-          setShowBanKickModal(true);
-          return;
+          // ── If the kick has already expired, silently clean up and allow entry ──
+          if (isKickExpired(kd)) {
+            deleteDoc(doc(db, 'rooms', room.id, 'kickedUsers', userId)).catch(() => {});
+            updateDoc(doc(db, 'users', userId), { kickedFrom: null }).catch(() => {});
+            // fall through to allow room entry
+          } else {
+            // Active kick — show the modal
+            setKickModalData({
+              roomName:     room.name,
+              reason:       kd.reason       || 'No reason specified',
+              kickedBy:     'Administrator',
+              kickedAt:     kd.kickedAt?.toDate ? kd.kickedAt.toDate() : (kd.kickedAt?.seconds ? new Date(kd.kickedAt.seconds * 1000) : new Date()),
+              duration:     kd.kickDuration || kd.duration || null,
+              kickDuration: kd.kickDuration || kd.duration || null,
+              kickUntil:    kd.kickUntil    || null,
+              roomId:       kd.roomId       || room.id,
+            });
+            setShowBanKickModal(true);
+            return;
+          }
         }
       }
     } catch {}

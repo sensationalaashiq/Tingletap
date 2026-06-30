@@ -60,6 +60,15 @@ const IconUnbanned = () => (
   </svg>
 );
 
+const IconBadgeAwarded = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <circle cx="9" cy="11.5" r="4.5" stroke="#fbbf24" strokeWidth="1.5" fill="rgba(251,191,36,0.12)"/>
+    <path d="M9 9.2l.85 1.75 1.9.28-1.38 1.34.33 1.9L9 13.55l-1.7.92.33-1.9-1.38-1.34 1.9-.28z" fill="#fbbf24"/>
+    <path d="M6.5 7V4.5h1.8V6h1.4V4.5H11.5V7" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6.5 7h5" stroke="#a78bfa" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+);
+
 const IconPromoted = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
     <path d="M9 2l1.8 4h4l-3.3 2.4 1.3 4L9 10 5.2 12.4l1.3-4L3.2 6h4z" stroke="#fbbf24" strokeWidth="1.4" strokeLinejoin="round" fill="rgba(251,191,36,0.12)"/>
@@ -164,6 +173,7 @@ const EVENT_MAP = {
   unkicked:     { Icon: IconUnkicked,    cls: '' },
   banned:       { Icon: IconBanned,      cls: '' },
   unbanned:     { Icon: IconUnbanned,    cls: '' },
+  badge_awarded: { Icon: IconBadgeAwarded, cls: '' },
   promoted:     { Icon: IconPromoted,    cls: '' },
   demoted:      { Icon: IconDemoted,     cls: '' },
   locked:       { Icon: IconLocked,      cls: '' },
@@ -189,6 +199,7 @@ function detectEventType(message) {
   if (txt.includes('kicked')) return 'kicked';
   if (txt.includes('unbanned')) return 'unbanned';
   if (txt.includes('banned')) return 'banned';
+  if (txt.includes('awarded') || txt.includes('badge')) return 'badge_awarded';
   if (txt.includes('promoted')) return 'promoted';
   if (txt.includes('demoted')) return 'demoted';
   if (txt.includes('locked')) return txt.includes('unlocked') ? 'unlocked' : 'locked';

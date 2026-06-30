@@ -232,8 +232,9 @@
 }
 .bkm3-badge--kicked {
   background: rgba(245,158,11,0.14);
-  color: #fcd34d;
-  border: 1px solid rgba(245,158,11,0.28);
+  color: #92400e;
+  border: 1px solid rgba(245,158,11,0.38);
+  font-weight: 900;
 }
 
 /* ── Live Countdown Timer ────────────────────────────── */
@@ -274,15 +275,15 @@
   font-weight: 900;
   font-family: 'JetBrains Mono','SF Mono','Courier New',monospace;
   font-variant-numeric: tabular-nums;
-  color: #fbbf24;
-  text-shadow: 0 0 18px rgba(251,191,36,0.55), 0 0 36px rgba(245,158,11,0.25);
+  color: #c2410c;
+  text-shadow: 0 0 12px rgba(194,65,12,0.30);
   letter-spacing: 0.04em;
   animation: bkm3Tick 1s ease-in-out infinite;
   line-height: 1;
 }
 .bkm3-timer-ring--kick {
-  color: #fbbf24;
-  text-shadow: 0 0 24px rgba(251,191,36,0.55), 0 0 48px rgba(245,158,11,0.25);
+  color: #c2410c;
+  text-shadow: 0 0 16px rgba(194,65,12,0.30);
 }
 .bkm3-timer-dur {
   text-align: right;

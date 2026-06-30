@@ -18,14 +18,14 @@
 
 /* ── Main Card ── */
 .radio-popup {
-  background: linear-gradient(160deg, #ffffff 0%, #faf7ff 100%);
-  border-radius: 18px;
-  width: 300px;
+  background: linear-gradient(160deg, #fdfbff 0%, #f3effe 100%);
+  border-radius: 20px;
+  width: 310px;
   overflow: hidden;
   box-shadow:
-    0 20px 60px rgba(109, 40, 217, 0.22),
-    0 6px 20px rgba(0, 0, 0, 0.10),
-    0 0 0 1.5px rgba(139, 92, 246, 0.28);
+    0 24px 70px rgba(124, 58, 237, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    0 0 0 1.5px rgba(196, 181, 253, 0.5);
   transition: box-shadow 0.3s ease;
 }
 
@@ -34,9 +34,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 14px;
-  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%) !important;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 15px 16px;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c084fc 100%) !important;
+  border-bottom: 1px solid rgba(196, 181, 253, 0.35);
 }
 
 .radio-title {
@@ -508,7 +508,7 @@
 html.dark-mode .radio-header,
 html.dark-theme-variant .radio-header,
 html[class*="theme-"] .radio-header {
-  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%) !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c084fc 100%) !important;
 }
 html.dark-mode .radio-title,
 html.dark-theme-variant .radio-title,
