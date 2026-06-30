@@ -922,38 +922,68 @@ const HomePage = ({ user, roomIdOverride }) => {
     }, []);
 
     // TingleBot — global join/leave broadcasts
+    // Reload-spam prevention:
+    //   • sessionStorage key persists across F5/reload but clears on tab close.
+    //     If the key exists we're in a reload — skip join (user never really left).
+    //   • beforeunload sets window._tbPageUnloading so the cleanup function
+    //     can skip the leave message on reload/tab-close (onDisconnect handles
+    //     the offline state; the leave noise is not needed).
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
         const name = loggedInUserProfile.displayName || 'Someone';
+        const currentUid = loggedInUserProfile.uid || auth.currentUser?.uid;
         const roleLabel = getRoleDisplayLabel({
             role: loggedInUserProfile.role,
             gender: loggedInUserProfile.gender,
             isGuest: loggedInUserProfile.isGuest,
             badge: loggedInUserProfile.badge,
         });
-        // Broadcast join message globally
-        addDoc(collection(db, 'rooms', roomId, 'messages'), {
-            text: `${name} (${roleLabel}) joined the room.`,
-            uid: 'tinglebot_system_official_2024',
-            displayName: 'TingleBot',
-            isBot: true,
-            systemBot: true,
-            tinglebotType: 'join',
-            createdAt: serverTimestamp(),
-            noReply: true,
-            noReaction: true,
-            noReport: true,
-            noUnread: true,
-        }).then(ref => {
-            if (ref?.id) {
-                scheduledTinglebotDeletionsRef.current.add(ref.id);
-                setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
-            }
-        }).catch(e => console.error('TingleBot join error', e));
+
+        // ── Reload detection ──────────────────────────────────────────────────
+        const joinKey = `tbt_joined_${roomId}_${currentUid}`;
+        const alreadyJoinedThisSession = !!sessionStorage.getItem(joinKey);
+
+        const handleBeforeUnload = () => { window._tbPageUnloading = true; };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        if (!alreadyJoinedThisSession) {
+            sessionStorage.setItem(joinKey, '1');
+            // Broadcast join message globally
+            addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                text: `${name} (${roleLabel}) joined the room.`,
+                uid: 'tinglebot_system_official_2024',
+                displayName: 'TingleBot',
+                isBot: true,
+                systemBot: true,
+                tinglebotType: 'join',
+                createdAt: serverTimestamp(),
+                noReply: true,
+                noReaction: true,
+                noReport: true,
+                noUnread: true,
+            }).then(ref => {
+                if (ref?.id) {
+                    scheduledTinglebotDeletionsRef.current.add(ref.id);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                }
+            }).catch(e => console.error('TingleBot join error', e));
+        }
+
         // expose room id for SettingsSidebar announcements
         window._tingleBotRoomId = roomId;
+
         return () => {
-            // Broadcast leave message globally
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+
+            // Skip leave on page reload / tab close — onDisconnect handles
+            // the RTDB offline state; the chat message is just noise.
+            if (window._tbPageUnloading) {
+                window._tbPageUnloading = false;
+                return; // ← no leave message on reload
+            }
+
+            // Genuine navigation away or room switch — send leave + clear key
+            sessionStorage.removeItem(joinKey);
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: `${name} (${roleLabel}) left the room.`,
                 uid: 'tinglebot_system_official_2024',
@@ -2098,6 +2128,46 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         loggedInUserProfileRef.current = loggedInUserProfile;
     }, [loggedInUserProfile]);
+
+    // ── PRESENCE PART 0: Instant write — no loggedInUserProfile wait ────────────
+    // Writes a minimal presence entry as soon as auth uid + roomId are known so
+    // the online count and sidebar update immediately on room entry / page reload.
+    // Part 1 (below) overwrites with the full profile once it arrives.
+    useEffect(() => {
+        if (!roomId) return;
+        const isGuest = localStorage.getItem('isGuest') === 'true';
+
+        let currentUid = user?.uid;
+        let displayName = user?.displayName || 'User';
+        let gender = 'male';
+        let role = 'user';
+
+        if (isGuest) {
+            try {
+                const g = JSON.parse(localStorage.getItem('guestUser') || '{}');
+                currentUid = g.uid;
+                displayName = g.username || g.displayName || 'Guest';
+                gender = g.gender || getStoredGuestGender() || 'male';
+                role = 'guest';
+            } catch {}
+        }
+
+        if (!currentUid) return;
+
+        const userStatusRef = ref(rtdb, `status/${currentUid}`);
+        set(userStatusRef, {
+            state: 'online',
+            currentRoomId: roomId,
+            last_changed: Date.now(),
+            uid: currentUid,
+            displayName,
+            role,
+            isGuest: isGuest || false,
+            gender,
+            photoURL: getDefaultAvatarUrl(currentUid, gender),
+        }).catch(() => {});
+        // No cleanup here — Part 2 (stable effect) owns the offline transition
+    }, [roomId, user?.uid]);
 
     // ── PRESENCE PART 1: Write online status whenever profile or room is ready ─
     // loggedInUserProfile IS in deps here — safe because RTDB writes don't trigger
