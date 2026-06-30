@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './GiphyStickersModal.css';
 
-const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY || 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
+const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
 
 const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
     const [searchTerm, setSearchTerm] = useState('');

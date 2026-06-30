@@ -7133,7 +7133,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     isOpen={isYouTubeSearchModalOpen}
                     onClose={() => setIsYouTubeSearchModalOpen(false)}
                     onVideoSelect={handleYouTubeVideoSelect}
-                    apiKey={import.meta.env.VITE_YOUTUBE_API_KEY || 'AIzaSyDiUOH9uH0erJYL8LN2I9OjwZHjB9p3K3o'}
+                    apiKey={'AIzaSyDiUOH9uH0erJYL8LN2I9OjwZHjB9p3K3o'}
                 />
 
                 {/* Combined GIFs & Stickers Modal */}

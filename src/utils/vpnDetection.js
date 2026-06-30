@@ -4,7 +4,7 @@ import { SECURITY_CONFIG, isWhitelistedIP, isWhitelistedCountry } from '../confi
 export class VPNDetector {
   static async checkIP(ip) {
     try {
-      const apiKey = import.meta.env.VITE_ABSTRACT_API_KEY || '2441a8428c694a809adfa381591efe51';
+      const apiKey = '2441a8428c694a809adfa381591efe51';
       const url = `https://ipgeolocation.abstractapi.com/v1/?api_key=${apiKey}&ip_address=${ip}`;
 
       console.log(`Checking VPN status for IP: ${ip} using Abstract API`);

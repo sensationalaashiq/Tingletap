@@ -381,28 +381,6 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // One-time: ensure perplexityai.03@gmail.com is Owner
-  useEffect(() => {
-    const initOwner = async () => {
-      try {
-        const OWNER_EMAIL = import.meta.env.VITE_OWNER_EMAIL || 'perplexityai.03@gmail.com';
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('email', '==', OWNER_EMAIL));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const userDoc = snap.docs[0];
-          if (userDoc.data().role !== 'owner') {
-            await updateDoc(doc(db, 'users', userDoc.id), { role: 'owner' });
-            console.log('✅ Owner role granted to:', OWNER_EMAIL);
-          }
-        }
-      } catch (e) {
-        console.log('Owner init skipped:', e.message);
-      }
-    };
-    initOwner();
-  }, []);
-
   // Real-time banned devices data
   useEffect(() => {
     const bannedDevicesQuery = query(collection(db, 'bannedDevices'), where('isActive', '!=', false));

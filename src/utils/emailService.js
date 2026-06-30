@@ -2,10 +2,10 @@
 import emailjs from '@emailjs/browser';
 import CryptoJS from 'crypto-js';
 
-const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || 'service_ifklrtb';
-const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '3Dza90dvmw142K5uD';
-const OTP_TEMPLATE    = import.meta.env.VITE_EMAILJS_OTP_TEMPLATE    || 'template_5yk012w';
-const RESET_TEMPLATE  = import.meta.env.VITE_EMAILJS_RESET_TEMPLATE  || 'template_rynlsk5';
+const SERVICE_ID  = 'service_ifklrtb';
+const PUBLIC_KEY  = '3Dza90dvmw142K5uD';
+const OTP_TEMPLATE    = 'template_5yk012w';
+const RESET_TEMPLATE  = 'template_rynlsk5';
 
 // Initialize once at module load
 emailjs.init(PUBLIC_KEY);
