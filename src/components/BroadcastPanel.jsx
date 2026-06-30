@@ -29,43 +29,160 @@ const MusicVisual = ({ isPlaying }) => (
   </div>
 );
 
-/* ── Broadcast SVG icon ── */
+/* ── Broadcast SVG icon — vivid purple-violet gradient ── */
 const BroadcastIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <defs>
-      <linearGradient id="bcGrad" x1="0" y1="0" x2="1" y2="1">
+      <linearGradient id="bcG" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stopColor="#a78bfa"/>
-        <stop offset="100%" stopColor="#6d28d9"/>
+        <stop offset="100%" stopColor="#7c3aed"/>
       </linearGradient>
     </defs>
-    <circle cx="12" cy="12" r="3" fill="url(#bcGrad)"/>
-    <path d="M8.5 8.5a5 5 0 000 7" stroke="url(#bcGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-    <path d="M15.5 8.5a5 5 0 010 7" stroke="url(#bcGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-    <path d="M5.5 5.5a9 9 0 000 13" stroke="url(#bcGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".6"/>
-    <path d="M18.5 5.5a9 9 0 010 13" stroke="url(#bcGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".6"/>
+    <circle cx="12" cy="12" r="3.2" fill="url(#bcG)"/>
+    <path d="M8.2 8.2a5.5 5.5 0 000 7.6" stroke="url(#bcG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <path d="M15.8 8.2a5.5 5.5 0 010 7.6" stroke="url(#bcG)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <path d="M5 5a10 10 0 000 14" stroke="#c4b5fd" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity=".65"/>
+    <path d="M19 5a10 10 0 010 14" stroke="#c4b5fd" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity=".65"/>
   </svg>
 );
 
-/* ── Mic icon ── */
+/* ── Mic icon — purple on / red+strike off ── */
 const MicIcon = ({ muted }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    {muted
-      ? <><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v3m-3 0h6M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round"/><line x1="2" y1="2" x2="22" y2="22" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round"/></>
-      : <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v3m-3 0h6M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>}
+    {muted ? (
+      <>
+        <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v3m-3 0h6M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="3" y1="3" x2="21" y2="21" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round"/>
+      </>
+    ) : (
+      <>
+        <defs>
+          <linearGradient id="micG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#a78bfa"/>
+            <stop offset="100%" stopColor="#7c3aed"/>
+          </linearGradient>
+        </defs>
+        <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v3m-3 0h6M12 1a4 4 0 00-4 4v7a4 4 0 008 0V5a4 4 0 00-4-4z" stroke="url(#micG)" strokeWidth="1.8" strokeLinecap="round"/>
+      </>
+    )}
   </svg>
 );
 
-/* ── Play/Pause/Stop/Skip icons ── */
-const PlayIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>;
-const PauseIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>;
-const StopIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>;
-const SkipNextIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm8.5-6v6H17V6h-2.5v6z"/></svg>;
-const SkipPrevIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6v12l-8.5-6L18 6zM9.5 12V6H7v12h2.5V12z"/></svg>;
-const LockIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>;
-const UsersIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>;
-const MusicNoteIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>;
-const YoutubeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-2.75 12.43 12.43 0 00-8.18 2.86 12.3 12.3 0 00-4.43 9.37 4.83 4.83 0 002.78 4.34A4.83 4.83 0 009.77 22a12.37 12.37 0 008.18-2.86 12.3 12.3 0 004.43-9.37 4.83 4.83 0 00-2.79-3.08zM10 15V9l5 3-5 3z"/></svg>;
-const RadioWaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>;
+/* ── Play — emerald green ── */
+const PlayIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="plG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
+    <path d="M8 5v14l11-7z" fill="url(#plG)"/>
+  </svg>
+);
+
+/* ── Pause — amber gold ── */
+const PauseIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="paG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="url(#paG)"/>
+  </svg>
+);
+
+/* ── Stop — coral red ── */
+const StopIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="stG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
+    <rect x="6" y="6" width="12" height="12" rx="2" fill="url(#stG)"/>
+  </svg>
+);
+
+/* ── SkipNext — indigo ── */
+const SkipNextIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="snG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs>
+    <path d="M6 18l8.5-6L6 6v12zm8.5-6v6H17V6h-2.5v6z" fill="url(#snG)"/>
+  </svg>
+);
+
+/* ── SkipPrev — indigo ── */
+const SkipPrevIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="spG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs>
+    <path d="M18 6v12l-8.5-6L18 6zM9.5 12V6H7v12h2.5V12z" fill="url(#spG)"/>
+  </svg>
+);
+
+/* ── Lock — amber ── */
+const LockIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="lkG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="url(#lkG)"/>
+  </svg>
+);
+
+/* ── Users — teal cyan ── */
+const UsersIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="usG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#22d3ee"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="url(#usG)"/>
+  </svg>
+);
+
+/* ── Music note — rose pink ── */
+const MusicNoteIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="mnG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs>
+    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="url(#mnG)"/>
+  </svg>
+);
+
+/* ── YouTube — red ── */
+const YoutubeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="ytG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
+    <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.2 5 12 5 12 5s-4.2 0-7 .1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.2 0 7-.2c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM10 15V9l5.5 3L10 15z" fill="url(#ytG)"/>
+  </svg>
+);
+
+/* ── RadioWave — purple violet ── */
+const RadioWaveIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="rwG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+    <circle cx="12" cy="12" r="3" fill="url(#rwG)"/>
+    <path d="M8.5 8.5a5 5 0 000 7" stroke="url(#rwG)" strokeWidth="1.7" strokeLinecap="round"/>
+    <path d="M15.5 8.5a5 5 0 010 7" stroke="url(#rwG)" strokeWidth="1.7" strokeLinecap="round"/>
+    <path d="M5.5 5.5a9 9 0 000 13" stroke="#c4b5fd" strokeWidth="1.3" strokeLinecap="round" opacity=".6"/>
+    <path d="M18.5 5.5a9 9 0 010 13" stroke="#c4b5fd" strokeWidth="1.3" strokeLinecap="round" opacity=".6"/>
+  </svg>
+);
+
+/* ── Invite speaker icon — teal ── */
+const InviteIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="ivG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
+    <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="url(#ivG)"/>
+  </svg>
+);
+
+/* ── Requests icon — violet ── */
+const RequestsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="rqG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#6d28d9"/></linearGradient></defs>
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" fill="url(#rqG)"/>
+  </svg>
+);
+
+/* ── Mic stage icon — green ── */
+const StageIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="sgG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#4ade80"/><stop offset="100%" stopColor="#16a34a"/></linearGradient></defs>
+    <path d="M12 14c2.21 0 4-1.79 4-4V5a4 4 0 00-8 0v5c0 2.21 1.79 4 4 4zm6.5-4c0 3.58-2.93 6.5-6.5 6.5S5.5 13.58 5.5 10H4c0 4.08 3.05 7.44 7 7.93V21h2v-3.07c3.95-.49 7-3.85 7-7.93h-1.5z" fill="url(#sgG)"/>
+  </svg>
+);
+
+/* ── Antenna / public broadcast icon — rose ── */
+const AntennaIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="anG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+    <path d="M12 5a2 2 0 100 4 2 2 0 000-4zm0-3C6.48 2 2 6.48 2 12c0 3.54 1.85 6.65 4.63 8.43l1.07-1.85A8 8 0 014 12c0-4.42 3.58-8 8-8s8 3.58 8 8a7.97 7.97 0 01-3.7 6.58l1.07 1.85C19.15 18.65 21 15.54 21 12c0-5.52-4.48-10-9-10zm0 9l-3 9h2l.5-1.5h1l.5 1.5h2l-3-9zm0 3.5l.5 1.5h-1l.5-1.5z" fill="url(#anG)"/>
+  </svg>
+);
 
 /* ════════════════════════════════════════════
    MAIN BROADCAST PANEL
@@ -593,11 +710,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               {micMuted ? 'Mic Off' : 'Mic On'}
             </button>
             <button className="bp-ctrl-btn" onClick={() => setActiveTab(1)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              <InviteIcon />
               Invite Speaker
             </button>
             <button className="bp-ctrl-btn" onClick={() => setActiveTab(1)}>
-              <UsersIcon />
+              <RequestsIcon />
               Requests ({joinRequests.filter(r => r.status === 'pending').length})
             </button>
           </div>
