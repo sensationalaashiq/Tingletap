@@ -1676,6 +1676,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                         
                         // Update cache
                         window.userProfilesCache.set(userId, userData);
+
+                        // Populate window.userMessageStyles so every viewer renders
+                        // other users' messages with the sender's actual font prefs
+                        // (consistent styling regardless of viewer role / guest state).
+                        // Fallbacks match ChatMessage's rendering defaults (11px / #2d2d2d).
+                        if (!window.userMessageStyles) window.userMessageStyles = {};
+                        const fp = userData.messageFontPreferences || userData.fontPreferences;
+                        if (fp) {
+                            window.userMessageStyles[userId] = {
+                                fontSize:        fp.fontSize        || '11px',
+                                fontColor:       fp.fontColor       || '#2d2d2d',
+                                fontFamily:      fp.fontFamily      || 'inherit',
+                                isBold:          Boolean(fp.isBold),
+                                isItalic:        Boolean(fp.isItalic),
+                                isUnderline:     Boolean(fp.isUnderline),
+                                isStrikethrough: Boolean(fp.isStrikethrough)
+                            };
+                        }
                         
                         // Generate new avatar URL with timestamp
                         const avatarTimestamp = Date.now();
@@ -2597,6 +2615,10 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
     const lastScrollTop = useRef(0);
     const scrollTimeoutRef = useRef(null);
+    // Flag to suppress scroll-handler during programmatic scrolls so they don't
+    // falsely set hasUserScrolled=true and block new-message auto-scroll for 1 s.
+    const isProgrammaticScrollRef = useRef(false);
+    const programmaticScrollTimerRef = useRef(null);
 
     // Enhanced auto-scroll functionality with professional chat behavior
     const scrollToBottom = (force = false) => {
@@ -2620,6 +2642,13 @@ const HomePage = ({ user, roomIdOverride }) => {
         // 2. Haven't done initial scroll yet (room entry)
         // 3. User is at bottom and hasn't manually scrolled
         if (force || !hasInitialScrolled || (isNearBottom && !hasUserScrolled)) {
+            // Mark as programmatic so handleScroll ignores this movement
+            isProgrammaticScrollRef.current = true;
+            if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+            programmaticScrollTimerRef.current = setTimeout(() => {
+                isProgrammaticScrollRef.current = false;
+            }, 150);
+
             element.scrollTo({
                 top: scrollHeight,
                 behavior: force || !hasInitialScrolled ? 'auto' : 'smooth'
@@ -2642,6 +2671,11 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Handle scroll events to detect manual scrolling
     const handleScroll = useCallback(() => {
         if (!chatFeedRef.current) return;
+        // Ignore scroll events triggered by our own programmatic scrollToBottom calls
+        if (isProgrammaticScrollRef.current) {
+            lastScrollTop.current = chatFeedRef.current.scrollTop;
+            return;
+        }
         
         const element = chatFeedRef.current;
         const scrollHeight = element.scrollHeight;
@@ -2703,64 +2737,80 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [handleScroll]);
 
-    // Auto-scroll on new messages with professional chat behavior
+    // Auto-scroll on new messages — deps limited to [messages] only so scroll
+    // logic never re-runs just because isAtBottom or font states changed.
     useEffect(() => {
-        // Force scroll for initial load or when messages first load
         const isFirstLoad = messages.length > 0 && !hasInitialScrolled;
-        
         if (isFirstLoad) {
-            // Force scroll for initial load - show latest messages
             setTimeout(() => scrollToBottom(true), 100);
+            // Extra fallback in case content/images aren't painted yet
+            setTimeout(() => scrollToBottom(true), 400);
             setHasUserScrolled(false);
         } else if (messages.length > 0) {
-            // Smart scroll for new messages - only if user hasn't manually scrolled
             scrollToBottom(false);
         }
-        
-        // Get current preferences from multiple sources
-        const currentPrefs = window.chatFontPreferences || {
-            fontSize,
-            fontColor,
-            fontFamily,
-            isBold,
-            isItalic,
-            isUnderline,
-            isStrikethrough
-        };
-        
-        // Apply font preferences to new messages
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [messages]);
+
+    // Apply font styles whenever preferences change — separate from scroll effect
+    // to avoid triggering DOM manipulation on every new message.
+    useEffect(() => {
+        // Only use window.chatFontPreferences if it was populated from actual user
+        // data (Firestore / localStorage profile). The React font states initialise
+        // to 14px before Firestore loads, so we must NOT write those initial values
+        // to window.userMessageStyles — viewers would see 14px instead of the
+        // correct 11px default.  window.chatFontPreferences is set only after the
+        // profile effect confirms real data, so it is the safe source of truth.
+        const currentPrefs = window.chatFontPreferences;
+        if (!currentPrefs) return; // Firestore prefs not yet loaded — skip
+
+        // Sync the logged-in user's prefs into window.userMessageStyles so React
+        // renders their own messages with the same styles every viewer sees.
+        const myUid = auth.currentUser?.uid ||
+            (localStorage.getItem('isGuest') === 'true'
+                ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
+                : null);
+        if (myUid) {
+            if (!window.userMessageStyles) window.userMessageStyles = {};
+            window.userMessageStyles[myUid] = {
+                fontSize:        currentPrefs.fontSize,
+                fontColor:       currentPrefs.fontColor,
+                fontFamily:      currentPrefs.fontFamily,
+                isBold:          currentPrefs.isBold,
+                isItalic:        currentPrefs.isItalic,
+                isUnderline:     currentPrefs.isUnderline,
+                isStrikethrough: currentPrefs.isStrikethrough
+            };
+        }
         if (window.applyFontStylesToMessages) {
             window.applyFontStylesToMessages(currentPrefs);
         }
-
-        // Apply username styles for all users in chat messages
         if (window.forceApplyAllUsersStyles) {
             window.forceApplyAllUsersStyles();
         }
-        
-        // Mobile keyboard handling - only if user is at bottom
+    }, [fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);
+
+    // Stable resize / orientation handler — uses a ref to avoid stale closures
+    // while keeping the effect deps array empty (no re-subscription on renders).
+    const scrollToBottomRef = useRef(null);
+    scrollToBottomRef.current = scrollToBottom;
+    useEffect(() => {
         const handleResize = () => {
-            if (isAtBottom) {
-                setTimeout(() => scrollToBottom(true), 100);
-                setTimeout(() => scrollToBottom(true), 300);
+            if (!chatFeedRef.current) return;
+            const el = chatFeedRef.current;
+            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+            if (nearBottom) {
+                setTimeout(() => scrollToBottomRef.current?.(true), 100);
+                setTimeout(() => scrollToBottomRef.current?.(true), 300);
             }
         };
-        
-        const handleOrientationChange = () => {
-            if (isAtBottom) {
-                setTimeout(() => scrollToBottom(true), 200);
-                setTimeout(() => scrollToBottom(true), 500);
-            }
-        };
-        
         window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleOrientationChange);
-        
+        window.addEventListener('orientationchange', handleResize);
         return () => {
             window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleOrientationChange);
+            window.removeEventListener('orientationchange', handleResize);
         };
-    }, [messages, fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough, isAtBottom]);
+    }, []);
 
     // Removed global username styling - now handled per user in SettingsSidebar
 
