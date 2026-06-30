@@ -24,6 +24,7 @@ import SettingsSidebar from '../components/SettingsSidebar';
 import CustomAudioPlayer from '../components/CustomAudioPlayer';
 import PremiumImageMessage from '../components/PremiumImageMessage';
 import RadioPlayer from '../components/RadioPlayer';
+import BroadcastPanel from '../components/BroadcastPanel';
 import YouTubeSearchModal from '../components/YouTubeSearchModal';
 import GiphyStickersModal from '../components/GiphyStickersModal';
 import StylishFontPopup from '../components/StylishFontPopup';
@@ -878,6 +879,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [profileFriends, setProfileFriends] = useState([]);
     const [loadingProfileFriends, setLoadingProfileFriends] = useState(false);
     const [isRadioOpen, setIsRadioOpen] = useState(false);
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
     const [sendProgress, setSendProgress] = useState(null);
@@ -6669,6 +6671,26 @@ const HomePage = ({ user, roomIdOverride }) => {
                                       <PremiumDeleteIcon />
                                   </button>
                               )}
+                              <button
+                                  className="header-action-btn bp-header-btn"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsBroadcastOpen(prev => !prev); }}
+                                  title="Broadcast Studio"
+                                  style={{ position: 'relative' }}
+                              >
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <defs>
+                                          <linearGradient id="bcHdrGrad" x1="0" y1="0" x2="1" y2="1">
+                                              <stop offset="0%" stopColor="#a78bfa"/>
+                                              <stop offset="100%" stopColor="#6d28d9"/>
+                                          </linearGradient>
+                                      </defs>
+                                      <circle cx="12" cy="12" r="3" fill="url(#bcHdrGrad)"/>
+                                      <path d="M8.5 8.5a5 5 0 000 7" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                                      <path d="M15.5 8.5a5 5 0 010 7" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                                      <path d="M5.5 5.5a9 9 0 000 13" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".55"/>
+                                      <path d="M18.5 5.5a9 9 0 010 13" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".55"/>
+                                  </svg>
+                              </button>
                               {!(loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest') && (
                               <button
                                   className="header-action-btn friend-request-btn"
@@ -7126,6 +7148,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                 <RadioPlayer 
                     isOpen={isRadioOpen} 
                     onClose={() => setIsRadioOpen(false)} 
+                />
+
+                {/* Broadcast Panel */}
+                <BroadcastPanel
+                    isOpen={isBroadcastOpen}
+                    onClose={() => setIsBroadcastOpen(false)}
+                    loggedInUserProfile={loggedInUserProfile}
+                    allUsersProfiles={friendsProfiles || []}
                 />
 
                 {/* YouTube Search Modal */}
