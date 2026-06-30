@@ -190,6 +190,8 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
   const [banMsLeft, setBanMsLeft]           = useState(0);
   const [understood, setUnderstood]         = useState(false);
   const [kickExpired, setKickExpired]       = useState(false);
+  const [banAvatarFailed, setBanAvatarFailed]   = useState(false);
+  const [kickAvatarFailed, setKickAvatarFailed] = useState(false);
   const autoRemovedRef                      = useRef(false);
 
   const user        = auth.currentUser;
@@ -393,7 +395,11 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
           {/* User card */}
           <div className="bkm3-user-card bkm3-user-card--ban">
-            <div className="bkm3-avatar bkm3-avatar--ban">{getInitials(displayName)}</div>
+            <div className="bkm3-avatar bkm3-avatar--ban">
+              {(user?.photoURL && !banAvatarFailed)
+                ? <img src={user.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} onError={() => setBanAvatarFailed(true)} />
+                : getInitials(displayName)}
+            </div>
             <div className="bkm3-user-info">
               <div className="bkm3-username">{displayName}</div>
               {email && (
@@ -494,7 +500,11 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
           {/* User card */}
           <div className="bkm3-user-card bkm3-user-card--kick">
-            <div className="bkm3-avatar bkm3-avatar--kick">{getInitials(displayName)}</div>
+            <div className="bkm3-avatar bkm3-avatar--kick">
+              {(user?.photoURL && !kickAvatarFailed)
+                ? <img src={user.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} onError={() => setKickAvatarFailed(true)} />
+                : getInitials(displayName)}
+            </div>
             <div className="bkm3-user-info">
               <div className="bkm3-username">{displayName}</div>
               {email && (

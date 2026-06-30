@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 13px 14px;
-  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%);
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%) !important;
   border-bottom: 1px solid rgba(139, 92, 246, 0.3);
 }
 
@@ -43,10 +43,30 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 700;
   font-size: 0.88rem;
   letter-spacing: 0.2px;
+}
+
+/* Country badge (replaces emoji flags) */
+.rp-country-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  min-width: 18px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.rp-country-badge--icon {
+  background: none;
+  padding: 0;
+  min-width: unset;
 }
 
 .radio-title-icon {
@@ -482,6 +502,24 @@
   color: #7c5cbf;
   min-width: 26px;
   text-align: right;
+}
+
+/* ══ THEME OVERRIDES for header/title visibility ════════════ */
+html.dark-mode .radio-header,
+html.dark-theme-variant .radio-header,
+html[class*="theme-"] .radio-header {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%) !important;
+}
+html.dark-mode .radio-title,
+html.dark-theme-variant .radio-title,
+html[class*="theme-"] .radio-title {
+  color: #ffffff !important;
+}
+html.dark-mode .radio-title-icon,
+html.dark-theme-variant .radio-title-icon,
+html[class*="theme-"] .radio-title-icon {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.25);
 }
 
 /* ══ DARK MODE ══════════════════════════════════════════════ */

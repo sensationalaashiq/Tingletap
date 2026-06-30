@@ -679,11 +679,31 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, on
 };
 
 const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
-    <div>
-        <p style={{ margin: 0, padding: '0 0 5px 0', fontWeight: 500, fontSize: '15px' }}>{message}</p>
-        <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button className="toast-confirm-btn yes" onClick={onConfirm}>Yes</button>
-            <button className="toast-confirm-btn no" onClick={onCancel}>No</button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#f59e0b,#ef4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,0.28)' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="none"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <p style={{ margin: 0, fontWeight: 600, fontSize: '12.5px', color: 'currentColor', lineHeight: 1.4 }}>{message}</p>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '7px' }}>
+            <button
+                onClick={onCancel}
+                style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid rgba(156,163,175,0.4)', background: 'rgba(156,163,175,0.1)', color: 'inherit', fontWeight: 600, fontSize: '11.5px', cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8 }}
+            >
+                Cancel
+            </button>
+            <button
+                onClick={onConfirm}
+                style={{ padding: '5px 12px', borderRadius: '7px', border: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', fontWeight: 700, fontSize: '11.5px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 2px 8px rgba(239,68,68,0.3)' }}
+            >
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="white"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                Confirm
+            </button>
         </div>
     </div>
 );
@@ -3227,7 +3247,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             setShowFontPopup(false);
             
             toast.success("Message text style saved! (Usernames unchanged)", {
-                icon: "💬",
+                icon: TI.success,
                 style: {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     color: 'white',
@@ -5216,7 +5236,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         const handleCancel = () => toast.dismiss(toastId);
         toast.warn(
             <ConfirmationToast message="Are you sure you want to clear all private conversations?" onConfirm={performClear} onCancel={handleCancel} />,
-            { toastId, closeOnClick: false, closeButton: true }
+            { toastId, closeOnClick: false, closeButton: true, style: { background: 'linear-gradient(135deg,#fffbf0,#fff8e8)', border: '1px solid rgba(245,158,11,0.22)', color: '#1c1917', borderRadius: '14px' } }
         );
     };
 
@@ -6477,7 +6497,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             setTimeout(() => scrollToBottom(true), 100);
             
             toast.success("Sticker sent successfully!", {
-                icon: "🎭",
+                icon: TI.success,
                 style: {
                     background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
                     color: 'white',

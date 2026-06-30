@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, getDoc, doc } from 'firebase/firestore';
 import './AdminBanKickModal.css';
 
 /* ─────────────────────────────────────────────────────────
@@ -115,6 +115,29 @@ const AdminBanKickModal = ({
   const cfg = AC[localAction] || AC.ban;
   const isReverse = ['unban', 'unmute', 'unkick'].includes(localAction);
   const activeTab = cfg.tab;
+
+  /* live photo URL for target user — fetched fresh from Firestore on open */
+  const [livePhotoUrl, setLivePhotoUrl] = useState('');
+  const [livePhotoFailed, setLivePhotoFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isVisible && selectedUser?.uid) {
+      // Reset failure flag and seed from prop immediately
+      setLivePhotoFailed(false);
+      setLivePhotoUrl(selectedUser.photoURL || '');
+      // Fetch freshest photoURL; discard if modal has moved to another user
+      getDoc(doc(db, 'users', selectedUser.uid))
+        .then(snap => {
+          if (cancelled) return;
+          if (snap.exists()) {
+            setLivePhotoUrl(snap.data().photoURL || '');
+          }
+        })
+        .catch(() => {});
+    }
+    return () => { cancelled = true; };
+  }, [isVisible, selectedUser?.uid]);
 
   /* sync localAction + reset when modal opens / actionType prop changes */
   useEffect(() => {
@@ -326,12 +349,20 @@ const AdminBanKickModal = ({
         {/* ── User Identity Strip ── */}
         <div className="luxmod-user-strip">
           <div className="luxmod-user-avatar-wrap">
+            {(!livePhotoFailed && livePhotoUrl) ? (
             <img
-              src={selectedUser.photoURL || getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}
+              src={livePhotoUrl}
               alt=""
               className="luxmod-user-avatar"
-              onError={e => { e.target.src = getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender); }}
+              onError={() => setLivePhotoFailed(true)}
             />
+          ) : (
+            <img
+              src={getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}
+              alt=""
+              className="luxmod-user-avatar"
+            />
+          )}
             <div className="luxmod-user-status-dot" style={{ background: statusColor }} />
           </div>
           <div className="luxmod-user-meta">

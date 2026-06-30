@@ -2,6 +2,47 @@ import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './RadioPlayer.css';
 
+/* ── Country badge SVG (replaces emoji flags) ─────────────────── */
+const CountryBadge = ({ code, colors }) => {
+  const map = {
+    IN: { label: 'IN', bg: 'linear-gradient(135deg,#ff9933,#138808)', text: '#fff' },
+    AE: { label: 'AE', bg: 'linear-gradient(135deg,#00732f,#ff0000)', text: '#fff' },
+    GB: { label: 'GB', bg: 'linear-gradient(135deg,#012169,#c8102e)', text: '#fff' },
+    SG: { label: 'SG', bg: 'linear-gradient(135deg,#ef3340,#ffffff)', text: '#fff' },
+    STAR: {
+      node: (
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="#fbbf24">
+          <path d="M8 1l1.85 3.75 4.14.6-3 2.92.71 4.13L8 10.25l-3.7 1.95.71-4.13-3-2.92 4.14-.6z"/>
+        </svg>
+      )
+    },
+    FILM: {
+      node: (
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="#a78bfa">
+          <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="#a78bfa" strokeWidth="1" fill="none"/>
+          <rect x="1" y="5" width="14" height="1" fill="#a78bfa" opacity=".5"/>
+          <rect x="1" y="10" width="14" height="1" fill="#a78bfa" opacity=".5"/>
+          <rect x="3" y="3" width="1.5" height="10" fill="#a78bfa" opacity=".4"/>
+          <rect x="11.5" y="3" width="1.5" height="10" fill="#a78bfa" opacity=".4"/>
+        </svg>
+      )
+    },
+  };
+  const info = map[code] || map.STAR;
+  if (info.node) {
+    return (
+      <span className="rp-country-badge rp-country-badge--icon">
+        {info.node}
+      </span>
+    );
+  }
+  return (
+    <span className="rp-country-badge" style={{ background: info.bg, color: info.text }}>
+      {info.label}
+    </span>
+  );
+};
+
 const RadioPlayer = ({ isOpen, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStation, setCurrentStation] = useState(null);
@@ -18,7 +59,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8",
       genre: "Bollywood & Popular Music",
       country: "India",
-      flag: "🇮🇳",
+      flag: "IN",
       color: ["#f97316", "#ea580c"],
       glow: "rgba(249,115,22,0.45)",
       description: "All India Radio — Your Favourite Station",
@@ -34,7 +75,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://eu8.fastcast4u.com/proxy/clyedupq?mp=/1",
       genre: "Bollywood & Entertainment",
       country: "UAE",
-      flag: "🇦🇪",
+      flag: "AE",
       color: ["#ef4444", "#dc2626"],
       glow: "rgba(239,68,68,0.45)",
       description: "Popular Bollywood Music from Dubai",
@@ -50,7 +91,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://funasia.streamguys1.com/live4",
       genre: "Bollywood & Popular Music",
       country: "UAE",
-      flag: "🇦🇪",
+      flag: "AE",
       color: ["#3b82f6", "#2563eb"],
       glow: "rgba(59,130,246,0.45)",
       description: "Big FM Dubai — Top Bollywood Hits",
@@ -66,7 +107,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://azuracast.vibesounds.in:8010/radio.mp3",
       genre: "Hindi Hits & Golden Era",
       country: "India",
-      flag: "✨",
+      flag: "STAR",
       color: ["#f59e0b", "#d97706"],
       glow: "rgba(245,158,11,0.45)",
       description: "Pure Hindi Gold — Evergreen Melodies",
@@ -82,7 +123,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://radio.canstream.co.uk:8115/live.mp3",
       genre: "Asian Music",
       country: "UK",
-      flag: "🇬🇧",
+      flag: "GB",
       color: ["#ec4899", "#db2777"],
       glow: "rgba(236,72,153,0.45)",
       description: "Fever FM — Asian Music & Entertainment",
@@ -98,7 +139,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://stream-171.zeno.fm/8ty8szwpwfeuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI4dHk4c3p3cHdmZXV2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im9FTWdMVnJTVHRpVWxGRzFTZHBYSmciLCJpYXQiOjE3NTI0MTcwODMsImV4cCI6MTc1MjQxNzE0M30.I_ALFdeucggXjaJpUyXc2AzrMRatOveFoIj7tPx_pCw",
       genre: "Bollywood Hits",
       country: "Global",
-      flag: "🎬",
+      flag: "FILM",
       color: ["#8b5cf6", "#7c3aed"],
       glow: "rgba(139,92,246,0.45)",
       description: "Hits of Bollywood — Top Songs 24/7",
@@ -114,7 +155,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       url: "https://28323.live.streamtheworld.com/987FM.mp3",
       genre: "Top 40 Hits",
       country: "Singapore",
-      flag: "🇸🇬",
+      flag: "SG",
       color: ["#14b8a6", "#0d9488"],
       glow: "rgba(20,184,166,0.45)",
       description: "98.7 FM Singapore — Your Hit Music",
@@ -230,7 +271,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
             {/* ── Currently Playing Mini-Bar (always visible when playing) ── */}
             {isPlaying && activeStation && isMinimized && (
               <div className="radio-mini-now-playing" style={{ '--station-glow': activeStation.glow }}>
-                <span className="radio-mini-flag">{activeStation.flag}</span>
+                <span className="radio-mini-flag"><CountryBadge code={activeStation.flag} /></span>
                 <span className="radio-mini-name">{activeStation.name}</span>
                 <div className="radio-mini-bars">
                   <span style={{ background: `linear-gradient(to top, ${activeStation.color[0]}, ${activeStation.color[1]})` }}/>
@@ -276,7 +317,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
                         <div className="rp-station-info">
                           <div className="rp-station-name">{station.name}</div>
                           <div className="rp-station-meta">
-                            <span className="rp-station-flag">{station.flag}</span>
+                            <CountryBadge code={station.flag} />
                             <span className="rp-station-genre">{station.genre}</span>
                           </div>
                         </div>
