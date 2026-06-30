@@ -1,0 +1,116 @@
+Perform a complete end-to-end architecture, scalability, performance and Firebase audit of my entire TingleTap project hosted on Replit.
+
+This is a READ-ONLY analysis.
+Do NOT modify, optimize or generate code.
+Scan everything first and then generate a detailed report.
+
+Perform a full project scan including every file, component, page, modal, popup, hook, context, utility, Firebase service and database interaction.
+
+Scan every part of the application, including but not limited to:
+
+• Login Page
+• Registration Page
+• Dashboard
+• Room List
+• Every Chat Room
+• Homepage
+• Sidebar
+• User List
+• Settings Sidebar
+• Friends
+• Friend Requests
+• Private Messages
+• Notifications
+• TingleBot
+• AutoMod
+• Audio Broadcast
+• Whisper
+• Reports
+• Feedback
+• Admin Panel
+• Owner Panel
+• Moderator Features
+• Badge System
+• Role System
+• User Profiles
+• View Profile Modal
+• Every Modal
+• Every Popup
+• Every Banner
+• Every Dialog
+• Every Dropdown
+• Every Toast
+• Every Context Menu
+• Every Background Service
+• Every Scheduled Task
+• Every Firebase Listener
+• Every Firestore Query
+• Every Realtime Database Listener
+• Every Authentication Call
+• Every Read Operation
+• Every Write Operation
+• Every Update Operation
+• Every Delete Operation
+• Every Transaction
+• Every Batch Operation
+• Every Network Request
+• Every API Call
+• Every React Component
+• Every Route
+• Every State Update
+• Every Re-render
+• Every Memory-consuming process
+
+Analyze:
+
+- Which pages create the highest Firebase Reads.
+- Which pages create the highest Firebase Writes.
+- Which components continuously listen to Firebase.
+- Which listeners remain active unnecessarily.
+- Which operations are duplicated.
+- Which Firebase paths are read repeatedly.
+- Which Firestore queries are expensive.
+- Which Realtime Database listeners consume the most bandwidth.
+- Which components trigger unnecessary re-renders.
+- Which pages consume the most browser memory.
+- Which features consume the most CPU.
+- Which features may become bottlenecks with increasing users.
+- Which pages can cause lag under heavy traffic.
+- Whether any Firebase listeners are leaked or not detached properly.
+- Whether any writes happen more frequently than required.
+- Whether any database structures reduce scalability.
+
+After scanning the entire project, generate a comprehensive report including:
+
+1. Overall project architecture quality.
+2. Firebase architecture quality.
+3. Firestore architecture quality.
+4. Realtime Database architecture quality.
+5. React rendering performance.
+6. Network efficiency.
+7. Memory efficiency.
+8. Replit hosting suitability.
+9. Estimated Firebase Reads per active user.
+10. Estimated Firebase Writes per active user.
+11. Estimated bandwidth per active user.
+12. Estimated browser memory usage per active user.
+13. Estimated CPU usage per active user.
+14. Biggest scalability bottlenecks.
+15. Biggest performance bottlenecks.
+16. Security observations.
+17. Database optimization opportunities.
+18. Listener optimization opportunities.
+19. Rendering optimization opportunities.
+20. Overall scalability score (out of 100).
+21. Overall performance score (out of 100).
+22. Firebase efficiency score (out of 100).
+23. Replit compatibility score (out of 100).
+
+Finally, estimate—based on the ACTUAL codebase, Firebase usage patterns, listeners, queries, writes, reads, rendering and Replit hosting limits—how many concurrent users my current system can realistically support on:
+
+- Replit Free Hosting
+- Firebase Spark (Free Plan)
+
+Also estimate how many concurrent users it could support after applying only safe performance optimizations **without changing any existing functionality or user experience**.
+
+Do not guess or provide generic advice. Base every conclusion on the actual project after scanning the complete codebase and every page, component, modal, popup and Firebase interaction.
