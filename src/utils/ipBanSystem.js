@@ -9,6 +9,7 @@ import { VPNDetector } from './vpnDetection';
 export class IPBanSystem {
   static bannedIPs = new Set();
   static initialized = false;
+  static _unsubscribe = null;
 
   /**
    * Initialize the IP ban system with real-time updates
@@ -19,7 +20,7 @@ export class IPBanSystem {
     try {
       // Listen for real-time updates to banned IPs
       const bannedIPsQuery = query(collection(db, 'bannedIPs'));
-      onSnapshot(bannedIPsQuery, (snapshot) => {
+      this._unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
         this.bannedIPs.clear();
         snapshot.docs.forEach(doc => {
           const data = doc.data();
@@ -35,6 +36,14 @@ export class IPBanSystem {
     } catch (error) {
       console.error('IP Ban System: Failed to initialize', error);
     }
+  }
+
+  static cleanup() {
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+    this.initialized = false;
   }
 
   /**

@@ -5,3 +5,4 @@
 - [Firestore Rules](firestore-rules.md) — explicit rules for bannedIPs/bannedDevices (auth read), warnings_announcements (auth read/staff write), modLogs (staff), rooms/automod (staff); moderators read settings/config; catch-all allows owner/admin only
 - [Moderation expiry contract](moderation-expiry.md) — modal computes expiresAt (absolute ISO); writers use expiresAt directly; never run parseDurationMs on an ISO timestamp
 - [Kick modal expiry pattern](kick-expiry-pattern.md) — handleRoomClick must call isKickExpired() BEFORE showing BanKickModal; expired kicks auto-clean silently and allow entry. Never show modal for already-expired kicks.
+- [Performance audit fixes](perf-audit-fixes.md) — 12 scalability/security fixes applied; see file for what's done and what remains (useMemo, Sidebar memo, usernamePreferences scan, UserProfileContext).

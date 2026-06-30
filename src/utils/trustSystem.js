@@ -124,6 +124,9 @@ export const getInitialTrustData = () => ({
   }
 });
 
+// In-memory cache: accumulates MESSAGE_SENT increments and flushes to Firestore every 5 minutes
+const _msgSentCache = {};
+
 export const getUserTrustData = async (uid) => {
   try {
     const userRef = doc(db, 'users', uid);
@@ -144,6 +147,39 @@ export const getUserTrustData = async (uid) => {
 export const updateTrustScore = async (uid, changeType, customDelta = null) => {
   try {
     if (!uid) return;
+    const delta = customDelta !== null ? customDelta : (TRUST_SCORE_CHANGES[changeType] || 0);
+
+    // Debounce MESSAGE_SENT: accumulate locally, flush to Firestore every 5 minutes
+    if (changeType === 'MESSAGE_SENT') {
+      if (!_msgSentCache[uid]) {
+        _msgSentCache[uid] = { pendingDelta: 0, pendingCount: 0, flushTimer: null };
+      }
+      const cache = _msgSentCache[uid];
+      cache.pendingDelta += delta;
+      cache.pendingCount += 1;
+      if (cache.flushTimer) return;
+      cache.flushTimer = setTimeout(async () => {
+        const { pendingDelta, pendingCount } = cache;
+        delete _msgSentCache[uid];
+        try {
+          const userRef = doc(db, 'users', uid);
+          const snap = await getDoc(userRef);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          const newScore = Math.max(0, Math.min(100, (data.trustScore ?? 10) + pendingDelta));
+          await updateDoc(userRef, {
+            trustScore: newScore,
+            trustRank: getRankFromScore(newScore).id,
+            'trustData.messagesCount': (data.trustData?.messagesCount || 0) + pendingCount,
+            'trustData.lastUpdated': new Date().toISOString()
+          });
+        } catch (err) {
+          console.error('[TrustSystem] Error flushing MESSAGE_SENT batch:', err);
+        }
+      }, 5 * 60 * 1000);
+      return;
+    }
+
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
@@ -152,7 +188,6 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
     const currentScore = data.trustScore ?? 10;
     const currentTrustData = data.trustData ?? {};
 
-    const delta = customDelta !== null ? customDelta : (TRUST_SCORE_CHANGES[changeType] || 0);
     const newScore = Math.max(0, Math.min(100, currentScore + delta));
     const newRank = getRankFromScore(newScore).id;
 
@@ -162,9 +197,7 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
       'trustData.lastUpdated': new Date().toISOString()
     };
 
-    if (changeType === 'MESSAGE_SENT') {
-      updates['trustData.messagesCount'] = (currentTrustData.messagesCount || 0) + 1;
-    } else if (changeType === 'WARNING_RECEIVED') {
+    if (changeType === 'WARNING_RECEIVED') {
       updates['trustData.warningsCount'] = (currentTrustData.warningsCount || 0) + 1;
       updates['trustData.violationsCount'] = (currentTrustData.violationsCount || 0) + 1;
       updates['trustData.lastViolation'] = new Date().toISOString();

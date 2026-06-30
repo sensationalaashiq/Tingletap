@@ -4,7 +4,7 @@ import { SECURITY_CONFIG, isWhitelistedIP, isWhitelistedCountry } from '../confi
 export class VPNDetector {
   static async checkIP(ip) {
     try {
-      const apiKey = '2441a8428c694a809adfa381591efe51';
+      const apiKey = import.meta.env.VITE_ABSTRACT_API_KEY || '2441a8428c694a809adfa381591efe51';
       const url = `https://ipgeolocation.abstractapi.com/v1/?api_key=${apiKey}&ip_address=${ip}`;
 
       console.log(`Checking VPN status for IP: ${ip} using Abstract API`);
@@ -127,7 +127,7 @@ export const startPeriodicVPNCheck = (callback) => {
       console.log('❌ VPN detected during periodic check - blocking access');
       callback(result);
     }
-  }, 2 * 60 * 1000); // Check every 2 minutes
+  }, 10 * 60 * 1000); // Check every 10 minutes
 };
 
 export const stopPeriodicVPNCheck = () => {

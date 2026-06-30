@@ -9,6 +9,7 @@ import { DeviceFingerprint } from './deviceFingerprint';
 export class DeviceBanSystem {
   static bannedDevices = new Set();
   static initialized = false;
+  static _unsubscribe = null;
 
   /**
    * Initialize the device ban system with real-time updates
@@ -19,7 +20,7 @@ export class DeviceBanSystem {
     try {
       // Listen for real-time updates to banned devices
       const bannedDevicesQuery = query(collection(db, 'bannedDevices'));
-      onSnapshot(bannedDevicesQuery, (snapshot) => {
+      this._unsubscribe = onSnapshot(bannedDevicesQuery, (snapshot) => {
         this.bannedDevices.clear();
         snapshot.docs.forEach(doc => {
           const data = doc.data();
@@ -35,6 +36,14 @@ export class DeviceBanSystem {
     } catch (error) {
       console.error('Device Ban System: Failed to initialize', error);
     }
+  }
+
+  static cleanup() {
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+    this.initialized = false;
   }
 
   /**

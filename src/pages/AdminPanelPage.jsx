@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
+import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
 import { nameToSlug } from '../utils/roomSlug';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -209,7 +209,7 @@ const AdminPanelPage = () => {
   // Real-time users data
   useEffect(() => {
     if (!isRoleReady) return;
-    const usersQuery = query(collection(db, 'users'));
+    const usersQuery = query(collection(db, 'users'), limit(100));
     const unsubscribe = onSnapshot(usersQuery,
       (snapshot) => {
         const usersData = snapshot.docs
@@ -385,7 +385,7 @@ const AdminPanelPage = () => {
   useEffect(() => {
     const initOwner = async () => {
       try {
-        const OWNER_EMAIL = 'perplexityai.03@gmail.com';
+        const OWNER_EMAIL = import.meta.env.VITE_OWNER_EMAIL || 'perplexityai.03@gmail.com';
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('email', '==', OWNER_EMAIL));
         const snap = await getDocs(q);
@@ -655,16 +655,15 @@ const AdminPanelPage = () => {
   // Rooms tab: load ALL kicked users from ALL rooms
   const loadAllKickedUsers = async (roomsList) => {
     const list = roomsList || rooms;
-    if (!list.length) return;
     setKickedUsersLoading(true);
     try {
+      const snap = await getDocs(collectionGroup(db, 'kickedUsers'));
       const all = [];
-      await Promise.all(list.map(async (room) => {
-        const snap = await getDocs(collection(db, 'rooms', room.id, 'kickedUsers'));
-        snap.docs.forEach(d => {
-          all.push({ uid: d.id, roomId: room.id, roomName: room.name, ...d.data() });
-        });
-      }));
+      snap.docs.forEach(d => {
+        const roomId = d.ref.parent.parent?.id;
+        const room = list.find(r => r.id === roomId);
+        all.push({ uid: d.id, roomId, roomName: room?.name || roomId, ...d.data() });
+      });
       setKickedUsersList(all);
     } catch (e) {
       console.error('Failed to load kicked users:', e);

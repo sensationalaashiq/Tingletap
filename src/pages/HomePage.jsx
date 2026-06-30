@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
-    collection, doc, getDoc, query, orderBy, onSnapshot, where,
+    collection, doc, getDoc, query, orderBy, onSnapshot, where, limit,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
 } from 'firebase/firestore';
 import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
@@ -195,7 +195,7 @@ const ImageMessage = ({ imageUrl, imageFileName }) => (
 );
 
 
-const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds }) => {
+const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -676,7 +676,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, on
             document.body
         )}
     </>);
-};
+});
 
 const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -830,6 +830,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [privateAudioTab, setPrivateAudioTab] = useState('upload');
     const privateFileInputRef = useRef(null);
     const privateAudioInputRef = useRef(null);
+    const pmListenerRef = useRef(null);
     const [showPrivateAudioMiniPopup, setShowPrivateAudioMiniPopup] = useState(false);
     
     // State to track which dropdown is currently open (by message ID)
@@ -2646,14 +2647,22 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // ── Keep only latest 25 user messages (delete extras from Firestore) ──
+                // Only the sender of the most-recent message prunes — avoids N-client write storms
                 const userMsgs = newMessages.filter(
                     m => !m.isBot && m.uid !== 'tinglebot_system_official_2024' && !m.systemBot
                 );
                 if (userMsgs.length > 25) {
-                    const toDelete = userMsgs.slice(0, userMsgs.length - 25);
-                    toDelete.forEach(m => {
-                        deleteDoc(doc(db, 'rooms', roomId, 'messages', m.id)).catch(() => {});
-                    });
+                    const newestUserMsg = userMsgs[userMsgs.length - 1];
+                    const myUid = auth.currentUser?.uid ||
+                        (localStorage.getItem('isGuest') === 'true'
+                            ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
+                            : null);
+                    if (newestUserMsg && newestUserMsg.uid === myUid) {
+                        const toDelete = userMsgs.slice(0, userMsgs.length - 25);
+                        toDelete.forEach(m => {
+                            deleteDoc(doc(db, 'rooms', roomId, 'messages', m.id)).catch(() => {});
+                        });
+                    }
                 }
             }, (error) => {
                 if (error.code === 'permission-denied') {
@@ -2675,6 +2684,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                         delete window.cleanupHomePageListeners;
                     }
                     resetAutoModState();
+                    if (pmListenerRef.current) {
+                        pmListenerRef.current();
+                        pmListenerRef.current = null;
+                    }
                 } catch (error) {
                 }
             };
@@ -4402,8 +4415,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const conversationId = [auth.currentUser.uid, user.uid].sort().join('_');
                 const messagesQuery = query(
                     collection(db, 'privateMessages'),
-                    where('conversationId', '==', conversationId)
+                    where('conversationId', '==', conversationId),
+                    orderBy('createdAt'),
+                    limit(30)
                 );
+                
+                // Cancel any existing PM listener before creating a new one
+                if (pmListenerRef.current) {
+                    pmListenerRef.current();
+                    pmListenerRef.current = null;
+                }
                 
                 const unsubscribe = onSnapshot(messagesQuery, 
                     async (snapshot) => {
@@ -4482,7 +4503,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 );
                 
-                // Clean up function will be called automatically
+                // Store unsubscribe so it can be cancelled when opening a new PM
+                pmListenerRef.current = unsubscribe;
                 return unsubscribe;
             } catch (error) {
                 setPrivateMessages([]);
@@ -5145,17 +5167,19 @@ const HomePage = ({ user, roomIdOverride }) => {
             try {
                 const messagesQuery = query(
                     collection(db, 'privateMessages'),
-                    where('conversationId', '==', conversation.conversationId)
+                    where('conversationId', '==', conversation.conversationId),
+                    orderBy('createdAt'),
+                    limit(30)
                 );
+                
+                if (pmListenerRef.current) {
+                    pmListenerRef.current();
+                    pmListenerRef.current = null;
+                }
                 
                 const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
                     const messages = snapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .sort((a, b) => {
-                            const timeA = a.createdAt?.toDate?.() || new Date(0);
-                            const timeB = b.createdAt?.toDate?.() || new Date(0);
-                            return timeA - timeB;
-                        });
+                        .map(doc => ({ id: doc.id, ...doc.data() }));
                     setPrivateMessages(messages);
                     
                     // Auto-scroll to bottom with multiple attempts
@@ -5176,6 +5200,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         requestAnimationFrame(scrollToBottom);
                     });
                 });
+                pmListenerRef.current = unsubscribe;
                 
                 // Mark messages as read
                 try {
@@ -7108,7 +7133,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     isOpen={isYouTubeSearchModalOpen}
                     onClose={() => setIsYouTubeSearchModalOpen(false)}
                     onVideoSelect={handleYouTubeVideoSelect}
-                    apiKey={import.meta.env.VITE_YOUTUBE_API_KEY || "AIzaSyDiUOH9uH0erJYL8LN2I9OjwZHjB9p3K3o"}
+                    apiKey={import.meta.env.VITE_YOUTUBE_API_KEY || 'AIzaSyDiUOH9uH0erJYL8LN2I9OjwZHjB9p3K3o'}
                 />
 
                 {/* Combined GIFs & Stickers Modal */}
