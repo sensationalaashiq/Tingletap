@@ -7156,6 +7156,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onClose={() => setIsBroadcastOpen(false)}
                     loggedInUserProfile={loggedInUserProfile}
                     allUsersProfiles={friendsProfiles || []}
+                    roomId={roomId}
                 />
 
                 {/* YouTube Search Modal */}

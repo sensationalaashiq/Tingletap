@@ -70,7 +70,7 @@ const RadioWaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill
 /* ════════════════════════════════════════════
    MAIN BROADCAST PANEL
 ════════════════════════════════════════════ */
-const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles = [] }) => {
+const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles = [], roomId }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   /* ── RJ Broadcast state ── */
@@ -295,14 +295,55 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       youtube: { state: 'stopped', videoId: null, seekTo: 0, songName: '' }
     };
     await set(ref(rtdb, 'broadcasts/rj'), bcData);
+
+    if (roomId) {
+      const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
+      const { db: fsDb } = await import('../firebase/config');
+      fsAdd(fsColl(fsDb, 'rooms', roomId, 'messages'), {
+        text: `${myName} is now LIVE on Broadcast! Tune in to the Broadcast tab.`,
+        uid: 'tinglebot_system_official_2024',
+        displayName: 'TingleBot',
+        isBot: true,
+        systemBot: true,
+        tinglebotType: 'broadcast_live',
+        createdAt: fsST(),
+        noReply: true,
+        noReaction: true,
+        noReport: true,
+        noUnread: true,
+      }).then(r => {
+        if (r?.id) setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 10 * 60 * 1000);
+      }).catch(() => {});
+    }
   };
 
   const handleEndBroadcast = async () => {
+    const endingName = myName;
     await remove(ref(rtdb, 'broadcasts/rj'));
     setYtUrl('');
     setYtCurrentSongName('');
     setYtPlayerState('stopped');
     stopLocalMic();
+
+    if (roomId) {
+      const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
+      const { db: fsDb } = await import('../firebase/config');
+      fsAdd(fsColl(fsDb, 'rooms', roomId, 'messages'), {
+        text: `${endingName}'s Broadcast has ended.`,
+        uid: 'tinglebot_system_official_2024',
+        displayName: 'TingleBot',
+        isBot: true,
+        systemBot: true,
+        tinglebotType: 'broadcast_ended',
+        createdAt: fsST(),
+        noReply: true,
+        noReaction: true,
+        noReport: true,
+        noUnread: true,
+      }).then(r => {
+        if (r?.id) setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 5 * 60 * 1000);
+      }).catch(() => {});
+    }
   };
 
   const handleMicToggle = async () => {

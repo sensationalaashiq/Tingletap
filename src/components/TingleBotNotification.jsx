@@ -140,6 +140,29 @@ const IconUnkicked = () => (
   </svg>
 );
 
+const IconBroadcastLive = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <circle cx="9" cy="9" r="3" fill="#a78bfa" opacity="0.9"/>
+    <circle cx="9" cy="9" r="3" stroke="#a78bfa" strokeWidth="1.2"/>
+    <path d="M5.5 5.5a5 5 0 000 7" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round"/>
+    <path d="M12.5 5.5a5 5 0 010 7" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round"/>
+    <path d="M3 3a9 9 0 000 12" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round" opacity="0.55"/>
+    <path d="M15 3a9 9 0 010 12" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round" opacity="0.55"/>
+    <circle cx="15.5" cy="3.5" r="1.5" fill="#ef4444">
+      <animate attributeName="opacity" values="1;0.3;1" dur="1.2s" repeatCount="indefinite"/>
+    </circle>
+  </svg>
+);
+
+const IconBroadcastEnded = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <circle cx="9" cy="9" r="3" stroke="#94a3b8" strokeWidth="1.4"/>
+    <path d="M5.5 5.5a5 5 0 000 7" stroke="#94a3b8" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+    <path d="M12.5 5.5a5 5 0 010 7" stroke="#94a3b8" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+    <line x1="5" y1="5" x2="13" y2="13" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 const IconAutoMod = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
     <path d="M9 2L3 4.5v4.8C3 12.9 5.6 15.8 9 17c3.4-1.2 6-4.1 6-7.7V4.5L9 2z"
@@ -181,7 +204,9 @@ const EVENT_MAP = {
   slow_mode:    { Icon: IconSlowMode,    cls: '' },
   announcement: { Icon: IconAnnouncement, cls: 'tinglebot-announcement' },
   rule:         { Icon: IconRule,        cls: 'tinglebot-rule' },
-  automod:      { Icon: IconAutoMod,     cls: 'tinglebot-automod' },
+  automod:         { Icon: IconAutoMod,         cls: 'tinglebot-automod' },
+  broadcast_live:  { Icon: IconBroadcastLive,  cls: 'tinglebot-broadcast' },
+  broadcast_ended: { Icon: IconBroadcastEnded, cls: 'tinglebot-broadcast-ended' },
 };
 
 /* ─────────────────────────────────────────────
@@ -207,6 +232,8 @@ function detectEventType(message) {
   if (txt.includes('slow mode')) return 'slow_mode';
   if (txt.includes('announcement')) return 'announcement';
   if (txt.includes('rule') || txt.includes('please') || txt.includes('reminder')) return 'rule';
+  if (txt.includes('broadcast') && (txt.includes('live') || txt.includes('started'))) return 'broadcast_live';
+  if (txt.includes('broadcast') && (txt.includes('ended') || txt.includes('off'))) return 'broadcast_ended';
   return 'default';
 }
 

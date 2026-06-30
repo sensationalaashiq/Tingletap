@@ -279,6 +279,81 @@
   color: rgba(165, 180, 252, 0.80);
 }
 
+/* ── Broadcast Live variant ── */
+.tinglebot-strip.tinglebot-broadcast {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(167, 139, 250, 0.09) 40%,
+    rgba(239, 68, 68, 0.07) 100%
+  );
+  box-shadow:
+    0 2px 14px rgba(239, 68, 68, 0.14),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+.tinglebot-strip.tinglebot-broadcast .tinglebot-brand {
+  background: linear-gradient(135deg, #a78bfa 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.tinglebot-strip.tinglebot-broadcast .tinglebot-text {
+  font-weight: 600;
+  color: rgba(140, 40, 40, 0.90);
+}
+
+/* ── Broadcast Ended variant ── */
+.tinglebot-strip.tinglebot-broadcast-ended {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(148, 163, 184, 0.06) 100%
+  );
+}
+
+.tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text {
+  color: rgba(100, 116, 139, 0.85);
+}
+
+/* Dark mode broadcast */
+.dark-mode .tinglebot-strip.tinglebot-broadcast,
+html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast {
+  background: linear-gradient(
+    135deg,
+    rgba(60, 10, 30, 0.55) 0%,
+    rgba(120, 60, 200, 0.12) 40%,
+    rgba(239, 68, 68, 0.10) 100%
+  );
+  box-shadow:
+    0 2px 16px rgba(239, 68, 68, 0.20),
+    0 1px 4px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.dark-mode .tinglebot-strip.tinglebot-broadcast .tinglebot-text,
+html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast .tinglebot-text {
+  color: rgba(252, 165, 165, 0.90);
+  font-weight: 600;
+}
+
+.dark-mode .tinglebot-strip.tinglebot-broadcast-ended,
+html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast-ended {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 20, 30, 0.50) 0%,
+    rgba(71, 85, 105, 0.10) 100%
+  );
+}
+
+.dark-mode .tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text,
+html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text {
+  color: rgba(148, 163, 184, 0.75);
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .tinglebot-strip-wrapper {
