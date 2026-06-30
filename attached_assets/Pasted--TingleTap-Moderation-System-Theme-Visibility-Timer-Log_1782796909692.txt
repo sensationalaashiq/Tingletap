@@ -1,0 +1,128 @@
+# TingleTap – Moderation System, Theme Visibility & Timer Logic Upgrade
+
+Implement the following improvements without breaking any existing functionality, UI, permissions, Firebase logic, or existing moderation features.
+
+### 1. Fix Room Name Everywhere
+Replace every hardcoded **"This Room"** or **"1 Room"** text with the actual room name (Indian Room, Gaming Room, Gaming Room, etc.) everywhere:
+- TingleBot chat strips
+- Kick/Ban modals shown to users
+- Notifications
+- Moderation history
+- Admin logs
+- Anywhere room names are displayed
+
+### 2. Global Moderation Synchronization
+Moderation actions from **Admin Panel, Sidebar, Chat Hover Buttons, User Dropdown, Profile Modal, Sidebar Hover Buttons, and every future moderation entry point** must stay fully synchronized.
+
+If a user is:
+- Kicked → Every button instantly changes to **Unkick**
+- Banned → Every button instantly changes to **Unban**
+- Muted → Every button instantly changes to **Unmute**
+
+Likewise, after Unkick/Unban/Unmute, every button changes back immediately without refresh.
+
+### 3. Fix AdminKickBanModal
+Redesign the duration section with a premium UI.
+Replace the old custom input with:
+- Quick duration presets (1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 3d, 7d, Permanent)
+- Custom Date & Time picker
+- Premium dropdown/selector UI
+- Calendar + Clock picker
+
+Remove the unnecessary **"This Room"** tab from the Kick section.
+
+### 4. Fix Timer Logic
+Current bug:
+Selecting **1 Hour** or any timed duration shows **Permanent**.
+
+Fix the logic so every duration stores a proper expiry timestamp.
+
+Examples:
+- 1 minute = expires after 60 seconds
+- 1 hour = expires after 3600 seconds
+- 3 days = expires after 72 hours
+- Permanent = never expires
+
+Timed actions must never become Permanent.
+
+### 5. Live Countdown
+Kicked/Banned users should see:
+- Room Name
+- Moderator
+- Reason
+- Remaining Time
+- Live countdown updating every second
+
+Examples:
+- 58s
+- 12m 25s
+- 1h 15m
+- 2d 4h
+
+### 6. Automatic Expiry
+When the timer reaches zero:
+- Automatically Unkick/Unban the user
+- Restore permissions immediately
+- Update all moderation buttons everywhere
+- No manual action or refresh required
+
+### 7. Room Join Fix
+Currently, after Unkick, users still cannot join the room.
+
+Fix the backend logic so Unkick completely removes the room restriction and users can rejoin immediately without clearing cache or logging out.
+
+### 8. Accurate TingleBot Notifications
+TingleBot must always display:
+- Correct room name
+- Correct moderator
+- Correct duration
+- Correct action
+
+Never show "This Room" or "1 Room" unless the action actually affects multiple rooms.
+
+### 9. Premium Status Colors
+Improve moderation modal readability.
+Use high-contrast colors:
+- Kick → Orange/Amber
+- Ban → Red
+- Mute → Purple
+- Countdown → Blue
+- Success/Expired → Green
+
+Support both Light and Dark modes.
+
+### 10. Theme & Visibility Fix (All Themes)
+Audit **Light Theme, Dark Theme, themes.css, CSS variables, and all custom themes**.
+
+Ensure every UI element remains fully visible in every theme:
+- Text
+- Icons
+- Buttons
+- SVGs
+- Inputs
+- Dropdowns
+- Labels
+- Modals
+- Toasts
+- Chat bubbles
+- Hover states
+- Borders
+- Shadows
+- Sidebar
+- Header
+- Footer
+- User cards
+- Admin Panel
+- Settings
+- Notifications
+- TingleBot strips
+- Moderation modals
+
+Fix any low-contrast or invisible text/icons by correcting CSS variables and theme tokens. Remove hardcoded colors where necessary and rely on proper theme variables so every theme is consistent and readable.
+
+### Final Requirements
+- Do not break any existing functionality.
+- Keep Firebase synchronization intact.
+- Keep all moderation permissions unchanged.
+- Ensure real-time updates everywhere.
+- Ensure timers, countdowns, auto-expiry, room rejoin, and theme visibility work perfectly across the entire application.

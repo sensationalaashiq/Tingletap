@@ -745,6 +745,45 @@ html.dark-theme-variant .luxmod-expiry-preview strong { color: #c4b5fd; }
 html.dark-mode .luxmod-rooms-empty,
 html.dark-theme-variant .luxmod-rooms-empty { color: rgba(196,181,253,0.4); }
 
+/* ── Custom Duration Wrap ────────────────────────────────── */
+.luxmod-custom-dur-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.luxmod-custom-dur-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(109,40,217,0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.luxmod-custom-dur-or {
+  text-align: center;
+  font-size: 8px;
+  color: rgba(91,33,182,0.35);
+  font-style: italic;
+  margin: 1px 0;
+}
+.luxmod-datetime-input {
+  color-scheme: light;
+  cursor: pointer;
+}
+html.dark-mode .luxmod-datetime-input,
+html.dark-theme-variant .luxmod-datetime-input {
+  color-scheme: dark;
+}
+
+/* ── Moderation Status Colors (high-contrast) ────────────── */
+.luxmod-status-kick  { color: #f97316; }
+.luxmod-status-ban   { color: #ef4444; }
+.luxmod-status-mute  { color: #a855f7; }
+.luxmod-status-timer { color: #3b82f6; }
+.luxmod-status-ok    { color: #22c55e; }
+
 /* ── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 400px) {
   .luxmod-card { border-radius: 12px; max-width: 250px; max-height: 86vh; }

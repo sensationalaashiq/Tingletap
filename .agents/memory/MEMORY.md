@@ -3,3 +3,4 @@
 - [Guest avatar & gender consistency](guest-avatar-gender.md) — photoURL must use user.uid (not displayName) as hash seed; buildGuestProfile must regenerate uid-based URL if stored one is from randomuser.me
 - [TingleBot AutoMod architecture](tinglebot-automod.md) — staff-only enforcement model; v3.0 adds modLogs, homoglyphs, personal-info detection, multi-signal scoring, cross-session persistence
 - [Firestore Rules](firestore-rules.md) — explicit rules for bannedIPs/bannedDevices (auth read), warnings_announcements (auth read/staff write), modLogs (staff), rooms/automod (staff); moderators read settings/config; catch-all allows owner/admin only
+- [Moderation expiry contract](moderation-expiry.md) — modal computes expiresAt (absolute ISO); writers use expiresAt directly; never run parseDurationMs on an ISO timestamp

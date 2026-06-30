@@ -388,11 +388,14 @@ const RoomListPage = () => {
         if (raw) {
           const kd = JSON.parse(raw);
           setKickModalData({
-            roomName: kd.roomName || 'the room',
-            reason: kd.reason || 'You were removed by a moderator.',
-            kickedBy: kd.kickedBy || 'An administrator',
-            kickedAt: kd.kickedAt ? new Date(kd.kickedAt) : new Date(),
-            duration: kd.duration || null
+            roomName:     kd.roomName     || 'the room',
+            reason:       kd.reason       || 'You were removed by a moderator.',
+            kickedBy:     kd.kickedBy     || 'An administrator',
+            kickedAt:     kd.kickedAt ? new Date(kd.kickedAt) : new Date(),
+            duration:     kd.kickDuration || kd.duration || null,
+            kickDuration: kd.kickDuration || kd.duration || null,
+            kickUntil:    kd.kickUntil    || null,
+            roomId:       kd.roomId       || null,
           });
           setShowBanKickModal(true);
         }
@@ -468,10 +471,14 @@ const RoomListPage = () => {
         if (kick.exists()) {
           const kd = kick.data();
           setKickModalData({
-            roomName: room.name,
-            reason: kd.reason || 'No reason specified',
-            kickedBy: kd.kickedBy?.name || kd.kickedByName || 'An administrator',
-            kickedAt: kd.kickedAt?.toDate ? kd.kickedAt.toDate() : new Date()
+            roomName:     room.name,
+            reason:       kd.reason       || 'No reason specified',
+            kickedBy:     kd.kickedBy?.name || kd.kickedBy || kd.kickedByName || 'An administrator',
+            kickedAt:     kd.kickedAt?.toDate ? kd.kickedAt.toDate() : (kd.kickedAt?.seconds ? new Date(kd.kickedAt.seconds * 1000) : new Date()),
+            duration:     kd.kickDuration || kd.duration || null,
+            kickDuration: kd.kickDuration || kd.duration || null,
+            kickUntil:    kd.kickUntil    || null,
+            roomId:       kd.roomId       || room.id,
           });
           setShowBanKickModal(true);
           return;

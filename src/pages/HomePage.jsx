@@ -1928,9 +1928,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             const kickData = {
                 roomName : kd.roomName || roomName || 'this room',
                 reason   : kd.reason   || 'You were removed by a moderator.',
-                kickedBy : kd.kickedBy?.displayName || kd.kickedBy?.name || 'An administrator',
-                kickedAt : kd.kickedAt?.toDate ? kd.kickedAt.toDate().toISOString() : new Date().toISOString(),
-                duration : kd.duration || null,
+                kickedBy : kd.kickedBy?.displayName || kd.kickedBy?.name || kd.kickedBy || 'An administrator',
+                kickedAt : kd.kickedAt?.toDate ? kd.kickedAt.toDate().toISOString() : (kd.kickedAt?.seconds ? new Date(kd.kickedAt.seconds * 1000).toISOString() : new Date().toISOString()),
+                duration : kd.kickDuration || kd.duration || null,
+                kickDuration : kd.kickDuration || kd.duration || null,
+                kickUntil : kd.kickUntil || null,
+                roomId   : kd.roomId || roomId,
             };
             localStorage.setItem('lastKickData', JSON.stringify(kickData));
             localStorage.setItem('showKickModal', 'true');
@@ -3404,8 +3407,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
+            // isKickExpired now checks kickUntil first (absolute), then falls back to relative duration
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error("You are temporarily kicked from this room.");
+                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             /* Kick expired — clear it silently */
@@ -3535,7 +3539,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         if (userProfile.kickedFrom?.roomId === roomId) {
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error("You are temporarily kicked from this room.");
+                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
@@ -3627,7 +3631,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         if (userProfile.kickedFrom?.roomId === roomId) {
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error("You are temporarily kicked from this room.");
+                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
@@ -3717,9 +3721,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         const target = homePageKickModal.user;
         if (!target?.uid) return;
         try {
-            const kickMs = parseDurationMs(actionData.duration);
-            const kickUntil = kickMs !== Infinity ? new Date(Date.now() + kickMs).toISOString() : null;
-            const kickData = {
+            // Use pre-computed expiresAt from modal (handles datetime picker correctly)
+            const kickUntil = actionData.expiresAt || null;
+            const kickBaseData = {
                 uid: target.uid,
                 displayName: target.displayName,
                 kickedAt: serverTimestamp(),
@@ -3727,17 +3731,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                 kickedById: auth.currentUser?.uid || 'system',
                 reason: actionData.reason || 'Kicked by a moderator.',
                 duration: actionData.duration,
+                kickDuration: actionData.duration,   // BanKickModal reads kickDuration for countdown
                 kickUntil,
             };
             const targetRooms = actionData.selectedRooms?.length > 0
                 ? actionData.selectedRooms
                 : [roomId];
             for (const rid of targetRooms) {
-                await setDoc(doc(db, 'rooms', rid, 'kickedUsers', target.uid), { ...kickData, roomId: rid });
+                const rSnap = await getDoc(doc(db, 'rooms', rid)).catch(() => null);
+                const rName = rSnap?.data()?.name || roomName || rid;
+                await setDoc(doc(db, 'rooms', rid, 'kickedUsers', target.uid), { ...kickBaseData, roomId: rid, roomName: rName });
             }
             remove(ref(rtdb, `status/${target.uid}/currentRoomId`));
             playNotificationSound('adminAction');
-            const botMsg = `${target.displayName} has been kicked from ${targetRooms.length === 1 ? 'this room' : `${targetRooms.length} rooms`}${actionData.reason ? ` — ${actionData.reason}` : ''}.`;
+            const botMsg = `${target.displayName} has been kicked from ${targetRooms.length === 1 ? (roomName || 'this room') : `${targetRooms.length} rooms`}${actionData.reason ? ` — ${actionData.reason}` : ''}.`;
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: botMsg,
                 uid: 'tinglebot_system_official_2024',

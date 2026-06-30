@@ -1123,8 +1123,9 @@ const AdminPanelPage = () => {
       
       switch (effectiveAction) {
         case 'ban': {
-          const banMs = parseDurationMs(actionData.duration);
-          const banUntil = banMs ? new Date(Date.now() + banMs).toISOString() : null;
+          // Use pre-computed expiresAt from modal (handles datetime picker correctly)
+          const banMs = !actionData.expiresAt ? parseDurationMs(actionData.duration) : null;
+          const banUntil = actionData.expiresAt || (banMs && banMs !== Infinity ? new Date(Date.now() + banMs).toISOString() : null);
           const banInfo = {
             reason: actionData.reason || '',
             bannedBy: adminName,
@@ -1138,12 +1139,15 @@ const AdminPanelPage = () => {
           remove(ref(rtdb, `status/${selectedUser.uid}`));
           const banRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (banRoomId) {
-            addDoc(collection(db, 'rooms', banRoomId, 'messages'), {
-              text: `${selectedUser.displayName} has been banned${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'banned',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
+            getDoc(doc(db, 'rooms', banRoomId)).then(rs => {
+              const banRoomName = rs?.data()?.name || 'this room';
+              addDoc(collection(db, 'rooms', banRoomId, 'messages'), {
+                text: `${selectedUser.displayName} has been banned from ${banRoomName}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
+                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+                isBot: true, systemBot: true, tinglebotType: 'banned',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+              }).catch(() => {});
             }).catch(() => {});
           }
           const banLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
@@ -1191,8 +1195,9 @@ const AdminPanelPage = () => {
         }
           
         case 'mute': {
-          const muteMs = parseDurationMs(actionData.duration);
-          const muteUntil = muteMs ? new Date(Date.now() + muteMs).toISOString() : null;
+          // Use pre-computed expiresAt from modal (handles datetime picker correctly)
+          const muteMs = !actionData.expiresAt ? parseDurationMs(actionData.duration) : null;
+          const muteUntil = actionData.expiresAt || (muteMs && muteMs !== Infinity ? new Date(Date.now() + muteMs).toISOString() : null);
           const mutedInfo = {
             isMuted: true,
             mutedAt: new Date().toISOString(),
@@ -1250,19 +1255,26 @@ const AdminPanelPage = () => {
           
         case 'kick': {
           const kickReason = actionData?.reason || 'Kicked by admin';
+          const kickDur = actionData?.duration || null;
+          // Prefer pre-computed expiresAt from modal (handles datetime picker correctly)
+          const kickUntil = actionData?.expiresAt || null;
           const kickEntry = {
             uid: selectedUser.uid,
             displayName: selectedUser.displayName,
             reason: kickReason,
             kickedBy: adminName,
             kickedAt: serverTimestamp(),
-            duration: actionData?.duration || null,
+            duration: kickDur,
+            kickDuration: kickDur,   // BanKickModal reads kickDuration for countdown
+            kickUntil,
           };
 
           if (actionData?.kickScope === 'multiple_rooms' && actionData?.selectedRooms?.length > 0) {
             for (const rid of actionData.selectedRooms) {
+              const rSnap = await getDoc(doc(db, 'rooms', rid)).catch(() => null);
+              const rName = rSnap?.data()?.name || rid;
               await setDoc(doc(db, 'rooms', rid, 'kickedUsers', selectedUser.uid), {
-                ...kickEntry, roomId: rid
+                ...kickEntry, roomId: rid, roomName: rName
               });
               addDoc(collection(db, 'rooms', rid, 'messages'), {
                 text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
@@ -1280,14 +1292,16 @@ const AdminPanelPage = () => {
           } else {
             const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || currentRoomId || selectedUser.kickedFrom?.roomId;
             if (kickRoomId) {
+              const kickRoomSnap = await getDoc(doc(db, 'rooms', kickRoomId)).catch(() => null);
+              const kickRoomName = kickRoomSnap?.data()?.name || kickRoomId;
               await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), {
-                ...kickEntry, roomId: kickRoomId
+                ...kickEntry, roomId: kickRoomId, roomName: kickRoomName
               });
               await updateDoc(userRef, {
                 kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason }
               }).catch(() => {});
               addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
-                text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
+                text: `${selectedUser.displayName} has been kicked from ${kickRoomName}${kickReason ? ` — ${kickReason}` : '.'}`,
                 uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
                 isBot: true, systemBot: true, tinglebotType: 'kicked',
                 createdAt: serverTimestamp(),
@@ -1304,17 +1318,33 @@ const AdminPanelPage = () => {
         }
 
         case 'unkick': {
-          const kickedRoomId = selectedUser.kickedFrom?.roomId;
-          if (kickedRoomId) {
-            await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid)).catch(() => {});
-            addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
-              text: `${selectedUser.displayName} has been unkicked and can rejoin.`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'unkicked',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+          const unkickScopeMode = actionData?.unkickScope || 'all_rooms';
+          if (unkickScopeMode === 'all_rooms') {
+            // Clear from every room that has a kickedUsers entry for this uid
+            const allRoomsSnap = await getDocs(collection(db, 'rooms')).catch(() => null);
+            if (allRoomsSnap) {
+              const tasks = allRoomsSnap.docs.map(rd =>
+                deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', selectedUser.uid)).catch(() => {})
+              );
+              await Promise.all(tasks);
+            }
+          } else {
+            // This-room or specific room: use kickedFrom.roomId or currentRoomId
+            const kickedRoomId = selectedUser.kickedFrom?.roomId || actionData?.currentRoomId;
+            if (kickedRoomId) {
+              await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid)).catch(() => {});
+              const unkickRoomSnap = await getDoc(doc(db, 'rooms', kickedRoomId)).catch(() => null);
+              const unkickRoomName = unkickRoomSnap?.data()?.name || kickedRoomId;
+              addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
+                text: `${selectedUser.displayName} has been unkicked and can rejoin ${unkickRoomName}.`,
+                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+                isBot: true, systemBot: true, tinglebotType: 'unkicked',
+                createdAt: serverTimestamp(),
+                noReply: true, noReaction: true, noReport: true, noUnread: true,
+              }).catch(() => {});
+            }
           }
+          // Always clear kickedFrom on the user doc
           await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
           pt.success(`${selectedUser.displayName} can now rejoin.`);
           updateSelectedUser({ kickedFrom: null });

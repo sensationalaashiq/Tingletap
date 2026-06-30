@@ -53,16 +53,59 @@ const REASONS = {
 };
 
 const DURATIONS = {
-  ban:  [{ v: '1h', l: '1 Hr' }, { v: '24h', l: '24 Hrs' }, { v: '3d', l: '3 Days' }, { v: '7d', l: '7 Days' }, { v: '30d', l: '30 Days' }, { v: '1y', l: '1 Year' }, { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: 'Custom…' }],
-  mute: [{ v: '5m', l: '5 Min' }, { v: '15m', l: '15 Min' }, { v: '30m', l: '30 Min' }, { v: '1h', l: '1 Hr' }, { v: '6h', l: '6 Hrs' }, { v: '24h', l: '24 Hrs' }, { v: '7d', l: '7 Days' }, { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: 'Custom…' }],
-  kick: [{ v: '1h', l: '1 Hr' }, { v: '3h', l: '3 Hrs' }, { v: '6h', l: '6 Hrs' }, { v: '12h', l: '12 Hrs' }, { v: '24h', l: '24 Hrs' }, { v: '3d', l: '3 Days' }, { v: '7d', l: '7 Days' }, { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: 'Custom…' }],
+  ban:  [
+    { v: '1h', l: '1 Hr' }, { v: '6h', l: '6 Hrs' }, { v: '12h', l: '12 Hrs' },
+    { v: '24h', l: '24 Hrs' }, { v: '3d', l: '3 Days' }, { v: '7d', l: '7 Days' },
+    { v: '30d', l: '30 Days' }, { v: '1y', l: '1 Year' },
+    { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: '📅 Custom…' },
+  ],
+  mute: [
+    { v: '1m', l: '1 Min' }, { v: '5m', l: '5 Min' }, { v: '10m', l: '10 Min' },
+    { v: '30m', l: '30 Min' }, { v: '1h', l: '1 Hr' }, { v: '6h', l: '6 Hrs' },
+    { v: '24h', l: '24 Hrs' }, { v: '7d', l: '7 Days' },
+    { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: '📅 Custom…' },
+  ],
+  kick: [
+    { v: '1m', l: '1 Min' }, { v: '5m', l: '5 Min' }, { v: '10m', l: '10 Min' },
+    { v: '30m', l: '30 Min' }, { v: '1h', l: '1 Hr' }, { v: '3h', l: '3 Hrs' },
+    { v: '6h', l: '6 Hrs' }, { v: '12h', l: '12 Hrs' }, { v: '1d', l: '1 Day' },
+    { v: '3d', l: '3 Days' }, { v: '7d', l: '7 Days' },
+    { v: 'permanent', l: 'Permanent' }, { v: 'custom', l: '📅 Custom…' },
+  ],
 };
 
 /* ─────────────────────────────────────────────────────────
    Duration → human expiry string
 ───────────────────────────────────────────────────────── */
-function computeExpiry(durVal, customStr) {
-  const raw = durVal === 'custom' ? customStr : durVal;
+function computeExpiry(durVal, customStr, customDatetime) {
+  if (durVal === 'custom') {
+    // Custom datetime picker takes priority
+    if (customDatetime) {
+      const exp = new Date(customDatetime);
+      if (!isNaN(exp.getTime())) {
+        return exp.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    // Fallback: text duration
+    const raw = customStr?.trim();
+    if (!raw) return null;
+    const m = raw.match(/^(\d+(?:\.\d+)?)\s*(m|min|h|hr|d|day|w|week|mo|month|y|year)s?$/i);
+    if (!m) return null;
+    const n = parseFloat(m[1]);
+    const unit = m[2].toLowerCase();
+    const ms = unit.startsWith('m') && unit.length <= 3 && !unit.startsWith('mo')
+      ? n * 60000
+      : unit.startsWith('h') ? n * 3600000
+      : unit.startsWith('d') ? n * 86400000
+      : unit.startsWith('w') ? n * 7 * 86400000
+      : unit.startsWith('mo') ? n * 30 * 86400000
+      : unit.startsWith('y') ? n * 365 * 86400000
+      : null;
+    if (!ms) return null;
+    const exp = new Date(Date.now() + ms);
+    return exp.toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  const raw = durVal;
   if (!raw || raw === 'permanent') return 'Never expires';
   const now = new Date();
   const m = raw.match(/^(\d+(?:\.\d+)?)\s*(m|min|h|hr|d|day|w|week|mo|month|y|year)s?$/i);
@@ -104,6 +147,7 @@ const AdminBanKickModal = ({
   const [customDuration, setCustomDuration] = useState('');
   const [kickScope, setKickScope]           = useState('multiple_rooms');
   const [unkickScope, setUnkickScope]       = useState('all_rooms');
+  const [customDatetime, setCustomDatetime] = useState('');
   const [selectedRooms, setSelectedRooms]   = useState([]);
   const [adminNotes, setAdminNotes]         = useState('');
   const [appealAllowed, setAppealAllowed]   = useState(true);
@@ -145,7 +189,8 @@ const AdminBanKickModal = ({
       setLocalAction(actionType || 'ban');
       setReason('');
       setCustomReason('');
-      setDuration(actionType === 'mute' ? '5m' : 'permanent');
+      setDuration(actionType === 'kick' ? '1h' : actionType === 'mute' ? '5m' : 'permanent');
+      setCustomDatetime('');
       setCustomDuration('');
       setKickScope('this_room');
       setUnkickScope('all_rooms');
@@ -164,6 +209,8 @@ const AdminBanKickModal = ({
     else setDuration('permanent');
     setReason('');
     setCustomReason('');
+    setCustomDuration('');
+    setCustomDatetime('');
     setError('');
   }, [localAction]);
 
@@ -190,7 +237,12 @@ const AdminBanKickModal = ({
   const handleConfirm = async () => {
     setError('');
     const finalReason   = reason === 'custom' ? customReason.trim() : reason;
-    const finalDuration = duration === 'custom' ? customDuration.trim() : duration;
+    // duration stays as a human-readable label; expiresAt carries the absolute expiry
+    let finalDuration = duration;
+    if (duration === 'custom') {
+      // Keep a short descriptive label, never store ISO in duration
+      finalDuration = customDatetime ? 'custom (date/time)' : (customDuration.trim() || 'custom');
+    }
 
     if (!isReverse && !finalReason) {
       setError('Please select or enter a reason.');
@@ -200,15 +252,38 @@ const AdminBanKickModal = ({
       setError('Please select at least one room.');
       return;
     }
-    if (duration === 'custom' && !customDuration.trim()) {
-      setError('Please enter a custom duration.');
+    if (duration === 'custom' && !customDuration.trim() && !customDatetime) {
+      setError('Please enter a custom duration or pick a date/time.');
       return;
     }
 
     setIsLoading(true);
+
+    /* Compute absolute expiresAt so writers never need to call parseDurationMs
+       on an ISO timestamp (which would produce the wrong result).
+       Keep duration as the human-readable label for display purposes only. */
+    let expiresAt = null;
+    if (duration === 'custom' && customDatetime) {
+      const dt = new Date(customDatetime);
+      if (!isNaN(dt.getTime())) expiresAt = dt.toISOString();
+    } else if (finalDuration && finalDuration !== 'permanent') {
+      // Inline parseDurationMs so we don't need to import it here
+      const m = String(finalDuration).match(/^(\d+(?:\.\d+)?)\s*(m|min|h|hr|d|day|w|week|mo|month|y|year)s?$/i);
+      if (m) {
+        const n = parseFloat(m[1]);
+        const unit = m[2].toLowerCase();
+        const ms = unit.startsWith('m') && unit.length <= 3 && !unit.startsWith('mo')
+          ? n * 60000 : unit.startsWith('h') ? n * 3600000
+          : unit.startsWith('d') ? n * 86400000 : unit.startsWith('w') ? n * 7 * 86400000
+          : unit.startsWith('mo') ? n * 30 * 86400000 : unit.startsWith('y') ? n * 365 * 86400000 : null;
+        if (ms) expiresAt = new Date(Date.now() + ms).toISOString();
+      }
+    }
+
     const actionData = {
       reason:        isReverse ? (adminNotes.trim() || `${localAction} by ${currentUserProfile?.displayName || 'Admin'}`) : finalReason,
       duration:      finalDuration,
+      expiresAt,           // absolute ISO timestamp — writers must use this as kickUntil/banUntil/muteUntil
       actionBy:      currentUserProfile?.displayName || 'System Administrator',
       actionById:    currentUserProfile?.uid || 'system',
       adminNotes:    adminNotes.trim(),
@@ -247,9 +322,9 @@ const AdminBanKickModal = ({
 
   const handleClose = () => {
     setReason(''); setCustomReason(''); setDuration('permanent');
-    setCustomDuration(''); setAdminNotes(''); setAppealAllowed(true);
+    setCustomDuration(''); setCustomDatetime(''); setAdminNotes(''); setAppealAllowed(true);
     setSelectedRooms([]); setIsLoading(false); setSuccessBanner(null); setError('');
-    setKickScope('this_room'); setUnkickScope('all_rooms');
+    setKickScope('multiple_rooms'); setUnkickScope('all_rooms');
     onClose();
   };
 
@@ -282,7 +357,7 @@ const AdminBanKickModal = ({
   const tabs = hideBanTab ? allTabs.filter(t => t.id !== 'ban') : allTabs;
 
   /* ── Expiry display ── */
-  const expiryLabel = cfg.hasDuration ? computeExpiry(duration, customDuration) : null;
+  const expiryLabel = cfg.hasDuration ? computeExpiry(duration, customDuration, customDatetime) : null;
 
   return (
     <div className="luxmod-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
@@ -544,14 +619,29 @@ const AdminBanKickModal = ({
                 ))}
               </div>
               {duration === 'custom' && (
-                <input
-                  type="text"
-                  className="luxmod-input"
-                  placeholder="e.g. 2h, 7d, 3 weeks"
-                  value={customDuration}
-                  onChange={e => setCustomDuration(e.target.value)}
-                  style={{ '--focus-color': cfg.color }}
-                />
+                <div className="luxmod-custom-dur-wrap">
+                  <div className="luxmod-custom-dur-label">
+                    <Ico name="clock" color={cfg.color} size={9} />
+                    Pick exact date &amp; time:
+                  </div>
+                  <input
+                    type="datetime-local"
+                    className="luxmod-input luxmod-datetime-input"
+                    value={customDatetime}
+                    min={new Date(Date.now() + 60000).toISOString().slice(0,16)}
+                    onChange={e => { setCustomDatetime(e.target.value); setCustomDuration(''); }}
+                    style={{ '--focus-color': cfg.color }}
+                  />
+                  <div className="luxmod-custom-dur-or">— or type a duration —</div>
+                  <input
+                    type="text"
+                    className="luxmod-input"
+                    placeholder="e.g. 2h, 7d, 3 weeks"
+                    value={customDuration}
+                    onChange={e => { setCustomDuration(e.target.value); setCustomDatetime(''); }}
+                    style={{ '--focus-color': cfg.color }}
+                  />
+                </div>
               )}
               {expiryLabel && (
                 <div className="luxmod-expiry-preview">

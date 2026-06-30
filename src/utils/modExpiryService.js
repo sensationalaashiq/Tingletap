@@ -18,7 +18,9 @@ export const parseDurationMs = (value) => {
   if (!value || value === 'permanent') return Infinity;
   if (typeof value === 'number') return value > 0 ? value : Infinity;
   const s = value.toString().toLowerCase().trim();
-  if (s === 'permanent' || s === 'never' || s === '0') return Infinity;
+  if (s === 'permanent' || s === 'never' || s === '0' || s.startsWith('custom')) return Infinity;
+  // Reject ISO timestamps / absolute dates — they are not relative durations
+  if (s.length > 15 || s.includes('t') || s.includes(':') || s.includes('-')) return Infinity;
   const n = parseFloat(s);
   if (!n || isNaN(n)) return Infinity;
   if (s.includes('d'))                           return n * 86_400_000;
@@ -107,12 +109,17 @@ export const autoCheckUnkick = async (uid, roomId) => {
     if (!snap.exists()) return false;
 
     const kd = snap.data();
-    const dur = parseDurationMs(kd.duration);
-    if (dur === Infinity) return false; // permanent kick
-
-    const kickedAt = toMs(kd.kickedAt);
-    if (!kickedAt) return false;
-    if (Date.now() < kickedAt + dur) return false; // still running
+    // Prefer absolute expiry timestamp first
+    const until = kd.kickUntil || kd.expiresAt;
+    if (until) {
+      if (Date.now() < new Date(until).getTime()) return false; // still running
+    } else {
+      const dur = parseDurationMs(kd.kickDuration ?? kd.duration);
+      if (dur === Infinity) return false; // permanent kick
+      const kickedAt = toMs(kd.kickedAt);
+      if (!kickedAt) return false;
+      if (Date.now() < kickedAt + dur) return false; // still running
+    }
 
     /* Expired → clean both places */
     await deleteDoc(kickedRef);
@@ -134,7 +141,11 @@ export const runFullExpiryCheck = async (uid, userProfile, currentRoomId) => {
 /* ─── 5. Instant kick-expiry check (no Firestore read) ───── */
 export const isKickExpired = (kickData) => {
   if (!kickData) return true;
-  const dur = parseDurationMs(kickData.duration);
+  // Prefer absolute expiry timestamp (most accurate, handles datetime picker)
+  const until = kickData.kickUntil || kickData.expiresAt;
+  if (until) return Date.now() >= new Date(until).getTime();
+  // Fallback: compute from relative duration
+  const dur = parseDurationMs(kickData.kickDuration ?? kickData.duration);
   if (dur === Infinity) return false;
   const t = toMs(kickData.kickedAt ?? kickData.time);
   if (!t) return false;

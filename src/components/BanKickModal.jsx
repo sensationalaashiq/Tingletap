@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -48,15 +48,16 @@ const fmtDate = (date) => {
 };
 
 const fmtCountdown = (ms) => {
-  if (ms <= 0) return '00:00';
+  if (ms <= 0) return '0s';
   const totalSec = Math.floor(ms / 1000);
   const d = Math.floor(totalSec / 86400);
   const h = Math.floor((totalSec % 86400) / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  return `${s}s`;
 };
 
 const getInitials = (name) => {
@@ -305,6 +306,35 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
   useEffect(() => {
     if (!kickInfo) { setKickMsLeft(null); return; }
 
+    // If kickUntil absolute timestamp is provided, use it directly
+    if (kickInfo.kickUntil) {
+      const kickUntilMs = new Date(kickInfo.kickUntil).getTime();
+      const compute = () => Math.max(0, kickUntilMs - Date.now());
+      const initial = compute();
+      setKickMsLeft(initial);
+      if (initial <= 0 && !autoRemovedRef.current) {
+        autoRemovedRef.current = true;
+        setKickExpired(true);
+        const roomId = kickInfo.roomId || window.location.pathname.split('/room/')[1];
+        if (roomId && uid) deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid)).catch(() => {});
+        if (uid) updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
+        return;
+      }
+      const iv = setInterval(() => {
+        const remaining = compute();
+        setKickMsLeft(remaining);
+        if (remaining <= 0 && !autoRemovedRef.current) {
+          autoRemovedRef.current = true;
+          setKickExpired(true);
+          clearInterval(iv);
+          const roomId = kickInfo.roomId || window.location.pathname.split('/room/')[1];
+          if (roomId && uid) deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid)).catch(() => {});
+          if (uid) updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
+        }
+      }, 1000);
+      return () => clearInterval(iv);
+    }
+
     const KICK_DUR =
       (typeof kickInfo.kickDuration === 'number' && kickInfo.kickDuration > 0 ? kickInfo.kickDuration : null) ||
       parseDurationToMs(kickInfo.kickDuration) ||
@@ -330,6 +360,10 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
       if (roomId && uid) {
         deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid)).catch(() => {});
       }
+      // Clear kickedFrom on user doc so room join is restored immediately
+      if (uid) {
+        updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
+      }
       return;
     }
 
@@ -343,6 +377,10 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
         const roomId = kickInfo.roomId || window.location.pathname.split('/room/')[1];
         if (roomId && uid) {
           deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid)).catch(() => {});
+        }
+        // Clear kickedFrom on user doc so room join is restored immediately
+        if (uid) {
+          updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
       }
     }, 1000);
@@ -362,7 +400,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
   /* derived duration label — NEVER show "Permanent" for timed kicks */
   const kickDurLabel = kickInfo
-    ? fmtDurationLabel(kickInfo.kickDuration ?? kickInfo.duration)
+    ? fmtDurationLabel(kickInfo.kickDuration ?? kickInfo.duration ?? kickInfo.kickUntil)
     : null;
   const kickIsPermanent = !kickDurLabel;
 
