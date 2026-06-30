@@ -327,7 +327,8 @@ const Sidebar = ({
               ...kickData, roomId: rid, roomName: rName
             });
           }
-          await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from ${actionData.selectedRooms.length} room(s) — ${actionData.reason || 'No reason provided'}`, 'kicked');
+          const kickedRoomNames = actionData.selectedRooms.map(rid => rooms.find(r => r.id === rid)?.name || rid).join(', ');
+          await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from ${kickedRoomNames} — ${actionData.reason || 'No reason provided'}`, 'kicked');
         } else {
           const targetRoomId = actionData.currentRoomId || roomId;
           if (!targetRoomId) { toast.error('Not in a room — cannot kick.', { icon: TI.error }); return; }

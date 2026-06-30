@@ -1910,18 +1910,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             const kd = snap.data();
 
-            /* ── Check if this timed kick has already expired ── */
-            const dur = parseDurationMs(kd.duration);
-            if (dur !== Infinity) {
-                const raw = kd.kickedAt;
-                const kickedAt = raw?.toDate ? raw.toDate().getTime()
-                               : raw?.seconds ? raw.seconds * 1000 : null;
-                if (kickedAt && Date.now() >= kickedAt + dur) {
-                    /* Expired — silently clean up and let user stay */
-                    deleteDoc(kickedRef).catch(() => {});
-                    updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
-                    return;
-                }
+            /* ── Check if this timed kick has already expired (uses kickUntil first, then relative duration) ── */
+            if (isKickExpired(kd)) {
+                /* Expired — silently clean up and let user stay */
+                deleteDoc(kickedRef).catch(() => {});
+                updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
+                return;
             }
 
             /* ── Still active kick — navigate user out ── */
@@ -2063,6 +2057,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!uid || !loggedInUserProfile?.isBanned) return;
         autoCheckUnban(uid, loggedInUserProfile);
     }, [uid, loggedInUserProfile?.isBanned, loggedInUserProfile?.bannedAt, loggedInUserProfile?.banDuration]);
+
+    // ── Immediate kick expiry check on room entry ──
+    // Runs as soon as uid/roomId are known so an expired kick document is
+    // cleaned up before any message-send or onSnapshot fires.
+    useEffect(() => {
+        if (!uid || !roomId) return;
+        autoCheckUnkick(uid, roomId);
+    }, [uid, roomId]);
 
     // ── Periodic background expiry check (every 60 s) ──
     // Catches mute/ban/kick that expired while the user was idle in the room.
@@ -7903,9 +7905,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                             {(() => {
                                 const mutedByRole = (loggedInUserProfile?.mutedInfo?.mutedByRole || '').toLowerCase();
                                 const isBot = mutedByRole.includes('automod') || mutedByRole.includes('tinglebot') || mutedByRole.includes('system');
-                                const roleLabel = isBot ? 'TingleBot AutoMod'
+                                const roleLabel = isBot ? 'TingleBot'
                                     : mutedByRole === 'owner' ? 'Owner'
-                                    : mutedByRole === 'admin' ? 'Admin'
+                                    : mutedByRole === 'admin' ? 'Administrator'
                                     : mutedByRole === 'moderator' ? 'Moderator'
                                     : 'Staff';
                                 return (
@@ -7916,7 +7918,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         border: `1px solid ${isBot ? 'rgba(245,158,11,0.25)' : 'rgba(109,40,217,0.18)'}`,
                                         whiteSpace: 'nowrap', letterSpacing: '0.01em',
                                     }}>
-                                        {isBot ? `🤖 ${roleLabel}` : `by ${roleLabel}`}
+                                        {isBot ? `🤖 Muted by ${roleLabel}` : `by ${roleLabel}`}
                                     </span>
                                 );
                             })()}
