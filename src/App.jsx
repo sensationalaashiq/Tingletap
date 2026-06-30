@@ -268,7 +268,6 @@ function App() {
 
                   // Continuous enforcement for banned users
                   const banEnforcementInterval = setInterval(() => {
-                    console.log("🚫 Enforcing ban modal visibility");
                     setShowBanModal(true);
                     setBanModalData(banData);
 
@@ -298,7 +297,7 @@ function App() {
                     if (window.location.pathname !== '/login') {
                       window.history.replaceState(null, null, '/login');
                     }
-                  }, 100); // Every 100ms
+                  }, 3000); // Every 3s — sufficient to enforce, not wasteful
 
                   // Store interval globally
                   window.banEnforcementInterval = banEnforcementInterval;
@@ -334,7 +333,6 @@ function App() {
               // Continue enforcement even when logged out
               setTimeout(() => {
                 const banEnforcementInterval = setInterval(() => {
-                  console.log("🚫 Enforcing stored ban status");
                   setShowBanModal(true);
                   setBanModalData(banData);
 
@@ -356,7 +354,7 @@ function App() {
                   if (window.location.pathname !== '/login') {
                     window.history.replaceState(null, null, '/login');
                   }
-                }, 100);
+                }, 3000); // Every 3s — sufficient enforcement
 
                 window.banEnforcementInterval = banEnforcementInterval;
               }, 100);
@@ -440,7 +438,7 @@ function App() {
                   modalElement.style.opacity = '1';
                   modalElement.style.pointerEvents = 'all';
                 }
-              }, 50);
+              }, 2000); // Every 2s — enforces lockdown without CPU waste
 
               // Store interval globally for cleanup
               window.globalBanLockdownInterval = banLockdownInterval;

@@ -239,7 +239,7 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
         document.body.style.userSelect = 'none'; document.body.style.pointerEvents = 'none';
       };
       forceStyle();
-      const iv = setInterval(forceStyle, 10);
+      const iv = setInterval(forceStyle, 500); // 500ms is more than sufficient to enforce modal visibility
 
       document.addEventListener('keydown',    blockKb,    true);
       document.addEventListener('keyup',      blockKb,    true);

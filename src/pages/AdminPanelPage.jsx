@@ -379,7 +379,7 @@ const AdminPanelPage = () => {
 
   // Real-time reports data
   useEffect(() => {
-    const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
+    const reportsQuery = query(collection(db, 'reports'), orderBy('timestamp', 'desc'), limit(100));
     const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
       const reportsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setReports(reportsData);
@@ -412,7 +412,7 @@ const AdminPanelPage = () => {
 
   // Real-time guest sessions (active + ended-but-not-yet-expired)
   useEffect(() => {
-    const sessionsRef = collection(db, 'guestSessions');
+    const sessionsRef = query(collection(db, 'guestSessions'), limit(200));
     const unsubscribe = onSnapshot(sessionsRef, async (snapshot) => {
       const now = new Date().toISOString();
       const sessions = [];
@@ -446,7 +446,7 @@ const AdminPanelPage = () => {
   // Real-time feedback & complaints
   useEffect(() => {
     if (!isRoleReady) return;
-    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'), limit(100));
     const unsub = onSnapshot(q, snap => {
       setFeedbackItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => console.error('feedback listener error:', err.message));

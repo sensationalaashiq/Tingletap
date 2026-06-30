@@ -124,15 +124,42 @@ export const getInitialTrustData = () => ({
   }
 });
 
-// In-memory cache: accumulates MESSAGE_SENT increments and flushes to Firestore every 5 minutes
+// ─────────────────────────────────────────────────────────────────
+// IN-MEMORY TRUST DATA CACHE
+// Eliminates per-event Firestore getDoc calls.
+// TTL: 60 seconds — stale data for trust scoring is acceptable.
+// Cache is invalidated immediately after any write to the user's
+// trust fields, so subsequent reads always get fresh data.
+// ─────────────────────────────────────────────────────────────────
+const _trustCache = new Map(); // uid → { data, ts }
+const TRUST_CACHE_TTL = 60_000; // 60 seconds
+
+const _getCachedUserData = async (uid) => {
+  const now = Date.now();
+  const hit = _trustCache.get(uid);
+  if (hit && (now - hit.ts) < TRUST_CACHE_TTL) return hit.data;
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  _trustCache.set(uid, { data, ts: now });
+  return data;
+};
+
+const _setCacheData = (uid, data) => {
+  _trustCache.set(uid, { data, ts: Date.now() });
+};
+
+const _invalidateCache = (uid) => {
+  _trustCache.delete(uid);
+};
+
+// In-memory accumulator: batches MESSAGE_SENT increments, flushes every 5 minutes
 const _msgSentCache = {};
 
 export const getUserTrustData = async (uid) => {
   try {
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return null;
-    const data = snap.data();
+    const data = await _getCachedUserData(uid);
+    if (!data) return null;
     return {
       trustScore: data.trustScore ?? 10,
       trustRank: data.trustRank ?? 'squire',
@@ -149,7 +176,7 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
     if (!uid) return;
     const delta = customDelta !== null ? customDelta : (TRUST_SCORE_CHANGES[changeType] || 0);
 
-    // Debounce MESSAGE_SENT: accumulate locally, flush to Firestore every 5 minutes
+    // ── MESSAGE_SENT: accumulate locally, flush to Firestore every 5 minutes ──
     if (changeType === 'MESSAGE_SENT') {
       if (!_msgSentCache[uid]) {
         _msgSentCache[uid] = { pendingDelta: 0, pendingCount: 0, flushTimer: null };
@@ -162,17 +189,19 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
         const { pendingDelta, pendingCount } = cache;
         delete _msgSentCache[uid];
         try {
-          const userRef = doc(db, 'users', uid);
-          const snap = await getDoc(userRef);
-          if (!snap.exists()) return;
-          const data = snap.data();
+          // Use cache if fresh; otherwise fetch once
+          const data = await _getCachedUserData(uid);
+          if (!data) return;
           const newScore = Math.max(0, Math.min(100, (data.trustScore ?? 10) + pendingDelta));
-          await updateDoc(userRef, {
+          const updates = {
             trustScore: newScore,
             trustRank: getRankFromScore(newScore).id,
             'trustData.messagesCount': (data.trustData?.messagesCount || 0) + pendingCount,
             'trustData.lastUpdated': new Date().toISOString()
-          });
+          };
+          await updateDoc(doc(db, 'users', uid), updates);
+          // Update cache with new values rather than invalidating
+          _setCacheData(uid, { ...data, ...updates, trustScore: newScore, trustRank: getRankFromScore(newScore).id });
         } catch (err) {
           console.error('[TrustSystem] Error flushing MESSAGE_SENT batch:', err);
         }
@@ -180,14 +209,12 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
       return;
     }
 
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
+    // ── All other event types (admin-triggered, rare) ──
+    const data = await _getCachedUserData(uid);
+    if (!data) return;
 
-    const data = snap.data();
     const currentScore = data.trustScore ?? 10;
     const currentTrustData = data.trustData ?? {};
-
     const newScore = Math.max(0, Math.min(100, currentScore + delta));
     const newRank = getRankFromScore(newScore).id;
 
@@ -215,7 +242,9 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
       updates['trustData.lastViolation'] = new Date().toISOString();
     }
 
-    await updateDoc(userRef, updates);
+    await updateDoc(doc(db, 'users', uid), updates);
+    // Invalidate so next read gets the fresh server data
+    _invalidateCache(uid);
     return { newScore, newRank, delta };
   } catch (err) {
     console.error('[TrustSystem] Error updating trust score:', err);
@@ -225,11 +254,10 @@ export const updateTrustScore = async (uid, changeType, customDelta = null) => {
 export const applyAccountAgeTrustBonus = async (uid, createdAt) => {
   try {
     if (!uid || !createdAt) return;
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
 
-    const data = snap.data();
+    const data = await _getCachedUserData(uid);
+    if (!data) return;
+
     const lastCheck = data.trustData?.lastCleanCheck;
     const now = Date.now();
 
@@ -252,8 +280,11 @@ export const applyAccountAgeTrustBonus = async (uid, createdAt) => {
       bonus += TRUST_SCORE_CHANGES.CLEAN_WEEK;
     }
 
+    // Invalidate before calling updateTrustScore so it fetches fresh if needed
+    _invalidateCache(uid);
     await updateTrustScore(uid, 'ACCOUNT_AGE_DAILY', bonus);
-    await updateDoc(userRef, { 'trustData.lastCleanCheck': new Date().toISOString() });
+    await updateDoc(doc(db, 'users', uid), { 'trustData.lastCleanCheck': new Date().toISOString() });
+    _invalidateCache(uid);
   } catch (err) {
     console.error('[TrustSystem] Error applying age bonus:', err);
   }
@@ -261,12 +292,11 @@ export const applyAccountAgeTrustBonus = async (uid, createdAt) => {
 
 export const initializeUserTrust = async (uid) => {
   try {
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
-    const data = snap.data();
+    const data = await _getCachedUserData(uid);
+    if (!data) return;
     if (data.trustScore !== undefined) return;
-    await updateDoc(userRef, getInitialTrustData());
+    await updateDoc(doc(db, 'users', uid), getInitialTrustData());
+    _invalidateCache(uid);
   } catch (err) {
     console.error('[TrustSystem] Error initializing trust:', err);
   }

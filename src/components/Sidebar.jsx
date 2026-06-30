@@ -237,10 +237,7 @@ const Sidebar = ({
     return () => clearTimeout(t);
   }, [liveUsers]);
 
-  useEffect(() => {
-    const id = setInterval(() => { if (window.applyGlobalUsernameStyles) window.applyGlobalUsernameStyles(); }, 5000);
-    return () => clearInterval(id);
-  }, []);
+  // Styles are applied via the liveUsers effect and the userSpecificUsernameStylesChanged event — no polling needed
 
   /* -- status modal event -- */
   useEffect(() => {
