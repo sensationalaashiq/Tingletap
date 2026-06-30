@@ -573,7 +573,7 @@ const ChatMessage = ({ message, isEven, onDelete, onKick, onUnkick, onReport, on
                             if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
                             if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
                             const pStyle = {
-                                fontSize: savedMsgStyle?.fontSize || '11px',
+                                fontSize: savedMsgStyle?.fontSize || '10px',
                                 color: savedMsgStyle?.fontColor || '#2d2d2d',
                                 fontFamily: savedMsgStyle?.fontFamily || 'inherit',
                                 fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
@@ -1685,7 +1685,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         const fp = userData.messageFontPreferences || userData.fontPreferences;
                         if (fp) {
                             window.userMessageStyles[userId] = {
-                                fontSize:        fp.fontSize        || '11px',
+                                fontSize:        fp.fontSize        || '10px',
                                 fontColor:       fp.fontColor       || '#2d2d2d',
                                 fontFamily:      fp.fontFamily      || 'inherit',
                                 isBold:          Boolean(fp.isBold),

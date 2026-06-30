@@ -899,6 +899,7 @@ html body .theme-light .user-font-styled {
 }
 
 .message-displayname {
+  font-size: 11px;
   font-weight: bold;
   font-family: 'Georgia', serif;
   color: var(--username-color);
@@ -948,6 +949,8 @@ html body .theme-light .user-font-styled {
 
 .message-body p {
   margin: 0;
+  font-size: 10px;
+  font-weight: normal;
   font-family: 'Lato', sans-serif;
   line-height: 1.5;
   color: var(--text-primary) !important;
@@ -982,7 +985,7 @@ body.theme-dark .message-body p:not([style]):not(.user-font-styled),
 body.theme-dark .message-content-container p:not([style]):not(.user-font-styled) {
     color: #e2e8f0 !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-    font-weight: 500 !important;
+    font-weight: normal !important;
 }
 
 .youtube-embed {
@@ -2074,22 +2077,22 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   text-decoration: inherit !important;
 }
 
-/* Bold Light theme message text - NO WHITISH EFFECTS */
-body:not(.dark-mode):not([class*="theme-"]) .message-body p,
-body.theme-light .message-body p {
+/* Light theme message text - NO forced bold, no whitish effects */
+body:not(.dark-mode):not([class*="theme-"]) .message-body p:not([style*="font-weight"]):not(.user-font-styled),
+body.theme-light .message-body p:not([style*="font-weight"]):not(.user-font-styled) {
   color: #2d1b69 !important;
-  font-weight: 600 !important;
+  font-weight: normal !important;
   opacity: 1 !important;
   text-shadow: none !important;
   filter: none !important;
   -webkit-filter: none !important;
 }
 
-/* Bold Dark theme message text - NO WHITISH EFFECTS */
-body.dark-mode .message-body p,
-body.theme-dark .message-body p {
+/* Dark theme message text - NO forced bold */
+body.dark-mode .message-body p:not([style*="font-weight"]):not(.user-font-styled),
+body.theme-dark .message-body p:not([style*="font-weight"]):not(.user-font-styled) {
   color: #f1f5f9 !important;
-  font-weight: 600 !important;
+  font-weight: normal !important;
   opacity: 1 !important;
   text-shadow: none !important;
   filter: none !important;
