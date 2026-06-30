@@ -948,25 +948,26 @@ html.dark-theme-variant textarea::placeholder { color: var(--input-placeholder) 
 html.dark-theme-variant hr { border-color: var(--border-color) !important; }
 
 /* ── PM Header Popup ── */
+/* ── PM Header Popup (luxury redesign) — theme overrides ── */
 html.dark-theme-variant .pm-header-popup-container {
-  background: var(--modal-bg) !important;
-  border-color: var(--border-accent) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35) !important;
+  background: linear-gradient(160deg, var(--bg-elevated) 0%, var(--bg-card) 100%) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1.5px var(--border-accent) !important;
 }
-html.dark-theme-variant .pm-popup-header {
-  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-elevated) 100%) !important;
-  border-bottom-color: var(--border-color) !important;
-}
-html.dark-theme-variant .pm-popup-title { color: var(--username-color) !important; }
-html.dark-theme-variant .pm-popup-title svg { fill: var(--accent-color) !important; }
-html.dark-theme-variant .pm-popup-clear-btn,
-html.dark-theme-variant .pm-popup-close-btn { background: var(--badge-bg) !important; color: var(--username-color) !important; }
-html.dark-theme-variant .pm-popup-clear-btn:hover {
-  background: linear-gradient(135deg, rgba(239,68,68,0.25) 0%, rgba(220,38,38,0.35) 100%) !important;
-  color: #f87171 !important;
-}
-html.dark-theme-variant .pm-popup-item { background: transparent !important; border-bottom-color: var(--border-color) !important; }
-html.dark-theme-variant .pm-popup-item:hover { background: var(--sidebar-hover) !important; }
+/* pm-popup-header keeps its deep purple gradient — intentional, no theme override */
+html.dark-theme-variant .pm-popup-count { background: rgba(255,255,255,0.2) !important; }
+/* pm-popup-clear-btn keeps its red gradient — no theme override needed */
+/* pm-popup-close-btn keeps its white style — no theme override needed */
+html.dark-theme-variant .pm-popup-content { background: transparent !important; scrollbar-color: var(--accent-color) transparent !important; }
+html.dark-theme-variant .pm-popup-empty p { color: var(--username-color) !important; }
+html.dark-theme-variant .pm-popup-empty small { color: var(--accent-color) !important; }
+html.dark-theme-variant .pm-conversation-item { border-color: var(--border-color) !important; }
+html.dark-theme-variant .pm-conversation-item:hover { background: var(--sidebar-hover) !important; border-color: var(--border-accent) !important; }
+html.dark-theme-variant .pm-conversation-name { color: var(--text-primary) !important; }
+html.dark-theme-variant .pm-conversation-preview { color: var(--text-secondary) !important; }
+html.dark-theme-variant .pm-conversation-time { color: var(--text-muted) !important; }
+html.dark-theme-variant .pm-conversation-delete-btn { background: rgba(239,68,68,0.08) !important; border-color: rgba(239,68,68,0.2) !important; color: #f87171 !important; }
+html.dark-theme-variant .pm-conversation-delete-btn:hover { background: linear-gradient(135deg,#ef4444,#dc2626) !important; color: #ffffff !important; }
+/* Legacy sender/preview/time classes (no-op, kept for safety) */
 html.dark-theme-variant .pm-popup-sender { color: var(--username-color) !important; }
 html.dark-theme-variant .pm-popup-preview { color: var(--text-secondary) !important; }
 html.dark-theme-variant .pm-popup-time { color: var(--text-muted) !important; }
@@ -1235,43 +1236,28 @@ html.dark-theme-variant .auth-container { background: var(--modal-bg) !important
 ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Friend Request Popup ── */
+/* ── Friend Request Popup (luxury redesign) — theme overrides ── */
 html.dark-theme-variant .friend-request-popup-container {
-  background: var(--modal-bg) !important;
-  border-color: var(--border-color) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  background: linear-gradient(160deg, var(--bg-elevated) 0%, var(--bg-card) 100%) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1.5px var(--border-accent) !important;
 }
-html.dark-theme-variant .friend-request-popup-header {
-  background: var(--bg-tertiary) !important;
-  border-bottom-color: var(--border-color) !important;
-  color: var(--username-color) !important;
-}
-html.dark-theme-variant .friend-request-popup-title { color: var(--username-color) !important; }
-html.dark-theme-variant .friend-request-popup-title svg { stroke: var(--username-color) !important; fill: none !important; }
-html.dark-theme-variant .friend-request-popup-close-btn { color: var(--text-secondary) !important; background: transparent !important; }
-html.dark-theme-variant .friend-request-popup-close-btn:hover { background: rgba(255,255,255,0.1) !important; color: var(--text-primary) !important; }
-html.dark-theme-variant .friend-request-popup-content { background: var(--bg-secondary) !important; }
-html.dark-theme-variant .friend-request-popup-empty { color: var(--accent-hover) !important; }
+/* friend-request-popup-header keeps deep purple gradient — intentional */
+html.dark-theme-variant .fr-popup-count { background: rgba(255,255,255,0.2) !important; }
+/* friend-request-popup-close-btn keeps white style */
+html.dark-theme-variant .friend-request-popup-content { background: transparent !important; }
 html.dark-theme-variant .friend-request-popup-empty p { color: var(--username-color) !important; }
-html.dark-theme-variant .friend-request-popup-empty small { color: var(--text-muted) !important; }
-html.dark-theme-variant .friend-request-popup-empty svg { stroke: var(--text-muted) !important; }
-html.dark-theme-variant .friend-request-item {
-  background: var(--badge-bg) !important;
-  border-color: var(--border-accent) !important;
-}
-html.dark-theme-variant .friend-request-item:hover {
-  background: var(--sidebar-hover) !important;
-  border-color: var(--border-secondary) !important;
-}
-html.dark-theme-variant .friend-request-avatar { border-color: var(--border-color) !important; }
+html.dark-theme-variant .friend-request-popup-empty small { color: var(--accent-color) !important; }
+html.dark-theme-variant .friend-request-item { background: var(--badge-bg) !important; border-color: var(--border-accent) !important; }
+html.dark-theme-variant .friend-request-item:hover { background: var(--sidebar-hover) !important; border-color: var(--border-secondary) !important; }
+html.dark-theme-variant .friend-request-avatar { border-color: var(--border-accent) !important; }
 html.dark-theme-variant .friend-request-name { color: var(--text-primary) !important; }
 html.dark-theme-variant .friend-request-time { color: var(--accent-color) !important; }
-html.dark-theme-variant .friend-request-role { color: var(--text-tertiary) !important; }
-html.dark-theme-variant .friend-request-message { color: var(--text-secondary) !important; }
-html.dark-theme-variant .accept-btn { background: linear-gradient(135deg,#059669,#047857) !important; color: #ffffff !important; border-color: rgba(16,185,129,0.5) !important; box-shadow: 0 2px 8px rgba(5,150,105,0.4) !important; }
-html.dark-theme-variant .accept-btn:hover { background: linear-gradient(135deg,#10b981,#059669) !important; box-shadow: 0 4px 14px rgba(16,185,129,0.55) !important; }
+/* accept/reject buttons keep their solid green/red in all themes — no override needed */
+html.dark-theme-variant .accept-btn { background: linear-gradient(135deg,#059669,#047857) !important; color: #ffffff !important; box-shadow: 0 3px 12px rgba(5,150,105,0.5) !important; }
+html.dark-theme-variant .accept-btn:hover { background: linear-gradient(135deg,#10b981,#059669) !important; box-shadow: 0 6px 20px rgba(16,185,129,0.6) !important; }
 html.dark-theme-variant .accept-btn svg { stroke: #ffffff !important; }
-html.dark-theme-variant .reject-btn { background: linear-gradient(135deg,#dc2626,#b91c1c) !important; color: #ffffff !important; border-color: rgba(239,68,68,0.5) !important; box-shadow: 0 2px 8px rgba(220,38,38,0.4) !important; }
-html.dark-theme-variant .reject-btn:hover { background: linear-gradient(135deg,#ef4444,#dc2626) !important; box-shadow: 0 4px 14px rgba(239,68,68,0.55) !important; }
+html.dark-theme-variant .reject-btn { background: linear-gradient(135deg,#dc2626,#b91c1c) !important; color: #ffffff !important; box-shadow: 0 3px 12px rgba(220,38,38,0.5) !important; }
+html.dark-theme-variant .reject-btn:hover { background: linear-gradient(135deg,#ef4444,#dc2626) !important; box-shadow: 0 6px 20px rgba(239,68,68,0.6) !important; }
 html.dark-theme-variant .reject-btn svg { stroke: #ffffff !important; }
 html.dark-theme-variant .friend-request-actions { background: transparent !important; }
 

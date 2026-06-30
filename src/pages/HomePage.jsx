@@ -5202,7 +5202,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 await batch.commit();
                 setConversations([]);
                 setUnreadCounts({});
-                toast.success("All conversations cleared successfully!", { icon: TI.clear });
+                toast.success(
+                    <span style={{display:'flex',alignItems:'center',gap:'8px',fontWeight:600}}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        All conversations cleared!
+                    </span>,
+                    { style:{background:'linear-gradient(135deg,#1e1b4b,#312e81)',color:'#fff',border:'1px solid rgba(139,92,246,0.4)',borderRadius:'12px'}, autoClose:3000, icon:false }
+                );
             } catch (error) {
                 toast.error("Failed to clear conversations.", { icon: TI.error });
             }
@@ -5233,7 +5239,13 @@ const HomePage = ({ user, roomIdOverride }) => {
             await batch.commit();
             setConversations(prev => prev.filter(c => c.otherUserId !== conversation.otherUserId));
             setUnreadCounts(prev => { const u = { ...prev }; delete u[conversation.otherUserId]; return u; });
-            toast.success(`Conversation deleted`, { icon: TI.clear });
+            toast.success(
+                <span style={{display:'flex',alignItems:'center',gap:'8px',fontWeight:600}}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Chat with <b style={{color:'#fbbf24'}}>{conversation.otherUserName}</b> deleted
+                </span>,
+                { style:{background:'linear-gradient(135deg,#1a0a2e,#2d1b69)',color:'#fff',border:'1px solid rgba(239,68,68,0.4)',borderRadius:'12px'}, autoClose:2800, icon:false }
+            );
         } catch {
             toast.error("Failed to delete conversation.", { icon: TI.error });
         }
@@ -6804,17 +6816,30 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <div className="friend-request-popup-container" onClick={(e) => e.stopPropagation()}>
                             <div className="friend-request-popup-header">
                                 <div className="friend-request-popup-title">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                        <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
-                                    </svg>
+                                    <span className="fr-title-icon">
+                                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+                                            <defs>
+                                                <linearGradient id="frTitleGrad" x1="0" y1="0" x2="1" y2="1">
+                                                    <stop offset="0%" stopColor="#f9a8d4"/>
+                                                    <stop offset="50%" stopColor="#c4b5fd"/>
+                                                    <stop offset="100%" stopColor="#818cf8"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,10V7H4V10H1V12H4V15H6V12H9V10" stroke="url(#frTitleGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </span>
                                     Friend Requests
+                                    {friendRequests.length > 0 && (
+                                        <span className="fr-popup-count">{friendRequests.length}</span>
+                                    )}
                                 </div>
                                 <button 
                                     className="friend-request-popup-close-btn"
                                     onClick={() => setShowFriendRequestNotification(false)}
+                                    title="Close"
                                 >
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                                     </svg>
                                 </button>
                             </div>
@@ -6822,8 +6847,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                             <div className="friend-request-popup-content">
                                 {friendRequests.length === 0 ? (
                                     <div className="friend-request-popup-empty">
-                                        <svg viewBox="0 0 24 24" width="32" height="32" fill="#9ca3af">
-                                            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C13.79,12 12,10.21 12,8C12,5.79 13.79,4 16,4M16,14C20.42,14 24,15.79 24,18V20H8V18C8,15.79 11.58,14 16,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/>
+                                        <svg viewBox="0 0 24 24" width="44" height="44" fill="none">
+                                            <defs>
+                                                <linearGradient id="frEmptyGrad" x1="0" y1="0" x2="1" y2="1">
+                                                    <stop offset="0%" stopColor="#c4b5fd"/>
+                                                    <stop offset="100%" stopColor="#6d28d9"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <circle cx="15" cy="8" r="4" fill="url(#frEmptyGrad)" opacity="0.3"/>
+                                            <path d="M15 14c4.42 0 8 1.79 8 4v2H7v-2c0-2.21 3.58-4 8-4zM6 10V7H4v3H1v2h3v3h2v-3h3v-2H6z" fill="url(#frEmptyGrad)" opacity="0.4"/>
                                         </svg>
                                         <p>No friend requests</p>
                                         <small>You'll see friend requests here when you receive them</small>
@@ -6856,18 +6888,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                     <button 
                                                         className="accept-btn"
                                                         onClick={() => handleAcceptFriendRequest(request)}
-                                                        title="Accept"
+                                                        title="Accept Friend Request"
                                                     >
-                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="20 6 9 17 4 12"/>
                                                         </svg>
                                                     </button>
                                                     <button 
                                                         className="reject-btn"
                                                         onClick={() => handleRejectFriendRequest(request)}
-                                                        title="Decline"
+                                                        title="Decline Friend Request"
                                                     >
-                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                                             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                                                         </svg>
                                                     </button>
@@ -6889,45 +6921,46 @@ const HomePage = ({ user, roomIdOverride }) => {
                         }
                     }}>
                         <div className="pm-header-popup-container" onClick={(e) => e.stopPropagation()}>
+                            {/* Premium Header */}
                             <div className="pm-popup-header">
                                 <div className="pm-popup-title">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                        <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
-                                    </svg>
+                                    <span className="pm-popup-title-icon">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                            <defs>
+                                                <linearGradient id="pmTitleGrad" x1="0" y1="0" x2="1" y2="1">
+                                                    <stop offset="0%" stopColor="#c4b5fd"/>
+                                                    <stop offset="100%" stopColor="#7c3aed"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmTitleGrad)"/>
+                                        </svg>
+                                    </span>
                                     Private Messages
+                                    {conversations.length > 0 && (
+                                        <span className="pm-popup-count">{conversations.length}</span>
+                                    )}
                                 </div>
                                 <div className="pm-popup-actions">
                                     <button 
                                         className="pm-popup-clear-btn"
                                         onClick={handleClearAllConversations}
-                                        title="Clear All Conversations"
+                                        title="Delete All Conversations"
                                     >
-                                        <svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
-                                          <defs>
-                                            <linearGradient id="del_lg1"><stop offset="0" stopColor="#ffddf3"/><stop offset="1" stopColor="#7900e9"/></linearGradient>
-                                            <linearGradient id="del_sv1" gradientUnits="userSpaceOnUse" x1="34.016" x2="50" xlinkHref="#del_lg1" y1="41.991" y2="41.991"/>
-                                            <linearGradient id="del_sv2" gradientUnits="userSpaceOnUse" x1="14" x2="34.04" xlinkHref="#del_lg1" y1="40.996" y2="40.996"/>
-                                          </defs>
-                                          <path d="m42.028 49.975c-1.092 0-2.149-.211-3.144-.629-.804-.32-1.521-.762-2.164-1.328-2.745-2.417-3.503-6.521-1.801-9.757.822-1.561 2.198-2.825 3.873-3.559 1.031-.456 2.159-.696 3.266-.696.641 0 1.277.078 1.895.233 3.504.879 6.047 4.142 6.047 7.761 0 2.592-1.262 5.033-3.375 6.527-1.333.949-2.921 1.448-4.597 1.448z" fill="url(#del_sv1)"/>
-                                          <path d="m28.014 50.001c-4.153 0-8.329-.415-12.411-1.232-.926-.188-1.603-1.013-1.603-1.959v-2.47c0-3.995 2.071-7.833 5.405-10.017 2.229-1.473 5.021-2.277 8.082-2.333.123.004.245.007.369.007s.249-.002.377-.007c1.938.032 3.934.39 5.773 1.036.011.004.022.008.033.012-1.084.951-1.99 2.089-2.659 3.359-2.286 4.345-1.614 9.733 1.51 13.413-1.622.128-3.252.191-4.876.191z" fill="url(#del_sv2)"/>
-                                          <g fill="#541491">
-                                            <path d="m12 47.808c-.553 0-1-.448-1-1v-2.465c0-4.991 2.589-9.793 6.757-12.534 4.702-3.091 11.31-3.706 17.243-1.608.521.184.794.755.609 1.276-.184.52-.752.794-1.275.609-5.274-1.865-11.352-1.319-15.479 1.394-3.611 2.375-5.855 6.538-5.855 10.863v2.465c0 .552-.447 1-1 1z"/>
-                                            <path d="m27.991 53.003c-4.343 0-8.68-.431-12.975-1.293-.542-.109-.893-.636-.784-1.177.109-.542.637-.891 1.177-.784 7.451 1.494 15.033 1.654 22.54.473.544-.086 1.057.286 1.144.833.085.545-.287 1.057-.833 1.143-3.413.537-6.843.805-10.269.805z"/>
-                                            <path d="m15.214 51.73c-.065 0-.132-.006-.198-.02-2.327-.467-4.016-2.528-4.016-4.902 0-.552.447-1 1-1s1 .448 1 1c0 1.424 1.014 2.661 2.41 2.941.541.109.892.636.783 1.177-.095.476-.512.804-.979.804z"/>
-                                            <path d="m46 43h-8c-.553 0-1-.448-1-1s.447-1 1-1h8c.553 0 1 .448 1 1s-.447 1-1 1z"/>
-                                            <path d="m42 47c-.553 0-1-.448-1-1v-8c0-.552.447-1 1-1s1 .448 1 1v8c0 .552-.447 1-1 1z"/>
-                                            <path d="m27.94 30.993c-.001 0-.001 0 0 0-.897 0-1.787-.123-2.646-.363-4.929-1.382-8.06-6.416-7.127-11.458.915-4.948 5.647-8.598 10.759-8.128 5.088.466 9.074 4.84 9.074 9.956 0 1.221-.219 2.416-.649 3.551-1.464 3.853-5.246 6.442-9.411 6.442zm.09-17.992c-3.813 0-7.208 2.809-7.896 6.533-.746 4.036 1.758 8.063 5.7 9.169.684.192 1.393.289 2.105.289h.001c3.34 0 6.37-2.07 7.541-5.152.344-.906.519-1.862.519-2.84 0-4.093-3.188-7.592-7.258-7.966-.238-.022-.475-.033-.712-.033z"/>
-                                            <path d="m42.018 52.976c-.001 0-.001 0 0 0-2.702 0-5.285-.962-7.274-2.708-3.781-3.322-4.822-8.958-2.475-13.4 1.882-3.561 5.724-5.861 9.788-5.861.888 0 1.772.109 2.629.324 4.817 1.209 8.314 5.696 8.314 10.669 0 3.56-1.735 6.916-4.644 8.978-1.842 1.307-4.035 1.998-6.338 1.998zm.039-19.97c-3.332 0-6.48 1.882-8.021 4.795-1.92 3.634-1.067 8.245 2.027 10.963 1.624 1.426 3.738 2.211 5.953 2.211h.001c1.887 0 3.679-.563 5.183-1.629 2.379-1.687 3.8-4.433 3.8-7.346 0-4.069-2.86-7.741-6.801-8.73-.698-.175-1.419-.264-2.142-.264z"/>
-                                            <path d="m37.982 33.842c-.196 0-.396-.058-.569-.178-.952-.661-1.988-1.191-3.079-1.577-.521-.184-.794-.755-.609-1.276.184-.521.754-.795 1.275-.61 1.259.445 2.454 1.057 3.554 1.819.453.315.566.938.251 1.392-.195.28-.506.43-.823.43z"/>
-                                          </g>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6l-1 14H6L5 6"/>
+                                            <path d="M10 11v6"/>
+                                            <path d="M14 11v6"/>
+                                            <path d="M9 6V4h6v2"/>
                                         </svg>
                                     </button>
                                     <button 
                                         className="pm-popup-close-btn"
                                         onClick={() => setPmHeaderBoxOpen(false)}
+                                        title="Close"
                                     >
-                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                                         </svg>
                                     </button>
                                 </div>
@@ -6936,8 +6969,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                             <div className="pm-popup-content">
                                 {conversations.length === 0 ? (
                                     <div className="pm-popup-empty">
-                                        <svg viewBox="0 0 24 24" width="32" height="32" fill="#9ca3af">
-                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z"/>
+                                        <svg viewBox="0 0 24 24" width="44" height="44" fill="none">
+                                            <defs>
+                                                <linearGradient id="pmEmptyGrad" x1="0" y1="0" x2="1" y2="1">
+                                                    <stop offset="0%" stopColor="#a78bfa"/>
+                                                    <stop offset="100%" stopColor="#6d28d9"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmEmptyGrad)" opacity="0.35"/>
+                                            <path d="M7 8h10M7 12h7" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
                                         </svg>
                                         <p>No conversations yet</p>
                                         <small>Start chatting with users to see messages here</small>
@@ -6994,7 +7034,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                         onClick={(e) => handleDeleteConversation(e, conversation)}
                                                         title="Delete conversation"
                                                     >
-                                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                                                         </svg>
                                                     </button>
