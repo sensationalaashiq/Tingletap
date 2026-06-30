@@ -154,8 +154,6 @@ html.theme-golden-sunset.dark-theme-variant .bp-overlay {
   position: fixed;
   inset: 0;
   background: var(--bp-overlay-bg, rgba(45,20,80,0.45));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   z-index: 1200;
   display: flex;
   align-items: center;
@@ -339,8 +337,6 @@ html.theme-golden-sunset.dark-theme-variant .bp-overlay {
   border: 1px solid var(--bp-card-border);
   border-radius: 18px;
   box-shadow: var(--bp-card-shadow);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .bp-input {
@@ -1342,9 +1338,7 @@ html.dark-theme-variant .bp-create-card {
 .bp-password-modal {
   position: absolute;
   inset: 0;
-  background: rgba(30,10,60,0.62);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(30,10,60,0.72);
   display: flex;
   align-items: center;
   justify-content: center;

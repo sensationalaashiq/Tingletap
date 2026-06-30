@@ -253,15 +253,15 @@ const RadioPlayer = ({ isOpen, onClose }) => {
               </div>
               <div className="radio-header-controls">
                 <button className="rp-minimize-btn" onClick={handleMinimize} title={isMinimized ? "Expand" : "Minimize"}>
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fef3c7" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                     {isMinimized
-                      ? <><polyline points="6 9 12 15 18 9"/></>
-                      : <><polyline points="18 15 12 9 6 15"/></>
+                      ? <polyline points="6 9 12 15 18 9"/>
+                      : <polyline points="18 15 12 9 6 15"/>
                     }
                   </svg>
                 </button>
                 <button className="rp-close-btn" onClick={handleClose} title="Close">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fecaca" strokeWidth="2.8" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </button>
