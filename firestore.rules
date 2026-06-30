@@ -333,8 +333,13 @@ service cloud.firestore {
     match /privateMessages/{messageId} {
       allow read: if isStaff()
                   || (request.auth != null
-                      && request.auth.uid in resource.data.get('participants', [])
+                      && (request.auth.uid in resource.data.get('participants', [])
+                          || resource.data.get('receiverId', '') == request.auth.uid
+                          || resource.data.get('senderId', '') == request.auth.uid)
                       && notBanned());
+
+      // Staff (owner/admin) may create TingleBot DM notifications on behalf of TingleBot
+      allow create: if isStaff();
 
       allow create: if request.auth != null
                     && request.auth.uid in request.resource.data.get('participants', [])
@@ -352,7 +357,8 @@ service cloud.firestore {
 
       allow update: if isStaff()
                     || (request.auth != null
-                        && request.auth.uid in resource.data.get('participants', [])
+                        && (request.auth.uid in resource.data.get('participants', [])
+                            || resource.data.get('receiverId', '') == request.auth.uid)
                         && notBanned());
 
       allow delete: if isStaff()
@@ -491,18 +497,20 @@ service cloud.firestore {
 
 
     // ================================================================
-    // FEEDBACK
-    // All authenticated users (including guests) may submit feedback,
+    // FEEDBACK & COMPLAINTS
+    // All authenticated registered users may submit feedback,
     // but NOT if they are banned.
+    // Admins & owners may read, update, and delete all submissions.
     // ================================================================
 
     match /feedback/{feedbackId} {
       allow create: if request.auth != null
-                    && request.resource.data.submittedBy == request.auth.uid
+                    && isRegistered()
+                    && request.resource.data.uid == request.auth.uid
                     && notBanned();
 
       allow read: if request.auth != null
-                  && (resource.data.submittedBy == request.auth.uid || isStaff());
+                  && (resource.data.uid == request.auth.uid || isStaff());
 
       allow update, delete: if isStaff();
     }

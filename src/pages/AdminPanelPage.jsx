@@ -139,6 +139,16 @@ const AdminPanelPage = () => {
   const [violationsFilter, setViolationsFilter] = useState('all');
   const [violationsShowResolved, setViolationsShowResolved] = useState(false);
 
+  // Feedback & Complaints
+  const [feedbackItems, setFeedbackItems] = useState([]);
+  const [feedbackSearch, setFeedbackSearch] = useState('');
+  const [feedbackTypeFilter, setFeedbackTypeFilter] = useState('all');
+  const [feedbackSort, setFeedbackSort] = useState('newest');
+  const [feedbackReplyOpen, setFeedbackReplyOpen] = useState(null);
+  const [feedbackReplyStatus, setFeedbackReplyStatus] = useState('');
+  const [feedbackReplyText, setFeedbackReplyText] = useState('');
+  const [feedbackReplySending, setFeedbackReplySending] = useState(false);
+
   // Unkick modal
   const [showUnkickModal, setShowUnkickModal] = useState(false);
   const [unkickTarget, setUnkickTarget] = useState(null);
@@ -432,6 +442,92 @@ const AdminPanelPage = () => {
     }, err => console.error('modLogs listener error:', err.message));
     return () => unsub();
   }, [isRoleReady]);
+
+  // Real-time feedback & complaints
+  useEffect(() => {
+    if (!isRoleReady) return;
+    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      setFeedbackItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => console.error('feedback listener error:', err.message));
+    return () => unsub();
+  }, [isRoleReady]);
+
+  // Mark feedback read/unread
+  const handleFeedbackMarkRead = async (id, isRead) => {
+    try {
+      await updateDoc(doc(db, 'feedback', id), { isRead });
+    } catch (e) { console.error(e); }
+  };
+
+  // Delete feedback
+  const handleFeedbackDelete = async (id) => {
+    if (!window.confirm('Delete this submission permanently?')) return;
+    try {
+      await deleteDoc(doc(db, 'feedback', id));
+    } catch (e) { console.error(e); }
+  };
+
+  // Send admin reply via TingleBot DM
+  const handleFeedbackReply = async (item) => {
+    if (!feedbackReplyText.trim() && !feedbackReplyStatus) return;
+    setFeedbackReplySending(true);
+    try {
+      const TINGLEBOT_UID = 'tinglebot_system_official_2024';
+      const conversationId = [TINGLEBOT_UID, item.uid].sort().join('_');
+
+      const STATUS_TEXTS = {
+        feedback_received: 'Feedback Received — Thank you for sharing your thoughts with us.',
+        complaint_received: 'Complaint Received — We have received your complaint and will review it.',
+        under_review: 'Your submission is currently Under Review by our team.',
+        checking_issue: 'We are Checking the Issue you reported. Stay tuned.',
+        in_progress: 'Your request is In Progress. Our team is actively working on it.',
+        info_required: 'Additional Information is Required to process your request. Please DM an admin.',
+        resolved: 'Your issue has been Resolved. Thank you for your patience.',
+        closed: 'This submission has been Closed. No further action is required.',
+        warning_issued: 'A Warning has been issued regarding your submission.',
+        thank_you: 'Thank You for Your Feedback — we appreciate your contribution to TingleTap!',
+      };
+
+      const statusText = feedbackReplyStatus ? STATUS_TEXTS[feedbackReplyStatus] || '' : '';
+      const customText = feedbackReplyText.trim();
+      const fullText = [statusText, customText].filter(Boolean).join('\n\n');
+
+      await addDoc(collection(db, 'privateMessages'), {
+        senderId: TINGLEBOT_UID,
+        senderName: 'TingleBot',
+        receiverId: item.uid,
+        participants: [TINGLEBOT_UID, item.uid],
+        conversationId,
+        text: fullText,
+        isBot: true,
+        isBotNotification: true,
+        botStatusKey: feedbackReplyStatus || 'feedback_received',
+        tinglebotType: feedbackReplyStatus || 'feedback_received',
+        feedbackReply: true,
+        feedbackId: item.id,
+        isRead: false,
+        createdAt: serverTimestamp(),
+      });
+
+      // Also add reply record to feedback doc
+      await updateDoc(doc(db, 'feedback', item.id), {
+        lastReplyAt: serverTimestamp(),
+        lastReplyStatus: feedbackReplyStatus || 'custom',
+        isRead: true,
+      });
+
+      setFeedbackReplyOpen(null);
+      setFeedbackReplyText('');
+      setFeedbackReplyStatus('');
+      pt.success('Reply sent via TingleBot DM!');
+    } catch (e) {
+      console.error('Error sending feedback reply:', e);
+      pt.error('Failed to send reply.');
+    } finally {
+      setFeedbackReplySending(false);
+    }
+  };
 
   // Moderation functions
   const handleModerateUser = (user, action) => {
@@ -1746,6 +1842,22 @@ const AdminPanelPage = () => {
                 renderIcon: (c) => (
                   <>
                     <path fill={c} d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z"/>
+                  </>
+                )
+              },
+              {
+                id: 'feedback', label: 'Feedback',
+                badge: feedbackItems.filter(f => !f.isRead).length,
+                iconColor: '#a855f7',
+                renderIcon: (c) => (
+                  <>
+                    <defs>
+                      <linearGradient id="adm_fb_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stopColor={c}/>
+                        <stop offset="1" stopColor={c}/>
+                      </linearGradient>
+                    </defs>
+                    <path fill={c} d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2.5-3.5c-.4.6-1 1-1.5 1.3V10h-2V8.8c-.6-.3-1.2-1-1.5-1.7-.3-.7-.2-1.5.2-2.1.8-1.2 2.5-1.5 3.7-.7.9.6 1.4 1.7 1.1 2.7z"/>
                   </>
                 )
               }
@@ -3756,6 +3868,268 @@ const AdminPanelPage = () => {
                     })}
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* ═══════════════════════════════════════════════════════
+              FEEDBACK & COMPLAINTS TAB
+          ═══════════════════════════════════════════════════════ */}
+          {activeTab === 'feedback' && (() => {
+            const REPLY_STATUSES = [
+              { key: 'feedback_received',  label: 'Feedback Received',              color: '#a855f7' },
+              { key: 'complaint_received', label: 'Complaint Received',             color: '#ef4444' },
+              { key: 'under_review',       label: 'Under Review',                   color: '#60a5fa' },
+              { key: 'checking_issue',     label: 'Checking Issue',                 color: '#f59e0b' },
+              { key: 'in_progress',        label: 'In Progress',                    color: '#10b981' },
+              { key: 'info_required',      label: 'Additional Information Required',color: '#f97316' },
+              { key: 'resolved',           label: 'Resolved',                       color: '#10b981' },
+              { key: 'closed',             label: 'Closed',                         color: '#64748b' },
+              { key: 'warning_issued',     label: 'Warning Issued',                 color: '#f59e0b' },
+              { key: 'thank_you',          label: 'Thank You for Your Feedback',    color: '#ec4899' },
+            ];
+
+            let filtered = [...feedbackItems];
+            if (feedbackTypeFilter !== 'all') filtered = filtered.filter(f => f.type === feedbackTypeFilter);
+            if (feedbackSearch.trim()) {
+              const q = feedbackSearch.trim().toLowerCase();
+              filtered = filtered.filter(f =>
+                (f.username || '').toLowerCase().includes(q) ||
+                (f.displayName || '').toLowerCase().includes(q) ||
+                (f.email || '').toLowerCase().includes(q)
+              );
+            }
+            if (feedbackSort === 'oldest') filtered.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+
+            const unreadCount = feedbackItems.filter(f => !f.isRead).length;
+            const feedbackCount = feedbackItems.filter(f => f.type === 'feedback').length;
+            const complaintCount = feedbackItems.filter(f => f.type === 'complaint').length;
+
+            return (
+              <div style={{ padding: '0 0 24px' }}>
+                {/* Header */}
+                <div className="luxury-section-header" style={{ marginBottom: 18 }}>
+                  <h2 style={{ display:'flex', alignItems:'center', gap:10, fontSize:20, fontWeight:800, color:'#1e293b', margin:0 }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:26,height:26,flexShrink:0}}>
+                      <defs>
+                        <linearGradient id="adm_fbtitle_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stopColor="#a855f7"/><stop offset="1" stopColor="#ec4899"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="url(#adm_fbtitle_g)"/>
+                      <path d="M7 9h10M7 12h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    Feedback &amp; Complaints
+                  </h2>
+                  <p style={{ color:'#64748b', fontSize:13, margin:'4px 0 0', fontWeight:500 }}>
+                    Manage user-submitted feedback and complaint reports
+                  </p>
+                </div>
+
+                {/* Stats row */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:10, marginBottom:18 }}>
+                  {[
+                    { label:'Total', value: feedbackItems.length, color:'#6366f1', bg:'rgba(99,102,241,0.08)', border:'rgba(99,102,241,0.18)' },
+                    { label:'Unread', value: unreadCount, color:'#ef4444', bg:'rgba(239,68,68,0.08)', border:'rgba(239,68,68,0.18)' },
+                    { label:'Feedback', value: feedbackCount, color:'#a855f7', bg:'rgba(168,85,247,0.08)', border:'rgba(168,85,247,0.18)' },
+                    { label:'Complaints', value: complaintCount, color:'#f97316', bg:'rgba(249,115,22,0.08)', border:'rgba(249,115,22,0.18)' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: s.bg, border:`1px solid ${s.border}`, borderRadius:12, padding:'12px 14px', textAlign:'center' }}>
+                      <div style={{ fontSize:22, fontWeight:800, color: s.color, lineHeight:1 }}>{s.value}</div>
+                      <div style={{ fontSize:11, color:'#64748b', fontWeight:600, marginTop:3 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filters & Search */}
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14, alignItems:'center' }}>
+                  <div style={{ position:'relative', flex:'1 1 180px' }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',opacity:0.4}}>
+                      <circle cx="11" cy="11" r="8" stroke="#64748b" strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke="#64748b" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      placeholder="Search username or email…"
+                      value={feedbackSearch}
+                      onChange={e => setFeedbackSearch(e.target.value)}
+                      style={{ width:'100%', boxSizing:'border-box', padding:'8px 10px 8px 30px', borderRadius:9, border:'1px solid rgba(148,163,184,0.3)', fontSize:12.5, fontFamily:'inherit', outline:'none', background:'rgba(255,255,255,0.8)', color:'#1e293b' }}
+                    />
+                  </div>
+                  {['all','feedback','complaint'].map(f => (
+                    <button key={f} onClick={() => setFeedbackTypeFilter(f)} style={{
+                      padding:'7px 13px', borderRadius:8, border:`1px solid ${feedbackTypeFilter===f ? '#a855f7' : 'rgba(148,163,184,0.3)'}`,
+                      background: feedbackTypeFilter===f ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'rgba(255,255,255,0.8)',
+                      color: feedbackTypeFilter===f ? '#fff' : '#475569', fontWeight:600, fontSize:12, cursor:'pointer', fontFamily:'inherit'
+                    }}>
+                      {f === 'all' ? 'All' : f === 'feedback' ? 'Feedback' : 'Complaints'}
+                    </button>
+                  ))}
+                  <button onClick={() => setFeedbackSort(s => s==='newest'?'oldest':'newest')} style={{
+                    padding:'7px 13px', borderRadius:8, border:'1px solid rgba(148,163,184,0.3)',
+                    background:'rgba(255,255,255,0.8)', color:'#475569', fontWeight:600, fontSize:12, cursor:'pointer', fontFamily:'inherit',
+                    display:'flex', alignItems:'center', gap:5
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12}}>
+                      <path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z" fill="#475569"/>
+                    </svg>
+                    {feedbackSort === 'newest' ? 'Newest' : 'Oldest'}
+                  </button>
+                </div>
+
+                {/* Feedback Cards */}
+                {filtered.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'40px 20px', color:'#94a3b8' }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:40,height:40,margin:'0 auto 12px',display:'block',opacity:0.3}}>
+                      <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" stroke="#64748b" strokeWidth="1.5" fill="none"/>
+                    </svg>
+                    <div style={{fontWeight:700,fontSize:14}}>No submissions found</div>
+                  </div>
+                ) : filtered.map(item => {
+                  const isOpen = feedbackReplyOpen === item.id;
+                  const ts = item.timestamp?.toDate ? item.timestamp.toDate() : item.timestamp ? new Date(item.timestamp) : null;
+                  const dateStr = ts ? ts.toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true }) : '—';
+                  const isFeedback = item.type === 'feedback';
+                  const accentColor = isFeedback ? '#a855f7' : '#ef4444';
+                  const accentBg = isFeedback ? 'rgba(168,85,247,0.07)' : 'rgba(239,68,68,0.07)';
+                  const accentBorder = isFeedback ? 'rgba(168,85,247,0.2)' : 'rgba(239,68,68,0.2)';
+                  const avatarUrl = item.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid || 'user'}`;
+
+                  return (
+                    <div key={item.id} style={{
+                      background: item.isRead ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.95)',
+                      border: `1.5px solid ${item.isRead ? 'rgba(148,163,184,0.2)' : accentBorder}`,
+                      borderRadius: 16, marginBottom: 12, overflow:'hidden',
+                      boxShadow: item.isRead ? '0 2px 8px rgba(0,0,0,0.04)' : `0 4px 20px ${accentColor}18`,
+                      transition: 'box-shadow 0.2s, border-color 0.2s',
+                    }}>
+                      {/* Card Header */}
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 16px 12px', borderBottom:'1px solid rgba(148,163,184,0.1)' }}>
+                        <img src={avatarUrl} alt="" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:`2px solid ${accentColor}40`, flexShrink:0 }} onError={e=>{ e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid||'user'}`; }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                            <span style={{ fontWeight:800, fontSize:13.5, color:'#1e293b' }}>{item.username || item.displayName || 'Unknown'}</span>
+                            {item.displayName && item.displayName !== item.username && (
+                              <span style={{ fontSize:11, color:'#64748b', fontWeight:500 }}>({item.displayName})</span>
+                            )}
+                            {/* Type badge */}
+                            <span style={{
+                              padding:'2px 8px', borderRadius:20, fontSize:10.5, fontWeight:700, letterSpacing:'0.04em',
+                              background: accentBg, color: accentColor, border:`1px solid ${accentBorder}`, textTransform:'uppercase'
+                            }}>
+                              {isFeedback ? 'Feedback' : 'Complaint'}
+                            </span>
+                            {/* Unread dot */}
+                            {!item.isRead && (
+                              <span style={{ width:7, height:7, borderRadius:'50%', background: accentColor, display:'inline-block', flexShrink:0 }} title="Unread" />
+                            )}
+                          </div>
+                          <div style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{item.email || '—'}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:3, flexWrap:'wrap' }}>
+                            {item.role && (
+                              <span style={{ padding:'1px 6px', borderRadius:5, fontSize:10, fontWeight:600, background:'rgba(99,102,241,0.1)', color:'#6366f1' }}>
+                                {item.role}
+                              </span>
+                            )}
+                            {item.badge && (
+                              <span style={{ padding:'1px 6px', borderRadius:5, fontSize:10, fontWeight:600, background:'rgba(251,191,36,0.12)', color:'#d97706' }}>
+                                {item.badge}
+                              </span>
+                            )}
+                            <span style={{ fontSize:10.5, color:'#94a3b8' }}>{dateStr}</span>
+                          </div>
+                        </div>
+                        {/* Read status & Actions */}
+                        <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                          <button onClick={() => handleFeedbackMarkRead(item.id, !item.isRead)} title={item.isRead ? 'Mark Unread' : 'Mark Read'} style={{
+                            width:30, height:30, borderRadius:8, border:'1px solid rgba(148,163,184,0.3)', background:'rgba(255,255,255,0.8)',
+                            cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+                          }}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                              {item.isRead
+                                ? <><path d="M3 10l9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#64748b" strokeWidth="1.6"/><path d="M9 21V12h6v9" stroke="#64748b" strokeWidth="1.6" strokeLinecap="round"/></>
+                                : <><path d="M3 10l9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#10b981" opacity="0.15" stroke="#10b981" strokeWidth="1.6"/><path d="M9 21V12h6v9" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round"/></>
+                              }
+                            </svg>
+                          </button>
+                          <button onClick={() => { setFeedbackReplyOpen(isOpen ? null : item.id); setFeedbackReplyText(''); setFeedbackReplyStatus(''); }} style={{
+                            width:30, height:30, borderRadius:8, border:`1px solid ${isOpen ? accentColor : 'rgba(148,163,184,0.3)'}`,
+                            background: isOpen ? accentBg : 'rgba(255,255,255,0.8)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+                          }} title="Reply">
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={isOpen ? accentColor : '#64748b'} strokeWidth="1.6" fill="none"/>
+                            </svg>
+                          </button>
+                          <button onClick={() => handleFeedbackDelete(item.id)} title="Delete" style={{
+                            width:30, height:30, borderRadius:8, border:'1px solid rgba(239,68,68,0.25)', background:'rgba(239,68,68,0.06)',
+                            cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+                          }}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}>
+                              <path d="M3 6h18M19 6l-1 14H6L5 6M10 6V4h4v2" stroke="#ef4444" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Message Body */}
+                      <div style={{ padding:'12px 16px', fontSize:13, color:'#334155', lineHeight:1.65, whiteSpace:'pre-wrap', borderBottom: isOpen ? '1px solid rgba(148,163,184,0.1)' : 'none' }}>
+                        {item.message}
+                      </div>
+
+                      {/* Reply Panel */}
+                      {isOpen && (
+                        <div style={{ padding:'12px 16px 14px', background: accentBg }}>
+                          <div style={{ fontWeight:700, fontSize:12, color: accentColor, marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}>
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={accentColor} strokeWidth="1.8" fill="none"/>
+                            </svg>
+                            SEND TINGLEBOT REPLY TO {(item.username || 'USER').toUpperCase()}
+                          </div>
+                          {/* Status buttons */}
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
+                            {REPLY_STATUSES.map(s => (
+                              <button key={s.key} onClick={() => setFeedbackReplyStatus(feedbackReplyStatus === s.key ? '' : s.key)} style={{
+                                padding:'4px 9px', borderRadius:6, fontSize:10.5, fontWeight:700, cursor:'pointer', fontFamily:'inherit', border:`1px solid ${s.color}50`,
+                                background: feedbackReplyStatus === s.key ? s.color : `${s.color}12`,
+                                color: feedbackReplyStatus === s.key ? '#fff' : s.color,
+                                transition: 'all 0.15s'
+                              }}>
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Custom message */}
+                          <textarea
+                            rows={3}
+                            placeholder="Type a custom message to include with the reply (optional)…"
+                            value={feedbackReplyText}
+                            onChange={e => setFeedbackReplyText(e.target.value)}
+                            style={{ width:'100%', boxSizing:'border-box', borderRadius:9, padding:'8px 11px', fontSize:12.5, fontFamily:'inherit', border:`1px solid ${accentBorder}`, outline:'none', resize:'vertical', background:'rgba(255,255,255,0.9)', color:'#1e293b', lineHeight:1.5 }}
+                          />
+                          <div style={{ display:'flex', gap:7, marginTop:8, justifyContent:'flex-end' }}>
+                            <button onClick={() => { setFeedbackReplyOpen(null); setFeedbackReplyText(''); setFeedbackReplyStatus(''); }} style={{ padding:'7px 13px', borderRadius:8, border:'1px solid rgba(148,163,184,0.3)', background:'rgba(255,255,255,0.8)', color:'#475569', fontWeight:600, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleFeedbackReply(item)}
+                              disabled={feedbackReplySending || (!feedbackReplyText.trim() && !feedbackReplyStatus)}
+                              style={{
+                                padding:'7px 16px', borderRadius:8, border:'none',
+                                background: `linear-gradient(135deg,${accentColor},${isFeedback?'#ec4899':'#f97316'})`,
+                                color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit',
+                                opacity: feedbackReplySending || (!feedbackReplyText.trim() && !feedbackReplyStatus) ? 0.55 : 1,
+                                display:'flex', alignItems:'center', gap:6
+                              }}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12}}>
+                                <path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              {feedbackReplySending ? 'Sending…' : 'Send via TingleBot'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })()}

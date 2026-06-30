@@ -7,6 +7,172 @@ import PremiumImageMessage from './PremiumImageMessage';
 import { auth } from '../firebase/config';
 import './LuxuryPrivateMessageWindow.css';
 
+/* ─── TingleBot DM Notification Strip Icons ─── */
+const BotIconFeedbackReceived = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="#a855f7" opacity="0.2"/>
+    <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" stroke="#a855f7" strokeWidth="1.5" fill="none"/>
+    <path d="M7 9h10M7 12h7" stroke="#a855f7" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconComplaintReceived = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="#ef4444" opacity="0.15" stroke="#ef4444" strokeWidth="1.5"/>
+    <path d="M12 8v5M12 15.5v.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconUnderReview = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="#60a5fa" strokeWidth="1.5"/>
+    <path d="M12 8v4l2.5 2" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconChecking = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M11 4C7.13 4 4 7.13 4 11c0 3.87 3.13 7 7 7 1.33 0 2.57-.38 3.63-1.02L19 21l2-2-5.02-5.37C16.62 12.57 17 11.33 17 10c0-3.87-3.13-7-7-7z" stroke="#f59e0b" strokeWidth="1.5" fill="none"/>
+    <path d="M11 8v3l2 1" stroke="#f59e0b" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconInProgress = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#6ee7b7" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconInfoRequired = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="#f97316" strokeWidth="1.5"/>
+    <path d="M12 8v.5M12 11v5" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconResolved = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="#10b981" strokeWidth="1.5" fill="rgba(16,185,129,0.1)"/>
+    <path d="M7.5 12l3 3 6-6" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const BotIconClosed = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="#64748b" strokeWidth="1.5"/>
+    <path d="M8 8l8 8M16 8l-8 8" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconWarning = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 19h20L12 2z" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M12 9v5M12 16.5v.5" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconThankYou = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z" fill="rgba(236,72,153,0.15)" stroke="#ec4899" strokeWidth="1.5"/>
+  </svg>
+);
+
+const BOT_STATUS_ICONS = {
+  feedback_received: BotIconFeedbackReceived,
+  complaint_received: BotIconComplaintReceived,
+  under_review: BotIconUnderReview,
+  checking_issue: BotIconChecking,
+  in_progress: BotIconInProgress,
+  info_required: BotIconInfoRequired,
+  resolved: BotIconResolved,
+  closed: BotIconClosed,
+  warning_issued: BotIconWarning,
+  thank_you: BotIconThankYou,
+};
+
+const BOT_STATUS_COLORS = {
+  feedback_received: { accent: '#a855f7', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
+  complaint_received: { accent: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.2)' },
+  under_review:      { accent: '#60a5fa', bg: 'rgba(96,165,250,0.07)', border: 'rgba(96,165,250,0.2)' },
+  checking_issue:    { accent: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.2)' },
+  in_progress:       { accent: '#6ee7b7', bg: 'rgba(110,231,183,0.07)', border: 'rgba(110,231,183,0.2)' },
+  info_required:     { accent: '#f97316', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
+  resolved:          { accent: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.22)' },
+  closed:            { accent: '#64748b', bg: 'rgba(100,116,139,0.07)', border: 'rgba(100,116,139,0.2)' },
+  warning_issued:    { accent: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.24)' },
+  thank_you:         { accent: '#ec4899', bg: 'rgba(236,72,153,0.07)', border: 'rgba(236,72,153,0.2)' },
+};
+
+/* ─── UltraPMBotNotice — renders TingleBot DM notifications ─── */
+const UltraPMBotNotice = ({ msg }) => {
+  const statusKey = msg.botStatusKey || msg.tinglebotType || 'feedback_received';
+  const IconComp = BOT_STATUS_ICONS[statusKey] || BotIconFeedbackReceived;
+  const colors = BOT_STATUS_COLORS[statusKey] || BOT_STATUS_COLORS.feedback_received;
+  const ts = msg.createdAt?.toDate
+    ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    : msg.createdAt
+      ? new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : '';
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '3px 6px 4px',
+    }}>
+      <div style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        width: '100%',
+        maxWidth: '98%',
+        background: colors.bg,
+        border: `1px solid ${colors.border}`,
+        borderRadius: '12px',
+        padding: '8px 11px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+        backdropFilter: 'blur(6px)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* shimmer */}
+        <div style={{
+          position: 'absolute', top: 0, left: '-60%', width: '40%', height: '100%',
+          background: `linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)`,
+          animation: 'tb-pm-shimmer 3s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 26, height: 26, borderRadius: '7px',
+            background: `${colors.accent}1a`, flexShrink: 0,
+          }}>
+            <IconComp />
+          </span>
+          <span style={{
+            fontWeight: 800, fontSize: '10.5px',
+            color: colors.accent, letterSpacing: '0.06em',
+            textTransform: 'uppercase', flexShrink: 0,
+          }}>TingleBot</span>
+          <span style={{
+            width: 4, height: 4, borderRadius: '50%',
+            background: colors.accent, opacity: 0.6, flexShrink: 0,
+          }} />
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: '9.5px', color: 'rgba(100,116,139,0.8)', flexShrink: 0 }}>{ts}</span>
+        </div>
+        <div style={{
+          fontSize: '12px', lineHeight: 1.55,
+          color: 'var(--text-primary, #1e293b)',
+          marginTop: '6px', paddingLeft: '2px',
+        }}>
+          {msg.text}
+        </div>
+      </div>
+      <style>{`
+        @keyframes tb-pm-shimmer {
+          0% { left: -60%; opacity: 0; }
+          40% { opacity: 1; }
+          100% { left: 160%; opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const LuxuryPrivateMessageWindow = ({
   isOpen,
   privateMessageTarget,
@@ -422,7 +588,22 @@ const LuxuryPrivateMessageWindow = ({
                   </motion.div>
                 ) : (
                   <div className="ultra-pm-messages-list">
-                    {privateMessages.map((msg, index) => (
+                    {privateMessages.map((msg, index) => {
+                      // TingleBot system notification rendering
+                      if (msg.isBot || msg.isBotNotification || msg.senderId === 'tinglebot_system_official_2024') {
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, scale: 0.92, y: 4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+                            style={{ padding: '4px 2px' }}
+                          >
+                            <UltraPMBotNotice msg={msg} />
+                          </motion.div>
+                        );
+                      }
+                      return (
                       <motion.div
                         key={msg.id}
                         className={`ultra-pm-message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
@@ -489,7 +670,8 @@ const LuxuryPrivateMessageWindow = ({
                           )}
                         </div>
                       </motion.div>
-                    ))}
+                    );
+                    })}
                   </div>
                 )}
               </AnimatePresence>

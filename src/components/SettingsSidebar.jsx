@@ -11,6 +11,7 @@ import EditProfileModal from './EditProfileModal';
 import ChangeUsernameModal from './ChangeUsernameModal';
 import WarningAnnouncementModal from './WarningAnnouncementModal';
 import WarningAnnouncementManager from './WarningAnnouncementManager';
+import FeedbackPage from './FeedbackPage';
 import './SettingsSidebar.css';
 
 const OtherGenderIconSVG = () => (
@@ -3169,6 +3170,26 @@ const SettingsSidebar = ({
                     </div>
                 );
 
+            case 'feedback':
+                return (
+                    <div className="settings-tab-content">
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                <defs>
+                                    <linearGradient id="fb_h3_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0" stopColor="#a855f7"/>
+                                        <stop offset="1" stopColor="#ec4899"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="url(#fb_h3_g)"/>
+                                <path d="M12 7.5c-.9-1.8-3.5-1.8-3.5.5 0 1.8 1.75 3.2 3.5 4.5 1.75-1.3 3.5-2.7 3.5-4.5 0-2.3-2.6-2.3-3.5-.5z" fill="white" opacity="0.9"/>
+                            </svg>
+                            FEEDBACK &amp; COMPLAINTS
+                        </h3>
+                        <FeedbackPage loggedInUserProfile={loggedInUserProfile} />
+                    </div>
+                );
+
             case 'tinglebot':
                 return (
                     <div className="settings-tab-content">
@@ -3890,6 +3911,26 @@ const SettingsSidebar = ({
                                 <line x1="22" y1="11" x2="16" y2="11"/>
                             </svg>
                             <span>Team</span>
+                        </button>
+
+                        {/* Feedback tab — every logged-in user */}
+                        <button
+                            className={`settings-tab ${activeTab === 'feedback' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('feedback')}
+                            title="Feedback & Complaints"
+                            style={{ position: 'relative' }}
+                        >
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="none">
+                                <defs>
+                                    <linearGradient id="fb_tab_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0" stopColor={activeTab === 'feedback' ? '#ffffff' : '#a855f7'}/>
+                                        <stop offset="1" stopColor={activeTab === 'feedback' ? '#ffffff' : '#ec4899'}/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="url(#fb_tab_g)"/>
+                                <path d="M12 7.5c-.9-1.8-3.5-1.8-3.5.5 0 1.8 1.75 3.2 3.5 4.5 1.75-1.3 3.5-2.7 3.5-4.5 0-2.3-2.6-2.3-3.5-.5z" fill="white" opacity="0.92"/>
+                            </svg>
+                            <span>Feedback</span>
                         </button>
 
                         {/* TingleBot tab — owner only */}
