@@ -462,10 +462,13 @@ const AdminPanelPage = () => {
 
   // Delete feedback
   const handleFeedbackDelete = async (id) => {
-    if (!window.confirm('Delete this submission permanently?')) return;
     try {
       await deleteDoc(doc(db, 'feedback', id));
-    } catch (e) { console.error(e); }
+      pt.success('Submission deleted.');
+    } catch (e) {
+      console.error(e);
+      pt.error('Failed to delete submission.');
+    }
   };
 
   // Send admin reply via TingleBot DM

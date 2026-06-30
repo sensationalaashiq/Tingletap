@@ -120,11 +120,11 @@ const FeedbackPage = ({ loggedInUserProfile }) => {
   return (
     <div className="fb-page">
       <div className="fb-page-intro">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="#a855f7" strokeWidth="1.8"/>
-          <path d="M12 7v5.5M12 15.5v1" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+          <circle cx="12" cy="12" r="10" stroke="#a855f7" strokeWidth="2"/>
+          <path d="M12 7v5.5M12 15.5v1" stroke="#a855f7" strokeWidth="2.2" strokeLinecap="round"/>
         </svg>
-        <span>Your submissions are private and reviewed only by admins. No need to enter personal details — they are captured automatically.</span>
+        <span>Your submissions are private and reviewed only by admins. No need to enter personal details.</span>
       </div>
 
       {/* ── Feedback Card ── */}
