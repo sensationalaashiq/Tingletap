@@ -8921,8 +8921,11 @@ html.dark-mode .reject-btn:hover,
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 10px !important;
-  gap: 8px !important;
+  padding: 0 8px !important;
+  gap: 4px !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  max-height: 50px !important;
 }
 
 /* Fix header sections to use flex flow instead of absolute positioning */
@@ -8930,6 +8933,7 @@ html.dark-mode .reject-btn:hover,
   display: flex !important;
   align-items: center !important;
   flex-shrink: 0 !important;
+  padding-left: 2px !important;
 }
 
 .homepage-container .header-center {
@@ -8944,8 +8948,8 @@ html.dark-mode .reject-btn:hover,
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 6px !important;
-  gap: 8px !important;
+  padding: 0 4px !important;
+  gap: 5px !important;
 }
 
 .homepage-container .header-right {
@@ -8953,10 +8957,10 @@ html.dark-mode .reject-btn:hover,
   right: auto !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 4px !important;
   flex-shrink: 0 !important;
   flex-wrap: nowrap !important;
-  padding-right: 4px !important;
+  padding-right: 2px !important;
 }
 
 /* Settings button — override absolute positioning inside homepage */
@@ -8976,12 +8980,12 @@ html.dark-mode .reject-btn:hover,
 
 /* --- Header Buttons (icon-only, no background) --- */
 .homepage-container .header-action-btn {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  max-width: 32px !important;
-  max-height: 32px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -9004,8 +9008,8 @@ html.dark-mode .reject-btn:hover,
 .homepage-container .header-action-btn svg {
   color: #7c3aed !important;
   fill: #7c3aed !important;
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
   flex-shrink: 0 !important;
 }
 
@@ -9062,8 +9066,8 @@ html.dark-mode .reject-btn:hover,
   background: transparent !important;
 }
 .homepage-container .radio-header-btn svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 .homepage-container .pm-header-btn {
@@ -9108,7 +9112,7 @@ html.dark-mode .reject-btn:hover,
   text-shadow: none !important;
   font-weight: 700 !important;
   letter-spacing: 0.2px !important;
-  font-size: 0.88rem !important;
+  font-size: 0.84rem !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -9125,8 +9129,8 @@ html.dark-mode .reject-btn:hover,
   border: 1.5px solid rgba(109, 40, 217, 0.35) !important;
   font-weight: 800 !important;
   border-radius: 20px !important;
-  padding: 2px 8px !important;
-  font-size: 0.72rem !important;
+  padding: 1px 6px !important;
+  font-size: 0.68rem !important;
   letter-spacing: 0.3px !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
@@ -9147,29 +9151,29 @@ html.dark-mode .reject-btn:hover,
     gap: 4px !important;
   }
   .homepage-container .header-action-btn {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
-    max-width: 32px !important;
-    max-height: 32px !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
   .homepage-container .header-right {
-    gap: 4px !important;
+    gap: 3px !important;
   }
   .homepage-container .header-center {
-    gap: 6px !important;
+    gap: 4px !important;
   }
   .homepage-container .header-title {
-    font-size: 0.82rem !important;
+    font-size: 0.79rem !important;
   }
   .homepage-container .user-count {
-    padding: 2px 6px !important;
-    font-size: 0.65rem !important;
+    padding: 1px 5px !important;
+    font-size: 0.62rem !important;
   }
 }
 
@@ -9179,16 +9183,16 @@ html.dark-mode .reject-btn:hover,
     gap: 3px !important;
   }
   .homepage-container .header-action-btn {
-    width: 30px !important;
-    height: 30px !important;
-    min-width: 30px !important;
-    min-height: 30px !important;
-    max-width: 30px !important;
-    max-height: 30px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 15px !important;
-    height: 15px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
   .homepage-container .header-right {
     gap: 3px !important;
@@ -10389,42 +10393,6 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
   box-shadow: 0 0 0 1px rgba(59,130,246,0.3) !important;
 }
 
-/* ── Header: DARK vivid gradient (fix title visibility) ─────────── */
-.chat-header {
-  background: linear-gradient(135deg, #3b0764 0%, #5b21b6 50%, #6d28d9 100%) !important;
-  box-shadow: 0 4px 22px rgba(76, 29, 149, 0.45), 0 1px 4px rgba(0,0,0,0.2) !important;
-}
-.dark-mode .chat-header {
-  background: linear-gradient(135deg, #1a0533 0%, #2e0853 55%, #4c1d95 100%) !important;
-}
-/* Title: lavender colour for visibility on dark purple header */
-.header-title,
-.chat-header .header-title,
-.chat-header .header-center .header-title {
-  color: #ddd6fe !important;
-  font-weight: 700 !important;
-  text-shadow: 0 1px 8px rgba(0,0,0,0.5), 0 0 24px rgba(196,181,253,0.3) !important;
-  letter-spacing: 0.01em !important;
-}
-/* User count badge — lavender */
-.chat-header .user-count {
-  background: rgba(196, 181, 253, 0.22) !important;
-  color: #ddd6fe !important;
-  border: 1.5px solid rgba(196, 181, 253, 0.55) !important;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
-}
-/* Header icons */
-.header-action-btn {
-  background: rgba(255,255,255,0.2) !important;
-  border: 1.5px solid rgba(255,255,255,0.35) !important;
-  color: #ffffff !important;
-}
-.header-action-btn:hover {
-  background: rgba(255,255,255,0.32) !important;
-  transform: scale(1.08) !important;
-}
-.header-action-btn svg { color: #ffffff !important; fill: #ffffff !important; }
-
 /* ── Whole chat page: subtle saturation boost ────────────────────── */
 .homepage-container .chat-feed {
   filter: saturate(1.08) !important;
@@ -10438,9 +10406,9 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
 body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
-  color: #5b21b6 !important;
+  color: #3b0764 !important;
   font-weight: 700 !important;
-  font-size: 0.76rem !important;
+  font-size: 0.84rem !important;
   background: none !important;
   border: none !important;
   border-radius: 0 !important;
@@ -10488,18 +10456,18 @@ body .homepage-container .menu-trigger {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
 }
 
-/* Bigger icons — visible on light lavender header */
+/* Icons — visible on light lavender header */
 body .homepage-container .header-action-btn svg {
-  width: 24px !important;
-  height: 24px !important;
+  width: 18px !important;
+  height: 18px !important;
   flex-shrink: 0 !important;
 }
 
@@ -10524,7 +10492,20 @@ body .homepage-container .menu-trigger svg path {
   stroke: #4c1d95 !important;
 }
 
-/* Dark mode — keep icons bright white */
+/* Dark mode — title must be light on dark header */
+body.dark-mode .homepage-container .chat-header .header-title,
+body.dark-mode .homepage-container .header-title {
+  color: #e9d5ff !important;
+  text-shadow: none !important;
+}
+body.dark-mode .homepage-container .chat-header .user-count,
+body.dark-mode .homepage-container .user-count {
+  color: #a78bfa !important;
+  background: rgba(167,139,250,0.18) !important;
+  border-color: rgba(167,139,250,0.4) !important;
+}
+
+/* Dark mode — keep icons bright lavender */
 body.dark-mode .homepage-container .header-action-btn svg,
 body.dark-mode .homepage-container .settings-btn svg,
 body.dark-mode .homepage-container .settings-btn svg path {

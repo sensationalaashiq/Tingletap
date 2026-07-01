@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { db, rtdb, auth } from '../firebase/config';
 import {
-  ref, set, get, update, remove, onValue, push, off, onDisconnect
+  ref, set, get, update, remove, onValue, push, off, onDisconnect, increment, serverTimestamp
 } from 'firebase/database';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import './BroadcastPanel.css';
 
-/* ── STUN config ── */
+/* ── STUN + TURN config for better NAT traversal ── */
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
 ];
 
 /* ── Password hashing (SHA-256 via Web Crypto) ── */
@@ -21,8 +23,7 @@ const hashPassword = async (pw) => {
 };
 
 /* ══════════════════════════════════════════════════════
-   PREMIUM TOAST SYSTEM — colorful SVG icons, theme-aware
-   no emojis, adapts to dark/light/any theme
+   PREMIUM TOAST SYSTEM
 ══════════════════════════════════════════════════════ */
 const _isDark = () =>
   document.documentElement.classList.contains('dark-mode') ||
@@ -45,7 +46,6 @@ const _toastStyle = (dark) => ({
   minHeight: 'unset',
 });
 
-/* Premium toast icon components */
 const _TISuccess = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiOk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
@@ -126,14 +126,10 @@ const LockGoldIcon = ({ size = 16 }) => (
         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
     </defs>
-    {/* shackle */}
     <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="url(#lgLock1)" strokeWidth="1.8" strokeLinecap="round" fill="none" filter="url(#lgGlow)"/>
-    {/* body */}
     <rect x="5" y="10" width="14" height="11" rx="2.5" fill="url(#lgLock1)" opacity="0.95"/>
-    {/* keyhole */}
     <circle cx="12" cy="15.5" r="1.6" fill="url(#lgLock2)"/>
     <rect x="11.25" y="15.5" width="1.5" height="2.5" rx="0.6" fill="url(#lgLock2)"/>
-    {/* shine */}
     <rect x="6.5" y="11.5" width="4" height="1" rx="0.5" fill="rgba(255,255,255,0.35)"/>
   </svg>
 );
@@ -158,7 +154,7 @@ const MusicVisual = ({ isPlaying }) => (
   </div>
 );
 
-/* ── Broadcast SVG icon — vivid purple-violet gradient ── */
+/* ── Broadcast SVG icon — white variant for header, gradient for rest ── */
 const BroadcastIcon = ({ size = 20, color }) => {
   const c = color || 'url(#bcG)';
   const c2 = color ? color : '#c4b5fd';
@@ -181,7 +177,7 @@ const BroadcastIcon = ({ size = 20, color }) => {
   );
 };
 
-/* ── Mic icon — purple on / red+strike off ── */
+/* ── Mic icon ── */
 const MicIcon = ({ muted }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     {muted ? (
@@ -203,7 +199,6 @@ const MicIcon = ({ muted }) => (
   </svg>
 );
 
-/* ── Play — emerald green ── */
 const PlayIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="plG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
@@ -211,7 +206,6 @@ const PlayIcon = () => (
   </svg>
 );
 
-/* ── Pause — amber gold ── */
 const PauseIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="paG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
@@ -219,7 +213,6 @@ const PauseIcon = () => (
   </svg>
 );
 
-/* ── Stop — coral red ── */
 const StopIcon = ({ color }) => {
   const c = color || 'url(#stG)';
   return (
@@ -232,7 +225,6 @@ const StopIcon = ({ color }) => {
   );
 };
 
-/* ── SkipNext — indigo ── */
 const SkipNextIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="snG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs>
@@ -240,7 +232,6 @@ const SkipNextIcon = () => (
   </svg>
 );
 
-/* ── SkipPrev — indigo ── */
 const SkipPrevIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="spG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs>
@@ -248,7 +239,6 @@ const SkipPrevIcon = () => (
   </svg>
 );
 
-/* ── Lock — amber ── */
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="lkG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
@@ -256,7 +246,6 @@ const LockIcon = () => (
   </svg>
 );
 
-/* ── Users — teal cyan ── */
 const UsersIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="usG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#22d3ee"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
@@ -264,7 +253,6 @@ const UsersIcon = () => (
   </svg>
 );
 
-/* ── Music note — rose pink ── */
 const MusicNoteIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="mnG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs>
@@ -272,7 +260,6 @@ const MusicNoteIcon = () => (
   </svg>
 );
 
-/* ── YouTube — red ── */
 const YoutubeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="ytG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
@@ -280,7 +267,6 @@ const YoutubeIcon = () => (
   </svg>
 );
 
-/* ── RadioWave — purple violet ── */
 const RadioWaveIcon = ({ color }) => {
   const c = color || 'url(#rwG)';
   const c2 = color ? color : '#c4b5fd';
@@ -298,7 +284,6 @@ const RadioWaveIcon = ({ color }) => {
   );
 };
 
-/* ── Invite speaker icon — teal ── */
 const InviteIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="ivG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
@@ -306,7 +291,6 @@ const InviteIcon = () => (
   </svg>
 );
 
-/* ── Requests icon — violet ── */
 const RequestsIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="rqG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#6d28d9"/></linearGradient></defs>
@@ -314,15 +298,6 @@ const RequestsIcon = () => (
   </svg>
 );
 
-/* ── Mic stage icon — green ── */
-const StageIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="sgG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#4ade80"/><stop offset="100%" stopColor="#16a34a"/></linearGradient></defs>
-    <path d="M12 14c2.21 0 4-1.79 4-4V5a4 4 0 00-8 0v5c0 2.21 1.79 4 4 4zm6.5-4c0 3.58-2.93 6.5-6.5 6.5S5.5 13.58 5.5 10H4c0 4.08 3.05 7.44 7 7.93V21h2v-3.07c3.95-.49 7-3.85 7-7.93h-1.5z" fill="url(#sgG)"/>
-  </svg>
-);
-
-/* ── Antenna / public broadcast icon — rose ── */
 const AntennaIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="anG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
@@ -337,21 +312,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [activeTab, setActiveTab] = useState(0);
 
   /* ── RJ Broadcast state ── */
-  const [rjBroadcast, setRjBroadcast] = useState(null);          // live RTDB data
+  const [rjBroadcast, setRjBroadcast] = useState(null);
   const [rjIsLive, setRjIsLive] = useState(false);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [ytUrl, setYtUrl] = useState('');
-  const [ytPlayerState, setYtPlayerState] = useState('stopped'); // playing/paused/stopped
+  const [ytPlayerState, setYtPlayerState] = useState('stopped');
   const [ytCurrentSongName, setYtCurrentSongName] = useState('');
   const [micMuted, setMicMuted] = useState(false);
   const [listenerCount, setListenerCount] = useState(0);
-  const [speakerMap, setSpeakerMap] = useState({});              // uid → {name, photoURL}
-  const [broadcastDuration, setBroadcastDuration] = useState(0); // secs since live
+  const [speakerMap, setSpeakerMap] = useState({});
+  const [broadcastDuration, setBroadcastDuration] = useState(0);
   const durationRef = useRef(null);
 
   /* ── Join Requests state ── */
-  const [joinRequests, setJoinRequests] = useState([]);           // array of {uid, name, photoURL, ts}
-  const [myRequestStatus, setMyRequestStatus] = useState(null);   // null / 'pending' / 'accepted' / 'rejected'
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [myRequestStatus, setMyRequestStatus] = useState(null);
   const [iAmSpeaker, setIAmSpeaker] = useState(false);
 
   /* ── Public Broadcasts state ── */
@@ -361,38 +336,52 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [pubPassword, setPubPassword] = useState('');
   const [pubIsProtected, setPubIsProtected] = useState(false);
   const [listeningTo, setListeningTo] = useState(null);
-  const [passwordPrompt, setPasswordPrompt] = useState(null); // { broadcastId, title }
+  const [passwordPrompt, setPasswordPrompt] = useState(null);
   const [pwInput, setPwInput] = useState('');
-
-  /* ── WebRTC refs ── */
-  const peerConnections = useRef({});     // RJ broadcast peer connections
-  const localStream = useRef(null);       // RJ mic stream
-  const ytPlayerRef = useRef(null);
-  const ytContainerRef = useRef(null);
-
-  /* ── Public broadcast WebRTC refs ── */
-  const pubHostStream = useRef(null);     // broadcaster's mic stream
-  const pubHostPCs = useRef({});          // uid → RTCPeerConnection (broadcaster side)
-  const pubListenerPC = useRef(null);     // RTCPeerConnection (listener side)
-  const pubAudioEl = useRef(null);        // Audio element for listener playback
-  const pubRtdbUnsubs = useRef([]);       // cleanup functions for RTDB listeners
-  const pubListenersUnsub = useRef(null); // unsub for listeners path watcher
-
-  /* ── RJ broadcast WebRTC refs ── */
-  const rjHostPCs = useRef({});           // uid → RTCPeerConnection (RJ broadcaster side)
-  const rjListenersUnsub = useRef(null);  // unsub for RJ listeners watcher
-  const rjRtdbUnsubs = useRef([]);        // cleanup fns for per-listener RTDB subs
-  const rjListenerPC = useRef(null);      // RTCPeerConnection (listener side, RJ)
-  const rjAudioEl = useRef(null);         // Audio element for listener playback
 
   /* ── RJ listener state ── */
   const [rjIsListening, setRjIsListening] = useState(false);
   const [rjConnecting, setRjConnecting] = useState(false);
 
+  /* ── Go Live state ── */
+  const [goingLive, setGoingLive] = useState(false);
+
+  /* ── Public joining state ── */
+  const [pubJoining, setPubJoining] = useState(false);
+
+  /* ── WebRTC refs — RJ broadcaster side ── */
+  const rjHostPCs = useRef({});
+  const localStream = useRef(null);
+  const rjListenersUnsub = useRef(null);
+  const rjHostRtdbUnsubs = useRef([]);
+
+  /* ── WebRTC refs — RJ listener side (separate from broadcaster) ── */
+  const rjListenerPC = useRef(null);
+  const rjAudioEl = useRef(null);
+  const rjListenerRtdbUnsubs = useRef([]);
+
+  /* ── WebRTC refs — Public broadcaster ── */
+  const pubHostStream = useRef(null);
+  const pubHostPCs = useRef({});
+  const pubListenersUnsub = useRef(null);
+  const pubHostRtdbUnsubs = useRef([]);
+
+  /* ── WebRTC refs — Public listener ── */
+  const pubListenerPC = useRef(null);
+  const pubAudioEl = useRef(null);
+  const pubListenerRtdbUnsubs = useRef([]);
+
+  /* ── YouTube player refs ── */
+  const ytPlayerRef = useRef(null);
+  const ytContainerRef = useRef(null);
+  const ytInitialized = useRef(false);
+
+  /* ── onDisconnect refs (keep handle to cancel if needed) ── */
+  const rjOnDisconnectRef = useRef(null);
+  const pubOnDisconnectRef = useRef(null);
+
   /* ── Permission flags ── */
   const isRJ = loggedInUserProfile?.badge === 'rj';
-  const isOwnerAdmin = ['owner', 'admin'].includes(loggedInUserProfile?.role);
-  // Only RJ badge holders can manage RJ broadcast (role stays 'user')
   const canManageRJ = isRJ;
   const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
   const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
@@ -415,22 +404,33 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (data) {
         setListenerCount(data.listenerCount || 0);
         setSpeakerMap(data.speakers || {});
-        setYtPlayerState(data.youtube?.state || 'stopped');
+        const ytState = data.youtube?.state || 'stopped';
+        setYtPlayerState(ytState);
         setYtCurrentSongName(data.youtube?.songName || '');
-        // Check if I am a speaker
         if (myUid && data.speakers && data.speakers[myUid]) {
           setIAmSpeaker(true);
         } else {
           setIAmSpeaker(false);
         }
+        /* Auto-sync YouTube for listeners: if the RJ becomes live and already has a video, init player */
+        if (live && data.youtube?.videoId && !canManageRJ) {
+          syncYouTubePlayer(data.youtube);
+        }
       } else {
+        /* RJ went offline — clean up listener side silently */
+        if (rjIsListening) {
+          _rjCleanupListenerSide(false);
+          setRjIsListening(false);
+        }
         setListenerCount(0);
         setSpeakerMap({});
         setIAmSpeaker(false);
+        setYtPlayerState('stopped');
+        setYtCurrentSongName('');
       }
     });
     return () => unsub();
-  }, [isOpen, myUid]);
+  }, [isOpen, myUid, canManageRJ]);
 
   /* ── Join requests RTDB listener ── */
   useEffect(() => {
@@ -448,19 +448,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => unsub();
   }, [isOpen, myUid]);
 
-  /* ── Register/unregister listener presence ── */
-  useEffect(() => {
-    if (!isOpen || !myUid || !rjIsLive) return;
-    const lRef = ref(rtdb, `broadcasts/rj/listeners/${myUid}`);
-    set(lRef, { uid: myUid, name: myName, joinedAt: Date.now() });
-    onDisconnectCleanup(lRef);
-    return () => remove(lRef);
-  }, [isOpen, myUid, rjIsLive]);
-
-  const onDisconnectCleanup = (lRef) => {
-    onDisconnect(lRef).remove();
-  };
-
   /* ── Duration timer ── */
   useEffect(() => {
     if (rjIsLive && rjBroadcast?.startedAt) {
@@ -477,9 +464,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => { if (durationRef.current) clearInterval(durationRef.current); };
   }, [rjIsLive, rjBroadcast?.startedAt]);
 
-  /* ── YouTube player sync ── */
+  /* ── YouTube player sync for listeners (fires when RTDB youtube node changes) ── */
   useEffect(() => {
-    if (!rjIsLive || !isOpen) return;
+    if (!rjIsLive || !isOpen || canManageRJ) return;
     const ytRef = ref(rtdb, 'broadcasts/rj/youtube');
     const unsub = onValue(ytRef, (snap) => {
       const yt = snap.val();
@@ -487,7 +474,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       syncYouTubePlayer(yt);
     });
     return () => unsub();
-  }, [rjIsLive, isOpen]);
+  }, [rjIsLive, isOpen, canManageRJ]);
 
   /* ── Public broadcasts Firestore listener ── */
   useEffect(() => {
@@ -504,66 +491,104 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => unsub();
   }, [isOpen, myUid]);
 
+  /* ── Watch public broadcast session I'm listening to — detect host disconnect ── */
+  useEffect(() => {
+    if (!listeningTo?.id) return;
+    const sessionRef = ref(rtdb, `broadcasts/public/${listeningTo.id}/session`);
+    const unsub = onValue(sessionRef, (snap) => {
+      if (!snap.exists()) {
+        /* Host disconnected — clean up listener side */
+        _pubCleanupListenerSide();
+        setListeningTo(null);
+        bpToast.info('The broadcaster has ended the session.');
+      }
+    });
+    return () => unsub();
+  }, [listeningTo?.id]);
+
   /* ══════════════════════════════════════
      YOUTUBE PLAYER
   ══════════════════════════════════════ */
-  const initYtPlayer = useCallback((videoId) => {
-    if (!videoId) return;
-    if (ytPlayerRef.current) {
-      ytPlayerRef.current.loadVideoById(videoId);
-      return;
-    }
-    if (!window.YT || !window.YT.Player) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-      window.onYouTubeIframeAPIReady = () => createPlayer(videoId);
-      return;
-    }
-    createPlayer(videoId);
+  const ensureYtApiLoaded = useCallback(() => {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      const existing = document.getElementById('yt-iframe-api-script');
+      if (!existing) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+      const checkReady = setInterval(() => {
+        if (window.YT && window.YT.Player) { clearInterval(checkReady); resolve(); }
+      }, 100);
+    });
   }, []);
 
-  const createPlayer = (videoId) => {
+  const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
+    if (!videoId) return;
+    await ensureYtApiLoaded();
+    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+      ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
+      return;
+    }
     if (!ytContainerRef.current) return;
+    ytInitialized.current = true;
     ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
       height: '1',
       width: '1',
       videoId,
-      playerVars: { autoplay: 0, controls: 0 },
+      playerVars: { autoplay: 1, controls: 0, start: Math.floor(startSeconds) },
       events: {
         onReady: (e) => {
           e.target.setVolume(80);
+          if (startSeconds > 0) e.target.seekTo(startSeconds, true);
         },
         onStateChange: () => {}
       }
     });
-  };
+  }, [ensureYtApiLoaded]);
 
-  const syncYouTubePlayer = (ytData) => {
+  const syncYouTubePlayer = useCallback((ytData) => {
+    if (!ytData) return;
+    const { state, videoId, seekTo, updatedAt } = ytData;
+
+    /* Calculate time drift since RJ wrote the update */
+    const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
+    const adjustedSeek = state === 'playing' ? (seekTo || 0) + driftSecs : (seekTo || 0);
+
+    if (!ytPlayerRef.current || !ytPlayerRef.current.loadVideoById) {
+      /* Player not ready yet — init it with the video */
+      if (videoId) initYtPlayer(videoId, adjustedSeek);
+      return;
+    }
+
     const player = ytPlayerRef.current;
-    if (!player || !player.loadVideoById) return;
-    const { state, videoId, seekTo } = ytData;
+
     if (videoId) {
-      const cur = player.getVideoUrl?.() || '';
-      if (!cur.includes(videoId)) {
-        player.loadVideoById({ videoId, startSeconds: seekTo || 0 });
+      const curUrl = player.getVideoUrl?.() || '';
+      if (!curUrl.includes(videoId)) {
+        player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
+        return;
       }
     }
+
     if (state === 'playing') {
+      player.seekTo?.(adjustedSeek, true);
       player.playVideo?.();
-      if (seekTo != null) player.seekTo?.(seekTo, true);
     } else if (state === 'paused') {
+      player.seekTo?.(seekTo || 0, true);
       player.pauseVideo?.();
     } else if (state === 'stopped') {
       player.stopVideo?.();
     }
-  };
+  }, [initYtPlayer]);
 
   /* ══════════════════════════════════════
-     RJ BROADCAST — WebRTC (broadcaster side)
+     RJ BROADCAST — BROADCASTER SIDE
   ══════════════════════════════════════ */
 
-  /** Create & send a WebRTC offer to one listener (RJ broadcaster side). */
+  /** Create & send a WebRTC offer to one listener (broadcaster side). */
   const rjCreateOfferForListener = async (listenerUid) => {
     const existing = rjHostPCs.current[listenerUid];
     if (existing) {
@@ -571,15 +596,34 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       try { existing.close(); } catch {}
       delete rjHostPCs.current[listenerUid];
     }
+
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     rjHostPCs.current[listenerUid] = pc;
 
+    /* Add mic tracks to this connection */
     if (localStream.current) {
       localStream.current.getTracks().forEach(t => pc.addTrack(t, localStream.current));
     }
+
+    /* Send ICE candidates to listener */
     pc.onicecandidate = (e) => {
-      if (e.candidate)
+      if (e.candidate) {
         push(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/hostCandidates`), e.candidate.toJSON()).catch(() => {});
+      }
+    };
+
+    /* Handle connection state changes */
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        /* Auto-retry after brief delay */
+        setTimeout(() => {
+          if (rjHostPCs.current[listenerUid] === pc) {
+            try { pc.close(); } catch {}
+            delete rjHostPCs.current[listenerUid];
+            rjCreateOfferForListener(listenerUid).catch(() => {});
+          }
+        }, 2000);
+      }
     };
 
     const offer = await pc.createOffer();
@@ -588,28 +632,33 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     const unsubAns = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/answer`), snap => {
       const ans = snap.val();
-      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription)
+      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
         pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
+      }
     });
-    rjRtdbUnsubs.current.push(unsubAns);
+    rjHostRtdbUnsubs.current.push(unsubAns);
 
     const unsubLC = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/listenerCandidates`), snap => {
       const cands = snap.val() || {};
       Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
     });
-    rjRtdbUnsubs.current.push(unsubLC);
+    rjHostRtdbUnsubs.current.push(unsubLC);
   };
 
-  /** Watch RJ listeners node — create offers for new listeners, cleanup for departed (broadcaster side). */
+  /** Watch listeners node — create/remove connections as listeners join/leave. */
   const rjStartListenerWatcher = () => {
     let prevUIDs = new Set();
     const lisRef = ref(rtdb, 'broadcasts/rj/listeners');
     const unsub = onValue(lisRef, snap => {
       const listeners = snap.val() || {};
       const currentUIDs = new Set(Object.keys(listeners));
+
       currentUIDs.forEach(uid => {
-        if (uid !== myUid && !prevUIDs.has(uid)) rjCreateOfferForListener(uid);
+        if (uid !== myUid && !prevUIDs.has(uid)) {
+          rjCreateOfferForListener(uid).catch(() => {});
+        }
       });
+
       prevUIDs.forEach(uid => {
         if (!currentUIDs.has(uid) && rjHostPCs.current[uid]) {
           try { rjHostPCs.current[uid].close(); } catch {}
@@ -617,39 +666,68 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           remove(ref(rtdb, `broadcasts/rj/connections/${uid}`)).catch(() => {});
         }
       });
+
       prevUIDs = currentUIDs;
+
+      /* Update listener count in RTDB */
+      const count = currentUIDs.size;
+      update(ref(rtdb, 'broadcasts/rj'), { listenerCount: count }).catch(() => {});
     });
     rjListenersUnsub.current = unsub;
   };
 
-  /** Cleanup all RJ broadcast WebRTC resources (broadcaster side). */
-  const rjStopAllConnections = () => {
-    rjRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
-    rjRtdbUnsubs.current = [];
+  /** Cleanup all broadcaster-side RJ WebRTC resources. */
+  const rjStopAllBroadcasterConnections = () => {
+    rjHostRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    rjHostRtdbUnsubs.current = [];
+
     if (rjListenersUnsub.current) { try { rjListenersUnsub.current(); } catch {} rjListenersUnsub.current = null; }
+
     Object.values(rjHostPCs.current).forEach(pc => { try { pc.close(); } catch {} });
     rjHostPCs.current = {};
+
     remove(ref(rtdb, 'broadcasts/rj/connections')).catch(() => {});
+    remove(ref(rtdb, 'broadcasts/rj/listeners')).catch(() => {});
   };
 
   /* ══════════════════════════════════════
-     RJ BROADCAST — WebRTC (listener side)
+     RJ BROADCAST — LISTENER SIDE
   ══════════════════════════════════════ */
+
+  /** Clean up only the listener-side resources without touching RTDB (for when RJ disconnects). */
+  const _rjCleanupListenerSide = (removePresence = true) => {
+    rjListenerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    rjListenerRtdbUnsubs.current = [];
+
+    if (rjListenerPC.current) { try { rjListenerPC.current.close(); } catch {} rjListenerPC.current = null; }
+
+    if (rjAudioEl.current) {
+      try { rjAudioEl.current.pause(); rjAudioEl.current.srcObject = null; } catch {}
+      rjAudioEl.current = null;
+    }
+
+    if (removePresence && myUid) {
+      remove(ref(rtdb, `broadcasts/rj/listeners/${myUid}`)).catch(() => {});
+      remove(ref(rtdb, `broadcasts/rj/connections/${myUid}`)).catch(() => {});
+    }
+  };
 
   /** Listener joins the RJ broadcast audio stream. */
   const rjJoinAudio = async () => {
-    if (!myUid) return;
+    if (!myUid || rjConnecting || rjIsListening) return;
     setRjConnecting(true);
+
     try {
-      // Register presence so broadcaster knows to make an offer for us
+      /* Register presence — broadcaster will see this and create an offer */
       const lRef = ref(rtdb, `broadcasts/rj/listeners/${myUid}`);
       await set(lRef, { uid: myUid, name: myName, joinedAt: Date.now() });
       onDisconnect(lRef).remove();
 
+      /* Create peer connection BEFORE watching for the offer so we're ready */
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       rjListenerPC.current = pc;
 
-      // When audio track arrives, play it
+      /* When audio track arrives, play it */
       pc.ontrack = (e) => {
         if (!rjAudioEl.current) {
           const audio = new Audio();
@@ -659,73 +737,84 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         }
         rjAudioEl.current.srcObject = e.streams[0];
         rjAudioEl.current.play().catch(() => {});
+        setRjIsListening(true);
+        setRjConnecting(false);
       };
 
-      // Send our ICE candidates to broadcaster
+      /* Send our ICE candidates to broadcaster */
       pc.onicecandidate = (e) => {
-        if (e.candidate)
+        if (e.candidate) {
           push(ref(rtdb, `broadcasts/rj/connections/${myUid}/listenerCandidates`), e.candidate.toJSON()).catch(() => {});
+        }
       };
 
-      // Wait for broadcaster's offer, then answer
-      const unsubOffer = onValue(ref(rtdb, `broadcasts/rj/connections/${myUid}/offer`), async snap => {
+      /* Handle connection failure — auto-retry */
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'failed') {
+          _rjCleanupListenerSide(false);
+          rjListenerPC.current = null;
+          setTimeout(() => {
+            setRjIsListening(false);
+            setRjConnecting(false);
+          }, 500);
+        }
+      };
+
+      /* Watch for broadcaster's offer */
+      const offerRef = ref(rtdb, `broadcasts/rj/connections/${myUid}/offer`);
+      const unsubOffer = onValue(offerRef, async snap => {
         const offer = snap.val();
         if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await set(ref(rtdb, `broadcasts/rj/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
-      });
-      rjRtdbUnsubs.current.push(unsubOffer);
 
-      // Listen for broadcaster's ICE candidates
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await set(ref(rtdb, `broadcasts/rj/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
+        } catch {}
+      });
+      rjListenerRtdbUnsubs.current.push(unsubOffer);
+
+      /* Watch for broadcaster's ICE candidates */
       const unsubHC = onValue(ref(rtdb, `broadcasts/rj/connections/${myUid}/hostCandidates`), snap => {
         const cands = snap.val() || {};
         Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
       });
-      rjRtdbUnsubs.current.push(unsubHC);
+      rjListenerRtdbUnsubs.current.push(unsubHC);
 
-      // Also sync YouTube player if already playing
-      if (rjBroadcast?.youtube?.videoId) {
-        initYtPlayer(rjBroadcast.youtube.videoId);
+      /* Sync YouTube player if RJ already playing something */
+      const ytSnap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
+      const ytData = ytSnap.val();
+      if (ytData?.videoId) {
+        syncYouTubePlayer(ytData);
       }
+
       setRjIsListening(true);
     } catch (err) {
       console.error('RJ join audio error:', err);
       bpToast.error('Could not connect to broadcast. Please try again.');
+      _rjCleanupListenerSide(true);
     } finally {
       setRjConnecting(false);
     }
   };
 
-  /** Listener leaves the RJ broadcast audio stream. */
+  /** Listener leaves the RJ broadcast. */
   const rjLeaveAudio = () => {
-    rjRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
-    rjRtdbUnsubs.current = [];
-    if (rjListenerPC.current) { try { rjListenerPC.current.close(); } catch {} rjListenerPC.current = null; }
-    if (rjAudioEl.current) {
-      rjAudioEl.current.pause();
-      rjAudioEl.current.srcObject = null;
-      rjAudioEl.current = null;
-    }
-    if (myUid) {
-      remove(ref(rtdb, `broadcasts/rj/listeners/${myUid}`)).catch(() => {});
-      remove(ref(rtdb, `broadcasts/rj/connections/${myUid}`)).catch(() => {});
-    }
+    _rjCleanupListenerSide(true);
     setRjIsListening(false);
   };
 
   /* ══════════════════════════════════════
      RJ CONTROLS
   ══════════════════════════════════════ */
-  const [goingLive, setGoingLive] = useState(false);
 
   const handleGoLive = async () => {
     if (!myUid) { bpToast.error('You must be logged in to go live.'); return; }
     if (!isRJ) { bpToast.error('Only RJ badge holders can go live.'); return; }
     setGoingLive(true);
+
     try {
-      // Start mic first
       await startLocalMic();
 
       const bcData = {
@@ -739,31 +828,23 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         startedAt: Date.now(),
         speakers: {},
         joinRequests: {},
-        youtube: { state: 'stopped', videoId: null, seekTo: 0, songName: '' }
+        youtube: { state: 'stopped', videoId: null, seekTo: 0, songName: '', updatedAt: Date.now() }
       };
+
       await set(ref(rtdb, 'broadcasts/rj'), bcData);
+
+      /* onDisconnect: if RJ's connection drops, automatically remove the session */
+      const rjRef = ref(rtdb, 'broadcasts/rj');
+      const odHandle = onDisconnect(rjRef);
+      odHandle.remove();
+      rjOnDisconnectRef.current = odHandle;
+
       setMicMuted(false);
-      rjStartListenerWatcher(); // start WebRTC listener for audience
+      rjStartListenerWatcher();
       bpToast.mic('You are now LIVE! Listeners can hear you.');
 
       if (roomId) {
-        const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
-        const { db: fsDb } = await import('../firebase/config');
-        fsAdd(fsColl(fsDb, 'rooms', roomId, 'messages'), {
-          text: `${myName} is now LIVE on Broadcast! Tune in to the Broadcast tab.`,
-          uid: 'tinglebot_system_official_2024',
-          displayName: 'TingleBot',
-          isBot: true,
-          systemBot: true,
-          tinglebotType: 'broadcast_live',
-          createdAt: fsST(),
-          noReply: true,
-          noReaction: true,
-          noReport: true,
-          noUnread: true,
-        }).then(r => {
-          if (r?.id) setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 10 * 60 * 1000);
-        }).catch(() => {});
+        _postSystemMessage(roomId, `${myName} is now LIVE on Broadcast! Tune in to the Broadcast tab.`, 'broadcast_live', 10 * 60 * 1000);
       }
     } catch (err) {
       console.error('Go Live error:', err);
@@ -777,32 +858,24 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const handleEndBroadcast = async () => {
     const endingName = myName;
     try {
-      rjStopAllConnections(); // WebRTC cleanup before removing RTDB node
+      /* Cancel the onDisconnect handler so it doesn't double-remove */
+      if (rjOnDisconnectRef.current) {
+        try { rjOnDisconnectRef.current.cancel(); } catch {}
+        rjOnDisconnectRef.current = null;
+      }
+
+      rjStopAllBroadcasterConnections();
       await remove(ref(rtdb, 'broadcasts/rj'));
+
       setYtUrl('');
       setYtCurrentSongName('');
       setYtPlayerState('stopped');
+      if (ytPlayerRef.current?.stopVideo) ytPlayerRef.current.stopVideo();
       stopLocalMic();
       bpToast.success('Broadcast ended.');
 
       if (roomId) {
-        const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
-        const { db: fsDb } = await import('../firebase/config');
-        fsAdd(fsColl(fsDb, 'rooms', roomId, 'messages'), {
-          text: `${endingName}'s Broadcast has ended.`,
-          uid: 'tinglebot_system_official_2024',
-          displayName: 'TingleBot',
-          isBot: true,
-          systemBot: true,
-          tinglebotType: 'broadcast_ended',
-          createdAt: fsST(),
-          noReply: true,
-          noReaction: true,
-          noReport: true,
-          noUnread: true,
-        }).then(r => {
-          if (r?.id) setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 5 * 60 * 1000);
-        }).catch(() => {});
+        _postSystemMessage(roomId, `${endingName}'s Broadcast has ended.`, 'broadcast_ended', 5 * 60 * 1000);
       }
     } catch (err) {
       console.error('End broadcast error:', err);
@@ -815,13 +888,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       await startLocalMic();
       setMicMuted(false);
     } else {
-      const enabled = !micMuted;
-      localStream.current.getAudioTracks().forEach(t => { t.enabled = !enabled; });
-      setMicMuted(enabled);
+      const nowMuted = !micMuted;
+      localStream.current.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
+      setMicMuted(nowMuted);
     }
   };
 
   const startLocalMic = async () => {
+    if (localStream.current) return localStream.current;
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     localStream.current = stream;
     return stream;
@@ -836,15 +910,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const handleYtLoad = () => {
     const vid = extractYtId(ytUrl);
-    if (!vid) return;
+    if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube link.'); return; }
     const songName = ytUrl;
-    initYtPlayer(vid);
+    const nowMs = Date.now();
+    initYtPlayer(vid, 0);
     update(ref(rtdb, 'broadcasts/rj/youtube'), {
       videoId: vid,
       state: 'paused',
       seekTo: 0,
-      songName: songName,
-      updatedAt: Date.now()
+      songName,
+      updatedAt: nowMs,
     });
     setYtCurrentSongName(songName);
   };
@@ -853,6 +928,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const player = ytPlayerRef.current;
     let newState = ytPlayerState;
     let seekTo = 0;
+    const nowMs = Date.now();
+
     if (action === 'play') {
       player?.playVideo?.();
       newState = 'playing';
@@ -868,21 +945,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     } else if (action === 'skipnext') {
       seekTo = (player?.getCurrentTime?.() || 0) + 30;
       player?.seekTo?.(seekTo, true);
-      newState = 'playing';
       player?.playVideo?.();
+      newState = 'playing';
     } else if (action === 'skipprev') {
       seekTo = Math.max(0, (player?.getCurrentTime?.() || 0) - 15);
       player?.seekTo?.(seekTo, true);
+      newState = ytPlayerState;
     }
+
     setYtPlayerState(newState);
-    update(ref(rtdb, 'broadcasts/rj/youtube'), {
-      state: newState,
-      seekTo,
-      updatedAt: Date.now()
-    });
+    update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs });
   };
 
-  /* ── Invite speaker ── */
+  /* ── Speaker management ── */
   const handleInviteSpeaker = async (uid) => {
     if (!uid) return;
     const target = allUsersProfiles.find(u => u.uid === uid);
@@ -894,7 +969,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       joinedAt: Date.now(),
       muted: false
     });
-    // Remove from join requests
     await remove(ref(rtdb, `broadcasts/rj/joinRequests/${uid}`));
   };
 
@@ -902,17 +976,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     await remove(ref(rtdb, `broadcasts/rj/speakers/${uid}`));
   };
 
-  /* ══════════════════════════════════════
-     JOIN REQUESTS
-  ══════════════════════════════════════ */
+  /* ── Join Requests ── */
   const handleRequestToJoin = async () => {
     if (!myUid || !rjIsLive) return;
     await set(ref(rtdb, `broadcasts/rj/joinRequests/${myUid}`), {
-      uid: myUid,
-      name: myName,
-      photoURL: myPhoto,
-      status: 'pending',
-      requestedAt: Date.now()
+      uid: myUid, name: myName, photoURL: myPhoto, status: 'pending', requestedAt: Date.now()
     });
     setMyRequestStatus('pending');
   };
@@ -923,9 +991,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     setMyRequestStatus(null);
   };
 
-  const handleAcceptRequest = async (uid) => {
-    await handleInviteSpeaker(uid);
-  };
+  const handleAcceptRequest = async (uid) => handleInviteSpeaker(uid);
 
   const handleRejectRequest = async (uid) => {
     await update(ref(rtdb, `broadcasts/rj/joinRequests/${uid}`), { status: 'rejected' });
@@ -933,12 +999,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   /* ══════════════════════════════════════
-     PUBLIC BROADCASTS — WebRTC Audio
+     PUBLIC BROADCASTS — BROADCASTER SIDE
   ══════════════════════════════════════ */
 
-  /* ── Broadcaster: create a peer connection for one listener ── */
   const pubCreateOfferForListener = async (broadcastId, listenerUid) => {
-    // Close and remove stale/closed PC before renegotiating
     const existing = pubHostPCs.current[listenerUid];
     if (existing) {
       if (existing.connectionState !== 'failed' && existing.signalingState !== 'closed') return;
@@ -949,69 +1013,60 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     pubHostPCs.current[listenerUid] = pc;
 
-    // Add mic tracks
     if (pubHostStream.current) {
       pubHostStream.current.getTracks().forEach(t => pc.addTrack(t, pubHostStream.current));
     }
 
-    // Send ICE candidates
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        push(
-          ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/hostCandidates`),
-          e.candidate.toJSON()
-        ).catch(() => {});
+        push(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/hostCandidates`), e.candidate.toJSON()).catch(() => {});
       }
     };
 
-    // Create & store offer
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        setTimeout(() => {
+          if (pubHostPCs.current[listenerUid] === pc) {
+            try { pc.close(); } catch {}
+            delete pubHostPCs.current[listenerUid];
+            pubCreateOfferForListener(broadcastId, listenerUid).catch(() => {});
+          }
+        }, 2000);
+      }
+    };
+
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/offer`), {
-      type: offer.type, sdp: offer.sdp
-    }).catch(() => {});
+    await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/offer`), { type: offer.type, sdp: offer.sdp }).catch(() => {});
 
-    // Bug fix #3: onValue returns the unsubscribe fn — call it directly
-    const unsubAns = onValue(
-      ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/answer`),
-      snap => {
-        const ans = snap.val();
-        if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-          pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
-        }
+    const unsubAns = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/answer`), snap => {
+      const ans = snap.val();
+      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+        pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
       }
-    );
-    pubRtdbUnsubs.current.push(unsubAns);
+    });
+    pubHostRtdbUnsubs.current.push(unsubAns);
 
-    const unsubLC = onValue(
-      ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`),
-      snap => {
-        const cands = snap.val() || {};
-        Object.values(cands).forEach(c => {
-          pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-        });
-      }
-    );
-    pubRtdbUnsubs.current.push(unsubLC);
+    const unsubLC = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`), snap => {
+      const cands = snap.val() || {};
+      Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+    });
+    pubHostRtdbUnsubs.current.push(unsubLC);
   };
 
-  /* ── Broadcaster: watch listeners with join/leave tracking ── */
   const pubStartListenerWatcher = (broadcastId) => {
     let prevUIDs = new Set();
     const lisRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners`);
-    // Bug fix #3: store return value directly
     const unsub = onValue(lisRef, snap => {
       const listeners = snap.val() || {};
       const currentUIDs = new Set(Object.keys(listeners));
 
-      // New listeners → create offer
       currentUIDs.forEach(uid => {
         if (uid !== myUid && !prevUIDs.has(uid)) {
-          pubCreateOfferForListener(broadcastId, uid);
+          pubCreateOfferForListener(broadcastId, uid).catch(() => {});
         }
       });
 
-      // Bug fix #1: departed listeners → close + delete PC so they can cleanly rejoin
       prevUIDs.forEach(uid => {
         if (!currentUIDs.has(uid) && pubHostPCs.current[uid]) {
           try { pubHostPCs.current[uid].close(); } catch {}
@@ -1021,19 +1076,24 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       });
 
       prevUIDs = currentUIDs;
+
+      /* Update listener count in Firestore */
+      updateDoc(doc(db, 'publicBroadcasts', broadcastId), { listenerCount: currentUIDs.size }).catch(() => {});
     });
-    pubListenersUnsub.current = unsub; // Bug fix #3: store unsub fn directly
+    pubListenersUnsub.current = unsub;
   };
 
-  /* ── Broadcaster: stop everything ── */
   const pubStopHostAudio = (broadcastId) => {
-    // Bug fix #3: call unsubs directly (they ARE the unsubscribe functions)
-    pubRtdbUnsubs.current.forEach(unsub => { try { unsub(); } catch {} });
-    pubRtdbUnsubs.current = [];
-    if (pubListenersUnsub.current) {
-      try { pubListenersUnsub.current(); } catch {}
-      pubListenersUnsub.current = null;
+    /* Cancel onDisconnect so it doesn't double-fire */
+    if (pubOnDisconnectRef.current) {
+      try { pubOnDisconnectRef.current.cancel(); } catch {}
+      pubOnDisconnectRef.current = null;
     }
+
+    pubHostRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    pubHostRtdbUnsubs.current = [];
+
+    if (pubListenersUnsub.current) { try { pubListenersUnsub.current(); } catch {} pubListenersUnsub.current = null; }
 
     Object.values(pubHostPCs.current).forEach(pc => { try { pc.close(); } catch {} });
     pubHostPCs.current = {};
@@ -1044,98 +1104,98 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
 
     if (broadcastId) {
-      remove(ref(rtdb, `broadcasts/public/${broadcastId}/listeners`)).catch(() => {});
-      remove(ref(rtdb, `broadcasts/public/${broadcastId}/connections`)).catch(() => {});
+      remove(ref(rtdb, `broadcasts/public/${broadcastId}`)).catch(() => {});
     }
   };
 
-  /* ── Listener: join and receive audio ── */
+  /* ══════════════════════════════════════
+     PUBLIC BROADCASTS — LISTENER SIDE
+  ══════════════════════════════════════ */
+
+  const _pubCleanupListenerSide = () => {
+    pubListenerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    pubListenerRtdbUnsubs.current = [];
+
+    if (pubListenerPC.current) { try { pubListenerPC.current.close(); } catch {} pubListenerPC.current = null; }
+
+    if (pubAudioEl.current) {
+      try { pubAudioEl.current.pause(); pubAudioEl.current.srcObject = null; } catch {}
+      pubAudioEl.current = null;
+    }
+  };
+
   const pubJoinAudio = async (bc) => {
     if (!myUid) return;
     const { id: broadcastId } = bc;
 
-    await set(ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`), {
-      uid: myUid, name: myName, joinedAt: Date.now()
-    }).catch(() => {});
+    /* Register presence so broadcaster creates offer for us */
+    const lRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`);
+    await set(lRef, { uid: myUid, name: myName, joinedAt: Date.now() }).catch(() => {});
+    onDisconnect(lRef).remove();
 
-    updateDoc(doc(db, 'publicBroadcasts', broadcastId), {
-      listenerCount: (bc.listenerCount || 0) + 1
-    }).catch(() => {});
+    /* Create peer connection BEFORE watching for the offer */
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    pubListenerPC.current = pc;
 
+    pc.ontrack = e => {
+      if (!pubAudioEl.current) {
+        pubAudioEl.current = new Audio();
+        pubAudioEl.current.autoplay = true;
+        pubAudioEl.current.playsInline = true;
+      }
+      pubAudioEl.current.srcObject = e.streams[0];
+      pubAudioEl.current.play().catch(() => {});
+    };
+
+    pc.onicecandidate = evt => {
+      if (evt.candidate) {
+        push(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/listenerCandidates`), evt.candidate.toJSON()).catch(() => {});
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed') {
+        _pubCleanupListenerSide();
+        pubListenerPC.current = null;
+        setListeningTo(null);
+      }
+    };
+
+    /* Watch for broadcaster's offer */
     const offerRef = ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/offer`);
-    // Bug fix #3: store onValue return as direct unsub
     const unsubOffer = onValue(offerRef, async snap => {
       const offer = snap.val();
-      if (!offer || pubListenerPC.current) return;
+      if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
 
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-      pubListenerPC.current = pc;
-
-      pc.ontrack = e => {
-        if (!pubAudioEl.current) {
-          pubAudioEl.current = new Audio();
-          pubAudioEl.current.autoplay = true;
-        }
-        pubAudioEl.current.srcObject = e.streams[0];
-        pubAudioEl.current.play().catch(() => {});
-      };
-
-      pc.onicecandidate = evt => {
-        if (evt.candidate) {
-          push(
-            ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/listenerCandidates`),
-            evt.candidate.toJSON()
-          ).catch(() => {});
-        }
-      };
-
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/answer`), {
-        type: answer.type, sdp: answer.sdp
-      }).catch(() => {});
-
-      // Bug fix #3: store return from onValue directly
-      const unsubHC = onValue(
-        ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/hostCandidates`),
-        s => {
-          const cands = s.val() || {};
-          Object.values(cands).forEach(c => {
-            pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-          });
-        }
-      );
-      pubRtdbUnsubs.current.push(unsubHC);
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
+      } catch {}
     });
-    pubRtdbUnsubs.current.push(unsubOffer);
+    pubListenerRtdbUnsubs.current.push(unsubOffer);
+
+    /* Watch for broadcaster's ICE candidates */
+    const unsubHC = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/hostCandidates`), s => {
+      const cands = s.val() || {};
+      Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+    });
+    pubListenerRtdbUnsubs.current.push(unsubHC);
   };
 
-  /* ── Listener: leave ── */
   const pubLeaveAudio = (broadcastId) => {
-    // Bug fix #3: call unsubs directly
-    pubRtdbUnsubs.current.forEach(unsub => { try { unsub(); } catch {} });
-    pubRtdbUnsubs.current = [];
-
-    if (pubListenerPC.current) {
-      try { pubListenerPC.current.close(); } catch {}
-      pubListenerPC.current = null;
-    }
-    if (pubAudioEl.current) {
-      pubAudioEl.current.pause();
-      pubAudioEl.current.srcObject = null;
-      pubAudioEl.current = null;
-    }
+    _pubCleanupListenerSide();
     if (broadcastId && myUid) {
       remove(ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`)).catch(() => {});
+      remove(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}`)).catch(() => {});
     }
   };
 
-  /* ── Handlers ── */
+  /* ── Public Broadcast Handlers ── */
   const handleCreatePublicBroadcast = async () => {
     if (!myUid || !pubTitle.trim()) return;
 
-    // Bug fix #2: get mic BEFORE creating Firestore doc so we abort on failure
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -1146,10 +1206,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     pubHostStream.current = stream;
 
     try {
-      // Password security: store SHA-256 hash, never plaintext
       const passwordHash = pubIsProtected && pubPassword.trim()
-        ? await hashPassword(pubPassword.trim())
-        : '';
+        ? await hashPassword(pubPassword.trim()) : '';
 
       const data = {
         hostUid: myUid,
@@ -1158,21 +1216,33 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         title: pubTitle.trim(),
         isLive: true,
         isPasswordProtected: pubIsProtected,
-        passwordHash,               // ← hashed, not plaintext
+        passwordHash,
         listenerCount: 0,
         createdAt: new Date().toISOString(),
         startedAt: Date.now()
       };
+
       const docRef = await addDoc(collection(db, 'publicBroadcasts'), data);
-      setMyActiveBroadcast({ id: docRef.id, ...data });
+      const broadcastId = docRef.id;
+      setMyActiveBroadcast({ id: broadcastId, ...data });
       setPubTitle('');
       setPubPassword('');
       setPubIsProtected(false);
-      pubStartListenerWatcher(docRef.id); // mic already in pubHostStream
+
+      /* Create RTDB session node with onDisconnect cleanup */
+      const sessionRef = ref(rtdb, `broadcasts/public/${broadcastId}/session`);
+      await set(sessionRef, { hostUid: myUid, startedAt: Date.now() });
+      const odHandle = onDisconnect(sessionRef);
+      odHandle.remove();
+      pubOnDisconnectRef.current = odHandle;
+
+      /* Also use onDisconnect to mark Firestore doc as isLive: false via RTDB trigger isn't possible,
+         but we set the RTDB session — listeners watch this and know host disconnected */
+
+      pubStartListenerWatcher(broadcastId);
       bpToast.live('Your public broadcast is LIVE! Others can now tune in.');
     } catch (err) {
       console.error('Create broadcast error:', err);
-      // Mic was started — stop it since doc creation failed
       stream.getTracks().forEach(t => t.stop());
       pubHostStream.current = null;
       bpToast.error('Failed to start broadcast. Please try again.');
@@ -1193,30 +1263,51 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   const handleJoinPublicBroadcast = async (bc) => {
+    if (pubJoining) return;
+
+    /* If already listening to this one, toggle off */
+    if (listeningTo?.id === bc.id) {
+      pubLeaveAudio(bc.id);
+      setListeningTo(null);
+      return;
+    }
+
+    /* Leave current if switching */
     if (listeningTo) {
       pubLeaveAudio(listeningTo.id);
-      if (listeningTo.id === bc.id) { setListeningTo(null); return; }
+      setListeningTo(null);
     }
+
     if (bc.isPasswordProtected) {
       setPasswordPrompt({ broadcastId: bc.id, title: bc.title });
       return;
     }
-    setListeningTo(bc);
-    await pubJoinAudio(bc);
+
+    setPubJoining(true);
+    try {
+      setListeningTo(bc);
+      await pubJoinAudio(bc);
+    } finally {
+      setPubJoining(false);
+    }
   };
 
   const handlePasswordSubmit = async () => {
     if (!passwordPrompt) return;
     const bc = publicBroadcasts.find(b => b.id === passwordPrompt.broadcastId);
     if (!bc) return;
-    // Password security: compare SHA-256 hashes
     try {
       const entered = await hashPassword(pwInput);
       if (entered === bc.passwordHash) {
-        setListeningTo(bc);
         setPasswordPrompt(null);
         setPwInput('');
-        await pubJoinAudio(bc);
+        setPubJoining(true);
+        try {
+          setListeningTo(bc);
+          await pubJoinAudio(bc);
+        } finally {
+          setPubJoining(false);
+        }
       } else {
         bpToast.error('Wrong password. Try again.');
         setPwInput('');
@@ -1227,39 +1318,57 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   };
 
-  /* ══════════════════════════════════════
-     RENDER HELPERS
-  ══════════════════════════════════════ */
-  const renderTabBadge = (tab) => {
-    if (tab === 1 && joinRequests.filter(r => r.status === 'pending').length > 0) {
-      const count = joinRequests.filter(r => r.status === 'pending').length;
-      if (canManageRJ) return <span className="bp-tab-badge">{count}</span>;
-    }
-    return null;
-  };
-
-  /* ── Cleanup WebRTC listeners when panel closes ── */
+  /* ── Cleanup when panel closes ── */
   useEffect(() => {
     if (!isOpen) {
-      if (listeningTo) pubLeaveAudio(listeningTo.id);
-      if (rjIsListening) rjLeaveAudio();
-      // Don't stop host audio on close so the broadcast continues in the background
+      if (listeningTo) { pubLeaveAudio(listeningTo.id); setListeningTo(null); }
+      if (rjIsListening) { rjLeaveAudio(); }
     }
   }, [isOpen]);
+
+  /* ── Global cleanup on unmount ── */
+  useEffect(() => {
+    return () => {
+      if (listeningTo) pubLeaveAudio(listeningTo.id);
+      if (rjIsListening) rjLeaveAudio();
+    };
+  }, []);
+
+  /* ── Utility: post system message to a room ── */
+  const _postSystemMessage = async (rId, text, tinglebotType, deleteMsAfter) => {
+    try {
+      const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
+      const { db: fsDb } = await import('../firebase/config');
+      const r = await fsAdd(fsColl(fsDb, 'rooms', rId, 'messages'), {
+        text,
+        uid: 'tinglebot_system_official_2024',
+        displayName: 'TingleBot',
+        isBot: true, systemBot: true, tinglebotType,
+        createdAt: fsST(),
+        noReply: true, noReaction: true, noReport: true, noUnread: true,
+      });
+      if (r?.id && deleteMsAfter) {
+        setTimeout(() => deleteDoc(doc(db, 'rooms', rId, 'messages', r.id)).catch(() => {}), deleteMsAfter);
+      }
+    } catch {}
+  };
 
   if (!isOpen) return null;
 
   /* ══════════════════════════════════════
-     TAB 0 — RJ BROADCAST
+     RENDER HELPERS
   ══════════════════════════════════════ */
-  const renderRJTab = () => {
-    if (canManageRJ) return renderRJControls();
-    return renderListenerView();
+  const renderTabBadge = (tab) => {
+    if (tab === 1) {
+      const count = joinRequests.filter(r => r.status === 'pending').length;
+      if (count > 0 && canManageRJ) return <span className="bp-tab-badge">{count}</span>;
+    }
+    return null;
   };
 
+  /* ── TAB 0: RJ Controls (broadcaster) ── */
   const renderRJControls = () => (
     <div>
-      {/* Go Live / End */}
       <div className="bp-golive-card">
         <div className="bp-golive-row">
           <div className="bp-golive-info">
@@ -1282,7 +1391,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
       </div>
 
-      {/* Broadcast title */}
       {!rjIsLive && (
         <div className="bp-title-row">
           <input
@@ -1294,14 +1402,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
       )}
 
-      {/* Controls */}
       {rjIsLive && (
         <>
           <div className="bp-control-grid">
-            <button
-              className={`bp-ctrl-btn${micMuted ? ' danger' : ''}`}
-              onClick={handleMicToggle}
-            >
+            <button className={`bp-ctrl-btn${micMuted ? ' danger' : ''}`} onClick={handleMicToggle}>
               <MicIcon muted={micMuted} />
               {micMuted ? 'Mic Off' : 'Mic On'}
             </button>
@@ -1315,7 +1419,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             </button>
           </div>
 
-          {/* Analytics */}
           <div className="bp-analytics-row">
             <div className="bp-stat-card">
               <div className="bp-stat-value">{listenerCount}</div>
@@ -1331,7 +1434,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             </div>
           </div>
 
-          {/* YouTube section */}
           <div className="bp-yt-section">
             <div className="bp-yt-label"><YoutubeIcon /> Music Sync</div>
             <div className="bp-yt-url-row">
@@ -1340,14 +1442,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 placeholder="YouTube URL..."
                 value={ytUrl}
                 onChange={e => setYtUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleYtLoad()}
               />
               <button className="bp-yt-load-btn" onClick={handleYtLoad}>Load</button>
             </div>
             {ytCurrentSongName && (
               <div className="bp-song-controls">
-                <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}>
-                  <SkipPrevIcon />
-                </button>
+                <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}><SkipPrevIcon /></button>
                 {ytPlayerState === 'playing'
                   ? <button className="bp-song-btn play-main" onClick={() => handleYtControl('pause')}><PauseIcon /></button>
                   : <button className="bp-song-btn play-main" onClick={() => handleYtControl('play')}><PlayIcon /></button>
@@ -1358,7 +1459,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             )}
           </div>
 
-          {/* Active speakers */}
           {Object.keys(speakerMap).length > 0 && (
             <div className="bp-speakers-section">
               <div className="bp-section-label">Active Speakers</div>
@@ -1383,13 +1483,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     </div>
   );
 
+  /* ── TAB 0: Listener view ── */
   const renderListenerView = () => {
     if (!rjIsLive || !rjBroadcast) {
       return (
         <div className="bp-no-broadcast">
-          <div className="bp-no-broadcast-icon">
-            <BroadcastIcon size={56} />
-          </div>
+          <div className="bp-no-broadcast-icon"><BroadcastIcon size={56} /></div>
           <h3>No Active Broadcast</h3>
           <p>The RJ is not live right now. Check back later!</p>
         </div>
@@ -1445,21 +1544,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           )}
         </div>
 
-        {/* Listen Live / Stop Listening button (all non-guest, non-RJ users) */}
         {!isGuest && !canManageRJ && (
           <div style={{ marginTop: 16 }}>
             {rjIsListening ? (
               <button
-                className="bp-request-btn cancel"
-                style={{ width: '100%' }}
-                onClick={() => { rjLeaveAudio(); }}
+                className="bp-listen-btn bp-listen-btn--stop"
+                onClick={rjLeaveAudio}
               >
-                <StopIcon color="#ef4444" /> Stop Listening
+                <StopIcon color="currentColor" />
+                Stop Listening
               </button>
             ) : (
               <button
-                className="bp-request-btn join"
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                className="bp-listen-btn bp-listen-btn--join"
                 onClick={rjJoinAudio}
                 disabled={rjConnecting}
               >
@@ -1469,6 +1566,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             )}
           </div>
         )}
+
         {isGuest && (
           <p style={{ fontSize: 11.5, color: 'var(--bp-text-muted)', marginTop: 14, marginBottom: 0 }}>
             Register for a free account to listen live.
@@ -1487,18 +1585,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${sp.uid}`; }}
               />
             ))}
-            {speakers.length > 5 && (
-              <span className="bp-speaker-count">+{speakers.length - 5} more</span>
-            )}
+            {speakers.length > 5 && <span className="bp-speaker-count">+{speakers.length - 5} more</span>}
           </div>
         )}
       </div>
     );
   };
 
-  /* ══════════════════════════════════════
-     TAB 1 — JOIN REQUESTS
-  ══════════════════════════════════════ */
+  /* ── TAB 0 router ── */
+  const renderRJTab = () => canManageRJ ? renderRJControls() : renderListenerView();
+
+  /* ── TAB 1: Join Stage ── */
   const renderJoinTab = () => {
     if (!rjIsLive) {
       return (
@@ -1513,17 +1610,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       return (
         <div>
           <div className="bp-speaker-status">
-            <h3 style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center' }}>
-              <MicIcon muted={false} />
-              You are a Speaker
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+              <MicIcon muted={false} /> You are a Speaker
             </h3>
             <p>Your voice is live on the broadcast</p>
           </div>
-          <button
-            className="bp-request-btn cancel"
-            style={{ width: '100%' }}
-            onClick={() => handleRemoveSpeaker(myUid)}
-          >
+          <button className="bp-request-btn cancel" style={{ width: '100%' }} onClick={() => handleRemoveSpeaker(myUid)}>
             Leave Stage
           </button>
         </div>
@@ -1600,15 +1692,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     );
   };
 
-  /* ══════════════════════════════════════
-     TAB 2 — PUBLIC BROADCASTS
-  ══════════════════════════════════════ */
+  /* ── TAB 2: Public Broadcasts ── */
   const renderPublicTab = () => {
     const others = publicBroadcasts.filter(b => b.hostUid !== myUid);
 
     return (
       <div>
-        {/* My active broadcast banner */}
         {myActiveBroadcast && (
           <div className="bp-my-broadcast-banner">
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1622,7 +1711,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           </div>
         )}
 
-        {/* Create broadcast */}
         {!isGuest && !myActiveBroadcast && (
           <div className="bp-create-section">
             <div className="bp-create-card">
@@ -1634,7 +1722,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                   value={pubTitle}
                   onChange={e => setPubTitle(e.target.value)}
                 />
-                {/* Password toggle */}
                 <label className="bp-checkbox-label" style={{ userSelect: 'none', alignItems: 'center' }}>
                   <input
                     type="checkbox"
@@ -1658,15 +1745,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                   className="bp-create-btn"
                   onClick={handleCreatePublicBroadcast}
                   disabled={!pubTitle.trim() || (pubIsProtected && !pubPassword.trim())}
-                  style={{ background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff' }}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                    <circle cx="12" cy="12" r="3" fill="white"/>
-                    <path d="M8.5 8.5a5 5 0 000 7" stroke="white" strokeWidth="1.7" strokeLinecap="round"/>
-                    <path d="M15.5 8.5a5 5 0 010 7" stroke="white" strokeWidth="1.7" strokeLinecap="round"/>
-                    <path d="M5 5a9 9 0 000 14" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round"/>
-                    <path d="M19 5a9 9 0 010 14" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
+                  <BroadcastIcon size={15} color="white" />
                   Go Live Now
                 </button>
                 {!pubTitle.trim() && (
@@ -1686,7 +1766,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           </div>
         )}
 
-        {/* List of public broadcasts */}
         {others.length > 0 ? (
           <>
             <div className="bp-broadcasts-list-label">Live Broadcasts ({others.length})</div>
@@ -1714,8 +1793,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     <button
                       className={`bp-bc-join-btn${listeningTo?.id === bc.id ? ' listening' : ''}`}
                       onClick={() => handleJoinPublicBroadcast(bc)}
+                      disabled={pubJoining && listeningTo?.id !== bc.id}
                     >
-                      {listeningTo?.id === bc.id ? 'Listening' : 'Join'}
+                      {listeningTo?.id === bc.id ? (
+                        <><StopIcon color="currentColor" /> Leave</>
+                      ) : pubJoining ? 'Joining...' : (
+                        <><BroadcastIcon size={12} color="white" /> Join</>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1730,11 +1814,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           </div>
         ) : null}
 
-        {/* Password prompt modal */}
         {passwordPrompt && (
           <div className="bp-password-modal">
             <div className="bp-password-box">
-              <h3 style={{ display:'flex', alignItems:'center', gap:8 }}><LockGoldIcon size={20} /> {passwordPrompt.title}</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><LockGoldIcon size={20} /> {passwordPrompt.title}</h3>
               <input
                 className="bp-input"
                 type="password"
@@ -1762,7 +1845,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     <div className="bp-overlay" onClick={onClose}>
       <div className="bp-panel" onClick={e => e.stopPropagation()}>
 
-        {/* Hidden YouTube container */}
+        {/* Hidden YouTube player container */}
         <div className="bp-yt-hidden-player">
           <div ref={ytContainerRef} id="bp-yt-player" />
         </div>
@@ -1770,13 +1853,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         {/* Header */}
         <div className="bp-header">
           <div className="bp-header-left">
-            <div className="bp-header-icon"><BroadcastIcon size={20} /></div>
+            {/* Icon uses white so it's visible on the purple gradient background */}
+            <div className="bp-header-icon">
+              <BroadcastIcon size={22} color="white" />
+            </div>
             <div>
               <div className="bp-header-title">Broadcast Studio</div>
               <div className="bp-header-subtitle">{rjIsLive ? '🔴 RJ Live' : 'Premium Broadcast'}</div>
             </div>
           </div>
-          <button className="bp-close-btn" onClick={onClose}>
+          <button className="bp-close-btn" onClick={onClose} aria-label="Close">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
             </svg>
