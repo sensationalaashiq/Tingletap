@@ -2879,8 +2879,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [handleScroll]);
 
-    // Auto-scroll on new messages — deps limited to [messages] only so scroll
-    // logic never re-runs just because isAtBottom or font states changed.
+    // Auto-scroll on new messages — only on first room entry; never interrupt
+    // the user while they are reading old messages.
     useEffect(() => {
         const isFirstLoad = messages.length > 0 && !hasInitialScrolled;
         if (isFirstLoad) {
@@ -2889,7 +2889,17 @@ const HomePage = ({ user, roomIdOverride }) => {
             setTimeout(() => scrollToBottom(true), 400);
             setHasUserScrolled(false);
         } else if (messages.length > 0) {
-            scrollToBottom(false);
+            // When a new message arrives, only auto-scroll if the user is
+            // already sitting at the bottom. If they scrolled up to read
+            // history, just show the "scroll to bottom" chip — don't force scroll.
+            if (!chatFeedRef.current) return;
+            const el = chatFeedRef.current;
+            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+            if (nearBottom) {
+                scrollToBottom(false);
+            } else {
+                setShowScrollToBottomBtn(true);
+            }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages]);
@@ -8059,6 +8069,25 @@ const HomePage = ({ user, roomIdOverride }) => {
             )}
 
             <SendProgressBar progress={sendProgress} />
+
+            {/* ── Premium Scroll-to-Bottom Chip ── */}
+            {showScrollToBottomBtn && (
+                <button
+                    className="scroll-to-bottom-chip"
+                    onClick={handleScrollToBottomClick}
+                    title="Jump to latest message"
+                    aria-label="Scroll to bottom"
+                >
+                    <span className="scroll-to-bottom-chip-icon">
+                        {/* Premium double-chevron down SVG */}
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 2.5L6 6.5L10 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M2 6L6 10L10 6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </span>
+                    <span className="scroll-to-bottom-chip-label">Latest</span>
+                </button>
+            )}
 
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
