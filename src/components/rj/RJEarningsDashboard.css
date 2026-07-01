@@ -1,0 +1,152 @@
+/* src/components/rj/RJEarningsDashboard.css */
+.rje-root {
+  min-height: 100vh;
+  background: var(--bg-primary,#f8f7ff);
+  font-family: 'Inter',-apple-system,sans-serif;
+  position: relative; overflow-x: hidden;
+}
+.rje-orb {
+  position: fixed; border-radius: 50%; filter: blur(80px);
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+.rje-orb--1 { width:350px;height:350px;background:radial-gradient(circle,rgba(139,92,246,0.22),transparent);top:-80px;right:-80px;animation:rjeO1 8s ease-in-out infinite; }
+.rje-orb--2 { width:280px;height:280px;background:radial-gradient(circle,rgba(34,197,94,0.15),transparent);bottom:80px;left:-60px;animation:rjeO2 10s ease-in-out infinite; }
+@keyframes rjeO1{0%,100%{transform:translate(0,0)}50%{transform:translate(-15px,20px)}}
+@keyframes rjeO2{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-10px)}}
+
+.rje-header {
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;
+  background:rgba(248,247,255,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(139,92,246,0.12);
+}
+html.dark-mode .rje-header { background:rgba(15,13,36,0.85); }
+.rje-back-btn {
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:10px;
+  border:1.5px solid rgba(139,92,246,0.2);
+  background:rgba(139,92,246,0.07);
+  color:var(--text-primary,#1e1b4b);cursor:pointer;transition:all 0.2s;
+}
+.rje-back-btn:hover{background:rgba(139,92,246,0.14);}
+.rje-header-brand {
+  flex:1;display:flex;align-items:center;gap:8px;
+  font-size:17px;font-weight:700;color:var(--text-primary,#1e1b4b);
+}
+.rje-withdraw-btn {
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:12px;
+  background:linear-gradient(135deg,#3b82f6,#2563eb);
+  color:white;font-size:12px;font-weight:700;
+  border:none;cursor:pointer;transition:all 0.2s;
+  box-shadow:0 3px 10px rgba(37,99,235,0.3);
+}
+.rje-withdraw-btn:hover{transform:translateY(-1px);}
+
+.rje-content {
+  position:relative;z-index:1;
+  max-width:640px;margin:0 auto;
+  padding:20px 16px 80px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+/* Stats */
+.rje-stats-grid {
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+}
+.rje-stat-card {
+  background:rgba(255,255,255,0.75);
+  border:1.5px solid rgba(139,92,246,0.1);
+  border-radius:20px;padding:16px;
+  backdrop-filter:blur(10px);
+  transition:all 0.2s;
+}
+html.dark-mode .rje-stat-card{background:rgba(30,27,75,0.5);}
+.rje-stat-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(109,40,217,0.12);}
+.rje-stat-icon{margin-bottom:8px;}
+.rje-stat-value{font-size:22px;font-weight:800;margin-bottom:2px;}
+.rje-stat-label{font-size:12px;font-weight:600;color:var(--text-secondary,#4b5563);margin-bottom:2px;}
+.rje-stat-sub{font-size:11px;color:var(--text-muted,#9ca3af);}
+
+/* Commission card */
+.rje-commission-card {
+  background:rgba(255,255,255,0.75);
+  border:1.5px solid rgba(139,92,246,0.12);
+  border-radius:20px;padding:20px;
+  backdrop-filter:blur(10px);
+}
+html.dark-mode .rje-commission-card{background:rgba(30,27,75,0.5);}
+.rje-commission-row{display:flex;flex-direction:column;gap:10px;}
+.rje-commission-item{display:flex;justify-content:space-between;align-items:center;}
+.rje-commission-item--total{padding-top:10px;}
+.rje-commission-label{font-size:13px;color:var(--text-secondary,#4b5563);}
+.rje-commission-value{font-size:14px;font-weight:700;color:var(--text-primary,#1e1b4b);}
+.rje-commission-value.rje-neg{color:#f43f5e;}
+.rje-commission-value.rje-pos{font-size:18px;color:#22c55e;}
+.rje-commission-divider{height:1px;background:rgba(139,92,246,0.1);}
+.rje-commission-note{
+  font-size:11px;color:var(--text-muted,#9ca3af);
+  margin:12px 0 0;line-height:1.5;
+}
+
+/* Section title */
+.rje-section-title{
+  font-size:15px;font-weight:700;
+  color:var(--text-primary,#1e1b4b);margin:0 0 12px;
+}
+
+/* Period grid */
+.rje-period-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.rje-period-card {
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid rgba(139,92,246,0.1);
+  border-radius:16px;padding:12px 10px;
+  text-align:center;
+  backdrop-filter:blur(8px);
+}
+html.dark-mode .rje-period-card{background:rgba(30,27,75,0.4);}
+.rje-period-label{font-size:11px;color:var(--text-muted,#9ca3af);margin-bottom:6px;}
+.rje-period-coins{
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  font-size:13px;font-weight:700;color:#d97706;margin-bottom:3px;
+}
+.rje-period-rupee{font-size:12px;font-weight:600;color:#22c55e;}
+
+/* History */
+.rje-empty{
+  display:flex;flex-direction:column;align-items:center;gap:8px;padding:40px;
+  text-align:center;color:var(--text-muted,#9ca3af);
+}
+.rje-empty p{font-size:14px;font-weight:600;color:var(--text-secondary,#6b7280);margin:0;}
+.rje-empty span{font-size:12px;}
+.rje-tx-list{display:flex;flex-direction:column;gap:8px;}
+.rje-tx-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;
+  background:rgba(255,255,255,0.7);
+  border:1.5px solid rgba(139,92,246,0.08);
+  border-radius:14px;
+  backdrop-filter:blur(8px);
+  transition:all 0.2s;
+}
+html.dark-mode .rje-tx-item{background:rgba(30,27,75,0.4);}
+.rje-tx-item:hover{transform:translateX(3px);border-color:rgba(139,92,246,0.18);}
+.rje-tx-icon{
+  width:32px;height:32px;border-radius:10px;
+  background:rgba(244,63,94,0.1);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.rje-tx-info{flex:1;min-width:0;}
+.rje-tx-name{display:block;font-size:13px;font-weight:600;color:var(--text-primary,#1e1b4b);}
+.rje-tx-time{font-size:11px;color:var(--text-muted,#9ca3af);}
+.rje-tx-coins{
+  display:flex;align-items:center;gap:3px;
+  font-size:14px;font-weight:700;color:#22c55e;flex-shrink:0;
+}
+
+@media(max-width:480px){
+  .rje-stats-grid{grid-template-columns:repeat(2,1fr);}
+  .rje-period-grid{grid-template-columns:repeat(2,1fr);}
+}

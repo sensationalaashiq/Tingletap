@@ -1969,6 +1969,19 @@ html.dark-theme-variant .bp-request-btn.cancel { color: #f87171 !important; }
 }
 
 /* ──────────────────────────────────────────────────────────
+   SIX-TAB LAYOUT
+────────────────────────────────────────────────────────── */
+.bp-tabs--six .bp-tab {
+  font-size: 9.5px;
+  padding: 7px 3px;
+  gap: 2px;
+  flex: 1;
+}
+.bp-tabs--six .bp-tab svg {
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────────────────
    ANNOUNCEMENT STRIPS (Listener View — inline preview)
 ────────────────────────────────────────────────────────── */
 @keyframes bp-ann-slide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }

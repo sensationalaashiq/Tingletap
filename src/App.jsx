@@ -23,6 +23,11 @@ import FAQPage from './pages/FAQPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import WelcomeDashboard from './pages/WelcomeDashboard';
 import RoomSlugPage from './pages/RoomSlugPage';
+import BuyCoinsPage from './components/coins/BuyCoinsPage';
+import CoinWalletPage from './components/coins/CoinWalletPage';
+import Leaderboard from './components/coins/Leaderboard';
+import RJEarningsDashboard from './components/rj/RJEarningsDashboard';
+import RJWithdrawal from './components/rj/RJWithdrawal';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthRoute from './components/AuthRoute';
@@ -961,6 +966,13 @@ function App() {
 
         {/* Slug-based room routes — e.g. /r/indian-chat, /r/adult-chat */}
         <Route path="/r/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
+
+        {/* ── Coin & Gift System ── */}
+        <Route path="/buy-coins" element={<ProtectedRoute user={user} profile={userProfile}><BuyCoinsPage /></ProtectedRoute>} />
+        <Route path="/wallet" element={<ProtectedRoute user={user} profile={userProfile}><CoinWalletPage /></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute user={user} profile={userProfile}><Leaderboard /></ProtectedRoute>} />
+        <Route path="/rj-earnings" element={<ProtectedRoute user={user} profile={userProfile}><RJEarningsDashboard /></ProtectedRoute>} />
+        <Route path="/rj-withdrawal" element={<ProtectedRoute user={user} profile={userProfile}><RJWithdrawal /></ProtectedRoute>} />
 
         {/* Default route */}
         <Route path="/" element={user

@@ -164,6 +164,22 @@
 ══════════════════════════════════════════════════════ */
 .wd-cta-stack { display:flex; flex-direction:column; gap:13px; max-width:420px; animation:wdFadeUp .7s ease .13s both; }
 
+/* Coin wallet quick access strip */
+.wd-coins-strip { display:flex; flex-wrap:wrap; gap:10px; max-width:420px; margin-top:10px; animation:wdFadeUp .7s ease .18s both; }
+.wd-coin-btn { display:flex; align-items:center; gap:7px; padding:11px 16px; border-radius:14px; font-size:13px; font-weight:700; border:none; cursor:pointer; transition:all .25s ease; font-family:'Inter',sans-serif; flex:1; min-width:120px; justify-content:center; }
+.wd-coin-btn--wallet { background:rgba(253,230,138,0.18); border:1.5px solid rgba(217,119,6,0.25); color:#92400e; }
+.wd-coin-btn--wallet:hover { background:rgba(253,230,138,0.32); transform:translateY(-2px); }
+.wd-coin-btn--buy { background:rgba(167,139,250,0.18); border:1.5px solid rgba(124,58,237,0.25); color:#6d28d9; }
+.wd-coin-btn--buy:hover { background:rgba(167,139,250,0.30); transform:translateY(-2px); }
+.wd-coin-btn--lb { background:rgba(253,230,138,0.12); border:1.5px solid rgba(217,119,6,0.18); color:#b45309; }
+.wd-coin-btn--lb:hover { background:rgba(253,230,138,0.22); transform:translateY(-2px); }
+.wd-coin-btn--rj { background:rgba(52,211,153,0.15); border:1.5px solid rgba(5,150,105,0.2); color:#065f46; }
+.wd-coin-btn--rj:hover { background:rgba(52,211,153,0.25); transform:translateY(-2px); }
+html.dark-mode .wd-coin-btn--wallet { color:#fde68a; border-color:rgba(253,230,138,0.2); background:rgba(217,119,6,0.12); }
+html.dark-mode .wd-coin-btn--buy { color:#c4b5fd; border-color:rgba(167,139,250,0.2); background:rgba(124,58,237,0.12); }
+html.dark-mode .wd-coin-btn--lb { color:#fcd34d; border-color:rgba(253,211,77,0.18); background:rgba(180,83,9,0.12); }
+html.dark-mode .wd-coin-btn--rj { color:#6ee7b7; border-color:rgba(52,211,153,0.2); background:rgba(5,150,105,0.1); }
+
 /* Launch Chat — purple gradient */
 .wd-launch-btn { display:flex; align-items:center; justify-content:center; gap:10px; padding:18px 28px; border-radius:18px; background:linear-gradient(135deg,#5b5bd6 0%,#7c3aed 50%,#a855f7 100%); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(91,91,214,.45); transition:all .3s ease; position:relative; overflow:hidden; font-family:'Inter',sans-serif; color:#fff; font-size:17px; font-weight:800; letter-spacing:.01em; }
 .wd-launch-btn:hover { transform:translateY(-3px); box-shadow:0 14px 44px rgba(91,91,214,.6); }

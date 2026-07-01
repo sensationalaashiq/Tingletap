@@ -844,6 +844,44 @@ const WelcomeDashboard = () => {
 
         </div>
 
+        {/* ── COIN WALLET QUICK ACCESS (registered users only) ── */}
+        {userRole !== 'guest' && (
+          <div className="wd-coins-strip">
+            <button className="wd-coin-btn wd-coin-btn--wallet" onClick={() => navigate('/wallet')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="wd_wlt" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+                <circle cx="12" cy="12" r="10" fill="url(#wd_wlt)"/>
+                <text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#92400e">C</text>
+              </svg>
+              <span>My Wallet</span>
+            </button>
+            <button className="wd-coin-btn wd-coin-btn--buy" onClick={() => navigate('/buy-coins')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="wd_buy" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+                <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3z" fill="url(#wd_buy)"/>
+              </svg>
+              <span>Buy Coins</span>
+            </button>
+            <button className="wd-coin-btn wd-coin-btn--lb" onClick={() => navigate('/leaderboard')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="wd_lb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+                <path d="M6 4h12v7a6 6 0 01-12 0V4zm-3 2H1v3a4 4 0 003 3.87V6zm16 0h2v3a4 4 0 01-3 3.87V6z" fill="url(#wd_lb)"/>
+              </svg>
+              <span>Leaderboard</span>
+            </button>
+            {(userBadge?.toLowerCase() === 'rj' || userRole === 'rj') && (
+              <button className="wd-coin-btn wd-coin-btn--rj" onClick={() => navigate('/rj-earnings')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="wd_rj" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
+                  <rect x="9" y="2" width="6" height="12" rx="3" fill="url(#wd_rj)"/>
+                  <path d="M5 10a7 7 0 0014 0" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                </svg>
+                <span>RJ Earnings</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* ── MEMBER CARD ── */}
         <div className="wd-member-wrap">
 

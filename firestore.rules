@@ -892,6 +892,68 @@ service cloud.firestore {
     }
 
     // ================================================================
+    // COIN & GIFT SYSTEM
+    // ================================================================
+
+    // Coin config — admin reads/writes; registered users can read
+    match /settings/coinConfig {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    // Coin wallets — owner can read/write own wallet; staff can read all
+    match /coinWallets/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isStaff());
+      allow write: if isStaff(); // Wallet mutations go through server-side transactions only
+    }
+
+    // Coin transactions — user can read own; staff can read all; writes via server transactions
+    match /coinTransactions/{txId} {
+      allow read: if request.auth != null && (
+        resource.data.fromUid == request.auth.uid ||
+        resource.data.toUid  == request.auth.uid ||
+        isStaff()
+      );
+      allow write: if isStaff();
+    }
+
+    // Gift records — readable by all authenticated; staff manage
+    match /giftRecords/{recordId} {
+      allow read: if request.auth != null;
+      allow write: if isStaff();
+    }
+
+    // Payment orders — user can read/create own; staff can update (verify/reject)
+    match /paymentOrders/{orderId} {
+      allow read: if request.auth != null && (
+        resource.data.uid == request.auth.uid || isStaff()
+      );
+      allow create: if request.auth != null && isRegistered()
+                    && request.resource.data.uid == request.auth.uid;
+      allow update: if isStaff();
+    }
+
+    // RJ Earnings — RJ can read own; staff can read/write all
+    match /rjEarnings/{rjUid} {
+      allow read: if request.auth != null && (request.auth.uid == rjUid || isStaff());
+      allow write: if isStaff();
+    }
+
+    // RJ Withdrawal Info — RJ can read/write own; staff can read
+    match /rjWithdrawalInfo/{rjUid} {
+      allow read: if request.auth != null && (request.auth.uid == rjUid || isStaff());
+      allow write: if request.auth != null && (request.auth.uid == rjUid || isStaff());
+    }
+
+    // RJ Payments — staff manage; RJ can read own payment records
+    match /rjPayments/{paymentId} {
+      allow read: if request.auth != null && (
+        resource.data.rjUid == request.auth.uid || isStaff()
+      );
+      allow write: if isStaff();
+    }
+
+    // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.
     // This prevents accidental exposure of new collections.

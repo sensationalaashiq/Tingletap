@@ -6,6 +6,7 @@ import {
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import RJFollowButton from './RJFollowSystem';
+import GiftPanel from './coins/GiftPanel';
 import './BroadcastPanel.css';
 
 /* ── STUN + TURN config — multiple servers for maximum connectivity ── */
@@ -3107,7 +3108,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
 
         {/* Tabs */}
-        <div className="bp-tabs bp-tabs--five">
+        <div className="bp-tabs bp-tabs--six">
           <button
             className={`bp-tab${activeTab === 0 ? ' active' : ''}`}
             onClick={() => setActiveTab(0)}
@@ -3152,6 +3153,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             Public
             {myActiveBroadcast && <span className="bp-live-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block', marginLeft: 2 }} />}
           </button>
+          <button
+            className={`bp-tab${activeTab === 5 ? ' active' : ''}`}
+            onClick={() => setActiveTab(5)}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="tabGift" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#f472b6"/>
+                  <stop offset="100%" stopColor="#db2777"/>
+                </linearGradient>
+              </defs>
+              <path d="M20 12v-2h-2.18C17.93 9.08 18 8.55 18 8c0-2.21-1.79-4-4-4-1.58 0-2.93.93-3.57 2.27C9.93 4.93 8.58 4 7 4 4.79 4 3 5.79 3 8c0 .55.07 1.08.18 1.58V12H1l3 8h16l3-8h-3z" fill="url(#tabGift)"/>
+            </svg>
+            Gifts
+          </button>
         </div>
 
         {/* Content */}
@@ -3161,6 +3177,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           {activeTab === 2 && renderSongQueueTab()}
           {activeTab === 3 && renderAnnouncementsTab()}
           {activeTab === 4 && renderPublicTab()}
+          {activeTab === 5 && (
+            <GiftPanel
+              rjUid={rjIsLive ? rjBroadcast?.rjUid : null}
+              rjName={rjIsLive ? rjBroadcast?.rjName : null}
+              rjAvatar={rjIsLive ? rjBroadcast?.rjAvatar : null}
+              loggedInUserProfile={loggedInUserProfile}
+              roomId={roomId}
+            />
+          )}
         </div>
       </div>
     </div>

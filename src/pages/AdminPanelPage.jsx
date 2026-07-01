@@ -9,6 +9,8 @@ import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ToastContainer } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
+import AdminCoinsPanel from '../components/admin/AdminCoinsPanel';
+import '../components/admin/AdminCoinsPanel.css';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
 import { Badges } from '../data/Badges.jsx';
@@ -1862,6 +1864,22 @@ const AdminPanelPage = () => {
                       </linearGradient>
                     </defs>
                     <path fill={c} d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2.5-3.5c-.4.6-1 1-1.5 1.3V10h-2V8.8c-.6-.3-1.2-1-1.5-1.7-.3-.7-.2-1.5.2-2.1.8-1.2 2.5-1.5 3.7-.7.9.6 1.4 1.7 1.1 2.7z"/>
+                  </>
+                )
+              },
+              {
+                id: 'coins', label: 'Coins',
+                iconColor: '#f59e0b',
+                renderIcon: (c) => (
+                  <>
+                    <defs>
+                      <linearGradient id="adm_coins_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stopColor="#fde68a"/>
+                        <stop offset="1" stopColor={c}/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="12" cy="12" r="10" fill="url(#adm_coins_g)"/>
+                    <path fill="#92400e" d="M13.5 8H10v1.5h1.5v5H10V16h4v-1.5h-1.5v-5H14L13.5 8zm-2-2a1 1 0 112 0 1 1 0 01-2 0z"/>
                   </>
                 )
               }
@@ -4137,6 +4155,24 @@ const AdminPanelPage = () => {
               </div>
             );
           })()}
+
+          {/* ── Coins, Payments & RJ Earnings Tab ── */}
+          {activeTab === 'coins' && (
+            <div className="luxury-coins-section">
+              <div className="luxury-section-header">
+                <h2>
+                  <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                    <defs><linearGradient id="adm_ch" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+                    <circle cx="12" cy="12" r="10" fill="url(#adm_ch)"/>
+                    <path fill="#92400e" d="M13.5 8H10v1.5h1.5v5H10V16h4v-1.5h-1.5v-5H14L13.5 8zm-2-2a1 1 0 112 0 1 1 0 01-2 0z"/>
+                  </svg>
+                  Coins, Payments &amp; RJ Earnings
+                </h2>
+                <p>Manage coin packages, UPI settings, payment orders, and RJ earnings</p>
+              </div>
+              <AdminCoinsPanel />
+            </div>
+          )}
 
         </div>
       </div>
