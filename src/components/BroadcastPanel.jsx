@@ -245,18 +245,30 @@ const FloatingMinimizedBubble = ({ onExpand, onClose, isLive, pubIsLive }) => {
       <div className="bp-floating-inner">
         <FloatingPodcastIcon />
         {(isLive || pubIsLive) && <div className="bp-floating-live-dot" />}
+        {/* X close — inside the circle, top-right corner */}
+        <div
+          className="bp-floating-close"
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          title="Close"
+          role="button"
+          tabIndex={0}
+        >
+          <svg width="8" height="8" viewBox="0 0 14 14" fill="none">
+            <path d="M1.5 1.5l11 11M12.5 1.5l-11 11" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/>
+          </svg>
+        </div>
       </div>
-      <button
-        className="bp-floating-close"
-        onClick={(e) => { e.stopPropagation(); onClose(); }}
-        title="Close broadcast"
-      >
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="white">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-        </svg>
-      </button>
       <div className="bp-floating-label">
-        {isLive ? '🔴 RJ Live' : pubIsLive ? '🟢 On Air' : '🎙 Studio'}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 3, flexShrink: 0 }}>
+          <rect x="9" y="2" width="6" height="11" rx="3" fill="#fbbf24"/>
+          <path d="M19 10a7 7 0 01-14 0" stroke="#f472b6" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+          <line x1="12" y1="17" x2="12" y2="20" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+          <line x1="9" y1="20" x2="15" y2="20" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+        <span>{isLive ? 'RJ Live' : pubIsLive ? 'On Air' : 'Studio'}</span>
+        {(isLive || pubIsLive) && (
+          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isLive ? '#ef4444' : '#22c55e', marginLeft: 4, verticalAlign: 'middle', animation: 'bp-pulse 1s infinite', flexShrink: 0 }} />
+        )}
       </div>
     </div>
   );

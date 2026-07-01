@@ -1749,39 +1749,43 @@ html.dark-theme-variant .bp-close-btn:hover {
 
 .bp-floating-close {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: 2.5px solid rgba(255,255,255,0.90);
+  background-color: #e11d48;
+  background-image: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 2px solid #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(239,68,68,0.50);
-  transition: all 0.18s ease;
-  outline: none;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(220,38,38,0.70), 0 0 0 1px rgba(239,68,68,0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
 }
 .bp-floating-close:hover {
-  transform: scale(1.18);
-  box-shadow: 0 4px 14px rgba(239,68,68,0.65);
+  transform: scale(1.2);
+  box-shadow: 0 4px 14px rgba(220,38,38,0.85);
 }
 
 .bp-floating-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.4px;
-  color: rgba(255,255,255,0.92);
-  text-align: center;
-  background: linear-gradient(135deg, rgba(124,58,237,0.85), rgba(219,39,119,0.80));
+  color: rgba(255,255,255,0.95);
+  background: linear-gradient(135deg, rgba(124,58,237,0.88), rgba(219,39,119,0.82));
   padding: 3px 9px;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.2);
   backdrop-filter: blur(10px);
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
   pointer-events: none;
 }
