@@ -1283,7 +1283,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     setMyRequestStatus(null);
   };
 
-  const handleAcceptRequest = async (uid) => handleInviteSpeaker(uid);
+  const handleAcceptRequest = async (uid) => {
+    try {
+      await handleInviteSpeaker(uid);
+    } catch (err) {
+      const reason = err?.code === 'PERMISSION_DENIED' || err?.code === 'permission-denied'
+        ? 'Database permission denied — please update your Firebase Realtime Database rules.'
+        : (err?.message || 'Unknown error');
+      bpToast.error('Failed to accept: ' + reason);
+    }
+  };
 
   const handleRejectRequest = async (uid) => {
     await update(ref(rtdb, `broadcasts/rj/joinRequests/${uid}`), { status: 'rejected' });
