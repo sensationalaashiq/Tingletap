@@ -1,0 +1,108 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "status": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "broadcasts": {
+      "rj": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+
+        "connections": {
+          "$uid": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          }
+        },
+
+        "listeners": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null"
+          }
+        },
+
+        "speakers": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null"
+          }
+        },
+
+        "joinRequests": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null"
+          }
+        },
+
+        "youtube": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      },
+
+      "public": {
+        "$broadcastId": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+
+          "session": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+
+          "connections": {
+            "$uid": {
+              ".read": "auth != null",
+              ".write": "auth != null"
+            }
+          },
+
+          "listeners": {
+            ".read": "auth != null",
+            "$uid": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      }
+    },
+
+    "calls": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+
+      "$callId": {
+        ".read": "auth != null && (data.child('callerId').val() == auth.uid || data.child('recipientId').val() == auth.uid)",
+
+        ".write": "auth != null && (!data.exists() || data.child('callerId').val() == auth.uid || data.child('recipientId').val() == auth.uid)"
+      }
+    },
+
+    "privateMessages": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+
+      "$conversationId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && auth.uid == newData.child('senderId').val()"
+          }
+        }
+      }
+    }
+  }
+}
