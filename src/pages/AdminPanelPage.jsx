@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit } from 'firebase/firestore';
+import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp } from 'firebase/firestore';
 import { nameToSlug } from '../utils/roomSlug';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -202,7 +202,7 @@ const AdminPanelPage = () => {
           userData = { ...userData, role: 'owner' };
         }
         setCurrentUserProfile(userData);
-        if (!['owner', 'admin', 'moderator'].includes(userData.role)) {
+        if (!['owner', 'admin'].includes(userData.role)) {
           pt.error('Access denied. Admin privileges required.');
           navigate('/');
         } else {
@@ -1382,6 +1382,7 @@ const AdminPanelPage = () => {
             duration: kickDur,
             kickDuration: kickDur,   // BanKickModal reads kickDuration for countdown
             kickUntil,
+            kickUntilTs: kickUntil ? Timestamp.fromDate(new Date(kickUntil)) : null,
           };
 
           if (actionData?.kickScope === 'multiple_rooms' && actionData?.selectedRooms?.length > 0) {
@@ -1630,7 +1631,7 @@ const AdminPanelPage = () => {
     };
   };
 
-  if (!currentUserProfile || !['owner', 'admin', 'moderator'].includes(currentUserProfile.role)) {
+  if (!currentUserProfile || !['owner', 'admin'].includes(currentUserProfile.role)) {
     return (
       <div className="luxury-admin-container">
         <div className="luxury-access-denied">

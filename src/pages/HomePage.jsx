@@ -393,16 +393,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                             </button>
                                         )}
 
-                                        {/* Report — for logged-in non-guests */}
-                                        {!isViewerGuest && (
-                                            <>
-                                                <div className="sb-apd-divider"/>
-                                                <button className="sb-apd-btn sb-apd-warn" onClick={(e) => { e.stopPropagation(); onReport(message); closeAllDropdowns(); }}>
-                                                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#d97706" d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/></svg>
-                                                    Report User
-                                                </button>
-                                            </>
-                                        )}
+                                        {/* Report — visible to all authenticated users including guests */}
+                                        <>
+                                            <div className="sb-apd-divider"/>
+                                            <button className="sb-apd-btn sb-apd-warn" onClick={(e) => { e.stopPropagation(); onReport(message); closeAllDropdowns(); }}>
+                                                <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#d97706" d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/></svg>
+                                                Report User
+                                            </button>
+                                        </>
 
                                         {/* Block — hidden on Owner/Admin/Moderator profiles */}
                                         {!isTargetStaff && (

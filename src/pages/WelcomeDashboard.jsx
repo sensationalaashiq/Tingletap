@@ -841,6 +841,17 @@ const WelcomeDashboard = () => {
             <GearIcon size={18} animated />
             <span>Account Settings</span>
           </button>
+
+          {/* Manage Platform — Owner only */}
+          {userRole === 'owner' && (
+            <button className="wd-settings-btn" onClick={() => navigate('/admin-panel')} style={{background:'linear-gradient(135deg,#fbbf24,#f59e0b)',color:'#fff',border:'none'}}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+              <span>Manage Platform</span>
+            </button>
+          )}
         </div>
 
         {/* ── MEMBER CARD ── */}

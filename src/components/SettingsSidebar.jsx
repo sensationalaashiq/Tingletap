@@ -3003,7 +3003,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* Admin Section (if applicable) */}
-                        {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role)) && (
+                        {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title admin-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

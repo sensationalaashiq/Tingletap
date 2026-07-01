@@ -47,7 +47,17 @@ service cloud.firestore {
     }
 
     function isKickedFrom(uid, roomId) {
-      return exists(/databases/$(database)/documents/rooms/$(roomId)/kickedUsers/$(uid));
+      let kickPath = /databases/$(database)/documents/rooms/$(roomId)/kickedUsers/$(uid);
+      if (!exists(kickPath)) return false;
+      let kd = get(kickPath).data;
+      // If a Firestore Timestamp expiry is stored, honour it so expired kicks
+      // don't block users even before client-side cleanup runs.
+      let expiry = kd.get('kickUntilTs', null);
+      if (expiry != null && expiry is timestamp) {
+        return request.time < expiry; // still kicked only while now < expiry
+      }
+      // No timestamp expiry field → treat as permanent (client handles ISO-string cleanup)
+      return true;
     }
 
     // Convenience shorthands for the calling user
