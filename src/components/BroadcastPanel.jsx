@@ -1252,12 +1252,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Speaker management ── */
   const handleInviteSpeaker = async (uid) => {
     if (!uid) return;
-    const target = allUsersProfiles.find(u => u.uid === uid);
-    if (!target) return;
+    /* Use data from the join request itself (always available) —
+       fall back to allUsersProfiles only as a secondary source */
+    const fromRequest = joinRequests.find(r => r.uid === uid);
+    const fromProfiles = allUsersProfiles.find(u => u.uid === uid);
+    const name = fromRequest?.name || fromProfiles?.username || fromProfiles?.displayName || 'User';
+    const photoURL = fromRequest?.photoURL || fromProfiles?.photoURL || '';
     await update(ref(rtdb, `broadcasts/rj/speakers/${uid}`), {
       uid,
-      name: target.username || target.displayName || 'User',
-      photoURL: target.photoURL || '',
+      name,
+      photoURL,
       joinedAt: Date.now(),
       muted: false
     });
