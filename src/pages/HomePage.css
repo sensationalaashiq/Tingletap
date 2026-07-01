@@ -8980,12 +8980,12 @@ html.dark-mode .reject-btn:hover,
 
 /* --- Header Buttons (icon-only, no background) --- */
 .homepage-container .header-action-btn {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  max-width: 28px !important;
-  max-height: 28px !important;
+  width: 31px !important;
+  height: 31px !important;
+  min-width: 31px !important;
+  min-height: 31px !important;
+  max-width: 31px !important;
+  max-height: 31px !important;
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -9008,8 +9008,8 @@ html.dark-mode .reject-btn:hover,
 .homepage-container .header-action-btn svg {
   color: #7c3aed !important;
   fill: #7c3aed !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
   flex-shrink: 0 !important;
 }
 
@@ -9066,8 +9066,8 @@ html.dark-mode .reject-btn:hover,
   background: transparent !important;
 }
 .homepage-container .radio-header-btn svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 .homepage-container .pm-header-btn {
@@ -9108,19 +9108,19 @@ html.dark-mode .reject-btn:hover,
 
 /* --- Header Title & User Count --- */
 .homepage-container .header-title {
-  color: #3b0764 !important;
+  color: #7c3aed !important;
   text-shadow: none !important;
   font-weight: 700 !important;
   letter-spacing: 0.2px !important;
-  font-size: 0.84rem !important;
+  font-size: 0.76rem !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 
 .dark-mode .homepage-container .header-title {
-  color: #ffffff !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+  color: #c4b5fd !important;
+  text-shadow: none !important;
 }
 
 .homepage-container .user-count {
@@ -9129,8 +9129,8 @@ html.dark-mode .reject-btn:hover,
   border: 1.5px solid rgba(109, 40, 217, 0.35) !important;
   font-weight: 800 !important;
   border-radius: 20px !important;
-  padding: 1px 6px !important;
-  font-size: 0.68rem !important;
+  padding: 1px 5px !important;
+  font-size: 0.62rem !important;
   letter-spacing: 0.3px !important;
   backdrop-filter: none !important;
   box-shadow: none !important;
@@ -9148,57 +9148,61 @@ html.dark-mode .reject-btn:hover,
 @media (max-width: 480px) {
   .homepage-container .chat-header {
     padding: 0 6px !important;
-    gap: 4px !important;
-  }
-  .homepage-container .header-action-btn {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
-    min-height: 26px !important;
-    max-width: 26px !important;
-    max-height: 26px !important;
-  }
-  .homepage-container .header-action-btn svg {
-    width: 15px !important;
-    height: 15px !important;
-  }
-  .homepage-container .header-right {
     gap: 3px !important;
   }
+  .homepage-container .header-action-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+  }
+  .homepage-container .header-action-btn svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+  .homepage-container .header-right {
+    gap: 2px !important;
+  }
   .homepage-container .header-center {
-    gap: 4px !important;
+    gap: 3px !important;
   }
   .homepage-container .header-title {
-    font-size: 0.79rem !important;
+    font-size: 0.72rem !important;
   }
   .homepage-container .user-count {
-    padding: 1px 5px !important;
-    font-size: 0.62rem !important;
+    padding: 1px 4px !important;
+    font-size: 0.58rem !important;
   }
 }
 
 @media (max-width: 360px) {
   .homepage-container .chat-header {
     padding: 0 4px !important;
-    gap: 3px !important;
+    gap: 2px !important;
   }
   .homepage-container .header-action-btn {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
+    width: 25px !important;
+    height: 25px !important;
+    min-width: 25px !important;
+    min-height: 25px !important;
+    max-width: 25px !important;
+    max-height: 25px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 14px !important;
-    height: 14px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
   .homepage-container .header-right {
-    gap: 3px !important;
+    gap: 2px !important;
   }
   .homepage-container .header-title {
-    font-size: 0.76rem !important;
+    font-size: 0.68rem !important;
+  }
+  .homepage-container .user-count {
+    padding: 1px 4px !important;
+    font-size: 0.56rem !important;
   }
 }
 
@@ -10402,13 +10406,13 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
    ██  FINAL AUTHORITY BLOCK — beats every rule above  ██
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. HEADER TITLE & USER-COUNT: sharp vivid purple ─ */
+/* ── 1. HEADER TITLE & USER-COUNT: lavender (same as settings icon) ─ */
 body .homepage-container .chat-header .header-title,
 body .chat-header .header-title,
 body .header-title {
-  color: #3b0764 !important;
+  color: #7c3aed !important;
   font-weight: 700 !important;
-  font-size: 0.84rem !important;
+  font-size: 0.76rem !important;
   background: none !important;
   border: none !important;
   border-radius: 0 !important;
@@ -10443,7 +10447,7 @@ body .chat-header .user-count {
   letter-spacing: 0.3px !important;
 }
 
-/* Final kill of all header button backgrounds + enforce bigger sizes */
+/* Final kill of all header button backgrounds + enforce sizes */
 body .homepage-container .header-action-btn,
 body .homepage-container .header-action-btn:hover,
 body .homepage-container .header-action-btn:focus,
@@ -10456,18 +10460,18 @@ body .homepage-container .menu-trigger {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  max-width: 28px !important;
-  max-height: 28px !important;
+  width: 31px !important;
+  height: 31px !important;
+  min-width: 31px !important;
+  min-height: 31px !important;
+  max-width: 31px !important;
+  max-height: 31px !important;
 }
 
 /* Icons — visible on light lavender header */
 body .homepage-container .header-action-btn svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
   flex-shrink: 0 !important;
 }
 
@@ -10492,10 +10496,10 @@ body .homepage-container .menu-trigger svg path {
   stroke: #4c1d95 !important;
 }
 
-/* Dark mode — title must be light on dark header */
+/* Dark mode — title uses soft lavender on dark header */
 body.dark-mode .homepage-container .chat-header .header-title,
 body.dark-mode .homepage-container .header-title {
-  color: #e9d5ff !important;
+  color: #c4b5fd !important;
   text-shadow: none !important;
 }
 body.dark-mode .homepage-container .chat-header .user-count,
