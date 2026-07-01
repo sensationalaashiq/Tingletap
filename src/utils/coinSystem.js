@@ -178,6 +178,7 @@ export async function deductCoinsForGift({ fromUid, toUid, coins, giftId, giftNa
         totalGifted: 0,
         totalReceived: coins,
         totalTransactions: 1,
+        lastGiftFromUid: fromUid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -186,6 +187,7 @@ export async function deductCoinsForGift({ fromUid, toUid, coins, giftId, giftNa
         balance: increment(coins),
         totalReceived: increment(coins),
         totalTransactions: increment(1),
+        lastGiftFromUid: fromUid,
         updatedAt: serverTimestamp(),
       });
     }
@@ -241,6 +243,7 @@ export async function deductCoinsForGift({ fromUid, toUid, coins, giftId, giftNa
           weekKey,
           monthCoins: coins,
           monthKey,
+          lastGiftFromUid: fromUid,
           lastUpdated: serverTimestamp(),
         });
       } else {
@@ -258,6 +261,7 @@ export async function deductCoinsForGift({ fromUid, toUid, coins, giftId, giftNa
           weekKey,
           monthCoins,
           monthKey,
+          lastGiftFromUid: fromUid,
           lastUpdated: serverTimestamp(),
         });
       }

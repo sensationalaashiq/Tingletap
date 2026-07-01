@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TI } from '../utils/toastIcons';
+import { SUPPORTED_LANGUAGES } from '../utils/translationService';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -149,6 +150,13 @@ const SettingsSidebar = ({
         usernameAnimationType: 'pulse',
         usernameAnimationDuration: '2s',
 
+        // Auto Translation Settings
+        autoTranslation: false,
+        translationLanguage: 'en',
+        showOriginalMessage: true,
+        translateBroadcastAnnouncements: true,
+        translatePrivateMessages: true,
+
     });
 
     // Load settings from Firebase profile on component mount
@@ -247,6 +255,13 @@ const SettingsSidebar = ({
                         usernameAnimationEnabled: userSettings.usernameAnimationEnabled !== undefined ? userSettings.usernameAnimationEnabled : (localStorage.getItem('usernameAnimationEnabled') === 'true'),
                         usernameAnimationType: userSettings.usernameAnimationType || localStorage.getItem('usernameAnimationType') || 'pulse',
                         usernameAnimationDuration: userSettings.usernameAnimationDuration || localStorage.getItem('usernameAnimationDuration') || '2s',
+
+                        // Auto Translation
+                        autoTranslation: userSettings.autoTranslation !== undefined ? userSettings.autoTranslation : (localStorage.getItem('autoTranslation') === 'true'),
+                        translationLanguage: userSettings.translationLanguage || localStorage.getItem('translationLanguage') || 'en',
+                        showOriginalMessage: userSettings.showOriginalMessage !== undefined ? userSettings.showOriginalMessage : (localStorage.getItem('showOriginalMessage') !== 'false'),
+                        translateBroadcastAnnouncements: userSettings.translateBroadcastAnnouncements !== undefined ? userSettings.translateBroadcastAnnouncements : (localStorage.getItem('translateBroadcastAnnouncements') !== 'false'),
+                        translatePrivateMessages: userSettings.translatePrivateMessages !== undefined ? userSettings.translatePrivateMessages : (localStorage.getItem('translatePrivateMessages') !== 'false'),
 
                     };
 
@@ -1203,6 +1218,168 @@ const SettingsSidebar = ({
                             </div>
 
                             </div>
+
+                    </div>
+                );
+
+            case 'chat':
+                return (
+                    <div className="settings-tab-content">
+                        <h3>Chat &amp; Auto Translation</h3>
+
+                        {/* ── Hero Banner ── */}
+                        <div className="tt-settings-hero" style={{marginBottom:'16px'}}>
+                            <div className="tt-settings-hero-icon">
+                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                                    <circle cx="12" cy="12" r="9" stroke="#fff" strokeWidth="1.7"/>
+                                    <path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="#fff" strokeWidth="1.4" strokeLinecap="round"/>
+                                    <path d="M3 12h18M3.5 8h17M3.5 16h17" stroke="rgba(255,255,255,0.8)" strokeWidth="1.2" strokeLinecap="round"/>
+                                </svg>
+                            </div>
+                            <div className="tt-settings-hero-text">
+                                <h5>Auto Translation</h5>
+                                <p>Automatically translate messages into your preferred language. Original messages are never modified.</p>
+                            </div>
+                        </div>
+
+                        {/* ── Master toggle ── */}
+                        <div className="setting-group" style={{marginBottom:'14px'}}>
+                            <h4 style={{display:'flex',alignItems:'center',gap:'7px'}}>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                    <defs>
+                                        <linearGradient id="ttH1" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor="#818cf8"/>
+                                            <stop offset="100%" stopColor="#ec4899"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="12" cy="12" r="9" stroke="url(#ttH1)" strokeWidth="1.6"/>
+                                    <path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#ttH1)" strokeWidth="1.3" strokeLinecap="round"/>
+                                    <path d="M3 12h18M3.5 8h17M3.5 16h17" stroke="url(#ttH1)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+                                </svg>
+                                TRANSLATION ENGINE
+                            </h4>
+
+                            <div className="modern-setting-item" style={{background:'linear-gradient(135deg,rgba(129,140,248,0.07),rgba(236,72,153,0.04))',border:'1px solid rgba(129,140,248,0.18)',borderRadius:'12px',padding:'10px 14px',marginBottom:'10px'}}>
+                                <div className="modern-setting-info">
+                                    <span style={{fontWeight:800}}>Auto Translation</span>
+                                    <small>Automatically translate all incoming messages into your selected language</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.autoTranslation}
+                                        onChange={(e) => handleSettingChange('autoTranslation', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            {/* Language selector */}
+                            <div style={{marginBottom:'10px'}}>
+                                <div style={{fontSize:'10px',fontWeight:700,color:'var(--text-muted,#7c6aaa)',letterSpacing:'.05em',textTransform:'uppercase',marginBottom:'6px',display:'flex',alignItems:'center',gap:'5px'}}>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none">
+                                        <defs><linearGradient id="ttLang" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#60a5fa"/></linearGradient></defs>
+                                        <path d="M3 5h12M9 3v2M5.45 13C7 10 9 8 12 7M4.08 17c4.32-1.5 8.76-5 10.92-10M19 21l-3-6M16 21l3-6M14 17h8" stroke="url(#ttLang)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                    Preferred Translation Language
+                                </div>
+                                <select
+                                    className="tt-lang-select"
+                                    value={settings.translationLanguage}
+                                    onChange={(e) => handleSettingChange('translationLanguage', e.target.value)}
+                                    disabled={!settings.autoTranslation}
+                                    style={{opacity: settings.autoTranslation ? 1 : 0.5, cursor: settings.autoTranslation ? 'pointer' : 'not-allowed'}}
+                                >
+                                    {SUPPORTED_LANGUAGES.map(lang => (
+                                        <option key={lang.code} value={lang.code}>{lang.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* ── Display Mode ── */}
+                        <div className="setting-group" style={{marginBottom:'14px',opacity: settings.autoTranslation ? 1 : 0.5, transition:'opacity .2s'}}>
+                            <h4 style={{display:'flex',alignItems:'center',gap:'7px'}}>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                    <defs><linearGradient id="ttH2" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#60a5fa"/></linearGradient></defs>
+                                    <rect x="3" y="3" width="18" height="14" rx="2" stroke="url(#ttH2)" strokeWidth="1.5"/>
+                                    <path d="M7 8h10M7 12h6" stroke="url(#ttH2)" strokeWidth="1.3" strokeLinecap="round"/>
+                                    <path d="M3 21l3-4h12l3 4" stroke="url(#ttH2)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                DISPLAY MODE
+                            </h4>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Show Original Message</span>
+                                    <small>Display original message above the translation (Mode 1). Disable to show translation only (Mode 2)</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.showOriginalMessage}
+                                        disabled={!settings.autoTranslation}
+                                        onChange={(e) => handleSettingChange('showOriginalMessage', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* ── Scope controls ── */}
+                        <div className="setting-group" style={{opacity: settings.autoTranslation ? 1 : 0.5, transition:'opacity .2s'}}>
+                            <h4 style={{display:'flex',alignItems:'center',gap:'7px'}}>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                    <defs><linearGradient id="ttH3" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs>
+                                    <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" stroke="url(#ttH3)" strokeWidth="1.5" strokeLinejoin="round"/>
+                                    <path d="M12 22V12M2 7l10 5 10-5" stroke="url(#ttH3)" strokeWidth="1.3" strokeLinecap="round"/>
+                                </svg>
+                                TRANSLATION SCOPE
+                            </h4>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Translate Broadcast Announcements</span>
+                                    <small>Translate RJ announcements and TingleBot messages</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.translateBroadcastAnnouncements}
+                                        disabled={!settings.autoTranslation}
+                                        onChange={(e) => handleSettingChange('translateBroadcastAnnouncements', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="modern-setting-item">
+                                <div className="modern-setting-info">
+                                    <span>Translate Private Messages</span>
+                                    <small>Translate messages in private conversations</small>
+                                </div>
+                                <label className="modern-toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.translatePrivateMessages}
+                                        disabled={!settings.autoTranslation}
+                                        onChange={(e) => handleSettingChange('translatePrivateMessages', e.target.checked)}
+                                    />
+                                    <span className="modern-toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            {/* Info card */}
+                            <div style={{display:'flex',gap:'8px',alignItems:'flex-start',padding:'9px 12px',background:'linear-gradient(135deg,rgba(52,211,153,0.07),rgba(96,165,250,0.05))',borderRadius:'10px',border:'1px solid rgba(52,211,153,0.18)',marginTop:'10px'}}>
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" style={{flexShrink:0,marginTop:'1px'}}>
+                                    <circle cx="12" cy="12" r="9" stroke="#34d399" strokeWidth="1.5"/>
+                                    <path d="M12 8v.5M12 11v5" stroke="#34d399" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <div style={{fontSize:'10px',color:'var(--text-muted,#6b7280)',lineHeight:1.5}}>
+                                    Translation is performed <strong style={{color:'#34d399'}}>locally for your view only</strong>. Original messages stored in Firebase are never modified. Other users see messages in their original language.
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
                 );
@@ -3781,6 +3958,25 @@ const SettingsSidebar = ({
                                 <circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/>
                             </svg>
                             <span>General</span>
+                        </button>
+
+                        <button
+                            className={`settings-tab ${activeTab === 'chat' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('chat')}
+                            title="Chat &amp; Translation"
+                        >
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <defs>
+                                    <linearGradient id="chatTabGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor={activeTab === 'chat' ? '#ffffff' : '#818cf8'}/>
+                                        <stop offset="100%" stopColor={activeTab === 'chat' ? '#ffffff' : '#ec4899'}/>
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="12" cy="12" r="9" stroke="url(#chatTabGrad)" strokeWidth="1.6"/>
+                                <path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#chatTabGrad)" strokeWidth="1.3" strokeLinecap="round"/>
+                                <path d="M3 12h18M3.5 8h17M3.5 16h17" stroke="url(#chatTabGrad)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+                            </svg>
+                            <span>Chat</span>
                         </button>
 
                         <button 

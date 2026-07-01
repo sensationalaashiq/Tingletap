@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { db, rtdb, auth } from '../firebase/config';
+import { translateText as _ttBP, getTranslationSettings as _tsBP, getLanguageName as _glnBP } from '../utils/translationService';
 import {
   ref, set, get, update, remove, onValue, onChildAdded, push, off, onDisconnect, increment, serverTimestamp
 } from 'firebase/database';
@@ -2191,6 +2192,37 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     </div>
   );
 
+  /* ── BPAnnTranslated: per-announcement translation helper ── */
+  const BPAnnTranslated = React.memo(function BPAnnTranslated({ text, annId }) {
+    const [result, setResult] = React.useState(null);
+    const [s, setS] = React.useState(() => _tsBP());
+    React.useEffect(() => {
+      const h = () => setS(_tsBP());
+      window.addEventListener('tbSettingChanged', h);
+      return () => window.removeEventListener('tbSettingChanged', h);
+    }, []);
+    React.useEffect(() => {
+      if (!s.enabled || !s.translateAnnouncements || !text) { setResult(null); return; }
+      let cancelled = false;
+      _ttBP(text, s.language).then(res => {
+        if (cancelled) return;
+        setResult(!res.skipped ? res : null);
+      });
+      return () => { cancelled = true; };
+    }, [text, annId, s.enabled, s.translateAnnouncements, s.language]);
+    return (
+      <div>
+        {(s.showOriginal || !result) && <div className="bp-ann-strip-msg">{text}</div>}
+        {result && (
+          <div style={{display:'flex',alignItems:'flex-start',gap:'5px',marginTop:'3px',padding:'3px 6px',borderRadius:'6px',background:'linear-gradient(135deg,rgba(129,140,248,0.08),rgba(236,72,153,0.05))',border:'1px solid rgba(129,140,248,0.18)'}}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,marginTop:'2px'}}><defs><linearGradient id="bpGlb" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs><circle cx="12" cy="12" r="9" stroke="url(#bpGlb)" strokeWidth="1.6"/><path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#bpGlb)" strokeWidth="1.3" strokeLinecap="round"/><path d="M3 12h18" stroke="url(#bpGlb)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/></svg>
+            <span className="bp-ann-strip-msg" style={{fontStyle:'italic',color:'var(--text-muted,#6b7280)'}}>{result.translated}</span>
+          </div>
+        )}
+      </div>
+    );
+  });
+
   /* ── Announcement notification strip for listeners ── */
   const renderAnnouncementStrips = () => {
     if (!announcements.length) return null;
@@ -2227,7 +2259,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                   {ann.sentAt ? new Date(ann.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                 </span>
               </div>
-              <div className="bp-ann-strip-msg">{ann.message}</div>
+              <BPAnnTranslated text={ann.message} annId={ann.id} />
             </div>
           </div>
         ))}
@@ -2842,7 +2874,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     )}
                   </div>
                 </div>
-                <div className="bp-ann-card-msg">{ann.message}</div>
+                <BPAnnTranslated text={ann.message} annId={ann.id + '_card'} />
               </div>
             ))}
           </div>

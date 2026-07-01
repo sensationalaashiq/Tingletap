@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { useTranslation } from '../hooks/useTranslation';
+import TranslatedMessage from './TranslatedMessage';
+import { translateText as _ttPM, getTranslationSettings as _tsPM, getLanguageName as _glnPM } from '../utils/translationService';
 import { motion, AnimatePresence } from 'framer-motion';
 import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
@@ -172,6 +175,62 @@ const UltraPMBotNotice = ({ msg }) => {
     </div>
   );
 };
+
+/* ── PM per-message translation wrapper ── */
+function PMTranslatedText({ msg, currentUid }) {
+  const isSent = msg.senderId === currentUid;
+  const [result, setResult] = React.useState(null);
+  const [settings, setSettings] = React.useState(() => _tsPM());
+
+  React.useEffect(() => {
+    const handler = () => setSettings(_tsPM());
+    window.addEventListener('tbSettingChanged', handler);
+    return () => window.removeEventListener('tbSettingChanged', handler);
+  }, []);
+
+  React.useEffect(() => {
+    if (!settings.enabled || !settings.translatePMs || !msg.text || isSent) {
+      setResult(null);
+      return;
+    }
+    let cancelled = false;
+    _ttPM(msg.text, settings.language).then(res => {
+      if (cancelled) return;
+      setResult(!res.skipped ? res : null);
+    });
+    return () => { cancelled = true; };
+  }, [msg.text, msg.id, isSent, settings.enabled, settings.translatePMs, settings.language]);
+
+  if (!settings.enabled || !settings.translatePMs || isSent) {
+    return <p className="ultra-pm-msg-text">{msg.text}</p>;
+  }
+  if (result) {
+    if (!settings.showOriginal) {
+      return (
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:'4px',marginBottom:'3px'}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="pmGlb" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs><circle cx="12" cy="12" r="9" stroke="url(#pmGlb)" strokeWidth="1.6"/><path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#pmGlb)" strokeWidth="1.3" strokeLinecap="round"/><path d="M3 12h18" stroke="url(#pmGlb)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/></svg>
+            <span style={{fontSize:'8.5px',fontWeight:700,background:'linear-gradient(135deg,#818cf8,#ec4899)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{_glnPM(settings.language)}</span>
+          </div>
+          <p className="ultra-pm-msg-text" style={{fontStyle:'italic'}}>{result.translated}</p>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p className="ultra-pm-msg-text">{msg.text}</p>
+        <div style={{marginTop:'3px',padding:'4px 8px',borderRadius:'7px',background:'linear-gradient(135deg,rgba(129,140,248,0.08),rgba(236,72,153,0.05))',border:'1px solid rgba(129,140,248,0.18)'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'4px',marginBottom:'2px'}}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="pmGlb2" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs><circle cx="12" cy="12" r="9" stroke="url(#pmGlb2)" strokeWidth="1.6"/><path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#pmGlb2)" strokeWidth="1.3" strokeLinecap="round"/><path d="M3 12h18" stroke="url(#pmGlb2)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/></svg>
+            <span style={{fontSize:'8px',fontWeight:700,color:'rgba(129,140,248,0.8)'}}>{_glnPM(settings.language)}</span>
+          </div>
+          <p className="ultra-pm-msg-text" style={{fontStyle:'italic',margin:0,fontSize:'10px',color:'var(--text-muted,#6b7280)'}}>{result.translated}</p>
+        </div>
+      </div>
+    );
+  }
+  return <p className="ultra-pm-msg-text">{msg.text}</p>;
+}
 
 const LuxuryPrivateMessageWindow = ({
   isOpen,
@@ -640,7 +699,7 @@ const LuxuryPrivateMessageWindow = ({
                               {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
                           </div>
-                          {msg.text && <p className="ultra-pm-msg-text">{msg.text}</p>}
+                          {msg.text && <PMTranslatedText msg={msg} currentUid={auth.currentUser?.uid} />}
                           {msg.imageUrl && (
                             <motion.div
                               initial={{ opacity: 0, scale: 0.88, y: 4 }}

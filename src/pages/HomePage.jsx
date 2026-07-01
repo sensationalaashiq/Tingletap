@@ -40,6 +40,8 @@ import GenderBadge from '../components/GenderBadge';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
 import TingleBotNotification from '../components/TingleBotNotification';
+import TranslatedMessage from '../components/TranslatedMessage';
+import { useTranslation } from '../hooks/useTranslation';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
@@ -195,6 +197,50 @@ const ImageMessage = ({ imageUrl, imageFileName }) => (
     <PremiumImageMessage imageUrl={imageUrl} imageFileName={imageFileName} />
 );
 
+
+/* ── ChatMessageTranslatedBody: isolates useTranslation to avoid Rules-of-Hooks violation ── */
+const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody({ text, uid, msgStyle, isMyMessage }) {
+    const translation = useTranslation(text);
+
+    const savedMsgStyle = msgStyle;
+    const msgDecorations = [];
+    if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
+    if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
+    const pStyle = {
+        fontSize: savedMsgStyle?.fontSize || '10px',
+        color: savedMsgStyle?.fontColor || '#2d2d2d',
+        fontFamily: savedMsgStyle?.fontFamily || 'inherit',
+        fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
+        fontStyle: savedMsgStyle?.isItalic ? 'italic' : 'normal',
+        textDecoration: msgDecorations.length > 0 ? msgDecorations.join(' ') : 'none',
+        margin: '3px 0',
+        lineHeight: '1.4',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word'
+    };
+    const viewerName = auth.currentUser?.displayName;
+    const renderedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
+        if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
+            return `<span class="tag-self-mention">@${name}</span>`;
+        }
+        return `<span class="tag-other-mention">@${name}</span>`;
+    });
+    const originalEl = <p style={pStyle} dangerouslySetInnerHTML={{ __html: renderedHtml }}></p>;
+
+    if (!isMyMessage && translation.enabled) {
+        return (
+            <TranslatedMessage
+                translatedText={translation.translatedText}
+                detectedLang={translation.detectedLang}
+                targetLang={translation.targetLang}
+                showOriginal={translation.showOriginal}
+                isTranslating={translation.isTranslating}
+                renderContent={() => originalEl}
+            />
+        );
+    }
+    return originalEl;
+});
 
 const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
@@ -564,34 +610,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         </div>
                     </div>
                     <div className="message-body">
-                        {text && (() => {
-                            const savedMsgStyle = (typeof window !== 'undefined' && window.userMessageStyles && uid)
-                                ? window.userMessageStyles[uid]
-                                : null;
-                            const msgDecorations = [];
-                            if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
-                            if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
-                            const pStyle = {
-                                fontSize: savedMsgStyle?.fontSize || '10px',
-                                color: savedMsgStyle?.fontColor || '#2d2d2d',
-                                fontFamily: savedMsgStyle?.fontFamily || 'inherit',
-                                fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
-                                fontStyle: savedMsgStyle?.isItalic ? 'italic' : 'normal',
-                                textDecoration: msgDecorations.length > 0 ? msgDecorations.join(' ') : 'none',
-                                margin: '3px 0',
-                                lineHeight: '1.4',
-                                wordWrap: 'break-word',
-                                overflowWrap: 'break-word'
-                            };
-                            const viewerName = auth.currentUser?.displayName;
-                            const renderedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
-                                if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
-                                    return `<span class="tag-self-mention">@${name}</span>`;
-                                }
-                                return `<span class="tag-other-mention">@${name}</span>`;
-                            });
-                            return <p style={pStyle} dangerouslySetInnerHTML={{ __html: renderedHtml }}></p>;
-                        })()}
+                        {text && (
+                            <ChatMessageTranslatedBody
+                                text={text}
+                                uid={uid}
+                                msgStyle={(typeof window !== 'undefined' && window.userMessageStyles && uid) ? window.userMessageStyles[uid] : null}
+                                isMyMessage={isMyMessage}
+                            />
+                        )}
                         {message.imageUrl && (
                             <ImageMessage 
                                 imageUrl={message.imageUrl}

@@ -1,0 +1,290 @@
+/* ═══════════════════════════════════════════════════════
+   TingleTap — TranslatedMessage Premium Styles
+   Full CSS-variable compatibility: light, dark, all themes
+════════════════════════════════════════════════════════ */
+
+.tt-msg-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Loading strip ── */
+.tt-loading-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(129,140,248,0.10), rgba(167,139,250,0.07));
+  border: 1px solid rgba(129,140,248,0.20);
+  width: fit-content;
+  animation: tt-fadein 0.25s ease;
+}
+
+.tt-loading-text {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-muted, #9ca3af);
+  letter-spacing: 0.2px;
+  font-style: italic;
+}
+
+/* ── Spinner animation ── */
+.tt-spinner-svg {
+  animation: tt-spin 0.8s linear infinite;
+}
+
+@keyframes tt-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Globe icon subtle pulse ── */
+.tt-translate-icon-svg {
+  animation: tt-globe-pulse 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes tt-globe-pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(0.92); }
+}
+
+/* ── Translation badge ── */
+.tt-translation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(129,140,248,0.12), rgba(236,72,153,0.08));
+  border: 1px solid rgba(129,140,248,0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  flex-shrink: 0;
+}
+
+.tt-badge-from,
+.tt-badge-to {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.15px;
+  white-space: nowrap;
+}
+
+.tt-badge-from {
+  color: var(--text-muted, #9ca3af);
+}
+
+.tt-badge-to {
+  background: linear-gradient(135deg, #818cf8, #a78bfa, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Mode-both: divider row ── */
+.tt-divider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.tt-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(129,140,248,0.20), transparent);
+  border-radius: 1px;
+}
+
+/* ── Translated block ── */
+.tt-translated-block {
+  border-radius: 10px;
+  padding: 6px 10px 7px;
+  margin-top: 4px;
+  animation: tt-fadein 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tt-translated-block::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(129,140,248,0.07), rgba(236,72,153,0.04));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.tt-mode-both {
+  border: 1px solid rgba(129,140,248,0.18);
+  background: var(--bg-elevated, rgba(238,242,255,0.65));
+}
+
+.tt-mode-only {
+  border: 1px solid rgba(129,140,248,0.22);
+  background: var(--bg-elevated, rgba(238,242,255,0.72));
+  padding: 7px 10px 8px;
+}
+
+.tt-mode-only .tt-translation-badge {
+  margin-bottom: 5px;
+}
+
+/* ── Translated text ── */
+.tt-translated-text {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-secondary, #4b5563);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  position: relative;
+  z-index: 1;
+  font-style: italic;
+}
+
+/* ── Compact variant (for PMs) ── */
+.tt-compact {
+  padding: 5px 8px 6px;
+  margin-top: 3px;
+  border-radius: 8px;
+}
+
+.tt-compact .tt-translated-text {
+  font-size: 9.5px;
+}
+
+.tt-compact .tt-translation-badge {
+  padding: 1px 5px;
+}
+
+.tt-compact .tt-badge-from,
+.tt-compact .tt-badge-to {
+  font-size: 8px;
+}
+
+/* ── Fade-in animation ── */
+@keyframes tt-fadein {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════
+   DARK MODE overrides
+══════════════════════════════════════ */
+html.dark-mode .tt-translated-block,
+html.dark-theme-variant .tt-translated-block {
+  background: var(--bg-elevated, rgba(30,32,60,0.72));
+  border-color: rgba(129,140,248,0.22);
+}
+
+html.dark-mode .tt-translated-text,
+html.dark-theme-variant .tt-translated-text {
+  color: var(--text-secondary, #9ca3af);
+}
+
+html.dark-mode .tt-translation-badge,
+html.dark-theme-variant .tt-translation-badge {
+  background: linear-gradient(135deg, rgba(129,140,248,0.14), rgba(236,72,153,0.10));
+  border-color: rgba(129,140,248,0.28);
+}
+
+html.dark-mode .tt-loading-strip,
+html.dark-theme-variant .tt-loading-strip {
+  background: linear-gradient(135deg, rgba(129,140,248,0.12), rgba(167,139,250,0.08));
+  border-color: rgba(129,140,248,0.25);
+}
+
+html.dark-mode .tt-loading-text,
+html.dark-theme-variant .tt-loading-text {
+  color: var(--text-muted, #6b7280);
+}
+
+html.dark-mode .tt-divider-line,
+html.dark-theme-variant .tt-divider-line {
+  background: linear-gradient(90deg, transparent, rgba(129,140,248,0.25), transparent);
+}
+
+/* ══════════════════════════════════════
+   Settings panel — Translation tab
+══════════════════════════════════════ */
+.tt-settings-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(129,140,248,0.10), rgba(236,72,153,0.06));
+  border: 1px solid rgba(129,140,248,0.20);
+  margin-bottom: 14px;
+}
+
+.tt-settings-hero-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #818cf8, #a78bfa, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(129,140,248,0.35);
+  animation: tt-hero-glow 3s ease-in-out infinite;
+}
+
+@keyframes tt-hero-glow {
+  0%,100% { box-shadow: 0 4px 14px rgba(129,140,248,0.35); }
+  50%      { box-shadow: 0 4px 22px rgba(167,139,250,0.55); }
+}
+
+.tt-settings-hero-text h5 {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary, #1e1b4b);
+  margin: 0 0 2px;
+  letter-spacing: -0.01em;
+}
+
+.tt-settings-hero-text p {
+  font-size: 10px;
+  color: var(--text-muted, #7c6aaa);
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* language selector */
+.tt-lang-select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color, #e0e7ff);
+  background: var(--input-bg, #f8fafc);
+  color: var(--text-primary, #1e1b4b);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b5cf6' strokeWidth='1.8' strokeLinecap='round' strokeLinejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 30px;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.tt-lang-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+}
+
+.tt-lang-select:hover {
+  border-color: var(--border-secondary, #c4b5fd);
+}

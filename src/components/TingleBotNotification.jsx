@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import renderTextWithLinks from '../utils/linkifyText';
 import './TingleBotNotification.css';
+import { translateText, getTranslationSettings, getLanguageName } from '../utils/translationService';
 
 /* ─────────────────────────────────────────────
    SVG ICON LIBRARY  (no emojis, pure SVG)
@@ -249,6 +250,72 @@ function buildDisplayText(message) {
 }
 
 /* ─────────────────────────────────────────────
+   Translation strip for announcements/rules
+───────────────────────────────────────────── */
+const TBTranslationStrip = ({ text }) => {
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [s, setS] = useState(() => getTranslationSettings());
+
+  useEffect(() => {
+    const handler = () => setS(getTranslationSettings());
+    window.addEventListener('tbSettingChanged', handler);
+    return () => window.removeEventListener('tbSettingChanged', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!s.enabled || !s.translateAnnouncements || !text) {
+      setResult(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    translateText(text, s.language).then(res => {
+      if (cancelled) return;
+      setResult(!res.skipped ? res : null);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+      setLoading(false);
+    };
+  }, [text, s.enabled, s.translateAnnouncements, s.language]);
+
+  if (loading) {
+    return (
+      <span style={{fontSize:'9px',color:'rgba(129,140,248,0.7)',fontStyle:'italic',marginLeft:'4px'}}>
+        (translating…)
+      </span>
+    );
+  }
+  if (!result) return null;
+
+  return (
+    <div style={{
+      marginTop:'4px',
+      fontSize:'10px',
+      fontStyle:'italic',
+      color:'var(--text-muted,#7c6aaa)',
+      borderTop:'1px solid rgba(129,140,248,0.15)',
+      paddingTop:'3px',
+      display:'flex',
+      alignItems:'center',
+      gap:'4px'
+    }}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+        <circle cx="12" cy="12" r="9" stroke="url(#tbGlobe)" strokeWidth="1.6"/>
+        <path d="M12 3c-2 2-3.5 5-3.5 9s1.5 7 3.5 9M12 3c2 2 3.5 5 3.5 9s-1.5 7-3.5 9" stroke="url(#tbGlobe)" strokeWidth="1.3" strokeLinecap="round"/>
+        <path d="M3 12h18" stroke="url(#tbGlobe)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+        <defs><linearGradient id="tbGlobe" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs>
+      </svg>
+      <span style={{color:'rgba(129,140,248,0.8)',fontWeight:700,fontSize:'8.5px'}}>{getLanguageName(s.language)}:</span>
+      <span>{result.translated}</span>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
 const TingleBotNotification = ({ message, onDelete, isOwner }) => {
@@ -271,13 +338,16 @@ const TingleBotNotification = ({ message, onDelete, isOwner }) => {
 
   return (
     <div className={`tinglebot-strip-wrapper${isOwner && onDelete ? ' tinglebot-strip-wrapper--interactive' : ''}`} aria-live="polite" aria-atomic="true">
-      <div className={`tinglebot-strip ${cls}`}>
+      <div className={`tinglebot-strip ${cls}`} style={(['announcement','rule'].includes(eventType) && getTranslationSettings().enabled && getTranslationSettings().translateAnnouncements) ? {flexWrap:'wrap',alignItems:'flex-start'} : {}}>
         <span className="tinglebot-icon">
           <Icon />
         </span>
         <span className="tinglebot-brand">TingleBot</span>
         <span className="tinglebot-sep" />
         <span className="tinglebot-text">{renderText()}</span>
+        {(['announcement','rule'].includes(eventType)) && (
+          <TBTranslationStrip text={text} />
+        )}
         {isOwner && onDelete && message.id && (
           <button
             className="tinglebot-delete-btn"
