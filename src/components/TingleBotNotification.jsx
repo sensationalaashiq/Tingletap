@@ -1,4 +1,5 @@
 import React from 'react';
+import renderTextWithLinks from '../utils/linkifyText';
 import './TingleBotNotification.css';
 
 /* ─────────────────────────────────────────────
@@ -255,17 +256,17 @@ const TingleBotNotification = ({ message, onDelete, isOwner }) => {
   const { Icon, cls } = EVENT_MAP[eventType] || { Icon: IconDefault, cls: '' };
   const text = buildDisplayText(message);
 
-  // Bold first word sequence that looks like a name (capitalised word)
+  // Bold first word sequence that looks like a name (capitalised word); linkify URLs in the rest
   const renderText = () => {
     const nameMatch = text.match(/^([A-Z][a-zA-Z0-9_]+(?:\s[A-Z][a-zA-Z]+)?)\s(.+)/);
     if (nameMatch) {
       return (
         <>
-          <strong>{nameMatch[1]}</strong>{' '}{nameMatch[2]}
+          <strong>{nameMatch[1]}</strong>{' '}{renderTextWithLinks(nameMatch[2])}
         </>
       );
     }
-    return text;
+    return renderTextWithLinks(text);
   };
 
   return (
