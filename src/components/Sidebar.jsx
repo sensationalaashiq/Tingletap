@@ -399,6 +399,20 @@ const Sidebar = ({
     if (genderFilter === 'male')   return u.gender?.toLowerCase() === 'male';
     // 'all' — show every user type: guest (Stree/Purush/Navrang), member, badge, owner, admin, moderator
     return true;
+  }).sort((a, b) => {
+    const roleRank = (u) => {
+      const role = u.role?.toLowerCase();
+      if (role === 'owner')     return 5;
+      if (role === 'admin')     return 4;
+      if (role === 'moderator') return 3;
+      if (role === 'guest')     return 0;
+      // registered user — badge holders above regular members
+      return (u.badge && u.badge !== '') ? 2 : 1;
+    };
+    const diff = roleRank(b) - roleRank(a);
+    if (diff !== 0) return diff;
+    // same rank → alphabetical by displayName
+    return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase());
   });
 
   /* -- role-based mod permissions (for viewer) -- */
