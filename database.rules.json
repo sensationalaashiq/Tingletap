@@ -66,6 +66,25 @@
           }
         }
       }
+    },
+
+    "calls": {
+      "$callId": {
+        ".read": "auth != null && (data.child('callerId').val() == auth.uid || data.child('recipientId').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('callerId').val() == auth.uid || data.child('recipientId').val() == auth.uid)"
+      }
+    },
+
+    "privateMessages": {
+      "$conversationId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && auth.uid == newData.child('senderId').val()"
+          }
+        }
+      }
     }
   }
 }
