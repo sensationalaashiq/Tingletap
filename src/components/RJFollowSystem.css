@@ -1,0 +1,414 @@
+/* ═══════════════════════════════════════════════════════
+   RJ FOLLOW SYSTEM — Premium Luxury Light Lavender
+   Full theme compatibility (Light / Dark / Custom)
+═══════════════════════════════════════════════════════ */
+
+@keyframes rjf-pop   { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
+@keyframes rjf-fadein{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes rjf-modalin{ from{opacity:0;transform:scale(0.93) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+/* ── Follow button (full) ── */
+.rjf-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: rjf-fadein 0.35s ease both;
+}
+
+.rjf-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(244, 114, 182, 0.35);
+  background: rgba(244, 114, 182, 0.08);
+  color: #db2777;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 10px rgba(244, 114, 182, 0.12);
+}
+
+.rjf-follow-btn:hover:not(:disabled) {
+  background: rgba(244, 114, 182, 0.16);
+  border-color: rgba(244, 114, 182, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(219, 39, 119, 0.20);
+}
+
+.rjf-follow-btn.following {
+  background: linear-gradient(135deg, rgba(244,114,182,0.18) 0%, rgba(167,139,250,0.14) 100%);
+  border-color: rgba(244, 114, 182, 0.45);
+  color: #be185d;
+}
+
+.rjf-follow-btn.following svg path { fill: url(#rjfHeart); }
+
+.rjf-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rjf-follow-btn:active:not(:disabled) svg {
+  animation: rjf-pop 0.3s ease;
+}
+
+/* ── Follower/Following stats row ── */
+.rjf-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.rjf-stat-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background 0.18s ease;
+}
+
+.rjf-stat-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.rjf-stat-btn strong {
+  font-size: 13px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.rjf-stat-btn span {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9a7ab8;
+  letter-spacing: 0.02em;
+}
+
+.rjf-stat-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(139, 92, 246, 0.18);
+  flex-shrink: 0;
+}
+
+/* ── Compact follow (inside broadcast player) ── */
+.rjf-compact-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  animation: rjf-fadein 0.3s ease both;
+}
+
+.rjf-compact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(244, 114, 182, 0.3);
+  background: rgba(244, 114, 182, 0.08);
+  color: #db2777;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.rjf-compact-btn:hover:not(:disabled) {
+  background: rgba(244, 114, 182, 0.15);
+  border-color: rgba(244, 114, 182, 0.5);
+  transform: translateY(-1px);
+}
+
+.rjf-compact-btn.following {
+  background: linear-gradient(135deg, rgba(244,114,182,0.16) 0%, rgba(167,139,250,0.12) 100%);
+  border-color: rgba(244,114,182,0.40);
+  color: #be185d;
+}
+
+.rjf-compact-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rjf-count-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rjf-count-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  background: rgba(139, 92, 246, 0.06);
+  cursor: pointer;
+  transition: background 0.18s;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.rjf-count-pill:hover {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.rjf-count-pill strong {
+  font-size: 12px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.rjf-count-pill span {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9a7ab8;
+}
+
+/* ── Follower List Modal ── */
+.rjf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(45, 20, 80, 0.48);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rjf-fadein 0.2s ease both;
+}
+
+.rjf-modal {
+  width: 340px;
+  max-width: 94vw;
+  max-height: 70vh;
+  background: rgba(250, 247, 255, 0.99);
+  border: 1.5px solid rgba(139, 92, 246, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(109, 40, 217, 0.22), 0 4px 16px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rjf-modalin 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.rjf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+  background: linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(99,102,241,0.04) 100%);
+}
+
+.rjf-modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.01em;
+}
+
+.rjf-modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+}
+.rjf-modal-close:hover { background: rgba(139, 92, 246, 0.16); }
+
+.rjf-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.rjf-loading,
+.rjf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 20px;
+  color: #9a7ab8;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.rjf-user-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.rjf-user-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  transition: background 0.15s;
+}
+
+.rjf-user-item:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.rjf-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(139, 92, 246, 0.18);
+  flex-shrink: 0;
+}
+
+.rjf-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rjf-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b1f7a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.rjf-user-time {
+  font-size: 10px;
+  color: #9a7ab8;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════
+   DARK THEME OVERRIDES
+══════════════════════════════════════════════════ */
+html.dark-mode .rjf-follow-btn,
+html.dark-theme-variant .rjf-follow-btn {
+  background: rgba(244, 114, 182, 0.10);
+  border-color: rgba(244, 114, 182, 0.28);
+  color: #f472b6;
+}
+html.dark-mode .rjf-follow-btn.following,
+html.dark-theme-variant .rjf-follow-btn.following {
+  background: linear-gradient(135deg, rgba(244,114,182,0.14), rgba(167,139,250,0.10));
+  color: #f9a8d4;
+}
+
+html.dark-mode .rjf-stats-row,
+html.dark-theme-variant .rjf-stats-row {
+  background: rgba(139,92,246,0.08);
+  border-color: rgba(139,92,246,0.18);
+}
+html.dark-mode .rjf-stat-btn span,
+html.dark-theme-variant .rjf-stat-btn span {
+  color: var(--text-muted, #8b7ab8);
+}
+html.dark-mode .rjf-stat-btn:hover,
+html.dark-theme-variant .rjf-stat-btn:hover {
+  background: rgba(139,92,246,0.12);
+}
+
+html.dark-mode .rjf-compact-btn,
+html.dark-theme-variant .rjf-compact-btn {
+  background: rgba(244,114,182,0.09);
+  border-color: rgba(244,114,182,0.26);
+  color: #f472b6;
+}
+html.dark-mode .rjf-compact-btn.following,
+html.dark-theme-variant .rjf-compact-btn.following {
+  color: #f9a8d4;
+}
+html.dark-mode .rjf-count-pill,
+html.dark-theme-variant .rjf-count-pill {
+  background: rgba(139,92,246,0.08);
+  border-color: rgba(139,92,246,0.20);
+}
+html.dark-mode .rjf-count-pill span,
+html.dark-theme-variant .rjf-count-pill span {
+  color: var(--text-muted, #8b7ab8);
+}
+
+html.dark-mode .rjf-modal-overlay,
+html.dark-theme-variant .rjf-modal-overlay {
+  background: rgba(0,0,0,0.72);
+}
+html.dark-mode .rjf-modal,
+html.dark-theme-variant .rjf-modal {
+  background: var(--modal-bg, rgba(14,8,36,0.99));
+  border-color: var(--border-accent, rgba(139,92,246,0.28));
+  box-shadow: 0 24px 64px rgba(0,0,0,0.65), 0 4px 16px rgba(0,0,0,0.3);
+}
+html.dark-mode .rjf-modal-header,
+html.dark-theme-variant .rjf-modal-header {
+  background: var(--bg-tertiary, rgba(139,92,246,0.10));
+  border-bottom-color: var(--border-color, rgba(139,92,246,0.14));
+}
+html.dark-mode .rjf-modal-close,
+html.dark-theme-variant .rjf-modal-close {
+  background: rgba(139,92,246,0.10);
+  color: var(--accent-hover, #a78bfa);
+}
+html.dark-mode .rjf-user-item:hover,
+html.dark-theme-variant .rjf-user-item:hover {
+  background: var(--sidebar-hover, rgba(139,92,246,0.08));
+}
+html.dark-mode .rjf-user-name,
+html.dark-theme-variant .rjf-user-name {
+  color: var(--text-primary, #ede9fe);
+}
+html.dark-mode .rjf-user-time,
+html.dark-theme-variant .rjf-user-time {
+  color: var(--text-muted, #8b7ab8);
+}
+html.dark-mode .rjf-loading,
+html.dark-theme-variant .rjf-loading,
+html.dark-mode .rjf-empty,
+html.dark-theme-variant .rjf-empty {
+  color: var(--text-muted, #8b7ab8);
+}
+html.dark-mode .rjf-stat-divider,
+html.dark-theme-variant .rjf-stat-divider {
+  background: var(--border-color, rgba(139,92,246,0.18));
+}

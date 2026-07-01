@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, onSnapshot, where, updateDoc, doc, arrayUnion, orderBy } from 'firebase/firestore';
+import renderTextWithLinks from '../utils/linkifyText';
 import './WarningAnnouncementPopup.css';
 
 /* ── Premium SVG Icons ─────────────────────────────────────── */
@@ -223,7 +224,7 @@ const WarningAnnouncementPopup = ({ currentUser, currentRoomId }) => {
               </div>
 
               {/* Message */}
-              <p className="wap-message">{w.message}</p>
+              <p className="wap-message">{renderTextWithLinks(w.message)}</p>
 
               {/* Footer */}
               <div className="wap-footer">

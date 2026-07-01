@@ -5,6 +5,7 @@ import {
 } from 'firebase/database';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import RJFollowButton from './RJFollowSystem';
 import './BroadcastPanel.css';
 
 /* ── STUN + TURN config — multiple servers for maximum connectivity ── */
@@ -529,6 +530,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Minimize / floating bubble state ── */
   const [isMinimized, setIsMinimized] = useState(false);
 
+  /* ── Song Request Queue state ── */
+  const [songQueue, setSongQueue] = useState([]);
+  const [songForm, setSongForm] = useState({ songName: '', artist: '', message: '' });
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [myQueueEntry, setMyQueueEntry] = useState(null);
+
+  /* ── Announcements state ── */
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementText, setAnnouncementText] = useState('');
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+
   /* ── Public broadcaster mic level (0-100) ── */
   const [pubMicLevel, setPubMicLevel] = useState(0);
   const [pubMicMuted, setPubMicMuted] = useState(false);
@@ -835,6 +847,37 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     return () => unsub();
   }, [isOpen, myUid]);
+
+  /* ── Song Queue RTDB listener ── */
+  useEffect(() => {
+    if (!isOpen) return;
+    const qRef = ref(rtdb, 'broadcasts/rj/songQueue');
+    const unsub = onValue(qRef, (snap) => {
+      const data = snap.val() || {};
+      const list = Object.entries(data)
+        .map(([uid, v]) => ({ uid, ...v }))
+        .sort((a, b) => (a.requestedAt || 0) - (b.requestedAt || 0));
+      setSongQueue(list);
+      if (myUid) {
+        setMyQueueEntry(data[myUid] || null);
+      }
+    });
+    return () => unsub();
+  }, [isOpen, myUid]);
+
+  /* ── Announcements RTDB listener ── */
+  useEffect(() => {
+    if (!isOpen) return;
+    const aRef = ref(rtdb, 'broadcasts/rj/announcements');
+    const unsub = onValue(aRef, (snap) => {
+      const data = snap.val() || {};
+      const list = Object.entries(data)
+        .map(([id, v]) => ({ id, ...v }))
+        .sort((a, b) => (a.sentAt || 0) - (b.sentAt || 0));
+      setAnnouncements(list);
+    });
+    return () => unsub();
+  }, [isOpen]);
 
   /* ── Watch public broadcast session I'm listening to — detect host disconnect ── */
   useEffect(() => {
@@ -1180,6 +1223,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
 
       rjStopAllBroadcasterConnections();
+      /* Clear song queue and announcements when broadcast ends */
+      await Promise.allSettled([
+        remove(ref(rtdb, 'broadcasts/rj/songQueue')),
+        remove(ref(rtdb, 'broadcasts/rj/announcements')),
+      ]);
       await remove(ref(rtdb, 'broadcasts/rj'));
 
       setYtUrl('');
@@ -1384,6 +1432,118 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const handleRejectRequest = async (uid) => {
     await update(ref(rtdb, `broadcasts/rj/joinRequests/${uid}`), { status: 'rejected' });
     setTimeout(() => remove(ref(rtdb, `broadcasts/rj/joinRequests/${uid}`)), 3000);
+  };
+
+  /* ══════════════════════════════════════
+     SONG REQUEST QUEUE HANDLERS
+  ══════════════════════════════════════ */
+
+  /* URL detection — reject ANY external link or domain reference */
+  const _containsURL = (text) => {
+    if (!text) return false;
+    const t = text.trim();
+    /* 1. Explicit protocols */
+    if (/https?:\/\//i.test(t)) return true;
+    if (/ftp:\/\//i.test(t)) return true;
+    /* 2. Obvious www prefix */
+    if (/\bwww\./i.test(t)) return true;
+    /* 3. Known music / video platforms (bare hostname form) */
+    if (/\b(youtu\.be|youtube\.com|spotify\.com|soundcloud\.com|jiosaavn\.com|gaana\.com|wynk\.(in|music)|apple\.com|music\.apple\.com|tidal\.com|deezer\.com|amazon\.com|music\.amazon|jiomusic|hungama|saavn|resso)\b/i.test(t)) return true;
+    /* 4. URL shorteners and bare domains commonly used to link */
+    if (/\b(bit\.ly|t\.co|goo\.gl|tinyurl\.com|ow\.ly|buff\.ly|is\.gd|rb\.gy|short\.link|cutt\.ly|tiny\.cc)\b/i.test(t)) return true;
+    /* 5. Any plain domain: word(s) dot known-TLD (catches google.com, example.co, etc.) */
+    if (/\b[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.(com|net|org|in|io|co|me|ly|fm|tv|music|app|link|info|biz|edu|gov|uk|us|de|fr|jp|au|ca|ru|cn|br)\b/i.test(t)) return true;
+    return false;
+  };
+
+  const handleSubmitSongRequest = async () => {
+    if (!myUid || !rjIsLive) return;
+    const { songName, artist, message } = songForm;
+    if (!songName.trim()) { bpToast.warning('Song name is required.'); return; }
+    if (_containsURL(songName) || _containsURL(artist) || _containsURL(message)) {
+      bpToast.error('Links and URLs are not allowed in song requests. Please enter only a song name.');
+      return;
+    }
+    if (songName.trim().length > 100) { bpToast.warning('Song name is too long (max 100 characters).'); return; }
+    if (myQueueEntry && myQueueEntry.status === 'pending') {
+      bpToast.warning('You already have a pending song request. Wait for the RJ to review it.'); return;
+    }
+    setSubmittingRequest(true);
+    try {
+      await set(ref(rtdb, `broadcasts/rj/songQueue/${myUid}`), {
+        uid: myUid,
+        username: myName,
+        avatar: myPhoto,
+        songName: songName.trim().slice(0, 100),
+        artist: artist.trim().slice(0, 80),
+        message: message.trim().slice(0, 160),
+        status: 'pending',
+        requestedAt: Date.now(),
+      });
+      setSongForm({ songName: '', artist: '', message: '' });
+      bpToast.success('Song request sent! The RJ will review it.');
+    } catch (err) {
+      bpToast.error('Failed to send request. Please try again.');
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
+
+  const handleSongQueueAction = async (uid, action) => {
+    if (!canManageRJ) return;
+    try {
+      if (action === 'approve') {
+        await update(ref(rtdb, `broadcasts/rj/songQueue/${uid}`), { status: 'approved' });
+      } else if (action === 'reject') {
+        await update(ref(rtdb, `broadcasts/rj/songQueue/${uid}`), { status: 'rejected' });
+        setTimeout(() => remove(ref(rtdb, `broadcasts/rj/songQueue/${uid}`)).catch(() => {}), 4000);
+      } else if (action === 'remove') {
+        await remove(ref(rtdb, `broadcasts/rj/songQueue/${uid}`));
+      } else if (action === 'skip') {
+        await update(ref(rtdb, `broadcasts/rj/songQueue/${uid}`), { status: 'skipped' });
+        setTimeout(() => remove(ref(rtdb, `broadcasts/rj/songQueue/${uid}`)).catch(() => {}), 2000);
+      }
+    } catch (err) {
+      bpToast.error('Action failed. Please try again.');
+    }
+  };
+
+  const handleCancelSongRequest = async () => {
+    if (!myUid) return;
+    await remove(ref(rtdb, `broadcasts/rj/songQueue/${myUid}`)).catch(() => {});
+    setMyQueueEntry(null);
+  };
+
+  /* ══════════════════════════════════════
+     ANNOUNCEMENT HANDLERS
+  ══════════════════════════════════════ */
+
+  const handleSendAnnouncement = async () => {
+    if (!canManageRJ || !rjIsLive || !announcementText.trim()) return;
+    setSendingAnnouncement(true);
+    try {
+      const newRef = push(ref(rtdb, 'broadcasts/rj/announcements'));
+      await set(newRef, {
+        rjUid: myUid,
+        rjName: myName,
+        rjAvatar: myPhoto,
+        rjBadge: 'RJ',
+        message: announcementText.trim().slice(0, 500),
+        sentAt: Date.now(),
+        sessionId: rjBroadcast?.startedAt || Date.now(),
+      });
+      setAnnouncementText('');
+      bpToast.success('Announcement sent to all listeners.');
+    } catch (err) {
+      bpToast.error('Failed to send announcement.');
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id) => {
+    if (!canManageRJ) return;
+    await remove(ref(rtdb, `broadcasts/rj/announcements/${id}`)).catch(() => {});
   };
 
   /* ══════════════════════════════════════
@@ -1878,6 +2038,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       const count = joinRequests.filter(r => r.status === 'pending').length;
       if (count > 0 && canManageRJ) return <span className="bp-tab-badge">{count}</span>;
     }
+    if (tab === 2) {
+      const count = canManageRJ
+        ? songQueue.filter(r => r.status === 'pending').length
+        : 0;
+      if (count > 0) return <span className="bp-tab-badge">{count}</span>;
+    }
+    if (tab === 3) {
+      const count = announcements.length;
+      if (count > 0) return <span className="bp-tab-badge bp-tab-badge--ann">{count}</span>;
+    }
     return null;
   };
 
@@ -2020,6 +2190,58 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     </div>
   );
 
+  /* ── Announcement notification strip for listeners ── */
+  const renderAnnouncementStrips = () => {
+    if (!announcements.length) return null;
+    return (
+      <div className="bp-ann-strips-wrap">
+        {announcements.slice(-3).map(ann => (
+          <div key={ann.id} className="bp-ann-strip">
+            <div className="bp-ann-strip-anim">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="annStrip" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b"/>
+                    <stop offset="100%" stopColor="#f472b6"/>
+                  </linearGradient>
+                </defs>
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="url(#annStrip)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+            </div>
+            <img
+              className="bp-ann-strip-avatar"
+              src={ann.rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`}
+              alt={ann.rjName}
+              onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`; }}
+            />
+            <div className="bp-ann-strip-body">
+              <div className="bp-ann-strip-meta">
+                <span className="bp-ann-strip-name">{ann.rjName}</span>
+                <span className="bp-ann-strip-badge">RJ</span>
+                <span className="bp-ann-strip-live">
+                  <span className="bp-ann-live-dot" />
+                  LIVE
+                </span>
+                <span className="bp-ann-strip-time">
+                  {ann.sentAt ? new Date(ann.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
+              </div>
+              <div className="bp-ann-strip-msg">{ann.message}</div>
+            </div>
+          </div>
+        ))}
+        {announcements.length > 0 && (
+          <button className="bp-ann-see-all-btn" onClick={() => setActiveTab(3)}>
+            See all announcements
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
+      </div>
+    );
+  };
+
   /* ── TAB 0: Listener view ── */
   const renderListenerView = () => {
     if (!rjIsLive || !rjBroadcast) {
@@ -2141,6 +2363,24 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           </p>
         )}
 
+        {/* ── Follow RJ Button ── */}
+        {!isGuest && rjBroadcast?.rjUid && (
+          <div style={{ marginTop: 14 }}>
+            <RJFollowButton
+              rjUid={rjBroadcast.rjUid}
+              rjName={rjBroadcast.rjName}
+              rjAvatar={rjBroadcast.rjAvatar}
+              compact={true}
+              showCounts={true}
+            />
+          </div>
+        )}
+
+        {/* ── Announcement Strips (latest 3) ── */}
+        {announcements.length > 0 && (
+          <div style={{ marginTop: 14 }}>{renderAnnouncementStrips()}</div>
+        )}
+
         {speakers.length > 0 && (
           <div className="bp-connected-speakers" style={{ marginTop: 12 }}>
             {speakers.slice(0, 5).map(sp => (
@@ -2260,7 +2500,357 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     );
   };
 
-  /* ── TAB 2: Public Broadcasts ── */
+  /* ── TAB 2: Song Request Queue ── */
+  const renderSongQueueTab = () => {
+    if (!rjIsLive) {
+      return (
+        <div className="bp-empty">
+          <div style={{ marginBottom: 10, opacity: 0.25 }}><MusicNoteIcon /></div>
+          No active broadcast. Song requests open when the RJ is live.
+        </div>
+      );
+    }
+
+    /* RJ Queue Management View */
+    if (canManageRJ) {
+      const pending  = songQueue.filter(r => r.status === 'pending');
+      const approved = songQueue.filter(r => r.status === 'approved');
+      const rejected = songQueue.filter(r => r.status === 'rejected' || r.status === 'skipped');
+
+      const renderQueueItem = (req, actions) => {
+        const pos = songQueue.indexOf(req) + 1;
+        return (
+          <div key={req.uid} className="bp-sq-item">
+            <img
+              className="bp-sq-avatar"
+              src={req.avatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`}
+              alt={req.username}
+              onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`; }}
+            />
+            <div className="bp-sq-info">
+              <div className="bp-sq-song">{req.songName}</div>
+              {req.artist && <div className="bp-sq-artist">{req.artist}</div>}
+              {req.message && <div className="bp-sq-msg">"{req.message}"</div>}
+              <div className="bp-sq-meta">
+                <span className="bp-sq-user">{req.username}</span>
+                <span className="bp-sq-dot">·</span>
+                <span className="bp-sq-pos">#{pos}</span>
+                <span className="bp-sq-dot">·</span>
+                <span className="bp-sq-time">
+                  {req.requestedAt ? new Date(req.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                </span>
+              </div>
+            </div>
+            <div className="bp-sq-actions">
+              {actions}
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div>
+          <div className="bp-sq-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="sqLab" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="url(#sqLab)"/>
+            </svg>
+            Pending Requests ({pending.length})
+          </div>
+          {pending.length === 0 ? (
+            <div className="bp-queue-empty">No pending song requests</div>
+          ) : (
+            <div className="bp-sq-list">
+              {pending.map(req => renderQueueItem(req, (
+                <>
+                  <button className="bp-sq-btn approve" onClick={() => handleSongQueueAction(req.uid, 'approve')} title="Approve">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Approve
+                  </button>
+                  <button className="bp-sq-btn skip" onClick={() => handleSongQueueAction(req.uid, 'skip')} title="Skip">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 18l8.5-6L6 6v12zm8.5-6v6H17V6h-2.5v6z" fill="#fbbf24"/></svg>
+                    Skip
+                  </button>
+                  <button className="bp-sq-btn reject" onClick={() => handleSongQueueAction(req.uid, 'reject')} title="Reject">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#f87171" strokeWidth="2.2" strokeLinecap="round"/></svg>
+                    Reject
+                  </button>
+                </>
+              )))}
+            </div>
+          )}
+
+          {approved.length > 0 && (
+            <>
+              <div className="bp-sq-label" style={{ marginTop: 14 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(52,211,153,0.18)"/><path d="M8 12l3 3 5-5" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Approved ({approved.length})
+              </div>
+              <div className="bp-sq-list">
+                {approved.map(req => renderQueueItem(req, (
+                  <button className="bp-sq-btn reject" onClick={() => handleSongQueueAction(req.uid, 'remove')} title="Remove">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#f87171" strokeWidth="2.2" strokeLinecap="round"/></svg>
+                    Remove
+                  </button>
+                )))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    /* Listener Song Request Form */
+    if (isGuest) {
+      return (
+        <div className="bp-guest-lock">
+          <div className="bp-guest-lock-icon"><LockIcon /></div>
+          <h3>Register to Request</h3>
+          <p>Create an account to send song requests to the RJ.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="bp-sq-form-card">
+          <div className="bp-sq-form-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="sqForm" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="url(#sqForm)"/>
+            </svg>
+            <span>Request a Song</span>
+          </div>
+
+          {myQueueEntry && myQueueEntry.status === 'pending' ? (
+            <div className="bp-sq-pending-card">
+              <div className="bp-sq-pending-title">Request Sent</div>
+              <div className="bp-sq-pending-song">{myQueueEntry.songName}</div>
+              {myQueueEntry.artist && <div className="bp-sq-pending-artist">{myQueueEntry.artist}</div>}
+              <div className="bp-sq-pending-status">
+                <span className="bp-sq-status-pill pending">Pending</span>
+                Waiting for RJ to review...
+              </div>
+              <button className="bp-sq-cancel-btn" onClick={handleCancelSongRequest}>
+                Cancel Request
+              </button>
+            </div>
+          ) : myQueueEntry && myQueueEntry.status === 'approved' ? (
+            <div className="bp-sq-pending-card approved">
+              <div className="bp-sq-pending-title">Your Request is Approved!</div>
+              <div className="bp-sq-pending-song">{myQueueEntry.songName}</div>
+              <div className="bp-sq-pending-status">
+                <span className="bp-sq-status-pill approved">Approved</span>
+                The RJ is playing your song!
+              </div>
+              <button className="bp-sq-cancel-btn" style={{ marginTop: 10 }} onClick={handleCancelSongRequest}>
+                Done
+              </button>
+            </div>
+          ) : myQueueEntry && myQueueEntry.status === 'rejected' ? (
+            <div className="bp-sq-pending-card rejected">
+              <div className="bp-sq-pending-title">Request Declined</div>
+              <div className="bp-sq-pending-song">{myQueueEntry.songName}</div>
+              <div className="bp-sq-pending-status">
+                <span className="bp-sq-status-pill rejected">Declined</span>
+              </div>
+              <button className="bp-sq-cancel-btn" onClick={handleCancelSongRequest} style={{ marginTop: 10 }}>
+                Request Another Song
+              </button>
+            </div>
+          ) : (
+            <div className="bp-sq-form">
+              <div className="bp-sq-field">
+                <label className="bp-sq-label-txt">Song Name <span className="bp-sq-required">*</span></label>
+                <input
+                  className="bp-input"
+                  placeholder="e.g. Tum Hi Ho"
+                  value={songForm.songName}
+                  onChange={e => setSongForm(f => ({ ...f, songName: e.target.value }))}
+                  maxLength={100}
+                />
+              </div>
+              <div className="bp-sq-field">
+                <label className="bp-sq-label-txt">Artist Name <span className="bp-sq-optional">(optional)</span></label>
+                <input
+                  className="bp-input"
+                  placeholder="e.g. Arijit Singh"
+                  value={songForm.artist}
+                  onChange={e => setSongForm(f => ({ ...f, artist: e.target.value }))}
+                  maxLength={80}
+                />
+              </div>
+              <div className="bp-sq-field">
+                <label className="bp-sq-label-txt">Message <span className="bp-sq-optional">(optional)</span></label>
+                <input
+                  className="bp-input"
+                  placeholder="A short message for the RJ..."
+                  value={songForm.message}
+                  onChange={e => setSongForm(f => ({ ...f, message: e.target.value }))}
+                  maxLength={160}
+                />
+              </div>
+              <div className="bp-sq-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8" fill="none"/><path d="M12 8v1M12 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                Only song names are accepted. No links or URLs allowed.
+              </div>
+              <button
+                className="bp-sq-submit-btn"
+                onClick={handleSubmitSongRequest}
+                disabled={submittingRequest || !songForm.songName.trim() || !rjIsLive}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="sqSend" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#a78bfa"/></linearGradient></defs>
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="url(#sqSend)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {submittingRequest ? 'Sending...' : 'Send Request'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Show approved queue to listeners */}
+        {songQueue.filter(r => r.status === 'approved').length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div className="bp-sq-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(52,211,153,0.18)"/><path d="M8 12l3 3 5-5" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Approved Requests
+            </div>
+            <div className="bp-sq-list">
+              {songQueue.filter(r => r.status === 'approved').map(req => (
+                <div key={req.uid} className="bp-sq-item listener">
+                  <img
+                    className="bp-sq-avatar"
+                    src={req.avatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`}
+                    alt={req.username}
+                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`; }}
+                  />
+                  <div className="bp-sq-info">
+                    <div className="bp-sq-song">{req.songName}</div>
+                    {req.artist && <div className="bp-sq-artist">{req.artist}</div>}
+                    <div className="bp-sq-meta">
+                      <span className="bp-sq-user">{req.username}</span>
+                      <span className="bp-sq-dot">·</span>
+                      <span className="bp-sq-status-pill approved small">Approved</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /* ── TAB 3: Announcements ── */
+  const renderAnnouncementsTab = () => {
+    return (
+      <div>
+        {/* RJ Send Announcement */}
+        {canManageRJ && rjIsLive && (
+          <div className="bp-ann-compose-card">
+            <div className="bp-ann-compose-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="annComp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#f472b6"/></linearGradient></defs>
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="url(#annComp)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+              <span>Send Announcement</span>
+              <span className="bp-ann-live-pill">
+                <span className="bp-ann-live-dot" />
+                LIVE
+              </span>
+            </div>
+            <textarea
+              className="bp-input bp-ann-textarea"
+              placeholder="Type your announcement to all listeners..."
+              value={announcementText}
+              onChange={e => setAnnouncementText(e.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+            <div className="bp-ann-compose-footer">
+              <span className="bp-ann-char-count">{announcementText.length}/500</span>
+              <button
+                className="bp-ann-send-btn"
+                onClick={handleSendAnnouncement}
+                disabled={sendingAnnouncement || !announcementText.trim()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {sendingAnnouncement ? 'Sending...' : 'Broadcast'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!rjIsLive && (
+          <div className="bp-empty">
+            <div style={{ marginBottom: 10, opacity: 0.25 }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg>
+            </div>
+            Announcements appear here when the RJ is live.
+          </div>
+        )}
+
+        {/* Announcements list */}
+        {announcements.length === 0 && rjIsLive ? (
+          <div className="bp-queue-empty" style={{ marginTop: canManageRJ ? 14 : 0 }}>
+            No announcements yet. {canManageRJ ? 'Send one above.' : 'The RJ hasn\'t sent any yet.'}
+          </div>
+        ) : (
+          <div className="bp-ann-list">
+            {[...announcements].reverse().map(ann => (
+              <div key={ann.id} className="bp-ann-card">
+                <div className="bp-ann-card-header">
+                  <div className="bp-ann-broadcast-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs><linearGradient id={`annCard${ann.id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#f472b6"/></linearGradient></defs>
+                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke={`url(#annCard${ann.id})`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </svg>
+                  </div>
+                  <img
+                    className="bp-ann-card-avatar"
+                    src={ann.rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`}
+                    alt={ann.rjName}
+                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`; }}
+                  />
+                  <div className="bp-ann-card-meta">
+                    <span className="bp-ann-card-name">{ann.rjName}</span>
+                    <span className="bp-ann-card-badge">RJ</span>
+                    <span className="bp-ann-card-live">
+                      <span className="bp-ann-live-dot" />
+                      LIVE
+                    </span>
+                  </div>
+                  <div className="bp-ann-card-right">
+                    <span className="bp-ann-card-time">
+                      {ann.sentAt ? new Date(ann.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                    {canManageRJ && (
+                      <button
+                        className="bp-ann-delete-btn"
+                        onClick={() => handleDeleteAnnouncement(ann.id)}
+                        title="Delete announcement"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="bp-ann-card-msg">{ann.message}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /* ── TAB 4: Public Broadcasts ── */
   const renderPublicTab = () => {
     const others = publicBroadcasts.filter(b => b.hostUid !== myUid);
 
@@ -2486,7 +3076,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             </div>
             <div>
               <div className="bp-header-title">Broadcast Studio</div>
-              <div className="bp-header-subtitle">{rjIsLive ? '🔴 RJ Live' : myActiveBroadcast ? '🟢 On Air' : 'Premium Broadcast'}</div>
+              <div className="bp-header-subtitle">
+                {rjIsLive ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'bp-pulse 1s infinite', flexShrink: 0 }} />
+                    RJ Live
+                  </span>
+                ) : myActiveBroadcast ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'bp-pulse 1s infinite', flexShrink: 0 }} />
+                    On Air
+                  </span>
+                ) : 'Premium Broadcast'}
+              </div>
             </div>
           </div>
           <div className="bp-header-actions">
@@ -2505,13 +3107,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
 
         {/* Tabs */}
-        <div className="bp-tabs">
+        <div className="bp-tabs bp-tabs--five">
           <button
             className={`bp-tab${activeTab === 0 ? ' active' : ''}`}
             onClick={() => setActiveTab(0)}
           >
             <BroadcastIcon size={13} />
-            {canManageRJ ? 'RJ Controls' : 'RJ Live'}
+            {canManageRJ ? 'Studio' : 'Live'}
             {rjIsLive && <span className="bp-live-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', marginLeft: 2 }} />}
           </button>
           <button
@@ -2519,12 +3121,32 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             onClick={() => setActiveTab(1)}
           >
             <UsersIcon />
-            Join Stage
+            Stage
             {renderTabBadge(1)}
           </button>
           <button
             className={`bp-tab${activeTab === 2 ? ' active' : ''}`}
             onClick={() => setActiveTab(2)}
+          >
+            <MusicNoteIcon />
+            Songs
+            {renderTabBadge(2)}
+          </button>
+          <button
+            className={`bp-tab${activeTab === 3 ? ' active' : ''}`}
+            onClick={() => setActiveTab(3)}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <defs><linearGradient id="tabAnn" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#f472b6"/></linearGradient></defs>
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="url(#tabAnn)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+              <path d="M13.73 21a2 2 0 01-3.46 0" stroke="url(#tabAnn)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+            </svg>
+            Updates
+            {renderTabBadge(3)}
+          </button>
+          <button
+            className={`bp-tab${activeTab === 4 ? ' active' : ''}`}
+            onClick={() => setActiveTab(4)}
           >
             <RadioWaveIcon />
             Public
@@ -2536,7 +3158,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         <div className="bp-content">
           {activeTab === 0 && renderRJTab()}
           {activeTab === 1 && renderJoinTab()}
-          {activeTab === 2 && renderPublicTab()}
+          {activeTab === 2 && renderSongQueueTab()}
+          {activeTab === 3 && renderAnnouncementsTab()}
+          {activeTab === 4 && renderPublicTab()}
         </div>
       </div>
     </div>

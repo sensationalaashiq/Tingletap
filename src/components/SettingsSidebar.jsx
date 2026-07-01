@@ -13,6 +13,7 @@ import WarningAnnouncementModal from './WarningAnnouncementModal';
 import WarningAnnouncementManager from './WarningAnnouncementManager';
 import FeedbackPage from './FeedbackPage';
 import './SettingsSidebar.css';
+import renderTextWithLinks from '../utils/linkifyText';
 
 const OtherGenderIconSVG = () => (
     <svg width="14" height="14" id="Layer_1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" data-name="Layer 1">
@@ -3264,7 +3265,7 @@ const SettingsSidebar = ({
                                             </>
                                         ) : (
                                             <>
-                                                <span style={{flex:1,fontSize:'11px',color:'#4b5563',lineHeight:'1.4'}}>{idx+1}. {rule}</span>
+                                                <span style={{flex:1,fontSize:'11px',color:'#4b5563',lineHeight:'1.4'}}>{idx+1}. {renderTextWithLinks(rule)}</span>
                                                 <div style={{display:'flex',flexDirection:'column',gap:'3px',flexShrink:0}}>
                                                     <button
                                                         onClick={() => { setEditingRuleIdx(idx); setEditingRuleText(rule); }}

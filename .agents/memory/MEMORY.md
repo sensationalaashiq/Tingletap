@@ -8,3 +8,6 @@
 - [Moderation expiry contract](moderation-expiry.md) — modal computes expiresAt (absolute ISO); writers use expiresAt directly; never run parseDurationMs on an ISO timestamp
 - [Kick modal expiry pattern](kick-expiry-pattern.md) — handleRoomClick must call isKickExpired() BEFORE showing BanKickModal; expired kicks auto-clean silently and allow entry. Never show modal for already-expired kicks.
 - [Performance audit fixes](perf-audit-fixes.md) — 12 scalability/security fixes applied; see file for what's done and what remains (useMemo, Sidebar memo, usernamePreferences scan, UserProfileContext).
+- [RJ Follow System](rj-follow-system.md) — Firestore subcollections users/{rjUid}/followers & users/{uid}/following; compact+full button variants
+- [Song Queue & Announcements](song-queue-announcements.md) — RTDB broadcasts/rj/songQueue + announcements; both cleared by handleEndBroadcast; comprehensive URL validation
+- [BroadcastPanel 5-tab layout](broadcast-panel-tabs.md) — tabs 0=Studio/Live, 1=Stage, 2=Songs, 3=Updates, 4=Public; Public moved from 2→4

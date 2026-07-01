@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { db } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { parseDurationMs } from '../utils/modExpiryService';
+import renderTextWithLinks from '../utils/linkifyText';
 
 /* ── Premium SVG icon set ───────────────────────────────────── */
 const IC = {
@@ -315,7 +316,7 @@ const WarningAnnouncementManager = ({ isVisible, onClose, currentUserProfile }) 
                     </div>
 
                     {/* Message preview */}
-                    <p style={{ margin: '0 0 8px', fontSize: '11.5px', color: '#4b5563', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.message}</p>
+                    <p style={{ margin: '0 0 8px', fontSize: '11.5px', color: '#4b5563', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{renderTextWithLinks(w.message)}</p>
 
                     {/* Meta row */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
