@@ -10974,3 +10974,177 @@ body .homepage-container .attachment-dropdown {
   color: #7c3aed;
   font-weight: 600;
 }
+
+/* ═══════════════════════════════════════════
+   EMOJI REACTIONS — Picker + Bar + Chips
+   ═══════════════════════════════════════════ */
+
+/* Transparent overlay to close picker on outside click */
+.rxn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99997;
+  background: transparent;
+}
+
+/* Floating emoji picker pill */
+.rxn-picker {
+  position: fixed;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow:
+    0 8px 32px rgba(99,102,241,.22),
+    0 2px 12px rgba(0,0,0,.14),
+    0 0 0 1px rgba(99,102,241,.1);
+  animation: rxnPickerPop .18s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes rxnPickerPop {
+  from { opacity: 0; transform: scale(.72) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Individual emoji button inside picker */
+.rxn-picker-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .14s cubic-bezier(.34,1.56,.64,1), background .12s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+.rxn-picker-btn:hover {
+  transform: scale(1.35) translateY(-3px);
+  background: rgba(99,102,241,.08);
+}
+.rxn-picker-btn--active {
+  background: rgba(99,102,241,.13);
+}
+.rxn-picker-btn--active .rxn-picker-emoji {
+  filter: drop-shadow(0 0 3px rgba(99,102,241,.55));
+}
+.rxn-picker-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  display: block;
+  user-select: none;
+}
+
+/* Hover "react" trigger button — floats beside message body */
+.rxn-trigger-btn {
+  position: absolute;
+  right: -34px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #fff;
+  border: 1.5px solid rgba(99,102,241,.22);
+  border-radius: 999px;
+  padding: 3px 6px 3px 5px;
+  cursor: pointer;
+  font-size: .75rem;
+  color: #9ca3af;
+  box-shadow: 0 2px 8px rgba(99,102,241,.14);
+  transition: all .14s ease;
+  white-space: nowrap;
+  animation: rxnBtnFade .15s ease;
+  z-index: 10;
+}
+@keyframes rxnBtnFade {
+  from { opacity: 0; transform: translateY(-50%) scale(.8); }
+  to   { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+.rxn-trigger-btn:hover,
+.rxn-trigger-btn--active {
+  border-color: rgba(99,102,241,.5);
+  color: #6366f1;
+  background: rgba(99,102,241,.06);
+  box-shadow: 0 3px 12px rgba(99,102,241,.22);
+}
+.rxn-trigger-btn span:first-child {
+  font-size: .9rem;
+  line-height: 1;
+}
+
+/* Reaction bar below message content */
+.rxn-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+/* Individual reaction chip */
+.rxn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(99,102,241,.07);
+  border: 1.5px solid rgba(99,102,241,.18);
+  border-radius: 999px;
+  padding: 2px 8px 2px 6px;
+  cursor: pointer;
+  transition: all .14s ease;
+  font-size: .75rem;
+  line-height: 1;
+}
+.rxn-chip:hover {
+  background: rgba(99,102,241,.14);
+  border-color: rgba(99,102,241,.4);
+  transform: scale(1.06);
+}
+.rxn-chip--mine {
+  background: rgba(99,102,241,.16);
+  border-color: rgba(99,102,241,.5);
+  box-shadow: 0 0 0 2px rgba(99,102,241,.12);
+}
+.rxn-chip-emoji {
+  font-size: .9rem;
+  line-height: 1;
+  display: block;
+}
+.rxn-chip-count {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #5b21b6;
+  min-width: 8px;
+  text-align: center;
+}
+.rxn-chip--mine .rxn-chip-count {
+  color: #4f46e5;
+}
+
+/* Dark mode support */
+.dark-mode .rxn-picker {
+  background: #1e1e2e;
+  box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(99,102,241,.2);
+}
+.dark-mode .rxn-trigger-btn {
+  background: #1e1e2e;
+  border-color: rgba(99,102,241,.3);
+  color: #9ca3af;
+}
+.dark-mode .rxn-chip {
+  background: rgba(99,102,241,.12);
+  border-color: rgba(99,102,241,.25);
+}
+.dark-mode .rxn-chip--mine {
+  background: rgba(99,102,241,.25);
+  border-color: rgba(99,102,241,.55);
+}
+.dark-mode .rxn-chip-count {
+  color: #a5b4fc;
+}

@@ -5,7 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where, limit,
-    addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch
+    addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch,
+    arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
 import { checkSpam } from '../utils/antiSpamSystem';
@@ -242,7 +243,9 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     return originalEl;
 });
 
-const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds }) => {
+const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+
+const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -251,7 +254,59 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const [guestLockModal, setGuestLockModal] = useState(null);
+    const [showReactionPicker, setShowReactionPicker] = useState(false);
+    const [pickerPos, setPickerPos] = useState({ x: 0, y: 0 });
+    const [showReactBtn, setShowReactBtn] = useState(false);
     const avatarRef = useRef(null);
+    const msgBodyRef = useRef(null);
+    const longPressRef = useRef(null);
+    const hoverLeaveRef = useRef(null);
+
+    const reactions = message.reactions || {};
+
+    const handleReact = async (emoji) => {
+        setShowReactionPicker(false);
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous || !roomId) return;
+        const msgRef = doc(db, 'rooms', roomId, 'messages', id);
+        const alreadyReacted = Array.isArray(reactions[emoji]) && reactions[emoji].includes(user.uid);
+        try {
+            await updateDoc(msgRef, {
+                [`reactions.${emoji}`]: alreadyReacted ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+        } catch {}
+    };
+
+    const openPicker = () => {
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) return;
+        const rect = msgBodyRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const pickerW = 238;
+        const pickerH = 56;
+        let x = rect.left;
+        let y = rect.top - pickerH - 10;
+        if (x + pickerW > window.innerWidth - 8) x = window.innerWidth - pickerW - 8;
+        if (x < 8) x = 8;
+        if (y < 8) y = rect.bottom + 8;
+        setPickerPos({ x, y });
+        setShowReactionPicker(true);
+    };
+
+    const handleRowEnter = () => {
+        clearTimeout(hoverLeaveRef.current);
+        setShowReactBtn(true);
+    };
+    const handleRowLeave = () => {
+        hoverLeaveRef.current = setTimeout(() => {
+            setShowReactBtn(false);
+            setShowReactionPicker(false);
+        }, 200);
+    };
+    const handleTouchStart = () => {
+        longPressRef.current = setTimeout(openPicker, 500);
+    };
+    const handleTouchEnd = () => clearTimeout(longPressRef.current);
     
     const currentUser = auth.currentUser;
     const isDropdownOpen = openDropdownId === id;
@@ -303,6 +358,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
              data-sender-badge={badge ? 'true' : 'false'}
              data-sender-gender={avatarGender}
              data-sender-is-bot={isBot ? 'true' : 'false'}
+             onMouseEnter={handleRowEnter}
+             onMouseLeave={handleRowLeave}
 >
             <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}>
                 <div className={`avatar-wrapper ${getBorderClass()}`} style={{ position: 'relative' }}>
@@ -609,7 +666,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             </span>
                         </div>
                     </div>
-                    <div className="message-body">
+                    <div
+                        className="message-body"
+                        ref={msgBodyRef}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchMove={handleTouchEnd}
+                        style={{ position: 'relative' }}
+                    >
                         {text && (
                             <ChatMessageTranslatedBody
                                 text={text}
@@ -654,11 +718,74 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 </div>
                             )
                         )}
+
+                        {/* Reaction bar */}
+                        {Object.keys(reactions).length > 0 && (
+                            <div className="rxn-bar">
+                                {Object.entries(reactions)
+                                    .filter(([, uids]) => Array.isArray(uids) && uids.length > 0)
+                                    .map(([emoji, uids]) => (
+                                        <button
+                                            key={emoji}
+                                            className={`rxn-chip${currentUser && uids.includes(currentUser.uid) ? ' rxn-chip--mine' : ''}`}
+                                            onClick={() => handleReact(emoji)}
+                                            title={`${uids.length} reaction${uids.length !== 1 ? 's' : ''}`}
+                                        >
+                                            <span className="rxn-chip-emoji">{emoji}</span>
+                                            <span className="rxn-chip-count">{uids.length}</span>
+                                        </button>
+                                    ))}
+                            </div>
+                        )}
+
+                        {/* Hover react button */}
+                        {showReactBtn && !isBot && currentUser && !currentUser.isAnonymous && (
+                            <button
+                                className={`rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
+                                onClick={openPicker}
+                                onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
+                                onMouseLeave={handleRowLeave}
+                                title="Add Reaction"
+                            >
+                                <span>🙂</span>
+                                <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
+                                    <path d="M2 4h6M5 1v8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                                </svg>
+                            </button>
+                        )}
                     </div>
                     
                 </div>
             </div>
         </div>
+
+        {/* Emoji Reaction Picker Portal */}
+        {showReactionPicker && createPortal(
+            <>
+                <div className="rxn-overlay" onClick={() => setShowReactionPicker(false)} />
+                <div
+                    className="rxn-picker"
+                    style={{ left: pickerPos.x, top: pickerPos.y }}
+                    onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
+                    onMouseLeave={handleRowLeave}
+                >
+                    {REACTION_EMOJIS.map(emoji => {
+                        const alreadyReacted = Array.isArray(reactions[emoji]) && currentUser && reactions[emoji].includes(currentUser.uid);
+                        return (
+                            <button
+                                key={emoji}
+                                className={`rxn-picker-btn${alreadyReacted ? ' rxn-picker-btn--active' : ''}`}
+                                onClick={() => handleReact(emoji)}
+                                title={emoji}
+                            >
+                                <span className="rxn-picker-emoji">{emoji}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </>,
+            document.body
+        )}
 
         {/* Compact Guest Feature Locked Modal */}
         {guestLockModal && createPortal(
@@ -6856,6 +6983,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 openDropdownId={openDropdownId}
                                 setOpenDropdownId={handleSetOpenDropdownId}
                                 kickedUserIds={roomKickedUserIds}
+                                roomId={roomId}
                             />
                             );
                         })}
