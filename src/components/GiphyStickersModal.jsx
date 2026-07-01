@@ -1,42 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GiphyStickersModal.css';
 
 const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
+const PAGE_LIMIT = 24;
 
 const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [gifs, setGifs] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState('');
+    const [offset, setOffset] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+    const [activeSearch, setActiveSearch] = useState('');
+    const contentRef = useRef(null);
 
     useEffect(() => {
-        if (isOpen) fetchTrendingGifs();
+        if (isOpen) {
+            setGifs([]);
+            setOffset(0);
+            setTotalCount(0);
+            setActiveSearch('');
+            setSearchTerm('');
+            fetchTrendingGifs(0, false);
+        }
     }, [isOpen]);
 
-    const fetchTrendingGifs = async () => {
-        setLoading(true); setError('');
+    const fetchTrendingGifs = async (off = 0, append = false) => {
+        if (append) setLoadingMore(true);
+        else { setLoading(true); setError(''); }
         try {
-            const res = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=18&rating=pg-13`);
+            const res = await fetch(
+                `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${PAGE_LIMIT}&offset=${off}&rating=pg-13`
+            );
             const data = await res.json();
-            if (data.data) setGifs(data.data);
+            if (data.data) {
+                setGifs(prev => append ? [...prev, ...data.data] : data.data);
+                setTotalCount(data.pagination?.total_count || 0);
+                setOffset(off + data.data.length);
+                setActiveSearch('');
+            }
         } catch { setError('Failed to load GIFs'); }
-        finally { setLoading(false); }
+        finally { setLoading(false); setLoadingMore(false); }
     };
 
-    const searchGifs = async () => {
-        if (!searchTerm.trim()) { fetchTrendingGifs(); return; }
-        setLoading(true); setError('');
+    const searchGifs = async (off = 0, append = false) => {
+        if (!searchTerm.trim()) { fetchTrendingGifs(0, false); return; }
+        if (append) setLoadingMore(true);
+        else { setLoading(true); setError(''); }
         try {
-            const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(searchTerm)}&limit=18&rating=pg-13`);
+            const res = await fetch(
+                `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(searchTerm)}&limit=${PAGE_LIMIT}&offset=${off}&rating=pg-13`
+            );
             const data = await res.json();
-            if (data.data) setGifs(data.data);
+            if (data.data) {
+                setGifs(prev => append ? [...prev, ...data.data] : data.data);
+                setTotalCount(data.pagination?.total_count || 0);
+                setOffset(off + data.data.length);
+                setActiveSearch(searchTerm);
+            }
         } catch { setError('Failed to search GIFs'); }
-        finally { setLoading(false); }
+        finally { setLoading(false); setLoadingMore(false); }
+    };
+
+    const handleSearch = () => {
+        setGifs([]);
+        setOffset(0);
+        if (searchTerm.trim()) searchGifs(0, false);
+        else fetchTrendingGifs(0, false);
+    };
+
+    const handleLoadMore = () => {
+        if (activeSearch) searchGifs(offset, true);
+        else fetchTrendingGifs(offset, true);
     };
 
     const handleGifSelect = (gif) => {
         if (onSelectGif) { onSelectGif(gif); onClose(); }
     };
+
+    const hasMore = gifs.length < totalCount;
 
     if (!isOpen) return null;
 
@@ -44,7 +87,7 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
         <div className="gsm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="gsm-card" onClick={e => e.stopPropagation()}>
 
-                {/* Header with icon */}
+                {/* Header */}
                 <div className="gsm-header">
                     <div className="gsm-icon-ring">
                         <svg viewBox="0 0 48 48" width="34" height="34" fill="none">
@@ -58,13 +101,14 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
                             </defs>
                             <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#gsmG1)" opacity=".18"/>
                             <rect x="4" y="4" width="40" height="40" rx="10" stroke="url(#gsmG1)" strokeWidth="2.2" fill="none"/>
-                            {/* G-I-F letters */}
                             <text x="8" y="30" fontSize="16" fontWeight="900" fontFamily="Arial, sans-serif" fill="url(#gsmG1)">GIF</text>
                         </svg>
                     </div>
                     <div className="gsm-title-wrap">
                         <span className="gsm-title">GIF & Stickers</span>
-                        <span className="gsm-subtitle">Trending & Search</span>
+                        <span className="gsm-subtitle">
+                            {totalCount > 0 ? `${gifs.length} of ${totalCount.toLocaleString()} GIFs` : 'Trending & Search'}
+                        </span>
                     </div>
                     <button className="gsm-close" onClick={onClose}>
                         <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
@@ -84,19 +128,18 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
                             type="text"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && searchGifs()}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
                             placeholder="Search GIFs..."
                             className="gsm-search-input"
                         />
                         {searchTerm && (
-                            <button className="gsm-search-clear" onClick={() => { setSearchTerm(''); fetchTrendingGifs(); }}>
+                            <button className="gsm-search-clear" onClick={() => { setSearchTerm(''); setGifs([]); fetchTrendingGifs(0, false); }}>
                                 <svg viewBox="0 0 16 16" width="12" height="12" fill="none">
                                     <path d="M12 4L4 12M4 4l8 8" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round"/>
                                 </svg>
                             </button>
                         )}
-                        <button className="gsm-search-btn" onClick={searchGifs}
-                            style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', boxShadow: '0 2px 8px rgba(99,102,241,.35)' }}>
+                        <button className="gsm-search-btn" onClick={handleSearch}>
                             <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                                 <circle cx="9" cy="9" r="6" stroke="#fff" strokeWidth="1.8"/>
                                 <path d="m16 16-3.5-3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -107,11 +150,11 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
 
                 {/* Section label */}
                 <div className="gsm-section-label">
-                    {searchTerm ? `Results for "${searchTerm}"` : '🔥 Trending'}
+                    {activeSearch ? `Results for "${activeSearch}"` : '🔥 Trending'}
                 </div>
 
                 {/* GIF grid */}
-                <div className="gsm-content">
+                <div className="gsm-content" ref={contentRef}>
                     {loading && (
                         <div className="gsm-loading">
                             <div className="gsm-spinner"/>
@@ -126,7 +169,7 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
                                 <circle cx="10" cy="15.5" r="0.8" fill="#f97316"/>
                             </svg>
                             <p>{error}</p>
-                            <button className="gsm-retry" onClick={fetchTrendingGifs}>Try Again</button>
+                            <button className="gsm-retry" onClick={() => fetchTrendingGifs(0, false)}>Try Again</button>
                         </div>
                     )}
                     {!loading && !error && gifs.length === 0 && (
@@ -140,19 +183,61 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
                         </div>
                     )}
                     {!loading && !error && gifs.length > 0 && (
-                        <div className="gsm-grid">
-                            {gifs.map(gif => (
-                                <div key={gif.id} className="gsm-gif-item" onClick={() => handleGifSelect(gif)}>
-                                    <img src={gif.images.fixed_height_small.url} alt={gif.title} loading="lazy"/>
-                                    <div className="gsm-gif-overlay">
-                                        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-                                            <circle cx="8" cy="8" r="6" fill="rgba(255,255,255,.9)"/>
-                                            <path d="M6 5.5l5 2.5-5 2.5V5.5z" fill="#6366f1"/>
-                                        </svg>
+                        <>
+                            <div className="gsm-grid">
+                                {gifs.map(gif => (
+                                    <div key={gif.id} className="gsm-gif-item" onClick={() => handleGifSelect(gif)}>
+                                        <img
+                                            src={gif.images?.fixed_height_small?.url || gif.images?.downsized?.url}
+                                            alt={gif.title}
+                                            loading="lazy"
+                                        />
+                                        <div className="gsm-gif-overlay">
+                                            <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                                                <circle cx="8" cy="8" r="6" fill="rgba(255,255,255,.9)"/>
+                                                <path d="M6 5.5l5 2.5-5 2.5V5.5z" fill="#6366f1"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Load More / Pagination */}
+                            {hasMore && (
+                                <div className="gsm-load-more-wrap">
+                                    <button
+                                        className="gsm-load-more-btn"
+                                        onClick={handleLoadMore}
+                                        disabled={loadingMore}
+                                    >
+                                        {loadingMore ? (
+                                            <>
+                                                <div className="gsm-mini-spinner" />
+                                                Loading…
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                                                    <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </svg>
+                                                Load More GIFs
+                                                <span className="gsm-load-more-count">
+                                                    {Math.min(PAGE_LIMIT, totalCount - gifs.length)} more
+                                                </span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <div className="gsm-pagination-info">
+                                        {gifs.length} / {totalCount.toLocaleString()} GIFs
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            )}
+                            {!hasMore && gifs.length > 0 && (
+                                <div className="gsm-all-loaded">
+                                    <span>✓ All {gifs.length} GIFs loaded</span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
