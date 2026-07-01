@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
+import SEO from '../seo/SEO';
+import { WebPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
   <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
@@ -69,6 +72,23 @@ const ContactPage = () => {
 
   return (
     <div className="lp-root lp-lpage">
+      <SEO
+        title={PAGES.contact.title}
+        description={PAGES.contact.description}
+        keywords={PAGES.contact.keywords}
+        canonical={PAGES.contact.canonical}
+        robots={PAGES.contact.robots}
+        ogType={PAGES.contact.ogType}
+      />
+      <WebPageSchema
+        name="Contact TingleTap"
+        description={PAGES.contact.description}
+        url={PAGES.contact.canonical}
+      />
+      <BreadcrumbSchema crumbs={[
+        { name: 'Home', url: SITE.url },
+        { name: 'Contact', url: PAGES.contact.canonical },
+      ]} />
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1"/><div className="lp-orb lp-orb-2"/><div className="lp-orb lp-orb-3"/>
       </div>

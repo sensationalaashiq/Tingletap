@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import SEO from '../seo/SEO';
+import { PAGES } from '../seo/seoConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
@@ -154,6 +156,12 @@ const ForgotPasswordPage = () => {
       top: 0, left: 0,
       boxSizing: 'border-box'
     }}>
+      <SEO
+        title={PAGES.forgotPassword.title}
+        description={PAGES.forgotPassword.description}
+        canonical={PAGES.forgotPassword.canonical}
+        robots={PAGES.forgotPassword.robots}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
         * { box-sizing: border-box; }

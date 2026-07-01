@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
+import SEO from '../seo/SEO';
+import { WebSiteSchema, OrganizationSchema, WebApplicationSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { PAGES, SITE } from '../seo/seoConfig';
 
 /* ═══════════════════════════════════════════════════════
    PREMIUM LUXURY SVG ICON LIBRARY
@@ -248,6 +251,18 @@ const LandingPage = () => {
 
   return (
     <div className="lp-root">
+      <SEO
+        title={PAGES.landing.title}
+        description={PAGES.landing.description}
+        keywords={PAGES.landing.keywords}
+        canonical={PAGES.landing.canonical}
+        robots={PAGES.landing.robots}
+        ogType={PAGES.landing.ogType}
+      />
+      <WebSiteSchema />
+      <OrganizationSchema />
+      <WebApplicationSchema />
+      <BreadcrumbSchema crumbs={[{ name: 'Home', url: SITE.url }]} />
       {/* Ambient Background */}
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1" />

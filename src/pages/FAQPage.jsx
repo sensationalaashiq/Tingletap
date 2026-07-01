@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
+import SEO from '../seo/SEO';
+import { FAQSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
   <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
@@ -60,6 +63,19 @@ const FAQPage = () => {
 
   return (
     <div className="lp-root lp-lpage">
+      <SEO
+        title={PAGES.faq.title}
+        description={PAGES.faq.description}
+        keywords={PAGES.faq.keywords}
+        canonical={PAGES.faq.canonical}
+        robots={PAGES.faq.robots}
+        ogType={PAGES.faq.ogType}
+      />
+      <FAQSchema faqs={faqData.map(f => ({ question: f.question, answer: f.answer.replace(/\n/g, ' ') }))} />
+      <BreadcrumbSchema crumbs={[
+        { name: 'Home', url: SITE.url },
+        { name: 'FAQ', url: PAGES.faq.canonical },
+      ]} />
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1"/><div className="lp-orb lp-orb-2"/><div className="lp-orb lp-orb-3"/>
       </div>

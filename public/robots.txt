@@ -1,0 +1,81 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Allow: /landing
+
+Disallow: /admin-panel
+Disallow: /admin-panel/
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /rj-earnings
+Disallow: /rj-withdrawal
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+
+User-agent: Googlebot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+
+User-agent: Bingbot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+
+User-agent: DuckDuckBot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /welcome
+
+User-agent: Slurp
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /welcome
+
+User-agent: Brave
+Allow: /
+Disallow: /admin-panel
+
+Sitemap: https://tingletap.com/sitemap.xml

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import SEO from '../seo/SEO';
+import { PAGES } from '../seo/seoConfig';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from '../firebase/config';
@@ -589,6 +591,12 @@ const LoginPage = () => {
       left: 0,
       boxSizing: 'border-box'
     }}>
+      <SEO
+        title={PAGES.login.title}
+        description={PAGES.login.description}
+        canonical={PAGES.login.canonical}
+        robots={PAGES.login.robots}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
 

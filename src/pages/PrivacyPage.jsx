@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
+import SEO from '../seo/SEO';
+import { WebPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
   <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
@@ -100,6 +103,23 @@ const PrivacyPage = () => {
   const navigate = useNavigate();
   return (
     <div className="lp-root lp-lpage">
+      <SEO
+        title={PAGES.privacy.title}
+        description={PAGES.privacy.description}
+        keywords={PAGES.privacy.keywords}
+        canonical={PAGES.privacy.canonical}
+        robots={PAGES.privacy.robots}
+        ogType={PAGES.privacy.ogType}
+      />
+      <WebPageSchema
+        name="Privacy Policy — TingleTap"
+        description={PAGES.privacy.description}
+        url={PAGES.privacy.canonical}
+      />
+      <BreadcrumbSchema crumbs={[
+        { name: 'Home', url: SITE.url },
+        { name: 'Privacy Policy', url: PAGES.privacy.canonical },
+      ]} />
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1"/><div className="lp-orb lp-orb-2"/><div className="lp-orb lp-orb-3"/>
       </div>

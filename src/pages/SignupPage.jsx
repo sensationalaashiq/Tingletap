@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import SEO from '../seo/SEO';
+import { PAGES } from '../seo/seoConfig';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, createUserProfile, checkUsernameAvailability, reserveUsername } from '../firebase/config';
@@ -291,6 +293,12 @@ const SignupPage = () => {
       top: 0, left: 0,
       boxSizing: 'border-box'
     }}>
+      <SEO
+        title={PAGES.signup.title}
+        description={PAGES.signup.description}
+        canonical={PAGES.signup.canonical}
+        robots={PAGES.signup.robots}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
 

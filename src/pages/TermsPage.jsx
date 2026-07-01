@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
+import SEO from '../seo/SEO';
+import { WebPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
   <svg viewBox="0 0 18 18" width="16" height="16" fill="none" style={{display:'block',flexShrink:0}}>
@@ -98,6 +101,23 @@ const TermsPage = () => {
   const navigate = useNavigate();
   return (
     <div className="lp-root lp-lpage">
+      <SEO
+        title={PAGES.terms.title}
+        description={PAGES.terms.description}
+        keywords={PAGES.terms.keywords}
+        canonical={PAGES.terms.canonical}
+        robots={PAGES.terms.robots}
+        ogType={PAGES.terms.ogType}
+      />
+      <WebPageSchema
+        name="Terms of Service — TingleTap"
+        description={PAGES.terms.description}
+        url={PAGES.terms.canonical}
+      />
+      <BreadcrumbSchema crumbs={[
+        { name: 'Home', url: SITE.url },
+        { name: 'Terms of Service', url: PAGES.terms.canonical },
+      ]} />
       <div className="lp-bg" aria-hidden="true">
         <div className="lp-orb lp-orb-1"/><div className="lp-orb lp-orb-2"/><div className="lp-orb lp-orb-3"/>
       </div>

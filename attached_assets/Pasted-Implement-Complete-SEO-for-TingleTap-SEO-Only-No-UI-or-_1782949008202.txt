@@ -1,0 +1,235 @@
+Implement Complete SEO for TingleTap (SEO Only – No UI or Performance Changes)
+
+Implement a complete, production-ready SEO system for the TingleTap React + Vite application.
+
+Important Rules
+
+- Do NOT modify the existing UI, design, layout, animations, chat system, CSS, themes, components, routing behavior, or user experience.
+- Do NOT implement Lazy Loading, JS Code Splitting, Route-Based Lazy Imports, Image Optimization, Font Preloading, CSS Optimization, Preconnect, DNS Prefetch, Browser Caching Headers, Compression changes, or any other performance optimization.
+- Focus ONLY on SEO, search engine indexing, structured data, metadata, discoverability, and social sharing.
+
+Page SEO
+
+Every public page must have unique:
+
+- HTML Title
+- Meta Description
+- Meta Keywords
+- Canonical URL
+- Robots Meta Tag
+- Author
+- Language
+- Theme Color
+- Viewport
+- Open Graph Title
+- Open Graph Description
+- Open Graph Image
+- Open Graph URL
+- Twitter Card
+- Twitter Title
+- Twitter Description
+- Twitter Image
+
+No duplicate titles or descriptions anywhere.
+
+Dynamic SEO
+
+Automatically generate SEO based on page content.
+
+Examples:
+
+- Home
+- About
+- Contact
+- Help
+- Login
+- Register
+- Forgot Password
+- Terms
+- Privacy Policy
+- Community Guidelines
+- Public Chat Rooms
+- Public User Profiles
+
+Each page must have completely unique metadata.
+
+Chat Room SEO
+
+Every public room should generate:
+
+- Dynamic Page Title
+- Dynamic Description
+- Canonical URL
+- Open Graph Tags
+- Twitter Tags
+- JSON-LD
+
+Do NOT index:
+
+- Private Rooms
+- Password Protected Rooms
+- Adult Rooms
+- Staff Rooms
+- Hidden Rooms
+
+These must return:
+
+- noindex
+- nofollow
+
+User Profile SEO
+
+Public profiles:
+
+- Indexable
+- Canonical URL
+- Structured Data
+
+Private, Guest, Suspended, Deleted, Banned or Hidden profiles:
+
+- noindex
+- nofollow
+
+Structured Data (JSON-LD)
+
+Implement valid Schema.org structured data:
+
+- WebSite
+- Organization
+- WebApplication
+- BreadcrumbList
+- FAQPage (where applicable)
+- ProfilePage
+- CollectionPage
+- WebPage
+
+Validate all schemas with no errors.
+
+Sitemap
+
+Automatically generate:
+
+- sitemap.xml
+- sitemap-index.xml (if needed)
+
+Include only public URLs.
+
+Never include:
+
+- Admin
+- Moderator
+- Owner Panel
+- Login
+- Register
+- Dashboard
+- Settings
+- Private Rooms
+- Password Rooms
+- Adult Rooms
+- Staff Rooms
+- API URLs
+- Firebase URLs
+
+robots.txt
+
+Generate robots.txt that:
+
+- Allows Google
+- Allows Bing
+- Allows DuckDuckGo
+- Allows Yahoo
+- Allows Brave Search
+- Blocks all private/authenticated sections
+- References the sitemap
+
+Search Engine Compatibility
+
+Ensure excellent compatibility with:
+
+- Google Search
+- Bing
+- Yahoo
+- DuckDuckGo
+- Brave Search
+- AI-powered search engines
+
+Social Sharing
+
+Generate rich previews for:
+
+- WhatsApp
+- Facebook
+- X (Twitter)
+- Telegram
+- Discord
+- LinkedIn
+
+Every shared page should display:
+
+- Correct title
+- Description
+- Thumbnail
+- URL
+
+Canonical Management
+
+Every public page must have exactly one valid canonical URL.
+
+Prevent duplicate content across all routes.
+
+Heading Structure
+
+Maintain a proper semantic hierarchy:
+
+- One H1 per page
+- Logical H2/H3/H4 structure
+- Semantic HTML
+
+Accessibility SEO
+
+Without changing the design:
+
+- Add missing alt attributes
+- Add aria-label where necessary
+- Improve semantic markup
+- Preserve existing UI exactly
+
+PWA Metadata
+
+Ensure:
+
+- manifest.json
+- App Name
+- Short Name
+- Icons
+- Theme Color
+- Background Color
+
+Only update metadata if required.
+
+Technical SEO Validation
+
+Eliminate:
+
+- Duplicate titles
+- Duplicate descriptions
+- Missing canonical tags
+- Invalid robots directives
+- Missing Open Graph tags
+- Missing Twitter tags
+- Invalid JSON-LD
+- Broken sitemap entries
+
+React Implementation
+
+Use React Helmet Async (or equivalent) for dynamic SEO.
+
+Generate:
+
+- robots.txt
+- sitemap.xml
+- manifest.json
+
+Do not modify any application logic, permissions, UI, CSS, routing behavior, Firebase integration, chat features, or user experience.
+
+The final implementation must be clean, scalable, production-ready, search-engine friendly, and optimized for maximum organic visibility without changing the existing look, feel, speed, or functionality of TingleTap.
