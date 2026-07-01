@@ -563,6 +563,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const ytPlayerRef = useRef(null);
   const ytContainerRef = useRef(null);
   const ytInitialized = useRef(false);
+  /* Tracks the RJ's intended playback state so we can auto-resume after browser throttling */
+  const ytIntendedStateRef = useRef('stopped');
 
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
@@ -575,6 +577,94 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
   const myName = loggedInUserProfile?.username || loggedInUserProfile?.displayName || 'User';
   const myPhoto = loggedInUserProfile?.photoURL || '';
+
+  /* ══════════════════════════════════════
+     YOUTUBE PLAYER HELPERS
+     (declared before Firebase effects so they can be safely listed in dep arrays)
+  ══════════════════════════════════════ */
+
+  const ensureYtApiLoaded = useCallback(() => {
+    return new Promise((resolve) => {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      const existing = document.getElementById('yt-iframe-api-script');
+      if (!existing) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+      const checkReady = setInterval(() => {
+        if (window.YT && window.YT.Player) { clearInterval(checkReady); resolve(); }
+      }, 100);
+    });
+  }, []);
+
+  const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
+    if (!videoId) return;
+    await ensureYtApiLoaded();
+    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+      ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
+      return;
+    }
+    if (!ytContainerRef.current) return;
+    ytInitialized.current = true;
+    ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
+      height: '1',
+      width: '1',
+      videoId,
+      playerVars: { autoplay: 1, controls: 0, start: Math.floor(startSeconds) },
+      events: {
+        onReady: (e) => {
+          e.target.setVolume(80);
+          if (startSeconds > 0) e.target.seekTo(startSeconds, true);
+        },
+        onStateChange: (e) => {
+          /* YT.PlayerState.PAUSED = 2 — if browser throttled us while we intended to play, auto-resume */
+          const YT_PAUSED = 2;
+          if (e.data === YT_PAUSED && ytIntendedStateRef.current === 'playing') {
+            setTimeout(() => {
+              try { e.target.playVideo(); } catch {}
+            }, 300);
+          }
+        }
+      }
+    });
+  }, [ensureYtApiLoaded]);
+
+  const syncYouTubePlayer = useCallback((ytData) => {
+    if (!ytData) return;
+    const { state, videoId, seekTo, updatedAt } = ytData;
+
+    /* Calculate time drift since RJ wrote the update */
+    const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
+    const adjustedSeek = state === 'playing' ? (seekTo || 0) + driftSecs : (seekTo || 0);
+
+    if (!ytPlayerRef.current || !ytPlayerRef.current.loadVideoById) {
+      /* Player not ready yet — init it with the video */
+      if (videoId) initYtPlayer(videoId, adjustedSeek);
+      return;
+    }
+
+    const player = ytPlayerRef.current;
+
+    if (videoId) {
+      const curUrl = player.getVideoUrl?.() || '';
+      if (!curUrl.includes(videoId)) {
+        player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
+        return;
+      }
+    }
+
+    if (state === 'playing') {
+      player.seekTo?.(adjustedSeek, true);
+      player.playVideo?.();
+    } else if (state === 'paused') {
+      player.seekTo?.(seekTo || 0, true);
+      player.pauseVideo?.();
+    } else if (state === 'stopped') {
+      player.stopVideo?.();
+    }
+  }, [initYtPlayer]);
 
   /* ══════════════════════════════════════
      FIREBASE LISTENERS
@@ -652,17 +742,84 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => { if (durationRef.current) clearInterval(durationRef.current); };
   }, [rjIsLive, rjBroadcast?.startedAt]);
 
-  /* ── YouTube player sync for listeners (fires when RTDB youtube node changes) ── */
+  /* ── YouTube player sync for listeners (always-on — keeps music playing even when panel is closed) ── */
   useEffect(() => {
-    if (!rjIsLive || !isOpen || canManageRJ) return;
+    if (canManageRJ) return; // only listeners need this; broadcaster controls directly
     const ytRef = ref(rtdb, 'broadcasts/rj/youtube');
     const unsub = onValue(ytRef, (snap) => {
       const yt = snap.val();
       if (!yt) return;
+      /* Track listener's intended state so visibilitychange can resume correctly */
+      ytIntendedStateRef.current = yt.state || 'stopped';
       syncYouTubePlayer(yt);
     });
     return () => unsub();
-  }, [rjIsLive, isOpen, canManageRJ]);
+  }, [canManageRJ, syncYouTubePlayer]);
+
+  /* ── Broadcaster: visibilitychange — resume YouTube if browser throttled us ── */
+  useEffect(() => {
+    if (!canManageRJ) return;
+    const handleVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      /* Guard: only push state if RJ is actually live — avoids ghost writes after broadcast ends */
+      if (!rjIsLive) return;
+      const player = ytPlayerRef.current;
+      if (!player) return;
+      if (ytIntendedStateRef.current === 'playing') {
+        try {
+          const cur = player.getCurrentTime?.() || 0;
+          player.seekTo?.(cur, true);
+          player.playVideo?.();
+          /* Push fresh position to Firebase so listeners resync */
+          update(ref(rtdb, 'broadcasts/rj/youtube'), {
+            state: 'playing',
+            seekTo: cur,
+            updatedAt: Date.now(),
+          }).catch(() => {});
+        } catch {}
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [canManageRJ, rjIsLive]);
+
+  /* ── Listener: visibilitychange — resync from RTDB when tab comes back ── */
+  useEffect(() => {
+    if (canManageRJ) return;
+    const handleVisible = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!rjIsLive) return;
+      try {
+        const snap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
+        const yt = snap.val();
+        if (yt) {
+          ytIntendedStateRef.current = yt.state || 'stopped';
+          syncYouTubePlayer(yt);
+        }
+      } catch {}
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [canManageRJ, rjIsLive, syncYouTubePlayer]);
+
+  /* ── Broadcaster: periodic seek position push every 10 s so listeners stay in sync ── */
+  useEffect(() => {
+    if (!canManageRJ || !rjIsLive) return;
+    const interval = setInterval(() => {
+      const player = ytPlayerRef.current;
+      if (!player || ytIntendedStateRef.current !== 'playing') return;
+      try {
+        const cur = player.getCurrentTime?.();
+        if (cur == null) return;
+        update(ref(rtdb, 'broadcasts/rj/youtube'), {
+          state: 'playing',
+          seekTo: cur,
+          updatedAt: Date.now(),
+        }).catch(() => {});
+      } catch {}
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [canManageRJ, rjIsLive]);
 
   /* ── Public broadcasts Firestore listener ── */
   useEffect(() => {
@@ -693,84 +850,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     return () => unsub();
   }, [listeningTo?.id]);
-
-  /* ══════════════════════════════════════
-     YOUTUBE PLAYER
-  ══════════════════════════════════════ */
-  const ensureYtApiLoaded = useCallback(() => {
-    return new Promise((resolve) => {
-      if (window.YT && window.YT.Player) { resolve(); return; }
-      const existing = document.getElementById('yt-iframe-api-script');
-      if (!existing) {
-        const tag = document.createElement('script');
-        tag.id = 'yt-iframe-api-script';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      }
-      const checkReady = setInterval(() => {
-        if (window.YT && window.YT.Player) { clearInterval(checkReady); resolve(); }
-      }, 100);
-    });
-  }, []);
-
-  const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
-    if (!videoId) return;
-    await ensureYtApiLoaded();
-    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-      ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
-      return;
-    }
-    if (!ytContainerRef.current) return;
-    ytInitialized.current = true;
-    ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
-      height: '1',
-      width: '1',
-      videoId,
-      playerVars: { autoplay: 1, controls: 0, start: Math.floor(startSeconds) },
-      events: {
-        onReady: (e) => {
-          e.target.setVolume(80);
-          if (startSeconds > 0) e.target.seekTo(startSeconds, true);
-        },
-        onStateChange: () => {}
-      }
-    });
-  }, [ensureYtApiLoaded]);
-
-  const syncYouTubePlayer = useCallback((ytData) => {
-    if (!ytData) return;
-    const { state, videoId, seekTo, updatedAt } = ytData;
-
-    /* Calculate time drift since RJ wrote the update */
-    const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
-    const adjustedSeek = state === 'playing' ? (seekTo || 0) + driftSecs : (seekTo || 0);
-
-    if (!ytPlayerRef.current || !ytPlayerRef.current.loadVideoById) {
-      /* Player not ready yet — init it with the video */
-      if (videoId) initYtPlayer(videoId, adjustedSeek);
-      return;
-    }
-
-    const player = ytPlayerRef.current;
-
-    if (videoId) {
-      const curUrl = player.getVideoUrl?.() || '';
-      if (!curUrl.includes(videoId)) {
-        player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
-        return;
-      }
-    }
-
-    if (state === 'playing') {
-      player.seekTo?.(adjustedSeek, true);
-      player.playVideo?.();
-    } else if (state === 'paused') {
-      player.seekTo?.(seekTo || 0, true);
-      player.pauseVideo?.();
-    } else if (state === 'stopped') {
-      player.stopVideo?.();
-    }
-  }, [initYtPlayer]);
 
   /* ══════════════════════════════════════
      RJ BROADCAST — BROADCASTER SIDE
@@ -1106,6 +1185,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       setYtUrl('');
       setYtCurrentSongName('');
       setYtPlayerState('stopped');
+      ytIntendedStateRef.current = 'stopped';
       if (ytPlayerRef.current?.stopVideo) ytPlayerRef.current.stopVideo();
       stopLocalMic();
       bpToast.success('Broadcast ended.');
@@ -1205,6 +1285,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube link.'); return; }
     const songName = ytUrl;
     const nowMs = Date.now();
+    ytIntendedStateRef.current = 'paused';
     initYtPlayer(vid, 0);
     update(ref(rtdb, 'broadcasts/rj/youtube'), {
       videoId: vid,
@@ -1245,6 +1326,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       newState = ytPlayerState;
     }
 
+    /* Track intended state so auto-resume logic knows what to do */
+    ytIntendedStateRef.current = newState;
     setYtPlayerState(newState);
     update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs });
   };
@@ -1707,10 +1790,32 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Cleanup when panel closes ── */
   useEffect(() => {
     if (!isOpen) {
+      // Public broadcast (music streams) stop when panel closes.
       if (listeningTo) { pubLeaveAudio(listeningTo.id); setListeningTo(null); }
-      if (rjIsListening) { rjLeaveAudio(); }
+      // RJ voice intentionally NOT stopped here — audio should keep playing
+      // even when the user minimises/closes the panel.
+      // Voice only stops when: RJ ends broadcast, user clicks Leave, page unloads.
     }
   }, [isOpen]);
+
+  /* ── Listener: visibilitychange — resume RJ voice if browser throttled it ── */
+  useEffect(() => {
+    if (canManageRJ) return; // broadcaster side only
+    const handleVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!rjIsListening) return;
+      const audio = rjAudioEl.current;
+      if (!audio) return;
+      // Resume if the browser paused the audio element in the background
+      if (audio.paused) {
+        audio.play().catch(() => {
+          setRjAudioBlocked(true);
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [canManageRJ, rjIsListening]);
 
   /* ── Global cleanup on unmount ── */
   useEffect(() => {
@@ -1741,7 +1846,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     } catch {}
   };
 
-  if (!isOpen) return null;
+  /* ── Panel closed: keep YouTube player alive in a hidden off-screen container ── */
+  if (!isOpen) {
+    return (
+      <div
+        style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, overflow: 'hidden', pointerEvents: 'none' }}
+        aria-hidden="true"
+      >
+        <div ref={ytContainerRef} id="bp-yt-player" />
+      </div>
+    );
+  }
 
   /* ── Minimized floating bubble ── */
   if (isMinimized) {

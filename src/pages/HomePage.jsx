@@ -969,13 +969,15 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         if (!alreadyJoinedThisSession) {
             sessionStorage.setItem(joinKey, '1');
-            // Broadcast join message globally
+            // Broadcast join message globally.
+            // NOTE: uid must be the real auth UID (not 'tinglebot_system_official_2024') so
+            // Firestore rules accept the write from regular users/guests.
+            // isBot/systemBot flags are omitted for the same reason — those require staff auth.
+            // The tinglebotType field is enough for the UI to render it as a TingleBot strip.
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: `${name} (${roleLabel}) joined the room.`,
-                uid: 'tinglebot_system_official_2024',
+                uid: currentUid,
                 displayName: 'TingleBot',
-                isBot: true,
-                systemBot: true,
                 tinglebotType: 'join',
                 createdAt: serverTimestamp(),
                 noReply: true,
@@ -1007,10 +1009,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             sessionStorage.removeItem(joinKey);
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: `${name} (${roleLabel}) left the room.`,
-                uid: 'tinglebot_system_official_2024',
+                uid: currentUid,
                 displayName: 'TingleBot',
-                isBot: true,
-                systemBot: true,
                 tinglebotType: 'leave',
                 createdAt: serverTimestamp(),
                 noReply: true,
@@ -2597,14 +2597,19 @@ const HomePage = ({ user, roomIdOverride }) => {
                             ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
                             : null);
                     if (latest && latest.uid !== myUid) {
-                        if (latest.isWhisper && latest.whisperTo === myUid) {
-                            playNotificationSound('whisper');
-                        } else if (!latest.isWhisper) {
-                            const myName = loggedInUserProfile?.displayName || '';
-                            if (myName && latest.text?.toLowerCase().includes(`@${myName.toLowerCase()}`)) {
-                                playNotificationSound('mention');
-                            } else {
-                                playNotificationSound('message');
+                        // Never play notification sounds for TingleBot system messages
+                        const _latestIsBot = latest.isBot || latest.systemBot ||
+                            latest.uid === 'tinglebot_system_official_2024' || latest.tinglebotType;
+                        if (!_latestIsBot) {
+                            if (latest.isWhisper && latest.whisperTo === myUid) {
+                                playNotificationSound('whisper');
+                            } else if (!latest.isWhisper) {
+                                const myName = loggedInUserProfile?.displayName || '';
+                                if (myName && latest.text?.toLowerCase().includes(`@${myName.toLowerCase()}`)) {
+                                    playNotificationSound('mention');
+                                } else {
+                                    playNotificationSound('message');
+                                }
                             }
                         }
                     }
@@ -2615,7 +2620,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                         loggedInUserProfile?.role
                     );
                     newMessages.forEach(m => {
-                        if (!m.isBot && !m.systemBot && m.uid !== 'tinglebot_system_official_2024') {
+                        // Skip system/TingleBot messages — including join/leave which now use real uids
+                        if (!m.isBot && !m.systemBot && !m.tinglebotType && m.uid !== 'tinglebot_system_official_2024') {
                             processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName).catch(() => {});
                         }
                     });
@@ -2629,7 +2635,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // We never schedule deletion with <30s remaining to avoid premature disappearance for others.
                 if (loggedInUserProfile?.role === 'owner') {
                     newMessages.forEach(msg => {
-                        const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024';
+                        // Include join/leave messages that now use real uids (detected via tinglebotType)
+                        const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.tinglebotType;
                         if (!isBot || !msg.id) return;
                         if (scheduledTinglebotDeletionsRef.current.has(msg.id)) return;
                         scheduledTinglebotDeletionsRef.current.add(msg.id);
@@ -2647,9 +2654,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // ── Keep only latest 25 user messages (delete extras from Firestore) ──
-                // Only the sender of the most-recent message prunes — avoids N-client write storms
+                // Only the sender of the most-recent message prunes — avoids N-client write storms.
+                // Exclude TingleBot system messages, including join/leave (which use real uids now).
                 const userMsgs = newMessages.filter(
-                    m => !m.isBot && m.uid !== 'tinglebot_system_official_2024' && !m.systemBot
+                    m => !m.isBot && m.uid !== 'tinglebot_system_official_2024' && !m.systemBot && !m.tinglebotType
                 );
                 if (userMsgs.length > 25) {
                     const newestUserMsg = userMsgs[userMsgs.length - 1];
@@ -6765,19 +6773,23 @@ const HomePage = ({ user, roomIdOverride }) => {
                     <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
                         {messages.filter(msg => {
                             if (!msg.uid) return true;
-                            // TingleBot messages are ALWAYS visible — check before any block list
-                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot');
+                            // TingleBot messages are ALWAYS visible — check before any block list.
+                            // Also check tinglebotType for join/leave messages written by regular users
+                            // (those use the real uid but must still render as TingleBot strips).
+                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
                             if (isTinglebotMsg) return true;
                             // Block list filters apply only to real user messages
                             if (blockedUsers.includes(msg.uid)) return false;
                             if (usersWhoBlockedMe.includes(msg.uid)) return false;
                             return true;
                         }).map((msg, index) => {
-                            // TingleBot messages render as premium notification strips
+                            // TingleBot messages render as premium notification strips.
+                            // Also check tinglebotType for join/leave messages (written by real users).
                             const isTingleBot = msg.isBot ||
                                 msg.uid === 'tinglebot_system_official_2024' ||
                                 msg.systemBot ||
-                                msg.type?.includes('tinglebot');
+                                msg.type?.includes('tinglebot') ||
+                                msg.tinglebotType;
                             if (isTingleBot) {
                                 return (
                                     <TingleBotNotification

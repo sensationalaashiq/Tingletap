@@ -87,6 +87,15 @@ service cloud.firestore {
           || request.resource.data.get('isModerationNotice', false) == true;
     }
 
+    // Returns true when tinglebotType is set to a privileged (non-join/leave) value.
+    // join and leave events are written by the joining/leaving user themselves using
+    // their real UID; all other tinglebotType values (kicked, banned, muted, etc.)
+    // are staff-only actions and must carry system flags through the normal path.
+    function claimsPrivilegedTinglebotType() {
+      let t = request.resource.data.get('tinglebotType', null);
+      return t != null && !(t in ['join', 'leave']);
+    }
+
     // Only TingleBot or staff may create documents that carry system flags
     function canWriteSystemMessage() {
       return isTingleBot() || isStaff();
@@ -295,10 +304,14 @@ service cloud.firestore {
 
           // — Everyone else (registered users AND guests):
           //   • Cannot set any system/bot flag
+          //   • Cannot set tinglebotType to anything other than 'join' or 'leave'
+          //     (join/leave are self-reported presence events; all other types are
+          //      staff moderation actions carried via the isStaff() path above)
           //   • Must not be banned, muted, or kicked from this room
           //   • Message uid must match caller
           (
             !claimsSystemFlags() &&
+            !claimsPrivilegedTinglebotType() &&
             validMessageBase() &&
             notBanned() &&
             notMuted() &&
