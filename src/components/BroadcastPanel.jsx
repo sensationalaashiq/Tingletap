@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { db, rtdb, auth } from '../firebase/config';
 import {
-  ref, set, get, update, remove, onValue, push, off, onDisconnect, increment, serverTimestamp
+  ref, set, get, update, remove, onValue, onChildAdded, push, off, onDisconnect, increment, serverTimestamp
 } from 'firebase/database';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
@@ -342,6 +342,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── RJ listener state ── */
   const [rjIsListening, setRjIsListening] = useState(false);
   const [rjConnecting, setRjConnecting] = useState(false);
+  const [rjAudioBlocked, setRjAudioBlocked] = useState(false);
+  const [pubAudioBlocked, setPubAudioBlocked] = useState(false);
 
   /* ── Go Live state ── */
   const [goingLive, setGoingLive] = useState(false);
@@ -381,7 +383,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const pubOnDisconnectRef = useRef(null);
 
   /* ── Permission flags ── */
-  const isRJ = loggedInUserProfile?.badge === 'rj';
+  const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj';
   const canManageRJ = isRJ;
   const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
   const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
@@ -638,9 +640,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     rjHostRtdbUnsubs.current.push(unsubAns);
 
-    const unsubLC = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/listenerCandidates`), snap => {
-      const cands = snap.val() || {};
-      Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+    /* Use onChildAdded so each listener ICE candidate is processed exactly once */
+    const unsubLC = onChildAdded(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/listenerCandidates`), snap => {
+      const c = snap.val();
+      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
     });
     rjHostRtdbUnsubs.current.push(unsubLC);
   };
@@ -716,6 +719,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const rjJoinAudio = async () => {
     if (!myUid || rjConnecting || rjIsListening) return;
     setRjConnecting(true);
+    setRjAudioBlocked(false);
 
     try {
       /* Register presence — broadcaster will see this and create an offer */
@@ -727,7 +731,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       rjListenerPC.current = pc;
 
-      /* When audio track arrives, play it */
+      /* Buffer ICE candidates that arrive before remote description is set */
+      let remoteDescReady = false;
+      const pendingCandidates = [];
+      const drainPending = async () => {
+        for (const c of pendingCandidates) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+        }
+        pendingCandidates.length = 0;
+      };
+
+      /* When audio track arrives, play it — handle autoplay policy */
       pc.ontrack = (e) => {
         if (!rjAudioEl.current) {
           const audio = new Audio();
@@ -736,7 +750,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           rjAudioEl.current = audio;
         }
         rjAudioEl.current.srcObject = e.streams[0];
-        rjAudioEl.current.play().catch(() => {});
+        rjAudioEl.current.play().then(() => {
+          setRjAudioBlocked(false);
+        }).catch(() => {
+          /* Autoplay blocked — show tap-to-listen button */
+          setRjAudioBlocked(true);
+        });
         setRjIsListening(true);
         setRjConnecting(false);
       };
@@ -748,7 +767,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         }
       };
 
-      /* Handle connection failure — auto-retry */
+      /* Handle connection failure — auto-retry once */
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'failed') {
           _rjCleanupListenerSide(false);
@@ -760,41 +779,51 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         }
       };
 
-      /* Watch for broadcaster's offer */
+      /* Watch for broadcaster's offer (fires immediately if already present) */
       const offerRef = ref(rtdb, `broadcasts/rj/connections/${myUid}/offer`);
       const unsubOffer = onValue(offerRef, async snap => {
         const offer = snap.val();
         if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
-
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          remoteDescReady = true;
+          await drainPending();                              /* apply buffered candidates */
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           await set(ref(rtdb, `broadcasts/rj/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
-        } catch {}
+        } catch (err) { console.warn('RJ offer handling error:', err); }
       });
       rjListenerRtdbUnsubs.current.push(unsubOffer);
 
-      /* Watch for broadcaster's ICE candidates */
-      const unsubHC = onValue(ref(rtdb, `broadcasts/rj/connections/${myUid}/hostCandidates`), snap => {
-        const cands = snap.val() || {};
-        Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+      /* onChildAdded: each host ICE candidate fires exactly once, buffered if needed */
+      const unsubHC = onChildAdded(ref(rtdb, `broadcasts/rj/connections/${myUid}/hostCandidates`), snap => {
+        const c = snap.val();
+        if (!c) return;
+        if (remoteDescReady) {
+          pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+        } else {
+          pendingCandidates.push(c);
+        }
       });
       rjListenerRtdbUnsubs.current.push(unsubHC);
 
       /* Sync YouTube player if RJ already playing something */
       const ytSnap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
       const ytData = ytSnap.val();
-      if (ytData?.videoId) {
-        syncYouTubePlayer(ytData);
-      }
+      if (ytData?.videoId) syncYouTubePlayer(ytData);
 
-      setRjIsListening(true);
+      /* Connection timeout: if no track in 12 s, show error */
+      setTimeout(() => {
+        if (!rjIsListening && rjConnecting) {
+          bpToast.warning('Connection is taking long. Check your network and try again.');
+          setRjConnecting(false);
+        }
+      }, 12000);
+
     } catch (err) {
       console.error('RJ join audio error:', err);
       bpToast.error('Could not connect to broadcast. Please try again.');
       _rjCleanupListenerSide(true);
-    } finally {
       setRjConnecting(false);
     }
   };
@@ -816,7 +845,22 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     try {
       await startLocalMic();
+    } catch (err) {
+      console.error('Mic error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        bpToast.error('Microphone blocked. Allow mic access in your browser settings (🔒 icon in address bar), then try again.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        bpToast.error('No microphone detected. Please connect a mic and try again.');
+      } else if (err.name === 'NotReadableError') {
+        bpToast.error('Microphone is in use by another app. Close it and try again.');
+      } else {
+        bpToast.error('Could not access microphone: ' + (err.message || 'Unknown error'));
+      }
+      setGoingLive(false);
+      return;
+    }
 
+    try {
       const bcData = {
         isLive: true,
         rjUid: myUid,
@@ -896,7 +940,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const startLocalMic = async () => {
     if (localStream.current) return localStream.current;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+      video: false
+    });
     localStream.current = stream;
     return stream;
   };
@@ -1047,9 +1094,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     pubHostRtdbUnsubs.current.push(unsubAns);
 
-    const unsubLC = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`), snap => {
-      const cands = snap.val() || {};
-      Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+    /* Use onChildAdded so each listener ICE candidate is processed exactly once */
+    const unsubLC = onChildAdded(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`), snap => {
+      const c = snap.val();
+      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
     });
     pubHostRtdbUnsubs.current.push(unsubLC);
   };
@@ -1127,6 +1175,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const pubJoinAudio = async (bc) => {
     if (!myUid) return;
     const { id: broadcastId } = bc;
+    setPubAudioBlocked(false);
 
     /* Register presence so broadcaster creates offer for us */
     const lRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`);
@@ -1137,6 +1186,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     pubListenerPC.current = pc;
 
+    /* Buffer ICE candidates that arrive before remote description is set */
+    let remoteDescReady = false;
+    const pendingCandidates = [];
+    const drainPending = async () => {
+      for (const c of pendingCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
+      pendingCandidates.length = 0;
+    };
+
     pc.ontrack = e => {
       if (!pubAudioEl.current) {
         pubAudioEl.current = new Audio();
@@ -1144,7 +1203,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         pubAudioEl.current.playsInline = true;
       }
       pubAudioEl.current.srcObject = e.streams[0];
-      pubAudioEl.current.play().catch(() => {});
+      pubAudioEl.current.play().then(() => {
+        setPubAudioBlocked(false);
+      }).catch(() => {
+        /* Autoplay blocked — show tap-to-listen button */
+        setPubAudioBlocked(true);
+      });
     };
 
     pc.onicecandidate = evt => {
@@ -1158,28 +1222,35 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         _pubCleanupListenerSide();
         pubListenerPC.current = null;
         setListeningTo(null);
+        bpToast.error('Connection failed. Try joining again.');
       }
     };
 
-    /* Watch for broadcaster's offer */
+    /* Watch for broadcaster's offer (fires immediately if already present) */
     const offerRef = ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/offer`);
     const unsubOffer = onValue(offerRef, async snap => {
       const offer = snap.val();
       if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
-
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        remoteDescReady = true;
+        await drainPending();                              /* apply buffered candidates */
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
-      } catch {}
+      } catch (err) { console.warn('Pub offer handling error:', err); }
     });
     pubListenerRtdbUnsubs.current.push(unsubOffer);
 
-    /* Watch for broadcaster's ICE candidates */
-    const unsubHC = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/hostCandidates`), s => {
-      const cands = s.val() || {};
-      Object.values(cands).forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {}));
+    /* onChildAdded: each host ICE candidate fires exactly once, buffered if needed */
+    const unsubHC = onChildAdded(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/hostCandidates`), snap => {
+      const c = snap.val();
+      if (!c) return;
+      if (remoteDescReady) {
+        pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      } else {
+        pendingCandidates.push(c);
+      }
     });
     pubListenerRtdbUnsubs.current.push(unsubHC);
   };
@@ -1198,9 +1269,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    } catch {
-      bpToast.error('Microphone permission required to go live. Allow mic access and try again.');
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+        video: false
+      });
+    } catch (err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        bpToast.error('Microphone blocked. Click the 🔒 icon in your browser address bar to allow mic access.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        bpToast.error('No microphone found. Connect a mic and try again.');
+      } else if (err.name === 'NotReadableError') {
+        bpToast.error('Microphone is already in use by another application. Close it and try again.');
+      } else {
+        bpToast.error('Could not access microphone: ' + (err.message || 'Unknown error'));
+      }
       return;
     }
     pubHostStream.current = stream;
@@ -1547,13 +1629,29 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         {!isGuest && !canManageRJ && (
           <div style={{ marginTop: 16 }}>
             {rjIsListening ? (
-              <button
-                className="bp-listen-btn bp-listen-btn--stop"
-                onClick={rjLeaveAudio}
-              >
-                <StopIcon color="currentColor" />
-                Stop Listening
-              </button>
+              <>
+                {rjAudioBlocked && (
+                  <button
+                    className="bp-listen-btn bp-listen-btn--join"
+                    style={{ marginBottom: 8, background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
+                    onClick={() => {
+                      if (rjAudioEl.current) {
+                        rjAudioEl.current.play().then(() => setRjAudioBlocked(false)).catch(() => {});
+                      }
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    Tap to Start Audio
+                  </button>
+                )}
+                <button
+                  className="bp-listen-btn bp-listen-btn--stop"
+                  onClick={rjLeaveAudio}
+                >
+                  <StopIcon color="currentColor" />
+                  Stop Listening
+                </button>
+              </>
             ) : (
               <button
                 className="bp-listen-btn bp-listen-btn--join"
@@ -1790,6 +1888,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     </div>
                   </div>
                   <div className="bp-bc-actions">
+                    {listeningTo?.id === bc.id && pubAudioBlocked && (
+                      <button
+                        className="bp-bc-join-btn"
+                        style={{ marginBottom: 4, background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontSize: 10 }}
+                        onClick={() => {
+                          if (pubAudioEl.current) {
+                            pubAudioEl.current.play().then(() => setPubAudioBlocked(false)).catch(() => {});
+                          }
+                        }}
+                      >
+                        Tap to Hear
+                      </button>
+                    )}
                     <button
                       className={`bp-bc-join-btn${listeningTo?.id === bc.id ? ' listening' : ''}`}
                       onClick={() => handleJoinPublicBroadcast(bc)}
