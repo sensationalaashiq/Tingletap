@@ -120,6 +120,148 @@ const bpToast = {
   live:    (msg) => toast.success(msg, { icon: <_TIBroadcast />, style: _toastStyle(_isDark()) }),
 };
 
+/* ── Colorful Minimize Icon ── */
+const MinimizeSVGIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+    <defs>
+      <linearGradient id="minG" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#fbbf24"/>
+        <stop offset="50%" stopColor="#f59e0b"/>
+        <stop offset="100%" stopColor="#f472b6"/>
+      </linearGradient>
+    </defs>
+    <rect x="4" y="11" width="16" height="2.5" rx="1.25" fill="url(#minG)"/>
+    <path d="M8 16l4 4 4-4" stroke="url(#minG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+/* ── Colorful Close Icon ── */
+const CloseSVGIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <defs>
+      <linearGradient id="clsG" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#f87171"/>
+        <stop offset="100%" stopColor="#dc2626"/>
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="10" fill="url(#clsG)" opacity=".15"/>
+    <circle cx="12" cy="12" r="10" stroke="url(#clsG)" strokeWidth="1.5" fill="none"/>
+    <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+/* ── Floating Podcast / RJ Icon ── */
+const FloatingPodcastIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+    <defs>
+      <linearGradient id="fpG1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95"/>
+        <stop offset="100%" stopColor="#ede9fe" stopOpacity="0.85"/>
+      </linearGradient>
+      <linearGradient id="fpG2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#fbbf24"/>
+        <stop offset="100%" stopColor="#f472b6"/>
+      </linearGradient>
+    </defs>
+    {/* Mic body */}
+    <rect x="18" y="6" width="12" height="20" rx="6" fill="url(#fpG1)"/>
+    {/* Mic stand */}
+    <path d="M24 32v8" stroke="url(#fpG1)" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M18 40h12" stroke="url(#fpG1)" strokeWidth="2.5" strokeLinecap="round"/>
+    {/* Sound waves */}
+    <path d="M11 18a13 13 0 000 12" stroke="url(#fpG2)" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M37 18a13 13 0 010 12" stroke="url(#fpG2)" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="M15 21a8 8 0 000 6" stroke="url(#fpG1)" strokeWidth="2" strokeLinecap="round" opacity=".7"/>
+    <path d="M33 21a8 8 0 010 6" stroke="url(#fpG1)" strokeWidth="2" strokeLinecap="round" opacity=".7"/>
+  </svg>
+);
+
+/* ── Floating Minimized Bubble (draggable) ── */
+const FloatingMinimizedBubble = ({ onExpand, onClose, isLive, pubIsLive }) => {
+  const posRef = useRef({ x: window.innerWidth - 96, y: window.innerHeight - 128 });
+  const [pos, setPos] = useState(() => ({ x: window.innerWidth - 96, y: window.innerHeight - 128 }));
+  const isDraggingRef = useRef(false);
+  const hasDragged = useRef(false);
+  const dragStart = useRef({ mx: 0, my: 0, elX: 0, elY: 0 });
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const dx = e.clientX - dragStart.current.mx;
+      const dy = e.clientY - dragStart.current.my;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged.current = true;
+      const newX = Math.max(8, Math.min(window.innerWidth - 76, dragStart.current.elX + dx));
+      const newY = Math.max(8, Math.min(window.innerHeight - 76, dragStart.current.elY + dy));
+      posRef.current = { x: newX, y: newY };
+      setPos({ x: newX, y: newY });
+    };
+    const onMouseUp = () => { isDraggingRef.current = false; };
+    const onTouchMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const t = e.touches[0];
+      const dx = t.clientX - dragStart.current.mx;
+      const dy = t.clientY - dragStart.current.my;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged.current = true;
+      const newX = Math.max(8, Math.min(window.innerWidth - 76, dragStart.current.elX + dx));
+      const newY = Math.max(8, Math.min(window.innerHeight - 76, dragStart.current.elY + dy));
+      posRef.current = { x: newX, y: newY };
+      setPos({ x: newX, y: newY });
+    };
+    const onTouchEnd = () => { isDraggingRef.current = false; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
+  const onMouseDown = (e) => {
+    isDraggingRef.current = true;
+    hasDragged.current = false;
+    dragStart.current = { mx: e.clientX, my: e.clientY, elX: posRef.current.x, elY: posRef.current.y };
+    e.preventDefault();
+  };
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    isDraggingRef.current = true;
+    hasDragged.current = false;
+    dragStart.current = { mx: t.clientX, my: t.clientY, elX: posRef.current.x, elY: posRef.current.y };
+  };
+  const handleClick = () => { if (!hasDragged.current) onExpand(); };
+
+  return (
+    <div
+      className="bp-floating-bubble"
+      style={{ left: pos.x, top: pos.y }}
+      onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
+      onClick={handleClick}
+    >
+      <div className="bp-floating-inner">
+        <FloatingPodcastIcon />
+        {(isLive || pubIsLive) && <div className="bp-floating-live-dot" />}
+      </div>
+      <button
+        className="bp-floating-close"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        title="Close broadcast"
+      >
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="white">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+      <div className="bp-floating-label">
+        {isLive ? '🔴 RJ Live' : pubIsLive ? '🟢 On Air' : '🎙 Studio'}
+      </div>
+    </div>
+  );
+};
+
 /* ── Premium Lock Icon ── */
 const LockGoldIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -372,6 +514,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [rjConnState, setRjConnState] = useState('idle');   /* idle | connecting | connected | failed */
   const [pubConnState, setPubConnState] = useState('idle'); /* idle | connecting | connected | failed */
 
+  /* ── Minimize / floating bubble state ── */
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  /* ── Public broadcaster mic level (0-100) ── */
+  const [pubMicLevel, setPubMicLevel] = useState(0);
+  const [pubMicMuted, setPubMicMuted] = useState(false);
+
   /* ── WebRTC refs — RJ broadcaster side ── */
   const rjHostPCs = useRef({});
   const localStream = useRef(null);
@@ -393,6 +542,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const pubListenerPC = useRef(null);
   const pubAudioEl = useRef(null);
   const pubListenerRtdbUnsubs = useRef([]);
+
+  /* ── Public broadcaster mic level refs ── */
+  const pubMicLevelCtxRef = useRef(null);
+  const pubMicLevelTimerRef = useRef(null);
 
   /* ── YouTube player refs ── */
   const ytPlayerRef = useRef(null);
@@ -916,7 +1069,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     } catch (err) {
       console.error('Go Live error:', err);
-      bpToast.error('Failed to go live. Check mic permissions & try again.');
+      const reason = err?.code === 'PERMISSION_DENIED' || err?.code === 'permission-denied'
+        ? 'Database permission denied. Check your Firebase rules.'
+        : (err?.message || 'Unknown error');
+      bpToast.error('Failed to go live: ' + reason);
       stopLocalMic();
     } finally {
       setGoingLive(false);
@@ -1005,6 +1161,31 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (micLevelTimerRef.current) { clearInterval(micLevelTimerRef.current); micLevelTimerRef.current = null; }
     if (micLevelCtxRef.current) { try { micLevelCtxRef.current.close(); } catch {} micLevelCtxRef.current = null; }
     setMicLevel(0);
+  };
+
+  /* ── Public broadcast mic level meter ── */
+  const startPubMicLevelMeter = (stream) => {
+    stopPubMicLevelMeter();
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      pubMicLevelCtxRef.current = ctx;
+      pubMicLevelTimerRef.current = setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        setPubMicLevel(Math.min(100, Math.round(avg * 3)));
+      }, 80);
+    } catch {}
+  };
+
+  const stopPubMicLevelMeter = () => {
+    if (pubMicLevelTimerRef.current) { clearInterval(pubMicLevelTimerRef.current); pubMicLevelTimerRef.current = null; }
+    if (pubMicLevelCtxRef.current) { try { pubMicLevelCtxRef.current.close(); } catch {} pubMicLevelCtxRef.current = null; }
+    setPubMicLevel(0);
   };
 
   const handleYtLoad = () => {
@@ -1346,6 +1527,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       return;
     }
     pubHostStream.current = stream;
+    startPubMicLevelMeter(stream);
+    setPubMicMuted(false);
 
     try {
       const passwordHash = pubIsProtected && pubPassword.trim()
@@ -1378,30 +1561,39 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       odHandle.remove();
       pubOnDisconnectRef.current = odHandle;
 
-      /* Also use onDisconnect to mark Firestore doc as isLive: false via RTDB trigger isn't possible,
-         but we set the RTDB session — listeners watch this and know host disconnected */
-
       pubStartListenerWatcher(broadcastId);
       bpToast.live('Your public broadcast is LIVE! Others can now tune in.');
     } catch (err) {
       console.error('Create broadcast error:', err);
       stream.getTracks().forEach(t => t.stop());
       pubHostStream.current = null;
-      bpToast.error('Failed to start broadcast. Please try again.');
+      stopPubMicLevelMeter();
+      const reason = err?.code === 'permission-denied' ? 'Permission denied — make sure you are logged in as a registered user.' : (err?.message || 'Unknown error');
+      bpToast.error('Failed to start broadcast: ' + reason);
     }
   };
 
   const handleStopPublicBroadcast = async () => {
     if (!myActiveBroadcast?.id) return;
     try {
+      stopPubMicLevelMeter();
+      setPubMicMuted(false);
       pubStopHostAudio(myActiveBroadcast.id);
       await updateDoc(doc(db, 'publicBroadcasts', myActiveBroadcast.id), { isLive: false });
       setMyActiveBroadcast(null);
       bpToast.success('Broadcast ended. Thanks for going live!');
     } catch (err) {
       console.error('Stop broadcast error:', err);
+      stopPubMicLevelMeter();
       bpToast.error('Failed to stop broadcast.');
     }
+  };
+
+  const handlePubMicToggle = () => {
+    if (!pubHostStream.current) return;
+    const nowMuted = !pubMicMuted;
+    pubHostStream.current.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
+    setPubMicMuted(nowMuted);
   };
 
   const handleJoinPublicBroadcast = async (bc) => {
@@ -1501,6 +1693,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (listeningTo) pubLeaveAudio(listeningTo.id);
       if (rjIsListening) rjLeaveAudio();
       stopMicLevelMeter();
+      stopPubMicLevelMeter();
     };
   }, []);
 
@@ -1524,6 +1717,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   if (!isOpen) return null;
+
+  /* ── Minimized floating bubble ── */
+  if (isMinimized) {
+    return (
+      <FloatingMinimizedBubble
+        isLive={rjIsLive && canManageRJ}
+        pubIsLive={!!myActiveBroadcast}
+        onExpand={() => setIsMinimized(false)}
+        onClose={() => { setIsMinimized(false); onClose(); }}
+      />
+    );
+  }
 
   /* ══════════════════════════════════════
      RENDER HELPERS
@@ -1922,16 +2127,49 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return (
       <div>
         {myActiveBroadcast && (
-          <div className="bp-my-broadcast-banner">
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <RadioWaveIcon />
+          <>
+            <div className="bp-my-broadcast-banner">
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <RadioWaveIcon />
+              </div>
+              <div className="bp-my-broadcast-info">
+                <h4>You are live — {myActiveBroadcast.title}</h4>
+                <p>Others can join and listen to you</p>
+              </div>
+              <button className="bp-stop-broadcast-btn" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={handleStopPublicBroadcast}>Stop</button>
             </div>
-            <div className="bp-my-broadcast-info">
-              <h4>You are live — {myActiveBroadcast.title}</h4>
-              <p>Others can join and listen to you</p>
+            {/* Pub broadcaster mic level meter */}
+            <div style={{ margin: '0 0 10px', padding: '8px 12px', background: 'rgba(34,197,94,0.08)', borderRadius: 10, border: '1px solid rgba(34,197,94,0.18)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <MicIcon muted={pubMicMuted} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: pubMicMuted ? '#f87171' : '#34d399' }}>
+                  {pubMicMuted ? 'MIC MUTED' : 'MIC LIVE'}
+                </span>
+                <span style={{ marginLeft: 'auto', fontSize: 10, color: pubMicLevel > 60 ? '#34d399' : pubMicLevel > 20 ? '#fbbf24' : '#a78bfa' }}>
+                  {pubMicMuted ? '—' : pubMicLevel > 60 ? 'Strong' : pubMicLevel > 20 ? 'Good' : 'Low'}
+                </span>
+                <button
+                  onClick={handlePubMicToggle}
+                  style={{
+                    padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none',
+                    background: pubMicMuted ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
+                    color: pubMicMuted ? '#f87171' : '#34d399',
+                  }}
+                >
+                  {pubMicMuted ? 'Unmute' : 'Mute'}
+                </button>
+              </div>
+              <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: pubMicMuted ? '0%' : `${pubMicLevel}%`,
+                  background: pubMicLevel > 60 ? '#34d399' : pubMicLevel > 20 ? '#fbbf24' : '#a78bfa',
+                  borderRadius: 4,
+                  transition: 'width 80ms linear',
+                }} />
+              </div>
             </div>
-            <button className="bp-stop-broadcast-btn" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={handleStopPublicBroadcast}>Stop</button>
-          </div>
+          </>
         )}
 
         {!isGuest && !myActiveBroadcast && (
@@ -2103,20 +2341,27 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         {/* Header */}
         <div className="bp-header">
           <div className="bp-header-left">
-            {/* Icon uses white so it's visible on the purple gradient background */}
             <div className="bp-header-icon">
               <BroadcastIcon size={22} color="white" />
             </div>
             <div>
               <div className="bp-header-title">Broadcast Studio</div>
-              <div className="bp-header-subtitle">{rjIsLive ? '🔴 RJ Live' : 'Premium Broadcast'}</div>
+              <div className="bp-header-subtitle">{rjIsLive ? '🔴 RJ Live' : myActiveBroadcast ? '🟢 On Air' : 'Premium Broadcast'}</div>
             </div>
           </div>
-          <button className="bp-close-btn" onClick={onClose} aria-label="Close">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
-          </button>
+          <div className="bp-header-actions">
+            <button
+              className="bp-minimize-btn"
+              onClick={() => setIsMinimized(true)}
+              aria-label="Minimize"
+              title="Minimize (audio keeps playing)"
+            >
+              <MinimizeSVGIcon />
+            </button>
+            <button className="bp-close-btn" onClick={onClose} aria-label="Close" title="Close">
+              <CloseSVGIcon />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
