@@ -86,12 +86,14 @@ export default function GiftPanel({ rjUid, rjName, rjAvatar, loggedInUserProfile
   // Listen for live gifts in RTDB
   useEffect(() => {
     if (!roomId) return;
-    const { ref: rtdbRef, onValue } = require('firebase/database');
-    // We use onValue with RTDB to listen for gift notifications
-    // The path giftFeed/{roomId} gets auto-cleared after display
+    let active = true;
+    let detach = null;
+
+    // Dynamic import keeps the ES module boundary clean (no require())
     import('firebase/database').then(({ ref: rtdbRef2, onChildAdded, off }) => {
+      if (!active) return; // unmounted before import resolved
       const feedRef = rtdbRef2(rtdb, `giftFeed/${roomId}`);
-      const handler = onChildAdded(feedRef, (snap) => {
+      onChildAdded(feedRef, (snap) => {
         const data = snap.val();
         if (!data) return;
         const gift = getGiftById(data.giftId);
@@ -101,9 +103,15 @@ export default function GiftPanel({ rjUid, rjName, rjAvatar, loggedInUserProfile
         // Auto-remove from RTDB after 4s
         setTimeout(() => remove(rtdbRef2(rtdb, `giftFeed/${roomId}/${id}`)).catch(() => {}), 4000);
       });
-      flyInRef.current = { feedRef, handler };
-      return () => { try { off(feedRef); } catch {} };
+      detach = () => { try { off(feedRef); } catch {} };
+      // If already unmounted by the time the import resolved, clean up immediately
+      if (!active) detach();
     });
+
+    return () => {
+      active = false;
+      if (detach) detach();
+    };
   }, [roomId]);
 
   const filteredGifts = activeTier === 'all'

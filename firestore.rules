@@ -901,42 +901,164 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
-    // Coin wallets — owner can read/write own wallet; staff can read all
+    // ================================================================
+    // COIN WALLET
+    // Gift transactions run entirely client-side, so rules enforce
+    // field-level invariants instead of relying on a trusted backend.
+    //
+    // Own wallet:
+    //   • Create: zero-balance bootstrap only (prevents self-funding)
+    //   • Update: only gift-deduction fields; balance can only decrease;
+    //     totalGifted can only increase — prevents balance inflation
+    //
+    // Another user's wallet (gift credit path):
+    //   • Create: totalGifted/totalPurchased must be 0 (receiver doc)
+    //   • Update: balance/totalReceived can only increase; only credit
+    //     fields affected — prevents stealing or zeroing others' coins
+    //
+    // Staff bypass all constraints for admin operations.
+    // ================================================================
     match /coinWallets/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isStaff());
-      allow write: if isStaff(); // Wallet mutations go through server-side transactions only
+
+      // Bootstrap: initialise own wallet with zero balance (subscribeWallet)
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.auth.uid == uid
+                    && request.resource.data.balance              == 0
+                    && request.resource.data.get('totalPurchased', 0) == 0
+                    && request.resource.data.get('totalGifted',    0) == 0
+                    && request.resource.data.get('totalReceived',  0) == 0;
+
+      // Gift deduction from own wallet — balance can only decrease, totalGifted only increase
+      allow update: if request.auth != null && isRegistered() && notBanned()
+                    && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['balance', 'totalGifted', 'totalTransactions', 'updatedAt'])
+                    && request.resource.data.balance     <= resource.data.balance
+                    && request.resource.data.balance     >= 0
+                    && request.resource.data.get('totalGifted', 0)
+                         >= resource.data.get('totalGifted', 0);
+
+      // Gift credit side — sender creates receiver wallet (new receiver doc only)
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.auth.uid != uid
+                    && request.resource.data.get('totalGifted',    0) == 0
+                    && request.resource.data.get('totalPurchased',  0) == 0
+                    && request.resource.data.balance >= 0;
+
+      // Gift credit side — sender updates existing receiver wallet (balance only up)
+      allow update: if request.auth != null && isRegistered() && notBanned()
+                    && request.auth.uid != uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['balance', 'totalReceived', 'totalTransactions', 'updatedAt'])
+                    && request.resource.data.balance
+                         >= resource.data.balance
+                    && request.resource.data.get('totalReceived', 0)
+                         >= resource.data.get('totalReceived', 0);
+
+      // Staff bypass for admin verification and adjustments
+      allow write: if isStaff();
     }
 
-    // Coin transactions — user can read own; staff can read all; writes via server transactions
+    // ================================================================
+    // COIN TRANSACTIONS
+    // Users write two records per gift (gift_sent + gift_received).
+    // Type, sign, and status are enforced per path.
+    // Purchase transactions may only be created by staff (verifyPaymentOrder).
+    // ================================================================
     match /coinTransactions/{txId} {
       allow read: if request.auth != null && (
+        resource.data.uid     == request.auth.uid ||
         resource.data.fromUid == request.auth.uid ||
-        resource.data.toUid  == request.auth.uid ||
+        resource.data.toUid   == request.auth.uid ||
         isStaff()
       );
-      allow write: if isStaff();
+
+      // Staff: admin verifyPaymentOrder writes a purchase tx (uid = target user, not admin)
+      allow create: if isStaff();
+
+      // Sender's gift_sent record — coins negative, uid = auth, type constrained
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.resource.data.uid    == request.auth.uid
+                    && request.resource.data.type   == 'gift_sent'
+                    && request.resource.data.coins  <  0
+                    && request.resource.data.status == 'completed';
+
+      // Receiver's gift_received record — written by sender, coins positive
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.resource.data.get('fromUid', '') == request.auth.uid
+                    && request.resource.data.type   == 'gift_received'
+                    && request.resource.data.coins  >  0
+                    && request.resource.data.status == 'completed';
+
+      allow update, delete: if isStaff();
     }
 
-    // Gift records — readable by all authenticated; staff manage
+    // ================================================================
+    // GIFT RECORDS
+    // Public leaderboard source; sender-authenticated create only.
+    // ================================================================
     match /giftRecords/{recordId} {
       allow read: if request.auth != null;
-      allow write: if isStaff();
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.resource.data.fromUid == request.auth.uid
+                    && request.resource.data.coins   >  0;
+      allow update, delete: if isStaff();
     }
 
-    // Payment orders — user can read/create own; staff can update (verify/reject)
+    // ================================================================
+    // PAYMENT ORDERS
+    // User creates own order; user may only flip pending → submitted.
+    // Staff verify/reject.
+    // ================================================================
     match /paymentOrders/{orderId} {
       allow read: if request.auth != null && (
         resource.data.uid == request.auth.uid || isStaff()
       );
       allow create: if request.auth != null && isRegistered()
                     && request.resource.data.uid == request.auth.uid;
-      allow update: if isStaff();
+      allow update: if isStaff()
+        || (request.auth != null && isRegistered()
+            && resource.data.uid            == request.auth.uid
+            && resource.data.status         == 'pending'
+            && request.resource.data.status == 'submitted'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'submittedAt', 'updatedAt']));
     }
 
-    // RJ Earnings — RJ can read own; staff can read/write all
+    // ================================================================
+    // RJ EARNINGS
+    // Updated client-side as part of the gift transaction.
+    // Users may only write gift-earned fields; totalCoins/pendingCoins
+    // can only increase; paidCoins is staff-only (never touched by users).
+    // ================================================================
     match /rjEarnings/{rjUid} {
       allow read: if request.auth != null && (request.auth.uid == rjUid || isStaff());
-      allow write: if isStaff();
+
+      // Gift credit creates a new earnings doc; paidCoins must start at 0
+      allow create: if request.auth != null && isRegistered() && notBanned()
+                    && request.resource.data.get('paidCoins', 0) == 0
+                    && request.resource.data.get('totalCoins',   0) >= 0
+                    && request.resource.data.get('pendingCoins', 0) >= 0
+                    && request.resource.data.keys().hasOnly([
+                         'totalCoins', 'totalGifts', 'pendingCoins', 'paidCoins',
+                         'todayCoins', 'todayKey', 'weekCoins', 'weekKey',
+                         'monthCoins', 'monthKey', 'lastUpdated'
+                       ]);
+
+      // Gift credit updates existing earnings — only gift fields, additive only
+      allow update: if request.auth != null && isRegistered() && notBanned()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['totalCoins', 'totalGifts', 'pendingCoins',
+                                   'todayCoins', 'todayKey', 'weekCoins', 'weekKey',
+                                   'monthCoins', 'monthKey', 'lastUpdated'])
+                    && request.resource.data.get('totalCoins',   0)
+                         >= resource.data.get('totalCoins',   0)
+                    && request.resource.data.get('pendingCoins', 0)
+                         >= resource.data.get('pendingCoins', 0);
+
+      allow delete: if isStaff();
+      allow write:  if isStaff();
     }
 
     // RJ Withdrawal Info — RJ can read/write own; staff can read

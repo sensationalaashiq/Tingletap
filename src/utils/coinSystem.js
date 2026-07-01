@@ -319,18 +319,56 @@ export function subscribePaymentOrders(callback) {
 }
 
 export async function verifyPaymentOrder(orderDocId, orderData) {
-  // Credit coins
-  await creditCoins({
-    uid: orderData.uid,
-    coins: orderData.coins,
-    orderId: orderData.orderId,
-    note: `Coin purchase — ₹${orderData.price}`,
-  });
-  // Mark order verified
-  await updateDoc(doc(db, 'paymentOrders', orderDocId), {
-    status: 'verified',
-    verifiedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  // Idempotent: run everything inside a single transaction so a retry
+  // that arrives after a partial write doesn't double-credit the wallet.
+  await runTransaction(db, async (tx) => {
+    const orderRef = doc(db, 'paymentOrders', orderDocId);
+    const orderSnap = await tx.get(orderRef);
+
+    if (!orderSnap.exists()) throw new Error('Payment order not found');
+    // Already processed — bail out safely without touching the wallet.
+    if (orderSnap.data().status === 'verified') return;
+
+    // Always use authoritative stored values — never trust caller-supplied data.
+    const { uid, coins, orderId, price } = orderSnap.data();
+    const walletRef = getWalletRef(uid);
+    const walletSnap = await tx.get(walletRef);
+
+    if (!walletSnap.exists()) {
+      tx.set(walletRef, {
+        balance: coins,
+        totalPurchased: coins,
+        totalGifted: 0,
+        totalReceived: 0,
+        totalTransactions: 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      tx.update(walletRef, {
+        balance: increment(coins),
+        totalPurchased: increment(coins),
+        totalTransactions: increment(1),
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    const txRef = doc(collection(db, 'coinTransactions'));
+    tx.set(txRef, {
+      uid,
+      type: 'purchase',
+      coins,
+      orderId,
+      note: `Coin purchase — ₹${price}`,
+      timestamp: serverTimestamp(),
+      status: 'completed',
+    });
+
+    tx.update(orderRef, {
+      status: 'verified',
+      verifiedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   });
 }
 
