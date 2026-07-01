@@ -310,15 +310,17 @@ svg:hover {
     color: var(--icon-hover);
 }
 
-/* Apply theme color to plain icon buttons only (no fill override so gradients survive) */
-button svg,
+/* Apply theme color to plain icon buttons only.
+   Exclude .bp-* broadcast panel buttons — they use
+   inline gradient SVGs that must not be overridden. */
+button:not([class*="bp-"]) svg,
 .action-btn svg,
 .send-btn svg,
 .actions-btn svg {
     color: var(--icon-color) !important;
 }
 
-button:hover svg,
+button:not([class*="bp-"]):hover svg,
 .action-btn:hover svg,
 .send-btn:hover svg,
 .actions-btn:hover svg {
@@ -763,13 +765,52 @@ html body .theme-light .user-font-styled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
+  padding: 8px 10px;
   background-color: var(--header-bg);
   color: var(--header-text);
   border-bottom: 1px solid var(--header-border);
   flex-shrink: 0;
   z-index: 10;
-  transition: var(--theme-transition);
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Header zones */
+.header-left  { flex-shrink: 0; display: flex; align-items: center; }
+.header-center {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Room title + user count — ellipsis on overflow */
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--header-text, #fff);
+}
+.user-count {
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.72;
+  flex-shrink: 0;
 }
 
 .chat-title {
@@ -783,6 +824,23 @@ html body .theme-light .user-font-styled {
   color: white;
   font-size: 1.5rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 8px;
+  transition: background 0.18s;
+  flex-shrink: 0;
+}
+.header-action-btn:hover {
+  background: rgba(255,255,255,0.10);
+}
+
+/* Keep all header icons the same compact size */
+.header-action-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0;
 }
 
 /* Chat Feed */

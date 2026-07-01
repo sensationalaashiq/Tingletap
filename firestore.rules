@@ -854,6 +854,28 @@ service cloud.firestore {
 
 
     // ================================================================
+    // PUBLIC BROADCASTS
+    // Readable by ALL authenticated users (guest, user, badge, staff).
+    // Create/update/delete: only the broadcaster (hostUid == caller)
+    // or staff can modify.
+    // ================================================================
+
+    match /publicBroadcasts/{docId} {
+      // Every authenticated user (including guests) may list live broadcasts
+      allow read: if request.auth != null;
+
+      // Any registered (non-guest) user may create a broadcast doc
+      allow create: if request.auth != null && isRegistered()
+                    && request.resource.data.hostUid == request.auth.uid;
+
+      // Only the broadcaster or staff may update/delete
+      allow update, delete: if request.auth != null && (
+        isStaff() ||
+        (resource.data.hostUid == request.auth.uid)
+      );
+    }
+
+    // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.
     // This prevents accidental exposure of new collections.

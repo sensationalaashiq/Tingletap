@@ -41,111 +41,177 @@
   --bp-overlay-bg:      rgba(45,20,80,0.45);
 }
 
-/* ─── Dark Mode overrides ─── */
+/* ══════════════════════════════════════════════════════════════
+   ALL DARK THEMES — maps global CSS variables (DarkMode.css /
+   Themes.css) to --bp-* tokens so EVERY theme (dark-mode,
+   rose-pink, burgundy-wine, aurora, royal-purple, sunset-orange,
+   ocean-blue, forest-green, golden-sunset, and any future theme
+   added via html.dark-theme-variant) automatically adapts.
+   No per-theme blocks needed.
+══════════════════════════════════════════════════════════════ */
 html.dark-mode .bp-overlay,
 html.dark-theme-variant .bp-overlay {
-  --bp-panel-bg:        rgba(12,8,30,0.97);
-  --bp-panel-border:    rgba(139,92,246,0.30);
-  --bp-panel-shadow:    0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07);
-  --bp-header-bg:       linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(59,130,246,0.06) 100%);
-  --bp-header-border:   rgba(139,92,246,0.15);
-  --bp-text-primary:    #ede9fe;
-  --bp-text-secondary:  #c4b5fd;
-  --bp-text-muted:      #8b7ab8;
-  --bp-text-light:      #7c5cbf;
-  --bp-card-bg:         rgba(255,255,255,0.04);
-  --bp-card-border:     rgba(139,92,246,0.14);
-  --bp-card-shadow:     0 2px 12px rgba(0,0,0,0.22);
-  --bp-input-bg:        rgba(255,255,255,0.06);
-  --bp-input-border:    rgba(139,92,246,0.22);
-  --bp-input-text:      #ede9fe;
-  --bp-input-placeholder: rgba(196,181,253,0.35);
-  --bp-tab-inactive:    rgba(241,245,249,0.40);
-  --bp-tab-active:      #a78bfa;
-  --bp-tab-border:      rgba(139,92,246,0.12);
-  --bp-divider:         rgba(139,92,246,0.12);
-  --bp-close-bg:        rgba(255,255,255,0.07);
-  --bp-close-color:     rgba(241,245,249,0.7);
-  --bp-scrollbar:       rgba(139,92,246,0.30);
-  --bp-empty-color:     rgba(241,245,249,0.30);
-  --bp-overlay-bg:      rgba(0,0,0,0.60);
+  --bp-panel-bg:          var(--modal-bg,       rgba(12,8,30,0.97));
+  --bp-panel-border:      var(--border-accent,  rgba(139,92,246,0.30));
+  --bp-panel-shadow:      0 32px 80px rgba(0,0,0,0.65),
+                          0 0 0 1px rgba(255,255,255,0.04),
+                          inset 0 1px 0 rgba(255,255,255,0.07);
+  --bp-header-bg:         linear-gradient(135deg,
+                            var(--bg-tertiary,  rgba(139,92,246,0.12)) 0%,
+                            var(--bg-elevated,  rgba(59,130,246,0.06)) 100%);
+  --bp-header-border:     var(--border-color,   rgba(139,92,246,0.15));
+  --bp-text-primary:      var(--text-primary,   #ede9fe);
+  --bp-text-secondary:    var(--text-secondary, #c4b5fd);
+  --bp-text-muted:        var(--text-muted,     #8b7ab8);
+  --bp-text-light:        var(--text-tertiary,  #7c5cbf);
+  --bp-card-bg:           var(--bg-elevated,    rgba(255,255,255,0.04));
+  --bp-card-border:       var(--border-color,   rgba(139,92,246,0.14));
+  --bp-card-shadow:       0 2px 12px rgba(0,0,0,0.22);
+  --bp-input-bg:          var(--input-bg,       rgba(255,255,255,0.06));
+  --bp-input-border:      var(--input-border,   rgba(139,92,246,0.22));
+  --bp-input-text:        var(--input-text,     #ede9fe);
+  --bp-input-placeholder: var(--input-placeholder, rgba(196,181,253,0.35));
+  --bp-tab-inactive:      var(--text-muted,     rgba(241,245,249,0.40));
+  --bp-tab-active:        var(--accent-color,   #a78bfa);
+  --bp-tab-border:        var(--border-color,   rgba(139,92,246,0.12));
+  --bp-divider:           var(--border-color,   rgba(139,92,246,0.12));
+  --bp-close-bg:          rgba(255,255,255,0.07);
+  --bp-close-color:       var(--text-secondary, rgba(241,245,249,0.70));
+  --bp-scrollbar:         var(--border-secondary,rgba(139,92,246,0.30));
+  --bp-empty-color:       var(--text-muted,     rgba(241,245,249,0.30));
+  --bp-overlay-bg:        var(--modal-overlay,  rgba(0,0,0,0.60));
 }
 
-/* ─── Rose Pink theme ─── */
-html.theme-rose-pink .bp-overlay {
-  --bp-panel-bg:        rgba(255,248,252,0.98);
-  --bp-panel-border:    rgba(240,98,146,0.22);
-  --bp-text-primary:    #7a1638;
-  --bp-text-secondary:  #c0507a;
-  --bp-text-muted:      #d090aa;
-  --bp-card-border:     rgba(240,98,146,0.15);
-  --bp-tab-active:      #f06292;
-  --bp-input-border:    rgba(240,98,146,0.22);
-}
-html.theme-rose-pink.dark-mode .bp-overlay,
-html.theme-rose-pink.dark-theme-variant .bp-overlay {
-  --bp-panel-bg:        rgba(26,8,16,0.97);
-  --bp-panel-border:    rgba(240,98,146,0.32);
-  --bp-text-primary:    #fce4ec;
-  --bp-text-secondary:  #f48fb1;
+/* ── Element-level overrides so every component is visible in any dark theme ── */
+
+/* Cards / hero sections */
+html.dark-mode .bp-golive-card,
+html.dark-theme-variant .bp-golive-card,
+html.dark-mode .bp-player-card,
+html.dark-theme-variant .bp-player-card,
+html.dark-mode .bp-joinreq-hero,
+html.dark-theme-variant .bp-joinreq-hero,
+html.dark-mode .bp-create-card,
+html.dark-theme-variant .bp-create-card {
+  background: linear-gradient(135deg,
+    var(--bg-tertiary,  rgba(139,92,246,0.14)) 0%,
+    var(--bg-elevated,  rgba(59,130,246,0.08))  100%);
+  border-color: var(--border-accent, rgba(139,92,246,0.22));
 }
 
-/* ─── Ocean Blue theme ─── */
-html.theme-ocean-blue .bp-overlay {
-  --bp-panel-bg:        rgba(245,250,255,0.98);
-  --bp-panel-border:    rgba(56,189,248,0.22);
-  --bp-text-primary:    #0c3a60;
-  --bp-text-secondary:  #2a7ab8;
-  --bp-text-muted:      #7ab0d8;
-  --bp-card-border:     rgba(56,189,248,0.15);
-  --bp-tab-active:      #0ea5e9;
-  --bp-input-border:    rgba(56,189,248,0.22);
+/* Control buttons */
+html.dark-mode .bp-ctrl-btn,
+html.dark-theme-variant .bp-ctrl-btn {
+  color: var(--text-secondary);
 }
-html.theme-ocean-blue.dark-mode .bp-overlay,
-html.theme-ocean-blue.dark-theme-variant .bp-overlay {
-  --bp-panel-bg:        rgba(6,15,30,0.97);
-  --bp-panel-border:    rgba(56,189,248,0.32);
-  --bp-text-primary:    #e0f2fe;
-  --bp-text-secondary:  #7dd3fc;
+html.dark-mode .bp-ctrl-btn:hover,
+html.dark-theme-variant .bp-ctrl-btn:hover {
+  background: var(--sidebar-hover);
+  border-color: var(--border-accent);
+  box-shadow: none;
 }
-
-/* ─── Forest Green theme ─── */
-html.theme-forest-green .bp-overlay {
-  --bp-panel-bg:        rgba(245,255,248,0.98);
-  --bp-panel-border:    rgba(74,222,128,0.22);
-  --bp-text-primary:    #0f3d22;
-  --bp-text-secondary:  #2a8050;
-  --bp-text-muted:      #7ab898;
-  --bp-card-border:     rgba(74,222,128,0.15);
-  --bp-tab-active:      #22c55e;
-  --bp-input-border:    rgba(74,222,128,0.22);
-}
-html.theme-forest-green.dark-mode .bp-overlay,
-html.theme-forest-green.dark-theme-variant .bp-overlay {
-  --bp-panel-bg:        rgba(6,18,10,0.97);
-  --bp-panel-border:    rgba(74,222,128,0.32);
-  --bp-text-primary:    #dcfce7;
-  --bp-text-secondary:  #86efac;
+html.dark-mode .bp-ctrl-btn.active,
+html.dark-theme-variant .bp-ctrl-btn.active {
+  background: var(--badge-bg);
+  border-color: var(--border-accent);
+  color: var(--accent-hover);
 }
 
-/* ─── Golden Sunset theme ─── */
-html.theme-golden-sunset .bp-overlay {
-  --bp-panel-bg:        rgba(255,253,242,0.98);
-  --bp-panel-border:    rgba(251,191,36,0.25);
-  --bp-text-primary:    #6b3d00;
-  --bp-text-secondary:  #b07020;
-  --bp-text-muted:      #d4a058;
-  --bp-card-border:     rgba(251,191,36,0.18);
-  --bp-tab-active:      #f59e0b;
-  --bp-input-border:    rgba(251,191,36,0.28);
+/* Tabs */
+html.dark-mode .bp-tab:hover,
+html.dark-theme-variant .bp-tab:hover { background: var(--sidebar-hover); }
+html.dark-mode .bp-tab.active,
+html.dark-theme-variant .bp-tab.active { background: var(--badge-bg); }
+
+/* Input focus ring */
+html.dark-mode .bp-input:focus,
+html.dark-theme-variant .bp-input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--border-accent);
 }
-html.theme-golden-sunset.dark-mode .bp-overlay,
-html.theme-golden-sunset.dark-theme-variant .bp-overlay {
-  --bp-panel-bg:        rgba(20,12,4,0.97);
-  --bp-panel-border:    rgba(251,191,36,0.35);
-  --bp-text-primary:    #fef3c7;
-  --bp-text-secondary:  #fcd34d;
+
+/* Password modal */
+html.dark-mode .bp-password-modal,
+html.dark-theme-variant .bp-password-modal { background: rgba(0,0,0,0.72); }
+
+/* Checkbox */
+html.dark-mode .bp-checkbox-label,
+html.dark-theme-variant .bp-checkbox-label { color: var(--text-secondary); }
+html.dark-mode .bp-checkbox-label input[type="checkbox"],
+html.dark-theme-variant .bp-checkbox-label input[type="checkbox"] { accent-color: var(--accent-color); }
+
+/* Broadcast list chips */
+html.dark-mode .bp-bc-chip,
+html.dark-theme-variant .bp-bc-chip {
+  background: var(--badge-bg);
+  border-color: var(--border-accent);
+  color: var(--text-muted);
 }
+html.dark-mode .bp-bc-locked,
+html.dark-theme-variant .bp-bc-locked {
+  background: rgba(251,191,36,0.12);
+  border-color: rgba(251,191,36,0.28);
+  color: #fbbf24;
+}
+
+/* Hover states for items */
+html.dark-mode .bp-speaker-item:hover,
+html.dark-theme-variant .bp-speaker-item:hover,
+html.dark-mode .bp-req-item:hover,
+html.dark-theme-variant .bp-req-item:hover,
+html.dark-mode .bp-broadcast-item:hover,
+html.dark-theme-variant .bp-broadcast-item:hover {
+  background: var(--sidebar-hover);
+  border-color: var(--border-accent);
+  box-shadow: none;
+}
+
+/* Stat values gradient uses theme accent */
+html.dark-mode .bp-stat-value,
+html.dark-theme-variant .bp-stat-value,
+html.dark-mode .bp-rj-title,
+html.dark-theme-variant .bp-rj-title {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Listener chip accent */
+html.dark-mode .bp-listener-chip strong,
+html.dark-theme-variant .bp-listener-chip strong { color: var(--accent-hover); }
+
+/* Green status labels — slightly brighter in dark themes */
+html.dark-mode .bp-speaker-status h3,
+html.dark-theme-variant .bp-speaker-status h3,
+html.dark-mode .bp-my-broadcast-info h4,
+html.dark-theme-variant .bp-my-broadcast-info h4 { color: #4ade80; }
+html.dark-mode .bp-speaker-status p,
+html.dark-theme-variant .bp-speaker-status p,
+html.dark-mode .bp-my-broadcast-info p,
+html.dark-theme-variant .bp-my-broadcast-info p { color: rgba(74,222,128,0.65); }
+
+/* Listening state button — green tint */
+html.dark-mode .bp-bc-join-btn.listening,
+html.dark-theme-variant .bp-bc-join-btn.listening { color: #4ade80; border-color: rgba(74,222,128,0.28); }
+
+/* Accept button green */
+html.dark-mode .bp-req-accept,
+html.dark-theme-variant .bp-req-accept { color: #4ade80; }
+
+/* Password cancel button */
+html.dark-mode .bp-pw-btn.cancel-pw,
+html.dark-theme-variant .bp-pw-btn.cancel-pw {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  background: var(--bg-elevated);
+}
+html.dark-mode .bp-pw-btn.cancel-pw:hover,
+html.dark-theme-variant .bp-pw-btn.cancel-pw:hover { background: var(--sidebar-hover); }
+
+/* Stop broadcast button */
+html.dark-mode .bp-stop-broadcast-btn,
+html.dark-theme-variant .bp-stop-broadcast-btn { border-color: rgba(239,68,68,0.28); }
 
 /* ══════════════════════════════════════════
    OVERLAY
@@ -1135,9 +1201,11 @@ html.dark-theme-variant .bp-create-card {
   box-shadow: 0 10px 26px rgba(109,40,217,0.48);
 }
 .bp-create-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.62;
   cursor: not-allowed;
   transform: none;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+  color: #fff !important;
 }
 .bp-stop-broadcast-btn {
   width: 100%;
