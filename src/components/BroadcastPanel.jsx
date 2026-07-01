@@ -7,12 +7,24 @@ import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, 
 import { toast } from 'react-toastify';
 import './BroadcastPanel.css';
 
-/* ── STUN + TURN config for better NAT traversal ── */
+/* ── STUN + TURN config — multiple servers for maximum connectivity ── */
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+  /* Free public TURN servers (Metered open relay) — work behind strict NAT/firewalls */
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:80?transport=tcp',
+      'turn:openrelay.metered.ca:443',
+      'turns:openrelay.metered.ca:443',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 /* ── Password hashing (SHA-256 via Web Crypto) ── */
@@ -350,6 +362,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── Public joining state ── */
   const [pubJoining, setPubJoining] = useState(false);
+
+  /* ── Mic level meter (0-100) for RJ broadcaster ── */
+  const [micLevel, setMicLevel] = useState(0);
+  const micLevelCtxRef = useRef(null);
+  const micLevelTimerRef = useRef(null);
+
+  /* ── Connection quality state for listeners ── */
+  const [rjConnState, setRjConnState] = useState('idle');   /* idle | connecting | connected | failed */
+  const [pubConnState, setPubConnState] = useState('idle'); /* idle | connecting | connected | failed */
 
   /* ── WebRTC refs — RJ broadcaster side ── */
   const rjHostPCs = useRef({});
@@ -752,30 +773,31 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         rjAudioEl.current.srcObject = e.streams[0];
         rjAudioEl.current.play().then(() => {
           setRjAudioBlocked(false);
+          setRjConnState('connected');
         }).catch(() => {
-          /* Autoplay blocked — show tap-to-listen button */
           setRjAudioBlocked(true);
+          setRjConnState('connected');
         });
         setRjIsListening(true);
         setRjConnecting(false);
+      };
+
+      pc.onconnectionstatechange = () => {
+        const s = pc.connectionState;
+        if (s === 'connected') setRjConnState('connected');
+        else if (s === 'connecting' || s === 'new') setRjConnState('connecting');
+        else if (s === 'failed') {
+          setRjConnState('failed');
+          _rjCleanupListenerSide(false);
+          rjListenerPC.current = null;
+          setTimeout(() => { setRjIsListening(false); setRjConnecting(false); }, 500);
+        } else if (s === 'disconnected') setRjConnState('connecting');
       };
 
       /* Send our ICE candidates to broadcaster */
       pc.onicecandidate = (e) => {
         if (e.candidate) {
           push(ref(rtdb, `broadcasts/rj/connections/${myUid}/listenerCandidates`), e.candidate.toJSON()).catch(() => {});
-        }
-      };
-
-      /* Handle connection failure — auto-retry once */
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed') {
-          _rjCleanupListenerSide(false);
-          rjListenerPC.current = null;
-          setTimeout(() => {
-            setRjIsListening(false);
-            setRjConnecting(false);
-          }, 500);
         }
       };
 
@@ -832,6 +854,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const rjLeaveAudio = () => {
     _rjCleanupListenerSide(true);
     setRjIsListening(false);
+    setRjAudioBlocked(false);
+    setRjConnState('idle');
   };
 
   /* ══════════════════════════════════════
@@ -945,14 +969,42 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       video: false
     });
     localStream.current = stream;
+    startMicLevelMeter(stream);
     return stream;
   };
 
   const stopLocalMic = () => {
+    stopMicLevelMeter();
+    setMicLevel(0);
     if (localStream.current) {
       localStream.current.getTracks().forEach(t => t.stop());
       localStream.current = null;
     }
+  };
+
+  /* ── Mic level meter using Web Audio API ── */
+  const startMicLevelMeter = (stream) => {
+    stopMicLevelMeter();
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      micLevelCtxRef.current = ctx;
+      micLevelTimerRef.current = setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        setMicLevel(Math.min(100, Math.round(avg * 3)));
+      }, 80);
+    } catch {}
+  };
+
+  const stopMicLevelMeter = () => {
+    if (micLevelTimerRef.current) { clearInterval(micLevelTimerRef.current); micLevelTimerRef.current = null; }
+    if (micLevelCtxRef.current) { try { micLevelCtxRef.current.close(); } catch {} micLevelCtxRef.current = null; }
+    setMicLevel(0);
   };
 
   const handleYtLoad = () => {
@@ -1205,9 +1257,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       pubAudioEl.current.srcObject = e.streams[0];
       pubAudioEl.current.play().then(() => {
         setPubAudioBlocked(false);
+        setPubConnState('connected');
       }).catch(() => {
-        /* Autoplay blocked — show tap-to-listen button */
         setPubAudioBlocked(true);
+        setPubConnState('connected');
       });
     };
 
@@ -1218,11 +1271,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed') {
+      const s = pc.connectionState;
+      if (s === 'connected') setPubConnState('connected');
+      else if (s === 'connecting' || s === 'new') setPubConnState('connecting');
+      else if (s === 'disconnected') setPubConnState('connecting');
+      else if (s === 'failed') {
+        setPubConnState('failed');
         _pubCleanupListenerSide();
         pubListenerPC.current = null;
         setListeningTo(null);
-        bpToast.error('Connection failed. Try joining again.');
+        bpToast.error('Connection lost. Try joining again.');
       }
     };
 
@@ -1257,6 +1315,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const pubLeaveAudio = (broadcastId) => {
     _pubCleanupListenerSide();
+    setPubConnState('idle');
+    setPubAudioBlocked(false);
     if (broadcastId && myUid) {
       remove(ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`)).catch(() => {});
       remove(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}`)).catch(() => {});
@@ -1400,6 +1460,33 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   };
 
+  /* ── Stale public broadcast cleanup on panel open ──
+       If a previous session ended via page reload, the Firestore doc may still say isLive:true
+       but the RTDB session will be gone. We clean those up so the broadcaster can start fresh. ── */
+  useEffect(() => {
+    if (!isOpen || !myUid) return;
+    const cleanStale = async () => {
+      try {
+        const q = query(
+          collection(db, 'publicBroadcasts'),
+          where('hostUid', '==', myUid),
+          where('isLive', '==', true)
+        );
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${d.id}/session`));
+          if (!rtdbSnap.exists()) {
+            /* RTDB session gone → stale — mark as ended */
+            await updateDoc(doc(db, 'publicBroadcasts', d.id), { isLive: false }).catch(() => {});
+            /* Also clean up any leftover RTDB data */
+            await remove(ref(rtdb, `broadcasts/public/${d.id}`)).catch(() => {});
+          }
+        }
+      } catch {}
+    };
+    cleanStale();
+  }, [isOpen, myUid]);
+
   /* ── Cleanup when panel closes ── */
   useEffect(() => {
     if (!isOpen) {
@@ -1413,6 +1500,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => {
       if (listeningTo) pubLeaveAudio(listeningTo.id);
       if (rjIsListening) rjLeaveAudio();
+      stopMicLevelMeter();
     };
   }, []);
 
@@ -1486,6 +1574,28 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
       {rjIsLive && (
         <>
+          {/* Mic level meter */}
+          <div style={{ margin: '0 0 10px', padding: '8px 12px', background: 'rgba(109,40,217,0.10)', borderRadius: 10, border: '1px solid rgba(139,92,246,0.18)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <MicIcon muted={micMuted} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bp-text-muted, #a78bfa)' }}>
+                {micMuted ? 'MIC MUTED' : 'MIC LIVE'}
+              </span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: micLevel > 60 ? '#34d399' : micLevel > 20 ? '#fbbf24' : '#a78bfa' }}>
+                {micMuted ? '—' : micLevel > 60 ? 'Strong' : micLevel > 20 ? 'Good' : 'Low'}
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: micMuted ? '0%' : `${micLevel}%`,
+                background: micLevel > 60 ? '#34d399' : micLevel > 20 ? '#fbbf24' : '#a78bfa',
+                borderRadius: 4,
+                transition: 'width 80ms linear',
+              }} />
+            </div>
+          </div>
+
           <div className="bp-control-grid">
             <button className={`bp-ctrl-btn${micMuted ? ' danger' : ''}`} onClick={handleMicToggle}>
               <MicIcon muted={micMuted} />
@@ -1628,6 +1738,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
         {!isGuest && !canManageRJ && (
           <div style={{ marginTop: 16 }}>
+            {/* Connection quality pill */}
+            {(rjIsListening || rjConnecting) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '2px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+                  background: rjConnState === 'connected' ? 'rgba(52,211,153,0.15)' : rjConnState === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(251,191,36,0.15)',
+                  color: rjConnState === 'connected' ? '#34d399' : rjConnState === 'failed' ? '#f87171' : '#fbbf24',
+                  border: `1px solid ${rjConnState === 'connected' ? 'rgba(52,211,153,0.3)' : rjConnState === 'failed' ? 'rgba(239,68,68,0.3)' : 'rgba(251,191,36,0.3)'}`,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', animation: rjConnState === 'connecting' ? 'bp-pulse 1s infinite' : 'none' }} />
+                  {rjConnState === 'connected' ? 'Connected' : rjConnState === 'failed' ? 'Failed' : 'Connecting…'}
+                </span>
+              </div>
+            )}
             {rjIsListening ? (
               <>
                 {rjAudioBlocked && (
@@ -1655,7 +1780,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             ) : (
               <button
                 className="bp-listen-btn bp-listen-btn--join"
-                onClick={rjJoinAudio}
+                onClick={() => { setRjConnState('connecting'); rjJoinAudio(); }}
                 disabled={rjConnecting}
               >
                 <BroadcastIcon size={16} color="white" />
@@ -1888,6 +2013,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     </div>
                   </div>
                   <div className="bp-bc-actions">
+                    {/* Connection quality badge for listener */}
+                    {listeningTo?.id === bc.id && pubConnState !== 'idle' && (
+                      <div style={{ marginBottom: 4, textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '1px 8px', borderRadius: 20, fontSize: 9, fontWeight: 700,
+                          background: pubConnState === 'connected' ? 'rgba(52,211,153,0.15)' : pubConnState === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(251,191,36,0.15)',
+                          color: pubConnState === 'connected' ? '#34d399' : pubConnState === 'failed' ? '#f87171' : '#fbbf24',
+                        }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', animation: pubConnState === 'connecting' ? 'bp-pulse 1s infinite' : 'none' }} />
+                          {pubConnState === 'connected' ? '● Live' : pubConnState === 'failed' ? '✕ Failed' : '○ Connecting'}
+                        </span>
+                      </div>
+                    )}
                     {listeningTo?.id === bc.id && pubAudioBlocked && (
                       <button
                         className="bp-bc-join-btn"
