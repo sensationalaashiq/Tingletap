@@ -312,8 +312,18 @@ const fmtTime = (secs) => {
 };
 
 const extractYtId = (url) => {
-  const m = (url || '').match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
-  return m ? m[1] : null;
+  if (!url) return null;
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{11})/,                        // watch?v=ID  (standard)
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,                   // youtu.be/ID (short link)
+    /\/(?:embed|v|shorts|live)\/([A-Za-z0-9_-]{11})/,   // /embed/ /v/ /shorts/ /live/
+    /^([A-Za-z0-9_-]{11})$/,                             // bare 11-char ID pasted directly
+  ];
+  for (const p of patterns) {
+    const m = url.trim().match(p);
+    if (m) return m[1];
+  }
+  return null;
 };
 
 /* ── Premium Animated Music SVG ── */
@@ -579,6 +589,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const ytInitialized = useRef(false);
   /* Tracks the RJ's intended playback state so we can auto-resume after browser throttling */
   const ytIntendedStateRef = useRef('stopped');
+  /* Mirrors rjIsLive state — readable in timers/intervals without stale closures */
+  const rjIsLiveRef = useRef(false);
 
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
@@ -684,15 +696,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
      FIREBASE LISTENERS
   ══════════════════════════════════════ */
 
-  /* ── RJ Broadcast RTDB listener ── */
+  /* ── RJ Broadcast RTDB listener — always-on (no isOpen guard) ──
+     Must be always connected so rjIsLive / rjIsLiveRef stay accurate even
+     when the broadcast panel is closed or minimized.                        */
   useEffect(() => {
-    if (!isOpen) return;
     const bcRef = ref(rtdb, 'broadcasts/rj');
     const unsub = onValue(bcRef, (snap) => {
       const data = snap.val();
       setRjBroadcast(data);
       const live = !!(data && data.isLive);
       setRjIsLive(live);
+      rjIsLiveRef.current = live;
       if (data) {
         setListenerCount(data.listenerCount || 0);
         setSpeakerMap(data.speakers || {});
@@ -722,7 +736,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     });
     return () => unsub();
-  }, [isOpen, myUid, canManageRJ]);
+  }, [myUid, canManageRJ]);
 
   /* ── Join requests RTDB listener ── */
   useEffect(() => {
@@ -791,12 +805,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => clearInterval(interval);
   }, [canManageRJ, rjIsLive]);
 
-  /* ── YouTube playback watchdog — runs every 3 s, auto-resumes if browser throttled ──
-     Covers: minimize, tab-switch, mobile background, iframe suspension.
+  /* ── YouTube playback watchdog — always-on, uses ref so no stale-closure ──
+     Runs every 3 s. Covers: minimize, tab-switch, mobile background, iframe suspension.
      Applies to both RJ (broadcaster) and listeners.                                    */
   useEffect(() => {
-    if (!rjIsLive) return;
     const interval = setInterval(() => {
+      if (!rjIsLiveRef.current) return;
       if (ytIntendedStateRef.current !== 'playing') return;
       const player = ytPlayerRef.current;
       if (!player) return;
@@ -809,14 +823,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       } catch {}
     }, 3000);
     return () => clearInterval(interval);
-  }, [rjIsLive]);
+  }, []);
 
   /* ── MediaSession API — tells OS / browser this is active audio media ──
      Prevents mobile browsers from killing background audio.
      Updated whenever RJ voice or YouTube is playing.                      */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
-    if (rjIsLive) {
+    const isLive = rjIsLiveRef.current || rjIsLive;
+    if (isLive) {
       try {
         navigator.mediaSession.metadata = new window.MediaMetadata({
           title: ytCurrentSongName || 'TingleTap Live Radio',
@@ -843,7 +858,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   useEffect(() => {
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return;
-      if (!rjIsLive) return;
+      if (!rjIsLiveRef.current) return;
 
       /* Resume YouTube */
       const player = ytPlayerRef.current;
@@ -889,7 +904,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [rjIsLive, canManageRJ, rjIsListening, syncYouTubePlayer]);
+  }, [canManageRJ, syncYouTubePlayer]);
 
   /* ── Public broadcasts Firestore listener ── */
   useEffect(() => {
@@ -1086,6 +1101,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (!myUid || rjConnecting || rjIsListening) return;
     setRjConnecting(true);
     setRjAudioBlocked(false);
+    /* Remember that user joined so we can auto-resume after logout/login */
+    try { localStorage.setItem('tingle_rj_was_listening', 'true'); } catch {}
 
     try {
       /* Register presence — broadcaster will see this and create an offer */
@@ -1201,6 +1218,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     setRjIsListening(false);
     setRjAudioBlocked(false);
     setRjConnState('idle');
+    /* User chose to leave manually — don't auto-resume next time */
+    try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
   };
 
   /* ══════════════════════════════════════
@@ -1292,8 +1311,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       setYtCurrentSongName('');
       setYtPlayerState('stopped');
       ytIntendedStateRef.current = 'stopped';
+      rjIsLiveRef.current = false;
       if (ytPlayerRef.current?.stopVideo) ytPlayerRef.current.stopVideo();
       stopLocalMic();
+      /* Clear listening flag for all users — broadcast is over */
+      try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
       bpToast.success('Broadcast ended.');
 
       if (roomId) {
