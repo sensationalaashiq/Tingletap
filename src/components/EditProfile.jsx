@@ -78,6 +78,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
   const [flipH, setFlipH] = useState(false);
   const [flipV, setFlipV] = useState(false);
   const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -138,6 +139,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
       setFlipH(false);
       setFlipV(false);
       setBrightness(100);
+      setContrast(100);
       setImagePosition({ x: 0, y: 0 });
       setIsDragging(false);
       setCrop({
@@ -342,6 +344,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setFlipH(false);
         setFlipV(false);
         setBrightness(100);
+        setContrast(100);
         setImagePosition({ x: 0, y: 0 });
         setIsDragging(false);
         
@@ -367,6 +370,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
     setFlipH(false);
     setFlipV(false);
     setBrightness(100);
+    setContrast(100);
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
   };
@@ -518,7 +522,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
                     objectFit: 'contain',
                     transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale * (flipH ? -1 : 1)}, ${scale * (flipV ? -1 : 1)}) rotate(${rotate}deg)`,
                     transformOrigin: 'center',
-                    filter: `brightness(${brightness}%)`,
+                    filter: `brightness(${brightness}%) contrast(${contrast}%)`,
                     cursor: isDragging ? 'grabbing' : 'grab',
                     userSelect: 'none',
                     touchAction: 'none',
@@ -570,6 +574,19 @@ const EditProfile = ({ onClose, onSuccess }) => {
                   onChange={(e) => setBrightness(parseInt(e.target.value))} className="crop-slider" />
               </div>
 
+              <div className="control-group">
+                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <defs><linearGradient id="conGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#f43f5e"/></linearGradient></defs>
+                    <circle cx="12" cy="12" r="10" stroke="url(#conGrad)" strokeWidth="1.5" fill="none"/>
+                    <path d="M12 2a10 10 0 000 20V2z" fill="url(#conGrad)"/>
+                  </svg>
+                  Contrast — {contrast}%
+                </label>
+                <input type="range" min="50" max="200" step="5" value={contrast}
+                  onChange={(e) => setContrast(parseInt(e.target.value))} className="crop-slider" />
+              </div>
+
               <div className="crop-flip-row">
                 <button
                   type="button"
@@ -596,7 +613,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
                 <button
                   type="button"
                   className="crop-flip-btn reset-btn"
-                  onClick={() => { setScale(1); setRotate(0); setFlipH(false); setFlipV(false); setBrightness(100); setImagePosition({x:0,y:0}); }}
+                  onClick={() => { setScale(1); setRotate(0); setFlipH(false); setFlipV(false); setBrightness(100); setContrast(100); setImagePosition({x:0,y:0}); }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M4 4v5h5M20 20v-5h-5M4.05 9A9 9 0 0 1 20 12.95M19.95 15A9 9 0 0 1 4 11.05" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
