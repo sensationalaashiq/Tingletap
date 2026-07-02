@@ -1051,6 +1051,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [loadingProfileFriends, setLoadingProfileFriends] = useState(false);
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+    const [liveBroadcastCount, setLiveBroadcastCount] = useState(0);
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
     const [sendProgress, setSendProgress] = useState(null);
@@ -6879,6 +6880,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                                       <path d="M5.5 5.5a9 9 0 000 13" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".55"/>
                                       <path d="M18.5 5.5a9 9 0 010 13" stroke="url(#bcHdrGrad)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".55"/>
                                   </svg>
+                                  {liveBroadcastCount > 0 && !isBroadcastOpen && (
+                                      <span className="bp-live-badge">{liveBroadcastCount > 9 ? '9+' : liveBroadcastCount}</span>
+                                  )}
                               </button>
                               {!(loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest') && (
                               <button
@@ -7351,6 +7355,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     loggedInUserProfile={loggedInUserProfile}
                     allUsersProfiles={friendsProfiles || []}
                     roomId={roomId}
+                    onLiveStatus={setLiveBroadcastCount}
                 />
 
                 {/* YouTube Search Modal */}

@@ -493,7 +493,7 @@ const AntennaIcon = () => (
 /* ════════════════════════════════════════════
    MAIN BROADCAST PANEL
 ════════════════════════════════════════════ */
-const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles = [], roomId }) => {
+const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles = [], roomId, onLiveStatus }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   /* ── RJ Broadcast state ── */
@@ -915,9 +915,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [canManageRJ, syncYouTubePlayer]);
 
-  /* ── Public broadcasts Firestore listener ── */
+  /* ── Public broadcasts Firestore listener (always-on for badge count) ── */
   useEffect(() => {
-    if (!isOpen) return;
     const q = query(collection(db, 'publicBroadcasts'), where('isLive', '==', true));
     const unsub = onSnapshot(q, (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -928,7 +927,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     });
     return () => unsub();
-  }, [isOpen, myUid]);
+  }, [myUid]);
+
+  /* ── Notify parent of live count for header badge ── */
+  useEffect(() => {
+    if (!onLiveStatus) return;
+    const othersCount = publicBroadcasts.filter(b => b.hostUid !== myUid).length;
+    const total = (rjIsLive ? 1 : 0) + othersCount;
+    onLiveStatus(total);
+  }, [rjIsLive, publicBroadcasts, myUid, onLiveStatus]);
 
   /* ── Song Queue RTDB listener ── */
   useEffect(() => {
