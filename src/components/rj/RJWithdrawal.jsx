@@ -5,6 +5,7 @@ import { auth } from '../../firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { fetchRJWithdrawalInfo, saveRJWithdrawalInfo } from '../../utils/coinSystem';
 import { toast } from 'react-toastify';
+import { pt } from '../../utils/premiumToast';
 import './RJWithdrawal.css';
 
 /* ── Icons ── */
@@ -86,10 +87,10 @@ export default function RJWithdrawal() {
       await saveRJWithdrawalInfo(fbUser.uid, form);
       setSaved(true);
       setErrors({});
-      toast.success('Withdrawal info saved successfully!');
+      pt.withdraw('Withdrawal info saved successfully!');
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
-      toast.error('Could not save. Please try again.');
+      pt.error('Could not save. Please try again.');
     } finally {
       setSaving(false);
     }

@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import BanKickModal from '../components/BanKickModal';
 import '../components/BanKickModal.css';
 import './WelcomeDashboard.css';
@@ -550,9 +551,9 @@ const WelcomeDashboard = () => {
         localStorage.removeItem('isGuest');
         localStorage.removeItem('guestGender');
       }
-      toast.success('Logged out successfully!');
+      pt.logout('Logged out successfully!');
       navigate('/');
-    } catch { toast.error('Failed to logout'); }
+    } catch { pt.error('Failed to logout'); }
   };
 
   const openPanel = () => { setActiveSubPanel(null); setShowSettingsPanel(true); };
@@ -738,9 +739,9 @@ const WelcomeDashboard = () => {
   ];
 
   const handleRowClick = (item) => {
-    if (item.locked) { toast.info('🔒 Register an account to unlock this feature!'); return; }
+    if (item.locked) { pt.unlock('Register an account to unlock this feature!'); return; }
     if (item.sub_id) {
-      if (!user && item.sub_id !== 'delete-account') { toast.info('Not available for guest users'); return; }
+      if (!user && item.sub_id !== 'delete-account') { pt.info('Not available for guest users'); return; }
       setActiveSubPanel(item.sub_id);
     } else if (item.action) {
       item.action();
@@ -1228,7 +1229,7 @@ const EditProfilePanel = ({ user, onDone }) => {
   const handleFile = (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
+    if (f.size > 5 * 1024 * 1024) { pt.error('Max 5MB allowed per image'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target.result);
     reader.readAsDataURL(f);
@@ -1236,7 +1237,7 @@ const EditProfilePanel = ({ user, onDone }) => {
   };
 
   const handleSave = async () => {
-    if (!form.displayName.trim()) { toast.error('Display name required'); return; }
+    if (!form.displayName.trim()) { pt.error('Display name required'); return; }
     setSaving(true);
     try {
       let photoURL = photoPreview;
@@ -1262,9 +1263,9 @@ const EditProfilePanel = ({ user, onDone }) => {
         await setDoc(doc(db, 'users', user.uid), { ...allowedFormFields, photoURL, updatedAt: new Date().toISOString() }, { merge: true });
       }
 
-      toast.success('Profile updated!');
+      pt.profile('Profile updated successfully!');
       onDone();
-    } catch (e) { toast.error(e.message); }
+    } catch (e) { pt.error(e.message); }
     finally { setSaving(false); }
   };
 
@@ -1402,12 +1403,12 @@ const ChangeUsernamePanel = ({ user, onDone }) => {
     : '';
 
   const handleSave = async () => {
-    if (isRestricted) { toast.error(`You can change username after ${daysLeft} more day(s)`); return; }
+    if (isRestricted) { pt.error(`You can change username after ${daysLeft} more day(s)`); return; }
     const val = username.trim();
-    if (!val) { toast.error('Username cannot be empty'); return; }
-    if (val.length < 2) { toast.error('Minimum 2 characters'); return; }
-    if (val.length > 30) { toast.error('Maximum 30 characters'); return; }
-    if (val === user.displayName) { toast.info('Username is already the same'); return; }
+    if (!val) { pt.error('Username cannot be empty'); return; }
+    if (val.length < 2) { pt.error('Minimum 2 characters required'); return; }
+    if (val.length > 30) { pt.error('Maximum 30 characters allowed'); return; }
+    if (val === user.displayName) { pt.info('Username is already the same'); return; }
     setSaving(true);
     try {
       const changedAt = new Date().toISOString();
@@ -1417,9 +1418,9 @@ const ChangeUsernamePanel = ({ user, onDone }) => {
         usernameChangedAt: changedAt,
         updatedAt: changedAt
       }, { merge: true });
-      toast.success('Username updated! You can change it again in 90 days.');
+      pt.username('Username updated! Next change allowed in 90 days.');
       onDone();
-    } catch (e) { toast.error(e.message); }
+    } catch (e) { pt.error(e.message); }
     finally { setSaving(false); }
   };
 
@@ -1505,21 +1506,21 @@ const ChangePasswordPanel = ({ user, onDone }) => {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.current) { toast.error('Enter current password'); return; }
-    if (form.newPw.length < 6) { toast.error('New password must be at least 6 characters'); return; }
-    if (form.newPw !== form.confirm) { toast.error('Passwords do not match'); return; }
-    if (form.newPw === form.current) { toast.error('New password must be different from current'); return; }
+    if (!form.current) { pt.error('Enter current password'); return; }
+    if (form.newPw.length < 6) { pt.error('New password must be at least 6 characters'); return; }
+    if (form.newPw !== form.confirm) { pt.error('Passwords do not match'); return; }
+    if (form.newPw === form.current) { pt.error('New password must be different from current'); return; }
     setSaving(true);
     try {
       const cred = EmailAuthProvider.credential(user.email, form.current);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, form.newPw);
       await setDoc(doc(db, 'users', user.uid), { passwordChangedAt: new Date().toISOString() }, { merge: true });
-      toast.success('Password updated successfully!');
+      pt.password('Password updated successfully!');
       onDone();
     } catch (e) {
-      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Current password is incorrect');
-      else toast.error(e.message);
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') pt.error('Current password is incorrect');
+      else pt.error(e.message);
     }
     finally { setSaving(false); }
   };
@@ -1618,10 +1619,10 @@ const DeleteAccountPanel = ({ user, onDone }) => {
     try {
       await deleteDoc(doc(db, 'users', user.uid));
       await deleteUser(user);
-      toast.success('Account permanently deleted.');
+      pt.delete('Account permanently deleted.');
       onDone();
     } catch (e) {
-      toast.error('Auto-deletion failed: ' + e.message);
+      pt.error('Auto-deletion failed: ' + e.message);
     }
   };
 
@@ -1662,8 +1663,8 @@ const DeleteAccountPanel = ({ user, onDone }) => {
   }, [step, schedAt]);
 
   const handleSchedule = async () => {
-    if (!confirmed) { toast.error('Please confirm you understand'); return; }
-    if (!password)  { toast.error('Enter your current password'); return; }
+    if (!confirmed) { pt.error('Please confirm you understand'); return; }
+    if (!password)  { pt.error('Enter your current password'); return; }
     setBusy(true);
     try {
       const cred = EmailAuthProvider.credential(user.email, password);
@@ -1676,10 +1677,10 @@ const DeleteAccountPanel = ({ user, onDone }) => {
       }, { merge: true });
       setSchedAt(deleteAt);
       setStep('scheduled');
-      toast.success('Deletion scheduled — you have 72 hours to revert');
+      pt.schedule('Deletion scheduled — you have 72 hours to revert');
     } catch (e) {
-      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Incorrect password');
-      else toast.error(e.message);
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') pt.error('Incorrect password');
+      else pt.error(e.message);
     } finally { setBusy(false); }
   };
 
@@ -1691,9 +1692,9 @@ const DeleteAccountPanel = ({ user, onDone }) => {
         scheduledDeleteAt: null,
         deletionScheduledOn: null
       });
-      toast.success('🎉 Account deletion cancelled! Your account is safe.');
+      pt.cancel('Account deletion cancelled! Your account is safe.');
       onDone();
-    } catch (e) { toast.error(e.message); }
+    } catch (e) { pt.error(e.message); }
     finally { setBusy(false); }
   };
 

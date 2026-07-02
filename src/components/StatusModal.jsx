@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import './StatusModal.css';
 
 const StatusModal = ({ onClose }) => {
@@ -188,7 +189,7 @@ const StatusModal = ({ onClose }) => {
     const user = auth.currentUser;
     if (!user) return;
     const statusToSet = selectedPreset || newStatus;
-    if (!statusToSet.trim()) { toast.error('Please enter a status or select a preset!'); return; }
+    if (!statusToSet.trim()) { pt.error('Please enter a status or select a preset!'); return; }
     const statusData = {
       status: statusToSet,
       statusStyles: {
@@ -200,8 +201,8 @@ const StatusModal = ({ onClose }) => {
     try {
       await setDoc(doc(db, 'users', user.uid), statusData, { merge: true });
       onClose();
-      toast.success('Status updated!', { position: 'bottom-center', autoClose: 2000, theme: 'dark' });
-    } catch { toast.error('Failed to update status.'); }
+      pt.success('Status updated!', { position: 'bottom-center', autoClose: 2000 });
+    } catch { pt.error('Failed to update status.'); }
   };
 
   const handlePresetSelect = (preset) => { setSelectedPreset(preset.text); setNewStatus(''); };
@@ -212,8 +213,8 @@ const StatusModal = ({ onClose }) => {
     try {
       await setDoc(doc(db, 'users', user.uid), { status: '' }, { merge: true });
       onClose();
-      toast.success('Status cleared!', { position: 'bottom-center', autoClose: 2000, theme: 'dark' });
-    } catch { toast.error('Failed to clear status.'); }
+      pt.success('Status cleared!', { position: 'bottom-center', autoClose: 2000 });
+    } catch { pt.error('Failed to clear status.'); }
   };
 
   const displayText = selectedPreset || newStatus || 'Your status preview…';

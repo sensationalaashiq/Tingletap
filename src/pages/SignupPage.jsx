@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, createUserProfile, checkUsernameAvailability, reserveUsername } from '../firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP, initializeEmailJS } from '../utils/emailService';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
@@ -136,10 +137,10 @@ const SignupPage = () => {
       initializeEmailJS();
       const otpCode = generateOTP();
       const result = await sendOTPEmail(formData.email, otpCode);
-      if (result.success) { setOtpSent(true); toast.success('OTP sent to your email! Check inbox and spam folder.'); }
-      else { toast.error(result.error || 'Failed to send OTP. Please try again.'); }
+      if (result.success) { setOtpSent(true); pt.otp('OTP sent to your email! Check inbox and spam folder.'); }
+      else { pt.error(result.error || 'Failed to send OTP. Please try again.'); }
     } catch (err) {
-      toast.error('Failed to send OTP. Please try again.');
+      pt.error('Failed to send OTP. Please try again.');
     }
     setOtpLoading(false);
   };
@@ -152,7 +153,7 @@ const SignupPage = () => {
       clearOTP(formData.email);
       setCurrentStep(3);
       setError('');
-      toast.success('Email verified successfully!');
+      pt.success('Email verified successfully!');
     } else {
       setError('Invalid or expired OTP. Please try again.');
     }
@@ -262,7 +263,7 @@ const SignupPage = () => {
         try { await user.delete(); } catch (deleteError) {}
         throw new Error('Failed to create user profile. Please try again.');
       }
-      toast.success('Account created successfully! Welcome to TingleTap!');
+      pt.success('Account created successfully! Welcome to TingleTap!');
       navigate('/rooms');
     } catch (err) {
       let errorMessage = 'Account creation failed. Please try again.';
@@ -273,7 +274,7 @@ const SignupPage = () => {
       else if (err.code === 'auth/too-many-requests') errorMessage = 'Too many attempts. Please try again later';
       else if (err.message === 'Failed to create user profile. Please try again.') errorMessage = 'Failed to create user profile. Please try again.';
       setError(errorMessage);
-      toast.error(errorMessage);
+      pt.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1277,10 +1278,10 @@ const SignupPage = () => {
                   document.body.style.userSelect = '';
                   if (window.ipBanInterval) clearInterval(window.ipBanInterval);
                 } else {
-                  toast.error('Your IP address is still banned from accessing this platform.');
+                  pt.error('Your IP address is still banned from accessing this platform.');
                 }
               } catch (error) {
-                toast.error('Error checking access. Please try again later.');
+                pt.error('Error checking access. Please try again later.');
               }
             }}
           />

@@ -7,6 +7,7 @@ import { ref, set, remove } from 'firebase/database';
 import { subscribeWallet, deductCoinsForGift, formatCoins } from '../../utils/coinSystem';
 import { GIFT_CATALOG, GIFT_TIERS, getGiftById } from '../../utils/giftSystem';
 import { toast } from 'react-toastify';
+import { pt } from '../../utils/premiumToast';
 import './GiftPanel.css';
 
 /* ── Inline SVG icons (no emoji) ── */
@@ -120,9 +121,9 @@ export default function GiftPanel({ rjUid, rjName, rjAvatar, loggedInUserProfile
 
   const handleSend = async () => {
     if (!selectedGift || !uid || !rjUid || sending) return;
-    if (isGuest) { toast.error('Guests cannot send gifts. Please register.'); return; }
+    if (isGuest) { pt.error('Guests cannot send gifts. Please register.'); return; }
     if (!wallet || wallet.balance < selectedGift.coinCost) {
-      toast.error('Insufficient coins. Please buy more coins.');
+      pt.coin('Insufficient coins. Please buy more coins.');
       return;
     }
 
@@ -148,13 +149,13 @@ export default function GiftPanel({ rjUid, rjName, rjAvatar, loggedInUserProfile
 
       setSentGift(selectedGift);
       setSelectedGift(null);
-      toast.success(`${selectedGift.name} sent to ${rjName}!`, { autoClose: 2000 });
+      pt.gift(`${selectedGift.name} sent to ${rjName}!`, { autoClose: 2000 });
       setTimeout(() => setSentGift(null), 3000);
     } catch (e) {
       if (e.message === 'Insufficient coins') {
-        toast.error('Not enough coins.');
+        pt.coin('Not enough coins to send this gift.');
       } else {
-        toast.error('Gift failed. Please try again.');
+        pt.error('Gift failed. Please try again.');
       }
     } finally {
       setSending(false);
