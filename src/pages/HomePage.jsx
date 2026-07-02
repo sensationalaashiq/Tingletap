@@ -243,7 +243,13 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     return originalEl;
 });
 
-const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+const REACTION_EMOJIS = [
+    '❤️','😂','😍','🥰','😎','🤩','🥺','😭',
+    '😮','😡','🤣','😅','😏','🥳','😴','😬',
+    '👍','👎','👏','🙌','🤝','🫶','💪','🙏',
+    '🔥','💯','🎉','🏆','👀','💀','🤯','😈',
+    '✅','❌','💔','💘','🌟','⚡','🎯','🫠'
+];
 
 const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
@@ -259,6 +265,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const [showReactBtn, setShowReactBtn] = useState(false);
     const avatarRef = useRef(null);
     const msgBodyRef = useRef(null);
+    const reactBtnRef = useRef(null);
     const longPressRef = useRef(null);
     const hoverLeaveRef = useRef(null);
 
@@ -280,15 +287,21 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const openPicker = () => {
         const user = auth.currentUser;
         if (!user || user.isAnonymous) return;
-        const rect = msgBodyRef.current?.getBoundingClientRect();
+        const anchor = reactBtnRef.current || msgBodyRef.current;
+        const rect = anchor?.getBoundingClientRect();
         if (!rect) return;
-        const pickerW = 238;
-        const pickerH = 56;
-        let x = rect.left;
-        let y = rect.top - pickerH - 10;
-        if (x + pickerW > window.innerWidth - 8) x = window.innerWidth - pickerW - 8;
-        if (x < 8) x = 8;
+        const pickerW = 260;
+        const pickerH = 220;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // Place above anchor by default; flip below if not enough room
+        let y = rect.top - pickerH - 8;
         if (y < 8) y = rect.bottom + 8;
+        if (y + pickerH > vh - 8) y = Math.max(8, vh - pickerH - 8);
+        // Left-align to anchor, but clamp to viewport
+        let x = rect.left;
+        if (x + pickerW > vw - 8) x = vw - pickerW - 8;
+        if (x < 8) x = 8;
         setPickerPos({ x, y });
         setShowReactionPicker(true);
     };
@@ -632,6 +645,25 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         <div className="msg-ts-row">
                             {!isBot && (
                                 <div className="message-actions">
+                                    {/* Reaction trigger — always before other action icons */}
+                                    {showReactBtn && currentUser && !currentUser.isAnonymous && (
+                                        <button
+                                            ref={reactBtnRef}
+                                            className={`message-action-btn rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
+                                            onClick={(e) => { e.stopPropagation(); openPicker(); }}
+                                            onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
+                                            onMouseLeave={handleRowLeave}
+                                            title="Add Reaction"
+                                        >
+                                            <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+                                                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7"/>
+                                                <path d="M7 11.5s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                                <circle cx="7.5" cy="8.5" r="1" fill="currentColor"/>
+                                                <circle cx="12.5" cy="8.5" r="1" fill="currentColor"/>
+                                                <path d="M12 5.5l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                                            </svg>
+                                        </button>
+                                    )}
                                     {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                     {!isMyMessage && (
                                         <>
@@ -738,21 +770,6 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             </div>
                         )}
 
-                        {/* Hover react button */}
-                        {showReactBtn && !isBot && currentUser && !currentUser.isAnonymous && (
-                            <button
-                                className={`rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
-                                onClick={openPicker}
-                                onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
-                                onMouseLeave={handleRowLeave}
-                                title="Add Reaction"
-                            >
-                                <span>🙂</span>
-                                <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
-                                    <path d="M2 4h6M5 1v8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-                                </svg>
-                            </button>
-                        )}
                     </div>
                     
                 </div>
@@ -769,19 +786,22 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                     onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
                     onMouseLeave={handleRowLeave}
                 >
-                    {REACTION_EMOJIS.map(emoji => {
-                        const alreadyReacted = Array.isArray(reactions[emoji]) && currentUser && reactions[emoji].includes(currentUser.uid);
-                        return (
-                            <button
-                                key={emoji}
-                                className={`rxn-picker-btn${alreadyReacted ? ' rxn-picker-btn--active' : ''}`}
-                                onClick={() => handleReact(emoji)}
-                                title={emoji}
-                            >
-                                <span className="rxn-picker-emoji">{emoji}</span>
-                            </button>
-                        );
-                    })}
+                    <div className="rxn-picker-header">React to message</div>
+                    <div className="rxn-picker-grid">
+                        {REACTION_EMOJIS.map(emoji => {
+                            const alreadyReacted = Array.isArray(reactions[emoji]) && currentUser && reactions[emoji].includes(currentUser.uid);
+                            return (
+                                <button
+                                    key={emoji}
+                                    className={`rxn-picker-btn${alreadyReacted ? ' rxn-picker-btn--active' : ''}`}
+                                    onClick={() => handleReact(emoji)}
+                                    title={emoji}
+                                >
+                                    <span className="rxn-picker-emoji">{emoji}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </>,
             document.body
