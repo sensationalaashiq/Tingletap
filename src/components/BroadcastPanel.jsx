@@ -770,51 +770,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => unsub();
   }, [canManageRJ, syncYouTubePlayer]);
 
-  /* ── Broadcaster: visibilitychange — resume YouTube if browser throttled us ── */
-  useEffect(() => {
-    if (!canManageRJ) return;
-    const handleVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      /* Guard: only push state if RJ is actually live — avoids ghost writes after broadcast ends */
-      if (!rjIsLive) return;
-      const player = ytPlayerRef.current;
-      if (!player) return;
-      if (ytIntendedStateRef.current === 'playing') {
-        try {
-          const cur = player.getCurrentTime?.() || 0;
-          player.seekTo?.(cur, true);
-          player.playVideo?.();
-          /* Push fresh position to Firebase so listeners resync */
-          update(ref(rtdb, 'broadcasts/rj/youtube'), {
-            state: 'playing',
-            seekTo: cur,
-            updatedAt: Date.now(),
-          }).catch(() => {});
-        } catch {}
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisible);
-    return () => document.removeEventListener('visibilitychange', handleVisible);
-  }, [canManageRJ, rjIsLive]);
-
-  /* ── Listener: visibilitychange — resync from RTDB when tab comes back ── */
-  useEffect(() => {
-    if (canManageRJ) return;
-    const handleVisible = async () => {
-      if (document.visibilityState !== 'visible') return;
-      if (!rjIsLive) return;
-      try {
-        const snap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
-        const yt = snap.val();
-        if (yt) {
-          ytIntendedStateRef.current = yt.state || 'stopped';
-          syncYouTubePlayer(yt);
-        }
-      } catch {}
-    };
-    document.addEventListener('visibilitychange', handleVisible);
-    return () => document.removeEventListener('visibilitychange', handleVisible);
-  }, [canManageRJ, rjIsLive, syncYouTubePlayer]);
+  /* ── visibilitychange for YouTube + voice: handled by the unified effect below ── */
 
   /* ── Broadcaster: periodic seek position push every 10 s so listeners stay in sync ── */
   useEffect(() => {
@@ -834,6 +790,106 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }, 10000);
     return () => clearInterval(interval);
   }, [canManageRJ, rjIsLive]);
+
+  /* ── YouTube playback watchdog — runs every 3 s, auto-resumes if browser throttled ──
+     Covers: minimize, tab-switch, mobile background, iframe suspension.
+     Applies to both RJ (broadcaster) and listeners.                                    */
+  useEffect(() => {
+    if (!rjIsLive) return;
+    const interval = setInterval(() => {
+      if (ytIntendedStateRef.current !== 'playing') return;
+      const player = ytPlayerRef.current;
+      if (!player) return;
+      try {
+        const YT_PLAYING = 1;
+        const state = player.getPlayerState?.();
+        if (state !== YT_PLAYING) {
+          player.playVideo?.();
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [rjIsLive]);
+
+  /* ── MediaSession API — tells OS / browser this is active audio media ──
+     Prevents mobile browsers from killing background audio.
+     Updated whenever RJ voice or YouTube is playing.                      */
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (rjIsLive) {
+      try {
+        navigator.mediaSession.metadata = new window.MediaMetadata({
+          title: ytCurrentSongName || 'TingleTap Live Radio',
+          artist: 'TingleTap Broadcast',
+          album: 'Live Show',
+        });
+        navigator.mediaSession.playbackState = 'playing';
+        navigator.mediaSession.setActionHandler('play', () => {
+          ytPlayerRef.current?.playVideo?.();
+          rjAudioEl.current?.play?.().catch(() => {});
+        });
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('stop', null);
+      } catch {}
+    } else {
+      try {
+        navigator.mediaSession.playbackState = 'none';
+      } catch {}
+    }
+  }, [rjIsLive, ytCurrentSongName]);
+
+  /* ── Visibility change: aggressive resume for BOTH YouTube and voice audio ──
+     Fires when: tab becomes visible again, user switches back from another app. */
+  useEffect(() => {
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!rjIsLive) return;
+
+      /* Resume YouTube */
+      const player = ytPlayerRef.current;
+      if (player && ytIntendedStateRef.current === 'playing') {
+        try {
+          player.playVideo?.();
+        } catch {}
+      }
+
+      /* Resume RJ voice audio element */
+      const audio = rjAudioEl.current;
+      if (audio && !canManageRJ && rjIsListening) {
+        if (audio.paused) {
+          audio.play().catch(() => {});
+        }
+      }
+
+      /* Broadcaster: push fresh seek so listeners resync too */
+      if (canManageRJ && player && ytIntendedStateRef.current === 'playing') {
+        try {
+          const cur = player.getCurrentTime?.() || 0;
+          player.seekTo?.(cur, true);
+          update(ref(rtdb, 'broadcasts/rj/youtube'), {
+            state: 'playing',
+            seekTo: cur,
+            updatedAt: Date.now(),
+          }).catch(() => {});
+        } catch {}
+      }
+
+      /* Listener: re-fetch RTDB state to resync YouTube */
+      if (!canManageRJ) {
+        try {
+          const snap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
+          const yt = snap.val();
+          if (yt) {
+            ytIntendedStateRef.current = yt.state || 'stopped';
+            syncYouTubePlayer(yt);
+          }
+        } catch {}
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [rjIsLive, canManageRJ, rjIsListening, syncYouTubePlayer]);
 
   /* ── Public broadcasts Firestore listener ── */
   useEffect(() => {
@@ -1960,24 +2016,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   }, [isOpen]);
 
-  /* ── Listener: visibilitychange — resume RJ voice if browser throttled it ── */
-  useEffect(() => {
-    if (canManageRJ) return; // broadcaster side only
-    const handleVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (!rjIsListening) return;
-      const audio = rjAudioEl.current;
-      if (!audio) return;
-      // Resume if the browser paused the audio element in the background
-      if (audio.paused) {
-        audio.play().catch(() => {
-          setRjAudioBlocked(true);
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisible);
-    return () => document.removeEventListener('visibilitychange', handleVisible);
-  }, [canManageRJ, rjIsListening]);
+  /* ── visibilitychange for RJ voice audio: handled by the unified effect above ── */
 
   /* ── Global cleanup on unmount ── */
   useEffect(() => {
@@ -2020,15 +2059,25 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     );
   }
 
-  /* ── Minimized floating bubble ── */
+  /* ── Minimized floating bubble ──
+     IMPORTANT: ytContainerRef MUST stay in the DOM or the YouTube iframe is
+     destroyed and music stops. Keep it in a tiny off-screen div alongside the bubble. */
   if (isMinimized) {
     return (
-      <FloatingMinimizedBubble
-        isLive={rjIsLive && canManageRJ}
-        pubIsLive={!!myActiveBroadcast}
-        onExpand={() => setIsMinimized(false)}
-        onClose={() => { setIsMinimized(false); onClose(); }}
-      />
+      <>
+        <div
+          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, overflow: 'hidden', pointerEvents: 'none' }}
+          aria-hidden="true"
+        >
+          <div ref={ytContainerRef} id="bp-yt-player" />
+        </div>
+        <FloatingMinimizedBubble
+          isLive={rjIsLive && canManageRJ}
+          pubIsLive={!!myActiveBroadcast}
+          onExpand={() => setIsMinimized(false)}
+          onClose={() => { setIsMinimized(false); onClose(); }}
+        />
+      </>
     );
   }
 
