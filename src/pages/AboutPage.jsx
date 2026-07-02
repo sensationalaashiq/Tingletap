@@ -150,7 +150,7 @@ const AboutPage = () => {
               <div className="lp-section-icon"><ChatBubbleIcon /></div>
               <div className="lp-section-content">
                 <div className="lp-section-title">What Makes Us Different</div>
-                <div className="lp-section-text">TingleTap combines real-time messaging, voice messages, YouTube sharing, TingleBot AI, RJ radio shows, live broadcast with YouTube sync, virtual gifting, emoji reactions, multiple radio channels, private encrypted conversations, and live radio — all in one premium platform designed specifically for the Indian community.</div>
+                <div className="lp-section-text">TingleTap combines real-time messaging, voice messages, YouTube sharing, TingleBot AutoMod, RJ radio shows, live broadcast, virtual gifting, emoji reactions, multiple radio channels, private encrypted conversations, and non-stop radio — all in one premium platform designed specifically for the Indian community.</div>
               </div>
             </div>
             <div className="lp-section-item">

@@ -981,7 +981,7 @@ const WelcomeDashboard = () => {
               </div>
             </div>
 
-            {/* 5 — TingleBot AI */}
+            {/* 5 — TingleBot AutoMod */}
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(168,85,247,0.12)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -997,8 +997,8 @@ const WelcomeDashboard = () => {
                 </svg>
               </div>
               <div className="wd-ftile-body">
-                <strong>TingleBot AI</strong>
-                <span>Smart AI assistant in chat</span>
+                <strong>TingleBot AutoMod</strong>
+                <span>Smart chat moderation guardian</span>
               </div>
             </div>
 
@@ -1035,7 +1035,7 @@ const WelcomeDashboard = () => {
               </div>
               <div className="wd-ftile-body">
                 <strong>Live Broadcast</strong>
-                <span>Go live with YouTube sync</span>
+                <span>RJ-powered audio live stream</span>
               </div>
             </div>
 

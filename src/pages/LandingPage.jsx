@@ -171,6 +171,37 @@ const IconBroadcast = ({ size = 30 }) => (
   </svg>
 );
 
+const IconEmoji = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="icem1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient>
+      <linearGradient id="icem2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+    <circle cx="16" cy="16" r="13" fill="url(#icem1)"/>
+    <circle cx="16" cy="16" r="13" fill="url(#icem2)" opacity="0.18"/>
+    <circle cx="11" cy="13" r="2" fill="white" opacity="0.9"/>
+    <circle cx="21" cy="13" r="2" fill="white" opacity="0.9"/>
+    <path d="M9 19c1.5 3.5 12.5 3.5 14 0" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+    <path d="M4 8l3-3M28 8l-3-3M6 25l2-2M26 25l-2-2" stroke="url(#icem1)" strokeWidth="1.8" strokeLinecap="round" opacity="0.55"/>
+  </svg>
+);
+
+const IconRadio = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="icrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2dd4bf"/><stop offset="100%" stopColor="#0d9488"/></linearGradient>
+      <linearGradient id="icrad2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+    <rect x="2" y="11" width="28" height="17" rx="5" fill="url(#icrad1)"/>
+    <rect x="2" y="11" width="28" height="17" rx="5" fill="url(#icrad2)" opacity="0.18"/>
+    <circle cx="10" cy="19.5" r="4" fill="white" opacity="0.3"/>
+    <circle cx="10" cy="19.5" r="2" fill="white" opacity="0.85"/>
+    <path d="M17 15h8M17 19.5h8M17 24h5" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity="0.85"/>
+    <path d="M5 11L13 4h6" stroke="url(#icrad1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="19" cy="4" r="1.5" fill="url(#icrad1)"/>
+  </svg>
+);
+
 const IconGift = ({ size = 30 }) => (
   <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -250,12 +281,15 @@ const LandingPage = () => {
 
   const features = [
     { Icon: IconChatRooms,  title: 'Real-Time Chat Rooms',       desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and Staff Rooms with live messaging, typing indicators and styled text.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
-    { Icon: IconTingleBot,  title: 'TingleBot AI',                desc: 'Built-in AI assistant powered by Google Gemini. Get answers, jokes, trivia and smart replies directly inside any chat room — 24/7.', tags: ['AI', 'Gemini', 'Smart Chat'], bg: 'linear-gradient(135deg,rgba(168,85,247,0.12),rgba(109,40,217,0.08))', color: '#a855f7' },
-    { Icon: IconBroadcast,  title: 'RJ Radio & Live Broadcast',   desc: 'Verified RJs go live with voice + YouTube music sync for all listeners. Background audio keeps playing even when you minimize the panel.', tags: ['RJ Live', 'YouTube Sync', 'Background'], bg: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(220,38,38,0.08))', color: '#f97316' },
-    { Icon: IconGift,       title: 'Virtual Gifts & Coin Wallet', desc: 'Send roses, crowns and diamonds to your favourite RJ during live broadcasts. Track earnings, view the leaderboard and buy coins.', tags: ['Coins', 'Gifts', 'Leaderboard'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.08))', color: '#f59e0b' },
-    { Icon: IconVoice,      title: 'Voice & Media Sharing',       desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room. Emoji reactions on any message.', tags: ['Voice', 'YouTube', 'Reactions'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
+    { Icon: IconTingleBot,  title: 'TingleBot AutoMod',           desc: 'Built-in moderation bot that auto-detects spam, abuse, homoglyphs and toxic language in real-time — keeping every room clean 24/7.', tags: ['AutoMod', 'Anti-Spam', 'Guardian'], bg: 'linear-gradient(135deg,rgba(168,85,247,0.12),rgba(109,40,217,0.08))', color: '#a855f7' },
+    { Icon: IconBroadcast,  title: 'RJ Radio & Live Broadcast',   desc: 'Verified RJs host live voice shows with synced music for all listeners. Background audio keeps playing even when you minimize the panel.', tags: ['RJ Live', 'Voice Shows', 'Background Play'], bg: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(220,38,38,0.08))', color: '#f97316' },
+    { Icon: IconGift,       title: 'Virtual Gifts & Coin Wallet', desc: 'Send roses, crowns and diamonds to your favourite RJ during live shows. Track coin earnings, view the leaderboard and buy coin packs.', tags: ['Coins', 'Gifts', 'Leaderboard'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.08))', color: '#f59e0b' },
+    { Icon: IconEmoji,      title: 'Emoji Reactions',             desc: 'React to any message instantly with animated emoji. Express yourself with hearts, fire, laugh, sad and more — all in real-time.', tags: ['Reactions', 'Animated', 'Live'], bg: 'linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.08))', color: '#eab308' },
+    { Icon: IconRadio,      title: 'Radio Channels',              desc: 'Tune into curated live music stations — Hindi, Punjabi, Lo-fi, EDM and more. Switch channels and enjoy non-stop music while you chat.', tags: ['Music', 'Stations', 'Non-Stop'], bg: 'linear-gradient(135deg,rgba(45,212,191,0.12),rgba(13,148,136,0.08))', color: '#14b8a6' },
+    { Icon: IconVoice,      title: 'Voice & Media Sharing',       desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room to watch together.', tags: ['Voice', 'YouTube', 'Media'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
     { Icon: IconPrivate,    title: 'Private Messaging',           desc: '1-on-1 private conversations with file sharing, voice messages, read receipts and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], bg: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08))', color: '#7c3aed' },
     { Icon: IconPremium,    title: 'Premium Customization',       desc: 'Badge holders unlock gradient text effects, glowing animations, username FX, custom fonts and exclusive profile styling.', tags: ['Gradient', 'Animations', 'Badges'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))', color: '#d97706' },
+    { Icon: IconTools,      title: 'Advanced User Tools',         desc: 'Gender-based filtering, friend requests, user blocking, whisper messages, full profiles and status with rich text effects.', tags: ['Filters', 'Friends', 'Block'], bg: 'linear-gradient(135deg,rgba(59,130,246,0.12),rgba(99,102,241,0.08))', color: '#3b82f6' },
     { Icon: IconShield,     title: 'Security & Moderation',       desc: 'VPN detection, device fingerprinting, TingleBot AutoMod, kick/ban/mute, IP banning and comprehensive reporting tools.', tags: ['VPN Shield', 'AutoMod', 'Reports'], bg: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', color: '#10b981' },
   ];
 
