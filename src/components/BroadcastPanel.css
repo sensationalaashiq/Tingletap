@@ -2194,15 +2194,16 @@ html.dark-theme-variant .bp-request-btn.cancel { color: #f87171 !important; }
   gap: 6px;
   padding: 7px 18px;
   border-radius: 50px;
-  border: none;
-  background: linear-gradient(135deg, #f59e0b, #f472b6);
-  color: #ffffff;
+  border: none !important;
+  background: linear-gradient(135deg, #f59e0b, #f472b6) !important;
+  color: #ffffff !important;
   font-size: 12px;
   font-weight: 700;
   font-family: 'Inter', system-ui, sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(245,158,11,0.28);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.38);
+  -webkit-text-fill-color: #ffffff;
 }
 .bp-ann-send-btn:hover:not(:disabled) {
   transform: translateY(-1px);

@@ -652,20 +652,12 @@ const EditProfile = ({ onClose, onSuccess }) => {
             : <span className="wd-avatar-init">{(formData.displayName || 'U').slice(0, 2).toUpperCase()}</span>
           }
           <div className="wd-avatar-overlay">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <defs>
-                <linearGradient id="avCamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#f472b6"/>
-                  <stop offset="40%" stopColor="#a855f7"/>
-                  <stop offset="80%" stopColor="#6366f1"/>
-                  <stop offset="100%" stopColor="#06b6d4"/>
-                </linearGradient>
-              </defs>
-              <rect x="1" y="4.5" width="22" height="16" rx="4" fill="url(#avCamGrad)"/>
-              <circle cx="12" cy="12.5" r="4" fill="white" opacity="0.9"/>
-              <circle cx="12" cy="12.5" r="2.3" fill="url(#avCamGrad)"/>
-              <rect x="8.5" y="2.5" width="7" height="3.5" rx="1.5" fill="url(#avCamGrad)"/>
-              <circle cx="19.5" cy="7.5" r="1.1" fill="white" opacity="0.75"/>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <rect x="1" y="4.5" width="22" height="16" rx="4" fill="white" opacity="0.9"/>
+              <circle cx="12" cy="12.5" r="4.2" fill="#7c3aed" opacity="0.9"/>
+              <circle cx="12" cy="12.5" r="2.2" fill="white"/>
+              <rect x="8.5" y="2.5" width="7" height="3.5" rx="1.5" fill="white" opacity="0.75"/>
+              <circle cx="19.5" cy="7.5" r="1.1" fill="#a855f7" opacity="0.8"/>
             </svg>
           </div>
         </div>
@@ -678,32 +670,25 @@ const EditProfile = ({ onClose, onSuccess }) => {
         />
         <span className="wd-avatar-hint">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <defs>
-              <linearGradient id="hintCamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#a855f7"/>
-                <stop offset="100%" stopColor="#6366f1"/>
-              </linearGradient>
-            </defs>
-            <rect x="1" y="3.5" width="22" height="16" rx="4" fill="url(#hintCamGrad)"/>
+            <rect x="1" y="3.5" width="22" height="16" rx="4" fill="#a855f7"/>
             <circle cx="12" cy="11.5" r="3.8" fill="white" opacity="0.9"/>
-            <circle cx="12" cy="11.5" r="2.2" fill="url(#hintCamGrad)"/>
+            <circle cx="12" cy="11.5" r="2.2" fill="#a855f7"/>
           </svg>
           Tap photo to change
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <defs>
-              <linearGradient id="starGradHint" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#f59e0b"/>
-                <stop offset="50%" stopColor="#ec4899"/>
-                <stop offset="100%" stopColor="#a855f7"/>
-              </linearGradient>
-            </defs>
-            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="url(#starGradHint)"/>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b">
+            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
           </svg>
         </span>
+        {profilePic && (
+          <span className="ep-photo-pending">
+            Photo ready — save to apply
+          </span>
+        )}
       </div>
 
       {/* ── Form ── */}
       <form onSubmit={handleSubmit}>
+        <div className="ep-form-wrap">
         <div className="wd-fields">
 
           {/* Display Name */}
@@ -913,6 +898,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
               </>
           }
         </button>
+        </div>{/* ep-form-wrap */}
       </form>
     </div>
     </>

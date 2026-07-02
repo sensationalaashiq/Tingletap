@@ -139,7 +139,7 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
                                 </svg>
                             </button>
                         )}
-                        <button className="gsm-search-btn" onClick={handleSearch}>
+                        <button className="gsm-search-btn" onClick={handleSearch} style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', flexShrink: 0 }}>
                             <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                                 <circle cx="9" cy="9" r="6" stroke="#fff" strokeWidth="1.8"/>
                                 <path d="m16 16-3.5-3.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
