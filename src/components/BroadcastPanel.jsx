@@ -514,6 +514,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [myRequestStatus, setMyRequestStatus] = useState(null);
   const [iAmSpeaker, setIAmSpeaker] = useState(false);
 
+  /* ── Speaker mode state (for the user who is accepted as a speaker) ── */
+  const [speakerMicMuted, setSpeakerMicMuted] = useState(false);
+  const [speakerConnecting, setSpeakerConnecting] = useState(false);
+
   /* ── Public Broadcasts state ── */
   const [publicBroadcasts, setPublicBroadcasts] = useState([]);
   const [myActiveBroadcast, setMyActiveBroadcast] = useState(null);
@@ -568,6 +572,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const localStream = useRef(null);
   const rjListenersUnsub = useRef(null);
   const rjHostRtdbUnsubs = useRef([]);
+
+  /* ── Audio mixing — RJ side (mixes RJ mic + speaker mics → one stream sent to listeners) ── */
+  const rjAudioCtx = useRef(null);
+  const rjMixDest = useRef(null);
+
+  /* ── WebRTC refs — RJ → Speaker connections (RJ receives each speaker's mic) ── */
+  const rjSpeakerPCs = useRef({});
+  /* Per-speaker unsub map: { [speakerUid]: [unsubFn, ...] }
+     Keeps RTDB listeners isolated so removing one speaker doesn't leak others. */
+  const rjSpeakerUnsubs = useRef({});
+
+  /* ── WebRTC refs — Speaker side (speaker sends their mic to RJ) ── */
+  const speakerPC = useRef(null);
+  const speakerStream = useRef(null);
+  const speakerRtdbUnsubs = useRef([]);
 
   /* ── WebRTC refs — RJ listener side (separate from broadcaster) ── */
   const rjListenerPC = useRef(null);
@@ -937,6 +956,142 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     onLiveStatus(total);
   }, [rjIsLive, publicBroadcasts, myUid, onLiveStatus]);
 
+  /* ── RJ side: watch speakerMap and open a receive-connection for each new speaker ── */
+  useEffect(() => {
+    if (!canManageRJ || !rjIsLive) return;
+    const speakerUids = Object.keys(speakerMap);
+
+    /* Connect to newly added speakers */
+    speakerUids.forEach(uid => {
+      if (uid !== myUid && !rjSpeakerPCs.current[uid]) {
+        rjConnectToSpeaker(uid).catch(() => {});
+      }
+    });
+
+    /* Disconnect speakers who left — clean up their RTDB listeners precisely */
+    Object.keys(rjSpeakerPCs.current).forEach(uid => {
+      if (!speakerMap[uid]) {
+        _rjDisconnectSpeaker(uid, true);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speakerMap, canManageRJ, rjIsLive]);
+
+  /* ── Speaker side: when iAmSpeaker becomes true, grab mic and connect to RJ ── */
+  useEffect(() => {
+    if (!myUid || canManageRJ) return;
+
+    if (!iAmSpeaker) {
+      /* Cleanup when removed from stage */
+      if (speakerPC.current) { try { speakerPC.current.close(); } catch {} speakerPC.current = null; }
+      if (speakerStream.current) { speakerStream.current.getTracks().forEach(t => t.stop()); speakerStream.current = null; }
+      speakerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+      speakerRtdbUnsubs.current = [];
+      setSpeakerConnecting(false);
+      setSpeakerMicMuted(false);
+      return;
+    }
+
+    /* iAmSpeaker = true — start mic and signal to RJ */
+    let cancelled = false;
+    const startSpeakerMode = async () => {
+      setSpeakerConnecting(true);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+          video: false,
+        });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        speakerStream.current = stream;
+        setSpeakerMicMuted(false);
+
+        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        speakerPC.current = pc;
+
+        /* Add mic tracks so RJ can receive our audio */
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+        /* Send our ICE candidates to RJ */
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            push(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/speakerCandidates`), e.candidate.toJSON()).catch(() => {});
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          const s = pc.connectionState;
+          if (s === 'connected') setSpeakerConnecting(false);
+        };
+
+        /* Watch for RJ's offer (RJ initiates because they receive) */
+        let remoteDescReady = false;
+        const pendingCands = [];
+        const drainPending = async () => {
+          for (const c of pendingCands) {
+            try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+          }
+          pendingCands.length = 0;
+        };
+
+        const offerRef = ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/offer`);
+        const unsubOffer = onValue(offerRef, async snap => {
+          const offer = snap.val();
+          if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            remoteDescReady = true;
+            await drainPending();
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await set(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp });
+            setSpeakerConnecting(false);
+            bpToast.mic('You are now live on stage! Everyone can hear you.');
+          } catch (err) {
+            console.warn('Speaker answer error:', err);
+          }
+        });
+        speakerRtdbUnsubs.current.push(unsubOffer);
+
+        /* Watch for RJ's ICE candidates */
+        const unsubHC = onChildAdded(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/rjCandidates`), snap => {
+          const c = snap.val();
+          if (!c) return;
+          if (remoteDescReady) {
+            pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+          } else {
+            pendingCands.push(c);
+          }
+        });
+        speakerRtdbUnsubs.current.push(unsubHC);
+
+      } catch (err) {
+        if (!cancelled) {
+          setSpeakerConnecting(false);
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            bpToast.error('Microphone blocked. Allow mic access to speak on stage.');
+          } else if (err.name === 'NotFoundError') {
+            bpToast.error('No microphone found. Please connect a mic.');
+          } else {
+            bpToast.error('Could not access mic for speaking: ' + (err.message || 'Unknown error'));
+          }
+        }
+      }
+    };
+
+    startSpeakerMode();
+
+    return () => {
+      cancelled = true;
+      if (speakerPC.current) { try { speakerPC.current.close(); } catch {} speakerPC.current = null; }
+      if (speakerStream.current) { speakerStream.current.getTracks().forEach(t => t.stop()); speakerStream.current = null; }
+      speakerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+      speakerRtdbUnsubs.current = [];
+      /* Remove our signal data from RTDB */
+      remove(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}`)).catch(() => {});
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iAmSpeaker, myUid, canManageRJ]);
+
   /* ── Song Queue RTDB listener ── */
   useEffect(() => {
     if (!isOpen) return;
@@ -999,9 +1154,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     rjHostPCs.current[listenerUid] = pc;
 
-    /* Add mic tracks to this connection */
-    if (localStream.current) {
-      localStream.current.getTracks().forEach(t => pc.addTrack(t, localStream.current));
+    /* Add mixed stream tracks (RJ mic + any accepted speakers) to this connection.
+       Fall back to raw localStream if AudioContext mixer wasn't initialised.      */
+    const mixedStream = rjMixDest.current?.stream || localStream.current;
+    if (mixedStream) {
+      mixedStream.getTracks().forEach(t => pc.addTrack(t, mixedStream));
     }
 
     /* Send ICE candidates to listener */
@@ -1086,8 +1243,107 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     Object.values(rjHostPCs.current).forEach(pc => { try { pc.close(); } catch {} });
     rjHostPCs.current = {};
 
+    /* Cleanup speaker-receive connections */
+    Object.values(rjSpeakerUnsubs.current).forEach(unsubs => {
+      unsubs.forEach(u => { try { u(); } catch {} });
+    });
+    rjSpeakerUnsubs.current = {};
+    Object.values(rjSpeakerPCs.current).forEach(pc => { try { pc.close(); } catch {} });
+    rjSpeakerPCs.current = {};
+
+    /* Close audio mixer */
+    if (rjAudioCtx.current) { try { rjAudioCtx.current.close(); } catch {} rjAudioCtx.current = null; }
+    rjMixDest.current = null;
+
     remove(ref(rtdb, 'broadcasts/rj/connections')).catch(() => {});
     remove(ref(rtdb, 'broadcasts/rj/listeners')).catch(() => {});
+    remove(ref(rtdb, 'broadcasts/rj/speakerConnections')).catch(() => {});
+  };
+
+  /** Tear down a single speaker's RJ-side connection and RTDB listeners. */
+  const _rjDisconnectSpeaker = (speakerUid, removeRtdb = false) => {
+    /* Unsubscribe this speaker's RTDB listeners only */
+    (rjSpeakerUnsubs.current[speakerUid] || []).forEach(u => { try { u(); } catch {} });
+    delete rjSpeakerUnsubs.current[speakerUid];
+
+    const pc = rjSpeakerPCs.current[speakerUid];
+    if (pc) { try { pc.close(); } catch {} }
+    delete rjSpeakerPCs.current[speakerUid];
+
+    if (removeRtdb) {
+      remove(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`)).catch(() => {});
+    }
+  };
+
+  /** RJ creates a WebRTC connection to receive a speaker's microphone audio.
+   *  The speaker's track is routed into the AudioContext mixer so all
+   *  existing listeners automatically hear the speaker without renegotiation. */
+  const rjConnectToSpeaker = async (speakerUid) => {
+    if (!canManageRJ || !myUid || speakerUid === myUid) return;
+    if (rjSpeakerPCs.current[speakerUid]) return; // already connecting/connected
+
+    if (!rjSpeakerUnsubs.current[speakerUid]) {
+      rjSpeakerUnsubs.current[speakerUid] = [];
+    }
+
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    rjSpeakerPCs.current[speakerUid] = pc;
+
+    /* When speaker's audio track arrives, plug it into the mix */
+    pc.ontrack = (e) => {
+      try {
+        if (!rjAudioCtx.current || !rjMixDest.current) return;
+        const speakerSrc = rjAudioCtx.current.createMediaStreamSource(new MediaStream([e.track]));
+        speakerSrc.connect(rjMixDest.current);
+        bpToast.mic('Speaker joined the stage and is now live!');
+      } catch (err) {
+        console.warn('Speaker audio mixer connect failed:', err);
+      }
+    };
+
+    /* Send RJ's ICE candidates to speaker */
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        push(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/rjCandidates`), e.candidate.toJSON()).catch(() => {});
+      }
+    };
+
+    /* Auto-reconnect when the connection drops — only if speaker is still in speakerMap */
+    pc.onconnectionstatechange = () => {
+      const s = pc.connectionState;
+      if ((s === 'failed' || s === 'disconnected') && rjSpeakerPCs.current[speakerUid] === pc) {
+        setTimeout(() => {
+          /* Only reconnect if the speaker is still accepted in the broadcast */
+          if (rjSpeakerPCs.current[speakerUid] === pc && speakerMap[speakerUid]) {
+            _rjDisconnectSpeaker(speakerUid, true);
+            rjConnectToSpeaker(speakerUid).catch(() => {});
+          }
+        }, 2500);
+      }
+    };
+
+    /* RJ creates offer specifying it wants to RECEIVE audio from the speaker */
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: false });
+    await pc.setLocalDescription(offer);
+    /* Clear stale signaling data before writing new offer so speaker always sees fresh offer */
+    await remove(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`)).catch(() => {});
+    await set(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/offer`), { type: offer.type, sdp: offer.sdp }).catch(() => {});
+
+    /* Watch for speaker's answer — stored per-speaker for isolated teardown */
+    const unsubAns = onValue(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/answer`), snap => {
+      const ans = snap.val();
+      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+        pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
+      }
+    });
+    rjSpeakerUnsubs.current[speakerUid].push(unsubAns);
+
+    /* Watch for speaker's ICE candidates */
+    const unsubSC = onChildAdded(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/speakerCandidates`), snap => {
+      const c = snap.val();
+      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+    });
+    rjSpeakerUnsubs.current[speakerUid].push(unsubSC);
   };
 
   /* ══════════════════════════════════════
@@ -1379,6 +1635,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     localStream.current = stream;
     startMicLevelMeter(stream);
+
+    /* Create Web Audio mixer — all audio sources (RJ mic + speakers) are routed
+       through this AudioContext and delivered to listeners as one mixed stream.    */
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const dest = ctx.createMediaStreamDestination();
+      const rjSrc = ctx.createMediaStreamSource(stream);
+      rjSrc.connect(dest);
+      rjAudioCtx.current = ctx;
+      rjMixDest.current = dest;
+    } catch (e) {
+      console.warn('RJ audio mixer init failed — falling back to direct stream:', e);
+    }
+
     return stream;
   };
 
@@ -1491,6 +1761,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     ytIntendedStateRef.current = newState;
     setYtPlayerState(newState);
     update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs });
+  };
+
+  /* ── Speaker mic toggle (for users who are on stage) ── */
+  const handleSpeakerMicToggle = () => {
+    if (!speakerStream.current) return;
+    const nowMuted = !speakerMicMuted;
+    speakerStream.current.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
+    setSpeakerMicMuted(nowMuted);
   };
 
   /* ── Speaker management ── */
@@ -2556,13 +2834,53 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         <div>
           <div className="bp-speaker-status">
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-              <MicIcon muted={false} /> You are a Speaker
+              <MicIcon muted={speakerMicMuted} />
+              {speakerConnecting ? 'Connecting to Stage…' : 'You are on Stage 🎙️'}
             </h3>
-            <p>Your voice is live on the broadcast</p>
+            <p style={{ marginBottom: 0 }}>
+              {speakerConnecting
+                ? 'Setting up your microphone — please wait…'
+                : speakerMicMuted
+                  ? 'Your mic is muted. Tap below to unmute.'
+                  : 'Your voice is live! Everyone on the broadcast can hear you.'}
+            </p>
           </div>
-          <button className="bp-request-btn cancel" style={{ width: '100%' }} onClick={() => handleRemoveSpeaker(myUid)}>
-            Leave Stage
-          </button>
+
+          {/* Mic level indicator */}
+          {!speakerConnecting && speakerStream.current && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              margin: '12px auto', justifyContent: 'center',
+              padding: '8px 16px', borderRadius: 12,
+              background: speakerMicMuted ? 'rgba(248,113,113,0.1)' : 'rgba(52,211,153,0.1)',
+              border: `1px solid ${speakerMicMuted ? 'rgba(248,113,113,0.2)' : 'rgba(52,211,153,0.2)'}`,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: speakerMicMuted ? '#f87171' : '#34d399' }}>
+                {speakerMicMuted ? '🔇 MIC OFF' : '🎙️ MIC LIVE'}
+              </span>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            {/* Mute / Unmute toggle */}
+            {!speakerConnecting && (
+              <button
+                className={`bp-request-btn ${speakerMicMuted ? 'join' : 'cancel'}`}
+                style={{ flex: 1 }}
+                onClick={handleSpeakerMicToggle}
+              >
+                {speakerMicMuted ? '🎙️ Unmute Mic' : '🔇 Mute Mic'}
+              </button>
+            )}
+            {/* Leave stage */}
+            <button
+              className="bp-request-btn cancel"
+              style={{ flex: 1 }}
+              onClick={() => handleRemoveSpeaker(myUid)}
+            >
+              Leave Stage
+            </button>
+          </div>
         </div>
       );
     }

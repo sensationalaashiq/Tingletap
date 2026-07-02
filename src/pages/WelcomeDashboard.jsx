@@ -1017,11 +1017,11 @@ const WelcomeDashboard = () => {
               </div>
               <div className="wd-ftile-body">
                 <strong>RJ Radio Shows</strong>
-                <span>Live RJ broadcasts & voice shows</span>
+                <span>Verified RJ hosts live voice shows</span>
               </div>
             </div>
 
-            {/* 7 — Live Broadcast */}
+            {/* 7 — Live Broadcast (Public / Password-protected) */}
             <div className="wd-ftile">
               <div className="wd-ftile-icon" style={{background:'rgba(249,115,22,0.12)'}}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -1035,7 +1035,43 @@ const WelcomeDashboard = () => {
               </div>
               <div className="wd-ftile-body">
                 <strong>Live Broadcast</strong>
-                <span>RJ-powered audio live stream</span>
+                <span>One-to-one or one-to-all · Password protected</span>
+              </div>
+            </div>
+
+            {/* 7b — Broadcast Stage / Mini Podcast */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(139,92,246,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft7bG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+                  <rect x="8" y="2" width="8" height="12" rx="4" fill="url(#ft7bG)" opacity=".9"/>
+                  <path d="M5 10a7 7 0 0014 0" stroke="url(#ft7bG)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                  <line x1="12" y1="17" x2="12" y2="20" stroke="url(#ft7bG)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <circle cx="5" cy="15" r="2.5" fill="url(#ft7bG)" opacity=".75"/>
+                  <circle cx="19" cy="15" r="2.5" fill="url(#ft7bG)" opacity=".75"/>
+                  <path d="M5 12.5v2.5M19 12.5v2.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Broadcast Stage</strong>
+                <span>Speak live alongside RJ · Mini podcast</span>
+              </div>
+            </div>
+
+            {/* 7c — Auto Translation */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(6,182,212,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft7cG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#22d3ee"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
+                  <circle cx="12" cy="12" r="10" stroke="url(#ft7cG)" strokeWidth="1.6" fill="none" opacity=".5"/>
+                  <path d="M2 12h20M12 2c-2.5 3-4 6.3-4 10s1.5 7 4 10M12 2c2.5 3 4 6.3 4 10s-1.5 7-4 10" stroke="url(#ft7cG)" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+                  <path d="M5.5 7h4M7.5 7v5M7.5 12c0 0 1.5-2 3-2" stroke="url(#ft7cG)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M13 14l1.5-4 1.5 4M13.5 12.5h2.5" stroke="url(#ft7cG)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Auto Translation</strong>
+                <span>Messages translated to your language</span>
               </div>
             </div>
 

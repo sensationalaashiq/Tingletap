@@ -13,3 +13,4 @@
 - [BroadcastPanel 5-tab layout](broadcast-panel-tabs.md) — tabs 0=Studio/Live, 1=Stage, 2=Songs, 3=Updates, 4=Public, 5=Gifts; 6-tab layout uses bp-tabs--six class
 - [Coin system Firestore rules](coin-system-rules.md) — gift tx is client-side; cross-wallet credit allowed only with additive-only field constraint; coinTransactions has two create paths (own uid OR fromUid==auth for gift_received); verifyPaymentOrder must read from orderSnap.data() not caller args
 - [Auto Translation System](auto-translation-system.md) — architecture decisions: child component for hooks-after-early-return, per-component effect pattern, MyMemory API, stale-cancel guards
+- [Broadcast Stage Speaker Audio](broadcast-stage-speaker-audio.md) — AudioContext mixer on RJ side; rjSpeakerUnsubs is a per-uid map (not flat array); use _rjDisconnectSpeaker() for isolated teardown; RTDB paths under speakerConnections/{uid}/
