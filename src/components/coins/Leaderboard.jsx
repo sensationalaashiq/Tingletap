@@ -11,26 +11,52 @@ import './Leaderboard.css';
 /* ── Icons ── */
 const ArrowLeftIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M19 12H5M5 12l7 7M5 12l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M19 12H5M5 12l7 7M5 12l7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const TrophyIcon = ({ size = 24 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="lb_ti" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
-    <path d="M6 4h12v7a6 6 0 01-12 0V4zm-3 2H1v3a4 4 0 003 3.87V6zm16 0h2v3a4 4 0 01-3 3.87V6zm-8 14v-3h-2v-2h6v2h-2v3h-2zm-3 2h8v2H8v-2z" fill="url(#lb_ti)"/>
+    <defs>
+      <linearGradient id="lb_ti" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fde68a"/>
+        <stop offset="60%" stopColor="#f59e0b"/>
+        <stop offset="100%" stopColor="#d97706"/>
+      </linearGradient>
+    </defs>
+    <path d="M6 4h12v7a6 6 0 01-12 0V4z" fill="url(#lb_ti)" opacity="0.92"/>
+    <path d="M3 6H1v3a4 4 0 003 3.87V6z" fill="url(#lb_ti)" opacity="0.6"/>
+    <path d="M21 6h2v3a4 4 0 01-3 3.87V6z" fill="url(#lb_ti)" opacity="0.6"/>
+    <path d="M12 18v-3" stroke="url(#lb_ti)" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M10 18h4" stroke="url(#lb_ti)" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M9 22h6" stroke="url(#lb_ti)" strokeWidth="2.5" strokeLinecap="round"/>
   </svg>
 );
 const CoinIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="lb_ci" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+    <defs>
+      <linearGradient id="lb_ci" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fde68a"/>
+        <stop offset="100%" stopColor="#d97706"/>
+      </linearGradient>
+    </defs>
     <circle cx="12" cy="12" r="10" fill="url(#lb_ci)"/>
-    <text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#92400e">C</text>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+    <text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#78350f">₹</text>
   </svg>
 );
 const GiftIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="lb_gi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs>
-    <path d="M20 12v-2h-2.18C17.93 9.08 18 8.55 18 8c0-2.21-1.79-4-4-4-1.58 0-2.93.93-3.57 2.27C9.93 4.93 8.58 4 7 4 4.79 4 3 5.79 3 8c0 .55.07 1.08.18 1.58V12H1l3 8h16l3-8h-3z" fill="url(#lb_gi)"/>
+    <defs>
+      <linearGradient id="lb_gi" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f9a8d4"/>
+        <stop offset="100%" stopColor="#db2777"/>
+      </linearGradient>
+    </defs>
+    <rect x="3" y="10" width="18" height="11" rx="2" fill="url(#lb_gi)" opacity="0.22"/>
+    <rect x="3" y="10" width="18" height="3" rx="0" fill="url(#lb_gi)" opacity="0.55"/>
+    <line x1="12" y1="10" x2="12" y2="21" stroke="#db2777" strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M8.5 7c0-1.93 1.57-3.5 3.5-3.5S15.5 5.07 15.5 7H8.5z" stroke="#db2777" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
+    <path d="M3 10h18" stroke="#db2777" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 

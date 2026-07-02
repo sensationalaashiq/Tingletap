@@ -96,14 +96,14 @@ const FireIcon = () => (
   </svg>
 );
 
-/* ── Package card colors ── */
+/* ── Package card colors — Light Lavender Premium ── */
 const PKG_THEMES = [
-  { from: '#e0e7ff', to: '#c7d2fe', accent: '#4338ca', badge: '#6366f1' },
-  { from: '#f0fdf4', to: '#d1fae5', accent: '#059669', badge: '#10b981' },
-  { from: '#fef3c7', to: '#fde68a', accent: '#d97706', badge: '#f59e0b' },
-  { from: '#fdf2f8', to: '#fce7f3', accent: '#be185d', badge: '#ec4899' },
-  { from: '#ede9fe', to: '#ddd6fe', accent: '#6d28d9', badge: '#8b5cf6' },
-  { from: '#fff7ed', to: '#ffedd5', accent: '#c2410c', badge: '#f97316' },
+  { from: '#f0eeff', to: '#e8e2ff', accent: '#5b21b6', badge: 'linear-gradient(135deg,#c4b5fd,#a78bfa)', coinColor: '#5b21b6' },
+  { from: '#f0fdf6', to: '#dcfce7', accent: '#15803d', badge: 'linear-gradient(135deg,#6ee7b7,#10b981)', coinColor: '#15803d' },
+  { from: '#fffbeb', to: '#fef3c7', accent: '#b45309', badge: 'linear-gradient(135deg,#fde68a,#f59e0b)', coinColor: '#b45309' },
+  { from: '#fdf4ff', to: '#fae8ff', accent: '#a21caf', badge: 'linear-gradient(135deg,#e879f9,#c026d3)', coinColor: '#a21caf' },
+  { from: '#eff6ff', to: '#dbeafe', accent: '#1d4ed8', badge: 'linear-gradient(135deg,#93c5fd,#3b82f6)', coinColor: '#1d4ed8' },
+  { from: '#fff1f2', to: '#ffe4e6', accent: '#be123c', badge: 'linear-gradient(135deg,#fda4af,#f43f5e)', coinColor: '#be123c' },
 ];
 
 export default function BuyCoinsPage() {
@@ -266,8 +266,8 @@ export default function BuyCoinsPage() {
                       </div>
                     )}
                     <div className="bc-pkg-coins">
-                      <CoinIcon size={36} />
-                      <span className="bc-pkg-coin-count">{pkg.coins.toLocaleString()}</span>
+                      <CoinIcon size={38} />
+                      <span className="bc-pkg-coin-count" style={{ color: theme.coinColor }}>{pkg.coins.toLocaleString()}</span>
                     </div>
                     {pkg.bonus > 0 && (
                       <div className="bc-pkg-bonus" style={{ color: theme.accent }}>

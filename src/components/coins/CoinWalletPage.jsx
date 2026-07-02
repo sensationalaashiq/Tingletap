@@ -13,42 +13,70 @@ import './CoinWalletPage.css';
 /* ── Icons ── */
 const CoinIcon = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="cwci" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#cwci)"/>
-    <text x="12" y="16" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#92400e">₹</text>
+    <defs>
+      <linearGradient id="cwci" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fde68a"/>
+        <stop offset="50%" stopColor="#f59e0b"/>
+        <stop offset="100%" stopColor="#d97706"/>
+      </linearGradient>
+      <filter id="cwci-glow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
+    </defs>
+    <circle cx="12" cy="12" r="10" fill="url(#cwci)" filter="url(#cwci-glow)"/>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1"/>
+    <text x="12" y="16" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#78350f">₹</text>
   </svg>
 );
 
 const ArrowLeftIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M19 12H5M5 12l7 7M5 12l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M19 12H5M5 12l7 7M5 12l7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const PurchaseIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="puri" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
-    <path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm1 14.5v1.5h-2v-1.5C9.55 16.77 9 15.97 9 15c0-1.1.9-2 2-2h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1H8c0-1.65 1.09-3.05 2.6-3.5V6.5h2v1.5c1.45.25 2.5 1.58 2.4 2.98L13 11c0 .55.45 1 1 1h.01C15.11 12 16 12.9 16 14c0 1.1-.9 2-2 2l-.01-.5H11c-.55 0-1 .45-1 1s.45 1 1 1h2z" fill="url(#puri)"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="puri" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6ee7b7"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
+    <circle cx="12" cy="12" r="10" fill="url(#puri)" opacity="0.15"/>
+    <path d="M12 6v2M12 16v2M8 10h5c.55 0 1 .45 1 1s-.45 1-1 1H9c-1.1 0-2 .9-2 2s.9 2 2 2h1M16 10h-1" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M9 8h6" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 );
 
 const GiftSentIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="gsi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs>
-    <path d="M20 12v-2h-2.18C17.93 9.08 18 8.55 18 8c0-2.21-1.79-4-4-4-1.58 0-2.93.93-3.57 2.27C9.93 4.93 8.58 4 7 4c-2.21 0-4 1.79-4 4 0 .55.07 1.08.18 1.58V12H1l3 8h16l3-8h-3zm-7-8c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-6 2c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z" fill="url(#gsi)"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="gsi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f9a8d4"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs>
+    <rect x="3" y="10" width="18" height="12" rx="2" fill="url(#gsi)" opacity="0.18"/>
+    <rect x="3" y="10" width="18" height="3" rx="0" fill="url(#gsi)" opacity="0.35"/>
+    <path d="M12 10V22M7 6c0-1.66 1.34-3 3-3 1.66 0 3 1.34 3 3H7z" stroke="#db2777" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M17 6c0-1.66-1.34-3-3-3-1.66 0-3 1.34-3 3h6z" stroke="#db2777" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
   </svg>
 );
 
 const GiftReceivedIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <defs><linearGradient id="gri" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
-    <path d="M20 12v-2h-2.18C17.93 9.08 18 8.55 18 8c0-2.21-1.79-4-4-4-1.58 0-2.93.93-3.57 2.27C9.93 4.93 8.58 4 7 4c-2.21 0-4 1.79-4 4 0 .55.07 1.08.18 1.58V12H1l3 8h16l3-8h-3zm-7-8c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-6 2c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z" fill="url(#gri)"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="gri" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+    <rect x="3" y="10" width="18" height="12" rx="2" fill="url(#gri)" opacity="0.2"/>
+    <rect x="3" y="10" width="18" height="3" rx="0" fill="url(#gri)" opacity="0.4"/>
+    <path d="M12 10V22M7 6c0-1.66 1.34-3 3-3 1.66 0 3 1.34 3 3H7z" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+    <path d="M17 6c0-1.66-1.34-3-3-3-1.66 0-3 1.34-3 3h6z" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
   </svg>
 );
 
 const ShopIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm0 10c-1.66 0-3-1.34-3-3h2c0 .55.45 1 1 1s1-.45 1-1h2c0 1.66-1.34 3-3 3z" fill="currentColor"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="cw-shopi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c4b5fd"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="url(#cw-shopi)" strokeWidth="1.8" fill="none" strokeLinejoin="round"/>
+    <line x1="3" y1="6" x2="21" y2="6" stroke="url(#cw-shopi)" strokeWidth="1.8"/>
+    <path d="M16 10a4 4 0 01-8 0" stroke="url(#cw-shopi)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
+const LeaderboardIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <defs><linearGradient id="lb_a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fde68a"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+    <rect x="2" y="11" width="4" height="10" rx="1.5" fill="url(#lb_a)" opacity="0.7"/>
+    <rect x="10" y="5" width="4" height="16" rx="1.5" fill="url(#lb_a)"/>
+    <rect x="18" y="14" width="4" height="7" rx="1.5" fill="url(#lb_a)" opacity="0.7"/>
   </svg>
 );
 
@@ -115,6 +143,7 @@ export default function CoinWalletPage() {
     <div className="cw-root">
       <div className="cw-orb cw-orb--1" />
       <div className="cw-orb cw-orb--2" />
+      <div className="cw-orb cw-orb--3" />
 
       {/* Header */}
       <header className="cw-header">
@@ -157,10 +186,7 @@ export default function CoinWalletPage() {
             <ShopIcon /> Buy Coins
           </button>
           <button className="cw-action-btn cw-action-btn--secondary" onClick={() => navigate('/leaderboard')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <defs><linearGradient id="lb_a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
-              <path d="M3 17h4v-6H3v6zm7 0h4V7h-4v10zm7 0h4v-3h-4v3z" fill="url(#lb_a)"/>
-            </svg>
+            <LeaderboardIcon />
             Leaderboard
           </button>
         </div>

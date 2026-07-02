@@ -977,7 +977,7 @@ const WelcomeDashboard = () => {
               </div>
               <div className="wd-ftile-body">
                 <strong>Active Community</strong>
-                <span>555+ members · Growing daily</span>
+                <span>Growing community · Join today</span>
               </div>
             </div>
 

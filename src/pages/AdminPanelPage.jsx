@@ -2410,7 +2410,7 @@ const AdminPanelPage = () => {
               
               <div className="luxury-rooms-grid">
                 {rooms.map((room, idx) => {
-                  const activeInRoom = Object.values(onlineStatuses).filter(s => s.currentRoomId === room.id).length;
+                  const activeInRoom = Object.values(onlineStatuses).filter(s => s?.state === 'online' && s.currentRoomId === room.id).length;
                   const roomColors = [
                     { from: '#7c3aed', to: '#a855f7' },
                     { from: '#3b82f6', to: '#6366f1' },
