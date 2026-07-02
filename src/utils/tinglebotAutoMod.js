@@ -824,6 +824,116 @@ const EXPLICIT_EMOJI_COMBOS = [
 ];
 
 /* ════════════════════════════════════════════════════════════════════════════
+   §E8  ROOM-AWARE PROTECTION TABLES
+   These drive the context-sensitive leniency / strict-override logic in §M.
+════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * §E8a — FAMILY ABUSE ROOTS
+ * These words insult / sexualise another person's family members (mother/sister).
+ * They must be enforced in EVERY room — including the Adult Room — because they
+ * are personal attacks, not consensual adult vocabulary.
+ *
+ * Keys are the normalised, lower-case form that hit.matched will contain after
+ * the normalisation pipeline (leet, homoglyph, space-collapse, etc.).
+ */
+const FAMILY_ABUSE_ROOTS = new Set([
+    // Mother-related (Hindi / transliterated)
+    'madarchod','madarchode','madarchodi','madarchot',
+    'maderchod','madrchod','madarjaat','madrjat','mdrchd',
+    'maa chod','teri maa ki','teri maa ko','teri maa ka','maa ki aankh',
+    'teri maa','maa ki',
+    // Sister-related (Hindi)
+    'behenchod','bhenchod','behnchod','bhen chod','bhainchod','bnchd',
+    'teri behen','teri behan','bhai chod',
+    // Vaginal-family (bhosdike = of a vagina → directed at someone's mother)
+    'bhosdike','bhosadike','bhosdiwala','bhosdiwale','bhosdiwali','bhosad','bhosdi',
+    'bsdk','bsdc',
+    // Marathi mother/sister abuse
+    'aai zavli','aai ghe','aaichi gand','aai chi gand','aai chi','bhosdya','bhosdich',
+    // Punjabi family abuse
+    'bhen di','bhen de','maaki','maaki nuu','teri maa di','teri bhain',
+    'bhain chod','bebe teri','bhain de lode','teri maa de',
+    // Bhojpuri mother abuse
+    'maiya ke','tohar maiya',
+    // Haryanavi
+    'teri maa ki','teri maa ka','teri behan ka',
+    // English family
+    'motherfucker','motherf*cker','muthafucker','mfkr','mf',
+]);
+
+/**
+ * §E8b — MINOR-RELATED WORDS
+ * Always enforced in every room, including the Adult Room.
+ * Any reference to minors in a sexual or suggestive context is severe.
+ */
+const MINOR_RELATED_WORDS = new Set([
+    'loli','lolita','lolicon','shota','shotacon',
+    'jailbait','preteen','kiddie','childporn','cp',
+    'underage','minor','pedo','pedophile','pedophilia',
+    'grooming','groomer',
+]);
+
+/**
+ * §E8c — ADULT ROOM PROTECTED REGEX PATTERNS
+ * Patterns that must always be enforced, even in the Adult Room.
+ * Covers: incest, minors in sexual context, non-consensual / coercive scenarios,
+ *         religious abuse, and explicit family-member targeting.
+ */
+const ADULT_PROTECTED_RX = [
+    // Incest
+    /\b(incest|bhai\s*behen\s*(sex|chudai|fuck)|maa\s*bete?\s*(sex|chudai|fuck)|father\s*daughter\s*sex|mother\s*son\s*(sex|fuck)|step\s*(mom|dad|sis|bro)\s*(sex|fuck|nude|naked|porn))\b/i,
+    // Minors in sexual context
+    /\b(under[\s-]?age|child\s*(porn|sex|nude|naked|pic|photo|video)|teen\s*porn|1[0-6]\s*year[\s-]?old\s*(sex|nude|naked|girl|boy))\b/i,
+    /\b(loli(con)?|shota(con)?|jailbait|preteen\s*(sex|nude|naked|pic)|kiddie\s*porn)\b/i,
+    // Non-consensual / coercion
+    /\b(rape\s*(her|him|fantasy|roleplay|fetish)|non[\s-]?consensual|force\s*(sex|fuck|her|him|them)|drugged?\s*(sex|rape|fuck))\b/i,
+    // Religious abuse
+    /\b(allah\s*(ke|ki|ka)\s*(gaand|chut|lund|maa)|bhagwan\s*(ke|ki)\s*(gaand|chut)|jesus\s*(fuck|sex|nude)|prophet\s*(sex|nude|fuck|rape))\b/i,
+    /\b(temple|mosque|church|mandir|masjid)\s*(mein|me|main|pe|par)\s*(sex|fuck|chudai|rape)\b/i,
+];
+
+/**
+ * §E8d — INDIAN ROOM CASUAL-SLANG WHITELIST
+ * These low-severity words are used as everyday filler in Indian chat — they
+ * are NOT targeting anyone and should be de-escalated on first / second use.
+ * Any word in this set gets the "first-pass grace" treatment in the Indian room.
+ */
+const INDIAN_CASUAL_SLANG = new Set([
+    // Very common casual filler — rarely targeting
+    'saala','saale','saali','sala','sale','sali',
+    'gadha','gadhe','ullu','ullo',
+    'pagal','pagli',
+    'bevkoof','bewakoof','bewda',
+    'harami','haraami','haramkhor',
+    'kamina','kameena','kamine','kaminey',
+    'nikamma','nalayak','anpad',
+    'chikna','maal','awara','lafanga','luchcha',
+    'jhootha','jhoota','chor',
+    'dhakkan','tharra',
+    // Devanagari equivalents
+    'साला','साले','गधा','उल्लू','पागल','बेवकूफ',
+    'हरामी','कमीना','निकम्मा','नालायक','आवारा',
+]);
+
+/**
+ * §E8e — TARGETING CONTEXT INDICATORS
+ * A message is considered "targeted" when it clearly directs abuse at a specific
+ * person rather than using slang as a general exclamation.
+ * Heuristic: pronoun / direct-address words appear near abusive content.
+ */
+const TARGETING_INDICATORS_RX = [
+    // English direct address
+    /\b(you|u|ur|your|yourself|he|she|they|him|her|them)\b/i,
+    // Hindi direct address
+    /\b(tum|tujhe|teri|tera|tere|tumhe|aap|apko|apne|tu|tujhko|isko|usko|iski|uski|iska|uska)\b/i,
+    // Punjabi/Bhojpuri direct address
+    /\b(tenu|tohe|tohar|toke)\b/i,
+    // @mention pattern
+    /@[a-z0-9_]{2,}/i,
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
    §F  FUZZY MATCHING ENGINE
 ════════════════════════════════════════════════════════════════════════════ */
 
@@ -979,6 +1089,84 @@ const checkEmojiAbuse = (text) => {
         }
     }
     return null;
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   §G2  ROOM-AWARE HELPER FUNCTIONS
+════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * hasTargetingContext(text)
+ * Returns true when the message appears to be directed at a specific person
+ * rather than used as a standalone exclamation or general expression.
+ * Used to decide whether leniency applies in the Indian Room.
+ */
+const hasTargetingContext = (text) =>
+    TARGETING_INDICATORS_RX.some(rx => rx.test(text));
+
+/**
+ * isAdultRoomProtected(text, hit)
+ * Returns true when a detection hit must be enforced even inside the Adult Room.
+ * The Adult Room is lenient about consensual adult vocabulary, but remains
+ * strictly enforced for family abuse, minors, incest, non-consensual content,
+ * religious abuse, hate speech, threats, scams, and personal info.
+ *
+ * @param {string} text - original message text
+ * @param {object} hit  - detection result {type, severity, matched?, …}
+ */
+const isAdultRoomProtected = (text, hit) => {
+    // 1. Type-level: these categories are always enforced everywhere
+    if (['hate','harassment','threat','scam','info','link'].includes(hit.type)) return true;
+
+    // 2. Severity-level: 'severe' words (incest, pedo, grooming, etc.) are never exempt
+    if (hit.severity === 'severe') return true;
+
+    // 3. Family abuse word match — even in adult room these are personal attacks
+    if (hit.matched) {
+        const matchedLower = hit.matched.toLowerCase();
+        if (FAMILY_ABUSE_ROOTS.has(matchedLower)) return true;
+        if (MINOR_RELATED_WORDS.has(matchedLower)) return true;
+    }
+
+    // 4. Pattern-level: incest / minor / non-consensual / religious abuse patterns
+    if (ADULT_PROTECTED_RX.some(rx => rx.test(text))) return true;
+
+    // 5. Multi-word family abuse (phrase hits don't always set hit.matched to full phrase)
+    //    Re-check the raw text against family abuse phrases
+    const lower = text.toLowerCase();
+    for (const root of FAMILY_ABUSE_ROOTS) {
+        if (root.includes(' ') && lower.includes(root)) return true;
+    }
+
+    return false;
+};
+
+/**
+ * isIndianRoomLenient(hit, text, priorTotal)
+ * Returns true when the Indian Room leniency rule allows skipping enforcement.
+ *
+ * Leniency applies ONLY when ALL of the following hold:
+ *  - the violation type is 'abuse' (not explicit / hate / threat / scam)
+ *  - the matched word is in the casual-slang set OR severity is 'low'
+ *  - there is no clear targeting context (no "you / tujhe / teri…" nearby)
+ *  - the user has not already accumulated several violations this session
+ *
+ * Medium-severity abuse gets ONE grace pass; low-severity gets TWO.
+ */
+const isIndianRoomLenient = (hit, text, priorTotal) => {
+    if (hit.type !== 'abuse') return false;
+    if (hasTargetingContext(text)) return false;
+
+    const matchedLower = (hit.matched || '').toLowerCase();
+    const isCasualSlang = INDIAN_CASUAL_SLANG.has(matchedLower);
+
+    // Low severity or known casual slang: grace for first 2 session violations
+    if ((hit.severity === 'low' || isCasualSlang) && priorTotal < 2) return true;
+
+    // Medium severity without targeting: grace for very first occurrence only
+    if (hit.severity === 'medium' && !isCasualSlang && priorTotal === 0) return true;
+
+    return false;
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -1341,11 +1529,15 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     const { uid, text, displayName = 'User' } = msg;
     const now = Date.now();
 
-    // Detect whether this is an Adult Room
+    // ── Detect room context ───────────────────────────────────────────────────
     const _roomNameLower = (roomName || '').toLowerCase();
-    const isAdultRoom = _roomNameLower.includes('adult') || _roomNameLower.includes('18+');
+    const isAdultRoom  = _roomNameLower.includes('adult') || _roomNameLower.includes('18+');
+    const isIndianRoom = _roomNameLower.includes('indian') || _roomNameLower.includes('india')
+                      || _roomNameLower.includes('hindi')  || _roomNameLower.includes('desi')
+                      || _roomNameLower.includes('bollywood') || _roomNameLower.includes('mumbai')
+                      || _roomNameLower.includes('delhi');
 
-    // Run detection pipeline (all clients)
+    // ── Run detection pipeline (all clients) ─────────────────────────────────
     const contentHit = detectContent(text);
     const spamHit    = detectSpam(uid, text, now);
 
@@ -1353,16 +1545,35 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     let hit = contentHit.detected ? contentHit : (spamHit.detected ? spamHit : null);
     if (!hit) return;
 
-    // Adult Room exemption: skip enforcement for profanity/abuse/explicit content.
-    // Spam, scams, doxxing (info), hate speech, and threats are still enforced.
-    if (isAdultRoom && (hit.type === 'abuse' || hit.type === 'explicit')) return;
+    // ── Adult Room exemption ──────────────────────────────────────────────────
+    // The Adult Room allows consensual adult conversations. However it remains
+    // strictly enforced for: family abuse, incest, minors, non-consensual content,
+    // religious abuse, hate speech, threats, scams, doxxing, and spam.
+    if (isAdultRoom) {
+        // Only allow 'abuse' or 'explicit' through the gate, and only when the
+        // specific content is NOT in the protected categories.
+        if ((hit.type === 'abuse' || hit.type === 'explicit') && !isAdultRoomProtected(text, hit)) {
+            return; // consensual adult content — skip enforcement
+        }
+        // All other types (hate, harassment, threat, scam, info, link, spam)
+        // and all protected content fall through to normal enforcement below.
+    }
 
-    // Update session violation counters (all clients track locally)
+    // ── Update session violation counters (all clients track locally) ─────────
     const sv = getSessionViolations(uid);
     const priorTotal = sv.total;
     sv.total += 1;
     sv[hit.type] = (sv[hit.type] || 0) + 1;
     sv.scoreAccum = (sv.scoreAccum || 0) + (hit.signalScore || 1);
+
+    // ── Indian Room leniency ──────────────────────────────────────────────────
+    // Reduce strictness for casual slang that is not targeting another user.
+    // Low-severity abuse gets 2 grace passes; medium gets 1 first-occurrence pass.
+    // High/severe abuse, explicit, hate, threats, scams → always enforced.
+    // Spam detection → always enforced.
+    if (isIndianRoom && hit.type !== 'spam' && isIndianRoomLenient(hit, text, priorTotal)) {
+        return; // casual, non-targeted, early-session — skip enforcement
+    }
 
     // Non-staff: detection only — no Firestore writes
     if (!isStaff) return;
