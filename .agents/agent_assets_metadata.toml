@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "1bhfCnkWsgdnVZNQLFy4Q"
+uri = "file://TINGLETEST_AUDIT_REPORT.md"
+type = "text"
+title = "TingleTap — Full Architecture, Performance & Firebase Audit"
