@@ -79,12 +79,12 @@ const icons = {
 };
 
 const sections = [
-  { icon: 'collect', title: 'Information We Collect', text: 'We collect minimal information necessary for service functionality: email address, display name, profile picture, chat messages, and basic usage analytics to improve your experience.' },
-  { icon: 'usage', title: 'How We Use Your Data', text: 'Your data is used solely to provide and improve our chat services. We never sell personal information to third parties or use it for advertising purposes.' },
-  { icon: 'security', title: 'Data Security', text: 'All data is encrypted in transit and at rest. Private messages use end-to-end encryption. We implement industry-standard security measures to protect your information at all times.' },
-  { icon: 'rights', title: 'Your Rights', text: 'You can access, modify, or delete your personal data at any time through your account settings. Contact our support team for assistance with any data-related requests.' },
-  { icon: 'cookie', title: 'Cookies & Local Storage', text: 'We use browser storage to remember your preferences, session state, and theme settings. No third-party tracking cookies are used. You may clear these at any time via your browser settings.' },
-  { icon: 'contact', title: 'Contact for Privacy', text: 'For privacy-related questions or concerns, please reach out through our contact page. We are committed to addressing any privacy issues promptly and transparently.' },
+  { icon: 'collect', title: 'Information We Collect', text: 'We collect minimal information necessary for service functionality: email address, display name, profile picture, chat messages, voice recordings, broadcast session data, coin transaction history, and basic usage analytics to improve your experience. Device fingerprints are collected solely for security and ban enforcement purposes.' },
+  { icon: 'usage', title: 'How We Use Your Data', text: 'Your data is used solely to provide and improve our services — including live chat, RJ radio broadcasts, TingleBot AI, virtual gifting, and radio channels. We never sell personal information to third parties or use it for advertising purposes. Broadcast data (YouTube sync state, voice sessions) is stored temporarily in real-time databases and cleared when sessions end.' },
+  { icon: 'security', title: 'Data Security', text: 'All data is encrypted in transit and at rest. Private messages use end-to-end encryption backed by Firebase security rules. Coin transactions and RJ earnings are protected by server-side validation rules. Device fingerprinting and IP tracking are used exclusively for community safety (ban enforcement) and are never shared externally.' },
+  { icon: 'rights', title: 'Your Rights', text: 'You can access, modify, or delete your personal data at any time through your account settings. This includes your profile, chat history, coin wallet history, and broadcast data. Contact our support team for assistance with any data-related requests including data export.' },
+  { icon: 'cookie', title: 'Cookies & Local Storage', text: 'We use browser storage to remember your preferences, session state, theme settings, broadcast listening state (so you can resume a live RJ session after returning), and cached username styles for instant display. No third-party tracking cookies are used. You may clear these at any time via your browser settings.' },
+  { icon: 'contact', title: 'Contact for Privacy', text: 'For privacy-related questions or concerns about any feature — including RJ broadcasts, coin transactions, TingleBot interactions, or device data — please reach out through our contact page. We are committed to addressing any privacy issues promptly and transparently.' },
 ];
 
 const ArrowRightIcon = () => (

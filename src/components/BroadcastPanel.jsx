@@ -313,16 +313,22 @@ const fmtTime = (secs) => {
 
 const extractYtId = (url) => {
   if (!url) return null;
+  const str = url.trim();
   const patterns = [
-    /[?&]v=([A-Za-z0-9_-]{11})/,                        // watch?v=ID  (standard)
-    /youtu\.be\/([A-Za-z0-9_-]{11})/,                   // youtu.be/ID (short link)
-    /\/(?:embed|v|shorts|live)\/([A-Za-z0-9_-]{11})/,   // /embed/ /v/ /shorts/ /live/
-    /^([A-Za-z0-9_-]{11})$/,                             // bare 11-char ID pasted directly
+    /[?&]v=([A-Za-z0-9_-]{11})/,                                  // watch?v=ID  (standard, music., m., nocookie.)
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,                             // youtu.be/ID (short link)
+    /\/(?:embed|v|shorts|live|e)\/([A-Za-z0-9_-]{11})/,           // /embed/ /v/ /shorts/ /live/ /e/
+    /[?&]vi=([A-Za-z0-9_-]{11})/,                                 // vi= param variant
+    /youtube\.com\/attribution_link.*v%3D([A-Za-z0-9_-]{11})/,    // attribution_link format
+    /^([A-Za-z0-9_-]{11})$/,                                       // bare 11-char ID pasted directly
   ];
   for (const p of patterns) {
-    const m = url.trim().match(p);
+    const m = str.match(p);
     if (m) return m[1];
   }
+  /* Last resort: search for any 11-char alphanumeric sequence after known markers */
+  const fallback = str.match(/(?:v=|vi=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);
+  if (fallback) return fallback[1];
   return null;
 };
 
@@ -595,6 +601,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
   const pubOnDisconnectRef = useRef(null);
+
+  /* ── Auto-resume guard: only attempt once per mount ── */
+  const autoResumeAttempted = useRef(false);
 
   /* ── Permission flags ── */
   const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj';
@@ -1221,6 +1230,23 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     /* User chose to leave manually — don't auto-resume next time */
     try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
   };
+
+  /* ── Auto-resume: when user logs back in and RJ is still live, rejoin from exact live position ──
+     Reads localStorage flag set during rjJoinAudio. Only fires once per mount.                      */
+  useEffect(() => {
+    if (!rjIsLive || !myUid || canManageRJ || rjIsListening || rjConnecting) return;
+    if (autoResumeAttempted.current) return;
+    try {
+      if (localStorage.getItem('tingle_rj_was_listening') !== 'true') return;
+    } catch { return; }
+    autoResumeAttempted.current = true;
+    /* Brief delay so RTDB connection stabilizes and YouTube drift is calculated correctly */
+    const t = setTimeout(() => {
+      rjJoinAudio();
+    }, 1800);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rjIsLive, myUid, canManageRJ, rjIsListening, rjConnecting]);
 
   /* ══════════════════════════════════════
      RJ CONTROLS

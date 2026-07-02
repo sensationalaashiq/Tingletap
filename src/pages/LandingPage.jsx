@@ -139,6 +139,54 @@ const IconShield = ({ size = 30 }) => (
   </svg>
 );
 
+const IconTingleBot = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="icbot1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a855f7"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient>
+      <linearGradient id="icbot2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+    <rect x="3" y="9" width="26" height="18" rx="5" fill="url(#icbot1)"/>
+    <rect x="3" y="9" width="26" height="18" rx="5" fill="url(#icbot2)" opacity="0.2"/>
+    <circle cx="11" cy="18" r="2.5" fill="white" opacity="0.9"/>
+    <circle cx="21" cy="18" r="2.5" fill="white" opacity="0.9"/>
+    <path d="M12.5 22.5c1 1.5 5.5 1.5 7 0" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M12 9V6M20 9V6" stroke="url(#icbot1)" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="12" cy="5" r="1.5" fill="url(#icbot1)"/>
+    <circle cx="20" cy="5" r="1.5" fill="url(#icbot1)"/>
+  </svg>
+);
+
+const IconBroadcast = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="icbc1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f97316"/><stop offset="100%" stopColor="#dc2626"/></linearGradient>
+      <linearGradient id="icbc2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+    <circle cx="16" cy="16" r="13" fill="url(#icbc1)" opacity="0.15"/>
+    <circle cx="16" cy="16" r="4.5" fill="url(#icbc1)"/>
+    <path d="M10.2 10.2a8 8 0 000 11.6" stroke="url(#icbc1)" strokeWidth="2.2" strokeLinecap="round"/>
+    <path d="M21.8 10.2a8 8 0 010 11.6" stroke="url(#icbc1)" strokeWidth="2.2" strokeLinecap="round"/>
+    <path d="M6.5 6.5a13.5 13.5 0 000 19" stroke="url(#icbc1)" strokeWidth="1.8" strokeLinecap="round" opacity="0.6"/>
+    <path d="M25.5 6.5a13.5 13.5 0 010 19" stroke="url(#icbc1)" strokeWidth="1.8" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+);
+
+const IconGift = ({ size = 30 }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="icgift1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient>
+      <linearGradient id="icgift2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+    <rect x="4" y="14" width="24" height="14" rx="3" fill="url(#icgift1)"/>
+    <rect x="4" y="14" width="24" height="14" rx="3" fill="url(#icgift2)" opacity="0.2"/>
+    <rect x="3" y="9" width="26" height="7" rx="3" fill="url(#icgift1)" opacity="0.85"/>
+    <path d="M16 9V28" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M4 12.5H28" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+    <path d="M16 9C16 9 12 4 9 6s1 5 7 3z" fill="white" opacity="0.8"/>
+    <path d="M16 9C16 9 20 4 23 6s-1 5-7 3z" fill="white" opacity="0.8"/>
+  </svg>
+);
+
 const IconCTAHeart = ({ size = 44 }) => (
   <svg viewBox="0 0 48 48" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -201,12 +249,14 @@ const LandingPage = () => {
   }, []);
 
   const features = [
-    { Icon: IconChatRooms, title: 'Real-Time Chat Rooms',  desc: '9+ themed rooms covering Indian, International, Gaming, Music Lounge and exclusive Staff Rooms with live messaging.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
-    { Icon: IconVoice,     title: 'Voice & Media Sharing', desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room.', tags: ['Voice', 'Audio Record', 'YouTube'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
-    { Icon: IconPrivate,   title: 'Private Messaging',     desc: '1-on-1 private conversations with file sharing, voice messages and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], bg: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08))', color: '#7c3aed' },
-    { Icon: IconTools,     title: 'Advanced User Tools',   desc: 'Gender-based filtering, friend requests, user blocking, whisper messages and full user profiles.', tags: ['Filters', 'Friends', 'Block'], bg: 'linear-gradient(135deg,rgba(59,130,246,0.12),rgba(99,102,241,0.08))', color: '#3b82f6' },
-    { Icon: IconPremium,   title: 'Premium Customization', desc: 'Badge holders unlock gradient text effects, glowing animations, username FX and exclusive profile styling.', tags: ['Gradient', 'Animations', 'Badges'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))', color: '#f59e0b' },
-    { Icon: IconShield,    title: 'Security & Moderation', desc: 'VPN detection, device fingerprinting, auto-moderation, kick/ban/mute systems and reporting tools.', tags: ['VPN Shield', 'Auto-Mod', 'Reports'], bg: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', color: '#10b981' },
+    { Icon: IconChatRooms,  title: 'Real-Time Chat Rooms',       desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and Staff Rooms with live messaging, typing indicators and styled text.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
+    { Icon: IconTingleBot,  title: 'TingleBot AI',                desc: 'Built-in AI assistant powered by Google Gemini. Get answers, jokes, trivia and smart replies directly inside any chat room — 24/7.', tags: ['AI', 'Gemini', 'Smart Chat'], bg: 'linear-gradient(135deg,rgba(168,85,247,0.12),rgba(109,40,217,0.08))', color: '#a855f7' },
+    { Icon: IconBroadcast,  title: 'RJ Radio & Live Broadcast',   desc: 'Verified RJs go live with voice + YouTube music sync for all listeners. Background audio keeps playing even when you minimize the panel.', tags: ['RJ Live', 'YouTube Sync', 'Background'], bg: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(220,38,38,0.08))', color: '#f97316' },
+    { Icon: IconGift,       title: 'Virtual Gifts & Coin Wallet', desc: 'Send roses, crowns and diamonds to your favourite RJ during live broadcasts. Track earnings, view the leaderboard and buy coins.', tags: ['Coins', 'Gifts', 'Leaderboard'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.08))', color: '#f59e0b' },
+    { Icon: IconVoice,      title: 'Voice & Media Sharing',       desc: 'Send voice messages, record audio in-chat and embed YouTube videos in real-time for the whole room. Emoji reactions on any message.', tags: ['Voice', 'YouTube', 'Reactions'], bg: 'linear-gradient(135deg,rgba(244,63,94,0.12),rgba(251,146,60,0.08))', color: '#f43f5e' },
+    { Icon: IconPrivate,    title: 'Private Messaging',           desc: '1-on-1 private conversations with file sharing, voice messages, read receipts and draggable floating chat windows.', tags: ['Private', 'Files', 'History'], bg: 'linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08))', color: '#7c3aed' },
+    { Icon: IconPremium,    title: 'Premium Customization',       desc: 'Badge holders unlock gradient text effects, glowing animations, username FX, custom fonts and exclusive profile styling.', tags: ['Gradient', 'Animations', 'Badges'], bg: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))', color: '#d97706' },
+    { Icon: IconShield,     title: 'Security & Moderation',       desc: 'VPN detection, device fingerprinting, TingleBot AutoMod, kick/ban/mute, IP banning and comprehensive reporting tools.', tags: ['VPN Shield', 'AutoMod', 'Reports'], bg: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', color: '#10b981' },
   ];
 
   const tiers = [

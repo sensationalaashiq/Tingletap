@@ -228,14 +228,17 @@ html.dark-mode .wd-coin-btn--rj { color:#6ee7b7; border-color:rgba(52,211,153,0.
 .wd-ribbon-quote p { font-size:14.5px; line-height:1.75; color:#3b2d6e; opacity:.85; margin:0; font-family:'Inter',sans-serif; }
 .wd-ribbon-quote p strong { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700; background:linear-gradient(135deg,#6366f1,#a855f7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
-/* Feature tiles grid */
+/* Feature tiles grid — 2-col on all screens, scrollable if many tiles */
 .wd-feature-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
 .wd-ftile { display:flex; align-items:center; gap:12px; padding:14px 15px; background:rgba(255,255,255,.78); border:1.5px solid rgba(99,102,241,.11); border-radius:17px; backdrop-filter:blur(8px); transition:transform .2s ease, box-shadow .2s ease; }
-.wd-ftile:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(99,102,241,.12); }
+.wd-ftile:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(99,102,241,.13); }
 .wd-ftile-icon { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .wd-ftile-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .wd-ftile-body strong { font-size:13px; font-weight:800; color:#1e1b4b; line-height:1.2; }
 .wd-ftile-body span { font-size:11px; color:#6d6b99; line-height:1.4; }
+
+/* Section label for feature groups */
+.wd-feature-section-label { grid-column:1/-1; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#a5b4fc; padding:4px 2px 0; }
 
 /* Identity strip */
 .wd-identity-strip { display:flex; align-items:center; justify-content:center; gap:9px; padding:13px 20px; background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(168,85,247,.08)); border:1.5px solid rgba(99,102,241,.15); border-radius:16px; }

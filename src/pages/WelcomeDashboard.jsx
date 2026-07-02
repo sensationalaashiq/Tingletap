@@ -923,42 +923,174 @@ const WelcomeDashboard = () => {
 
           {/* Feature tiles */}
           <div className="wd-feature-grid">
+
+            {/* 1 — Live Chat Rooms */}
             <div className="wd-ftile">
-              <div className="wd-ftile-icon" style={{background:'rgba(99,102,241,0.1)'}}>
-                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft1G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs><path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z" fill="url(#ft1G)"/></svg>
+              <div className="wd-ftile-icon" style={{background:'rgba(99,102,241,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft1G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs>
+                  <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z" fill="url(#ft1G)"/>
+                </svg>
               </div>
               <div className="wd-ftile-body">
                 <strong>Live Chat Rooms</strong>
                 <span>Real-time text, voice & video</span>
               </div>
             </div>
+
+            {/* 2 — Verified & Safe */}
             <div className="wd-ftile">
-              <div className="wd-ftile-icon" style={{background:'rgba(16,185,129,0.1)'}}>
-                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft2G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,15.97 6,15.42C6.95,14.03 9.17,13 12,13C14.83,13 17.05,14.03 18,15.42C17.76,15.97 17.47,16.5 17.13,17Z" fill="url(#ft2G)"/></svg>
+              <div className="wd-ftile-icon" style={{background:'rgba(16,185,129,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft2G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
+                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,15.97 6,15.42C6.95,14.03 9.17,13 12,13C14.83,13 17.05,14.03 18,15.42C17.76,15.97 17.47,16.5 17.13,17Z" fill="url(#ft2G)"/>
+                </svg>
               </div>
               <div className="wd-ftile-body">
                 <strong>Verified & Safe</strong>
                 <span>Moderated · Encrypted · Secure</span>
               </div>
             </div>
+
+            {/* 3 — Meaningful Bonds */}
             <div className="wd-ftile">
-              <div className="wd-ftile-icon" style={{background:'rgba(236,72,153,0.1)'}}>
-                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft3G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs><path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="url(#ft3G)"/></svg>
+              <div className="wd-ftile-icon" style={{background:'rgba(236,72,153,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft3G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#db2777"/></linearGradient></defs>
+                  <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="url(#ft3G)"/>
+                </svg>
               </div>
               <div className="wd-ftile-body">
                 <strong>Meaningful Bonds</strong>
                 <span>Private chats · Friend system</span>
               </div>
             </div>
+
+            {/* 4 — Active Community */}
             <div className="wd-ftile">
-              <div className="wd-ftile-icon" style={{background:'rgba(14,165,233,0.1)'}}>
-                <svg width="22" height="22" viewBox="0 0 24 24"><defs><linearGradient id="ft4G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0284c7"/></linearGradient></defs><path d="M16,11C17.66,11 18.99,9.66 18.99,8C18.99,6.34 17.66,5 16,5C14.34,5 13,6.34 13,8C13,9.66 14.34,11 16,11M8,11C9.66,11 10.99,9.66 10.99,8C10.99,6.34 9.66,5 8,5C6.34,5 5,6.34 5,8C5,9.66 6.34,11 8,11M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M16,13C15.71,13 15.38,13.02 15.03,13.05C16.19,13.89 17,15.02 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13Z" fill="url(#ft4G)"/></svg>
+              <div className="wd-ftile-icon" style={{background:'rgba(14,165,233,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft4G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0284c7"/></linearGradient></defs>
+                  <path d="M16,11C17.66,11 18.99,9.66 18.99,8C18.99,6.34 17.66,5 16,5C14.34,5 13,6.34 13,8C13,9.66 14.34,11 16,11M8,11C9.66,11 10.99,9.66 10.99,8C10.99,6.34 9.66,5 8,5C6.34,5 5,6.34 5,8C5,9.66 6.34,11 8,11M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M16,13C15.71,13 15.38,13.02 15.03,13.05C16.19,13.89 17,15.02 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13Z" fill="url(#ft4G)"/>
+                </svg>
               </div>
               <div className="wd-ftile-body">
                 <strong>Active Community</strong>
                 <span>555+ members · Growing daily</span>
               </div>
             </div>
+
+            {/* 5 — TingleBot AI */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(168,85,247,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft5G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#c084fc"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+                  <rect x="3" y="6" width="18" height="13" rx="3" fill="url(#ft5G)" opacity=".9"/>
+                  <rect x="3" y="6" width="18" height="13" rx="3" fill="white" opacity=".08"/>
+                  <circle cx="8.5" cy="12.5" r="1.5" fill="white"/>
+                  <circle cx="15.5" cy="12.5" r="1.5" fill="white"/>
+                  <path d="M9.5 15.5c.7.8 1.6 1.3 2.5 1.3s1.8-.5 2.5-1.3" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M9 6V4M15 6V4" stroke="url(#ft5G)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <circle cx="9" cy="3.5" r="1" fill="url(#ft5G)"/>
+                  <circle cx="15" cy="3.5" r="1" fill="url(#ft5G)"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>TingleBot AI</strong>
+                <span>Smart AI assistant in chat</span>
+              </div>
+            </div>
+
+            {/* 6 — RJ Radio & Live Shows */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(239,68,68,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft6G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
+                  <rect x="9" y="2" width="6" height="11" rx="3" fill="url(#ft6G)" opacity=".9"/>
+                  <path d="M5 10a7 7 0 0014 0" stroke="url(#ft6G)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  <line x1="12" y1="17" x2="12" y2="20" stroke="url(#ft6G)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="8" y1="20" x2="16" y2="20" stroke="url(#ft6G)" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="19" cy="5" r="3" fill="#ef4444"/>
+                  <path d="M17.8 5l.8.9L20.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>RJ Radio Shows</strong>
+                <span>Live RJ broadcasts & voice shows</span>
+              </div>
+            </div>
+
+            {/* 7 — Live Broadcast */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(249,115,22,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft7G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fb923c"/><stop offset="100%" stopColor="#ea580c"/></linearGradient></defs>
+                  <circle cx="12" cy="12" r="3.5" fill="url(#ft7G)"/>
+                  <path d="M8 8a6 6 0 000 8" stroke="url(#ft7G)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
+                  <path d="M16 8a6 6 0 010 8" stroke="url(#ft7G)" strokeWidth="1.9" strokeLinecap="round" fill="none"/>
+                  <path d="M5 5a10 10 0 000 14" stroke="url(#ft7G)" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity=".6"/>
+                  <path d="M19 5a10 10 0 010 14" stroke="url(#ft7G)" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity=".6"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Live Broadcast</strong>
+                <span>Go live with YouTube sync</span>
+              </div>
+            </div>
+
+            {/* 8 — Virtual Gifts & Coins */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(245,158,11,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft8G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
+                  <path d="M20 12v-2h-2.18C17.93 9.08 18 8.55 18 8c0-2.21-1.79-4-4-4-1.58 0-2.93.93-3.57 2.27C9.93 4.93 8.58 4 7 4 4.79 4 3 5.79 3 8c0 .55.07 1.08.18 1.58V12H1l3 8h16l3-8h-3z" fill="url(#ft8G)" opacity=".9"/>
+                  <circle cx="12" cy="10" r="2" fill="white" opacity=".7"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Virtual Gifts & Coins</strong>
+                <span>Send gifts · Support RJs</span>
+              </div>
+            </div>
+
+            {/* 9 — Radio Channels */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(20,184,166,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft9G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2dd4bf"/><stop offset="100%" stopColor="#0d9488"/></linearGradient></defs>
+                  <rect x="2" y="8" width="20" height="13" rx="3" fill="url(#ft9G)" opacity=".9"/>
+                  <rect x="2" y="8" width="20" height="13" rx="3" fill="white" opacity=".08"/>
+                  <circle cx="7" cy="14.5" r="2.8" fill="white" opacity=".7"/>
+                  <circle cx="7" cy="14.5" r="1.2" fill="url(#ft9G)"/>
+                  <path d="M13 11.5h5M13 14.5h5M13 17.5h3" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity=".85"/>
+                  <path d="M5 8V5a2 2 0 012-2h4a2 2 0 012 2v3" stroke="url(#ft9G)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Radio Channels</strong>
+                <span>Multiple live music stations</span>
+              </div>
+            </div>
+
+            {/* 10 — Emoji Reactions */}
+            <div className="wd-ftile">
+              <div className="wd-ftile-icon" style={{background:'rgba(234,179,8,0.12)'}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <defs><linearGradient id="ft10G" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#facc15"/><stop offset="100%" stopColor="#ca8a04"/></linearGradient></defs>
+                  <circle cx="12" cy="12" r="10" fill="url(#ft10G)" opacity=".9"/>
+                  <circle cx="12" cy="12" r="10" fill="white" opacity=".07"/>
+                  <circle cx="8.5" cy="9.5" r="1.4" fill="white" opacity=".9"/>
+                  <circle cx="15.5" cy="9.5" r="1.4" fill="white" opacity=".9"/>
+                  <path d="M7.5 14.5c1 2.5 7.5 2.5 9 0" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  <path d="M19 5.5l2-2M5 5.5L3 3.5" stroke="url(#ft10G)" strokeWidth="1.4" strokeLinecap="round" opacity=".6"/>
+                </svg>
+              </div>
+              <div className="wd-ftile-body">
+                <strong>Emoji Reactions</strong>
+                <span>React live to any message</span>
+              </div>
+            </div>
+
           </div>
 
           {/* Bottom identity strip */}
