@@ -895,42 +895,84 @@ const ADULT_PROTECTED_RX = [
 
 /**
  * §E8d — INDIAN ROOM CASUAL-SLANG WHITELIST
- * These low-severity words are used as everyday filler in Indian chat — they
- * are NOT targeting anyone and should be de-escalated on first / second use.
+ * These words are used as everyday filler in Indian chat — they are NOT
+ * targeting anyone and should be de-escalated on first / second / third use.
  * Any word in this set gets the "first-pass grace" treatment in the Indian room.
+ *
+ * Expanded in v3.1 to cover a wider range of common conversational Indian slang
+ * that routinely appears in casual, non-aggressive chat contexts.
  */
 const INDIAN_CASUAL_SLANG = new Set([
     // Very common casual filler — rarely targeting
     'saala','saale','saali','sala','sale','sali',
     'gadha','gadhe','ullu','ullo',
-    'pagal','pagli',
-    'bevkoof','bewakoof','bewda',
+    'pagal','pagli','paglu',
+    'bevkoof','bewakoof','bewda','bewde',
     'harami','haraami','haramkhor',
     'kamina','kameena','kamine','kaminey',
     'nikamma','nalayak','anpad',
     'chikna','maal','awara','lafanga','luchcha',
-    'jhootha','jhoota','chor',
+    'jhootha','jhoota','chor','chori',
     'dhakkan','tharra',
+    // Additional casual expressions commonly used in Indian rooms
+    'bakwas','bakwaas',            // nonsense
+    'faltu','faaltu',              // useless/pointless
+    'besharam','besharm',          // shameless
+    'shatir','shararat',           // mischievous/cunning
+    'ghamand','ghamandi',          // arrogance
+    'ghatiya','ghatiyo',           // cheap/low-quality
+    'nautanki',                    // drama / drama queen
+    // NOTE: chhakka/chakka intentionally omitted — derogatory anti-trans slur;
+    //       must remain subject to normal moderation even in Indian Room.
+    'takla',                       // bald (teasing)
+    'mota','motka','motki',        // chubby (casual teasing)
+    'susta','sustha',              // lazy (casual)
+    'laalchi','lalchi',            // greedy
+    'machhar','makkhi',            // pest/nuisance (casual)
+    'hadd','had',                  // "you've crossed the line" (expression)
+    'yaar','yrr',                  // friend/buddy (safe; listed to prevent fuzzy misfires)
+    'oye','oi',                    // casual address (safe)
+    'arrey','arre','are',          // exclamation (safe)
+    'naalaayak','nayalak',         // alternate spellings
+    'chup','chup kar',             // "shut up" as casual expression
     // Devanagari equivalents
     'साला','साले','गधा','उल्लू','पागल','बेवकूफ',
     'हरामी','कमीना','निकम्मा','नालायक','आवारा',
+    'बकवास','फालतू','बेशर्म','घटिया','नौटंकी',
 ]);
 
 /**
  * §E8e — TARGETING CONTEXT INDICATORS
- * A message is considered "targeted" when it clearly directs abuse at a specific
- * person rather than using slang as a general exclamation.
- * Heuristic: pronoun / direct-address words appear near abusive content.
+ * A message is considered "targeted" when it contains patterns that clearly
+ * direct abuse at a specific person — NOT merely because a generic pronoun
+ * like "you", "u", "tu", or "tum" is present.
+ *
+ * Design principle: casual Indian conversations constantly include "tu/tum/you"
+ * as normal speech. Treating every pronoun as a targeting indicator causes
+ * massive false positives in the Indian Room — e.g. "yaar tu pagal hai" would
+ * skip leniency and get moderated even though it is clearly casual.
+ *
+ * Targeting is only flagged when there is an unambiguous direct-abuse
+ * structure: an @mention, a possessive-family phrase, a "you are [X]" insult
+ * sentence, a direct Hindi command at a person, or a self-harm direction.
  */
 const TARGETING_INDICATORS_RX = [
-    // English direct address
-    /\b(you|u|ur|your|yourself|he|she|they|him|her|them)\b/i,
-    // Hindi direct address
-    /\b(tum|tujhe|teri|tera|tere|tumhe|aap|apko|apne|tu|tujhko|isko|usko|iski|uski|iska|uska)\b/i,
-    // Punjabi/Bhojpuri direct address
-    /\b(tenu|tohe|tohar|toke)\b/i,
-    // @mention pattern
+    // @mention — the clearest possible direct-addressing indicator
     /@[a-z0-9_]{2,}/i,
+    // Possessive family-member targeting: "teri maa", "your mom", "tera baap", etc.
+    // These combine with FAMILY_ABUSE_ROOTS hits and are always enforced separately,
+    // but this guard also blocks Indian Room leniency for the message as a whole.
+    /\b(teri|tera|tere|tumhari|tumhare|your)\s+(maa|ma|behen|behan|baap|bhai|sister|mother|father|mom|dad)\b/i,
+    // "you are / u r [a] [word]" — a clear personal-insult sentence structure
+    /\b(you|u)\s+(are|r|were)\s+(a\s+)?\S+/i,
+    // Hindi direct-command abuse aimed at a person: "tujhe X kar / de / dunga"
+    /\btujhe\s+\S+\s+(kar|de|deta|deti|dunga|denge|karunga|karenge)\b/i,
+    // Self-harm direction at a specific person
+    /\b(go\s+)?(kill|hang|rope)\s*(yourself|urself)\b/i,
+    // Narrow Hindi direct-insult construction: "tu/tum/aap [word] hai/ho/hain"
+    // Catches "tu pagal hai", "tum harami ho" (directed personal insults) without
+    // triggering on all occurrences of these pronouns in casual speech.
+    /\b(tu|tum|aap)\s+\S+\s+(hai|ho|hain|hoge|hogi)\b/i,
 ];
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -1114,6 +1156,18 @@ const hasTargetingContext = (text) =>
  * @param {string} text - original message text
  * @param {object} hit  - detection result {type, severity, matched?, …}
  */
+/**
+ * Ambiguous short family-abuse abbreviations that frequently appear as casual
+ * exclamations in adult conversation ("this mf is hilarious", "that mfkr won").
+ * In the adult room we only enforce these when the text contains an explicit
+ * possessive family-targeting phrase ("your mom", "teri maa", etc.).
+ * All other FAMILY_ABUSE_ROOTS words remain strictly enforced everywhere.
+ */
+const ADULT_AMBIGUOUS_FAMILY_ABBREVS = new Set(['mf','mfkr']);
+
+/** Matches explicit possessive family targeting even without the abuse word */
+const FAMILY_TARGETING_RX = /\b(your|teri|tera|tere|tumhari|tumhare)\s+(mom|maa|ma|mother|sister|behen|behan|baap|dad|father|bhai)\b/i;
+
 const isAdultRoomProtected = (text, hit) => {
     // 1. Type-level: these categories are always enforced everywhere
     if (['hate','harassment','threat','scam','info','link'].includes(hit.type)) return true;
@@ -1121,18 +1175,32 @@ const isAdultRoomProtected = (text, hit) => {
     // 2. Severity-level: 'severe' words (incest, pedo, grooming, etc.) are never exempt
     if (hit.severity === 'severe') return true;
 
-    // 3. Family abuse word match — even in adult room these are personal attacks
+    // 3. Family abuse / minor word match
     if (hit.matched) {
         const matchedLower = hit.matched.toLowerCase();
-        if (FAMILY_ABUSE_ROOTS.has(matchedLower)) return true;
+
+        // Special case: short ambiguous abbreviations like 'mf' / 'mfkr' are often used as
+        // casual exclamations ("this mf song is fire") rather than genuine family-targeting.
+        // In the adult room, skip the FAMILY_ABUSE_ROOTS enforcement ONLY for these
+        // abbreviations AND only when no explicit possessive family-targeting phrase is in
+        // the text. Crucially we do NOT return here — all remaining checks (ADULT_PROTECTED_RX,
+        // multi-word family abuse, MINOR_RELATED_WORDS) continue to run so that a message
+        // containing "mf" first but also a protected pattern later is still caught.
+        const skipFamilyRootCheck = ADULT_AMBIGUOUS_FAMILY_ABBREVS.has(matchedLower)
+            && !FAMILY_TARGETING_RX.test(text);
+
+        if (!skipFamilyRootCheck && FAMILY_ABUSE_ROOTS.has(matchedLower)) return true;
         if (MINOR_RELATED_WORDS.has(matchedLower)) return true;
     }
 
     // 4. Pattern-level: incest / minor / non-consensual / religious abuse patterns
+    // This always runs — even when the first matched token was an ambiguous abbreviation —
+    // ensuring that "mf [incest phrase]" or "mfkr [minor reference]" is still enforced.
     if (ADULT_PROTECTED_RX.some(rx => rx.test(text))) return true;
 
-    // 5. Multi-word family abuse (phrase hits don't always set hit.matched to full phrase)
-    //    Re-check the raw text against family abuse phrases
+    // 5. Multi-word family abuse — phrase hits don't always set hit.matched to the full phrase.
+    // Re-scan the raw text against every multi-word FAMILY_ABUSE_ROOTS entry regardless of
+    // what the initial matched token was, so mixed messages are never missed.
     const lower = text.toLowerCase();
     for (const root of FAMILY_ABUSE_ROOTS) {
         if (root.includes(' ') && lower.includes(root)) return true;
@@ -1148,10 +1216,15 @@ const isAdultRoomProtected = (text, hit) => {
  * Leniency applies ONLY when ALL of the following hold:
  *  - the violation type is 'abuse' (not explicit / hate / threat / scam)
  *  - the matched word is in the casual-slang set OR severity is 'low'
- *  - there is no clear targeting context (no "you / tujhe / teri…" nearby)
+ *  - there is no clear targeting context (no "@mention / teri maa / you are…")
  *  - the user has not already accumulated several violations this session
  *
- * Medium-severity abuse gets ONE grace pass; low-severity gets TWO.
+ * Grace pass counts (v3.1 — relaxed to reduce false positives):
+ *   • Low severity OR known casual slang → 3 grace passes (was 2)
+ *   • Medium severity (non-casual, non-targeted) → 2 grace passes (was 1)
+ *
+ * High / severe abuse, explicit, hate, threats, scams are never lenient.
+ * Spam detection is never lenient.
  */
 const isIndianRoomLenient = (hit, text, priorTotal) => {
     if (hit.type !== 'abuse') return false;
@@ -1160,11 +1233,14 @@ const isIndianRoomLenient = (hit, text, priorTotal) => {
     const matchedLower = (hit.matched || '').toLowerCase();
     const isCasualSlang = INDIAN_CASUAL_SLANG.has(matchedLower);
 
-    // Low severity or known casual slang: grace for first 2 session violations
-    if ((hit.severity === 'low' || isCasualSlang) && priorTotal < 2) return true;
+    // High / severe abuse is never lenient regardless of slang status
+    if (hit.severity === 'high' || hit.severity === 'severe') return false;
 
-    // Medium severity without targeting: grace for very first occurrence only
-    if (hit.severity === 'medium' && !isCasualSlang && priorTotal === 0) return true;
+    // Low severity or known casual slang: grace for first 3 session violations
+    if ((hit.severity === 'low' || isCasualSlang) && priorTotal < 3) return true;
+
+    // Medium severity without targeting: grace for first 2 occurrences
+    if (hit.severity === 'medium' && !isCasualSlang && priorTotal < 2) return true;
 
     return false;
 };
