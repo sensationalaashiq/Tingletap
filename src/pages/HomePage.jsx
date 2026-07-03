@@ -257,6 +257,18 @@ const REACTION_EMOJIS = [
     '✅','❌','💔','💘','🌟','⚡','🎯','🫠'
 ];
 
+// Stable-identity wrapper for handler functions passed into memoized child
+// components. The returned function's reference never changes across
+// renders (empty dep array), but it always forwards to the latest version
+// of `fn` via a ref, so it never becomes a stale closure. This lets us wrap
+// large/complex handlers safely without manually auditing every internal
+// dependency.
+function useStableCallback(fn) {
+    const fnRef = useRef(fn);
+    fnRef.current = fn;
+    return useCallback((...args) => fnRef.current(...args), []);
+}
+
 const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
@@ -892,6 +904,90 @@ const getGenderBorderClass = (userOrGender) => {
     if (g === 'transgender' || g === 'other') return 'transgender-border';
     return 'male-border';
 };
+
+// Extracted so the (potentially large) message array filter/map only
+// re-runs when messages/blocklists/handlers actually change, instead of on
+// every HomePage render (e.g. while the user is typing in the chat input).
+const MessageList = React.memo(({
+    messages,
+    blockedUsers,
+    usersWhoBlockedMe,
+    loggedInUserProfile,
+    openDropdownId,
+    roomKickedUserIds,
+    roomId,
+    chatFeedRef,
+    onDelete,
+    onKick,
+    onUnkick,
+    onReport,
+    onWhisper,
+    onViewProfile,
+    onAddFriend,
+    onPrivateMessage,
+    onBlock,
+    closeAllDropdowns,
+    toggleDropdown,
+    setOpenDropdownId,
+}) => {
+    return (
+        <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
+            {messages.filter(msg => {
+                if (!msg.uid) return true;
+                // TingleBot messages are ALWAYS visible — check before any block list.
+                // Also check tinglebotType for join/leave messages written by regular users
+                // (those use the real uid but must still render as TingleBot strips).
+                const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
+                if (isTinglebotMsg) return true;
+                // Block list filters apply only to real user messages
+                if (blockedUsers.includes(msg.uid)) return false;
+                if (usersWhoBlockedMe.includes(msg.uid)) return false;
+                return true;
+            }).map((msg, index) => {
+                // TingleBot messages render as premium notification strips.
+                // Also check tinglebotType for join/leave messages (written by real users).
+                const isTingleBot = msg.isBot ||
+                    msg.uid === 'tinglebot_system_official_2024' ||
+                    msg.systemBot ||
+                    msg.type?.includes('tinglebot') ||
+                    msg.tinglebotType;
+                if (isTingleBot) {
+                    return (
+                        <TingleBotNotification
+                            key={msg.id}
+                            message={msg}
+                            onDelete={onDelete}
+                            isOwner={loggedInUserProfile?.role === 'owner'}
+                        />
+                    );
+                }
+                return (
+                <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    isEven={index % 2 === 0}
+                    onDelete={onDelete}
+                    onKick={onKick}
+                    onUnkick={onUnkick}
+                    onReport={onReport}
+                    onWhisper={onWhisper}
+                    onViewProfile={onViewProfile}
+                    onAddFriend={onAddFriend}
+                    onPrivateMessage={onPrivateMessage}
+                    onBlock={onBlock}
+                    loggedInUserProfile={loggedInUserProfile}
+                    closeAllDropdowns={closeAllDropdowns}
+                    toggleDropdown={toggleDropdown}
+                    openDropdownId={openDropdownId}
+                    setOpenDropdownId={setOpenDropdownId}
+                    kickedUserIds={roomKickedUserIds}
+                    roomId={roomId}
+                />
+                );
+            })}
+        </main>
+    );
+});
 
 const HomePage = ({ user, roomIdOverride }) => {
     const { roomId: roomIdParam } = useParams();
@@ -6682,7 +6778,22 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     };
 
-    
+    // Stable-identity handler wrappers for the memoized MessageList component
+    // (see useStableCallback definition above HomePage). These never change
+    // reference across renders, so MessageList only re-renders when messages/
+    // blocklists/dropdown state actually change — not on every keystroke in
+    // the chat input.
+    const stableHandleDeleteMessage = useStableCallback(handleDeleteMessage);
+    const stableHandleKickUser = useStableCallback(handleKickUser);
+    const stableHandleUnkickUser = useStableCallback(handleUnkickUser);
+    const stableHandleReportUser = useStableCallback(handleReportUser);
+    const stableHandleWhisperUser = useStableCallback(handleWhisperUser);
+    const stableHandleViewProfile = useStableCallback(handleViewProfile);
+    const stableHandlePrivateMessage = useStableCallback(handlePrivateMessage);
+    const stableHandleBlockUser = useStableCallback(handleBlockUser);
+    const stableCloseAllDropdowns = useStableCallback(closeAllDropdowns);
+    const stableToggleDropdown = useStableCallback(toggleDropdown);
+    const stableHandleSetOpenDropdownId = useStableCallback(handleSetOpenDropdownId);
 
 
 
@@ -6903,61 +7014,28 @@ const HomePage = ({ user, roomIdOverride }) => {
                           </div>
                       </header>
 
-                    <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
-                        {messages.filter(msg => {
-                            if (!msg.uid) return true;
-                            // TingleBot messages are ALWAYS visible — check before any block list.
-                            // Also check tinglebotType for join/leave messages written by regular users
-                            // (those use the real uid but must still render as TingleBot strips).
-                            const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
-                            if (isTinglebotMsg) return true;
-                            // Block list filters apply only to real user messages
-                            if (blockedUsers.includes(msg.uid)) return false;
-                            if (usersWhoBlockedMe.includes(msg.uid)) return false;
-                            return true;
-                        }).map((msg, index) => {
-                            // TingleBot messages render as premium notification strips.
-                            // Also check tinglebotType for join/leave messages (written by real users).
-                            const isTingleBot = msg.isBot ||
-                                msg.uid === 'tinglebot_system_official_2024' ||
-                                msg.systemBot ||
-                                msg.type?.includes('tinglebot') ||
-                                msg.tinglebotType;
-                            if (isTingleBot) {
-                                return (
-                                    <TingleBotNotification
-                                        key={msg.id}
-                                        message={msg}
-                                        onDelete={handleDeleteMessage}
-                                        isOwner={loggedInUserProfile?.role === 'owner'}
-                                    />
-                                );
-                            }
-                            return (
-                            <ChatMessage
-                                key={msg.id}
-                                message={msg}
-                                isEven={index % 2 === 0}
-                                onDelete={handleDeleteMessage}
-                                onKick={handleKickUser}
-                                onUnkick={handleUnkickUser}
-                                onReport={handleReportUser}
-                                onWhisper={handleWhisperUser}
-                                onViewProfile={handleViewProfile}
-                                onAddFriend={handleAddFriend}
-                                onPrivateMessage={handlePrivateMessage}
-                                onBlock={handleBlockUser}
-                                loggedInUserProfile={loggedInUserProfile}
-                                closeAllDropdowns={closeAllDropdowns}
-                                toggleDropdown={toggleDropdown}
-                                openDropdownId={openDropdownId}
-                                setOpenDropdownId={handleSetOpenDropdownId}
-                                kickedUserIds={roomKickedUserIds}
-                                roomId={roomId}
-                            />
-                            );
-                        })}
-                        </main>
+                    <MessageList
+                        messages={messages}
+                        blockedUsers={blockedUsers}
+                        usersWhoBlockedMe={usersWhoBlockedMe}
+                        loggedInUserProfile={loggedInUserProfile}
+                        openDropdownId={openDropdownId}
+                        roomKickedUserIds={roomKickedUserIds}
+                        roomId={roomId}
+                        chatFeedRef={chatFeedRef}
+                        onDelete={stableHandleDeleteMessage}
+                        onKick={stableHandleKickUser}
+                        onUnkick={stableHandleUnkickUser}
+                        onReport={stableHandleReportUser}
+                        onWhisper={stableHandleWhisperUser}
+                        onViewProfile={stableHandleViewProfile}
+                        onAddFriend={handleAddFriend}
+                        onPrivateMessage={stableHandlePrivateMessage}
+                        onBlock={stableHandleBlockUser}
+                        closeAllDropdowns={stableCloseAllDropdowns}
+                        toggleDropdown={stableToggleDropdown}
+                        setOpenDropdownId={stableHandleSetOpenDropdownId}
+                    />
                     
 
                 {/* StylishImageUploadModal */}
