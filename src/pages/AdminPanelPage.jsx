@@ -245,10 +245,24 @@ const AdminPanelPage = () => {
   }, [isRoleReady]);
 
   // Real-time user status from RTDB
+  // Presence is now written to status/{roomId}/{uid} (room-scoped paths).
+  // We flatten the nested {roomId: {uid: data}} structure into the same
+  // {uid: data} shape that all downstream consumers expect, adding a
+  // _roomId field so write operations can derive the correct path.
   useEffect(() => {
     const statusRef = ref(rtdb, 'status');
     const unsubscribe = onValue(statusRef, (snapshot) => {
-      const statuses = snapshot.val() || {};
+      const raw = snapshot.val() || {};
+      const statuses = {};
+      Object.entries(raw).forEach(([roomId, users]) => {
+        if (users && typeof users === 'object') {
+          Object.entries(users).forEach(([uid, data]) => {
+            if (data && typeof data === 'object') {
+              statuses[uid] = { ...data, _roomId: roomId };
+            }
+          });
+        }
+      });
       setOnlineStatuses(statuses);
     });
     
@@ -318,12 +332,9 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // Load all kicked users when Rooms tab opens or rooms list changes
-  useEffect(() => {
-    if (activeTab === 'rooms' && rooms.length > 0) {
-      loadAllKickedUsers(rooms);
-    }
-  }, [activeTab, rooms.length]);
+  // Kicked users are loaded manually via the Refresh button in the Rooms tab.
+  // Removed the auto-trigger on tab switch to avoid an unbounded collectionGroup
+  // scan firing every time the admin navigates to the Rooms tab.
 
   // Auto-expiry: clear kicked users whose duration has elapsed
   useEffect(() => {

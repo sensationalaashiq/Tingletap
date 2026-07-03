@@ -93,8 +93,11 @@ export const clearOTP = (email) => localStorage.removeItem(`otp_${email}`);
 // ── Password Reset ────────────────────────────────────────────────────────────
 
 const generateResetToken = (email) => {
+  // Secret key read from build-time env var; falls back to a local-only default so
+  // the dev server on Replit still works without a Replit Secret configured.
+  const secret = import.meta.env.VITE_EMAIL_SECRET || 'tt-reset-secret-local-dev';
   const payload = JSON.stringify({ email, ts: Date.now() });
-  return CryptoJS.AES.encrypt(payload, 'tt-reset-secret').toString()
+  return CryptoJS.AES.encrypt(payload, secret).toString()
     .replace(/[^a-zA-Z0-9]/g, '');
 };
 

@@ -1,5 +1,5 @@
 import { db } from '../firebase/config';
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, query, where, limit, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
 import { DeviceFingerprint } from './deviceFingerprint';
 
 /**
@@ -19,7 +19,7 @@ export class DeviceBanSystem {
 
     try {
       // Listen for real-time updates to banned devices
-      const bannedDevicesQuery = query(collection(db, 'bannedDevices'));
+      const bannedDevicesQuery = query(collection(db, 'bannedDevices'), limit(500));
       this._unsubscribe = onSnapshot(bannedDevicesQuery, (snapshot) => {
         this.bannedDevices.clear();
         snapshot.docs.forEach(doc => {

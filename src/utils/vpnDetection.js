@@ -4,15 +4,24 @@ import { SECURITY_CONFIG, isWhitelistedIP, isWhitelistedCountry } from '../confi
 export class VPNDetector {
   static async checkIP(ip) {
     try {
-      const apiKey = '2441a8428c694a809adfa381591efe51';
-      const url = `https://ipgeolocation.abstractapi.com/v1/?api_key=${apiKey}&ip_address=${ip}`;
+      // Call proxy endpoint (Netlify Function in production) to avoid exposing the API key
+      // in client-side code. Falls back gracefully when the function is unavailable.
+      let data;
+      try {
+        const fnUrl = `/.netlify/functions/vpn-check?ip=${encodeURIComponent(ip)}`;
+        const fnResp = await fetch(fnUrl);
+        if (fnResp.ok) {
+          data = await fnResp.json();
+        } else {
+          throw new Error(`Proxy HTTP ${fnResp.status}`);
+        }
+      } catch (proxyErr) {
+        // In development (Replit) the Netlify Function does not exist — skip silently.
+        console.warn('[VPNDetector] Proxy unavailable, skipping VPN check:', proxyErr.message);
+        return { isVPN: false, confidence: 'unavailable', service: 'AbstractAPI' };
+      }
 
-      console.log(`Checking VPN status for IP: ${ip} using Abstract API`);
-
-      const response = await this.httpGetAsync(url);
-      const data = JSON.parse(response);
-
-      console.log('Abstract API VPN check:', { ip, data });
+      console.log('Abstract API VPN check (via proxy):', { ip, data });
 
       // Check if it's a VPN/Proxy based on Abstract API response
       const isVPN = data.security?.is_vpn || 

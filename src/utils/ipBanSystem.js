@@ -1,5 +1,5 @@
 import { db } from '../firebase/config';
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, query, where, limit, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
 import { VPNDetector } from './vpnDetection';
 
 /**
@@ -19,7 +19,7 @@ export class IPBanSystem {
 
     try {
       // Listen for real-time updates to banned IPs
-      const bannedIPsQuery = query(collection(db, 'bannedIPs'));
+      const bannedIPsQuery = query(collection(db, 'bannedIPs'), limit(500));
       this._unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
         this.bannedIPs.clear();
         snapshot.docs.forEach(doc => {

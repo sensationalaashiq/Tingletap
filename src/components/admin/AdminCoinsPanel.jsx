@@ -516,15 +516,12 @@ function RJEarningsSection({ config }) {
   useEffect(() => {
     const u1 = subscribeAllRJEarnings(async (rjs) => {
       setRjEarnings(rjs);
-      // Load withdrawal info for each RJ
-      const withdrawals = {};
-      await Promise.all(rjs.map(async rj => {
-        try {
-          const info = await fetchRJWithdrawalInfo(rj.uid);
-          if (info) withdrawals[rj.uid] = info;
-        } catch {}
-      }));
-      setRjWithdrawals(withdrawals);
+      // Batch-fetch all withdrawal info in one pass (replaces N individual getDoc calls)
+      try {
+        const uids = rjs.map(rj => rj.uid).filter(Boolean);
+        const withdrawals = await fetchRJWithdrawalInfoBatch(uids);
+        setRjWithdrawals(withdrawals);
+      } catch {}
     });
     const u2 = subscribeRJPayments(setPayments);
     return () => { u1(); u2(); };

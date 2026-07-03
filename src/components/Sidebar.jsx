@@ -201,14 +201,8 @@ const Sidebar = ({
     return () => { delete window.setProfileUser; };
   }, [setProfileUser]);
 
-  /* -- kicked users for current room (real-time) -- */
-  useEffect(() => {
-    if (!roomId) { setKickedUserIds(new Set()); return; }
-    const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
-      setKickedUserIds(new Set(snap.docs.map(d => d.id)));
-    }, () => {});
-    return () => unsub();
-  }, [roomId]);
+  /* -- kicked users: received as prop from HomePage (no duplicate listener) -- */
+  // The kickedUserIds state is populated from the prop below; no onSnapshot here.
 
   /* -- rooms subscription -- */
   useEffect(() => {

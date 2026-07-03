@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { parseDurationMs } from '../utils/modExpiryService';
 import renderTextWithLinks from '../utils/linkifyText';
 
@@ -123,7 +123,7 @@ const WarningAnnouncementManager = ({ isVisible, onClose, currentUserProfile }) 
 
   useEffect(() => {
     if (!isVisible) return;
-    const q = query(collection(db, 'warnings_announcements'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'warnings_announcements'), orderBy('createdAt', 'desc'), limit(50));
     return onSnapshot(q, (snap) => setWarnings(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, [isVisible]);
 

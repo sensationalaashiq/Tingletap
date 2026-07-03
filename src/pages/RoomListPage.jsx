@@ -251,16 +251,18 @@ const RoomListPage = () => {
     });
   }, []);
 
+  // ── Room occupancy counts — scoped to roomCounts/{roomId}/{uid} entries ──
+  // Each online user writes a lightweight true entry under their room.
+  // This avoids downloading the full status/ tree (which contains all user data)
+  // just to count room members.
   useEffect(() => {
-    return onValue(ref(rtdb, 'status'), (snap) => {
-      const presences = snap.val() || {};
+    return onValue(ref(rtdb, 'roomCounts'), (snap) => {
+      const data = snap.val() || {};
       const counts = {};
-      const STALE_MS = 5 * 60 * 1000;
-      const now = Date.now();
-      Object.values(presences).forEach(u => {
-        const fresh = !u.last_changed || (now - u.last_changed) < STALE_MS;
-        if (u.state === 'online' && u.currentRoomId && fresh)
-          counts[u.currentRoomId] = (counts[u.currentRoomId] || 0) + 1;
+      Object.entries(data).forEach(([roomId, members]) => {
+        if (members && typeof members === 'object') {
+          counts[roomId] = Object.keys(members).length;
+        }
       });
       setRoomCounts(counts);
     });

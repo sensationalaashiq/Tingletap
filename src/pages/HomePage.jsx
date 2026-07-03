@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';

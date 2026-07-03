@@ -394,7 +394,8 @@ export function subscribeRJEarnings(rjUid, callback) {
 }
 
 export function subscribeAllRJEarnings(callback) {
-  return onSnapshot(collection(db, 'rjEarnings'), (snap) => {
+  const q = query(collection(db, 'rjEarnings'), limit(100));
+  return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
   });
 }
@@ -402,6 +403,24 @@ export function subscribeAllRJEarnings(callback) {
 export async function fetchRJWithdrawalInfo(rjUid) {
   const snap = await getDoc(doc(db, 'rjWithdrawalInfo', rjUid));
   return snap.exists() ? snap.data() : null;
+}
+
+// Batch-fetch withdrawal info for multiple RJ UIDs in a single pass.
+// Avoids the N+1 pattern of calling fetchRJWithdrawalInfo per RJ in a loop.
+export async function fetchRJWithdrawalInfoBatch(uids) {
+  if (!uids || uids.length === 0) return {};
+  const result = {};
+  const chunks = [];
+  for (let i = 0; i < uids.length; i += 10) chunks.push(uids.slice(i, i + 10));
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const snaps = await Promise.all(chunk.map(uid => getDoc(doc(db, 'rjWithdrawalInfo', uid))));
+        snaps.forEach(snap => { if (snap.exists()) result[snap.id] = snap.data(); });
+      } catch {}
+    })
+  );
+  return result;
 }
 
 export async function saveRJWithdrawalInfo(rjUid, info) {
