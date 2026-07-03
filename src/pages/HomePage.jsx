@@ -21,6 +21,7 @@ import StylishConfirmationDialogue from '../components/StylishConfirmationDialog
 import AddFriendConfirmModal from '../components/AddFriendConfirmModal';
 import ChatActionModal from '../components/ChatActionModal';
 import AdminBanKickModal from '../components/AdminBanKickModal';
+import ErrorBoundary from '../components/ErrorBoundary';
 import Sidebar from '../components/Sidebar';
 import SettingsSidebar from '../components/SettingsSidebar';
 import CustomAudioPlayer from '../components/CustomAudioPlayer';
@@ -7289,14 +7290,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                 />
 
                 {/* Broadcast Panel */}
-                <BroadcastPanel
-                    isOpen={isBroadcastOpen}
-                    onClose={() => setIsBroadcastOpen(false)}
-                    loggedInUserProfile={loggedInUserProfile}
-                    allUsersProfiles={friendsProfiles || []}
-                    roomId={roomId}
-                    onLiveStatus={setLiveBroadcastCount}
-                />
+                <ErrorBoundary>
+                    <BroadcastPanel
+                        isOpen={isBroadcastOpen}
+                        onClose={() => setIsBroadcastOpen(false)}
+                        loggedInUserProfile={loggedInUserProfile}
+                        allUsersProfiles={friendsProfiles || []}
+                        roomId={roomId}
+                        onLiveStatus={setLiveBroadcastCount}
+                    />
+                </ErrorBoundary>
 
                 {/* YouTube Search Modal */}
                 <YouTubeSearchModal 

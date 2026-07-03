@@ -159,7 +159,7 @@ const BADGE_SVGS = {
   )
 };
 
-const RoyalTrustBadge = ({ trustScore, trustRank, showTooltip = true, size = 'md', showLabel = true }) => {
+const RoyalTrustBadge = React.memo(({ trustScore, trustRank, showTooltip = true, size = 'md', showLabel = true }) => {
   const [hovered, setHovered] = useState(false);
 
   const score = trustScore ?? 10;
@@ -217,7 +217,7 @@ const RoyalTrustBadge = ({ trustScore, trustRank, showTooltip = true, size = 'md
       )}
     </div>
   );
-};
+});
 
 export const TrustBadgeInline = ({ trustScore, trustRank }) => {
   const score = trustScore ?? 10;

@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -380,35 +380,40 @@ const Sidebar = ({
   /* -- filter users -- */
   // liveUsers is already filtered to the current room by the RTDB listener in HomePage.
   // We deduplicate by uid, then apply only search/gender UI filters.
-  const uniqueUsers = new Map();
-  liveUsers.forEach(u => { if (u?.uid && !uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
+  // FIX 12: memoize this filter+sort pass so it only recomputes when the
+  // underlying user list or active filters actually change, not on every
+  // unrelated Sidebar re-render (e.g. dropdown open/close, hover state).
+  const filteredUsers = useMemo(() => {
+    const uniqueUsers = new Map();
+    liveUsers.forEach(u => { if (u?.uid && !uniqueUsers.has(u.uid)) uniqueUsers.set(u.uid, u); });
 
-  const filteredUsers = Array.from(uniqueUsers.values()).filter(u => {
-    if (!u?.uid) return false;
-    // Search filter
-    if (searchQuery.trim()) {
-      if (!(u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim())) return false;
-    }
-    // Gender filter
-    if (genderFilter === 'female') return u.gender?.toLowerCase() === 'female';
-    if (genderFilter === 'male')   return u.gender?.toLowerCase() === 'male';
-    // 'all' — show every user type: guest (Stree/Purush/Navrang), member, badge, owner, admin, moderator
-    return true;
-  }).sort((a, b) => {
-    const roleRank = (u) => {
-      const role = u.role?.toLowerCase();
-      if (role === 'owner')     return 5;
-      if (role === 'admin')     return 4;
-      if (role === 'moderator') return 3;
-      if (role === 'guest')     return 0;
-      // registered user — badge holders above regular members
-      return (u.badge && u.badge !== '') ? 2 : 1;
-    };
-    const diff = roleRank(b) - roleRank(a);
-    if (diff !== 0) return diff;
-    // same rank → alphabetical by displayName
-    return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase());
-  });
+    return Array.from(uniqueUsers.values()).filter(u => {
+      if (!u?.uid) return false;
+      // Search filter
+      if (searchQuery.trim()) {
+        if (!(u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim())) return false;
+      }
+      // Gender filter
+      if (genderFilter === 'female') return u.gender?.toLowerCase() === 'female';
+      if (genderFilter === 'male')   return u.gender?.toLowerCase() === 'male';
+      // 'all' — show every user type: guest (Stree/Purush/Navrang), member, badge, owner, admin, moderator
+      return true;
+    }).sort((a, b) => {
+      const roleRank = (u) => {
+        const role = u.role?.toLowerCase();
+        if (role === 'owner')     return 5;
+        if (role === 'admin')     return 4;
+        if (role === 'moderator') return 3;
+        if (role === 'guest')     return 0;
+        // registered user — badge holders above regular members
+        return (u.badge && u.badge !== '') ? 2 : 1;
+      };
+      const diff = roleRank(b) - roleRank(a);
+      if (diff !== 0) return diff;
+      // same rank → alphabetical by displayName
+      return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase());
+    });
+  }, [liveUsers, searchQuery, genderFilter]);
 
   /* -- role-based mod permissions (for viewer) -- */
   const viewerRole = loggedInUserProfile?.role?.toLowerCase();

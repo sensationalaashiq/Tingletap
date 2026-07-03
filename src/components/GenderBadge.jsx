@@ -1,7 +1,7 @@
 import React from 'react';
 import './GenderBadge.css';
 
-const GenderBadge = ({ gender, size = 'small', className = '' }) => {
+const GenderBadge = React.memo(({ gender, size = 'small', className = '' }) => {
   const renderGenderIcon = () => {
     const genderLower = gender?.toLowerCase();
 
@@ -41,6 +41,6 @@ const GenderBadge = ({ gender, size = 'small', className = '' }) => {
       </div>
     </div>
   );
-};
+});
 
 export default GenderBadge;

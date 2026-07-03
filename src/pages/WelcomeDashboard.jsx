@@ -411,6 +411,7 @@ const WelcomeDashboard = () => {
     } catch { return ''; }
   });
   const [showBanModal, setShowBanModal] = useState(false);
+  const banModalIntervalRef = useRef(null);
   const [isScrolled, setIsScrolled]   = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showUserDrop, setShowUserDrop]   = useState(false);
@@ -518,7 +519,13 @@ const WelcomeDashboard = () => {
         const snap = await getDoc(doc(db, 'users', cu.uid));
         if (snap.exists()) {
           const d = snap.data();
-          if (d.isBanned) { setShowBanModal(true); setInterval(() => setShowBanModal(true), 1000); }
+          if (d.isBanned) {
+            setShowBanModal(true);
+            /* FIX 15: avoid leaking a permanent 1s interval — clear any prior one first
+               and store the id so the effect cleanup below can clear it on unmount. */
+            if (banModalIntervalRef.current) clearInterval(banModalIntervalRef.current);
+            banModalIntervalRef.current = setInterval(() => setShowBanModal(true), 1000);
+          }
           let dt = d.createdAt || cu.metadata.creationTime;
           if (dt?.toDate) dt = dt.toDate();
           else if (typeof dt === 'string') dt = new Date(dt);
@@ -529,7 +536,13 @@ const WelcomeDashboard = () => {
       } catch { setCurrentDate(''); }
     });
 
-    return () => unsubAuth();
+    return () => {
+      unsubAuth();
+      if (banModalIntervalRef.current) {
+        clearInterval(banModalIntervalRef.current);
+        banModalIntervalRef.current = null;
+      }
+    };
   }, []);
 
   const handleLogout = async () => {

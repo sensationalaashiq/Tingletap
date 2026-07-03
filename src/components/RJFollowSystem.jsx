@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from '../firebase/config';
 import {
   doc, setDoc, deleteDoc, onSnapshot, collection,
-  getDocs, query, orderBy
+  getDocs, query, orderBy, limit, getCountFromServer
 } from 'firebase/firestore';
 import './RJFollowSystem.css';
 
@@ -60,7 +60,9 @@ const FollowerListModal = ({ rjUid, rjName, type, onClose }) => {
         const collPath = type === 'followers'
           ? collection(db, 'users', rjUid, 'followers')
           : collection(db, 'users', rjUid, 'following');
-        const snap = await getDocs(query(collPath, orderBy('followedAt', 'desc')));
+        /* FIX 18: cap list fetch at 50 most-recent entries to avoid downloading
+           unbounded follower lists for popular RJs. */
+        const snap = await getDocs(query(collPath, orderBy('followedAt', 'desc'), limit(50)));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         setUsers(list);
       } catch (err) {
@@ -148,24 +150,28 @@ const RJFollowButton = ({ rjUid, rjName, rjAvatar, showCounts = true, compact = 
     return () => unsub();
   }, [myUid, rjUid, isSelf]);
 
-  /* ── Real-time follower count (using onSnapshot on followers subcollection) ── */
+  /* FIX 18: One-time aggregation count instead of a persistent onSnapshot
+     listener on the full followers/following subcollections (which downloads
+     every doc just to read `.size`). Optimistic local increment/decrement on
+     follow/unfollow below keeps the displayed count instantly accurate. */
   useEffect(() => {
     if (!rjUid) return;
+    let cancelled = false;
     const followersRef = collection(db, 'users', rjUid, 'followers');
-    const unsub = onSnapshot(followersRef, snap => {
-      setFollowerCount(snap.size);
-    }, () => {});
-    return () => unsub();
+    getCountFromServer(followersRef)
+      .then(snap => { if (!cancelled) setFollowerCount(snap.data().count); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [rjUid]);
 
-  /* ── Real-time following count ── */
   useEffect(() => {
     if (!rjUid) return;
+    let cancelled = false;
     const followingRef = collection(db, 'users', rjUid, 'following');
-    const unsub = onSnapshot(followingRef, snap => {
-      setFollowingCount(snap.size);
-    }, () => {});
-    return () => unsub();
+    getCountFromServer(followingRef)
+      .then(snap => { if (!cancelled) setFollowingCount(snap.data().count); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [rjUid]);
 
   const handleFollow = useCallback(async () => {
@@ -182,6 +188,7 @@ const RJFollowButton = ({ rjUid, rjName, rjAvatar, showCounts = true, compact = 
           deleteDoc(followRef),
           deleteDoc(followingRef),
         ]);
+        setFollowerCount(prev => Math.max(0, prev - 1));
       } else {
         /* Follow — store enough info for lists */
         const myProfile = currentUser;
@@ -200,6 +207,7 @@ const RJFollowButton = ({ rjUid, rjName, rjAvatar, showCounts = true, compact = 
             followedAt: now,
           }),
         ]);
+        setFollowerCount(prev => prev + 1);
       }
     } catch (err) {
       console.warn('RJFollowSystem follow error:', err);

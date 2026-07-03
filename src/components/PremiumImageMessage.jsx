@@ -66,7 +66,7 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
 };
 
 /* ─────────────────────────── MAIN COMPONENT ─────────────────────────── */
-const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
+const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = false }) => {
   const [state, setState] = useState('hidden');
   const [showModal, setShowModal] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
@@ -237,6 +237,6 @@ const PremiumImageMessage = ({ imageUrl, imageFileName, compact = false }) => {
       )}
     </>
   );
-};
+});
 
 export default PremiumImageMessage;

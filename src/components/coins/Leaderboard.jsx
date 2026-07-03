@@ -6,6 +6,7 @@ import {
   collection, query, where, orderBy, limit, onSnapshot, getDocs
 } from 'firebase/firestore';
 import { formatCoins } from '../../utils/coinSystem';
+import { getCachedUserProfile } from '../../utils/userProfileCache';
 import './Leaderboard.css';
 
 /* ── Icons ── */
@@ -74,13 +75,30 @@ const TYPE_OPTIONS = [
 const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const MEDAL_LABELS = ['1st', '2nd', '3rd'];
 
+/* FIX 16: module-level caches shared across mounts/tab-switches so re-toggling
+   period/type doesn't refetch the same user profiles or show a loading flicker
+   for data we already have. Live onSnapshot still keeps data fresh. */
+const lbResultCache = {}; // key: `${type}:${period}` -> { data, userMap, ts }
+const LB_RESULT_TTL_MS = 30 * 1000;
+
 function useLeaderboard(type, period) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [userMap, setUserMap] = useState({});
+  const cacheKey = `${type}:${period}`;
+  const cached = lbResultCache[cacheKey];
+  const hasFreshCache = cached && (Date.now() - cached.ts) < LB_RESULT_TTL_MS;
+
+  const [data, setData] = useState(cached ? cached.data : []);
+  const [loading, setLoading] = useState(!hasFreshCache);
+  const [userMap, setUserMap] = useState(cached ? cached.userMap : {});
 
   useEffect(() => {
-    setLoading(true);
+    const c = lbResultCache[cacheKey];
+    if (c && (Date.now() - c.ts) < LB_RESULT_TTL_MS) {
+      setData(c.data);
+      setUserMap(c.userMap);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     const txType = type === 'senders' ? 'gift_sent' : 'gift_received';
 
     let q;
@@ -120,18 +138,18 @@ function useLeaderboard(type, period) {
       const sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
       setData(sorted);
 
-      // Load user profiles
+      // Load user profiles (shared FIX 20 cache avoids refetching known profiles)
       const uids = sorted.map(s => s.uid);
       const newMap = { ...userMap };
       await Promise.all(uids.filter(uid => !newMap[uid]).map(async uid => {
         try {
-          const { doc: fsDoc, getDoc: fsGetDoc } = await import('firebase/firestore');
-          const snap2 = await fsGetDoc(fsDoc(db, 'users', uid));
-          if (snap2.exists()) newMap[uid] = snap2.data();
+          const profile = await getCachedUserProfile(uid);
+          if (profile) newMap[uid] = profile;
         } catch {}
       }));
       setUserMap(newMap);
       setLoading(false);
+      lbResultCache[cacheKey] = { data: sorted, userMap: newMap, ts: Date.now() };
     });
 
     return unsub;

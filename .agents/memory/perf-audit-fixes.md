@@ -20,8 +20,17 @@ description: Tracks which of the 18 audit fixes were applied and what patterns t
 
 ## Remaining / not applied
 
-- **useMemo for filtered lists**: Expensive message filters in HomePage render path not yet memoized.
-- **LuxuryPrivateMessageWindow / Sidebar memo**: Component-level React.memo not yet added to imported components.
 - **usernamePreferences full scan**: `syncAllUsersStyles()` still calls `getDocs(collection(db, 'users'))` on init — high-read risk on large user base.
 - **UserProfileContext refactor**: Major refactor to share user profile data via Context instead of prop drilling — high risk, not done.
 - **messageTextPreferences idempotency**: Already correct — uses `window._messageStylesUnsubscribe` guard before starting listener.
+
+## Session 2 additions (July 2026)
+
+- **React.memo**: Added to `GenderBadge`, `RoyalTrustBadge`, `PremiumImageMessage`, `TingleBotNotification`. Sidebar's per-row "online user" item was evaluated and deliberately NOT memoized — too many closures/portal/mod-action wiring for the perf gain; treat as a standing exception, not an oversight.
+- **useMemo for filtered lists**: Sidebar's online-user filter/sort/dedupe pipeline (`filteredUsers`) now memoized on `[liveUsers, searchQuery, genderFilter]`. Other HomePage message-filter pipelines were NOT surveyed/memoized this pass — still open if revisited.
+- **Extracting ChatInput.jsx / MessageList.jsx from HomePage.jsx**: Evaluated and deferred both times across two sessions. File is 8,300+ lines with deeply tangled state; treat this as needing a dedicated, carefully-scoped session rather than bundling with smaller perf fixes.
+- **Timer leak in WelcomeDashboard.jsx**: Ban-modal polling `setInterval` wasn't cleared on unmount; fixed with a ref + cleanup. When auditing `setInterval`, distinguish real leaks from intentional persistent ones (see below).
+- **Ban-lockdown intervals are intentional**: `LoginPage.jsx`, `SignupPage.jsx`, and `App.jsx` each run a persistent interval to keep enforcing an active ban screen — do not "fix" these, it would change visible behavior.
+- **Shared profile cache**: `src/utils/userProfileCache.js` (60s TTL, in-flight dedup) is the canonical place for user-profile caching; wired into Leaderboard.jsx. Prefer wiring new call sites into this utility over building bespoke local caches.
+- **RJFollowSystem**: Follower/following counts use one-time `getCountFromServer` + optimistic local updates instead of persistent `onSnapshot` listeners on the subcollections — avoids listener buildup for a rarely-changing count.
+- **Gotcha**: when wrapping a component in `React.memo(...)`, make sure there's exactly one matching closing `});` for that component — files with multiple sibling function components (e.g. a memoized main export + a plain named export below it) can end up with a mismatched brace if you search-replace the wrong `};` occurrence. Always rebuild (`vite build`) after memo-wrapping edits to catch this early.

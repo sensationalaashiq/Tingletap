@@ -14,6 +14,32 @@ import BanKickModal from '../components/BanKickModal';
 import { isKickExpired, autoCheckUnkick } from '../utils/modExpiryService';
 import './RoomListPage.css';
 
+/* FIX 19: Cache external geolocation lookups in sessionStorage for 1 hour so we
+   don't hit the external API on every room-list visit. Behavior/data shape unchanged. */
+const GEO_CACHE_KEY = 'rl_geo_cache_v1';
+const GEO_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+const fetchGeoWithCache = () => {
+  try {
+    const cachedRaw = sessionStorage.getItem(GEO_CACHE_KEY);
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      if (cached && cached.geo && (Date.now() - cached.ts) < GEO_CACHE_TTL_MS) {
+        return Promise.resolve(cached.geo);
+      }
+    }
+  } catch {}
+
+  return fetch('https://ipwho.is/')
+    .then(r => r.json())
+    .then(geo => {
+      try {
+        sessionStorage.setItem(GEO_CACHE_KEY, JSON.stringify({ ts: Date.now(), geo }));
+      } catch {}
+      return geo;
+    });
+};
+
 /* ══════════════════════════════════════════════════════
    PREMIUM SVG ICONS
 ══════════════════════════════════════════════════════ */
@@ -321,8 +347,7 @@ const RoomListPage = () => {
     }).catch(() => {});
 
     // Fetch real IP + geolocation and store for Admin Panel
-    fetch('https://ipwho.is/')
-      .then(r => r.json())
+    fetchGeoWithCache()
       .then(geo => {
         if (geo && geo.success && geo.ip) {
           updateDoc(doc(db, 'users', cu.uid), {
@@ -354,8 +379,7 @@ const RoomListPage = () => {
       const gDeviceType = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ? 'Mobile' : 'Desktop';
 
       DeviceFingerprint.generateFingerprint().then(gDeviceId => {
-        fetch('https://ipwho.is/')
-          .then(r => r.json())
+        fetchGeoWithCache()
           .then(geo => {
             if (!geo || !geo.success) return;
             updateDoc(doc(db, 'guestSessions', guestUid), {

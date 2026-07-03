@@ -538,7 +538,7 @@ function App() {
 
         // Setup online presence
         const userStatusRef = ref(rtdb, `/status/${currentUser.uid}`);
-        onValue(ref(rtdb, '.info/connected'), (snapshot) => {
+        const unsubscribeConnected = onValue(ref(rtdb, '.info/connected'), (snapshot) => {
             if (snapshot.val() === false) return;
             const onlineData = { state: 'online', last_changed: serverTimestamp() };
             onDisconnect(userStatusRef).set({ state: 'offline', last_changed: serverTimestamp() })
@@ -584,6 +584,7 @@ function App() {
           try {
             unsubscribeProfile();
             if (unsubscribeAuthCheck) unsubscribeAuthCheck();
+            if (unsubscribeConnected) unsubscribeConnected();
             if (window.cleanupFirestoreListeners) {
               delete window.cleanupFirestoreListeners;
             }

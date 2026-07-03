@@ -318,7 +318,7 @@ const TBTranslationStrip = ({ text }) => {
 /* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
-const TingleBotNotification = ({ message, onDelete, isOwner }) => {
+const TingleBotNotification = React.memo(({ message, onDelete, isOwner }) => {
   const eventType = detectEventType(message);
   const { Icon, cls } = EVENT_MAP[eventType] || { Icon: IconDefault, cls: '' };
   const text = buildDisplayText(message);
@@ -360,6 +360,6 @@ const TingleBotNotification = ({ message, onDelete, isOwner }) => {
       </div>
     </div>
   );
-};
+});
 
 export default TingleBotNotification;

@@ -917,8 +917,26 @@ const AdminPanelPage = () => {
   const confirmChangeRole = async (newRole) => {
     if (!roleTarget || !newRole || newRole === roleTarget.role) return;
     const myRole = currentUserProfile?.role;
+    /* FIX 23: defense-in-depth guard — re-validate permissions here even though
+       handleOpenRoleModal already checks, in case this is ever invoked directly.
+       Blocks self-escalation, non-privileged callers, and assigning 'owner'. */
+    if (!['owner', 'admin'].includes(myRole)) {
+      pt.error('Only Owner and Admin can change roles.'); return;
+    }
+    if (roleTarget.uid === currentUserProfile?.uid) {
+      pt.error('You cannot change your own role.'); return;
+    }
+    if (roleTarget.role === 'owner' || roleTarget.role === 'superowner') {
+      pt.error("The Owner's role cannot be changed."); return;
+    }
+    if (newRole === 'owner' || newRole === 'superowner') {
+      pt.error('The Owner role cannot be assigned through this panel.'); return;
+    }
     if (myRole === 'admin' && (newRole === 'owner' || newRole === 'admin')) {
       pt.error('Admins cannot assign Owner or Admin roles.'); return;
+    }
+    if (myRole === 'admin' && roleTarget.role === 'admin') {
+      pt.error('Admins cannot demote other Admins.'); return;
     }
     setChangingRole(true);
     try {
