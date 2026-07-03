@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, limit, getDocs, where } from 'firebase/firestore';
 
 /* ── Premium SVG icons ──────────────────────────────── */
 const IC = {
@@ -130,7 +130,8 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
       setRooms(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       if (currentRoomId && !selectedRooms.includes(currentRoomId)) setSelectedRooms([currentRoomId]);
     });
-    const unsubUsers = onSnapshot(query(collection(db, 'users')), (snap) => {
+    // FIX 4: Limit the initial users listener to 100 entries
+    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap) => {
       setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubRooms(); unsubUsers(); };

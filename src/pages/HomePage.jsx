@@ -1821,96 +1821,110 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             });
 
-            const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const userData = docSnap.data();
-                    
-                    // Initialize trust score for existing users who don't have it yet
-                    if (userData.trustScore === undefined) {
-                        initializeUserTrust(user.uid);
-                    }
+            // FIX 5: Centralise to ONE Firestore listener (owned by App.jsx).
+            // HomePage consumes profile updates via a window event dispatched by App.jsx,
+            // plus a one-time getDoc for the initial load. No second onSnapshot is created.
+            const handleLoggedInProfile = (userData) => {
+                if (!userData) return;
 
-                    // Apply daily account-age trust bonus (no-op if called too soon)
-                    if (userData.createdAt) {
-                        applyAccountAgeTrustBonus(user.uid, userData.createdAt).catch(() => {});
-                    }
-                    
-                    // Set profile
-                    setLoggedInUserProfile(userData);
-                    
-                    // Immediately apply font preferences when user profile loads
-                    if (userData.fontPreferences && window.chatFontPreferences) {
-                        const currentPrefs = window.chatFontPreferences;
-                        const firebasePrefs = {
-                            fontSize: userData.fontPreferences.fontSize || "14px",
-                            fontColor: userData.fontPreferences.fontColor || "#333333",
-                            fontFamily: userData.fontPreferences.fontFamily || "inherit",
-                            isBold: Boolean(userData.fontPreferences.isBold),
-                            isItalic: Boolean(userData.fontPreferences.isItalic),
-                            isUnderline: Boolean(userData.fontPreferences.isUnderline),
-                            isStrikethrough: Boolean(userData.fontPreferences.isStrikethrough)
-                        };
-                        
-                        // Apply Firebase preferences to state
-                        setFontSize(firebasePrefs.fontSize);
-                        setFontColor(firebasePrefs.fontColor);
-                        setFontFamily(firebasePrefs.fontFamily);
-                        setIsBold(firebasePrefs.isBold);
-                        setIsItalic(firebasePrefs.isItalic);
-                        setIsUnderline(firebasePrefs.isUnderline);
-                        setIsStrikethrough(firebasePrefs.isStrikethrough);
-                        
-                        // Update global in-memory object only — never localStorage
-                        window.chatFontPreferences = firebasePrefs;
-                    }
-                    
-                    // Load blocked users
-                    if (userData.blockedUsers) {
-                        setBlockedUsers(userData.blockedUsers);
-                    }
-                    // Load users who blocked me (bidirectional block)
-                    if (userData.blockedBy) {
-                        setUsersWhoBlockedMe(userData.blockedBy);
-                    }
-
-                    // Load global settings from Firebase and sync with localStorage
-                    if (userData.settings) {
-                        Object.keys(userData.settings).forEach(key => {
-                            localStorage.setItem(key, userData.settings[key].toString());
-                        });
-                    }
-                    
-                    // Load dark mode preference
-                    if (userData.darkMode !== undefined) {
-                        setIsDarkMode(userData.darkMode);
-                    }
+                // Initialize trust score for existing users who don't have it yet
+                if (userData.trustScore === undefined) {
+                    initializeUserTrust(user.uid);
                 }
-            });
 
-            // Set up global user profiles cache for real-time DP updates
-            if (!window.userProfilesCache) {
-                window.userProfilesCache = new Map();
-            }
+                // Apply daily account-age trust bonus (no-op if called too soon)
+                if (userData.createdAt) {
+                    applyAccountAgeTrustBonus(user.uid, userData.createdAt).catch(() => {});
+                }
 
-            // Listen for all users' profile updates for real-time DP updates
-            const allUsersRef = collection(db, 'users');
-            const unsubscribeAllUsers = onSnapshot(allUsersRef, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" || change.type === "modified") {
-                        const userData = change.doc.data();
-                        const userId = change.doc.id;
-                        
-                        // Update cache
-                        window.userProfilesCache.set(userId, userData);
+                // Set profile
+                setLoggedInUserProfile(userData);
 
-                        // Populate window.userMessageStyles so every viewer renders
-                        // other users' messages with the sender's actual font prefs
-                        // (consistent styling regardless of viewer role / guest state).
-                        // Fallbacks match ChatMessage's rendering defaults (11px / #2d2d2d).
+                // Immediately apply font preferences when user profile loads
+                if (userData.fontPreferences && window.chatFontPreferences) {
+                    const firebasePrefs = {
+                        fontSize: userData.fontPreferences.fontSize || "14px",
+                        fontColor: userData.fontPreferences.fontColor || "#333333",
+                        fontFamily: userData.fontPreferences.fontFamily || "inherit",
+                        isBold: Boolean(userData.fontPreferences.isBold),
+                        isItalic: Boolean(userData.fontPreferences.isItalic),
+                        isUnderline: Boolean(userData.fontPreferences.isUnderline),
+                        isStrikethrough: Boolean(userData.fontPreferences.isStrikethrough)
+                    };
+
+                    // Apply Firebase preferences to state
+                    setFontSize(firebasePrefs.fontSize);
+                    setFontColor(firebasePrefs.fontColor);
+                    setFontFamily(firebasePrefs.fontFamily);
+                    setIsBold(firebasePrefs.isBold);
+                    setIsItalic(firebasePrefs.isItalic);
+                    setIsUnderline(firebasePrefs.isUnderline);
+                    setIsStrikethrough(firebasePrefs.isStrikethrough);
+
+                    // Update global in-memory object only — never localStorage
+                    window.chatFontPreferences = firebasePrefs;
+                }
+
+                // Load blocked users
+                if (userData.blockedUsers) {
+                    setBlockedUsers(userData.blockedUsers);
+                }
+                // Load users who blocked me (bidirectional block)
+                if (userData.blockedBy) {
+                    setUsersWhoBlockedMe(userData.blockedBy);
+                }
+
+                // Load global settings from Firebase and sync with localStorage
+                if (userData.settings) {
+                    Object.keys(userData.settings).forEach(key => {
+                        localStorage.setItem(key, userData.settings[key].toString());
+                    });
+                }
+
+                // Load dark mode preference
+                if (userData.darkMode !== undefined) {
+                    setIsDarkMode(userData.darkMode);
+                }
+            };
+
+            // Initial load (single getDoc — App.jsx owns the real-time onSnapshot)
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) handleLoggedInProfile(docSnap.data());
+            }).catch(() => {});
+
+            // If App.jsx has already fetched the profile, use it immediately
+            if (window._appUserProfile) handleLoggedInProfile(window._appUserProfile);
+
+            // Subscribe to future profile updates from App.jsx's single listener
+            const profileEventHandler = (e) => { if (e.detail) handleLoggedInProfile(e.detail); };
+            window.addEventListener('_appUserProfileChanged', profileEventHandler);
+
+            // FIX 3: Cache infrastructure — lazy per-UID fetching replaces the
+            // global users collection listener.  window.fetchUserProfile(uid) is
+            // exposed so message renderers, avatars, and other consumers can pull
+            // only the profiles they actually display.
+            const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+            if (!window.userProfilesCache) window.userProfilesCache = new Map();
+            if (!window._profileCacheTTL) window._profileCacheTTL = new Map();
+
+            window.fetchUserProfile = async (uid) => {
+                if (!uid) return null;
+                const now = Date.now();
+                const cached  = window.userProfilesCache.get(uid);
+                const cachedAt = window._profileCacheTTL.get(uid) || 0;
+                if (cached && (now - cachedAt) < PROFILE_CACHE_TTL_MS) return cached;
+                try {
+                    const snap = await getDoc(doc(db, 'users', uid));
+                    if (snap.exists()) {
+                        const userData = snap.data();
+                        window.userProfilesCache.set(uid, userData);
+                        window._profileCacheTTL.set(uid, now);
+
+                        // Keep userMessageStyles populated for font rendering
                         if (!window.userMessageStyles) window.userMessageStyles = {};
                         const fp = userData.messageFontPreferences || userData.fontPreferences;
                         if (fp) {
-                            window.userMessageStyles[userId] = {
+                            window.userMessageStyles[uid] = {
                                 fontSize:        fp.fontSize        || '10px',
                                 fontColor:       fp.fontColor       || '#2d2d2d',
                                 fontFamily:      fp.fontFamily      || 'inherit',
@@ -1920,124 +1934,38 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 isStrikethrough: Boolean(fp.isStrikethrough)
                             };
                         }
-                        
-                        // Generate new avatar URL with timestamp
-                        const avatarTimestamp = Date.now();
-                        const newAvatarUrl = userData.photoURL ? 
-                            `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}&v=${Math.random().toString(36).substring(7)}` :
-                            `${getDefaultAvatarUrl(userId, userData.gender)}`;
-                        
-                        // Dispatch global profile update event
+
+                        // Dispatch update event for avatar / display-name refresh
+                        const newAvatarUrl = userData.photoURL
+                            ? `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${now}`
+                            : getDefaultAvatarUrl(uid, userData.gender);
                         window.dispatchEvent(new CustomEvent('userProfileUpdated', {
-                            detail: { userId, userData, newAvatarUrl }
+                            detail: { userId: uid, userData, newAvatarUrl }
                         }));
-                        
-                        // Update avatars in chat messages
-                        const messageAvatars = document.querySelectorAll(`[data-message-uid="${userId}"] .message-avatar`);
-                        messageAvatars.forEach(avatar => {
-                            if (avatar.src !== newAvatarUrl) {
-                                avatar.src = newAvatarUrl;
-                            }
+
+                        // Update DOM avatars that are already rendered
+                        document.querySelectorAll(`[data-message-uid="${uid}"] .message-avatar`).forEach(avatar => {
+                            if (avatar.src !== newAvatarUrl) avatar.src = newAvatarUrl;
+                        });
+                        document.querySelectorAll(`[data-user-uid="${uid}"] .dropdown-avatar, [data-profile-uid="${uid}"] .dropdown-avatar`).forEach(avatar => {
+                            if (avatar.src !== newAvatarUrl) avatar.src = newAvatarUrl;
                         });
 
-                        // Update avatars in user dropdowns inside messages
-                        const messageDropdownAvatars = document.querySelectorAll(`[data-message-uid="${userId}"] .dropdown-avatar, [data-user-uid="${userId}"] .dropdown-avatar, [data-profile-uid="${userId}"] .dropdown-avatar`);
-                        messageDropdownAvatars.forEach(avatar => {
-                            if (avatar.src !== newAvatarUrl) {
-                                avatar.src = newAvatarUrl;
-                            }
-                        });
-
-                        // Comprehensive private message avatar updates with cache busting
-                        const pmAvatarSelectors = [
-                            // Private message headers
-                            `[data-pm-user-uid="${userId}"] .pm-avatar`,
-                            `[data-pm-target-uid="${userId}"] .pm-avatar`, 
-                            `[data-conversation-user="${userId}"] .conversation-avatar`,
-                            `[data-conversation-user="${userId}"] img`,
-                            
-                            // Private message conversations  
-                            `.pm-messages [data-sender-id="${userId}"] .pm-message-avatar`,
-                            `.pm-messages [data-pm-sender="${userId}"] .pm-message-avatar`,
-                            `.pm-messages [data-pm-message-uid="${userId}"] img`,
-                            
-                            // Private message popups and modals
-                            `[data-private-message-target="${userId}"] img`,
-                            `[data-pm-conversation-user="${userId}"] img`,
-                            `.private-message-header[data-user-id="${userId}"] img`,
-                            `.pm-header-avatar[data-user-id="${userId}"]`,
-                            
-                            // Minimized conversation avatars
-                            `[data-minimized-user="${userId}"] .minimized-avatar-img`,
-                            `[data-conversation-user-id="${userId}"] .minimized-dp-only img`,
-                            `[data-minimized-conversation="${userId}"] img`,
-                            
-                            // Conversation list items
-                            `.conversation-item[data-user-id="${userId}"] img`,
-                            `.conversation-avatar[data-user-id="${userId}"]`,
-                            
-                            // Private message target avatars
-                            `.pm-target-avatar[data-user-id="${userId}"]`,
-                            `.private-target-image[data-user-id="${userId}"]`
-                        ];
-                        
-                        let pmUpdatedCount = 0;
-                        pmAvatarSelectors.forEach(selector => {
-                            const pmAvatars = document.querySelectorAll(selector);
-                            pmAvatars.forEach(avatar => {
-                                if (avatar.src !== newAvatarUrl) {
-                                    // Add smooth transition
-                                    avatar.style.transition = 'opacity 0.3s ease';
-                                    avatar.style.opacity = '0.7';
-                                    
-                                    avatar.src = newAvatarUrl;
-                                    pmUpdatedCount++;
-                                    
-                                    // Handle successful load
-                                    avatar.onload = () => {
-                                        avatar.style.opacity = '1';
-                                    };
-                                    
-                                    // Handle error with fallback
-                                    avatar.onerror = () => {
-                                        const fallbackUrl = `${getDefaultAvatarUrl(userId, userData.gender)}`;
-                                        if (avatar.src !== fallbackUrl) {
-                                            avatar.src = fallbackUrl;
-                                        }
-                                        avatar.style.opacity = '1';
-                                    };
-                                    
-                                    // Add tracking attributes
-                                    avatar.setAttribute('data-pm-updated', Date.now().toString());
-                                    avatar.setAttribute('data-pm-user', userId);
-                                }
-                            });
-                        });
-                        
-                        if (pmUpdatedCount > 0) {
-                        }
-
-                        // Update any other avatars in the homepage
-                        const otherAvatars = document.querySelectorAll(`img[data-user-id="${userId}"], img[data-user-uid="${userId}"]`);
-                        otherAvatars.forEach(avatar => {
-                            if (avatar.classList.contains('message-avatar') || 
-                                avatar.classList.contains('dropdown-avatar') || 
-                                avatar.classList.contains('pm-avatar') || 
-                                avatar.classList.contains('conversation-avatar') ||
-                                avatar.classList.contains('minimized-avatar-img')) {
-                                if (avatar.src !== newAvatarUrl) {
-                                    avatar.src = newAvatarUrl;
-                                }
-                            }
-                        });
+                        return userData;
                     }
-                });
-            }, (error) => {
-            });
+                } catch { /* silently swallow fetch errors */ }
+                return null;
+            };
 
+            // --- REMOVED: global onSnapshot(collection(db,'users')) listener ---
+            // Profiles are now fetched lazily via window.fetchUserProfile(uid)
+            // when message senders are seen for the first time (FIX 3).
+            // The fake block below preserves the variable name used in the old
+            // cleanup return so no reference errors occur during the transition.
+            // FIX 3 + FIX 5: Cleanup only removes the event listener.
+            // No Firestore listeners are opened by this effect for profile data.
             return () => {
-                unsubscribe();
-                unsubscribeAllUsers();
+                window.removeEventListener('_appUserProfileChanged', profileEventHandler);
             };
         }
     }, [user, roomId, navigate]);
@@ -2805,6 +2733,29 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                 setMessages(newMessages);
 
+                // FIX 1+2: Start room-scoped style listeners for current sender UIDs.
+                // FIX 3: Pre-populate the profile cache for each new sender so
+                //         avatar / displayName reads don't miss on first render.
+                const senderUids = [...new Set(newMessages.map(m => m.uid).filter(Boolean))];
+                if (senderUids.length > 0) {
+                    const uidKey = senderUids.slice().sort().join(',');
+                    if (window._lastStyleUidKey !== uidKey) {
+                        window._lastStyleUidKey = uidKey;
+                        Promise.all([
+                            import('../utils/messageTextPreferences').then(({ initializeGlobalMessageStyles }) => initializeGlobalMessageStyles(senderUids)),
+                            import('../utils/usernamePreferences').then(({ initializeUsernameStyles }) => initializeUsernameStyles(senderUids))
+                        ]).catch(() => {});
+                    }
+                    // Fetch any sender profiles not yet cached (FIX 3 call site)
+                    if (window.fetchUserProfile) {
+                        senderUids.forEach(uid => {
+                            if (!window.userProfilesCache?.has(uid)) {
+                                window.fetchUserProfile(uid).catch(() => {});
+                            }
+                        });
+                    }
+                }
+
                 // ── Auto-delete TingleBot messages (owner only, creation-time timers handle other clients) ──
                 // Only the owner client cleans up messages that slipped past the creation-time timer.
                 // We never schedule deletion with <30s remaining to avoid premature disappearance for others.
@@ -2878,24 +2829,12 @@ const HomePage = ({ user, roomIdOverride }) => {
     }, [roomId, loggedInUserProfile?.uid, loggedInUserProfile?.role, navigate]);
 
 
-    // Real-time friends list updates
-    useEffect(() => {
-        const isGuest = localStorage.getItem('isGuest') === 'true';
-        if (!auth.currentUser) return;
-
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const unsubscribe = onSnapshot(userRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const userData = docSnap.data();
-                if (userData.friends) {
-                    // Update logged in user profile with new friends list
-                    setLoggedInUserProfile(prev => ({ ...prev, friends: userData.friends }));
-                }
-            }
-        });
-
-        return () => unsubscribe();
-    }, []);
+    // Real-time friends list updates — FIX 5:
+    // handleLoggedInProfile (called from App.jsx's _appUserProfileChanged event)
+    // already calls setLoggedInUserProfile(userData) with the FULL profile,
+    // which includes the friends array.  A separate Firestore listener for the
+    // same document is therefore redundant and has been removed.
+    // No useEffect needed here.
 
 
 

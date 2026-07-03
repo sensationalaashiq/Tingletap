@@ -29,9 +29,19 @@ export const SECURITY_CONFIG = {
   ],
   
   // Admin override (for testing)
+  // FIX 8: Password read from env — set VITE_ADMIN_BYPASS_PASSWORD in .env.local
   ADMIN_BYPASS: {
     enabled: false, // Set to true for testing
-    password: 'admin123' // Change this for security
+    get password() {
+      const pwd = import.meta.env.VITE_ADMIN_BYPASS_PASSWORD;
+      if (!pwd) {
+        console.warn(
+          '⚠️ VITE_ADMIN_BYPASS_PASSWORD is not set. Admin bypass will not work. ' +
+          'Add it to .env.local for development.'
+        );
+      }
+      return pwd || '';
+    }
   }
 };
 

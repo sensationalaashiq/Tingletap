@@ -250,20 +250,29 @@ const AdminPanelPage = () => {
   // {uid: data} shape that all downstream consumers expect, adding a
   // _roomId field so write operations can derive the correct path.
   useEffect(() => {
+    // FIX 7: Production should replace this with a Cloud Function aggregate
+    // that pre-computes online counts and writes them to a small RTDB node.
     const statusRef = ref(rtdb, 'status');
     const unsubscribe = onValue(statusRef, (snapshot) => {
+      // FIX 7: Status is flat: status/{uid} = { state, currentRoomId, last_changed, ... }
       const raw = snapshot.val() || {};
       const statuses = {};
-      Object.entries(raw).forEach(([roomId, users]) => {
-        if (users && typeof users === 'object') {
-          Object.entries(users).forEach(([uid, data]) => {
-            if (data && typeof data === 'object') {
-              statuses[uid] = { ...data, _roomId: roomId };
-            }
-          });
+      Object.entries(raw).forEach(([uid, data]) => {
+        // Skip entries that are not user status objects (sanity check)
+        if (data && typeof data === 'object' && ('state' in data || 'last_changed' in data)) {
+          statuses[uid] = data;
         }
       });
-      setOnlineStatuses(statuses);
+      // FIX 7: Keep only the newest 200 entries in memory — do NOT modify the database.
+      const entries = Object.entries(statuses);
+      if (entries.length > 200) {
+        entries.sort(([, a], [, b]) => (b.last_changed || 0) - (a.last_changed || 0));
+        const trimmed = {};
+        entries.slice(0, 200).forEach(([uid, data]) => { trimmed[uid] = data; });
+        setOnlineStatuses(trimmed);
+      } else {
+        setOnlineStatuses(statuses);
+      }
     });
     
     return () => unsubscribe();

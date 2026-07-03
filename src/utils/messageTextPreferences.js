@@ -289,45 +289,92 @@ export const clearAllMessageStyles = () => {
   }
 };
 
-// Initialize global message styling with real-time Firestore listener
-export const initializeGlobalMessageStyles = () => {
-  try {
-    setTimeout(async () => {
-      try {
-        const { db, auth } = await import('../firebase/config');
-        const { collection, onSnapshot } = await import('firebase/firestore');
+// Initialize global message styling with room-scoped Firestore listeners.
+// Pass roomParticipantUids (string[]) to subscribe only to styles for users
+// currently in the room.  Call with an empty array to unsubscribe everything.
+// Returns a combined unsubscribe function.
+export const initializeGlobalMessageStyles = (roomParticipantUids = []) => {
+  // Tear down any previous chunk listeners
+  if (window._messageStylesUnsubscribes) {
+    window._messageStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+  }
+  window._messageStylesUnsubscribes = [];
 
-        // Only start the listener once a user is authenticated
-        if (!auth.currentUser) return;
+  // Backward-compat alias so callers that still hold the old handle can unsubscribe
+  window._messageStylesUnsubscribe = () => {
+    if (window._messageStylesUnsubscribes) {
+      window._messageStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+      window._messageStylesUnsubscribes = [];
+    }
+  };
 
-        if (window._messageStylesUnsubscribe) window._messageStylesUnsubscribe();
-        window._messageStylesUnsubscribe = onSnapshot(
+  // Do not open any listeners until we have UIDs to watch
+  if (!roomParticipantUids || roomParticipantUids.length === 0) {
+    return () => {};
+  }
+
+  const CHUNK_SIZE = 30;
+  const chunks = [];
+  for (let i = 0; i < roomParticipantUids.length; i += CHUNK_SIZE) {
+    chunks.push(roomParticipantUids.slice(i, i + CHUNK_SIZE));
+  }
+
+  (async () => {
+    try {
+      const { db, auth } = await import('../firebase/config');
+      const { collection, query, where, documentId, onSnapshot } = await import('firebase/firestore');
+
+      if (!auth.currentUser) return;
+
+      chunks.forEach(chunk => {
+        const q = query(
           collection(db, 'globalMessageStyles'),
+          where(documentId(), 'in', chunk)
+        );
+
+        const unsub = onSnapshot(
+          q,
           (snapshot) => {
             snapshot.docChanges().forEach((change) => {
               if (change.type === 'added' || change.type === 'modified') {
                 const data = change.doc.data();
                 if (data.userId && data.userName && data.styles) {
+                  // Merge into the global in-memory store
+                  window.allUsersMessageStyles = window.allUsersMessageStyles || {};
+                  window.allUsersMessageStyles[data.userId] = {
+                    userId: data.userId,
+                    userName: data.userName,
+                    styles: data.styles,
+                    timestamp: Date.now()
+                  };
                   applyGlobalMessageStyles(data.userId, data.userName, data.styles);
                 }
               }
             });
           },
           (error) => {
-            // permission-denied is expected until Firestore rules are deployed — skip silently
             if (error?.code === 'permission-denied') return;
             console.error('❌ Message styles listener error:', error);
           }
         );
-      } catch (error) {
-        if (error?.code !== 'permission-denied') {
-          console.error('❌ Error setting up message styles listener:', error);
+
+        if (window._messageStylesUnsubscribes) {
+          window._messageStylesUnsubscribes.push(unsub);
         }
+      });
+    } catch (error) {
+      if (error?.code !== 'permission-denied') {
+        console.error('❌ Error setting up message styles listeners:', error);
       }
-    }, 200);
-  } catch (error) {
-    console.error('❌ Error initializing global message styles:', error);
-  }
+    }
+  })();
+
+  return () => {
+    if (window._messageStylesUnsubscribes) {
+      window._messageStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+      window._messageStylesUnsubscribes = [];
+    }
+  };
 };
 
 // Make functions globally available

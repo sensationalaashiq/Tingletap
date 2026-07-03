@@ -33,12 +33,11 @@ export const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
 export const sendOTPEmail = async (email, otp) => {
-  // Always store first — UI can proceed even if email has a delay
-  localStorage.setItem(`otp_${email}`, JSON.stringify({
-    otp,
-    timestamp: Date.now(),
-    expires: Date.now() + 10 * 60 * 1000   // 10 min
-  }));
+  // FIX 9: Store only a hash — never the raw OTP — and only in sessionStorage
+  const otpHash = CryptoJS.SHA256(otp).toString();
+  const expires = Date.now() + 10 * 60 * 1000; // 10 min
+  sessionStorage.setItem(`otp_hash_${email}`, otpHash);
+  sessionStorage.setItem(`otp_exp_${email}`, String(expires));
 
   const params = {
     to_email:   email,
@@ -70,8 +69,8 @@ export const sendOTPEmail = async (email, otp) => {
     return { success: true };
   } catch (e) { console.warn('SDK error:', e.message); }
 
-  // OTP is in localStorage → verification still works even without email
-  console.warn('⚠️ Email delivery failed; OTP available in localStorage for dev testing:', otp);
+  // OTP hash is in sessionStorage → verification still works even without email
+  console.warn('⚠️ Email delivery failed; OTP hash stored in sessionStorage for dev testing');
   return {
     success: false,
     error: 'Could not send the OTP email. Check EmailJS template settings or spam folder.'
@@ -79,16 +78,37 @@ export const sendOTPEmail = async (email, otp) => {
 };
 
 export const verifyOTP = (email, entered) => {
+  // FIX 9: Compare hashed values only; delete immediately on success or expiry
   try {
-    const raw = localStorage.getItem(`otp_${email}`);
-    if (!raw) return false;
-    const { otp, expires } = JSON.parse(raw);
-    if (Date.now() > expires) { localStorage.removeItem(`otp_${email}`); return false; }
-    return otp === entered;
+    const storedHash = sessionStorage.getItem(`otp_hash_${email}`);
+    const storedExp  = sessionStorage.getItem(`otp_exp_${email}`);
+    if (!storedHash || !storedExp) return false;
+
+    if (Date.now() > Number(storedExp)) {
+      // Expired — clean up immediately
+      sessionStorage.removeItem(`otp_hash_${email}`);
+      sessionStorage.removeItem(`otp_exp_${email}`);
+      return false;
+    }
+
+    const enteredHash = CryptoJS.SHA256(String(entered)).toString();
+    const match = enteredHash === storedHash;
+
+    if (match) {
+      // Delete immediately on successful verification
+      sessionStorage.removeItem(`otp_hash_${email}`);
+      sessionStorage.removeItem(`otp_exp_${email}`);
+    }
+
+    return match;
   } catch { return false; }
 };
 
-export const clearOTP = (email) => localStorage.removeItem(`otp_${email}`);
+export const clearOTP = (email) => {
+  // FIX 9: Clear both sessionStorage keys
+  sessionStorage.removeItem(`otp_hash_${email}`);
+  sessionStorage.removeItem(`otp_exp_${email}`);
+};
 
 // ── Password Reset ────────────────────────────────────────────────────────────
 

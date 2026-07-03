@@ -7,8 +7,14 @@ const VPNBlockModal = ({ vpnInfo, onRetry }) => {
   const [adminPassword, setAdminPassword] = useState('');
 
   const handleAdminBypass = () => {
-    // Simple admin bypass for testing (you should implement proper authentication)
-    if (adminPassword === 'admin123') {
+    // FIX 8: Compare against env variable — never hardcode passwords
+    const bypassPassword = import.meta.env.VITE_ADMIN_BYPASS_PASSWORD;
+    if (!bypassPassword) {
+      console.warn('⚠️ VITE_ADMIN_BYPASS_PASSWORD is not set in .env.local');
+      alert('Admin bypass is not configured. Set VITE_ADMIN_BYPASS_PASSWORD in .env.local');
+      return;
+    }
+    if (adminPassword === bypassPassword) {
       localStorage.setItem('vpn_bypass', 'true');
       window.location.reload();
     } else {

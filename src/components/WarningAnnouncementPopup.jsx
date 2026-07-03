@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, where, updateDoc, doc, arrayUnion, orderBy } from 'firebase/firestore';
+import { updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { useWarnings } from '../contexts/WarningsContext'; // FIX 6
 import renderTextWithLinks from '../utils/linkifyText';
 import './WarningAnnouncementPopup.css';
 
@@ -104,34 +105,33 @@ const WarningAnnouncementPopup = ({ currentUser, currentRoomId }) => {
   const [visibleWarnings, setVisibleWarnings] = useState([]);
   const dismissedRef = useRef(new Set());
 
+  // FIX 6: Consume shared listener from WarningsContext instead of creating a new one
+  const { warnings } = useWarnings();
+
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(collection(db, 'warnings_announcements'), where('isActive', '==', true), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      const relevant = all.filter(w => {
-        if (dismissedRef.current.has(w.id)) return false;
-        if (w.dismissedBy?.includes(currentUser.uid)) return false;
-        if (w.expiresAt) {
-          let exp;
-          if (w.expiresAt.toDate) exp = w.expiresAt.toDate();
-          else if (w.expiresAt.seconds) exp = new Date(w.expiresAt.seconds * 1000);
-          else exp = new Date(w.expiresAt);
-          if (exp <= new Date()) return false;
-        }
-        switch (w.targetType) {
-          case 'all_users':   return true;
-          case 'selected_users': return w.selectedUsers?.includes(currentUser.uid);
-          case 'room':        return true;
-          case 'selected_rooms': return w.selectedRooms?.includes(currentRoomId);
-          case 'all_rooms':   return true;
-          default:            return true;
-        }
-      });
-      setActiveWarnings(relevant);
+    const relevant = warnings.filter(w => {
+      if (!w.isActive) return false;
+      if (dismissedRef.current.has(w.id)) return false;
+      if (w.dismissedBy?.includes(currentUser.uid)) return false;
+      if (w.expiresAt) {
+        let exp;
+        if (w.expiresAt.toDate) exp = w.expiresAt.toDate();
+        else if (w.expiresAt.seconds) exp = new Date(w.expiresAt.seconds * 1000);
+        else exp = new Date(w.expiresAt);
+        if (exp <= new Date()) return false;
+      }
+      switch (w.targetType) {
+        case 'all_users':      return true;
+        case 'selected_users': return w.selectedUsers?.includes(currentUser.uid);
+        case 'room':           return true;
+        case 'selected_rooms': return w.selectedRooms?.includes(currentRoomId);
+        case 'all_rooms':      return true;
+        default:               return true;
+      }
     });
-    return () => unsubscribe();
-  }, [currentUser, currentRoomId]);
+    setActiveWarnings(relevant);
+  }, [warnings, currentUser, currentRoomId]);
 
   useEffect(() => {
     const sorted = [...activeWarnings].sort((a, b) => {

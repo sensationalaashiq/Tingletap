@@ -604,20 +604,51 @@ export const clearAllUsernameStyles = () => {
   }
 };
 
-// Initialize username styling with real-time Firestore listener
-export const initializeUsernameStyles = () => {
-  try {
-    setTimeout(async () => {
-      try {
-        const { db, auth } = await import('../firebase/config');
-        const { collection, onSnapshot } = await import('firebase/firestore');
+// Initialize username styling with room-scoped Firestore listeners.
+// Pass roomParticipantUids (string[]) to subscribe only to styles for users
+// currently in the room.  Call with an empty array to unsubscribe everything.
+// Returns a combined unsubscribe function.
+export const initializeUsernameStyles = (roomParticipantUids = []) => {
+  // Tear down any previous chunk listeners
+  if (window._usernameStylesUnsubscribes) {
+    window._usernameStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+  }
+  window._usernameStylesUnsubscribes = [];
 
-        // Only start the listener once a user is authenticated
-        if (!auth.currentUser) return;
+  // Backward-compat alias
+  window._usernameStylesUnsubscribe = () => {
+    if (window._usernameStylesUnsubscribes) {
+      window._usernameStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+      window._usernameStylesUnsubscribes = [];
+    }
+  };
 
-        if (window._usernameStylesUnsubscribe) window._usernameStylesUnsubscribe();
-        window._usernameStylesUnsubscribe = onSnapshot(
+  // Do not open any listeners until we have UIDs to watch
+  if (!roomParticipantUids || roomParticipantUids.length === 0) {
+    return () => {};
+  }
+
+  const CHUNK_SIZE = 30;
+  const chunks = [];
+  for (let i = 0; i < roomParticipantUids.length; i += CHUNK_SIZE) {
+    chunks.push(roomParticipantUids.slice(i, i + CHUNK_SIZE));
+  }
+
+  (async () => {
+    try {
+      const { db, auth } = await import('../firebase/config');
+      const { collection, query, where, documentId, onSnapshot } = await import('firebase/firestore');
+
+      if (!auth.currentUser) return;
+
+      chunks.forEach(chunk => {
+        const q = query(
           collection(db, 'globalUsernameStyles'),
+          where(documentId(), 'in', chunk)
+        );
+
+        const unsub = onSnapshot(
+          q,
           (snapshot) => {
             snapshot.docChanges().forEach((change) => {
               if (change.type === 'added' || change.type === 'modified') {
@@ -625,7 +656,13 @@ export const initializeUsernameStyles = () => {
                 if (data.userId && data.userName && data.styles) {
                   window.allUsersUsernameStyles = window.allUsersUsernameStyles || {};
                   window.userUsernameStyles = window.userUsernameStyles || {};
-                  window.allUsersUsernameStyles[data.userId] = { userId: data.userId, userName: data.userName, styles: data.styles };
+                  // Merge into the global in-memory store
+                  window.allUsersUsernameStyles[data.userId] = {
+                    userId: data.userId,
+                    userName: data.userName,
+                    styles: data.styles,
+                    timestamp: Date.now()
+                  };
                   window.userUsernameStyles[data.userId] = data.styles;
                   applyGlobalUsernameStylesForUser(data.userId, data.userName, data.styles);
                 }
@@ -633,20 +670,28 @@ export const initializeUsernameStyles = () => {
             });
           },
           (error) => {
-            // permission-denied is expected until Firestore rules are deployed — skip silently
             if (error?.code === 'permission-denied') return;
             console.error('❌ Username styles listener error:', error);
           }
         );
-      } catch (error) {
-        if (error?.code !== 'permission-denied') {
-          console.error('❌ Error setting up username styles listener:', error);
+
+        if (window._usernameStylesUnsubscribes) {
+          window._usernameStylesUnsubscribes.push(unsub);
         }
+      });
+    } catch (error) {
+      if (error?.code !== 'permission-denied') {
+        console.error('❌ Error setting up username styles listeners:', error);
       }
-    }, 200);
-  } catch (error) {
-    console.error('❌ Error initializing username styles:', error);
-  }
+    }
+  })();
+
+  return () => {
+    if (window._usernameStylesUnsubscribes) {
+      window._usernameStylesUnsubscribes.forEach(fn => { try { fn(); } catch {} });
+      window._usernameStylesUnsubscribes = [];
+    }
+  };
 };
 
 // Fixed applyUsernameStyles function that works globally

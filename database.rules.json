@@ -4,64 +4,89 @@
     ".write": false,
 
     "status": {
+      // FIX 10: Presence status is non-sensitive; any auth user may READ.
+      // Each user may WRITE only their own status entry.
       ".read": "auth != null",
       "$uid": {
-        ".read": "auth != null",
         ".write": "auth != null && auth.uid === $uid"
       }
     },
 
+    "roomCounts": {
+      // Room-member counts are maintained by client-side presence writes.
+      // Read-only here — no explicit write grant so the root false catches writes.
+      ".read": "auth != null"
+    },
+
     "broadcasts": {
       "rj": {
+        // FIX 10 (partial): Per-uid child paths are restricted below.
+        //
+        // RTDB LIMITATION: Because Firebase RTDB cascades parent write grants,
+        // the `".write": "auth != null"` at the `broadcasts/rj` root means any
+        // authenticated user can write any descendant path, overriding child rules.
+        // The RJ code requires this broad grant for:
+        //   - update(broadcasts/rj, { listenerCount }) — top-level metadata write
+        //   - remove(broadcasts/rj/connections) — bulk cleanup at end of broadcast
+        //   - remove(broadcasts/rj/listeners) — bulk cleanup
+        //   - push(broadcasts/rj/connections/{uid}/hostCandidates) — RJ writes to listener's slot
+        //   - push(broadcasts/rj/speakerConnections/{uid}/rjCandidates) — RJ writes to speaker's slot
+        // Full enforcement requires moving cleanup to a Firebase Cloud Function
+        // running the Admin SDK, which is not in scope for this client-side fix.
+        // The child $uid rules below are defense-in-depth for well-behaved clients.
         ".read": "auth != null",
         ".write": "auth != null",
+
         "connections": {
           "$uid": {
             ".read": "auth != null",
-            ".write": "auth != null"
+            // FIX 10 (defense-in-depth): own uid only — effective when parent has no grant
+            ".write": "auth != null && auth.uid === $uid"
           }
         },
         "listeners": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null"
+            // FIX 10 (defense-in-depth): own uid only
+            ".write": "auth != null && auth.uid === $uid"
           }
         },
         "speakers": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null"
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        },
+        "speakerConnections": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
           }
         },
         "joinRequests": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null"
+            ".write": "auth != null && auth.uid === $uid"
           }
         },
-        "youtube": {
-          ".read": "auth != null",
-          ".write": "auth != null"
-        }
+        "youtube":      { ".read": "auth != null", ".write": "auth != null" },
+        "songQueue":    { ".read": "auth != null", ".write": "auth != null" },
+        "announcements":{ ".read": "auth != null", ".write": "auth != null" }
       },
       "public": {
         "$broadcastId": {
           ".read": "auth != null",
           ".write": "auth != null",
-          "session": {
-            ".read": "auth != null",
-            ".write": "auth != null"
-          },
           "connections": {
             "$uid": {
               ".read": "auth != null",
-              ".write": "auth != null"
+              ".write": "auth != null && auth.uid === $uid"
             }
           },
           "listeners": {
             ".read": "auth != null",
             "$uid": {
-              ".write": "auth != null"
+              ".write": "auth != null && auth.uid === $uid"
             }
           }
         }
@@ -77,8 +102,14 @@
 
     "privateMessages": {
       "$conversationId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
+        // FIX 10: Conversation IDs are uid1_uid2 (UIDs separated by _).
+        // .contains() checks that auth.uid appears as a substring.
+        // Firebase UIDs are 28-char alphanumeric with no underscores, making
+        // false positives from substring matching extremely unlikely.
+        // A fully-secure implementation would use an explicit participants
+        // map: data.child('participants').child(auth.uid).exists()
+        ".read": "auth != null && $conversationId.contains(auth.uid)",
+        ".write": "auth != null && $conversationId.contains(auth.uid)",
         "messages": {
           "$messageId": {
             ".write": "auth != null && auth.uid == newData.child('senderId').val()"

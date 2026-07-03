@@ -40,6 +40,7 @@ import { getStoredGuestGender } from './utils/roleUtils';
 import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
 import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
 import BanKickModal from './components/BanKickModal';
+import { WarningsProvider } from './contexts/WarningsContext'; // FIX 6
 import './App.css';
 import './styles/DarkMode.css';
 import './styles/Themes.css';
@@ -463,6 +464,9 @@ function App() {
                   }
                 : profile;
               setUserProfile(resolvedProfile);
+              // FIX 5: Broadcast profile to HomePage via window event (single Firestore listener)
+              window._appUserProfile = resolvedProfile;
+              window.dispatchEvent(new CustomEvent('_appUserProfileChanged', { detail: resolvedProfile }));
 
               // Apply user's saved theme from profile with optimization
               const userTheme = profile.selectedTheme || profile.settings?.selectedTheme || 'light';
@@ -926,6 +930,7 @@ function App() {
   }
 
   return (
+    <WarningsProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/signup" element={<AuthRoute user={user}><SignupPage /></AuthRoute>} />
@@ -997,6 +1002,7 @@ function App() {
         />
       )}
     </BrowserRouter>
+    </WarningsProvider>
   );
 }
 

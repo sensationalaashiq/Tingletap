@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, limit, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, limit, updateDoc, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { useWarnings } from '../contexts/WarningsContext'; // FIX 6
 import { parseDurationMs } from '../utils/modExpiryService';
 import renderTextWithLinks from '../utils/linkifyText';
 
@@ -121,11 +122,11 @@ const WarningAnnouncementManager = ({ isVisible, onClose, currentUserProfile }) 
     return () => clearInterval(t);
   }, [isVisible]);
 
+  // FIX 6: Consume shared listener from WarningsContext instead of creating a new one
+  const { warnings: ctxWarnings } = useWarnings();
   useEffect(() => {
-    if (!isVisible) return;
-    const q = query(collection(db, 'warnings_announcements'), orderBy('createdAt', 'desc'), limit(50));
-    return onSnapshot(q, (snap) => setWarnings(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, [isVisible]);
+    if (isVisible) setWarnings(ctxWarnings.slice(0, 50));
+  }, [ctxWarnings, isVisible]);
 
   const canManage = currentUserProfile && ['owner', 'admin', 'moderator'].includes(currentUserProfile.role);
   if (!isVisible || !canManage) return null;
