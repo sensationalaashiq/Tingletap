@@ -1,5 +1,6 @@
-import { db } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { collection, addDoc, query, where, limit, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { VPNDetector } from './vpnDetection';
 
 /**
@@ -16,22 +17,34 @@ export class IPBanSystem {
    */
   static async initialize() {
     if (this.initialized) return;
+    this.initialized = true; // mark immediately to prevent duplicate auth-gate setups
 
     try {
-      // Listen for real-time updates to banned IPs
-      const bannedIPsQuery = query(collection(db, 'bannedIPs'), limit(500));
-      this._unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
-        this.bannedIPs.clear();
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.ip && data.isActive !== false) {
-            this.bannedIPs.add(data.ip);
+      // FIX: bannedIPs Firestore rule requires auth != null — only attach the
+      // listener once a user is authenticated, and tear it down on logout.
+      // This preserves identical behavior (the read was denied pre-auth anyway)
+      // while removing noisy permission-denied console errors on app load.
+      this._authUnsubscribe = onAuthStateChanged(auth, (user) => {
+        if (this._unsubscribe) { this._unsubscribe(); this._unsubscribe = null; }
+        if (!user) { this.bannedIPs.clear(); return; }
+
+        const bannedIPsQuery = query(collection(db, 'bannedIPs'), limit(500));
+        this._unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
+          this.bannedIPs.clear();
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.ip && data.isActive !== false) {
+              this.bannedIPs.add(data.ip);
+            }
+          });
+          console.log('IP Ban System: Updated banned IPs list', this.bannedIPs.size, 'IPs banned');
+        }, (err) => {
+          if (err?.code !== 'permission-denied') {
+            console.error('IP Ban System: listener error', err);
           }
         });
-        console.log('IP Ban System: Updated banned IPs list', this.bannedIPs.size, 'IPs banned');
       });
 
-      this.initialized = true;
       console.log('IP Ban System: Initialized successfully');
     } catch (error) {
       console.error('IP Ban System: Failed to initialize', error);
@@ -42,6 +55,10 @@ export class IPBanSystem {
     if (this._unsubscribe) {
       this._unsubscribe();
       this._unsubscribe = null;
+    }
+    if (this._authUnsubscribe) {
+      this._authUnsubscribe();
+      this._authUnsubscribe = null;
     }
     this.initialized = false;
   }

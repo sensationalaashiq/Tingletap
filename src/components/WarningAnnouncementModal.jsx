@@ -123,6 +123,8 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
   const [users, setUsers]             = useState([]);
   const [isLoading, setIsLoading]     = useState(false);
   const [userSearch, setUserSearch]   = useState('');
+  const [searchResults, setSearchResults] = useState(null); // FIX 4: one-off getDocs search results (no listener)
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -136,6 +138,38 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
     });
     return () => { unsubRooms(); unsubUsers(); };
   }, [isVisible, currentRoomId]);
+
+  // FIX 4: Admin search — separate getDocs() prefix query on displayName, no permanent listener.
+  useEffect(() => {
+    if (!isVisible || targetType !== 'selected_users') return;
+    const term = userSearch.trim();
+    if (!term) { setSearchResults(null); return; }
+
+    let cancelled = false;
+    setIsSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        const q1 = query(
+          collection(db, 'users'),
+          orderBy('displayName'),
+          where('displayName', '>=', term),
+          where('displayName', '<=', term + '\uf8ff'),
+          limit(30)
+        );
+        const snap = await getDocs(q1);
+        if (!cancelled) {
+          setSearchResults(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }
+      } catch (err) {
+        console.error('Admin user search failed:', err);
+        if (!cancelled) setSearchResults(null);
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    }, 300);
+
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [userSearch, isVisible, targetType]);
 
   const getBgBorder = () => {
     if (type === 'warning') {
@@ -185,8 +219,10 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
   if (!isVisible || !canCreate()) return null;
 
   const isWarning = type === 'warning';
-  const filteredUsers = users.filter(u => !userSearch.trim() ||
-    (u.displayName || u.email || '').toLowerCase().includes(userSearch.toLowerCase()));
+  const filteredUsers = userSearch.trim()
+    ? (searchResults !== null ? searchResults : users.filter(u =>
+        (u.displayName || u.email || '').toLowerCase().includes(userSearch.toLowerCase())))
+    : users;
 
   /* ── Shared style tokens ── */
   const lbl = { fontSize:'11px', fontWeight:700, color:'#4c1d95', letterSpacing:'0.07em', textTransform:'uppercase', marginBottom:'5px', display:'flex', alignItems:'center', gap:'5px' };

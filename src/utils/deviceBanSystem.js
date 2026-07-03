@@ -1,5 +1,6 @@
-import { db } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { collection, addDoc, query, where, limit, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { DeviceFingerprint } from './deviceFingerprint';
 
 /**
@@ -16,22 +17,34 @@ export class DeviceBanSystem {
    */
   static async initialize() {
     if (this.initialized) return;
+    this.initialized = true; // mark immediately to prevent duplicate auth-gate setups
 
     try {
-      // Listen for real-time updates to banned devices
-      const bannedDevicesQuery = query(collection(db, 'bannedDevices'), limit(500));
-      this._unsubscribe = onSnapshot(bannedDevicesQuery, (snapshot) => {
-        this.bannedDevices.clear();
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.deviceId && data.isActive !== false) {
-            this.bannedDevices.add(data.deviceId);
+      // FIX: bannedDevices Firestore rule requires auth != null — only attach the
+      // listener once a user is authenticated, and tear it down on logout.
+      // This preserves identical behavior (the read was denied pre-auth anyway)
+      // while removing noisy permission-denied console errors on app load.
+      this._authUnsubscribe = onAuthStateChanged(auth, (user) => {
+        if (this._unsubscribe) { this._unsubscribe(); this._unsubscribe = null; }
+        if (!user) { this.bannedDevices.clear(); return; }
+
+        const bannedDevicesQuery = query(collection(db, 'bannedDevices'), limit(500));
+        this._unsubscribe = onSnapshot(bannedDevicesQuery, (snapshot) => {
+          this.bannedDevices.clear();
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.deviceId && data.isActive !== false) {
+              this.bannedDevices.add(data.deviceId);
+            }
+          });
+          console.log('Device Ban System: Updated banned devices list', this.bannedDevices.size, 'devices banned');
+        }, (err) => {
+          if (err?.code !== 'permission-denied') {
+            console.error('Device Ban System: listener error', err);
           }
         });
-        console.log('Device Ban System: Updated banned devices list', this.bannedDevices.size, 'devices banned');
       });
 
-      this.initialized = true;
       console.log('Device Ban System: Initialized successfully');
     } catch (error) {
       console.error('Device Ban System: Failed to initialize', error);
@@ -42,6 +55,10 @@ export class DeviceBanSystem {
     if (this._unsubscribe) {
       this._unsubscribe();
       this._unsubscribe = null;
+    }
+    if (this._authUnsubscribe) {
+      this._authUnsubscribe();
+      this._authUnsubscribe = null;
     }
     this.initialized = false;
   }
