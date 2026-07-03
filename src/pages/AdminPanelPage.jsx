@@ -756,7 +756,7 @@ const AdminPanelPage = () => {
     const list = roomsList || rooms;
     setKickedUsersLoading(true);
     try {
-      const snap = await getDocs(collectionGroup(db, 'kickedUsers'));
+      const snap = await getDocs(query(collectionGroup(db, 'kickedUsers'), limit(2000)));
       const all = [];
       snap.docs.forEach(d => {
         const roomId = d.ref.parent.parent?.id;
@@ -1477,7 +1477,7 @@ const AdminPanelPage = () => {
           const unkickScopeMode = actionData?.unkickScope || 'all_rooms';
           if (unkickScopeMode === 'all_rooms') {
             // Clear from every room that has a kickedUsers entry for this uid
-            const allRoomsSnap = await getDocs(collection(db, 'rooms')).catch(() => null);
+            const allRoomsSnap = await getDocs(query(collection(db, 'rooms'), limit(1000))).catch(() => null);
             if (allRoomsSnap) {
               const tasks = allRoomsSnap.docs.map(rd =>
                 deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', selectedUser.uid)).catch(() => {})

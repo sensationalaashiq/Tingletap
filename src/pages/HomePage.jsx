@@ -1235,7 +1235,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         window.handleTingleBotAnnouncementAllRooms = async (text) => {
             if (!text?.trim()) return;
             try {
-                const roomsSnapshot = await getDocs(collection(db, 'rooms'));
+                const roomsSnapshot = await getDocs(query(collection(db, 'rooms'), limit(1000)));
                 const promises = [];
                 roomsSnapshot.forEach((roomDoc) => {
                     promises.push(

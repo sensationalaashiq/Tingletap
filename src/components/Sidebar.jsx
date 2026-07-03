@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc, Timestamp, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -333,7 +333,7 @@ const Sidebar = ({
 
       } else if (effectiveAction === 'unkick') {
         if (actionData.unkickScope === 'all_rooms') {
-          const roomsSnap = await getDocs(collection(db, 'rooms'));
+          const roomsSnap = await getDocs(query(collection(db, 'rooms'), limit(1000)));
           const promises = roomsSnap.docs.map(rd =>
             deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', adminModalUser.uid)).catch(() => {})
           );

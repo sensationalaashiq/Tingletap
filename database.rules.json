@@ -20,47 +20,43 @@
 
     "broadcasts": {
       "rj": {
-        // FIX 10 (partial): Per-uid child paths are restricted below.
-        //
-        // RTDB LIMITATION: Because Firebase RTDB cascades parent write grants,
-        // the `".write": "auth != null"` at the `broadcasts/rj` root means any
-        // authenticated user can write any descendant path, overriding child rules.
-        // The RJ code requires this broad grant for:
-        //   - update(broadcasts/rj, { listenerCount }) — top-level metadata write
-        //   - remove(broadcasts/rj/connections) — bulk cleanup at end of broadcast
-        //   - remove(broadcasts/rj/listeners) — bulk cleanup
-        //   - push(broadcasts/rj/connections/{uid}/hostCandidates) — RJ writes to listener's slot
-        //   - push(broadcasts/rj/speakerConnections/{uid}/rjCandidates) — RJ writes to speaker's slot
-        // Full enforcement requires moving cleanup to a Firebase Cloud Function
-        // running the Admin SDK, which is not in scope for this client-side fix.
-        // The child $uid rules below are defense-in-depth for well-behaved clients.
+        // FIX 10 (hardened): Root write is now gated to the live broadcast's
+        // owner via the `rjUid` field written by the client on Go Live
+        // (see BroadcastPanel.jsx `set(ref(rtdb, 'broadcasts/rj'), { rjUid: myUid, ... })`).
+        // - Creating a fresh session (no data yet) is allowed for any auth user
+        //   (the client only exposes "Go Live" to users with the RJ badge; RTDB
+        //   has no access to that role flag without custom claims, so the app-level
+        //   gate remains the first line of defense for who may start a broadcast).
+        // - Once a session exists, only the matching rjUid may write/update/end it,
+        //   which also covers bulk cleanup (remove connections/listeners) and
+        //   top-level metadata writes (listenerCount) since RTDB cascades this
+        //   root grant down to every descendant path for that same host.
         ".read": "auth != null",
-        ".write": "auth != null",
+        ".write": "auth != null && (!data.exists() || auth.uid === data.child('rjUid').val())",
 
         "connections": {
           "$uid": {
             ".read": "auth != null",
-            // FIX 10 (defense-in-depth): own uid only — effective when parent has no grant
-            ".write": "auth != null && auth.uid === $uid"
+            // Own uid (listener's own ICE candidates) OR the live RJ (writes into a listener's slot)
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/rj/rjUid').val())"
           }
         },
         "listeners": {
           ".read": "auth != null",
           "$uid": {
-            // FIX 10 (defense-in-depth): own uid only
             ".write": "auth != null && auth.uid === $uid"
           }
         },
         "speakers": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/rj/rjUid').val())"
           }
         },
         "speakerConnections": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/rj/rjUid').val())"
           }
         },
         "joinRequests": {
@@ -69,18 +65,36 @@
             ".write": "auth != null && auth.uid === $uid"
           }
         },
-        "youtube":      { ".read": "auth != null", ".write": "auth != null" },
-        "songQueue":    { ".read": "auth != null", ".write": "auth != null" },
-        "announcements":{ ".read": "auth != null", ".write": "auth != null" }
+        "youtube": {
+          ".read": "auth != null",
+          // Only the live RJ drives playback state; listeners only ever read this node.
+          ".write": "auth != null && auth.uid === root.child('broadcasts/rj/rjUid').val()"
+        },
+        "songQueue": {
+          ".read": "auth != null",
+          "$uid": {
+            // A user may write their own song request; the live RJ may approve/reject/skip/remove any
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/rj/rjUid').val())"
+          }
+        },
+        "announcements": {
+          ".read": "auth != null",
+          // Only the live RJ posts/deletes announcements
+          ".write": "auth != null && auth.uid === root.child('broadcasts/rj/rjUid').val()",
+          "$announcementId": {
+            ".write": "auth != null && auth.uid === root.child('broadcasts/rj/rjUid').val()"
+          }
+        }
       },
       "public": {
         "$broadcastId": {
           ".read": "auth != null",
-          ".write": "auth != null",
+          // Root write (create/update/end) restricted to the session owner once it exists.
+          ".write": "auth != null && (!data.exists() || auth.uid === data.child('session/hostUid').val())",
           "connections": {
             "$uid": {
               ".read": "auth != null",
-              ".write": "auth != null && auth.uid === $uid"
+              ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/public/' + $broadcastId + '/session/hostUid').val())"
             }
           },
           "listeners": {

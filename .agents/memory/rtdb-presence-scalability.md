@@ -26,6 +26,10 @@ Room `messages` `onSnapshot` listeners in `HomePage.jsx` mean every new message 
 
 **How to apply:** when asked "how many users can this support on free tier," the ceiling is realistically ~20-35 concurrently *active* users before Firestore quota exhaustion, and ~100 concurrently *connected* users as a hard RTDB cap regardless of optimization work. Communicate this as a plan/billing constraint, not something "safe optimizations" can fully solve.
 
-## Known open security issue (RTDB rules)
+## RTDB broadcast hijack hole — fixed via owner-uid gating pattern
 
-`database.rules.json`: `broadcasts/rj` has `".write": "auth != null"` — any authenticated user (not just the RJ or staff) can write/delete any RJ's live broadcast node, effectively letting anyone hijack or kill any broadcast. Flagged during the July 2026 audit; not yet fixed as of that audit (read-only pass, no code changed).
+`broadcasts/rj` and `broadcasts/public/{id}` previously had `".write": "auth != null"` at the root, letting any authenticated user hijack/kill/rewrite any live broadcast (including sub-paths like `youtube`/`announcements` due to RTDB's cascading write-grant behavior). Fixed by gating root `.write` to `!data.exists() || auth.uid === data.child('<ownerUidField>').val()` using the field the client already writes on session start (`rjUid` for `broadcasts/rj`, `session/hostUid` for `broadcasts/public/{id}`).
+
+**Why this pattern, not a role check:** RTDB security rules have no access to Firestore-stored roles (e.g. "is this user an RJ") without custom auth claims, which this app doesn't use. Gating by "matches the uid that created this specific live session" is the achievable alternative — it doesn't stop unauthorized users from *starting* a session, but it does stop anyone but the current owner from hijacking an *existing* one, which was the actual exploit.
+
+**How to apply:** for any other RTDB tree with a "single active owner" shape (`root.child('.../ownerUidField').val()` reachable via string-concatenated path when nested under a wildcard), reuse this same gating pattern rather than broad `auth != null`. Remember rule changes in `database.rules.json` require manual deploy (`firebase deploy --only database` or Firebase Console) — no Firebase CLI/credentials exist in this dev sandbox to do it automatically.

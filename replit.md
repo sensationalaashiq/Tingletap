@@ -1,3 +1,17 @@
+# Recent Changes (July 3, 2026) — Performance & Security Audit (Session 3)
+
+Zero visible UI/behavior/schema changes; internal security hardening + query bounding only. Verified with a production build, workflow restart, and screenshot/console check.
+
+✅ **Applied**:
+- **RTDB security hole closed**: `broadcasts/rj` and `broadcasts/public/{id}` root `.write` rules in `database.rules.json` were `auth != null` (ANY authenticated user could hijack, overwrite, or delete a live broadcast, or push arbitrary YouTube/announcement state into someone else's session). Now gated to the actual live host via the existing `rjUid`/`hostUid` field — anyone can start a fresh session, but only that session's owner can write to it afterward. `youtube` and `announcements` sub-paths are now host-only writes (previously any authenticated user); `songQueue` allows a user to write only their own request or the host to manage any. **This requires deploying the updated `database.rules.json` via the Firebase Console or `firebase deploy --only database` — no Firebase CLI/credentials are available in this dev environment to do it automatically.**
+- Added `limit(1000)` to three previously-unbounded `getDocs(collection(db, 'rooms'))` admin/bot bulk-action calls (HomePage.jsx bot broadcast, Sidebar.jsx bulk unkick, AdminPanelPage.jsx bulk unkick) and `limit(2000)` to the `collectionGroup('kickedUsers')` scan in AdminPanelPage — safety caps well above realistic data volume, so no visible truncation.
+
+⏭️ **Investigated and intentionally left unchanged** (documented, not oversights):
+- Possible leaked `onSnapshot` in `messageTextPreferences.js` — re-verified: `window._messageStylesUnsubscribes` is synchronously initialized before any listener is created, so this was a false positive from the earlier audit pass.
+- Scoping the global RTDB `status` presence listener in HomePage.jsx to the current room (to fix O(N²) growth) — investigated but unsafe: `window.onlineUsers` (built from the full site-wide snapshot) also drives Sidebar's per-user online badges for users outside the current room and the site-wide online count, so scoping it would silently break those indicators. Left as documented future work requiring a Cloud Function presence aggregate.
+- VPN admin-bypass flag — re-verified already sufficiently hardened (`enabled: false` by default, password sourced from an env var, not hardcoded).
+- AdminPanelPage's always-on site-wide listeners — left as-is; justified by admins needing full visibility.
+
 # Overview
 
 TingleTap is a modern real-time chat application built with React that allows users to communicate through text, voice, and video. The platform features public chat rooms, private messaging, voice/video calls, media sharing, and advanced user customization options. The app includes comprehensive moderation tools, user profile management, and security features including VPN detection.
