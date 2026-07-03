@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './StylishImageUploadModal.css';
 
-const StylishImageUploadModal = ({
+const StylishImageUploadModal = React.memo(({
     isOpen,
     onClose,
     onImageUpload,
@@ -154,6 +154,6 @@ const StylishImageUploadModal = ({
             </div>
         </div>
     );
-};
+});
 
 export default StylishImageUploadModal;

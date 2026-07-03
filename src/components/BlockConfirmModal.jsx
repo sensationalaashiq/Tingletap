@@ -2,7 +2,7 @@ import React from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import './BlockConfirmModal.css';
 
-const BlockConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
+const BlockConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) => {
     if (!targetUser) return null;
 
     return (
@@ -84,6 +84,6 @@ const BlockConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
             </div>
         </div>
     );
-};
+});
 
 export default BlockConfirmModal;

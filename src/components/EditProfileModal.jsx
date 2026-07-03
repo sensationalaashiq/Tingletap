@@ -2,7 +2,7 @@ import React from 'react';
 import EditProfile from './EditProfile';
 import './EditProfile.css';
 
-const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
+const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   return (
@@ -290,6 +290,6 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
       </div>
     </>
   );
-};
+});
 
 export default EditProfileModal;

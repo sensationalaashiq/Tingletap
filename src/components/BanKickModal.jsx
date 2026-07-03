@@ -181,7 +181,7 @@ const InfoRow = ({ icon, label, children, accent = '#a78bfa' }) => (
 );
 
 /* ── Component ────────────────────────────────────────────── */
-const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: passedKickInfo }) => {
+const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: passedKickInfo }) => {
   const navigate = useNavigate();
   const [banInfo, setBanInfo]               = useState(null);
   const [kickInfo, setKickInfo]             = useState(null);
@@ -705,6 +705,6 @@ const BanKickModal = ({ isVisible, onClose, banInfo: passedBanInfo, kickInfo: pa
 
     </div>
   );
-};
+});
 
 export default BanKickModal;

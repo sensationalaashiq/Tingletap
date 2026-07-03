@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import './StatusModal.css';
 
-const StatusModal = ({ onClose }) => {
+const StatusModal = React.memo(({ onClose }) => {
   const [newStatus, setNewStatus]           = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
   const [fontFamily, setFontFamily]         = useState('inherit');
@@ -448,6 +448,6 @@ const StatusModal = ({ onClose }) => {
       </div>
     </div>
   );
-};
+});
 
 export default StatusModal;

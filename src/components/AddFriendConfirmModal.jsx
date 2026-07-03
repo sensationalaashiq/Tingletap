@@ -2,7 +2,7 @@ import React from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import './AddFriendConfirmModal.css';
 
-const AddFriendConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
+const AddFriendConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) => {
     if (!targetUser) return null;
 
     return (
@@ -94,6 +94,6 @@ const AddFriendConfirmModal = ({ targetUser, onConfirm, onCancel }) => {
             </div>
         </div>
     );
-};
+});
 
 export default AddFriendConfirmModal;

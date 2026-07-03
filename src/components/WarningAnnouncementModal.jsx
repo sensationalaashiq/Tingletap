@@ -112,7 +112,7 @@ const IC = {
 let _cachedModalData = null; // { rooms, users, fetchedAt }
 const MODAL_CACHE_TTL_MS = 60000;
 
-const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, currentRoomId }) => {
+const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserProfile, currentRoomId }) => {
   const [type, setType]               = useState('warning');
   const [title, setTitle]             = useState('');
   const [message, setMessage]         = useState('');
@@ -521,6 +521,6 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
     </div>,
     document.body
   );
-};
+});
 
 export default WarningAnnouncementModal;

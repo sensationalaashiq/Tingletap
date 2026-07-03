@@ -100,7 +100,7 @@ const getAccentColor = (warning) => {
   }
 };
 
-const WarningAnnouncementPopup = ({ currentUser, currentRoomId }) => {
+const WarningAnnouncementPopup = React.memo(({ currentUser, currentRoomId }) => {
   const [activeWarnings, setActiveWarnings]   = useState([]);
   const [visibleWarnings, setVisibleWarnings] = useState([]);
   const dismissedRef = useRef(new Set());
@@ -248,6 +248,6 @@ const WarningAnnouncementPopup = ({ currentUser, currentRoomId }) => {
       })}
     </div>
   );
-};
+});
 
 export default WarningAnnouncementPopup;

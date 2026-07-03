@@ -2,7 +2,7 @@ import React from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import './ChatActionModal.css';
 
-const ChatActionModal = ({
+const ChatActionModal = React.memo(({
   isOpen,
   type,
   user,
@@ -156,6 +156,6 @@ const ChatActionModal = ({
       </div>
     </div>
   );
-};
+});
 
 export default ChatActionModal;

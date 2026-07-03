@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import './AdultRoomModal.css';
 
-const AdultRoomModal = ({ isOpen, onConfirm, onCancel, roomName }) => {
+const AdultRoomModal = React.memo(({ isOpen, onConfirm, onCancel, roomName }) => {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [understandingConfirmed, setUnderstandingConfirmed] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -201,6 +201,6 @@ const AdultRoomModal = ({ isOpen, onConfirm, onCancel, roomName }) => {
   );
 
   return ReactDOM.createPortal(modal, document.body);
-};
+});
 
 export default AdultRoomModal;

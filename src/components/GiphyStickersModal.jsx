@@ -4,7 +4,7 @@ import './GiphyStickersModal.css';
 const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
 const PAGE_LIMIT = 24;
 
-const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
+const GiphyStickersModal = React.memo(({ isOpen, onClose, onSelectGif }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [gifs, setGifs] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -243,6 +243,6 @@ const GiphyStickersModal = ({ isOpen, onClose, onSelectGif }) => {
             </div>
         </div>
     );
-};
+});
 
 export default GiphyStickersModal;

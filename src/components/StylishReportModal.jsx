@@ -108,7 +108,7 @@ const REPORT_REASONS = [
     },
 ];
 
-const StylishReportModal = ({
+const StylishReportModal = React.memo(({
     isOpen,
     onClose,
     messageToReport,
@@ -268,6 +268,6 @@ const StylishReportModal = ({
             </div>
         </div>
     );
-};
+});
 
 export default StylishReportModal;

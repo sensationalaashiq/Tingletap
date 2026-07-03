@@ -4,7 +4,7 @@ import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 
-const ChangeUsernameModal = ({ isOpen, onClose, onSuccess }) => {
+const ChangeUsernameModal = React.memo(({ isOpen, onClose, onSuccess }) => {
   const [username, setUsername] = useState(auth.currentUser?.displayName || '');
   const [saving, setSaving] = useState(false);
 
@@ -255,6 +255,6 @@ const ChangeUsernameModal = ({ isOpen, onClose, onSuccess }) => {
       </div>
     </>
   );
-};
+});
 
 export default ChangeUsernameModal;

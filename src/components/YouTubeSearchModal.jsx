@@ -85,7 +85,7 @@ const extractVideoId = (url) => {
     return m ? m[1] : null;
 };
 
-const YouTubeSearchModal = ({ isOpen, onClose, onVideoSelect }) => {
+const YouTubeSearchModal = React.memo(({ isOpen, onClose, onVideoSelect }) => {
     const [tab, setTab]         = useState('video');
     const [videoUrl, setVideoUrl] = useState('');
     const [musicUrl, setMusicUrl] = useState('');
@@ -234,6 +234,6 @@ const YouTubeSearchModal = ({ isOpen, onClose, onVideoSelect }) => {
             </div>
         </div>
     );
-};
+});
 
 export default YouTubeSearchModal;

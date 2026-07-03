@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import './VPNBlockModal.css';
 
-const VPNBlockModal = ({ vpnInfo, onRetry }) => {
+const VPNBlockModal = React.memo(({ vpnInfo, onRetry }) => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
 
@@ -138,6 +138,6 @@ const VPNBlockModal = ({ vpnInfo, onRetry }) => {
       </div>
     </div>
   );
-};
+});
 
 export default VPNBlockModal;

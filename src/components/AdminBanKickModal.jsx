@@ -128,7 +128,7 @@ function computeExpiry(durVal, customStr, customDatetime) {
 /* ─────────────────────────────────────────────────────────
    AdminBanKickModal Component
 ───────────────────────────────────────────────────────── */
-const AdminBanKickModal = ({
+const AdminBanKickModal = React.memo(({
   isVisible,
   onClose,
   selectedUser,
@@ -733,6 +733,6 @@ const AdminBanKickModal = ({
       </div>
     </div>
   );
-};
+});
 
 export default AdminBanKickModal;

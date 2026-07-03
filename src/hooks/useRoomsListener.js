@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 // Shared singleton listener for the 'rooms' collection (orderBy('order')).
@@ -16,7 +16,7 @@ const subscribers = new Set();
 
 function startSharedListener() {
   if (unsubscribeFn) return;
-  const q = query(collection(db, 'rooms'), orderBy('order'));
+  const q = query(collection(db, 'rooms'), orderBy('order'), limit(500));
   unsubscribeFn = onSnapshot(q, (snap) => {
     sharedRooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     subscribers.forEach((cb) => cb(sharedRooms));

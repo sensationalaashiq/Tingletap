@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './IPBanModal.css';
 
-const IPBanModal = ({ banInfo, onRetry }) => {
+const IPBanModal = React.memo(({ banInfo, onRetry }) => {
   // Aggressive anti-bypass measures
   useEffect(() => {
     // Block browser back/forward
@@ -189,6 +189,6 @@ const IPBanModal = ({ banInfo, onRetry }) => {
       </div>
     </div>
   );
-};
+});
 
 export default IPBanModal;

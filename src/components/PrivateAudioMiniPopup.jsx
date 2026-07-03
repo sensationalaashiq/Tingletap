@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import useDraggable from '../hooks/useDraggable';
 import './PrivateAudioMiniPopup.css';
 
-const PrivateAudioMiniPopup = ({
+const PrivateAudioMiniPopup = React.memo(({
     isOpen,
     onClose,
     onSend,
@@ -679,6 +679,6 @@ const PrivateAudioMiniPopup = ({
             </div>
         </div>
     );
-};
+});
 
 export default PrivateAudioMiniPopup;

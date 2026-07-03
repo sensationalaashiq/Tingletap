@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './StylishFontPopup.css';
 
-const StylishFontPopup = ({ 
+const StylishFontPopup = React.memo(({ 
   isOpen, 
   onClose, 
   onApplyFont, 
@@ -616,6 +616,6 @@ const StylishFontPopup = ({
       </div>
     </div>
   );
-};
+});
 
 export default StylishFontPopup;
