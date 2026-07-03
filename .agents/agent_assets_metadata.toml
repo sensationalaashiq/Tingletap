@@ -12,3 +12,9 @@ id = "_C47lu8TwemJAqHI8HmPA"
 uri = "file://TINGLETAP_FULL_ARCHITECTURE_AUDIT_2026-07-03.md"
 type = "text"
 title = "TingleTap Full Architecture & Scalability Audit"
+
+[[outputs]]
+id = "u9wmtWh_wXuOttV1Ni578"
+uri = "file://TINGLETAP_DEEP_AUDIT_2026-07-03.md"
+type = "text"
+title = "TingleTap Deep Scalability Audit (July 3, 2026)"
