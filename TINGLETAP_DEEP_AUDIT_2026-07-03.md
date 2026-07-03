@@ -234,3 +234,45 @@ This report is based on **stated, explicit assumptions** (30 messages/hour/user,
 - **Session duration distribution**: how long a typical session actually stays connected/listening, since "24 hours continuous" is an explicit worst-case assumption from the prompt, not an observed pattern.
 
 Without those, any more precise number than the ranges given above would be a guess rather than a code-grounded conclusion.
+
+---
+
+## 10. Scores
+
+| Category | Score /100 | Why |
+|---|---|---|
+| Overall project architecture | 68 | Feature-complete, real transaction safety in the coin system, but two 5,000–8,400-line monolithic files (`HomePage.jsx`, `AdminPanelPage.jsx`) carry too much responsibility. |
+| Firestore query discipline | 70 | Most collections are already `limit()`-bounded from prior sessions; a handful of unbounded queries remain (`kickedUsers`, `activeSessions`, admin `rooms` modal query). |
+| Firestore scalability (fan-out cost model) | 25 | Not a discipline problem — it's the realtime-listener billing mechanic itself. This is the #1 blocker for 80 users × 24h continuous chat. |
+| RTDB security rules | 80 | Host-gated broadcast writes, per-uid presence writes, sensible participant checks — already hardened in prior sessions. |
+| RTDB bandwidth/connection scalability | 45 | Global O(N²) presence fan-out and the flat 100-connection Spark ceiling are both real, unresolved structural limits. |
+| React rendering performance | 62 | 26 components memoized including the newly-extracted `MessageList`; a few large unmemoized components (`Sidebar.jsx`, `SettingsSidebar.jsx`) remain. |
+| Memory-leak hygiene | 58 | Most listeners clean up correctly; a handful of confirmed leaks remain in `App.jsx`'s ban system and `HomePage.jsx`'s bot-message timers. |
+| Bundle size / code-splitting | 72 | Admin + economy pages already lazy-loaded; main bundle is still 2.75 MB, on the heavy side for a chat app's first load. |
+| N+1 query hygiene | 55 | Several per-row `getDoc` calls in `Sidebar.jsx`/`SettingsSidebar.jsx` where a batched read is already used correctly elsewhere in the codebase. |
+| Cost/spam guarding (gifts, etc.) | 50 | Balance checks are atomic (Firestore transactions), but no cooldown against rapid repeated gift-sends. |
+| **Overall scalability score (Spark, 24h continuous chat scenario)** | **22/100** | Dominated by the Firestore fan-out mechanic — this single factor caps the honest score regardless of how clean the rest of the code is. |
+| **Overall code-quality/performance score** | **64/100** | Genuinely solid engineering for a project this size; the low scalability score is a Firebase-plan/pricing-model ceiling, not a reflection of code quality. |
+
+---
+
+## 11. Fix-It Prompt — Getting 80 Concurrent Users Through 24h of Continuous Chat on Spark
+
+**Read this first, honestly:** every fix below is real, safe, and zero-UI/UX-change — I will implement all of them if you say go. But per §7.1's math, the Firestore realtime-listener fan-out cost for the main room chat is a **server-side billing mechanic**, not a client-side inefficiency, so **no amount of frontend code changes can mathematically guarantee** 80 users chatting continuously for a full 24 hours will stay under the fixed 50,000-reads/day Spark quota **if a large share of them are ever concentrated in the same 1–2 rooms at once**. What these fixes *can* do is: (a) eliminate every wasted/unnecessary read so 100% of your quota goes toward real chat activity instead of leaks and N+1s, (b) remove the two remaining unbounded queries that could spike usage unpredictably, (c) cut RTDB bandwidth so that stops being a second failure point, and (d) meaningfully push the realistic ceiling up from where it sits today. Whether 80 users spread across your existing room list stays under quota depends on how many rooms are actually "hot" at once (§7.1, the `K` variable) — something only real usage data can confirm. I'll flag this again once the fixes are in, and recommend checking the Firebase Console's Usage tab against real traffic before treating 80 as guaranteed-safe.
+
+With that caveat stated plainly, here is the exact, prioritized list of everything worth fixing, in the order that gives the most quota/bandwidth back per change:
+
+1. **Cap the two remaining unbounded Firestore listeners** — add `limit()` to `HomePage.jsx`'s `kickedUsers` room listener (~L2101) and `AdminPanelPage.jsx`'s `activeSessions` listener (~L438). Prevents unpredictable read spikes as room/session counts grow.
+2. **Cap `AdminBanKickModal.jsx`'s unbounded `rooms` query** (~L225) — same reasoning, staff-triggered but unbounded today.
+3. **Replace per-row `getDoc` kick-status checks in `Sidebar.jsx`** (~L691/1104/1141/1164) with one batched `where('uid','in',...)` read, or derive status from data already in memory — removes a real N+1 pattern that scales with visible room-list length × active users.
+4. **Replace `SettingsSidebar.jsx`'s per-ID `getDoc` loops** for blocked/friends lists (~L297/359) with the same batched pattern already used correctly in `HomePage.jsx`'s `fetchUsersInBatches`.
+5. **Route all remaining per-user profile fetches through the existing `userProfileCache.js`** so no two components ever re-fetch the same user doc within its TTL window.
+6. **Increase the RTDB presence heartbeat interval further** (currently 120s) if your product tolerance allows slightly staler "last seen" data — every increase linearly cuts the O(N²) presence-bandwidth cost that scales with concurrent users squared.
+7. **Add a server-enforced cooldown on gift-sending** (`GiftPanel.jsx` → `coinSystem.js` `deductCoinsForGift`, ~L151) so rapid repeated gifts can't multiply writes beyond intent — cheap insurance, not currently present beyond a local UI flag.
+8. **Fix the confirmed memory leaks** — `App.jsx`'s ban-hammer `onSnapshot` (~L377) with no cleanup, its two uncleared intervals (~L280, ~L423), `HomePage.jsx`'s uncancelled 3-minute bot-message-deletion timers, and `LoginPage.jsx`/`SignupPage.jsx`'s uncleared ban-check intervals. These don't move the Firestore/RTDB ceiling but do prevent long-lived tabs (exactly what "24h continuous" implies) from silently accumulating duplicate listeners/intervals over time.
+9. **Memoize `Sidebar.jsx`** and the unmemoized `liveUsers`/`onlineUserIds` derivations in `HomePage.jsx` (~L3237–3242) plus the repeated inline conversation-ID `sort().join('_')` calls — keeps 80 concurrent users' worth of UI updates from causing visible jank on lower-end devices, even though it doesn't touch server quota.
+10. **Extract `ChatInput`** from `HomePage.jsx` with the same `useStableCallback` pattern already proven this session for `MessageList` — reduces re-render scope further during heavy 24h typing/sending activity.
+
+**What I'd recommend after these are in:** check the Firebase Console Usage tab during a real multi-user test session to see actual reads/day and RTDB bandwidth against the quota, since that will tell us the real `K` (how many rooms are simultaneously busy) instead of the worst-case assumption used in this report — that's the number that ultimately decides whether 80 users is safely inside quota or not.
+
+Say the word and I'll implement items 1–10 in this order, verifying with a build + workflow restart + screenshot after each group, exactly like the prior optimization sessions.
