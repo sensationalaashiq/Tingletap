@@ -18,3 +18,9 @@ id = "u9wmtWh_wXuOttV1Ni578"
 uri = "file://TINGLETAP_DEEP_AUDIT_2026-07-03.md"
 type = "text"
 title = "TingleTap Scores + 80-User Fix-It Prompt (updated)"
+
+[[outputs]]
+id = "NKew3rL05ffcgvNEZiyIG"
+uri = "file://TINGLETAP_HYBRID_WEBSOCKET_MIGRATION_AUDIT_2026-07-03.md"
+type = "text"
+title = "TingleTap Hybrid WebSocket Migration Audit"
