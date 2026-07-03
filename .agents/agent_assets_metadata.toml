@@ -6,3 +6,9 @@ id = "1bhfCnkWsgdnVZNQLFy4Q"
 uri = "file://TINGLETEST_AUDIT_REPORT.md"
 type = "text"
 title = "TingleTap Architecture & Firebase Audit Report"
+
+[[outputs]]
+id = "_C47lu8TwemJAqHI8HmPA"
+uri = "file://TINGLETAP_FULL_ARCHITECTURE_AUDIT_2026-07-03.md"
+type = "text"
+title = "TingleTap Full Architecture & Scalability Audit"
