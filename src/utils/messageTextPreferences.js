@@ -18,16 +18,26 @@ if (typeof window !== 'undefined') {
   window.userMessageStyles = window.userMessageStyles || {};
 }
 
-// Save message font preferences to Firestore only (never localStorage)
-export const saveMessageFontPreferences = async (preferences) => {
+// Network writes are debounced per-uid (500ms trailing) so rapid consecutive
+// style changes collapse into a single Firestore write pair instead of one
+// pair per change. The local/instant UI application is NOT debounced.
+const _messageWriteTimers = {};
+const _messagePendingPrefs = {};
+
+const _flushMessagePreferencesToFirestore = async (uid) => {
+  const preferences = _messagePendingPrefs[uid];
+  delete _messageWriteTimers[uid];
+  delete _messagePendingPrefs[uid];
+  if (!preferences) return;
+
   try {
     const { auth, db } = await import('../firebase/config');
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || auth.currentUser.uid !== uid) return;
 
     const isGuest = auth.currentUser.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
 
     const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
-    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const userRef = doc(db, 'users', uid);
     const userDoc = await getDoc(userRef);
     const userData = userDoc.exists() ? userDoc.data() : {};
 
@@ -42,27 +52,37 @@ export const saveMessageFontPreferences = async (preferences) => {
     const userName = userData.displayName || auth.currentUser.displayName || 'User';
 
     // Write to globalMessageStyles for real-time cross-user sync
-    const globalStyleRef = doc(db, 'globalMessageStyles', auth.currentUser.uid);
+    const globalStyleRef = doc(db, 'globalMessageStyles', uid);
     await setDoc(globalStyleRef, {
-      userId: auth.currentUser.uid,
+      userId: uid,
       userName,
       styles: preferences,
       timestamp: Date.now()
     }, { merge: true });
 
-    // Apply styles globally for ALL users to see
-    applyGlobalMessageStyles(auth.currentUser.uid, userName, preferences);
-
-    // Store in global in-memory object
-    window.allUsersMessageStyles[auth.currentUser.uid] = {
-      userId: auth.currentUser.uid,
-      userName,
-      styles: preferences,
-      timestamp: Date.now()
-    };
-    window.userMessageStyles[auth.currentUser.uid] = preferences;
-
     console.log('✅ Message font preferences saved to Firebase');
+  } catch (error) {
+    console.error('❌ Error saving message font preferences:', error);
+  }
+};
+
+// Save message font preferences to Firestore only (never localStorage)
+export const saveMessageFontPreferences = async (preferences) => {
+  try {
+    const { auth } = await import('../firebase/config');
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    const userName = auth.currentUser.displayName || 'User';
+
+    // Instant local application (never debounced)
+    applyGlobalMessageStyles(uid, userName, preferences);
+    window.allUsersMessageStyles[uid] = { userId: uid, userName, styles: preferences, timestamp: Date.now() };
+    window.userMessageStyles[uid] = preferences;
+
+    // Debounced network write (500ms)
+    _messagePendingPrefs[uid] = preferences;
+    if (_messageWriteTimers[uid]) clearTimeout(_messageWriteTimers[uid]);
+    _messageWriteTimers[uid] = setTimeout(() => _flushMessagePreferencesToFirestore(uid), 500);
   } catch (error) {
     console.error('❌ Error saving message font preferences:', error);
   }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { auth, db, rtdb } from '../firebase/config';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import useRoomsListener from '../hooks/useRoomsListener';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { ref, onValue } from 'firebase/database';
 import { toast } from 'react-toastify';
@@ -269,13 +270,13 @@ const RoomListPage = () => {
   const [showPwText, setShowPwText] = useState(false);
   const navigate = useNavigate();
 
+  // Shared listener (deduped with Sidebar.jsx) — avoids two independent
+  // onSnapshot subscriptions on the same 'rooms' query when both are mounted.
+  const sharedRooms = useRoomsListener();
   useEffect(() => {
-    const q = query(collection(db, 'rooms'), orderBy('order'));
-    return onSnapshot(q, (snap) => {
-      setRooms(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
-  }, []);
+    setRooms(sharedRooms);
+    setLoading(false);
+  }, [sharedRooms]);
 
   // ── Room occupancy counts — scoped to roomCounts/{roomId}/{uid} entries ──
   // Each online user writes a lightweight true entry under their room.

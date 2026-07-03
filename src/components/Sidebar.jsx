@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc, Timestamp, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
+import useRoomsListener from '../hooks/useRoomsListener';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -204,13 +205,13 @@ const Sidebar = ({
   /* -- kicked users: received as prop from HomePage (no duplicate listener) -- */
   // The kickedUserIds state is populated from the prop below; no onSnapshot here.
 
-  /* -- rooms subscription -- */
+  /* -- rooms subscription -- shared listener (deduped with RoomListPage.jsx) */
+  const sharedRooms = useRoomsListener();
   useEffect(() => {
-    const q = query(collection(db, 'rooms'), orderBy('order'));
-    const unsub = onSnapshot(q, (snap) => {
-      setRooms(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setTimeout(() => { if (window.applyGlobalUsernameStyles) window.applyGlobalUsernameStyles(); }, 500);
-    });
+    setRooms(sharedRooms);
+    setTimeout(() => { if (window.applyGlobalUsernameStyles) window.applyGlobalUsernameStyles(); }, 500);
+  }, [sharedRooms]);
+  useEffect(() => {
     const handleProfileUpdate = (event) => {
       const { userId, userData } = event.detail;
       const newAvatarUrl = userData.photoURL || getAvatarUrl(userId, userData.gender, userData.photoURL);
@@ -220,7 +221,6 @@ const Sidebar = ({
     };
     window.addEventListener('userProfileUpdated', handleProfileUpdate);
     return () => {
-      unsub();
       window.removeEventListener('userProfileUpdated', handleProfileUpdate);
     };
   }, []);

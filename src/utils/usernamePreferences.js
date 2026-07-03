@@ -28,6 +28,70 @@ if (typeof window !== 'undefined') {
   window.userUsernameStyles = window.userUsernameStyles || {};
 }
 
+// Network writes are debounced per-uid (500ms trailing) so rapid consecutive
+// style changes (e.g. dragging a color/slider control) collapse into a single
+// Firestore write pair instead of one pair per change. The local/instant UI
+// application (below) is NOT debounced — it still happens immediately.
+const _usernameWriteTimers = {};
+const _usernamePendingPrefs = {};
+
+const _flushUsernamePreferencesToFirestore = async (uid) => {
+  const usernamePrefs = _usernamePendingPrefs[uid];
+  delete _usernameWriteTimers[uid];
+  delete _usernamePendingPrefs[uid];
+  if (!usernamePrefs) return;
+
+  try {
+    const { auth, db } = await import('../firebase/config');
+    const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
+
+    if (!auth.currentUser || auth.currentUser.uid !== uid || auth.currentUser.isAnonymous) return;
+
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.exists() ? userDoc.data() : {};
+
+    await updateDoc(userRef, {
+      usernameFontPreferences: usernamePrefs,
+      'settings.usernameFontSize': usernamePrefs.usernameFontSize,
+      'settings.usernameFontColor': usernamePrefs.usernameFontColor,
+      'settings.usernameFontFamily': usernamePrefs.usernameFontFamily,
+      'settings.usernameIsBold': usernamePrefs.usernameIsBold,
+      'settings.usernameIsItalic': usernamePrefs.usernameIsItalic,
+      'settings.usernameIsUnderline': usernamePrefs.usernameIsUnderline,
+      'settings.usernameIsStrikethrough': usernamePrefs.usernameIsStrikethrough,
+      'settings.usernameGradientEnabled': usernamePrefs.usernameGradientEnabled,
+      'settings.usernameGradientStart': usernamePrefs.usernameGradientStart,
+      'settings.usernameGradientEnd': usernamePrefs.usernameGradientEnd,
+      'settings.usernameGradientDirection': usernamePrefs.usernameGradientDirection,
+      'settings.usernameAnimationEnabled': usernamePrefs.usernameAnimationEnabled,
+      'settings.usernameAnimationType': usernamePrefs.usernameAnimationType,
+      'settings.usernameAnimationDuration': usernamePrefs.usernameAnimationDuration,
+      'settings.usernameTextShadow': usernamePrefs.usernameTextShadow,
+      'settings.usernameLetterSpacing': usernamePrefs.usernameLetterSpacing,
+      'settings.usernameOutlineEnabled': usernamePrefs.usernameOutlineEnabled,
+      'settings.usernameOutlineColor': usernamePrefs.usernameOutlineColor,
+      'settings.usernameOutlineSize': usernamePrefs.usernameOutlineSize,
+      updatedAt: new Date().toISOString()
+    });
+
+    console.log('✅ Username preferences saved to Firebase');
+
+    const userName = userData.displayName || auth.currentUser.displayName || 'User';
+
+    // Also write to globalUsernameStyles collection for real-time cross-user sync
+    const globalStyleRef = doc(db, 'globalUsernameStyles', uid);
+    await setDoc(globalStyleRef, {
+      userId: uid,
+      userName: userName,
+      styles: usernamePrefs,
+      timestamp: Date.now()
+    }, { merge: true });
+  } catch (error) {
+    console.error('❌ Error saving username preferences to Firebase:', error);
+  }
+};
+
 // Save USERNAME font preferences to Firestore only (never localStorage)
 export const saveUsernameFontPreferences = async (preferences) => {
   try {
@@ -53,77 +117,28 @@ export const saveUsernameFontPreferences = async (preferences) => {
       usernameOutlineSize: preferences.usernameOutlineSize || '1px'
     };
 
-    // Save to Firestore and apply globally
     try {
-      const { auth, db } = await import('../firebase/config');
-      const { doc, updateDoc, getDoc, setDoc } = await import('firebase/firestore');
+      const { auth } = await import('../firebase/config');
 
       if (auth.currentUser && !auth.currentUser.isAnonymous) {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        const uid = auth.currentUser.uid;
+        const userName = auth.currentUser.displayName || 'User';
 
-        await updateDoc(userRef, {
-          usernameFontPreferences: usernamePrefs,
-          'settings.usernameFontSize': usernamePrefs.usernameFontSize,
-          'settings.usernameFontColor': usernamePrefs.usernameFontColor,
-          'settings.usernameFontFamily': usernamePrefs.usernameFontFamily,
-          'settings.usernameIsBold': usernamePrefs.usernameIsBold,
-          'settings.usernameIsItalic': usernamePrefs.usernameIsItalic,
-          'settings.usernameIsUnderline': usernamePrefs.usernameIsUnderline,
-          'settings.usernameIsStrikethrough': usernamePrefs.usernameIsStrikethrough,
-          'settings.usernameGradientEnabled': usernamePrefs.usernameGradientEnabled,
-          'settings.usernameGradientStart': usernamePrefs.usernameGradientStart,
-          'settings.usernameGradientEnd': usernamePrefs.usernameGradientEnd,
-          'settings.usernameGradientDirection': usernamePrefs.usernameGradientDirection,
-          'settings.usernameAnimationEnabled': usernamePrefs.usernameAnimationEnabled,
-          'settings.usernameAnimationType': usernamePrefs.usernameAnimationType,
-          'settings.usernameAnimationDuration': usernamePrefs.usernameAnimationDuration,
-          'settings.usernameTextShadow': usernamePrefs.usernameTextShadow,
-          'settings.usernameLetterSpacing': usernamePrefs.usernameLetterSpacing,
-          'settings.usernameOutlineEnabled': usernamePrefs.usernameOutlineEnabled,
-          'settings.usernameOutlineColor': usernamePrefs.usernameOutlineColor,
-          'settings.usernameOutlineSize': usernamePrefs.usernameOutlineSize,
-          updatedAt: new Date().toISOString()
-        });
-
-        console.log('✅ Username preferences saved to Firebase');
-
-        // Apply styles globally for ALL users to see
-        const userName = userData.displayName || auth.currentUser.displayName || 'User';
-        applyGlobalUsernameStylesForUser(auth.currentUser.uid, userName, usernamePrefs);
-
-        // Also write to globalUsernameStyles collection for real-time cross-user sync
-        const globalStyleRef = doc(db, 'globalUsernameStyles', auth.currentUser.uid);
-        await setDoc(globalStyleRef, {
-          userId: auth.currentUser.uid,
-          userName: userName,
-          styles: usernamePrefs,
-          timestamp: Date.now()
-        }, { merge: true });
-
-        // Store in global object for all users to access (in-memory only)
-        window.allUsersUsernameStyles[auth.currentUser.uid] = {
-          userId: auth.currentUser.uid,
-          userName: userName,
-          styles: usernamePrefs,
-          timestamp: Date.now()
-        };
-        window.userUsernameStyles[auth.currentUser.uid] = usernamePrefs;
-
-        // Broadcast change event for other components
+        // Instant local application (never debounced) — updates this user's
+        // own view and broadcasts to already-connected peers immediately.
+        applyGlobalUsernameStylesForUser(uid, userName, usernamePrefs);
+        window.allUsersUsernameStyles[uid] = { userId: uid, userName, styles: usernamePrefs, timestamp: Date.now() };
+        window.userUsernameStyles[uid] = usernamePrefs;
         window.dispatchEvent(new CustomEvent('userSpecificUsernameStylesChanged', {
-          detail: {
-            userId: auth.currentUser.uid,
-            userName: userName,
-            styles: usernamePrefs
-          }
+          detail: { userId: uid, userName, styles: usernamePrefs }
         }));
+        setTimeout(() => { forceApplyAllUsersStyles(); }, 100);
 
-        // Force update all components
-        setTimeout(() => {
-          forceApplyAllUsersStyles();
-        }, 100);
+        // Debounced network write (500ms) — collapses rapid consecutive saves
+        // (e.g. dragging a slider) into a single Firestore write pair.
+        _usernamePendingPrefs[uid] = usernamePrefs;
+        if (_usernameWriteTimers[uid]) clearTimeout(_usernameWriteTimers[uid]);
+        _usernameWriteTimers[uid] = setTimeout(() => _flushUsernamePreferencesToFirestore(uid), 500);
       }
     } catch (error) {
       console.error('❌ Error saving username preferences to Firebase:', error);

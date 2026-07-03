@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
@@ -1517,22 +1517,25 @@ const AdminPanelPage = () => {
     }
   };
 
-  // Filter users based on search and filters
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = !searchTerm || 
-      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter users based on search and filters (memoized — avoids re-filtering the
+  // entire users array on every unrelated re-render, e.g. presence tick or other tab state)
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch = !searchTerm || 
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+      const matchesRole = filterRole === 'all' || user.role === filterRole;
       
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
-    
-    const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'online' && onlineStatuses[user.uid]?.state === 'online') ||
-      (filterStatus === 'offline' && onlineStatuses[user.uid]?.state !== 'online') ||
-      (filterStatus === 'banned' && user.isBanned) ||
-      (filterStatus === 'muted' && user.mutedInfo?.isMuted);
-      
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+      const matchesStatus = filterStatus === 'all' || 
+        (filterStatus === 'online' && onlineStatuses[user.uid]?.state === 'online') ||
+        (filterStatus === 'offline' && onlineStatuses[user.uid]?.state !== 'online') ||
+        (filterStatus === 'banned' && user.isBanned) ||
+        (filterStatus === 'muted' && user.mutedInfo?.isMuted);
+        
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, searchTerm, filterRole, filterStatus, onlineStatuses]);
 
   // Get user's real device/location info with proper fallbacks
   const getUserDeviceInfo = (user) => {

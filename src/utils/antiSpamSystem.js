@@ -99,24 +99,32 @@ export const checkSlowMode = (roomId, uid) => {
   return { allowed: true };
 };
 
-const applyAutoMute = async (uid, durationMs, reason) => {
+// violationDetails (optional) lets a caller that just logged a violation and is
+// now auto-muting in the same breath fold both into a single updateDoc call
+// instead of two sequential writes.
+const applyAutoMute = async (uid, durationMs, reason, violationDetails = null) => {
   const until = Date.now() + durationMs;
   mutedUsers.set(uid, { until, reason });
 
   try {
     const userRef = doc(db, 'users', uid);
+    const nowIso = new Date().toISOString();
+    const violationEntries = violationDetails
+      ? [
+          { type: violationDetails.violationType, message: violationDetails.messageText?.slice(0, 100), timestamp: nowIso },
+          { reason, timestamp: nowIso, autoMuted: true }
+        ]
+      : [{ reason, timestamp: nowIso, autoMuted: true }];
+
     await updateDoc(userRef, {
       'mutedInfo.isMuted': true,
       'mutedInfo.mutedBy': 'AutoMod',
       'mutedInfo.muteReason': reason,
-      'mutedInfo.muteTime': new Date().toISOString(),
+      'mutedInfo.muteTime': nowIso,
       'mutedInfo.muteUntil': new Date(until).toISOString(),
-      spamViolations: arrayUnion({
-        reason,
-        timestamp: new Date().toISOString(),
-        autoMuted: true
-      })
+      spamViolations: arrayUnion(...violationEntries)
     });
+    if (violationDetails) updateTrustScore(uid, 'SPAM_VIOLATION');
     updateTrustScore(uid, 'MUTE_RECEIVED');
   } catch (err) {
     console.error('[AntiSpam] Error applying auto-mute:', err);
@@ -205,11 +213,15 @@ export const checkSpam = async (uid, messageText, roomId) => {
   if (data.timestamps.length > SPAM_CONFIG.RATE_LIMIT_MAX_MESSAGES) {
     data.violations++;
     data.cooldownUntil = now + SPAM_CONFIG.COOLDOWN_DURATION_MS;
-    await logSpamViolation(uid, 'RATE_LIMIT', text);
 
     if (data.violations >= SPAM_CONFIG.VIOLATIONS_BEFORE_MUTE) {
       const muteDuration = SPAM_CONFIG.AUTO_MUTE_DURATION_MS * Math.pow(2, data.violations - SPAM_CONFIG.VIOLATIONS_BEFORE_MUTE);
-      await applyAutoMute(uid, muteDuration, 'Automatic mute: sending messages too fast');
+      // Combined into a single write — logSpamViolation's entry is folded into
+      // the same updateDoc as the mute, instead of two sequential writes.
+      await applyAutoMute(uid, muteDuration, 'Automatic mute: sending messages too fast', {
+        violationType: 'RATE_LIMIT',
+        messageText: text
+      });
       data.violations = 0;
       return {
         isSpam: true,
@@ -218,6 +230,7 @@ export const checkSpam = async (uid, messageText, roomId) => {
       };
     }
 
+    await logSpamViolation(uid, 'RATE_LIMIT', text);
     return {
       isSpam: true,
       type: 'rate_limit',

@@ -107,6 +107,11 @@ const IC = {
   ),
 };
 
+// Module-level cache so re-opening the modal within 60s reuses the last
+// fetched rooms/users data instead of re-subscribing to Firestore each time.
+let _cachedModalData = null; // { rooms, users, fetchedAt }
+const MODAL_CACHE_TTL_MS = 60000;
+
 const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, currentRoomId }) => {
   const [type, setType]               = useState('warning');
   const [title, setTitle]             = useState('');
@@ -128,13 +133,28 @@ const WarningAnnouncementModal = ({ isVisible, onClose, currentUserProfile, curr
 
   useEffect(() => {
     if (!isVisible) return;
-    const unsubRooms = onSnapshot(query(collection(db, 'rooms'), orderBy('name')), (snap) => {
-      setRooms(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+    // Reuse cached rooms/users if the modal was opened within the last 60s —
+    // avoids re-paying the read cost on every open/close toggle by staff.
+    const cacheIsFresh = _cachedModalData && (Date.now() - _cachedModalData.fetchedAt) < MODAL_CACHE_TTL_MS;
+    if (cacheIsFresh) {
+      setRooms(_cachedModalData.rooms);
+      setUsers(_cachedModalData.users);
       if (currentRoomId && !selectedRooms.includes(currentRoomId)) setSelectedRooms([currentRoomId]);
+      return; // no new listeners started — nothing to clean up
+    }
+
+    const unsubRooms = onSnapshot(query(collection(db, 'rooms'), orderBy('name')), (snap) => {
+      const roomsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setRooms(roomsData);
+      if (currentRoomId && !selectedRooms.includes(currentRoomId)) setSelectedRooms([currentRoomId]);
+      _cachedModalData = { ..._cachedModalData, rooms: roomsData, users: _cachedModalData?.users || [], fetchedAt: Date.now() };
     });
     // FIX 4: Limit the initial users listener to 100 entries
     const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap) => {
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setUsers(usersData);
+      _cachedModalData = { ..._cachedModalData, users: usersData, rooms: _cachedModalData?.rooms || [], fetchedAt: Date.now() };
     });
     return () => { unsubRooms(); unsubUsers(); };
   }, [isVisible, currentRoomId]);
