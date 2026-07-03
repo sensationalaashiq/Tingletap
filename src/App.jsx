@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
 import { auth, rtdb, db } from './firebase/config';
@@ -13,7 +13,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import HomePage from './pages/HomePage';
 import RoomListPage from './pages/RoomListPage';
 
-import AdminPanelPage from './pages/AdminPanelPage';
 import AboutPage from './pages/AboutPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
@@ -23,11 +22,16 @@ import FAQPage from './pages/FAQPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import WelcomeDashboard from './pages/WelcomeDashboard';
 import RoomSlugPage from './pages/RoomSlugPage';
-import BuyCoinsPage from './components/coins/BuyCoinsPage';
-import CoinWalletPage from './components/coins/CoinWalletPage';
-import Leaderboard from './components/coins/Leaderboard';
-import RJEarningsDashboard from './components/rj/RJEarningsDashboard';
-import RJWithdrawal from './components/rj/RJWithdrawal';
+
+// Lazily loaded — these are route-only, admin/coin/RJ-specific bundles that
+// most sessions (guests, regular chat users) never visit. Splitting them out
+// keeps the main bundle smaller without changing any behavior.
+const AdminPanelPage = lazy(() => import('./pages/AdminPanelPage'));
+const BuyCoinsPage = lazy(() => import('./components/coins/BuyCoinsPage'));
+const CoinWalletPage = lazy(() => import('./components/coins/CoinWalletPage'));
+const Leaderboard = lazy(() => import('./components/coins/Leaderboard'));
+const RJEarningsDashboard = lazy(() => import('./components/rj/RJEarningsDashboard'));
+const RJWithdrawal = lazy(() => import('./components/rj/RJWithdrawal'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthRoute from './components/AuthRoute';
@@ -950,7 +954,9 @@ function App() {
           path="/admin-panel"
           element={
             <ProtectedRoute user={user} profile={userProfile}>
-              <AdminPanelPage />
+              <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading Admin Panel...</div>}>
+                <AdminPanelPage />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -973,12 +979,12 @@ function App() {
         {/* Slug-based room routes — e.g. /r/indian-chat, /r/adult-chat */}
         <Route path="/r/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
 
-        {/* ── Coin & Gift System ── */}
-        <Route path="/buy-coins" element={<ProtectedRoute user={user} profile={userProfile}><BuyCoinsPage /></ProtectedRoute>} />
-        <Route path="/wallet" element={<ProtectedRoute user={user} profile={userProfile}><CoinWalletPage /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute user={user} profile={userProfile}><Leaderboard /></ProtectedRoute>} />
-        <Route path="/rj-earnings" element={<ProtectedRoute user={user} profile={userProfile}><RJEarningsDashboard /></ProtectedRoute>} />
-        <Route path="/rj-withdrawal" element={<ProtectedRoute user={user} profile={userProfile}><RJWithdrawal /></ProtectedRoute>} />
+        {/* ── Coin & Gift System (lazy-loaded, wrapped in a single Suspense) ── */}
+        <Route path="/buy-coins" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><BuyCoinsPage /></Suspense></ProtectedRoute>} />
+        <Route path="/wallet" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><CoinWalletPage /></Suspense></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><Leaderboard /></Suspense></ProtectedRoute>} />
+        <Route path="/rj-earnings" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><RJEarningsDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/rj-withdrawal" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><RJWithdrawal /></Suspense></ProtectedRoute>} />
 
         {/* Default route */}
         <Route path="/" element={user

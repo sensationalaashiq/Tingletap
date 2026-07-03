@@ -323,7 +323,7 @@ const AdminPanelPage = () => {
 
   // Real-time rooms data
   useEffect(() => {
-    const roomsQuery = query(collection(db, 'rooms'), orderBy('order'));
+    const roomsQuery = query(collection(db, 'rooms'), orderBy('order'), limit(500));
     const unsubscribe = onSnapshot(roomsQuery, (snapshot) => {
       const roomsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -382,7 +382,7 @@ const AdminPanelPage = () => {
 
   // Real-time banned IPs data
   useEffect(() => {
-    const bannedIPsQuery = query(collection(db, 'bannedIPs'), where('isActive', '!=', false));
+    const bannedIPsQuery = query(collection(db, 'bannedIPs'), where('isActive', '!=', false), limit(500));
     const unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
       const ipsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -415,7 +415,7 @@ const AdminPanelPage = () => {
 
   // Real-time banned devices data
   useEffect(() => {
-    const bannedDevicesQuery = query(collection(db, 'bannedDevices'), where('isActive', '!=', false));
+    const bannedDevicesQuery = query(collection(db, 'bannedDevices'), where('isActive', '!=', false), limit(500));
     const unsubscribe = onSnapshot(bannedDevicesQuery, (snapshot) => {
       const devicesData = snapshot.docs.map(doc => ({
         id: doc.id,

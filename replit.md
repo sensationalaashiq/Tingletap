@@ -1,3 +1,16 @@
+# Recent Changes (July 3, 2026) — Fix-It Prompt Implementation (Session 4)
+
+Implemented all 7 items from the audit's "Fix-It Prompt" (see `TINGLETEST_AUDIT_REPORT.md` section 15). Zero visible UI/behavior/schema changes. Verified with `npm run build` + workflow restart + screenshot/console check.
+
+✅ **Applied**:
+1. XSS: `DOMPurify.sanitize()` now actually invoked in `HomePage.jsx`'s `ChatMessageTranslatedBody` on `mentionedHtml` before `dangerouslySetInnerHTML` (allowed tags: span/br/b/i/em/strong/u, allowed attr: class) — the import existed but was never called before this fix.
+2. RTDB security rules — user deployed these themselves via Firebase Console; not touched in this session.
+3. Presence heartbeat interval in `HomePage.jsx` changed 30s → 120s (RTDB `status/{uid}` writes).
+4. Trust system write debounce — audit found this already implemented in `trustSystem.js` (5-min flush on `MESSAGE_SENT`); no change needed.
+5. Team Members listener role filter — audit found `SettingsSidebar.jsx` already filters by `role in [...]`; no change needed.
+6. Added `limit(500)` to `AdminPanelPage.jsx`'s `bannedIPs`, `bannedDevices`, and `rooms` (orderBy('order')) queries, and `limit(200)` to `HomePage.jsx`'s `privateMessages` participants-array-contains listener (no new `orderBy` added — avoided requiring an undeployable Firestore composite index on Spark plan without CLI access).
+7. Code splitting via `React.lazy()` + `Suspense` in `App.jsx`: `AdminPanelPage`, `BuyCoinsPage`, `CoinWalletPage`, `Leaderboard`, `RJEarningsDashboard`, `RJWithdrawal` are now separate on-demand chunks instead of bundled into the main JS. Main bundle dropped from 3.07 MB to ~2.74 MB; Admin Panel alone is a 257 KB chunk that most users never download.
+
 # Recent Changes (July 3, 2026) — Performance & Security Audit (Session 3)
 
 Zero visible UI/behavior/schema changes; internal security hardening + query bounding only. Verified with a production build, workflow restart, and screenshot/console check.

@@ -222,11 +222,15 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
         overflowWrap: 'break-word'
     };
     const viewerName = auth.currentUser?.displayName;
-    const renderedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
+    const mentionedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
             return `<span class="tag-self-mention">@${name}</span>`;
         }
         return `<span class="tag-other-mention">@${name}</span>`;
+    });
+    const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
+        ALLOWED_TAGS: ['span', 'br', 'b', 'i', 'em', 'strong', 'u'],
+        ALLOWED_ATTR: ['class']
     });
     const originalEl = <p style={pStyle} dangerouslySetInnerHTML={{ __html: renderedHtml }}></p>;
 
@@ -2365,7 +2369,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const fresh = { ...cached, last_changed: Date.now() };
             window._currentStatusData = fresh;
             set(userStatusRef, fresh).catch(() => {});
-        }, 30000);
+        }, 120000);
 
         return () => {
             clearInterval(heartbeatInterval);
@@ -2532,7 +2536,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Simpler query without complex conditions
         const q = query(
             collection(db, 'privateMessages'),
-            where('participants', 'array-contains', currentUserId)
+            where('participants', 'array-contains', currentUserId),
+            limit(200)
         );
 
         let pmIsInitialLoad = true;
