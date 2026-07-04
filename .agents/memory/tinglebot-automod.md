@@ -1,7 +1,23 @@
 ---
 name: TingleBot AutoMod Architecture
-description: Key design decisions for the TingleBot intelligent auto-moderation system (v3.0)
+description: Key design decisions for the TingleBot intelligent auto-moderation system (v3.0-v4.0)
 ---
+
+## v4.0 — Two separate automod entry points, both must agree
+
+There were historically TWO independent moderation systems gating chat send/receive: `tinglebotAutoMod.js` (post-send, staff-client enforcement, pattern-rich) and `abuseDetection.js` (pre-send, was a much simpler keyword-only module with its own auto-ban logic).
+
+**Why:** Fixing policy (owner exemption, no-auto-ban, context-aware slang tolerance) in only one module leaves the other one contradicting it — e.g. `abuseDetection.js` used to auto-ban on a severity threshold and had no owner exemption, flagging casual words like "idiot/stupid/loser" as high-severity with zero context awareness.
+
+**How to apply:** `abuseDetection.js` now delegates all classification to `detectModerationContent()` (exported from `tinglebotAutoMod.js`, wraps the internal `detectContent`) instead of maintaining a second dictionary. Any future policy change to what counts as abusive/tolerable belongs in `tinglebotAutoMod.js`'s detection layer only — `abuseDetection.js` should stay a thin pre-send wrapper (rate-limited history + kick/mute escalation, no ban).
+
+## No-auto-ban policy
+
+Both automod entry points cap automatic enforcement at Kick — there is no automatic ban anywhere in the client-side moderation code. `CFG.KICK_AT` in `tinglebotAutoMod.js` and `OFFENSE_CONFIG.KICK_THRESHOLD` in `abuseDetection.js` are both terminal escalation steps, not ban thresholds. Manual bans remain a staff-only Admin Panel action.
+
+## Owner exemption
+
+Owners must never be auto-moderated. Enforced at three layers for defense-in-depth: (1) HomePage.jsx gates the entire spam+abuse check block on `role !== 'owner'` before calling either module, (2) `abuseDetection.js`'s `detectAbuse(text, role)` short-circuits for `role === 'owner'`, (3) `handleAbuseViolation` also re-checks `opts.role !== 'owner'` before taking any action. `tinglebotAutoMod.js`'s `processAutoMod` already had its own owner/admin/moderator staff-side exemption from v3.0.
 
 ## Staff-only enforcement model
 

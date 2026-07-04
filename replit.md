@@ -1,3 +1,17 @@
+# Recent Changes (July 4, 2026) — TingleBot AutoMod Policy Rewrite (Session 5)
+
+Rewrote the moderation engine only (no UI/schema/RTDB/auth/roles/permissions/chat-flow/command changes). Zero visible UI/behavior/schema changes. Verified with `npm run build` + workflow restart + screenshot/console check.
+
+**Background**: discovered TWO independent automod entry points gating chat send/receive — `tinglebotAutoMod.js` (post-send, pattern-rich, already mostly compliant) and `abuseDetection.js` (pre-send, a separate, simpler keyword-only module with its own active auto-ban logic and no owner exemption — a critical compliance gap).
+
+✅ **Applied**:
+1. Owners are now never auto-moderated, enforced at 3 layers: HomePage.jsx's spam/abuse check block is gated on `role !== 'owner'` before either module runs; `abuseDetection.js`'s `detectAbuse(text, role)` short-circuits for owners; `handleAbuseViolation` re-checks role before acting. (`tinglebotAutoMod.js`'s staff-side exemption already existed.)
+2. Removed automatic banning entirely from `abuseDetection.js` (deleted `applyBan`/`SEVERE_BAN_THRESHOLD`); the most severe automatic action anywhere in the moderation engine is now Kick, matching `tinglebotAutoMod.js`'s existing Warning → Mute → Kick escalation ceiling. Added an explicit no-auto-ban policy comment next to `CFG` in `tinglebotAutoMod.js`.
+3. `abuseDetection.js` no longer maintains its own keyword dictionary — it now delegates all classification to a new exported `detectModerationContent()` from `tinglebotAutoMod.js`, so both entry points share one context-aware engine instead of contradicting each other (this alone fixed "idiot/stupid/loser" etc. being wrongly flagged as high-severity abuse).
+4. Added a `CASUAL_TOLERANT_WORDS` set + `applyGlobalContextTolerance()` to `tinglebotAutoMod.js` covering common Hindi/English casual slang and consensual-adult-chat vocabulary (chutiya, gaand, lund, chut, sex, kiss, boobs, etc. + spelling variants) — these only escalate to enforcement when combined with targeting/harassment context, minors, coercion, threats, or other always-strict signals (hate, doxxing, scams, links).
+5. Religion mentions alone are not flagged; only targeted religious hate patterns (existing `HATE_RX` bank) trigger action. Added a small terrorist/extremist-promotion regex bank to `HATE_RX` (join/praise a listed group, bomb-making instructions, planning an attack, "death to X") — always strictly enforced per policy.
+6. All auto-moderation logic remains 100% on-device, rule-based (no external AI API) — consistent with the existing architecture.
+
 # Recent Changes (July 3, 2026) — Fix-It Prompt Implementation (Session 4)
 
 Implemented all 7 items from the audit's "Fix-It Prompt" (see `TINGLETEST_AUDIT_REPORT.md` section 15). Zero visible UI/behavior/schema changes. Verified with `npm run build` + workflow restart + screenshot/console check.

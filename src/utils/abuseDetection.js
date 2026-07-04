@@ -1,58 +1,16 @@
 import { db } from '../firebase/config';
-import { doc, getDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { updateTrustScore } from './trustSystem';
+import { detectModerationContent } from './tinglebotAutoMod';
 
-const ABUSE_WORDS_EN = [
-  'fuck', 'shit', 'bitch', 'bastard', 'asshole', 'ass', 'cunt', 'dick', 'cock', 'pussy',
-  'whore', 'slut', 'nigger', 'nigga', 'faggot', 'fag', 'retard', 'idiot', 'moron', 'stupid',
-  'dumbass', 'motherfucker', 'fucker', 'prick', 'wanker', 'twat', 'bollocks', 'arse',
-  'jackass', 'douchebag', 'scumbag', 'loser', 'trash', 'garbage', 'screw you', 'go to hell',
-  'kill yourself', 'kys', 'die', 'i will kill', 'i\'ll kill', 'gonna kill', 'threat',
-  'rape', 'molest', 'pedophile', 'pedo', 'abuse', 'harass',
-  'ugly', 'fat pig', 'fat bitch', 'dumb bitch', 'stupid bitch', 'worthless',
-];
-
-const ABUSE_WORDS_HI = [
-  'madarchod', 'behenchod', 'chutiya', 'bhosdike', 'bhosdi', 'randi', 'gaandu', 'gandu',
-  'loda', 'lund', 'chut', 'bhen ke lode', 'teri maa', 'maa ki aankh', 'maa ka', 'baap ka',
-  'harami', 'kamina', 'kutta', 'kutti', 'suar', 'gadha', 'ullu', 'ullu ka pattha',
-  'saala', 'saali', 'haraami', 'mc', 'bc', 'mf', 'bhad mein ja', 'nikal', 'chup kar',
-  'chup ho ja', 'shut up', 'bakwas', 'jhatu', 'bhadwa', 'bhadwaa', 'rande', 'randee',
-  'madarchod', 'mader chod', 'bhen chod', 'behen chod', 'chod', 'chodna',
-  'teri maa ki', 'teri maa ko', 'tera baap', 'bhosdiwale', 'bhosdiwala'
-];
-
-const LEET_MAP = {
-  '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '6': 'g', '7': 't',
-  '@': 'a', '$': 's', '!': 'i', '+': 't', '#': 'h'
-};
-
-const normalizeLeet = (text) => {
-  return text.toLowerCase().split('').map(c => LEET_MAP[c] || c).join('');
-};
-
-const removeRepeatedChars = (text) => {
-  return text.replace(/(.)\1{2,}/g, '$1$1');
-};
-
-const normalizeText = (text) => {
-  let normalized = text.toLowerCase();
-  normalized = normalizeLeet(normalized);
-  normalized = removeRepeatedChars(normalized);
-  normalized = normalized.replace(/[^a-z0-9\s']/g, '');
-  return normalized;
-};
-
-const HARASSMENT_PATTERNS = [
-  /\b(kill\s*(your|ur|u)\s*self)\b/i,
-  /\bkys\b/i,
-  /\b(go\s*(die|hang|kill))\b/i,
-  /\b(i('ll|\s*will|\s*gonna)\s*(kill|hurt|find|rape|beat|destroy)\s*(you|u|ur))\b/i,
-  /\b(you\s*(deserve|should)\s*(to\s*)?(die|suffer|hurt))\b/i,
-  /\b(nobody\s*(likes|wants)\s*(you|u))\b/i,
-  /\b(ugly\s*(bitch|whore|slut|piece|fat))\b/i,
-  /\b(fat\s*(ugly|stupid|dumb|bitch|pig))\b/i,
-];
+// v4.0 — This module is a thin pre-send wrapper around the shared TingleBot
+// AutoMod context-aware classification engine (tinglebotAutoMod.js). It no
+// longer maintains its own separate keyword-only dictionaries: those caused
+// casual daily slang (e.g. "idiot", "stupid", "kutta") to be flagged as
+// high-severity abuse with no context awareness, and diverged from the main
+// engine's policy. Detection now always goes through detectModerationContent()
+// so both entry points (pre-send here, and post-send in tinglebotAutoMod.js)
+// agree on what counts as SAFE/CASUAL vs. TARGETED ABUSE.
 
 const offenseHistory = new Map();
 
@@ -65,60 +23,36 @@ const OFFENSE_CONFIG = {
     60 * 60 * 1000,
     24 * 60 * 60 * 1000,
   ],
-  SEVERE_BAN_THRESHOLD: 5,
+  // NOTE: there is intentionally NO ban threshold/action here. Kick is the
+  // maximum automatic action this module can take, matching the AutoMod
+  // engine's policy of Warning → Mute → Kick only (never an automatic ban).
+  KICK_THRESHOLD: 5,
   OFFENSE_COOLDOWN_MS: 7 * 24 * 60 * 60 * 1000,
 };
 
-export const detectAbuse = (messageText) => {
+// detectAbuse(messageText, role)
+// Owners are never automatically moderated — if the sender's role is 'owner'
+// this always returns not-abusive, regardless of message content.
+export const detectAbuse = (messageText, role) => {
   if (!messageText || typeof messageText !== 'string') {
     return { isAbusive: false };
   }
-
-  const normalized = normalizeText(messageText);
-  const words = normalized.split(/\s+/);
-
-  for (const word of ABUSE_WORDS_EN) {
-    const wordNorm = normalizeText(word);
-    if (normalized.includes(wordNorm)) {
-      return {
-        isAbusive: true,
-        severity: word.length <= 4 ? 'low' : 'high',
-        type: 'abusive_language',
-        language: 'en',
-        matched: word
-      };
-    }
+  if ((role || '').toLowerCase() === 'owner') {
+    return { isAbusive: false };
   }
 
-  for (const word of ABUSE_WORDS_HI) {
-    const wordNorm = word.toLowerCase().replace(/\s+/g, '');
-    const cleanNorm = normalized.replace(/\s+/g, '');
-    if (cleanNorm.includes(wordNorm) || normalized.includes(word.toLowerCase())) {
-      return {
-        isAbusive: true,
-        severity: 'high',
-        type: 'abusive_language',
-        language: 'hi',
-        matched: word
-      };
-    }
+  const hit = detectModerationContent(messageText);
+  if (!hit.detected) {
+    return { isAbusive: false };
   }
 
-  for (const pattern of HARASSMENT_PATTERNS) {
-    if (pattern.test(messageText)) {
-      return {
-        isAbusive: true,
-        severity: 'severe',
-        type: 'harassment_threat',
-        language: 'en',
-        matched: pattern.toString()
-      };
-    }
-  }
-
-  const capsOnlyWords = words.filter(w => w.length >= 3 && /^[A-Z]+$/.test(messageText.split(/\s+/).find(orig => orig.toLowerCase() === w) || ''));
-
-  return { isAbusive: false };
+  return {
+    isAbusive: true,
+    severity: hit.severity,
+    type: hit.type,
+    category: hit.label,
+    matched: hit.matched,
+  };
 };
 
 const getUserOffenseCount = (uid) => {
@@ -153,19 +87,22 @@ const applyMute = async (uid, durationMs, reason) => {
   return until;
 };
 
-const applyBan = async (uid, reason) => {
+// applyKick — replaces the old applyBan(). Kicks the user from the room the
+// violating message was sent in (never bans them account-wide). Uses the same
+// rooms/{roomId}/kickedUsers + users/{uid}.kickedFrom schema as the main
+// TingleBot AutoMod engine (tinglebotAutoMod.js kickUser) for consistency.
+const applyKick = async (uid, roomId, displayName, reason) => {
+  if (!roomId) return;
   try {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
-      isBanned: true,
-      banReason: reason,
-      bannedBy: 'AutoMod',
-      bannedAt: new Date().toISOString(),
-      banType: 'auto'
+    await setDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid), {
+      uid, displayName: displayName || 'User', reason, kickedBy: 'AutoMod', kickedAt: new Date().toISOString(),
     });
-    updateTrustScore(uid, 'BAN_ISSUED');
+    await updateDoc(doc(db, 'users', uid), {
+      kickedFrom: { roomId, reason, time: Date.now(), kickedBy: 'AutoMod' },
+    });
+    updateTrustScore(uid, 'KICK_RECEIVED');
   } catch (err) {
-    console.error('[AbuseDetection] Ban error:', err);
+    console.error('[AbuseDetection] Kick error:', err);
   }
 };
 
@@ -177,7 +114,6 @@ const logAbuseViolation = async (uid, messageText, detection, action) => {
         message: messageText?.slice(0, 200),
         type: detection.type,
         severity: detection.severity,
-        language: detection.language,
         action,
         timestamp: new Date().toISOString()
       })
@@ -188,8 +124,12 @@ const logAbuseViolation = async (uid, messageText, detection, action) => {
   }
 };
 
-export const handleAbuseViolation = async (uid, messageText, messageDocRef, detection) => {
+// handleAbuseViolation(uid, messageText, messageDocRef, detection, opts)
+// opts: { role, displayName } — owners are always skipped (defense in depth;
+// detectAbuse() should already have prevented this from being called for them).
+export const handleAbuseViolation = async (uid, messageText, messageDocRef, detection, opts = {}) => {
   if (!uid) return { action: 'none' };
+  if ((opts.role || '').toLowerCase() === 'owner') return { action: 'none' };
 
   const offenseCount = getUserOffenseCount(uid);
   addUserOffense(uid, { type: detection.type, severity: detection.severity });
@@ -206,22 +146,24 @@ export const handleAbuseViolation = async (uid, messageText, messageDocRef, dete
     }
   }
 
-  if (detection.severity === 'severe' || offenseCount >= OFFENSE_CONFIG.SEVERE_BAN_THRESHOLD) {
-    await applyBan(uid, `Automatic ban: severe abuse/threats (${offenseCount + 1} offenses)`);
-    await logAbuseViolation(uid, messageText, detection, 'auto_ban');
-    action = 'auto_ban';
-    userMessage = '🚫 You have been automatically banned for severe abuse or repeated violations.';
+  const roomId = messageDocRef?.parent?.parent?.id || null;
+
+  if (detection.severity === 'severe' || offenseCount >= OFFENSE_CONFIG.KICK_THRESHOLD) {
+    await applyKick(uid, roomId, opts.displayName, `Automatic kick: ${detection.category || 'severe violation'} (${offenseCount + 1} offenses)`);
+    await logAbuseViolation(uid, messageText, detection, 'auto_kick');
+    action = 'auto_kick';
+    userMessage = '🚫 You have been automatically kicked from this room for a serious violation.';
   } else if (offenseCount >= OFFENSE_CONFIG.MUTE_THRESHOLD) {
     const muteIndex = Math.min(
       offenseCount - OFFENSE_CONFIG.MUTE_THRESHOLD,
       OFFENSE_CONFIG.MUTE_DURATIONS.length - 1
     );
     const muteDuration = OFFENSE_CONFIG.MUTE_DURATIONS[muteIndex];
-    muteUntil = await applyMute(uid, muteDuration, `AutoMod: abusive language (offense #${offenseCount + 1})`);
+    muteUntil = await applyMute(uid, muteDuration, `AutoMod: ${detection.category || 'abusive language'} (offense #${offenseCount + 1})`);
     await logAbuseViolation(uid, messageText, detection, 'auto_mute');
     action = 'auto_mute';
     const mins = Math.ceil(muteDuration / 60000);
-    userMessage = `⚠️ Your message was removed and you have been muted for ${mins >= 60 ? Math.ceil(mins / 60) + ' hour(s)' : mins + ' minute(s)'} for abusive language.`;
+    userMessage = `⚠️ Your message was removed and you have been muted for ${mins >= 60 ? Math.ceil(mins / 60) + ' hour(s)' : mins + ' minute(s)'} for violating community guidelines.`;
   } else {
     await logAbuseViolation(uid, messageText, detection, 'warning');
     action = 'warning';

@@ -55,6 +55,10 @@ const lastActionTime        = new Map(); // uid → timestamp — global action 
    §B  CONFIGURATION
 ════════════════════════════════════════════════════════════════════════════ */
 
+// NOTE (v4.0 policy): Warning, Mute, and Kick are the ONLY automatic actions
+// this engine ever takes. There is intentionally no auto-ban threshold/action
+// anywhere in this file — KICK_AT is the maximum automatic escalation step.
+// Manual bans remain a staff-only action performed elsewhere (e.g. Admin Panel).
 export const CFG = {
     // Flood / repeat
     FLOOD_COUNT          : 5,
@@ -752,6 +756,12 @@ const HATE_RX = [
     /\b(all\s*)?(women|girls|females)\s*(should|deserve|must)\s*(stay|cook|shut|obey|be\s*home)\b/i,
     /\b(feminism|feminists?)\s*(is\s*)?(cancer|trash|garbage|hate)\b/i,
     /\btransgender\s*(freak|sick|disgusting|abomination|groomer)\b/i,
+    // Terrorist / extremist promotion (always strictly enforced)
+    /\b(join|support|glory\s*to|praise)\s*(isis|isil|al[\s-]?qaeda|taliban|boko\s*haram|lashkar|jaish)\b/i,
+    /\b(become|be)\s*a\s*(suicide\s*bomber|jihadi\s*fighter|martyr\s*for\s*(allah|jihad))\b/i,
+    /\b(plan|planning|carry\s*out)\s*a\s*(terror(ist)?\s*attack|bomb(ing)?|mass\s*shooting)\b/i,
+    /\bhow\s*to\s*(make|build)\s*a\s*(bomb|explosive|ied)\b/i,
+    /\b(death\s*to|destroy)\s*(america|india|the\s*west|infidels?|kafirs?)\b/i,
 ];
 
 /* §E5 — Personal info / doxxing (NEW in v3.0) */
@@ -939,6 +949,39 @@ const INDIAN_CASUAL_SLANG = new Set([
     'साला','साले','गधा','उल्लू','पागल','बेवकूफ',
     'हरामी','कमीना','निकम्मा','नालायक','आवारा',
     'बकवास','फालतू','बेशर्म','घटिया','नौटंकी',
+]);
+
+/**
+ * §E8f — GLOBAL CASUAL / CONSENSUAL-ADULT TOLERANCE LIST (v4.0)
+ * These words are common daily-use slang or consensual-adult vocabulary that
+ * must NEVER trigger a Warning/Mute/Kick by themselves, in ANY room — not just
+ * the Indian Room or Adult Room. They only become actionable when combined
+ * with genuine targeting/harassment context (see hasTargetingContext) or when
+ * they appear as part of an always-protected pattern (family abuse, minors,
+ * coercion, non-consent — see isAlwaysProtectedContent).
+ *
+ * This directly implements the "context-aware, not keyword-only" moderation
+ * policy: mentioning these words casually, jokingly, or in consensual adult
+ * conversation is SAFE / CASUAL / FRIENDLY BANTER / FLIRTING / CONSENSUAL
+ * ADULT CHAT — only directed, targeted use of them is TARGETED ABUSE.
+ */
+const CASUAL_TOLERANT_WORDS = new Set([
+    // Casual daily-use Hindi/English insults & filler
+    'chutiya','chutiye','chutia','chutiyo','chootiya','chuitya','chutiyap','chootiyapa','chutiyagiri',
+    'chut','choot',
+    'lund','land','loda','lavda','lauda','laude','lode','lun',
+    'gaand','gand','gaandu','gandu',
+    'kameena','kamina','kamine','kaminey',
+    'kutta','kutte','kuttiya','kutiya','kutia','naaye','naai','naye','nayi',
+    'saala','saale','saali','sala','sale','sali',
+    'harami','haraami',
+    'pagal','pagli','paglu',
+    'bewakoof','bevkoof','bewkoof',
+    'idiot','stupid','loser','noob','dumb',
+    // Consensual-adult vocabulary (allowed unless minors/coercion/threat/non-consent involved)
+    'sex','kiss','boobs','tits','titties','boobies',
+    // Devanagari equivalents
+    'चुतिया','चूत','गांड','गंड','लंड','कुत्ता','साला','हरामी','पागल','बेवकूफ','कमीना',
 ]);
 
 /**
@@ -1168,7 +1211,7 @@ const ADULT_AMBIGUOUS_FAMILY_ABBREVS = new Set(['mf','mfkr']);
 /** Matches explicit possessive family targeting even without the abuse word */
 const FAMILY_TARGETING_RX = /\b(your|teri|tera|tere|tumhari|tumhare)\s+(mom|maa|ma|mother|sister|behen|behan|baap|dad|father|bhai)\b/i;
 
-const isAdultRoomProtected = (text, hit) => {
+const isAlwaysProtectedContent = (text, hit) => {
     // 1. Type-level: these categories are always enforced everywhere
     if (['hate','harassment','threat','scam','info','link'].includes(hit.type)) return true;
 
@@ -1226,6 +1269,36 @@ const isAdultRoomProtected = (text, hit) => {
  * High / severe abuse, explicit, hate, threats, scams are never lenient.
  * Spam detection is never lenient.
  */
+/**
+ * applyGlobalContextTolerance(text, hit)
+ * v4.0 — GLOBAL context-aware tolerance, applied in every room (not just the
+ * Indian Room / Adult Room). This is the core of the "not keyword-only"
+ * moderation policy:
+ *   - Casual daily slang and consensual-adult vocabulary (CASUAL_TOLERANT_WORDS)
+ *     NEVER trigger a violation on their own.
+ *   - They only become actionable ("TARGETED ABUSE") when the message also has
+ *     a clear targeting/harassment structure aimed at a specific person
+ *     (hasTargetingContext), OR the hit falls into an always-protected
+ *     category (extreme family abuse, minors, coercion, non-consent, hate,
+ *     threats, scams, doxxing — isAlwaysProtectedContent), which are never
+ *     tolerated regardless of room or phrasing.
+ * Returns the original hit if it should still be enforced, or null if the
+ * message should be treated as SAFE / CASUAL / FRIENDLY BANTER / FLIRTING /
+ * CONSENSUAL ADULT CHAT and skipped.
+ */
+const applyGlobalContextTolerance = (text, hit) => {
+    if (hit.type !== 'abuse' && hit.type !== 'explicit') return hit;
+    if (isAlwaysProtectedContent(text, hit)) return hit;
+
+    const matchedLower = (hit.matched || '').toLowerCase();
+    if (CASUAL_TOLERANT_WORDS.has(matchedLower)) {
+        if (hasTargetingContext(text)) return hit; // targeted abuse — still enforced
+        return null; // casual / friendly banter / consensual adult chat — no action
+    }
+
+    return hit;
+};
+
 const isIndianRoomLenient = (hit, text, priorTotal) => {
     if (hit.type !== 'abuse') return false;
     if (hasTargetingContext(text)) return false;
@@ -1334,6 +1407,11 @@ const SIGNAL_WEIGHTS = {
 
 const SEVERITY_RANK = { low:1, medium:2, high:3, severe:4 };
 
+// Exported so other moderation entry points (e.g. the pre-send abuse check in
+// abuseDetection.js) share this same context-aware classification engine
+// instead of maintaining a second, divergent, keyword-only dictionary.
+export const detectModerationContent = (text) => detectContent(text);
+
 const detectContent = (text) => {
     // Guard: check whitelist first (saves false positives)
     if (isWhitelisted(text)) return { detected: false };
@@ -1349,7 +1427,8 @@ const detectContent = (text) => {
     if (infoHit) return { detected: true, ...infoHit, signalScore: SIGNAL_WEIGHTS.personalInfo };
 
     // 3. Word list match
-    const wordHit = checkWordLists(variants);
+    const rawWordHit = checkWordLists(variants);
+    const wordHit = rawWordHit ? applyGlobalContextTolerance(text, rawWordHit) : null;
     if (wordHit) {
         const label =
             wordHit.type === 'abuse'    ? 'Abusive language' :
@@ -1360,7 +1439,8 @@ const detectContent = (text) => {
     }
 
     // 4. Fuzzy match — misspelling evasion
-    const fuzzyHit = checkFuzzy(variants);
+    const rawFuzzyHit = checkFuzzy(variants);
+    const fuzzyHit = rawFuzzyHit ? applyGlobalContextTolerance(text, rawFuzzyHit) : null;
     if (fuzzyHit) {
         const label =
             fuzzyHit.type === 'abuse'    ? 'Abusive language (variant)' :
@@ -1628,7 +1708,7 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     if (isAdultRoom) {
         // Only allow 'abuse' or 'explicit' through the gate, and only when the
         // specific content is NOT in the protected categories.
-        if ((hit.type === 'abuse' || hit.type === 'explicit') && !isAdultRoomProtected(text, hit)) {
+        if ((hit.type === 'abuse' || hit.type === 'explicit') && !isAlwaysProtectedContent(text, hit)) {
             return; // consensual adult content — skip enforcement
         }
         // All other types (hate, harassment, threat, scam, info, link, spam)

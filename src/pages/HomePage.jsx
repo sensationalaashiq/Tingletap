@@ -3694,7 +3694,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
 
             // ── Anti-Spam & Abuse Detection ──────────────────────────────
-            if (!isGuest && uid) {
+            // Owners are never automatically moderated.
+            if (!isGuest && uid && (role || userProfile?.role || 'guest') !== 'owner') {
                 // Spam check
                 const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
                 if (spamResult.isSpam) {
@@ -3710,12 +3711,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // Abuse / toxicity check
-                const abuseResult = detectAbuse(newMessage.trim());
+                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest');
                 if (abuseResult.isAbusive) {
                     // Send the message first so we have the doc ref, then delete it
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
                     setNewMessage('');
-                    const modResult = await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult);
+                    const modResult = await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
                     if (modResult?.userMessage) {
                         const violationLabel = abuseResult.category || 'inappropriate content';
                         const abuseNoticeVariants = [
