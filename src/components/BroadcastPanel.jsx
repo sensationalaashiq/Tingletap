@@ -1018,64 +1018,91 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         speakerStream.current = stream;
         setSpeakerMicMuted(false);
 
-        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-        speakerPC.current = pc;
+        /* Builds one WebRTC attempt to RJ. Re-invoked on failure/disconnect
+           so a dropped connection recovers automatically instead of leaving
+           the speaker permanently silent until they manually leave/rejoin
+           the stage — mirrors the RJ-side auto-reconnect for symmetry.     */
+        const connectToRJ = () => {
+          if (cancelled) return;
+          const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+          speakerPC.current = pc;
 
-        /* Add mic tracks so RJ can receive our audio */
-        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+          /* Re-apply current mute state onto the fresh track set so a
+             reconnect doesn't silently un-mute the speaker. */
+          stream.getAudioTracks().forEach(t => { t.enabled = !speakerMicMutedRef.current; });
+          /* Add mic tracks so RJ can receive our audio */
+          stream.getTracks().forEach(t => pc.addTrack(t, stream));
 
-        /* Send our ICE candidates to RJ */
-        pc.onicecandidate = (e) => {
-          if (e.candidate) {
-            push(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/speakerCandidates`), e.candidate.toJSON()).catch(() => {});
-          }
+          /* Send our ICE candidates to RJ */
+          pc.onicecandidate = (e) => {
+            if (e.candidate) {
+              push(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/speakerCandidates`), e.candidate.toJSON()).catch(() => {});
+            }
+          };
+
+          pc.onconnectionstatechange = () => {
+            const s = pc.connectionState;
+            if (s === 'connected') setSpeakerConnecting(false);
+            if ((s === 'failed' || s === 'disconnected') && speakerPC.current === pc && !cancelled) {
+              setTimeout(() => {
+                if (speakerPC.current === pc && !cancelled) {
+                  try { pc.close(); } catch {}
+                  setSpeakerConnecting(true);
+                  /* RJ clears speakerConnections/{uid} and writes a fresh
+                     offer on its own reconnect — remove our stale side too
+                     so we don't race against half-old signaling data.     */
+                  remove(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`)).catch(() => {});
+                  connectToRJ();
+                }
+              }, 2500);
+            }
+          };
+
+          /* Watch for RJ's offer (RJ initiates because they receive) */
+          let remoteDescReady = false;
+          const pendingCands = [];
+          const drainPending = async () => {
+            for (const c of pendingCands) {
+              try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+            }
+            pendingCands.length = 0;
+          };
+
+          const offerRef = ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/offer`);
+          const unsubOffer = onValue(offerRef, async snap => {
+            const offer = snap.val();
+            /* Only react to offers meant for THIS connection attempt — an
+               older, already-closed pc must never process a newer offer. */
+            if (!offer || pc !== speakerPC.current || pc.signalingState === 'closed' || pc.remoteDescription) return;
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(offer));
+              remoteDescReady = true;
+              await drainPending();
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await set(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp });
+              setSpeakerConnecting(false);
+              bpToast.mic('You are now live on stage! Everyone can hear you.');
+            } catch (err) {
+              console.warn('Speaker answer error:', err);
+            }
+          });
+          speakerRtdbUnsubs.current.push(unsubOffer);
+
+          /* Watch for RJ's ICE candidates */
+          const unsubHC = onChildAdded(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/rjCandidates`), snap => {
+            const c = snap.val();
+            if (!c || pc !== speakerPC.current) return;
+            if (remoteDescReady) {
+              pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+            } else {
+              pendingCands.push(c);
+            }
+          });
+          speakerRtdbUnsubs.current.push(unsubHC);
         };
 
-        pc.onconnectionstatechange = () => {
-          const s = pc.connectionState;
-          if (s === 'connected') setSpeakerConnecting(false);
-        };
-
-        /* Watch for RJ's offer (RJ initiates because they receive) */
-        let remoteDescReady = false;
-        const pendingCands = [];
-        const drainPending = async () => {
-          for (const c of pendingCands) {
-            try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
-          }
-          pendingCands.length = 0;
-        };
-
-        const offerRef = ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/offer`);
-        const unsubOffer = onValue(offerRef, async snap => {
-          const offer = snap.val();
-          if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            remoteDescReady = true;
-            await drainPending();
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            await set(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp });
-            setSpeakerConnecting(false);
-            bpToast.mic('You are now live on stage! Everyone can hear you.');
-          } catch (err) {
-            console.warn('Speaker answer error:', err);
-          }
-        });
-        speakerRtdbUnsubs.current.push(unsubOffer);
-
-        /* Watch for RJ's ICE candidates */
-        const unsubHC = onChildAdded(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/rjCandidates`), snap => {
-          const c = snap.val();
-          if (!c) return;
-          if (remoteDescReady) {
-            pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-          } else {
-            pendingCands.push(c);
-          }
-        });
-        speakerRtdbUnsubs.current.push(unsubHC);
+        connectToRJ();
 
       } catch (err) {
         if (!cancelled) {
