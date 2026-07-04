@@ -576,12 +576,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Audio mixing — RJ side (mixes RJ mic + speaker mics → one stream sent to listeners) ── */
   const rjAudioCtx = useRef(null);
   const rjMixDest = useRef(null);
+  const rjLocalSourceNode = useRef(null);
 
   /* ── WebRTC refs — RJ → Speaker connections (RJ receives each speaker's mic) ── */
   const rjSpeakerPCs = useRef({});
   /* Per-speaker unsub map: { [speakerUid]: [unsubFn, ...] }
      Keeps RTDB listeners isolated so removing one speaker doesn't leak others. */
   const rjSpeakerUnsubs = useRef({});
+  /* Per-speaker MediaStreamAudioSourceNode — MUST be kept referenced or some
+     browsers garbage-collect the node shortly after creation, silently
+     killing the speaker's audio in the mix even though the connection stays
+     "connected". Also lets us cleanly .disconnect() on teardown. */
+  const rjSpeakerSourceNodes = useRef({});
 
   /* ── WebRTC refs — Speaker side (speaker sends their mic to RJ) ── */
   const speakerPC = useRef(null);
@@ -902,6 +908,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         if (audio.paused) {
           audio.play().catch(() => {});
         }
+      }
+
+      /* Broadcaster: resume the mixer AudioContext — backgrounding a tab can
+         suspend it, which would silently kill RJ mic + speaker audio for
+         every listener even though nothing looks wrong on the RJ's screen. */
+      if (canManageRJ && rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
+        rjAudioCtx.current.resume().catch(() => {});
       }
 
       /* Broadcaster: push fresh seek so listeners resync too */
@@ -1250,6 +1263,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     rjSpeakerUnsubs.current = {};
     Object.values(rjSpeakerPCs.current).forEach(pc => { try { pc.close(); } catch {} });
     rjSpeakerPCs.current = {};
+    Object.values(rjSpeakerSourceNodes.current).forEach(node => { try { node.disconnect(); } catch {} });
+    rjSpeakerSourceNodes.current = {};
 
     /* Close audio mixer */
     if (rjAudioCtx.current) { try { rjAudioCtx.current.close(); } catch {} rjAudioCtx.current = null; }
@@ -1269,6 +1284,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const pc = rjSpeakerPCs.current[speakerUid];
     if (pc) { try { pc.close(); } catch {} }
     delete rjSpeakerPCs.current[speakerUid];
+
+    /* Detach and drop the mixer source node so it can be garbage collected
+       and the speaker's old audio no longer bleeds into the mix. */
+    if (rjSpeakerSourceNodes.current[speakerUid]) {
+      try { rjSpeakerSourceNodes.current[speakerUid].disconnect(); } catch {}
+      delete rjSpeakerSourceNodes.current[speakerUid];
+    }
 
     if (removeRtdb) {
       remove(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`)).catch(() => {});
@@ -1293,8 +1315,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     pc.ontrack = (e) => {
       try {
         if (!rjAudioCtx.current || !rjMixDest.current) return;
-        const speakerSrc = rjAudioCtx.current.createMediaStreamSource(new MediaStream([e.track]));
+        /* Resume the mixer context if the browser suspended it (autoplay
+           policy) — otherwise the connected source produces silent audio. */
+        if (rjAudioCtx.current.state === 'suspended') {
+          rjAudioCtx.current.resume().catch(() => {});
+        }
+        /* Disconnect any previous source node for this speaker (e.g. on
+           renegotiation) before wiring up the new track. */
+        if (rjSpeakerSourceNodes.current[speakerUid]) {
+          try { rjSpeakerSourceNodes.current[speakerUid].disconnect(); } catch {}
+        }
+        const speakerSrc = rjAudioCtx.current.createMediaStreamSource(e.streams?.[0] || new MediaStream([e.track]));
         speakerSrc.connect(rjMixDest.current);
+        /* Keep a strong reference — without this, some browsers garbage
+           collect the unreferenced source node and audio silently stops. */
+        rjSpeakerSourceNodes.current[speakerUid] = speakerSrc;
         bpToast.mic('Speaker joined the stage and is now live!');
       } catch (err) {
         console.warn('Speaker audio mixer connect failed:', err);
@@ -1640,11 +1675,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
        through this AudioContext and delivered to listeners as one mixed stream.    */
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      /* Some browsers create contexts in a 'suspended' state (autoplay
+         policy) even inside a user-gesture-triggered async flow. */
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
       const dest = ctx.createMediaStreamDestination();
       const rjSrc = ctx.createMediaStreamSource(stream);
       rjSrc.connect(dest);
       rjAudioCtx.current = ctx;
       rjMixDest.current = dest;
+      /* Keep a strong reference to RJ's own source node too, for the same
+         garbage-collection reason as speaker source nodes below. */
+      rjLocalSourceNode.current = rjSrc;
     } catch (e) {
       console.warn('RJ audio mixer init failed — falling back to direct stream:', e);
     }
@@ -1658,6 +1701,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (localStream.current) {
       localStream.current.getTracks().forEach(t => t.stop());
       localStream.current = null;
+    }
+    if (rjLocalSourceNode.current) {
+      try { rjLocalSourceNode.current.disconnect(); } catch {}
+      rjLocalSourceNode.current = null;
     }
   };
 

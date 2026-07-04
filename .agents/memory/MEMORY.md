@@ -18,3 +18,4 @@
 - [RTDB presence & Firestore fan-out scalability](rtdb-presence-scalability.md) — global status listener causes O(N²) growth; message listener fan-out costs 1 read per room-listener per msg; RTDB Spark caps at 100 connections regardless of code fixes; open `broadcasts/rj` write rule (now closed, deployed by user)
 - [Firestore query bounding without CLI](firestore-index-cli-constraint.md) — no Firebase CLI/credentials in this env; prefer plain limit() over adding orderBy+limit that needs a new composite index
 - [Full audit session 6](full-audit-session6.md) — additional unbounded listeners (useRoomsListener, rjEarnings) + reusable concurrent-user capacity estimates for Spark/Netlify free tier
+- [Homepage theme flicker](homepage-theme-flicker.md) — class-mutating effects must depend on the specific field (selectedTheme), not the whole profile object, or heartbeat writes cause visible flicker

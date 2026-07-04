@@ -29,3 +29,9 @@ broadcasts/rj/speakerConnections/{speakerUid}/speakerCandidates ← speaker writ
 - Speaker side: `speakerMicMuted` / `speakerConnecting` state; `handleSpeakerMicToggle` toggles `speakerStream` track `.enabled`.
 
 **Why:** AudioContext mixing avoids renegotiating every listener PC when a new speaker joins. The mixed stream's tracks are already attached to all listener PCs — new audio sources are simply wired into the AudioContext graph, not added as new tracks.
+
+## GC pitfall (found July 4, 2026)
+
+`pc.ontrack` created a `MediaStreamAudioSourceNode` (`ctx.createMediaStreamSource(...)`) as a bare local variable and only called `.connect(rjMixDest)` on it. With no other reference held, some browsers garbage-collect the node shortly after — the PC stays "connected" but the speaker's audio silently goes dead. Same risk applies to RJ's own mic source node.
+
+**Fix pattern:** always stash Web Audio source nodes created inside a callback into a ref/map keyed by their id (e.g. `rjSpeakerSourceNodes.current[speakerUid] = speakerSrc`), and `.disconnect()` + delete them on teardown. Also defensively call `ctx.resume()` if `ctx.state === 'suspended'` — contexts created inside an async flow (after an `await`) can start suspended even though a user gesture originally triggered the flow, and tab-backgrounding can suspend an already-running context too (add a resume call in the visibilitychange handler as well).

@@ -1742,6 +1742,11 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Real-time profile user updates
     useEffect(() => {
         if (!profileUser?.uid) return;
+        // Skip when viewing our own profile — the main loggedInUserProfile
+        // listener already keeps this data fresh, so a second onSnapshot
+        // here would be a redundant duplicate listener (extra reads +
+        // redundant re-renders) for no benefit.
+        if (auth.currentUser?.uid && profileUser.uid === auth.currentUser.uid) return;
 
         const userDocRef = doc(db, 'users', profileUser.uid);
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
@@ -1790,7 +1795,11 @@ const HomePage = ({ user, roomIdOverride }) => {
     }, [profileUser?.uid]);
 
     useEffect(() => {
-        // Initialize theme on component load from user profile
+        // Initialize theme on component load from user profile.
+        // IMPORTANT: only depend on the theme field itself (not the whole
+        // profile object) — otherwise this class add/remove churn runs on
+        // every unrelated profile change (e.g. the lastSeen heartbeat),
+        // causing a visible dark/light flicker across the whole page.
         if (loggedInUserProfile) {
             const userTheme = loggedInUserProfile.selectedTheme || 'light';
             const colorThemes = ['rose-pink', 'burgundy-wine', 'aurora', 'royal-purple', 'sunset-orange'];
@@ -1823,7 +1832,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Also update localStorage
             localStorage.setItem('selectedTheme', userTheme);
         }
-    }, [loggedInUserProfile]);
+    }, [loggedInUserProfile?.selectedTheme]);
 
     // Enhanced useEffect to handle both authenticated users and guests
     useEffect(() => {
@@ -2576,13 +2585,34 @@ const HomePage = ({ user, roomIdOverride }) => {
         let isInitialLoad = true;
 
         const unsubscribe = onSnapshot(friendRequestsQuery, 
-            (snapshot) => {
+            async (snapshot) => {
                 const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Always fetch each sender's LATEST profile so the popup never shows a
+                // stale/wrong avatar or name if the sender changed their photo/name
+                // after the request was originally created.
+                const enrichedRequests = await Promise.all(requests.map(async (request) => {
+                    try {
+                        const senderSnap = await getDoc(doc(db, 'users', request.senderId));
+                        if (senderSnap.exists()) {
+                            const senderData = senderSnap.data();
+                            return {
+                                ...request,
+                                senderName: senderData.displayName || request.senderName,
+                                senderGender: senderData.gender || request.senderGender,
+                                senderPhoto: senderData.photoURL || null,
+                            };
+                        }
+                    } catch (_) {
+                        // Fall back to whatever was stored on the request doc
+                    }
+                    return request;
+                }));
                 
                 // Check for new friend requests only after initial load
                 setFriendRequests(prevRequests => {
                     // Only show notification if we actually received a new request and it's not the initial load
-                    const newRequestCount = requests.length;
+                    const newRequestCount = enrichedRequests.length;
                     const prevRequestCount = prevRequests.length;
                     
                     if (!isInitialLoad && newRequestCount > prevRequestCount) {
@@ -2597,7 +2627,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     // Update global counter for sidebar
                     window.friendRequestCount = newRequestCount;
                     
-                    return requests;
+                    return enrichedRequests;
                 });
             },
             (error) => {
@@ -7168,8 +7198,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             >
                                                 <div className="friend-request-avatar">
                                                     <img 
-                                                        src={request.senderPhoto || `${getDefaultAvatarUrl(request.senderId, request.senderGender || 'male')}`} 
+                                                        src={request.senderPhoto || getDefaultAvatarUrl(request.senderId, request.senderGender || 'male')} 
                                                         alt="avatar"
+                                                        onError={(e) => {
+                                                            const fallback = getDefaultAvatarUrl(request.senderId, request.senderGender || 'male');
+                                                            if (e.currentTarget.src !== fallback) {
+                                                                e.currentTarget.src = fallback;
+                                                            }
+                                                        }}
                                                     />
                                                 </div>
                                                 <div className="friend-request-details">
