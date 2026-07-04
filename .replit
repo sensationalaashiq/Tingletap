@@ -39,6 +39,7 @@ exposeLocalhost = true
 
 [agent]
 expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
 
 [workflows]
 runButton = "Project"
