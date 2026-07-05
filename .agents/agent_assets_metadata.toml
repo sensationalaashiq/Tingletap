@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "yXQJKnX2xDHXu2rbEvWmq"
+uri = "file://src/assets/tinglebot-avatar.png"
+type = "image"
+title = "cute tinglebot mascot avatar"
 
 [[outputs]]
 id = "1bhfCnkWsgdnVZNQLFy4Q"

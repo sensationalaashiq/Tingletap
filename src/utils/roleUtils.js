@@ -1,4 +1,15 @@
 import { Badges } from '../data/Badges';
+import tinglebotAvatarImg from '../assets/tinglebot-avatar.png';
+
+/**
+ * TingleBot's fixed uid (used across chat rooms, private messages, and
+ * Admin Panel Feedback/Complaints replies) so its avatar is never resolved
+ * to a random human portrait like a normal user.
+ */
+export const TINGLEBOT_UID = 'tinglebot_system_official_2024';
+
+/** Dedicated cute bot mascot avatar — always used for TingleBot, everywhere. */
+export const TINGLEBOT_AVATAR_URL = tinglebotAvatarImg;
 
 /**
  * Deterministic 0–99 index from a uid string (djb2 variant).
@@ -21,6 +32,9 @@ const uidToIndex = (uid, offset = 0) => {
  *   Transgender/Other → women/{37-99+37 mod 100}.jpg  (distinct subset)
  */
 export const getDefaultAvatarUrl = (uid, gender) => {
+  if (uid === TINGLEBOT_UID) {
+    return TINGLEBOT_AVATAR_URL;
+  }
   const g = (gender || '').toLowerCase();
   if (g === 'female') {
     return `https://randomuser.me/api/portraits/women/${uidToIndex(uid)}.jpg`;

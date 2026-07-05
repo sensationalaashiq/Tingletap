@@ -516,7 +516,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── Speaker mode state (for the user who is accepted as a speaker) ── */
   const [speakerMicMuted, setSpeakerMicMuted] = useState(false);
+  /* Kept in sync with speakerMicMuted so the WebRTC reconnect closure (which
+     runs outside React's render cycle) always reads the CURRENT mute state
+     instead of a stale value captured when the effect first ran. */
+  const speakerMicMutedRef = useRef(false);
   const [speakerConnecting, setSpeakerConnecting] = useState(false);
+  useEffect(() => { speakerMicMutedRef.current = speakerMicMuted; }, [speakerMicMuted]);
 
   /* ── Public Broadcasts state ── */
   const [publicBroadcasts, setPublicBroadcasts] = useState([]);

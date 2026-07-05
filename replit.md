@@ -1,3 +1,11 @@
+# Recent Changes (July 5, 2026) — Speaker Auto-Reconnect + TingleBot Avatar (Session 7)
+
+No UI redesign, no schema/permissions/routing changes. Verified with `npm run build` + workflow restart + log check.
+
+✅ **Applied**:
+1. **Broadcast speaker auto-reconnect (root cause found)**: unlike the RJ side, a stage speaker's own WebRTC connection had no retry logic at all — if it ever hit `failed`/`disconnected` (a network blip, etc.), the speaker was permanently silent until manually leaving and rejoining the stage, because RJ's own reconnect created a fresh offer that the speaker's stale `RTCPeerConnection` (with `remoteDescription` already set) would never process. `BroadcastPanel.jsx`'s `startSpeakerMode` was refactored into a reusable `connectToRJ()` that rebuilds the peer connection on failure, re-applies current mic-mute state via a new `speakerMicMutedRef`, and guards all RTDB listeners so a stale/closed `pc` can never act on a newer offer/candidate.
+2. **TingleBot avatar fix**: TingleBot's DP (in Admin Panel Feedback/Complaints replies and anywhere else its uid appears) was resolving through the same `getDefaultAvatarUrl()` used for real users — since no `users/tinglebot_system_official_2024` Firestore doc exists, it fell back to a hashed `randomuser.me` stock-photo portrait instead of a bot identity. Added a dedicated cute bot mascot image (`src/assets/tinglebot-avatar.png`) and special-cased TingleBot's uid inside `getDefaultAvatarUrl()` (`src/utils/roleUtils.js`) to always return it — fixes the avatar everywhere TingleBot's uid resolves an avatar (conversation list, PM avatars, etc.), not just the feedback-reply flow.
+
 # Recent Changes (July 4, 2026) — Friend Requests, Broadcast Speaker Audio, Homepage Flicker Fixes (Session 6)
 
 Fixed 4 of the 5 targeted issue areas (Firebase listener cleanup for `deviceBanSystem.js`/`ipBanSystem.js` was found already fixed in a prior session — no change needed there). No UI redesign, no schema/permissions/routing changes. Verified with `npm run build` + workflow restart + screenshot/console check.
