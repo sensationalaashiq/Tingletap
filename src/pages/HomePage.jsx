@@ -354,11 +354,6 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     // Get the actual display name - prioritize message.displayName for guests
     const actualDisplayName = message.displayName || displayName || 'Guest';
     
-    // Log for debugging guest usernames
-    if (message.isGuest) {
-        console.log('🟦 Guest message display:', { uid, displayName, messageDisplayName: message.displayName, actualDisplayName });
-    }
-
     const canDelete = viewerRole === 'owner' || viewerRole === 'admin' || viewerRole === 'moderator' || isMyMessage;
     const canKick = !isMyMessage && (
         (viewerRole === 'owner') ||
@@ -866,6 +861,27 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
             document.body
         )}
     </>);
+// Custom memo comparator: only re-render this ChatMessage when something
+// that actually affects its output changes. This prevents the full-list
+// repaint triggered by openDropdownId changes (which previously caused all
+// 60 ChatMessages to re-render whenever any dropdown opened/closed).
+}, (prevProps, nextProps) => {
+    // Re-render if the message object itself changed (new/edited content)
+    if (prevProps.message !== nextProps.message) return false;
+    // Re-render only if the open-dropdown state for THIS specific message changed
+    const prevOpen = prevProps.openDropdownId === prevProps.message.id;
+    const nextOpen = nextProps.openDropdownId === nextProps.message.id;
+    if (prevOpen !== nextOpen) return false;
+    // Re-render if the kicked status for this message's sender changed
+    const prevKicked = prevProps.kickedUserIds?.has?.(prevProps.message.uid) ?? false;
+    const nextKicked = nextProps.kickedUserIds?.has?.(nextProps.message.uid) ?? false;
+    if (prevKicked !== nextKicked) return false;
+    // Re-render on auth-relevant profile changes (uid = identity, role = permissions)
+    if (prevProps.loggedInUserProfile?.uid !== nextProps.loggedInUserProfile?.uid) return false;
+    if (prevProps.loggedInUserProfile?.role !== nextProps.loggedInUserProfile?.role) return false;
+    if (prevProps.roomId !== nextProps.roomId) return false;
+    if (prevProps.isEven !== nextProps.isEven) return false;
+    return true; // all relevant props unchanged → skip re-render
 });
 
 const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
@@ -1142,7 +1158,10 @@ const HomePage = ({ user, roomIdOverride }) => {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-    const [userOnlineStatuses, setUserOnlineStatuses] = useState({});
+    // Kept as a ref (not state) so RTDB heartbeats never cause a render cascade.
+    // The setLiveUsers effect only depends on onlineUserIds (join/leave events),
+    // not on every heartbeat tick.
+    const userOnlineStatusesRef = useRef({});
     const [onlineUsers, setOnlineUsers] = useState(new Set());
     const [friendRequests, setFriendRequests] = useState([]);
     const [showFriendRequestNotification, setShowFriendRequestNotification] = useState(false);
@@ -1404,6 +1423,10 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Track TingleBot message IDs that already have a deletion scheduled
     const scheduledTinglebotDeletionsRef = useRef(new Set());
     const joinedFirebaseUidRef = useRef(null);
+    // Stable message object cache: maps Firestore doc id → message object.
+    // Reusing the same JS object reference for unchanged messages lets
+    // ChatMessage's React.memo bail out without re-rendering.
+    const messageCacheRef = useRef(new Map());
     // Holds latest profile data so presence effect can read it WITHOUT being in its dep array
     const loggedInUserProfileRef = useRef(null);
 
@@ -2860,7 +2883,22 @@ const HomePage = ({ user, roomIdOverride }) => {
             const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(60));
             let prevMsgCount = 0;
             const unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                const newMessages = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id }));
+                // Stable message objects: only allocate new JS objects for docs that
+                // actually changed (added / modified / removed). Unchanged docs reuse
+                // their cached object reference so ChatMessage React.memo bails out
+                // without re-rendering, preventing the full-chat repaint on every
+                // single incoming message.
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'removed') {
+                        messageCacheRef.current.delete(change.doc.id);
+                    } else {
+                        // 'added' or 'modified' — allocate a fresh object only for these
+                        messageCacheRef.current.set(change.doc.id, { ...change.doc.data(), id: change.doc.id });
+                    }
+                });
+                const newMessages = snapshot.docs
+                    .map(d => messageCacheRef.current.get(d.id))
+                    .filter(Boolean);
 
                 // Play notification sounds for newly arriving messages (skip initial batch load)
                 if (prevMsgCount > 0 && newMessages.length > prevMsgCount) {
@@ -2984,6 +3022,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             return () => {
                 try {
                     unsubscribeMessages();
+                    // Clear the stable-object cache so stale objects from this room
+                    // don't persist when the user switches to another room.
+                    messageCacheRef.current.clear();
                     if (window.cleanupHomePageListeners) {
                         delete window.cleanupHomePageListeners;
                     }
@@ -3287,7 +3328,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // No Firestore wait — every user type (guest/member/badge/staff) is
         // visible immediately as soon as the RTDB snapshot arrives.
         const buildFromStatus = (uid) => {
-            const s = userOnlineStatuses[uid] || {};
+            const s = userOnlineStatusesRef.current[uid] || {};
             const gender = s.gender || 'male';
             return {
                 uid,
@@ -3307,7 +3348,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // ── STEP 2: Augment registered users with full Firestore profiles ──
         // Runs async; batched to stay within Firestore's 10-item 'in' limit.
         // When done, merges richer data (badges, styling, friends, etc.)
-        const registeredUids = onlineUserIds.filter(uid => !userOnlineStatuses[uid]?.isGuest);
+        const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
         if (registeredUids.length === 0) return;
 
         let cancelled = false;
@@ -3361,7 +3402,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         });
 
         return () => { cancelled = true; };
-    }, [onlineUserIds, userOnlineStatuses]);
+    }, [onlineUserIds]); // userOnlineStatuses is now a ref — only re-run when the user list changes
 
     useEffect(() => {
         if (!roomId) {
@@ -3396,25 +3437,31 @@ const HomePage = ({ user, roomIdOverride }) => {
                     return userStatus && userStatus.state === 'online' && fresh;
                 });
             
-            // Detect new users joining this room only
-            const previousUids = onlineUserIds;
-            const newJoiners = currentUidsInRoom.filter(uid => 
-                !previousUids.includes(uid) && uid !== auth.currentUser?.uid
-            );
-            
-            // Update state with current room users
-            setOnlineUserIds(currentUidsInRoom);
-            
-            // Update all user statuses with real-time data
-            setUserOnlineStatuses(statuses);
-            
+            // Store statuses in ref (not state) — avoids a re-render + setLiveUsers
+            // cascade on every heartbeat tick when no user actually joined/left.
+            userOnlineStatusesRef.current = statuses;
+            window.userOnlineStatuses = statuses;
+
+            // Only trigger a state update (and thus a re-render) when the set of
+            // users in the room actually changes. Pure heartbeat ticks are skipped.
+            setOnlineUserIds(prev => {
+                if (prev.length === currentUidsInRoom.length &&
+                    currentUidsInRoom.every(u => prev.includes(u)) &&
+                    prev.every(u => currentUidsInRoom.includes(u))) {
+                    return prev; // same set → same reference → no re-render
+                }
+                return currentUidsInRoom;
+            });
+
             // Create onlineUsers Set with ALL online users (not just current room)
             const onlineUsersSet = new Set(allOnlineUids);
-            setOnlineUsers(onlineUsersSet);
-            
-            // Make online users globally available
+            setOnlineUsers(prev => {
+                if (prev.size === onlineUsersSet.size && [...onlineUsersSet].every(u => prev.has(u))) {
+                    return prev; // no change → no re-render
+                }
+                return onlineUsersSet;
+            });
             window.onlineUsers = onlineUsersSet;
-            window.userOnlineStatuses = statuses;
         });
         
         return () => unsubscribe();
@@ -6056,7 +6103,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const getUserStatus = (userId) => {
-        const userStatus = userOnlineStatuses[userId];
+        const userStatus = userOnlineStatusesRef.current[userId];
         if (!userStatus) return { status: 'Last seen recently', isOnline: false };
         
         if (userStatus.state === 'online') {
@@ -6861,6 +6908,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const stableHandleViewProfile = useStableCallback(handleViewProfile);
     const stableHandlePrivateMessage = useStableCallback(handlePrivateMessage);
     const stableHandleBlockUser = useStableCallback(handleBlockUser);
+    const stableHandleAddFriend = useStableCallback(handleAddFriend);
     const stableCloseAllDropdowns = useStableCallback(closeAllDropdowns);
     const stableToggleDropdown = useStableCallback(toggleDropdown);
     const stableHandleSetOpenDropdownId = useStableCallback(handleSetOpenDropdownId);
@@ -7099,7 +7147,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         onReport={stableHandleReportUser}
                         onWhisper={stableHandleWhisperUser}
                         onViewProfile={stableHandleViewProfile}
-                        onAddFriend={handleAddFriend}
+                        onAddFriend={stableHandleAddFriend}
                         onPrivateMessage={stableHandlePrivateMessage}
                         onBlock={stableHandleBlockUser}
                         closeAllDropdowns={stableCloseAllDropdowns}
