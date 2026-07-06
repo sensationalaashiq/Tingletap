@@ -8857,29 +8857,6 @@ html.dark-mode .reject-btn:hover,
       box-shadow: 0 15px 45px rgba(99, 102, 241, 0.15) !important;
   }
 
-  .premium-input-container {
-      flex: 1 !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
-      height: 100% !important;
-  }
-
-  .premium-input-wrapper {
-      flex: 1 !important;
-      background: rgba(0, 0, 0, 0.03) !important;
-      border-radius: 20px !important;
-      height: 38px !important;
-      display: flex !important;
-      align-items: center !important;
-      padding: 0 14px !important;
-      border: 1px solid transparent !important;
-      transition: all 0.3s ease !important;
-  }
-
-  .dark-mode .premium-input-wrapper {
-      background: rgba(255, 255, 255, 0.05) !important;
-  }
 
   .premium-input-field {
       width: 100% !important;
@@ -9550,34 +9527,6 @@ html.dark-mode .reject-btn:hover,
   box-shadow: 0 -6px 30px rgba(139, 92, 246, 0.15) !important;
 }
 
-.homepage-container .premium-input-container {
-  gap: 10px !important;
-  height: auto !important;
-}
-
-.homepage-container .premium-input-wrapper {
-  height: 42px !important;
-  background: rgba(237, 233, 254, 0.55) !important;
-  border: 1.5px solid rgba(139, 92, 246, 0.2) !important;
-  border-radius: 21px !important;
-  padding: 0 16px !important;
-}
-
-.homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(237, 233, 254, 0.85) !important;
-  border-color: rgba(139, 92, 246, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
-}
-
-.dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(30, 16, 64, 0.7) !important;
-  border-color: rgba(139, 92, 246, 0.28) !important;
-}
-
-.dark-mode .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(36, 18, 78, 0.9) !important;
-  border-color: rgba(139, 92, 246, 0.55) !important;
-}
 
 .homepage-container .premium-input-field {
   font-size: 14px !important;
@@ -9834,39 +9783,6 @@ html.dark-mode .reject-btn:hover,
 }
 
 /* Input row: attachment + pill + send, all in one line */
-.homepage-container .premium-input-container {
-  display: flex !important;
-  align-items: flex-end !important;
-  gap: 7px !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 46px !important;
-}
-
-/* Input pill */
-.homepage-container .premium-input-wrapper {
-  flex: 1 !important;
-  height: auto !important;
-  min-height: 46px !important;
-  background: rgba(237, 233, 254, 0.5) !important;
-  border: 1px solid rgba(196, 181, 253, 0.4) !important;
-  border-radius: 20px !important;
-  padding: 6px 14px !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  box-shadow: none !important;
-  transition: border-color 0.2s, background 0.2s !important;
-  overflow: visible !important;
-}
-.homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(237, 233, 254, 0.8) !important;
-  border-color: rgba(167, 139, 250, 0.65) !important;
-  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.18) !important;
-}
-.dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(28, 12, 64, 0.7) !important;
-  border-color: rgba(139, 92, 246, 0.3) !important;
-}
 
 .homepage-container .premium-input-field {
   width: 100% !important;
@@ -10250,28 +10166,6 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
   background: rgba(14, 6, 36, 0.99) !important;
   border-top-color: rgba(139, 92, 246, 0.4) !important;
 }
-.homepage-container .message-form {
-  height: 52px !important;
-}
-.homepage-container .premium-input-container {
-  height: 52px !important;
-  gap: 8px !important;
-}
-.homepage-container .premium-input-wrapper {
-  height: 52px !important;
-  background: rgba(226, 212, 255, 0.72) !important;
-  border: 2px solid rgba(124, 58, 237, 0.42) !important;
-  border-radius: 26px !important;
-}
-.homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(226, 212, 255, 0.92) !important;
-  border-color: #6d28d9 !important;
-  box-shadow: 0 0 0 3.5px rgba(109, 40, 217, 0.2) !important;
-}
-.dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(44, 18, 96, 0.8) !important;
-  border-color: rgba(139, 92, 246, 0.5) !important;
-}
 .homepage-container .premium-input-field {
   color: #2e1065 !important;
   font-size: 15px !important;
@@ -10328,9 +10222,9 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
   stroke: none !important;
 }
 
-/* Sync ::after + chat-feed with 64px footer */
-.homepage-container::after { height: 64px !important; }
-.homepage-container .chat-feed { bottom: 64px !important; }
+/* Sync chat-feed bottom with footer height (~60px) */
+.homepage-container::after { height: 0 !important; }
+.homepage-container .chat-feed { bottom: 60px !important; }
 
 /* ── Usernames: default 12px bold, custom styles override via JS injection ── */
 .homepage-container .message-displayname[data-role="owner"] {
@@ -10631,15 +10525,6 @@ body .homepage-container .premium-footer-btn.send-btn {
   height: 34px !important;
 }
 
-/* Kill any wrapper capsule that might appear */
-body .homepage-container .premium-input-wrapper,
-body .homepage-container .premium-input-container {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
 
 /* Input field: flat, full height, no styling */
 body .homepage-container .premium-input-field,
@@ -10665,51 +10550,6 @@ body .homepage-container .message-form {
   flex: 1 !important;
 }
 
-/* Row: attachment | pill | send */
-body .homepage-container .premium-input-container {
-  display: flex !important;
-  align-items: flex-end !important;
-  gap: 8px !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 46px !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  flex: 1 !important;
-}
-
-/* Input pill — sole visible container, grows with content */
-body .homepage-container .premium-input-wrapper {
-  flex: 1 1 auto !important;
-  height: auto !important;
-  min-height: 46px !important;
-  background: rgba(237, 233, 254, 0.6) !important;
-  border: 1.5px solid rgba(167, 139, 250, 0.35) !important;
-  border-radius: 23px !important;
-  padding: 6px 16px !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-  min-width: 0 !important;
-  overflow: visible !important;
-  transition: border-color 0.2s, background 0.2s !important;
-}
-
-body .homepage-container .premium-input-wrapper:focus-within {
-  background: rgba(237, 233, 254, 0.92) !important;
-  border-color: rgba(139, 92, 246, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15) !important;
-}
-
-body.dark-mode .homepage-container .premium-input-wrapper,
-body .dark-mode .homepage-container .premium-input-wrapper {
-  background: rgba(30, 12, 68, 0.75) !important;
-  border-color: rgba(139, 92, 246, 0.3) !important;
-}
 
 body .homepage-container .premium-input-field {
   width: 100% !important;
@@ -10826,18 +10666,18 @@ body .homepage-container .send-btn svg path {
   stroke: none !important;
 }
 
-/* Chat feed ends exactly where the input row starts (44px) */
+/* Chat feed — bottom offset matches actual footer height (~60px) */
 body .homepage-container .chat-feed {
-  bottom: 44px !important;
+  bottom: 60px !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
 body .homepage-container::after {
-  height: 44px !important;
-  min-height: 44px !important;
+  height: 0 !important;
+  min-height: 0 !important;
 }
-.homepage-container::after { height: 44px !important; min-height: 44px !important; }
-.homepage-container .chat-feed { bottom: 44px !important; padding-bottom: 0 !important; }
+.homepage-container::after { height: 0 !important; min-height: 0 !important; }
+.homepage-container .chat-feed { bottom: 60px !important; padding-bottom: 0 !important; }
 
 /* Attachment dropdown floats cleanly above footer */
 body .homepage-container .attachment-dropdown {
