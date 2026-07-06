@@ -24,3 +24,4 @@
 - [Chat message flicker fixes](chat-flicker-fixes.md) — 5 root causes of rapid-message flicker; key fix: docChanges()+messageCacheRef for stable object refs, userOnlineStatuses→ref, ChatMessage custom memo comparator
 - [Emoji-free select pattern](emoji-free-select-pattern.md) — native `<option>` can't render SVG; replace emoji-laden `<select>` with a custom button/list picker when icons must be SVG
 - [Owner vs admin panel split](owner-admin-panel-split.md) — AdminPanelPage is owner-only; Owner+Admin moderation lives in a separate lightweight page reusing the same Firestore/RTDB logic, no duplicate listeners
+- [Achievement system](achievement-system.md) — 5 sequential titles in users/{uid}.achievements; event-driven from handleSendMessage; 45s cooldown; single updateDoc per batch; birthday badge is pure client-side isTodayBirthday()

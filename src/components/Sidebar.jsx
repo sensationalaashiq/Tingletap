@@ -13,6 +13,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import { isTodayBirthday, BIRTHDAY_BADGE_SVG } from '../utils/birthdayUtils';
 import { getRoomSlug } from '../utils/roomSlug';
 import { parseDurationMs } from '../utils/modExpiryService';
 import AdminBanKickModal from './AdminBanKickModal';
@@ -511,6 +512,11 @@ const Sidebar = ({
                       <span className="inline-badge" title={badges[loggedInUserProfile.badge].name}
                         dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
                     )}
+                    {isTodayBirthday(loggedInUserProfile.dateOfBirth) && (
+                      <span className="inline-badge birthday-badge-glow"
+                        title="Happy Birthday!"
+                        dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG }} />
+                    )}
                   </div>
                   <span className="sb-role-pill" style={{ background: pill.bg, color: pill.color }}>
                     {getRoleDisplayLabel({
@@ -805,6 +811,11 @@ const Sidebar = ({
                           {userItem.badge && badges[userItem.badge] && (
                             <span className="inline-badge" title={badges[userItem.badge].name}
                               dangerouslySetInnerHTML={{ __html: badges[userItem.badge].svg }} />
+                          )}
+                          {isTodayBirthday(userItem.dateOfBirth) && (
+                            <span className="inline-badge birthday-badge-glow"
+                              title="Happy Birthday!"
+                              dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG }} />
                           )}
                         </span>
                         <span className="sb-user-role-pill" style={{ background: pill.bg, color: pill.color }}>

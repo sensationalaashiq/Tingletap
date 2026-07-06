@@ -1,0 +1,220 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Achievements Section — TingleTap Premium Profile Cards
+   Matches the lavender VPM design language. Dark-mode compatible.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper ──────────────────────────────────────────────────────── */
+.ach-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1.5px solid rgba(196, 181, 253, 0.22);
+}
+
+/* ── Header row ───────────────────────────────────────────────────────────── */
+.ach-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ach-section-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b21b6;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dark-mode .ach-section-title {
+  color: #c4b5fd;
+}
+
+.ach-count-pill {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #7c3aed;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  letter-spacing: 0.02em;
+}
+
+.dark-mode .ach-count-pill {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.32);
+}
+
+/* ── Card grid ────────────────────────────────────────────────────────────── */
+.ach-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ── Card base ────────────────────────────────────────────────────────────── */
+.ach-card {
+  position: relative;
+  border-radius: 12px;
+  padding: 11px 7px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Locked */
+.ach-card.locked {
+  background: #f8fafc;
+  border: 1.5px solid rgba(203, 213, 225, 0.55);
+}
+
+.dark-mode .ach-card.locked {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Unlocked — gradient & shadow via inline style */
+.ach-card.unlocked {
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  animation: achReveal 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.ach-card.unlocked:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes achReveal {
+  from { opacity: 0; transform: scale(0.86) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* Subtle light sheen on unlocked cards */
+.ach-card.unlocked::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.40) 0%,
+    rgba(255, 255, 255, 0.00) 55%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ── Icon ─────────────────────────────────────────────────────────────────── */
+.ach-icon-wrap {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.13));
+}
+
+.ach-card.locked .ach-icon-wrap {
+  opacity: 0.24;
+  filter: grayscale(0.85) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.07));
+}
+
+/* ── Title name ───────────────────────────────────────────────────────────── */
+.ach-card-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.ach-card.locked .ach-card-name {
+  color: #9ca3af;
+}
+
+.dark-mode .ach-card.unlocked .ach-card-name { color: #111827; }
+.dark-mode .ach-card.locked   .ach-card-name { color: #6b7280; }
+
+/* ── Status badge ─────────────────────────────────────────────────────────── */
+.ach-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+
+.ach-status-badge.earned {
+  background: rgba(255, 255, 255, 0.62);
+  color: #065f46;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.ach-status-badge.locked-state {
+  background: rgba(0, 0, 0, 0.04);
+  color: #9ca3af;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .ach-status-badge.earned {
+  background: rgba(255, 255, 255, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.dark-mode .ach-status-badge.locked-state {
+  background: rgba(255, 255, 255, 0.04);
+  color: #6b7280;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Hover description tooltip ────────────────────────────────────────────── */
+.ach-desc-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(15, 8, 40, 0.90);
+  color: #f3f4f6;
+  font-size: 9px;
+  line-height: 1.45;
+  padding: 6px 9px;
+  border-radius: 8px;
+  width: 132px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  white-space: normal;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.ach-card.unlocked:hover .ach-desc-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Birthday badge glow animation ───────────────────────────────────────── */
+.birthday-badge-glow {
+  filter: drop-shadow(0 0 3.5px rgba(236, 72, 153, 0.62));
+  animation: bdGlowPulse 2.2s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+@keyframes bdGlowPulse {
+  0%,  100% { filter: drop-shadow(0 0 3px rgba(236, 72, 153, 0.50)); }
+  50%        { filter: drop-shadow(0 0 7px rgba(236, 72, 153, 0.90)); }
+}

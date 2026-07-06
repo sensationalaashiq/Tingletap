@@ -40,6 +40,9 @@ import SendProgressBar from '../components/SendProgressBar';
 import MinimizedConversations from '../components/MinimizedConversations';
 import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
 import GenderBadge from '../components/GenderBadge';
+import { checkAndGrantAchievements, ACHIEVEMENT_TITLES } from '../utils/achievementSystem';
+import { isTodayBirthday, BIRTHDAY_BADGE_SVG_LG } from '../utils/birthdayUtils';
+import AchievementsSection from '../components/AchievementsSection';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
 import TingleBotNotification from '../components/TingleBotNotification';
@@ -3914,6 +3917,43 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
+
+            // ── Achievement check (fire-and-forget, registered users only) ──
+            if (!isGuest && uid && loggedInUserProfile && !loggedInUserProfile.isGuest) {
+                checkAndGrantAchievements(uid, loggedInUserProfile, { justSentMessage: true })
+                    .then(newOnes => {
+                        if (!newOnes?.length) return;
+                        setLoggedInUserProfile(prev => ({
+                            ...prev,
+                            achievements: [...new Set([...(prev?.achievements || []), ...newOnes])],
+                        }));
+                        newOnes.forEach(id => {
+                            const title = ACHIEVEMENT_TITLES.find(a => a.id === id);
+                            if (!title) return;
+                            toast(
+                                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                    <div dangerouslySetInnerHTML={{ __html: title.svg }}
+                                         style={{ width:30, height:30, flexShrink:0 }}/>
+                                    <div>
+                                        <div style={{ fontWeight:700, fontSize:12.5, color:'#1f2937' }}>Achievement Unlocked!</div>
+                                        <div style={{ fontSize:11.5, color:'#7c3aed', marginTop:1 }}>{title.name}</div>
+                                    </div>
+                                </div>,
+                                {
+                                    autoClose: 5000,
+                                    style: {
+                                        background: '#faf5ff',
+                                        border: '1.5px solid rgba(139,92,246,0.28)',
+                                        borderRadius: 12,
+                                        boxShadow: '0 8px 24px rgba(109,40,217,0.15)',
+                                    },
+                                }
+                            );
+                        });
+                    })
+                    .catch(() => {});
+            }
+            // ────────────────────────────────────────────────────────────────
         } catch (error) {
             if (error.code === 'permission-denied') {
                 toast.error("Permission denied. Please check your account status.");
@@ -7753,6 +7793,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
                                             dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
                                     )}
+                                    {isTodayBirthday(profileUser.dateOfBirth) && (
+                                        <span className="vpm-badge-wrap birthday-badge-glow"
+                                            title="Happy Birthday!"
+                                            dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG_LG }} />
+                                    )}
                                 </div>
 
                                 {/* Compact badges row: role + online + trust */}
@@ -7943,6 +7988,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                 )}
                                             </div>
                                         )}
+
+                                        {/* ── Achievement Titles ── */}
+                                        <AchievementsSection userProfile={profileUser} />
 
                                     </div>
                                 )}
