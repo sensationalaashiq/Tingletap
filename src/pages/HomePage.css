@@ -11204,10 +11204,11 @@ body .homepage-container .message-form,
 .premium-textarea {
   width: 100%;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 34px;
   max-height: 120px;
-  line-height: 1.4;
+  line-height: 1.45;
   box-sizing: border-box;
   display: block;
   font-size: 15px;
@@ -11215,9 +11216,11 @@ body .homepage-container .message-form,
   background: transparent;
   border: none;
   outline: none;
-  padding: 8px 4px 18px 4px;
+  padding: 8px 4px 4px 4px;
   scrollbar-width: thin;
   scrollbar-color: rgba(124,58,237,0.3) transparent;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 .premium-textarea::-webkit-scrollbar { width: 3px; }
 .premium-textarea::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 2px; }
@@ -11227,22 +11230,56 @@ body .homepage-container .premium-textarea {
   height: auto !important;
   min-height: 34px !important;
   max-height: 120px !important;
-  padding: 8px 4px 18px 4px !important;
+  padding: 8px 4px 4px 4px !important;
   resize: none !important;
-  overflow: hidden !important;
-  line-height: 1.4 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  line-height: 1.45 !important;
   align-self: flex-end !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(124,58,237,0.35) transparent !important;
 }
 
-/* Buttons: fixed height regardless of textarea size */
+/* Buttons: align to bottom of expanding textarea */
 body .homepage-container .premium-footer-btn.attachment-btn,
 body .homepage-container .attachment-btn {
-  height: 34px !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
   align-self: flex-end !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
-body .homepage-container .premium-footer-btn.send-btn {
-  height: 34px !important;
+body .homepage-container .premium-footer-btn.attachment-btn svg,
+body .homepage-container .attachment-btn svg {
+  width: 28px !important;
+  height: 28px !important;
+  flex-shrink: 0 !important;
+}
+body .homepage-container .premium-footer-btn.send-btn,
+body .homepage-container .send-btn {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
   align-self: flex-end !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+body .homepage-container .premium-footer-btn.send-btn svg,
+body .homepage-container .send-btn svg {
+  width: 30px !important;
+  height: 30px !important;
+  flex-shrink: 0 !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════

@@ -1025,6 +1025,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
+    const [textareaRows, setTextareaRows] = useState(1);
     const [roomName, setRoomName] = useState('');
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState(() => {
@@ -1788,19 +1789,9 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
     useEffect(() => {
-        const el = textareaRef.current;
-        if (!el) return;
-        el.style.height = 'auto';
-        const newH = Math.min(el.scrollHeight, 120);
-        el.style.height = newH + 'px';
-        if (el.scrollHeight > 120) {
-            el.style.overflowY = 'auto';
-            el.style.overflowX = 'hidden';
-            el.scrollTop = el.scrollHeight; // keep cursor visible at bottom
-        } else {
-            el.style.overflowY = 'hidden';
-            el.style.overflowX = 'hidden';
-        }
+        // Count newlines to determine rows needed (no DOM measurement needed)
+        const lines = (newMessage.match(/\n/g) || []).length + 1;
+        setTextareaRows(Math.min(Math.max(1, lines), 5));
     }, [newMessage]);
 
     // Load friends for the profile being viewed (independent from logged-in user's friends)
@@ -8721,18 +8712,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <textarea
                             ref={textareaRef}
                             className="premium-input-field premium-textarea"
-                            rows={1}
+                            rows={textareaRows}
                             maxLength={MAX_CHAT_CHARS}
                             style={{
-                                width: '100%', background: 'transparent',
-                                border: 'none', outline: 'none', fontSize: '15px',
-                                fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
-                                caretColor: '#7c3aed', padding: '8px 4px 18px 4px', margin: 0,
-                                resize: 'none', overflowY: 'hidden', overflowX: 'hidden',
-                                minHeight: '34px', maxHeight: '120px',
-                                lineHeight: '1.4', boxSizing: 'border-box',
-                                display: 'block', scrollBehavior: 'smooth',
-                                WebkitOverflowScrolling: 'touch',
+                                color: isDarkMode ? '#e9d5ff' : '#2e1065',
+                                caretColor: '#7c3aed',
                             }}
                             placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...')}
                             value={newMessage}
@@ -8740,20 +8724,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 const val = e.target.value;
                                 if (val.length <= MAX_CHAT_CHARS) {
                                     setNewMessage(val);
-                                }
-                                // Auto-expand up to 120px, then scroll inside
-                                const el = e.target;
-                                el.style.height = 'auto';
-                                const newH = Math.min(el.scrollHeight, 120);
-                                el.style.height = newH + 'px';
-                                if (el.scrollHeight > 120) {
-                                    el.style.overflowY = 'auto';
-                                    el.style.overflowX = 'hidden';
-                                    // Scroll to bottom so latest typed text is visible
-                                    el.scrollTop = el.scrollHeight;
-                                } else {
-                                    el.style.overflowY = 'hidden';
-                                    el.style.overflowX = 'hidden';
                                 }
                             }}
                             onKeyDown={(e) => {
