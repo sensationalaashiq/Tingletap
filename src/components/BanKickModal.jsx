@@ -499,7 +499,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
             <div className="bkm3-appeal-title"><IcoShield /> Appeal Your Suspension</div>
             <div className="bkm3-appeal-body">
               If you believe this is a mistake, email us at{' '}
-              <span className="bkm3-link">admin@tingleapp.com</span> with your User ID.
+              <span className="bkm3-link">Admin@tingletap.com</span> with your User ID.
             </div>
           </div>
 
@@ -521,7 +521,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
               className="bkm3-btn bkm3-btn--ghost"
               onClick={() => {
                 const body = `Hello Admin,\n\nI am appealing my ban on TingleTap.\n\nUsername: ${displayName}\nUser ID: ${uid || 'N/A'}\nEmail: ${email || 'N/A'}\nReason given: ${banInfo.reason || 'Unknown'}\n\nReason for appeal:\n[Please explain here]\n\nThank you.`;
-                window.open(`mailto:admin@tingleapp.com?subject=${encodeURIComponent('Account Ban Appeal – TingleTap')}&body=${encodeURIComponent(body)}`, '_blank');
+                window.open(`mailto:Admin@tingletap.com?subject=${encodeURIComponent('Account Ban Appeal – TingleTap')}&body=${encodeURIComponent(body)}`, '_blank');
               }}
             >
               <IcoMail c="#c4b5fd" /> Appeal
@@ -643,7 +643,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
                 : kickIsPermanent
                   ? 'This is a permanent removal. Contact staff at '
                   : 'Wait for the timer above to reach 00:00 and you\'ll be able to rejoin automatically. If this was a mistake, email '}
-              {!kickExpired && <span className="bkm3-link">admin@tingleapp.com</span>}
+              {!kickExpired && <span className="bkm3-link">Admin@tingletap.com</span>}
               {!kickExpired && '.'}
             </div>
           </div>
@@ -693,7 +693,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
           </div>
           <div className="bkm3-appeal">
             <div className="bkm3-appeal-title"><IcoShield /> Contact Support</div>
-            <div className="bkm3-appeal-body">Email <span className="bkm3-link">admin@tingleapp.com</span> with your User ID.</div>
+            <div className="bkm3-appeal-body">Email <span className="bkm3-link">Admin@tingletap.com</span> with your User ID.</div>
           </div>
           <div className="bkm3-footer">
             <button className="bkm3-btn bkm3-btn--ban-primary" onClick={() => { if (onClose) onClose(); window.location.href = '/welcome'; }}>

@@ -276,7 +276,7 @@ const Sidebar = ({
         await updateDoc(doc(db, 'users', adminModalUser.uid), {
           isBanned: true, banReason: actionData.reason, bannedAt: serverTimestamp(),
           bannedBy: actionData.actionBy, bannedById: actionData.actionById,
-          banDuration: actionData.duration, banUntil: banUntilS, appealContact: 'admin@tingleapp.com'
+          banDuration: actionData.duration, banUntil: banUntilS, appealContact: 'Admin@tingletap.com'
         });
         await sendTingleBotMessage(`${adminModalUser.displayName} has been banned — ${actionData.reason || 'No reason provided'}`, 'banned');
 

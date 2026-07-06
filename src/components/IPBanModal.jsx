@@ -163,7 +163,7 @@ const IPBanModal = React.memo(({ banInfo, onRetry }) => {
               information in your appeal.
             </p>
             <div className="contact-info">
-              <p><strong>Support Email:</strong> appeals@tingletap.com</p>
+              <p><strong>Support Email:</strong> Support@tingletap.com</p>
               <p><strong>Reference ID:</strong> {banInfo?.id || 'Unknown'}</p>
             </div>
           </div>

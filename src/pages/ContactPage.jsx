@@ -60,13 +60,37 @@ const ArrowIcon = () => (
   </svg>
 );
 
+const SUBJECT_LABELS = {
+  technical: 'Technical Support',
+  account: 'Account Issues',
+  report: 'Report User / Content',
+  verification: 'Badge Verification',
+  billing: 'Premium Features',
+  suggestion: 'Feature Request',
+  bug: 'Bug Report',
+  general: 'General Inquiry',
+};
+
 const ContactPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sending, setSending] = useState(false);
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleSubmit = e => {
     e.preventDefault();
-    alert('Thank you for contacting TingleTap! Our support team will respond within 2-4 hours.');
+    setSending(true);
+    const subjectLabel = SUBJECT_LABELS[form.subject] || form.subject || 'General Inquiry';
+    const emailSubject = `[TingleTap Support] ${subjectLabel} – from ${form.name}`;
+    const emailBody =
+      `Name: ${form.name}\n` +
+      `Email: ${form.email}\n` +
+      `Issue Type: ${subjectLabel}\n\n` +
+      `Message:\n${form.message}`;
+    window.open(
+      `mailto:Support@tingletap.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`,
+      '_blank'
+    );
+    setSending(false);
     setForm({ name: '', email: '', subject: '', message: '' });
   };
 
@@ -146,8 +170,8 @@ const ContactPage = () => {
                 <label className="lp-label">Message</label>
                 <textarea className="lp-input" name="message" value={form.message} onChange={handleChange} placeholder="Describe your issue in detail…" required rows={4} style={{resize:'vertical',minHeight:'90px'}}/>
               </div>
-              <button type="submit" className="lp-submit-btn">
-                <SendIcon /><span>Send Message</span>
+              <button type="submit" className="lp-submit-btn" disabled={sending}>
+                <SendIcon /><span>{sending ? 'Opening…' : 'Send Message'}</span>
               </button>
             </form>
           </div>
