@@ -12,6 +12,19 @@
       }
     },
 
+    "room_presence": {
+      // FIX-PERF-1: Per-room presence node. Each room only contains its own
+      // members, eliminating the O(N²) bandwidth cost of the global status/ listener.
+      // Reads are room-scoped (any auth user may read a room's presence list).
+      // Writes are uid-scoped (each user writes only their own entry).
+      "$roomId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    },
+
     "roomCounts": {
       // Room-member counts are maintained by client-side presence writes.
       // Read-only here — no explicit write grant so the root false catches writes.

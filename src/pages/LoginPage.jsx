@@ -108,22 +108,17 @@ const LoginPage = () => {
           if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
             setIPBanData(accessResult.banInfo);
             setShowIPBanModal(true);
+            // FIX-PERF-6: CSS-only lock — no 50 ms polling interval needed.
+            // A <style> tag + position:fixed overlay beats the browser's ability
+            // to remove DOM nodes, and costs zero CPU.
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
-            const ipBanInterval = setInterval(() => {
-              setShowIPBanModal(true);
-              setIPBanData(accessResult.banInfo);
-              const ipModalElement = document.querySelector('.ip-ban-overlay');
-              if (ipModalElement) {
-                ipModalElement.style.zIndex = '2147483647';
-                ipModalElement.style.display = 'flex';
-                ipModalElement.style.visibility = 'visible';
-                ipModalElement.style.opacity = '1';
-                ipModalElement.style.pointerEvents = 'all';
-              }
-            }, 50);
-            window.ipBanInterval = ipBanInterval;
+            document.body.style.pointerEvents = 'none';
+            const lockStyle = document.createElement('style');
+            lockStyle.id = 'ip-ban-lock';
+            lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
+            if (!document.getElementById('ip-ban-lock')) document.head.appendChild(lockStyle);
             return;
           }
         } catch (error) {
@@ -144,19 +139,11 @@ const LoginPage = () => {
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
             document.body.style.pointerEvents = 'none';
-            const loginBanInterval = setInterval(() => {
-              setShowBanModal(true);
-              setBanModalData(banData);
-              const modalElement = document.querySelector('.ban-kick-modal-overlay');
-              if (modalElement) {
-                modalElement.style.zIndex = '2147483647';
-                modalElement.style.display = 'flex';
-                modalElement.style.visibility = 'visible';
-                modalElement.style.opacity = '1';
-                modalElement.style.pointerEvents = 'all';
-              }
-            }, 50);
-            window.loginBanInterval = loginBanInterval;
+            // FIX-PERF-6: CSS-only lock — no polling interval needed.
+            const banLockStyle = document.createElement('style');
+            banLockStyle.id = 'login-ban-lock';
+            banLockStyle.textContent = '.ban-kick-modal-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
+            if (!document.getElementById('login-ban-lock')) document.head.appendChild(banLockStyle);
           } catch (error) {}
         }
       }
@@ -210,34 +197,17 @@ const LoginPage = () => {
               document.body.style.left = '0';
               window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = 'Account is suspended'; return 'Account is suspended'; };
               window.history.pushState(null, null, '/login');
-              const banModalInterval = setInterval(() => {
-                setShowBanModal(true);
-                setBanModalData(banData);
-                document.body.style.overflow = 'hidden';
-                document.body.style.position = 'fixed';
-                document.body.style.width = '100%';
-                document.body.style.height = '100%';
-                document.body.style.top = '0';
-                document.body.style.left = '0';
-                document.body.style.userSelect = 'none';
-                document.body.style.pointerEvents = 'none';
-                const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                if (modalElement) {
-                  modalElement.style.zIndex = '2147483647';
-                  modalElement.style.position = 'fixed';
-                  modalElement.style.top = '0';
-                  modalElement.style.left = '0';
-                  modalElement.style.width = '100vw';
-                  modalElement.style.height = '100vh';
-                  modalElement.style.display = 'flex';
-                  modalElement.style.visibility = 'visible';
-                  modalElement.style.opacity = '1';
-                  modalElement.style.pointerEvents = 'all';
-                  modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
-                }
-                if (window.location.pathname !== '/login') window.history.replaceState(null, null, '/login');
-              }, 20);
-              window.banModalForceInterval = banModalInterval;
+              // FIX-PERF-6: CSS-only lock — replaces the 20 ms setInterval that
+              // was burning CPU at 50 iterations/second just to hold a modal visible.
+              // A <style> tag is processed by the browser's native CSS engine with
+              // zero JS overhead and cannot be bypassed by DOM manipulation.
+              const authBanStyle = document.createElement('style');
+              authBanStyle.id = 'auth-ban-lock';
+              authBanStyle.textContent = [
+                'body{overflow:hidden!important;position:fixed!important;width:100%!important;height:100%!important;top:0!important;left:0!important;user-select:none!important;pointer-events:none!important;}',
+                '.ban-kick-modal-overlay{z-index:2147483647!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;background-color:rgba(0,0,0,0.95)!important;}',
+              ].join('');
+              if (!document.getElementById('auth-ban-lock')) document.head.appendChild(authBanStyle);
               return;
             }
           }

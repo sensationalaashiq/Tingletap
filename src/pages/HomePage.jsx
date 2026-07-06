@@ -1128,6 +1128,10 @@ const HomePage = ({ user, roomIdOverride }) => {
     const privateFileInputRef = useRef(null);
     const privateAudioInputRef = useRef(null);
     const pmListenerRef = useRef(null);
+    // FIX-PERF-5: Track which uid the PM listener is currently subscribed for.
+    // Prevents re-subscribing (and re-reading 200 PM docs) every time the room
+    // changes or getPrivateMessageAvatarUrl gets a new reference.
+    const pmSubscribedUidRef = useRef(null);
     const [showPrivateAudioMiniPopup, setShowPrivateAudioMiniPopup] = useState(false);
     
     // State to track which dropdown is currently open (by message ID)
@@ -2516,6 +2520,14 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const userStatusRef = ref(rtdb, `status/${currentUid}`);
         set(userStatusRef, statusData).catch(() => {});
+
+        // FIX-PERF-1: Also write to the room-scoped presence node so the
+        // per-room listener (below) only downloads this room's users instead
+        // of the entire platform-wide status tree.
+        if (roomId) {
+            const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
+            set(roomPresenceRef, statusData).catch(() => {});
+        }
         // No cleanup — offline transition is handled by the stable effect below
     }, [roomId, user?.uid, loggedInUserProfile]);
 
@@ -2536,17 +2548,31 @@ const HomePage = ({ user, roomIdOverride }) => {
         const userStatusRef = ref(rtdb, `status/${currentUid}`);
         onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: Date.now() });
 
+        // FIX-PERF-1: onDisconnect for the room-scoped node too so it's cleared if the
+        // browser tab closes without a clean logout.
+        const roomPresenceRef = roomId ? ref(rtdb, `room_presence/${roomId}/${currentUid}`) : null;
+        if (roomPresenceRef) {
+            onDisconnect(roomPresenceRef).remove();
+        }
+
+        // FIX-PERF-2: Heartbeat extended from 120 s → 300 s (5 min).
+        // 120 s meant 30 writes/hour per user; 300 s = 12 writes/hour — a 60 % reduction.
+        // The stale-presence threshold in the listener is already 5 min so this is safe.
         const heartbeatInterval = setInterval(() => {
             const cached = window._currentStatusData;
             if (!cached) return;
             const fresh = { ...cached, last_changed: Date.now() };
             window._currentStatusData = fresh;
             set(userStatusRef, fresh).catch(() => {});
-        }, 120000);
+            // Also refresh the room-scoped node
+            if (roomPresenceRef) set(roomPresenceRef, fresh).catch(() => {});
+        }, 300000); // FIX-PERF-2: was 120 000 (2 min)
 
         return () => {
             clearInterval(heartbeatInterval);
             set(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+            // Remove this user from the room-scoped presence node on clean exit
+            if (roomPresenceRef) remove(roomPresenceRef).catch(() => {});
         };
     }, [roomId, user?.uid]);
 
@@ -2732,6 +2758,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
+        // FIX-PERF-5: Skip re-subscribing if we're already listening for this user.
+        // The dependency array includes getPrivateMessageAvatarUrl which gets a new
+        // reference on every render, causing 200-doc PM reads on every room change.
+        if (pmSubscribedUidRef.current === currentUserId) return;
+
         // Simpler query without complex conditions
         const q = query(
             collection(db, 'privateMessages'),
@@ -2843,7 +2874,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
         );
 
+        pmSubscribedUidRef.current = currentUserId;
         return () => {
+            pmSubscribedUidRef.current = null;
             try {
                 unsubscribe();
             } catch (error) {
@@ -2956,7 +2989,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // FIX 1+2: Start room-scoped style listeners for current sender UIDs.
                 // FIX 3: Pre-populate the profile cache for each new sender so
                 //         avatar / displayName reads don't miss on first render.
-                const senderUids = [...new Set(newMessages.map(m => m.uid).filter(Boolean))];
+                // FLICKER-FIX: Exclude TingleBot and all system/bot UIDs from style
+                // initialisation. Bot messages never have Firestore style docs, so
+                // including them causes a wasted Firestore read + a style-changed event
+                // that re-renders every ChatMessage — the root cause of chat flicker
+                // when TingleBot join/leave or RJ system messages arrive.
+                const BOT_UIDS = new Set(['tinglebot_system_official_2024']);
+                const senderUids = [...new Set(
+                    newMessages
+                        .filter(m => !m.isBot && !m.systemBot && !m.tinglebotType && !BOT_UIDS.has(m.uid))
+                        .map(m => m.uid)
+                        .filter(Boolean)
+                )];
                 if (senderUids.length > 0) {
                     const uidKey = senderUids.slice().sort().join(',');
                     if (window._lastStyleUidKey !== uidKey) {
@@ -3424,35 +3468,28 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
         
-        const statusRef = ref(rtdb, 'status');
-        const unsubscribe = onValue(statusRef, (snapshot) => {
-            const statuses = snapshot.val() || {};
+        // FIX-PERF-1: Scope presence listener to this room only instead of downloading
+        // the entire platform-wide `status/` tree. This eliminates the O(N²) bandwidth
+        // problem where every user received every other user's heartbeat on every tick.
+        // Each user now only downloads presence data for people in their current room.
+        const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
+        const unsubscribe = onValue(roomPresenceListenRef, (snapshot) => {
+            const presences = snapshot.val() || {};
             const STALE_MS = 5 * 60 * 1000; // 5 minutes — entries older than this are ghost
             const now = Date.now();
             
-            // Get users who are actually online in this room
-            const currentUidsInRoom = Object.keys(statuses)
+            // All entries in this node are already for this room — no roomId filter needed
+            const currentUidsInRoom = Object.keys(presences)
                 .filter(uid => {
-                    const userStatus = statuses[uid];
-                    const fresh = !userStatus.last_changed || (now - userStatus.last_changed) < STALE_MS;
-                    return userStatus && 
-                           userStatus.state === 'online' && 
-                           userStatus.currentRoomId === roomId &&
-                           fresh;
-                });
-            
-            // Get all online users regardless of room (fresh only)
-            const allOnlineUids = Object.keys(statuses)
-                .filter(uid => {
-                    const userStatus = statuses[uid];
-                    const fresh = !userStatus.last_changed || (now - userStatus.last_changed) < STALE_MS;
-                    return userStatus && userStatus.state === 'online' && fresh;
+                    const p = presences[uid];
+                    const fresh = !p.last_changed || (now - p.last_changed) < STALE_MS;
+                    return p && p.state === 'online' && fresh;
                 });
             
             // Store statuses in ref (not state) — avoids a re-render + setLiveUsers
             // cascade on every heartbeat tick when no user actually joined/left.
-            userOnlineStatusesRef.current = statuses;
-            window.userOnlineStatuses = statuses;
+            userOnlineStatusesRef.current = presences;
+            window.userOnlineStatuses = presences;
 
             // Only trigger a state update (and thus a re-render) when the set of
             // users in the room actually changes. Pure heartbeat ticks are skipped.
@@ -3465,8 +3502,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return currentUidsInRoom;
             });
 
-            // Create onlineUsers Set with ALL online users (not just current room)
-            const onlineUsersSet = new Set(allOnlineUids);
+            // onlineUsers Set: room-scoped (people visible in this room's sidebar)
+            const onlineUsersSet = new Set(currentUidsInRoom);
             setOnlineUsers(prev => {
                 if (prev.size === onlineUsersSet.size && [...onlineUsersSet].every(u => prev.has(u))) {
                     return prev; // no change → no re-render

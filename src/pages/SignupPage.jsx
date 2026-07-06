@@ -91,22 +91,15 @@ const SignupPage = () => {
           if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
             setIPBanData(accessResult.banInfo);
             setShowIPBanModal(true);
+            // FIX-PERF-6: CSS-only lock — no 50 ms polling interval needed.
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
-            const ipBanInterval = setInterval(() => {
-              setShowIPBanModal(true);
-              setIPBanData(accessResult.banInfo);
-              const ipModalElement = document.querySelector('.ip-ban-overlay');
-              if (ipModalElement) {
-                ipModalElement.style.zIndex = '2147483647';
-                ipModalElement.style.display = 'flex';
-                ipModalElement.style.visibility = 'visible';
-                ipModalElement.style.opacity = '1';
-                ipModalElement.style.pointerEvents = 'all';
-              }
-            }, 50);
-            window.ipBanInterval = ipBanInterval;
+            document.body.style.pointerEvents = 'none';
+            const lockStyle = document.createElement('style');
+            lockStyle.id = 'ip-ban-lock-su';
+            lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
+            if (!document.getElementById('ip-ban-lock-su')) document.head.appendChild(lockStyle);
             return;
           }
         } catch (error) {
@@ -1276,7 +1269,10 @@ const SignupPage = () => {
                   document.body.style.overflow = '';
                   document.body.style.position = '';
                   document.body.style.userSelect = '';
-                  if (window.ipBanInterval) clearInterval(window.ipBanInterval);
+                  document.body.style.pointerEvents = '';
+                  // Remove the CSS lock style tag injected by FIX-PERF-6
+                  const lockEl = document.getElementById('ip-ban-lock-su');
+                  if (lockEl) lockEl.remove();
                 } else {
                   pt.error('Your IP address is still banned from accessing this platform.');
                 }

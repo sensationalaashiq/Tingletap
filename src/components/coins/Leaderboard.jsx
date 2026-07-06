@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase/config';
 import {
-  collection, query, where, orderBy, limit, onSnapshot, getDocs
+  collection, query, where, orderBy, limit, getDocs
 } from 'firebase/firestore';
 import { formatCoins } from '../../utils/coinSystem';
 import { getCachedUserProfile } from '../../utils/userProfileCache';
@@ -75,84 +75,123 @@ const TYPE_OPTIONS = [
 const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const MEDAL_LABELS = ['1st', '2nd', '3rd'];
 
-/* FIX 16: module-level caches shared across mounts/tab-switches so re-toggling
-   period/type doesn't refetch the same user profiles or show a loading flicker
-   for data we already have. Live onSnapshot still keeps data fresh. */
+/* FIX-PERF-3: module-level in-memory cache shared across mounts/tab-switches.
+   Previously used a live onSnapshot(limit 500) — an always-open listener that
+   shipped 500 Firestore documents to every user visiting the leaderboard page.
+   Replaced with a one-time getDocs + 5-minute sessionStorage cache.
+   On tab focus (visibilitychange) stale entries are invalidated so data stays
+   reasonably fresh without a permanent listener. */
 const lbResultCache = {}; // key: `${type}:${period}` -> { data, userMap, ts }
-const LB_RESULT_TTL_MS = 30 * 1000;
+const LB_RESULT_TTL_MS = 5 * 60 * 1000; // 5 minutes (was 30 s live-snapshot)
+const SS_KEY = (k) => `lb_cache_${k}`;
+
+function readSSCache(cacheKey) {
+  try {
+    const raw = sessionStorage.getItem(SS_KEY(cacheKey));
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (Date.now() - entry.ts > LB_RESULT_TTL_MS) { sessionStorage.removeItem(SS_KEY(cacheKey)); return null; }
+    return entry;
+  } catch { return null; }
+}
+function writeSSCache(cacheKey, entry) {
+  try { sessionStorage.setItem(SS_KEY(cacheKey), JSON.stringify(entry)); } catch {}
+}
 
 function useLeaderboard(type, period) {
   const cacheKey = `${type}:${period}`;
-  const cached = lbResultCache[cacheKey];
-  const hasFreshCache = cached && (Date.now() - cached.ts) < LB_RESULT_TTL_MS;
 
-  const [data, setData] = useState(cached ? cached.data : []);
-  const [loading, setLoading] = useState(!hasFreshCache);
-  const [userMap, setUserMap] = useState(cached ? cached.userMap : {});
+  // Prefer in-memory → sessionStorage → fetch
+  const memCached = lbResultCache[cacheKey];
+  const ssCached = !memCached ? readSSCache(cacheKey) : null;
+  const boot = memCached || ssCached;
+  const hasFreshBoot = boot && (Date.now() - boot.ts) < LB_RESULT_TTL_MS;
+
+  const [data, setData] = useState(boot ? boot.data : []);
+  const [loading, setLoading] = useState(!hasFreshBoot);
+  const [userMap, setUserMap] = useState(boot ? boot.userMap : {});
 
   useEffect(() => {
-    const c = lbResultCache[cacheKey];
-    if (c && (Date.now() - c.ts) < LB_RESULT_TTL_MS) {
-      setData(c.data);
-      setUserMap(c.userMap);
-      setLoading(false);
-    } else {
+    let cancelled = false;
+
+    async function fetchLeaderboard(force = false) {
+      // Return early if fresh cache exists and not forced
+      const mem = lbResultCache[cacheKey];
+      if (!force && mem && (Date.now() - mem.ts) < LB_RESULT_TTL_MS) {
+        setData(mem.data); setUserMap(mem.userMap); setLoading(false);
+        return;
+      }
+      const ss = !force ? readSSCache(cacheKey) : null;
+      if (ss) {
+        setData(ss.data); setUserMap(ss.userMap); setLoading(false);
+        lbResultCache[cacheKey] = ss;
+        return;
+      }
+
       setLoading(true);
+      try {
+        const txType = type === 'senders' ? 'gift_sent' : 'gift_received';
+        const now = new Date();
+        const todayKey = now.toISOString().slice(0, 10);
+        const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        // FIX-PERF-3: getDocs (one-time read) instead of onSnapshot (permanent listener)
+        const q = query(
+          collection(db, 'coinTransactions'),
+          where('type', '==', txType),
+          orderBy('timestamp', 'desc'),
+          limit(500)
+        );
+        const snap = await getDocs(q);
+        if (cancelled) return;
+        const txs = snap.docs.map(d => d.data());
+
+        const filtered = txs.filter(tx => {
+          if (!tx.timestamp) return false;
+          const ts = tx.timestamp.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp);
+          if (period === 'today') return ts.toISOString().slice(0, 10) === todayKey;
+          if (period === 'week') return ts >= weekStart;
+          if (period === 'month') return ts >= monthStart;
+          return true;
+        });
+
+        const map = {};
+        filtered.forEach(tx => {
+          const uid = tx.uid;
+          if (!map[uid]) map[uid] = { uid, coins: 0, gifts: 0 };
+          map[uid].coins += Math.abs(tx.coins);
+          map[uid].gifts += 1;
+        });
+        const sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
+
+        const newMap = { ...lbResultCache[cacheKey]?.userMap };
+        await Promise.all(sorted.map(s => s.uid).filter(uid => !newMap[uid]).map(async uid => {
+          try { const p = await getCachedUserProfile(uid); if (p) newMap[uid] = p; } catch {}
+        }));
+        if (cancelled) return;
+
+        const entry = { data: sorted, userMap: newMap, ts: Date.now() };
+        lbResultCache[cacheKey] = entry;
+        writeSSCache(cacheKey, entry);
+        setData(sorted);
+        setUserMap(newMap);
+        setLoading(false);
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
     }
-    const txType = type === 'senders' ? 'gift_sent' : 'gift_received';
 
-    let q;
-    const now = new Date();
-    const todayKey = now.toISOString().slice(0, 10);
-    const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    fetchLeaderboard();
 
-    q = query(
-      collection(db, 'coinTransactions'),
-      where('type', '==', txType),
-      orderBy('timestamp', 'desc'),
-      limit(500)
-    );
+    // Refresh when the tab becomes visible again (user returns after a while)
+    const onVisible = () => {
+      const mem = lbResultCache[cacheKey];
+      if (!mem || (Date.now() - mem.ts) > LB_RESULT_TTL_MS) fetchLeaderboard(true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
-    const unsub = onSnapshot(q, async (snap) => {
-      const txs = snap.docs.map(d => d.data());
-
-      // Filter by period
-      const filtered = txs.filter(tx => {
-        if (!tx.timestamp) return false;
-        const ts = tx.timestamp.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp);
-        if (period === 'today') return ts.toISOString().slice(0, 10) === todayKey;
-        if (period === 'week') return ts >= weekStart;
-        if (period === 'month') return ts >= monthStart;
-        return true;
-      });
-
-      // Aggregate
-      const map = {};
-      filtered.forEach(tx => {
-        const uid = tx.uid;
-        if (!map[uid]) map[uid] = { uid, coins: 0, gifts: 0 };
-        map[uid].coins += Math.abs(tx.coins);
-        map[uid].gifts += 1;
-      });
-      const sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
-      setData(sorted);
-
-      // Load user profiles (shared FIX 20 cache avoids refetching known profiles)
-      const uids = sorted.map(s => s.uid);
-      const newMap = { ...userMap };
-      await Promise.all(uids.filter(uid => !newMap[uid]).map(async uid => {
-        try {
-          const profile = await getCachedUserProfile(uid);
-          if (profile) newMap[uid] = profile;
-        } catch {}
-      }));
-      setUserMap(newMap);
-      setLoading(false);
-      lbResultCache[cacheKey] = { data: sorted, userMap: newMap, ts: Date.now() };
-    });
-
-    return unsub;
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisible); };
   }, [type, period]);
 
   return { data, loading, userMap };

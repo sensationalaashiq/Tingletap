@@ -1,57 +1,68 @@
 /**
- * WarningsContext — FIX 6
- * Single Firestore listener for `warnings_announcements`.
- * WarningAnnouncementPopup and WarningAnnouncementManager consume this
- * context instead of each creating their own listener.
+ * WarningsContext — FIX-PERF-4
+ * Replaced the always-on onSnapshot listener with a one-time getDocs fetch
+ * on mount + a 5-minute setInterval refresh. This eliminates a permanent
+ * Firestore connection that was open for every authenticated session even
+ * though warnings/announcements change very rarely.
+ *
+ * The WarningAnnouncementPopup and WarningAnnouncementManager components
+ * consume this context and are unaffected — same { warnings } API.
  */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 const WarningsContext = createContext({ warnings: [] });
 
 export const useWarnings = () => useContext(WarningsContext);
 
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 export const WarningsProvider = ({ children }) => {
-  // ONE listener — newest 100 warnings; components filter as needed
   const [warnings, setWarnings] = useState([]);
+  const intervalRef = useRef(null);
+  const authedRef = useRef(false);
 
   useEffect(() => {
-    let firestoreUnsub = null;
+    async function fetchWarnings() {
+      if (!authedRef.current) return;
+      try {
+        const q = query(
+          collection(db, 'warnings_announcements'),
+          orderBy('createdAt', 'desc'),
+          limit(100)
+        );
+        const snap = await getDocs(q);
+        setWarnings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        if (err?.code !== 'permission-denied') {
+          console.error('WarningsContext fetch error:', err);
+        }
+      }
+    }
 
-    // Only open the Firestore listener once a user is authenticated (FIX 6)
     const authUnsub = onAuthStateChanged(auth, (user) => {
-      // Tear down any previous Firestore listener before (re-)evaluating
-      if (firestoreUnsub) { firestoreUnsub(); firestoreUnsub = null; }
+      // Clear previous interval whenever auth state changes
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
 
       if (!user) {
+        authedRef.current = false;
         setWarnings([]);
         return;
       }
 
-      const q = query(
-        collection(db, 'warnings_announcements'),
-        orderBy('createdAt', 'desc'),
-        limit(100)
-      );
-
-      firestoreUnsub = onSnapshot(
-        q,
-        (snap) => {
-          setWarnings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        },
-        (err) => {
-          if (err?.code !== 'permission-denied') {
-            console.error('WarningsContext listener error:', err);
-          }
-        }
-      );
+      authedRef.current = true;
+      // Initial load
+      fetchWarnings();
+      // Periodic refresh every 5 minutes (replaces always-open onSnapshot)
+      intervalRef.current = setInterval(fetchWarnings, REFRESH_INTERVAL_MS);
     });
 
     return () => {
       authUnsub();
-      if (firestoreUnsub) firestoreUnsub();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      authedRef.current = false;
     };
   }, []);
 
