@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 import SEO from '../seo/SEO';
@@ -76,22 +77,35 @@ const ContactPage = () => {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [sending, setSending] = useState(false);
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setSending(true);
     const subjectLabel = SUBJECT_LABELS[form.subject] || form.subject || 'General Inquiry';
-    const emailSubject = `[TingleTap Support] ${subjectLabel} – from ${form.name}`;
-    const emailBody =
-      `Name: ${form.name}\n` +
-      `Email: ${form.email}\n` +
-      `Issue Type: ${subjectLabel}\n\n` +
-      `Message:\n${form.message}`;
-    window.open(
-      `mailto:Support@tingletap.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`,
-      '_blank'
-    );
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/Support@tingletap.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          _subject: `[TingleTap Support] ${subjectLabel} – from ${form.name}`,
+          issue_type: subjectLabel,
+          message: form.message,
+          _template: 'table',
+          _captcha: 'false',
+        }),
+      });
+      const data = await res.json();
+      if (data.success === 'true' || data.success === true) {
+        toast.success('Message sent! We will respond within 2–4 hours.');
+        setForm({ name: '', email: '', subject: '', message: '' });
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
+    } catch {
+      toast.error('Failed to send. Please check your connection and try again.');
+    }
     setSending(false);
-    setForm({ name: '', email: '', subject: '', message: '' });
   };
 
   return (

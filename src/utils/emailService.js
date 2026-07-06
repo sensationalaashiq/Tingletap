@@ -48,7 +48,7 @@ export const sendOTPEmail = async (email, otp) => {
     otp:        otp,
     code:       otp,
     app_name:   'TingleTap',
-    from_name:  'TingleTap Team',
+    from_name:  'Alerts@tingletap.com',
     message:    `Your TingleTap verification code is: ${otp}. Valid for 10 minutes.`
   };
 
@@ -137,7 +137,7 @@ export const sendCustomPasswordResetEmail = async (email) => {
     user_name:  email.split('@')[0],
     reset_link: resetLink,
     app_name:   'TingleTap',
-    from_name:  'TingleTap Team'
+    from_name:  'Alerts@tingletap.com'
   };
 
   // 1️⃣ REST API
