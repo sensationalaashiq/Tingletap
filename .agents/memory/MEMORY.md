@@ -21,3 +21,4 @@
 - [Homepage theme flicker](homepage-theme-flicker.md) — class-mutating effects must depend on the specific field (selectedTheme), not the whole profile object, or heartbeat writes cause visible flicker
 - [Speaker-side WebRTC reconnect symmetry](speaker-webrtc-reconnect.md) — host-only reconnect logic isn't enough; peer must also rebuild its RTCPeerConnection or a fresh offer is silently ignored
 - [TingleBot avatar](tinglebot-avatar.md) — TingleBot has no Firestore user doc, so getDefaultAvatarUrl() fell back to a random human stock photo; fixed by special-casing its uid to a dedicated bot image
+- [Chat message flicker fixes](chat-flicker-fixes.md) — 5 root causes of rapid-message flicker; key fix: docChanges()+messageCacheRef for stable object refs, userOnlineStatuses→ref, ChatMessage custom memo comparator
