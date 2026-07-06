@@ -14,6 +14,7 @@ const IC = {
   sort: (<svg viewBox="0 0 24 24" width="13" height="13" fill="none"><line x1="3" y1="6" x2="21" y2="6" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/><line x1="3" y1="12" x2="15" y2="12" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/><line x1="3" y1="18" x2="9" y2="18" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/></svg>),
   empty: (<svg viewBox="0 0 24 24" width="46" height="46" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(139,92,246,.08)" stroke="rgba(139,92,246,.25)" strokeWidth="1.5"/><line x1="8" y1="12" x2="16" y2="12" stroke="rgba(139,92,246,.5)" strokeWidth="1.8" strokeLinecap="round"/></svg>),
   edit: (<svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  severityDot: (color) => (<svg viewBox="0 0 24 24" width="12" height="12" fill="none"><circle cx="12" cy="12" r="9" fill={`${color}25`} stroke={color} strokeWidth="2"/><circle cx="12" cy="12" r="3.2" fill={color}/></svg>),
   save: (<svg viewBox="0 0 24 24" width="13" height="13" fill="none"><polyline points="20 6 9 17 4 12" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>),
   activate: (<svg viewBox="0 0 24 24" width="13" height="13" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="#10b981" opacity=".7" stroke="#10b981" strokeWidth="1.5" strokeLinejoin="round"/></svg>),
   deactivate: (<svg viewBox="0 0 24 24" width="13" height="13" fill="none"><rect x="6" y="4" width="4" height="16" rx="1" fill="#f59e0b" opacity=".8"/><rect x="14" y="4" width="4" height="16" rx="1" fill="#f59e0b" opacity=".8"/></svg>),
@@ -349,12 +350,27 @@ const WarningAnnouncementManager = ({ isVisible, onClose, currentUserProfile }) 
                         {w.type === 'warning' && (
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '10px', fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', marginBottom: 4 }}>Severity</div>
-                            <select className="wm-inp wm-sel" style={{ ...inp, minWidth: 120 }} value={editData.severity} onChange={e => setEditData(p => ({ ...p, severity: e.target.value }))}>
-                              <option value="low">🟡 Low</option>
-                              <option value="medium">🟠 Medium</option>
-                              <option value="high">🔴 High</option>
-                              <option value="critical">⚫ Critical</option>
-                            </select>
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                              {[['low','Low','#eab308'],['medium','Medium','#f97316'],['high','High','#ef4444'],['critical','Critical','#18181b']].map(([v,label,color]) => {
+                                const active = editData.severity === v;
+                                return (
+                                  <button
+                                    key={v}
+                                    type="button"
+                                    onClick={() => setEditData(p => ({ ...p, severity: v }))}
+                                    style={{
+                                      display: 'flex', alignItems: 'center', gap: 5,
+                                      padding: '5px 9px', borderRadius: 8, fontSize: '10.5px', fontWeight: 700,
+                                      border: `1.5px solid ${active ? `${color}70` : 'rgba(139,92,246,0.2)'}`,
+                                      background: active ? `${color}14` : '#fff',
+                                      color: active ? color : '#6b7280', cursor: 'pointer',
+                                    }}
+                                  >
+                                    {IC.severityDot(color)}{label}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                         {/* Expiry */}

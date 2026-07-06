@@ -3224,7 +3224,7 @@ const SettingsSidebar = ({
                                     ADMIN CONTROLS
                                 </h4>
                                 <div className="modern-admin-buttons">
-                                    {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
+                                    {loggedInUserProfile?.role === 'owner' && (
                                         <button 
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3238,6 +3238,24 @@ const SettingsSidebar = ({
                                                 <polyline points="9 12 11 14 15 10"/>
                                             </svg>
                                             <span>ADMIN PANEL</span>
+                                        </button>
+                                    )}
+
+                                    {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
+                                        <button
+                                            className="modern-admin-btn admin"
+                                            onClick={() => {
+                                                navigate('/mod-panel');
+                                                onClose();
+                                            }}
+                                            title="Ban / Kick / Mute Panel"
+                                        >
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="9" cy="7" r="4"/>
+                                                <path d="M3 21v-1a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v1"/>
+                                                <path d="M17 5l1.6 1.6L21.5 3.5"/>
+                                            </svg>
+                                            <span>BAN / KICK / MUTE</span>
                                         </button>
                                     )}
 

@@ -27,6 +27,7 @@ import RoomSlugPage from './pages/RoomSlugPage';
 // most sessions (guests, regular chat users) never visit. Splitting them out
 // keeps the main bundle smaller without changing any behavior.
 const AdminPanelPage = lazy(() => import('./pages/AdminPanelPage'));
+const BanKickMutePanel = lazy(() => import('./pages/BanKickMutePanel'));
 const BuyCoinsPage = lazy(() => import('./components/coins/BuyCoinsPage'));
 const CoinWalletPage = lazy(() => import('./components/coins/CoinWalletPage'));
 const Leaderboard = lazy(() => import('./components/coins/Leaderboard'));
@@ -956,6 +957,17 @@ function App() {
             <ProtectedRoute user={user} profile={userProfile}>
               <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading Admin Panel...</div>}>
                 <AdminPanelPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mod-panel"
+          element={
+            <ProtectedRoute user={user} profile={userProfile}>
+              <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading Panel...</div>}>
+                <BanKickMutePanel />
               </Suspense>
             </ProtectedRoute>
           }

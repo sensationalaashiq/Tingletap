@@ -55,8 +55,12 @@
 /* ══════════════════════════════════════════════════════
    FLOATING ADMIN CONSOLE BUTTON
 ══════════════════════════════════════════════════════ */
-.rl-admin-float {
+.rl-admin-float-wrap {
   position: fixed; top: 20px; right: 20px; z-index: 500;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.rl-admin-float {
+  position: relative;
   display: flex; align-items: center; gap: 8px;
   padding: 11px 20px; border-radius: 14px;
   background: linear-gradient(135deg,#f59e0b,#d97706);
@@ -68,6 +72,18 @@
 }
 .rl-admin-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 36px rgba(245,158,11,.6); }
 .rl-admin-float span { color: #fff; }
+.rl-modpanel-float {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 20px; border-radius: 14px;
+  background: linear-gradient(135deg,#7c3aed,#6d28d9);
+  color: #fff; font-size: 13.5px; font-weight: 800;
+  border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+  box-shadow: 0 6px 24px rgba(109,40,217,.45);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.rl-modpanel-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 36px rgba(109,40,217,.6); }
+.rl-modpanel-float span { color: #fff; }
 .rl-admin-pulse {
   position: absolute; inset: 0; border-radius: 14px;
   border: 2px solid rgba(251,191,36,.7);

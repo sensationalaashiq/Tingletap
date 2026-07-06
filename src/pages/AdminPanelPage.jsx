@@ -205,8 +205,8 @@ const AdminPanelPage = () => {
           userData = { ...userData, role: 'owner' };
         }
         setCurrentUserProfile(userData);
-        if (!['owner', 'admin'].includes(userData.role)) {
-          pt.error('Access denied. Admin privileges required.');
+        if (userData.role !== 'owner') {
+          pt.error('Access denied. Owner privileges required.');
           navigate('/');
         } else {
           setIsRoleReady(true);

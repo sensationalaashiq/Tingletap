@@ -67,6 +67,15 @@ const AdminIcon = () => (
   </Ico>
 );
 
+const ModPanelIcon = () => (
+  <Ico w={18} h={18}>
+    <defs><linearGradient id="rl-modp" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+    <circle cx="9" cy="6" r="3" fill="url(#rl-modp)"/>
+    <path d="M3 16v-1c0-2.5 2.5-4.5 6-4.5s6 2 6 4.5v1" fill="url(#rl-modp)"/>
+    <path d="M13.5 4l1 1 2-2" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </Ico>
+);
+
 const SpeakerIcon = () => (
   <Ico w={16} h={16}>
     <path d="M3 6v4h3l4 4V2L6 6H3zM13.5 8c0-1.8-1-3.3-2.5-4v8C12.5 11.3 13.5 9.8 13.5 8z" fill="white"/>
@@ -254,6 +263,8 @@ const RoomListPage = () => {
   const [roomCounts, setRoomCounts] = useState({});
   const [loading, setLoading]       = useState(true);
   const [isAdmin, setIsAdmin]       = useState(false);
+  const [isOwner, setIsOwner]       = useState(false);
+  const [isModPanelUser, setIsModPanelUser] = useState(false);
   const [userRole, setUserRole]     = useState('user');
   const [voiceLang, setVoiceLang]   = useState('en-IN');
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -327,6 +338,8 @@ const RoomListPage = () => {
         }
         setUserRole(role);
         if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
+        setIsOwner(role === 'owner');
+        setIsModPanelUser(['owner', 'admin'].includes(role));
       }
     });
 
@@ -564,13 +577,23 @@ const RoomListPage = () => {
         <div className="rl-orb rl-orb-1"/><div className="rl-orb rl-orb-2"/><div className="rl-orb rl-orb-3"/>
       </div>
 
-      {/* ══ FLOATING ADMIN CONSOLE ══ */}
-      {isAdmin && (
-        <button className="rl-admin-float" onClick={() => navigate('/admin-panel')}>
-          <AdminIcon />
-          <span>Admin Console</span>
-          <span className="rl-admin-pulse" />
-        </button>
+      {/* ══ FLOATING ADMIN / MOD CONSOLE ══ */}
+      {(isOwner || isModPanelUser) && (
+        <div className="rl-admin-float-wrap">
+          {isOwner && (
+            <button className="rl-admin-float" onClick={() => navigate('/admin-panel')}>
+              <AdminIcon />
+              <span>Admin Console</span>
+              <span className="rl-admin-pulse" />
+            </button>
+          )}
+          {isModPanelUser && (
+            <button className="rl-modpanel-float" onClick={() => navigate('/mod-panel')}>
+              <ModPanelIcon />
+              <span>Ban / Kick / Mute</span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* ══ MAIN ══ */}

@@ -1,0 +1,52 @@
+.mkm-panel .mkm-stats-grid {
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+}
+
+.mkm-table-header {
+  grid-template-columns: 2.2fr 1.6fr 1.2fr 1.8fr;
+}
+
+.mkm-row {
+  grid-template-columns: 2.2fr 1.6fr 1.2fr 1.8fr;
+}
+
+.mkm-clean-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.mkm-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mkm-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+@media (max-width: 900px) {
+  .mkm-panel .mkm-stats-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+  .mkm-table-header,
+  .mkm-row {
+    grid-template-columns: 1fr;
+  }
+}

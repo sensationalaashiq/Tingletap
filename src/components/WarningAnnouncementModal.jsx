@@ -91,7 +91,78 @@ const ICONS = {
       <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={active ? '#dc2626' : '#9ca3af'} strokeWidth="1.6" strokeLinecap="round"/>
     </svg>
   ),
+  severityDot: (color) => (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+      <circle cx="12" cy="12" r="9" fill={`${color}25`} stroke={color} strokeWidth="2"/>
+      <circle cx="12" cy="12" r="3.2" fill={color}/>
+    </svg>
+  ),
+  pin: (active) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+      <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" fill={active ? 'rgba(124,58,237,.15)' : 'none'} stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.6" strokeLinejoin="round"/>
+      <circle cx="12" cy="9.5" r="2.4" fill={active ? '#7c3aed' : '#9ca3af'}/>
+    </svg>
+  ),
+  homes: (active) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+      <path d="M3 9.5l6-4.5 6 4.5v9a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18.5z" fill={active ? 'rgba(124,58,237,.15)' : 'none'} stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M14 9.5l4.5-3.4L21 8v7.5a1 1 0 0 1-1 1h-2.5" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.4" strokeLinejoin="round"/>
+    </svg>
+  ),
+  globe: (active) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+      <circle cx="12" cy="12" r="9" fill={active ? 'rgba(124,58,237,.15)' : 'none'} stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.6"/>
+      <ellipse cx="12" cy="12" rx="4" ry="9" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.4"/>
+      <line x1="3" y1="12" x2="21" y2="12" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.4"/>
+    </svg>
+  ),
+  usersMulti: (active) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+      <circle cx="9" cy="8" r="3" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.6"/>
+      <path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M16 4.5a3 3 0 0 1 0 5.9" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M18.5 20v-1a5 5 0 0 0-2.8-4.5" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  ),
+  globeUsers: (active) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+      <circle cx="12" cy="12" r="9" fill={active ? 'rgba(124,58,237,.15)' : 'none'} stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.6"/>
+      <path d="M3 9h18M3 15h18" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.2"/>
+      <ellipse cx="12" cy="12" rx="4" ry="9" stroke={active ? '#7c3aed' : '#9ca3af'} strokeWidth="1.2"/>
+    </svg>
+  ),
+  chevronDown: (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+      <polyline points="6 9 12 15 18 9" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
+  radio: (active, color) => (
+    <div style={{
+      width: 17, height: 17, borderRadius: '50%', flexShrink: 0,
+      border: `2px solid ${active ? color : '#d1d5db'}`,
+      background: active ? color : '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transition: 'all 0.15s',
+    }}>
+      {active && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
+    </div>
+  ),
 };
+
+const SEVERITY_OPTS = [
+  { v: 'low',      label: 'Low',      sub: 'Informational nudge',            color: '#eab308' },
+  { v: 'medium',   label: 'Medium',   sub: 'Needs attention',                color: '#f97316' },
+  { v: 'high',     label: 'High',     sub: 'Important action required',      color: '#ef4444' },
+  { v: 'critical', label: 'Critical', sub: 'Urgent & highly visible',        color: '#18181b' },
+];
+
+const TARGET_OPTS = [
+  { v: 'room',           label: 'Current Room only',        icon: ICONS.pin,        color: '#7c3aed' },
+  { v: 'selected_rooms', label: 'Choose specific rooms…',   icon: ICONS.homes,      color: '#7c3aed' },
+  { v: 'all_rooms',      label: 'All rooms simultaneously', icon: ICONS.globe,      color: '#7c3aed' },
+  { v: 'selected_users', label: 'Choose specific users…',   icon: ICONS.usersMulti, color: '#7c3aed' },
+  { v: 'all_users',      label: 'All registered users',     icon: ICONS.globeUsers, color: '#7c3aed' },
+];
 
 /* ── Module-level cache ─────────────────────────────────────── */
 let _cachedModalData = null;
@@ -416,7 +487,7 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
               background: 'rgba(237,233,254,0.55)',
               borderRadius: 13, border: '1.5px solid rgba(139,92,246,0.15)',
             }}>
-              {[['warning','⚠️ Warning'], ['announcement','📢 Announcement']].map(([v, label]) => (
+              {[['warning', 'Warning', ICONS.iconWarning], ['announcement', 'Announcement', ICONS.iconMegaphone]].map(([v, label, icon]) => (
                 <button key={v} type="button" className="wam-type-btn" onClick={() => setType(v)} style={{
                   flex: 1, padding: '9px 8px', borderRadius: 10, fontSize: '12.5px', fontWeight: 700,
                   border: `1.5px solid ${type === v ? accentC + '70' : 'transparent'}`,
@@ -425,7 +496,8 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
                   cursor: 'pointer', transition: 'all 0.15s',
                   boxShadow: type === v ? '0 2px 10px rgba(109,40,217,0.14)' : 'none',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>{label}</button>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}>{icon(type === v)}{label}</button>
               ))}
             </div>
           </div>
@@ -468,12 +540,31 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
           {isWarning && (
             <div>
               <Lbl icon={ICONS.severity}>Severity</Lbl>
-              <select className="wam-inp wam-sel" style={inp} value={severity} onChange={e => setSeverity(e.target.value)}>
-                <option value="low">🟡 Low — informational nudge</option>
-                <option value="medium">🟠 Medium — needs attention</option>
-                <option value="high">🔴 High — important action required</option>
-                <option value="critical">⚫ Critical — urgent & visible</option>
-              </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {SEVERITY_OPTS.map(o => {
+                  const active = severity === o.v;
+                  return (
+                    <div
+                      key={o.v}
+                      onClick={() => setSeverity(o.v)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
+                        border: `1.5px solid ${active ? `${o.color}60` : 'rgba(139,92,246,0.18)'}`,
+                        background: active ? `${o.color}12` : '#fafafa',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {ICONS.severityDot(o.color)}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: active ? o.color : '#374151' }}>{o.label}</div>
+                        <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>{o.sub}</div>
+                      </div>
+                      {ICONS.radio(active, o.color)}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -488,13 +579,30 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
           {/* ── Send To ── */}
           <div>
             <Lbl icon={ICONS.target}>Send To</Lbl>
-            <select className="wam-inp wam-sel" style={inp} value={targetType} onChange={e => setTargetType(e.target.value)}>
-              <option value="room">📍 Current Room only</option>
-              <option value="selected_rooms">🏠 Choose specific rooms…</option>
-              <option value="all_rooms">🌐 All rooms simultaneously</option>
-              <option value="selected_users">👥 Choose specific users…</option>
-              <option value="all_users">🌍 All registered users</option>
-            </select>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {TARGET_OPTS.map(o => {
+                const active = targetType === o.v;
+                return (
+                  <div
+                    key={o.v}
+                    onClick={() => setTargetType(o.v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
+                      border: `1.5px solid ${active ? `${accentC}60` : 'rgba(139,92,246,0.18)'}`,
+                      background: active ? `${accentC}0d` : '#fafafa',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {o.icon(active)}
+                    <div style={{ flex: 1, fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? accentC : '#374151' }}>
+                      {o.label}
+                    </div>
+                    {ICONS.radio(active, accentC)}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Selected Rooms List ── */}
@@ -567,8 +675,8 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
                 })}
               </div>
               {selectedRooms.length === 0 && (
-                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
-                  ⚠️ Select at least one room to send
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
+                  {ICONS.iconWarning(true)} Select at least one room to send
                 </div>
               )}
             </div>
@@ -679,8 +787,8 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
                 )}
               </div>
               {selectedUsers.length === 0 && (
-                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
-                  ⚠️ Select at least one user to send
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
+                  {ICONS.iconWarning(true)} Select at least one user to send
                 </div>
               )}
             </div>
@@ -689,14 +797,15 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
           {/* ── Info card when no list shown ── */}
           {!showRoomList && !showUserList && (
             <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '12px 16px', borderRadius: 11,
               background: `${accentC}08`,
               border: `1.5px dashed ${accentC}40`,
               color: accentC, fontSize: 12.5, fontWeight: 600, textAlign: 'center',
             }}>
-              {targetType === 'room' && '📍 Will be sent to the current room only'}
-              {targetType === 'all_rooms' && '🌐 Will be sent to ALL rooms simultaneously'}
-              {targetType === 'all_users' && '🌍 Will be sent to ALL registered users'}
+              {targetType === 'room' && (<>{ICONS.pin(true)} Will be sent to the current room only</>)}
+              {targetType === 'all_rooms' && (<>{ICONS.globe(true)} Will be sent to ALL rooms simultaneously</>)}
+              {targetType === 'all_users' && (<>{ICONS.globeUsers(true)} Will be sent to ALL registered users</>)}
             </div>
           )}
 
