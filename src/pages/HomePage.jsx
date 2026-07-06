@@ -40,7 +40,7 @@ import SendProgressBar from '../components/SendProgressBar';
 import MinimizedConversations from '../components/MinimizedConversations';
 import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
 import GenderBadge from '../components/GenderBadge';
-import { checkAndGrantAchievements, ACHIEVEMENT_TITLES } from '../utils/achievementSystem';
+import { checkAndGrantAchievements, ACHIEVEMENT_TITLES, getLatestAchievement } from '../utils/achievementSystem';
 import { isTodayBirthday, BIRTHDAY_BADGE_SVG_LG } from '../utils/birthdayUtils';
 import AchievementsSection from '../components/AchievementsSection';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
@@ -1191,6 +1191,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [friendsProfiles, setFriendsProfiles] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [profileFriends, setProfileFriends] = useState([]);
+    const [profileRelMarks, setProfileRelMarks] = useState([]);
+    const [loadingProfileRelMarks, setLoadingProfileRelMarks] = useState(false);
     const [loadingProfileFriends, setLoadingProfileFriends] = useState(false);
     const [isRadioOpen, setIsRadioOpen] = useState(false);
     const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
@@ -7883,6 +7885,19 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG_LG }} />
                                     )}
                                 </div>
+
+                                {/* Latest earned achievement — small premium chip, like the role pill */}
+                                {(() => {
+                                    const latestAch = getLatestAchievement(profileUser);
+                                    if (!latestAch) return null;
+                                    return (
+                                        <div className="vpm-ach-chip" title={latestAch.description}
+                                            style={{ background: latestAch.gradient, borderColor: latestAch.borderColor }}>
+                                            <span className="vpm-ach-chip-icon" dangerouslySetInnerHTML={{ __html: latestAch.svg }} />
+                                            <span className="vpm-ach-chip-label" style={{ color: latestAch.color }}>{latestAch.name}</span>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Compact badges row: role + online + trust */}
                                 <div className="vpm-badges-row">

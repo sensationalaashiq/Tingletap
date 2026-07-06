@@ -224,3 +224,17 @@ export const getAchievementsDisplay = (userProfile) => {
   const unlocked = Array.isArray(userProfile?.achievements) ? userProfile.achievements : [];
   return ACHIEVEMENT_TITLES.map(t => ({ ...t, unlocked: unlocked.includes(t.id) }));
 };
+
+/**
+ * Returns the highest (most recently earned) unlocked achievement title
+ * for a user, or null if none unlocked yet. Titles are sequential, so the
+ * "latest" is simply the highest-index title present in the unlocked list.
+ */
+export const getLatestAchievement = (userProfile) => {
+  const unlocked = Array.isArray(userProfile?.achievements) ? userProfile.achievements : [];
+  if (!unlocked.length) return null;
+  for (let i = ACHIEVEMENT_TITLES.length - 1; i >= 0; i--) {
+    if (unlocked.includes(ACHIEVEMENT_TITLES[i].id)) return ACHIEVEMENT_TITLES[i];
+  }
+  return null;
+};

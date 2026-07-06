@@ -21,6 +21,7 @@ import ChatActionModal from './ChatActionModal';
 import EditProfileModal from './EditProfileModal';
 import StatusModal from './StatusModal';
 import GenderBadge from './GenderBadge';
+import { getLatestAchievement } from '../utils/achievementSystem';
 import AdultRoomModal from './AdultRoomModal';
 
 /* ─── Room icons ─────────────────────────────────────────────────────────── */
@@ -817,6 +818,15 @@ const Sidebar = ({
                               title="Happy Birthday!"
                               dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG }} />
                           )}
+                          {(() => {
+                            const latestAch = getLatestAchievement(userItem);
+                            if (!latestAch) return null;
+                            return (
+                              <span className="sb-ach-chip" title={latestAch.description}
+                                style={{ background: latestAch.gradient, borderColor: latestAch.borderColor }}
+                                dangerouslySetInnerHTML={{ __html: latestAch.svg }} />
+                            );
+                          })()}
                         </span>
                         <span className="sb-user-role-pill" style={{ background: pill.bg, color: pill.color }}>
                           {getRoleDisplayLabel({ role: userItem.role, gender: userItem.gender, isGuest: tIsGuest, badge: userItem.badge })}
