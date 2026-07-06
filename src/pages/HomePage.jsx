@@ -1788,17 +1788,18 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
     useEffect(() => {
-        if (textareaRef.current) {
-            const el = textareaRef.current;
-            el.style.height = 'auto';
-            const newH = Math.min(el.scrollHeight, 120);
-            el.style.height = newH + 'px';
-            // Switch to scrollable once content overflows the max height
-            el.style.overflowY = el.scrollHeight > 120 ? 'auto' : 'hidden';
-            // Auto-scroll when textarea content changes
-            if (newMessage.length > 0) {
-                scrollToBottom(true);
-            }
+        const el = textareaRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        const newH = Math.min(el.scrollHeight, 120);
+        el.style.height = newH + 'px';
+        if (el.scrollHeight > 120) {
+            el.style.overflowY = 'auto';
+            el.style.overflowX = 'hidden';
+            el.scrollTop = el.scrollHeight; // keep cursor visible at bottom
+        } else {
+            el.style.overflowY = 'hidden';
+            el.style.overflowX = 'hidden';
         }
     }, [newMessage]);
 
@@ -8740,12 +8741,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 if (val.length <= MAX_CHAT_CHARS) {
                                     setNewMessage(val);
                                 }
-                                // Auto-expand
+                                // Auto-expand up to 120px, then scroll inside
                                 const el = e.target;
                                 el.style.height = 'auto';
                                 const newH = Math.min(el.scrollHeight, 120);
                                 el.style.height = newH + 'px';
-                                el.style.overflow = el.scrollHeight > 120 ? 'auto' : 'hidden';
+                                if (el.scrollHeight > 120) {
+                                    el.style.overflowY = 'auto';
+                                    el.style.overflowX = 'hidden';
+                                    // Scroll to bottom so latest typed text is visible
+                                    el.scrollTop = el.scrollHeight;
+                                } else {
+                                    el.style.overflowY = 'hidden';
+                                    el.style.overflowX = 'hidden';
+                                }
                             }}
                             onKeyDown={(e) => {
                                 // Enter = new line only; send via button

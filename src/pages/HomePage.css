@@ -9836,24 +9836,27 @@ html.dark-mode .reject-btn:hover,
 /* Input row: attachment + pill + send, all in one line */
 .homepage-container .premium-input-container {
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   gap: 7px !important;
   width: 100% !important;
-  height: 38px !important;
+  height: auto !important;
+  min-height: 46px !important;
 }
 
 /* Input pill */
 .homepage-container .premium-input-wrapper {
   flex: 1 !important;
-  height: 38px !important;
+  height: auto !important;
+  min-height: 46px !important;
   background: rgba(237, 233, 254, 0.5) !important;
   border: 1px solid rgba(196, 181, 253, 0.4) !important;
   border-radius: 20px !important;
-  padding: 0 14px !important;
+  padding: 6px 14px !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   box-shadow: none !important;
   transition: border-color 0.2s, background 0.2s !important;
+  overflow: visible !important;
 }
 .homepage-container .premium-input-wrapper:focus-within {
   background: rgba(237, 233, 254, 0.8) !important;
@@ -10649,20 +10652,11 @@ body .homepage-container .premium-input-field:focus {
   padding: 0 4px !important;
 }
 
-/* Message form fills footer exactly */
-body .homepage-container .message-form {
-  height: 44px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-  border: none !important;
-}
-
 /* Form fills footer — auto height for multiline textarea */
 body .homepage-container .message-form {
   width: 100% !important;
   height: auto !important;
-  min-height: 34px !important;
+  min-height: 46px !important;
   margin: 0 !important;
   padding: 0 !important;
   display: flex !important;
@@ -10671,13 +10665,14 @@ body .homepage-container .message-form {
   flex: 1 !important;
 }
 
-/* Row: attachment | pill | send — all 46px tall */
+/* Row: attachment | pill | send */
 body .homepage-container .premium-input-container {
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   gap: 8px !important;
   width: 100% !important;
-  height: 46px !important;
+  height: auto !important;
+  min-height: 46px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -10686,19 +10681,21 @@ body .homepage-container .premium-input-container {
   flex: 1 !important;
 }
 
-/* Input pill — sole visible container, full height */
+/* Input pill — sole visible container, grows with content */
 body .homepage-container .premium-input-wrapper {
   flex: 1 1 auto !important;
-  height: 46px !important;
+  height: auto !important;
+  min-height: 46px !important;
   background: rgba(237, 233, 254, 0.6) !important;
   border: 1.5px solid rgba(167, 139, 250, 0.35) !important;
   border-radius: 23px !important;
-  padding: 0 16px !important;
+  padding: 6px 16px !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   box-shadow: none !important;
   margin: 0 !important;
   min-width: 0 !important;
+  overflow: visible !important;
   transition: border-color 0.2s, background 0.2s !important;
 }
 
@@ -10716,7 +10713,8 @@ body .dark-mode .homepage-container .premium-input-wrapper {
 
 body .homepage-container .premium-input-field {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
+  min-height: 34px !important;
   background: transparent !important;
   border: none !important;
   outline: none !important;
@@ -10724,9 +10722,19 @@ body .homepage-container .premium-input-field {
   font-weight: 450 !important;
   color: #2e1065 !important;
   caret-color: #7c3aed !important;
-  padding: 0 !important;
+  padding: 4px 0 !important;
   margin: 0 !important;
-  line-height: 46px !important;
+  line-height: 1.45 !important;
+  resize: none !important;
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+  max-height: 120px !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+  align-self: flex-end !important;
 }
 
 body .homepage-container .premium-input-field::placeholder {
