@@ -2490,6 +2490,24 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Also write to room-scoped node immediately so user appears in sidebar/count right away
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
         set(roomPresenceRef, minimalStatus).catch(() => {});
+
+        // ── INSTANT SELF-INJECT ──────────────────────────────────────────────
+        // RTDB writes are async — the onValue listener fires with the previous
+        // (empty) snapshot BEFORE the write completes, so the user sees count=0
+        // and doesn't appear in the sidebar for ~200-500 ms. Fix: immediately
+        // populate the presence ref + state with our own entry so the UI is
+        // correct from frame 1, without waiting for the RTDB round-trip.
+        userOnlineStatusesRef.current = {
+            ...userOnlineStatusesRef.current,
+            [currentUid]: minimalStatus,
+        };
+        window.userOnlineStatuses = userOnlineStatusesRef.current;
+        setOnlineUserIds(prev =>
+            prev.includes(currentUid) ? prev : [...prev, currentUid]
+        );
+        const selfSet = new Set([...(window.onlineUsers || []), currentUid]);
+        setOnlineUsers(selfSet);
+        window.onlineUsers = selfSet;
         // No cleanup here — Part 2 (stable effect) owns the offline transition
     }, [roomId, user?.uid]);
 
