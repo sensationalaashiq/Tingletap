@@ -399,16 +399,6 @@ const LandingPage = () => {
 
           <div className="lp-stats lp-anim-up lp-d2">
             <div className="lp-stat">
-              <span className="lp-stat-n">{realTimeStats.activeUsers.toLocaleString()}+</span>
-              <span className="lp-stat-l">Active Users</span>
-            </div>
-            <div className="lp-stat-sep" />
-            <div className="lp-stat">
-              <span className="lp-stat-n">{realTimeStats.onlineNow}</span>
-              <span className="lp-stat-l">Online Now</span>
-            </div>
-            <div className="lp-stat-sep" />
-            <div className="lp-stat">
               <span className="lp-stat-n">{realTimeStats.totalRooms}+</span>
               <span className="lp-stat-l">Chat Rooms</span>
             </div>
@@ -567,11 +557,6 @@ const LandingPage = () => {
                 Real-time conversations with premium customization and powerful features.
               </p>
               <div className="lp-footer-stats">
-                <div className="lp-footer-stat">
-                  <span className="lp-fs-num">{realTimeStats.activeUsers.toLocaleString()}+</span>
-                  <span className="lp-fs-lbl">Active Users</span>
-                </div>
-                <div className="lp-fs-sep" />
                 <div className="lp-footer-stat">
                   <span className="lp-fs-num">{realTimeStats.totalRooms}+</span>
                   <span className="lp-fs-lbl">Chat Rooms</span>
