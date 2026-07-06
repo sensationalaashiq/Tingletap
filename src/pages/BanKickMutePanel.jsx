@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp, orderBy, where } from 'firebase/firestore';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ToastContainer } from 'react-toastify';
@@ -48,6 +48,17 @@ const BanKickMutePanel = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [actionType, setActionType] = useState('');
+
+  // Multi-tab state
+  const [activeTab, setActiveTab] = useState('users');
+  const [reports, setReports] = useState([]);
+  const [violations, setViolations] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [violationsLoading, setViolationsLoading] = useState(false);
+  const [reportSubTab, setReportSubTab] = useState('all');
+  const [violationsFilter, setViolationsFilter] = useState('all');
+  const [violationsShowResolved, setViolationsShowResolved] = useState(false);
+  const [reportActionLoading, setReportActionLoading] = useState({});
 
   // Access control: Owner + Admin only
   useEffect(() => {
@@ -101,6 +112,30 @@ const BanKickMutePanel = () => {
     const unsub = onValue(myStatusRef, (snap) => setCurrentRoomId(snap.val() || null));
     return () => unsub();
   }, [user]);
+
+  // Reports listener (loads when on reports/appeals tabs)
+  useEffect(() => {
+    if (!isRoleReady) return;
+    setReportsLoading(true);
+    const q = query(collection(db, 'reports'), orderBy('timestamp', 'desc'), limit(150));
+    const unsub = onSnapshot(q, snap => {
+      setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setReportsLoading(false);
+    }, () => setReportsLoading(false));
+    return () => unsub();
+  }, [isRoleReady]);
+
+  // Live violations listener
+  useEffect(() => {
+    if (!isRoleReady) return;
+    setViolationsLoading(true);
+    const q = query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(200));
+    const unsub = onSnapshot(q, snap => {
+      setViolations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setViolationsLoading(false);
+    }, () => setViolationsLoading(false));
+    return () => unsub();
+  }, [isRoleReady]);
 
   const handleModerateUser = (u, action) => {
     setSelectedUser(u);
@@ -448,6 +483,41 @@ const BanKickMutePanel = () => {
         </div>
       </div>
 
+      {/* ── Tab Navigation ── */}
+      <div style={{display:'flex',gap:0,borderBottom:'2px solid rgba(99,102,241,0.13)',padding:'0 24px',background:'#fff',overflowX:'auto'}}>
+        {[
+          { id:'users', label:'Users', color:'#3b82f6', icon:'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z', badge: null },
+          { id:'reports', label:'Reports', color:'#f59e0b', icon:'M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z', badge: reports.filter(r=>r.status==='pending').length },
+          { id:'appeals', label:'Ban Appeals', color:'#10b981', icon:'M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z', badge: reports.filter(r=>r.status==='appeal'||r.status==='appeal_pending').length },
+          { id:'violations', label:'Live Violations', color:'#ef4444', icon:'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z', badge: violations.filter(v=>!v.resolved).length },
+        ].map(tab => {
+          const isAct = activeTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              display:'flex', alignItems:'center', gap:6, padding:'11px 16px',
+              border:'none', background:'transparent', cursor:'pointer', whiteSpace:'nowrap',
+              borderBottom: isAct ? `2.5px solid ${tab.color}` : '2.5px solid transparent',
+              color: isAct ? tab.color : '#6b7280',
+              fontWeight: isAct ? 800 : 600, fontSize:13,
+              transition:'all 0.15s', marginBottom:'-2px',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}>
+                <path fill={isAct ? tab.color : '#9ca3af'} d={tab.icon}/>
+              </svg>
+              {tab.label}
+              {tab.badge > 0 && (
+                <span style={{
+                  background: isAct ? tab.color : '#e5e7eb', color: isAct ? '#fff' : '#374151',
+                  borderRadius:10, fontSize:10, fontWeight:800, padding:'1px 6px', minWidth:18, textAlign:'center'
+                }}>{tab.badge}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Users Tab ── */}
+      {activeTab === 'users' && (
       <div className="luxury-users-section">
         <div className="luxury-section-header">
           <h2>
@@ -505,6 +575,7 @@ const BanKickMutePanel = () => {
               <div className="luxury-table-header mkm-table-header">
                 <div className="luxury-th">User</div>
                 <div className="luxury-th">Type & Status</div>
+                <div className="luxury-th">Last Seen · Location</div>
                 <div className="luxury-th">Moderation</div>
                 <div className="luxury-th">Actions</div>
               </div>
@@ -554,6 +625,41 @@ const BanKickMutePanel = () => {
                             {typeLabel.toUpperCase()}
                           </span>
                         </div>
+                      </div>
+
+                      {/* Last Seen + Location cell */}
+                      <div className="luxury-td" style={{fontSize:11,color:'#4b5563'}}>
+                        {(() => {
+                          const st = onlineStatuses[u.uid];
+                          const lastChanged = st?.last_changed;
+                          const country = st?.country || u.country || u.lastCountry || '';
+                          let lastSeenStr = '—';
+                          if (isOnline) {
+                            lastSeenStr = '🟢 Now';
+                          } else if (lastChanged) {
+                            const diff = Date.now() - lastChanged;
+                            const m = Math.floor(diff/60000), h = Math.floor(diff/3600000), d = Math.floor(diff/86400000);
+                            if (m < 2) lastSeenStr = 'Just now';
+                            else if (m < 60) lastSeenStr = `${m}m ago`;
+                            else if (h < 24) lastSeenStr = `${h}h ago`;
+                            else if (d < 7) lastSeenStr = `${d}d ago`;
+                            else lastSeenStr = new Date(lastChanged).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+                          }
+                          return (
+                            <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                              <div style={{display:'flex',alignItems:'center',gap:4}}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#9ca3af" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>
+                                <span style={{fontWeight:700,color:isOnline?'#059669':'#374151'}}>{lastSeenStr}</span>
+                              </div>
+                              {country && country !== 'Unknown' && (
+                                <div style={{display:'flex',alignItems:'center',gap:4}}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#9ca3af" d="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0,9.5c-1.38,0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5,1.12 2.5,2.5-1.12,2.5-2.5,2.5z"/></svg>
+                                  <span style={{color:'#6b7280'}}>{country}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div className="luxury-td">
@@ -647,6 +753,185 @@ const BanKickMutePanel = () => {
           </div>
         )}
       </div>
+      )} {/* end activeTab === 'users' */}
+
+      {/* ── Reports & Ban Appeals Tab ── */}
+      {(activeTab === 'reports' || activeTab === 'appeals') && (
+        <div style={{padding:'20px 24px 40px'}}>
+          <div className="luxury-section-header">
+            <h2 style={{display:'flex',alignItems:'center',gap:10}}>
+              <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                <path fill={activeTab==='appeals'?'#10b981':'#f59e0b'} d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
+              </svg>
+              {activeTab==='appeals' ? 'Ban Appeals' : 'Reports'}
+            </h2>
+            <p>User-submitted reports, flagged messages, and ban appeal requests</p>
+          </div>
+
+          {/* Sub-tabs */}
+          <div style={{display:'flex',gap:6,marginBottom:16,flexWrap:'wrap'}}>
+            {[
+              {id:'all',label:'All',color:'#6366f1'},
+              {id:'users',label:'User Reports',color:'#ef4444'},
+              {id:'messages',label:'Message Reports',color:'#3b82f6'},
+              {id:'appeals',label:'Ban Appeals',color:'#10b981'},
+              {id:'pending',label:`Pending (${reports.filter(r=>r.status==='pending').length})`,color:'#f59e0b'},
+            ].map(st => {
+              const def = activeTab==='appeals' ? 'appeals' : 'all';
+              const cur = reportSubTab || def;
+              const isAct = cur===st.id;
+              return (
+                <button key={st.id} onClick={()=>setReportSubTab(st.id)} style={{
+                  padding:'5px 12px',borderRadius:20,border:`1.5px solid ${isAct?st.color:'rgba(0,0,0,0.1)'}`,
+                  background:isAct?st.color:'#fff',color:isAct?'#fff':'#374151',
+                  fontSize:12,fontWeight:700,cursor:'pointer'
+                }}>{st.label}</button>
+              );
+            })}
+          </div>
+
+          {reportsLoading ? (
+            <div style={{textAlign:'center',padding:'40px',color:'#9ca3af'}}>Loading reports…</div>
+          ) : (() => {
+            const cur = reportSubTab || (activeTab==='appeals'?'appeals':'all');
+            const filtered = reports.filter(r => {
+              if (cur==='users') return r.reportType==='User';
+              if (cur==='messages') return r.reportType==='Message'||!r.reportType;
+              if (cur==='appeals') return r.status==='appeal'||r.status==='appeal_pending';
+              if (cur==='pending') return r.status==='pending';
+              return true;
+            });
+            const statusColors = {pending:'#f59e0b',resolved:'#10b981',dismissed:'#9ca3af',action_taken:'#6366f1',appeal_accepted:'#059669',appeal_rejected:'#ef4444',appeal_pending:'#f97316'};
+            const fmtTime = (ts) => {
+              if (!ts) return '—';
+              const d = ts?.toDate ? ts.toDate() : new Date(ts);
+              if (isNaN(d.getTime())) return '—';
+              const diff = Date.now()-d.getTime();
+              const m=Math.floor(diff/60000),h=Math.floor(diff/3600000),dy=Math.floor(diff/86400000);
+              if(m<2)return 'Just now'; if(m<60)return `${m}m ago`; if(h<24)return `${h}h ago`; if(dy<7)return `${dy}d ago`;
+              return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+            };
+            if (filtered.length===0) return (
+              <div style={{textAlign:'center',padding:'48px',background:'#f8fafc',borderRadius:16,border:'2px dashed #e2e8f0',color:'#9ca3af'}}>
+                <p style={{margin:0,fontSize:14,fontWeight:700}}>No reports in this category</p>
+              </div>
+            );
+            return (
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                {filtered.map(r => {
+                  const sc = statusColors[r.status]||'#9ca3af';
+                  const isAppeal = r.status==='appeal'||r.status==='appeal_pending';
+                  return (
+                    <div key={r.id} style={{background:'#fff',borderRadius:14,border:`1.5px solid ${r.status==='pending'?'#fde68a':'#e5e7eb'}`,padding:'14px 16px',boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
+                        <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:800,background:sc+'22',color:sc,border:`1px solid ${sc}44`}}>
+                          {r.status?.replace(/_/g,' ')||'pending'}
+                        </span>
+                        <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:700,background:'#f3f4f6',color:'#374151'}}>
+                          {r.reportType||'Message'}
+                        </span>
+                        {r.category && <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:700,background:'rgba(99,102,241,0.08)',color:'#6366f1'}}>{r.category}</span>}
+                        <span style={{fontSize:11,color:'#9ca3af',marginLeft:'auto'}}>{fmtTime(r.timestamp)}</span>
+                      </div>
+                      {r.reason && <p style={{margin:'0 0 6px',fontSize:13,color:'#374151',lineHeight:1.5}}>"{r.reason}"</p>}
+                      <div style={{display:'flex',gap:16,fontSize:11,color:'#6b7280',flexWrap:'wrap'}}>
+                        {r.reportedByName && <span>By: <strong>{r.reportedByName}</strong></span>}
+                        {r.reportedUserName && <span>Against: <strong style={{color:'#ef4444'}}>{r.reportedUserName}</strong></span>}
+                        {r.roomId && <span>Room: <strong>{r.roomId}</strong></span>}
+                      </div>
+                      {isAppeal && r.appealMessage && (
+                        <div style={{marginTop:8,padding:'8px 10px',background:'rgba(16,185,129,0.06)',borderRadius:8,border:'1px solid rgba(16,185,129,0.2)'}}>
+                          <span style={{fontSize:11,fontWeight:700,color:'#059669'}}>Appeal: </span>
+                          <span style={{fontSize:12,color:'#374151'}}>{r.appealMessage}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Live Violations Tab ── */}
+      {activeTab === 'violations' && (
+        <div style={{padding:'20px 24px 40px'}}>
+          <div className="luxury-section-header">
+            <h2 style={{display:'flex',alignItems:'center',gap:10}}>
+              <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
+                <path fill="#ef4444" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z"/>
+              </svg>
+              Live Violations Feed
+            </h2>
+            <p>TingleBot AutoMod log — user, fault, and action taken</p>
+          </div>
+
+          {/* Filter + toggle */}
+          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap',alignItems:'center'}}>
+            <select value={violationsFilter} onChange={e=>setViolationsFilter(e.target.value)} style={{padding:'6px 12px',borderRadius:8,border:'1.5px solid rgba(0,0,0,0.1)',fontSize:12,background:'#fff',cursor:'pointer'}}>
+              <option value="all">All Types</option>
+              <option value="SPAM">Spam</option>
+              <option value="PROFANITY">Profanity</option>
+              <option value="THREAT">Threat</option>
+              <option value="EXCESSIVE_CAPS">Caps Abuse</option>
+              <option value="EMOJI_SPAM">Emoji Spam</option>
+            </select>
+            <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'#6b7280',cursor:'pointer'}}>
+              <input type="checkbox" checked={violationsShowResolved} onChange={e=>setViolationsShowResolved(e.target.checked)}/>
+              Show Resolved
+            </label>
+            <span style={{marginLeft:'auto',fontSize:12,color:'#9ca3af'}}>{violations.filter(v=>!v.resolved).length} unresolved</span>
+          </div>
+
+          {violationsLoading ? (
+            <div style={{textAlign:'center',padding:'40px',color:'#9ca3af'}}>Loading violations…</div>
+          ) : (() => {
+            const filtered = violations.filter(v => {
+              if (!violationsShowResolved && v.resolved) return false;
+              return violationsFilter==='all' || v.type===violationsFilter;
+            });
+            const SEV = {low:'#6b7280',medium:'#f59e0b',high:'#f97316',critical:'#dc2626'};
+            const fmtTime = (ts) => {
+              if (!ts) return '—';
+              const d = ts?.toDate ? ts.toDate() : new Date(typeof ts==='number'?ts:ts);
+              if (isNaN(d.getTime())) return '—';
+              const diff = Date.now()-d.getTime();
+              const m=Math.floor(diff/60000),h=Math.floor(diff/3600000);
+              if(m<2)return 'Just now'; if(m<60)return `${m}m ago`; if(h<24)return `${h}h ago`;
+              return d.toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+            };
+            if (filtered.length===0) return (
+              <div style={{textAlign:'center',padding:'48px',background:'#f8fafc',borderRadius:16,border:'2px dashed #e2e8f0',color:'#9ca3af'}}>
+                <p style={{margin:0,fontSize:14,fontWeight:700}}>No violations to show</p>
+              </div>
+            );
+            return (
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {filtered.map(v => {
+                  const sevColor = SEV[v.severity]||'#6b7280';
+                  return (
+                    <div key={v.id} style={{background:'#fff',borderRadius:12,border:`1.5px solid ${v.resolved?'#e5e7eb':'#fecaca'}`,padding:'12px 14px',boxShadow:'0 2px 6px rgba(0,0,0,0.04)',opacity:v.resolved?0.7:1}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:6}}>
+                        <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:800,background:'rgba(239,68,68,0.1)',color:'#ef4444'}}>{v.type||'VIOLATION'}</span>
+                        {v.severity && <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:700,background:sevColor+'18',color:sevColor}}>{v.severity}</span>}
+                        {v.action && <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:700,background:'rgba(99,102,241,0.08)',color:'#6366f1'}}>{v.action}</span>}
+                        {v.resolved && <span style={{padding:'2px 9px',borderRadius:20,fontSize:11,fontWeight:700,background:'#d1fae5',color:'#059669'}}>✓ Resolved</span>}
+                        <span style={{fontSize:11,color:'#9ca3af',marginLeft:'auto'}}>{fmtTime(v.timestamp)}</span>
+                      </div>
+                      <div style={{display:'flex',gap:14,fontSize:11,color:'#6b7280',flexWrap:'wrap'}}>
+                        {v.userName && <span>User: <strong style={{color:'#374151'}}>{v.userName}</strong></span>}
+                        {v.roomId && <span>Room: <strong>{v.roomId}</strong></span>}
+                        {v.message && <span style={{color:'#9ca3af',fontStyle:'italic'}}>"{v.message.slice?.(0,60)}{v.message?.length>60?'…':''}"</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <AdminBanKickModal
         isVisible={isModalVisible}

@@ -21,6 +21,32 @@ import { pt } from '../utils/premiumToast';
 import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
 
+// Extract just the brand name from a device model string for admin panel display
+const extractDeviceBrand = (model) => {
+  if (!model || model === 'Unknown Device') return 'Unknown';
+  if (/^Apple |^iPhone|^iPad/i.test(model)) return 'Apple';
+  if (/^Samsung|^SM-/i.test(model)) return 'Samsung';
+  if (/^Xiaomi/i.test(model)) return 'Xiaomi';
+  if (/^Redmi/i.test(model)) return 'Xiaomi';
+  if (/^POCO/i.test(model)) return 'Xiaomi';
+  if (/^OPPO|^CPH\d/i.test(model)) return 'OPPO';
+  if (/^vivo /i.test(model)) return 'vivo';
+  if (/^OnePlus/i.test(model)) return 'OnePlus';
+  if (/^Realme/i.test(model)) return 'Realme';
+  if (/^Motorola|^moto /i.test(model)) return 'Motorola';
+  if (/^Nokia/i.test(model)) return 'Nokia';
+  if (/^Nothing/i.test(model)) return 'Nothing';
+  if (/^Infinix/i.test(model)) return 'Infinix';
+  if (/^Tecno/i.test(model)) return 'Tecno';
+  if (/^Huawei/i.test(model)) return 'Huawei';
+  if (/^Honor/i.test(model)) return 'Honor';
+  if (/^itel/i.test(model)) return 'itel';
+  if (/^Google/i.test(model)) return 'Google';
+  if (/Android Device|Desktop Device|Mobile Device|Tablet Device/i.test(model)) return model;
+  const first = model.split(/[\s(]/)[0];
+  return first || model;
+};
+
 const AdminPanelPage = () => {
   const navigate = useNavigate();
   const [user] = useAuthState(auth);
@@ -133,9 +159,6 @@ const AdminPanelPage = () => {
   const [trustAdjustDelta, setTrustAdjustDelta] = useState('');
   const [trustAdjusting, setTrustAdjusting] = useState(false);
   const [trustSortBy, setTrustSortBy] = useState('score_desc');
-
-  // Guest Sessions
-  const [guestSessions, setGuestSessions] = useState([]);
 
   // Violations Dashboard (modLogs)
   const [violations, setViolations] = useState([]);
@@ -433,28 +456,6 @@ const AdminPanelPage = () => {
     return () => unsubscribe();
   }, []);
 
-  // Real-time guest sessions (active + ended-but-not-yet-expired)
-  useEffect(() => {
-    const sessionsRef = query(collection(db, 'guestSessions'), limit(200));
-    const unsubscribe = onSnapshot(sessionsRef, async (snapshot) => {
-      const now = new Date().toISOString();
-      const sessions = [];
-      const expired = [];
-      snapshot.docs.forEach(d => {
-        const data = { id: d.id, ...d.data() };
-        if (data.deleteAt && data.deleteAt < now) {
-          expired.push(d.id);
-        } else {
-          sessions.push(data);
-        }
-      });
-      setGuestSessions(sessions.sort((a, b) => (b.sessionStarted || '').localeCompare(a.sessionStarted || '')));
-      for (const id of expired) {
-        try { await deleteDoc(doc(db, 'guestSessions', id)); } catch {}
-      }
-    });
-    return () => unsubscribe();
-  }, []);
 
   // Real-time violations (modLogs from TingleBot AutoMod)
   useEffect(() => {
@@ -501,13 +502,17 @@ const AdminPanelPage = () => {
         );
         await Promise.all(reportsSnap.docs.map(d => deleteDoc(d.ref)));
 
-        // 2. Delete guest users/guestSessions older than 24h
-        // Fetch all guests by single field (no composite index needed) then filter age client-side
+        // 2. Delete guest users/guestSessions whose deleteAt has passed, or older than 24h
         const guestsSnap = await getDocs(
           query(collection(db, 'users'), where('isGuest', '==', true), limit(300))
         );
+        const nowIso = new Date().toISOString();
         const staleGuests = guestsSnap.docs.filter(d => {
-          const ts = parseTs(d.data().createdAt);
+          const data = d.data();
+          // Prefer explicit deleteAt (set to 30 min after logout)
+          if (data.deleteAt) return data.deleteAt < nowIso;
+          // Fallback: delete if older than 24h
+          const ts = parseTs(data.createdAt);
           return ts !== null && ts < cutoff24hMs;
         });
         await Promise.all(staleGuests.map(async d => {
@@ -1912,15 +1917,6 @@ const AdminPanelPage = () => {
                 )
               },
               {
-                id: 'guests', label: 'Guests', iconColor: '#67e8f9',
-                badge: guestSessions.filter(s => s.status === 'active').length,
-                renderIcon: (c) => (
-                  <>
-                    <path fill={c} d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                  </>
-                )
-              },
-              {
                 id: 'violations', label: 'Violations',
                 badge: violations.filter(v => !v.resolved).length,
                 iconColor: '#f43f5e',
@@ -2199,7 +2195,7 @@ const AdminPanelPage = () => {
                                   ) : (
                                     <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#6366f1" d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/></svg>
                                   )}
-                                  <span style={{fontWeight:800,color:'#4f46e5',fontSize:11}}>{deviceInfo.deviceModel}</span>
+                                  <span style={{fontWeight:800,color:'#4f46e5',fontSize:11}}>{extractDeviceBrand(deviceInfo.deviceModel)}</span>
                                 </div>
                                 <div className="luxury-device-item">
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:15,height:15,flexShrink:0}}><path fill="#f97316" d="M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
@@ -3408,42 +3404,50 @@ const AdminPanelPage = () => {
 
                       return (
                         <div key={u.uid} style={{
-                          display:'grid', gridTemplateColumns:'40px 1fr 160px 100px 90px 90px 110px',
-                          padding:'10px 16px', gap:8, alignItems:'center',
+                          display:'grid', gridTemplateColumns:'44px 1fr 150px 90px 80px 90px 110px',
+                          padding:'11px 16px', gap:8, alignItems:'center',
                           borderBottom:'1px solid rgba(0,0,0,0.04)',
-                          background: isTop3 ? `rgba(255,215,0,${0.04 - idx*0.01})` : (violations > 3 ? 'rgba(239,68,68,0.02)' : '#fff'),
-                          transition:'background 0.2s'
+                          background: isTop3
+                            ? `linear-gradient(135deg, rgba(255,215,0,${0.06 - idx*0.015}), rgba(255,255,255,0))`
+                            : (violations > 3 ? 'rgba(239,68,68,0.02)' : '#fff'),
+                          transition:'background 0.2s',
+                          borderLeft: isTop3 ? `3px solid ${medalColors[idx]}` : '3px solid transparent',
                         }}>
                           {/* Rank # */}
-                          <div style={{ fontSize:13, fontWeight:800, color: isTop3 ? medalColors[idx] : '#9ca3af', textAlign:'center' }}>
-                            {isTop3 ? ['🥇','🥈','🥉'][idx] : idx+1}
+                          <div style={{ fontSize:15, fontWeight:900, color: isTop3 ? medalColors[idx] : '#9ca3af', textAlign:'center', filter: isTop3 ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.18))' : 'none' }}>
+                            {isTop3 ? ['🥇','🥈','🥉'][idx] : <span style={{fontSize:12}}>{idx+1}</span>}
                           </div>
 
-                          {/* User */}
-                          <div style={{ display:'flex', alignItems:'center', gap:9, minWidth:0 }}>
+                          {/* User — name is the hero */}
+                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                             <img
                               src={u.photoURL || `${getDefaultAvatarUrl(u.uid, u.gender)}`}
-                              style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, border:`2px solid ${rank.color}`, objectFit:'cover' }}
+                              style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, border:`2.5px solid ${rank.color}`, objectFit:'cover', boxShadow:`0 0 8px ${rank.color}44` }}
                               alt=""
                             />
                             <div style={{ minWidth:0 }}>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#1e1b4b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                {u.displayName || 'Unknown'}
+                              <div style={{ fontSize:13.5, fontWeight:900, color:'#1e1b4b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', letterSpacing:'-0.01em' }}>
+                                {u.displayName || u.username || 'Unknown'}
                               </div>
-                              {u.username && (
-                                <div style={{ fontSize:10, color:'#7c3aed', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {u.username && u.displayName && (
+                                <div style={{ fontSize:11, color:'#7c3aed', fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                   @{u.username}
                                 </div>
                               )}
-                              <div style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                {u.email || '—'}
-                              </div>
+                              {!u.username && (
+                                <div style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                  {u.email || u.uid?.slice(0,10)}
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {/* Royal Rank Badge */}
-                          <div>
-                            <RoyalTrustBadge trustScore={score} trustRank={u.trustRank} size="sm" showLabel={true} showTooltip={false} />
+                          {/* Royal Rank Badge — compact, name visible */}
+                          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:2 }}>
+                            <RoyalTrustBadge trustScore={score} trustRank={u.trustRank} size="sm" showLabel={false} showTooltip={false} />
+                            <span style={{ fontSize:10, fontWeight:800, color: rank.color, letterSpacing:'0.02em', whiteSpace:'nowrap', overflow:'hidden', maxWidth:138, textOverflow:'ellipsis' }}>
+                              {rank.name}
+                            </span>
                           </div>
 
                           {/* Score bar */}
@@ -3578,171 +3582,6 @@ const AdminPanelPage = () => {
             );
           })()}
 
-          {/* ── Guest Sessions Tab ── */}
-          {activeTab === 'guests' && (() => {
-            const activeSessions = guestSessions.filter(s => s.status === 'active');
-            const endedSessions  = guestSessions.filter(s => s.status === 'ended');
-            const getDurationStr = (startStr, endStr) => {
-              if (!startStr) return null;
-              const s = new Date(startStr).getTime();
-              const e = endStr ? new Date(endStr).getTime() : Date.now();
-              const ms = e - s;
-              if (ms < 0) return null;
-              const mins = Math.floor(ms / 60000);
-              if (mins < 60) return `${mins}m`;
-              return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-            };
-            const GENDER_META = {
-              female: { svgPath:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z', color: '#ec4899', bg: '#fdf2f8', label: 'Female' },
-              trans:  { svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 15.2a7.2 7.2 0 0 1-6-3.22c.03-1.99 4-3.08 6-3.08s5.97 1.09 6 3.08a7.2 7.2 0 0 1-6 3.22z', color: '#8b5cf6', bg: '#f5f3ff', label: 'Trans' },
-              male:   { svgPath:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z', color: '#3b82f6', bg: '#eff6ff', label: 'Male'   },
-            };
-            return (
-              <div style={{ padding: '4px 0 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-                {/* ── Header ── */}
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-                  <div>
-                    <h2 style={{ margin:0, fontSize:18, fontWeight:900, color:'#1e1b4b', display:'flex', alignItems:'center', gap:8 }}>
-                      <svg viewBox="0 0 24 24" fill="none" style={{width:24,height:24,flexShrink:0}}>
-                        <path fill="#67e8f9" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                      </svg>
-                      Guest Sessions
-                    </h2>
-                    <p style={{ margin:'3px 0 0', fontSize:12, color:'#6b7280' }}>Real-time view of all guest user activity</p>
-                  </div>
-                  <div style={{ fontSize:12, color:'#9ca3af', background:'#f1f5f9', borderRadius:8, padding:'6px 12px', fontWeight:600 }}>
-                    Auto-updates live
-                  </div>
-                </div>
-
-                {/* ── Stats ── */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))', gap:10 }}>
-                  {[
-                    { label:'Active Now',      value:activeSessions.length,  color:'#10b981', bg:'rgba(16,185,129,0.08)',  border:'rgba(16,185,129,0.25)', icon:'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z' },
-                    { label:'Ended Sessions',  value:endedSessions.length,   color:'#f59e0b', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.25)', icon:'M12,20H4V8H12M16,8V6C16,4.89 15.1,4 14,4H10C8.89,4 8,4.89 8,6V8H2V20A2,2 0 0,0 4,22H12V20H16V8M14,6H10V4H14V6Z' },
-                    { label:'Total Tracked',   value:guestSessions.length,   color:'#67e8f9', bg:'rgba(103,232,249,0.08)',border:'rgba(103,232,249,0.25)',icon:'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
-                    { label:'Female Guests',   value:guestSessions.filter(s=>s.gender==='female').length, color:'#ec4899', bg:'rgba(236,72,153,0.08)', border:'rgba(236,72,153,0.25)', icon:'M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z' },
-                  ].map(st => (
-                    <div key={st.label} style={{ background:st.bg, border:`1.5px solid ${st.border}`, borderRadius:14, padding:'14px 14px 12px', textAlign:'center' }}>
-                      <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16,margin:'0 auto 6px',display:'block'}}><path fill={st.color} d={st.icon}/></svg>
-                      <div style={{ fontSize:24, fontWeight:900, color:st.color, lineHeight:1 }}>{st.value}</div>
-                      <div style={{ fontSize:10, color:'#9ca3af', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:4 }}>{st.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ── Sessions List ── */}
-                {guestSessions.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'48px 20px', background:'#f8fafc', borderRadius:16, border:'2px dashed #e2e8f0' }}>
-                    <svg viewBox="0 0 24 24" fill="none" style={{width:44,height:44,margin:'0 auto 10px',display:'block'}}><path fill="#cbd5e1" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                    <p style={{ margin:0, fontWeight:700, fontSize:14, color:'#94a3b8' }}>No guest sessions yet</p>
-                    <p style={{ margin:'4px 0 0', fontSize:12, color:'#cbd5e1' }}>Sessions appear here when guests log in</p>
-                  </div>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                    {guestSessions.map(s => {
-                      const isActive = s.status === 'active';
-                      const gm = GENDER_META[s.gender] || GENDER_META.male;
-                      const startedStr = s.sessionStarted ? new Date(s.sessionStarted).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-                      const endedStr = s.sessionEnded ? new Date(s.sessionEnded).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
-                      const duration = getDurationStr(s.sessionStarted, s.sessionEnded);
-                      const location = [s.city, s.region, s.country].filter(Boolean).join(', ');
-                      return (
-                        <div key={s.id} style={{
-                          background:'#ffffff',
-                          border:`2px solid ${isActive ? '#10b981' : '#e2e8f0'}`,
-                          borderRadius:16,
-                          overflow:'hidden',
-                          boxShadow: isActive ? '0 4px 20px rgba(16,185,129,0.12)' : '0 2px 8px rgba(0,0,0,0.04)',
-                        }}>
-                          {/* Card Header */}
-                          <div style={{ background: isActive ? 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(20,184,166,0.05))' : '#f8fafc', padding:'12px 16px', display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', borderBottom:`1px solid ${isActive ? 'rgba(16,185,129,0.15)' : '#e2e8f0'}` }}>
-                            {/* Avatar */}
-                            <div style={{ width:44, height:44, borderRadius:'50%', background: `linear-gradient(135deg,${gm.color}22,${gm.color}44)`, border:`2.5px solid ${gm.color}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                              <svg viewBox="0 0 24 24" fill="none" style={{width:24,height:24}}><path fill={gm.color} d={gm.svgPath}/></svg>
-                            </div>
-                            {/* Name + badges */}
-                            <div style={{ flex:1, minWidth:120 }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                                <span style={{ fontSize:15, fontWeight:900, color:'#1e1b4b' }}>{s.displayName || 'Guest'}</span>
-                                <span style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background: isActive ? '#dcfce7' : '#fef3c7', color: isActive ? '#059669' : '#b45309', border: `1px solid ${isActive ? '#86efac' : '#fcd34d'}`, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                                  {isActive
-                                    ? <><svg viewBox="0 0 10 10" fill="none" style={{width:8,height:8,flexShrink:0}}><circle cx="5" cy="5" r="4" fill="#059669"/></svg>Live</>
-                                    : <><svg viewBox="0 0 24 24" fill="none" style={{width:9,height:9,flexShrink:0}}><path fill="#b45309" d="M21 7L9 19l-5.5-5.5 1.41-1.41L9 16.17 19.59 5.59 21 7z"/></svg>Ended</>}
-                                </span>
-                                <span style={{ fontSize:11, padding:'1px 8px', borderRadius:20, background:gm.bg, color:gm.color, fontWeight:700, border:`1px solid ${gm.color}33` }}>
-                                  {gm.label}
-                                </span>
-                                {s.age && <span style={{ fontSize:11, color:'#6b7280', fontWeight:600 }}>Age {s.age}</span>}
-                              </div>
-                              <div style={{ fontSize:10.5, color:'#9ca3af', marginTop:3, fontFamily:'monospace' }}>
-                                ID: {s.uid ? s.uid.slice(0,16)+'…' : (s.id ? s.id.slice(0,16)+'…' : '—')}
-                              </div>
-                            </div>
-                            {duration && (
-                              <div style={{ textAlign:'right', flexShrink:0 }}>
-                                <div style={{ fontSize:18, fontWeight:900, color: isActive ? '#10b981' : '#6b7280', lineHeight:1 }}>{duration}</div>
-                                <div style={{ fontSize:10, color:'#9ca3af', fontWeight:600 }}>Duration</div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Card Body - Info Grid */}
-                          <div style={{ padding:'12px 16px', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'10px 20px' }}>
-                            {/* Device */}
-                            <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
-                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><rect x="5" y="2" width="14" height="20" rx="2" stroke="#9ca3af" strokeWidth="2"/><circle cx="12" cy="17" r="1" fill="#9ca3af"/></svg>
-                                Device Info
-                              </div>
-                              <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-                                {s.deviceType && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Type:</span> {s.deviceType}</div>}
-                                {s.browser   && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Browser:</span> {s.browser}</div>}
-                                {s.os        && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>OS:</span> {s.os}</div>}
-                                {s.deviceId  && <div style={{ fontSize:11, color:'#6b7280', fontFamily:'monospace' }} title={s.deviceId}>Device ID: {s.deviceId.slice(0,14)}…</div>}
-                              </div>
-                            </div>
-
-                            {/* Location */}
-                            <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
-                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#9ca3af"/></svg>
-                                Location &amp; Network
-                              </div>
-                              <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-                                <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>IP:</span> <span style={{ fontFamily:'monospace' }}>{s.ip || 'Unknown'}</span></div>
-                                {location && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Location:</span> {location}</div>}
-                                {s.lat && s.lon && <div style={{ fontSize:11, color:'#9ca3af', fontFamily:'monospace' }}>({Number(s.lat).toFixed(4)}, {Number(s.lon).toFixed(4)})</div>}
-                              </div>
-                            </div>
-
-                            {/* Timing */}
-                            <div>
-                              <div style={{ fontSize:10, fontWeight:800, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
-                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><circle cx="12" cy="12" r="9" stroke="#9ca3af" strokeWidth="2"/><path d="M12 7v5l3 2" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/></svg>
-                                Session Timing
-                              </div>
-                              <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-                                <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Started:</span> {startedStr}</div>
-                                {endedStr && <div style={{ fontSize:12, color:'#374151', fontWeight:600 }}><span style={{ color:'#9ca3af' }}>Ended:</span> {endedStr}</div>}
-                                {s.deleteAt && (
-                                  <div style={{ fontSize:11, color:'#ef4444', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#ef4444" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                    Auto-del: {new Date(s.deleteAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
 
           {/* ═══════════════════════════════════════════════════════
               VIOLATIONS DASHBOARD TAB

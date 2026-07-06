@@ -725,7 +725,7 @@ function App() {
           // Mark guest session as ended; auto-delete after 1 hour
           try {
             const endTime = new Date().toISOString();
-            const deleteAt = new Date(Date.now() + 3600 * 1000).toISOString();
+            const deleteAt = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 minutes
             await updateDoc(doc(db, 'guestSessions', uid), {
               sessionEnded: endTime,
               deleteAt,

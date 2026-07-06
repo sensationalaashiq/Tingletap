@@ -2469,8 +2469,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         if (!currentUid) return;
 
-        const userStatusRef = ref(rtdb, `status/${currentUid}`);
-        set(userStatusRef, {
+        const minimalStatus = {
             state: 'online',
             currentRoomId: roomId,
             last_changed: Date.now(),
@@ -2480,7 +2479,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             isGuest: isGuest || false,
             gender,
             photoURL: getDefaultAvatarUrl(currentUid, gender),
-        }).catch(() => {});
+        };
+        const userStatusRef = ref(rtdb, `status/${currentUid}`);
+        set(userStatusRef, minimalStatus).catch(() => {});
+        // Also write to room-scoped node immediately so user appears in sidebar/count right away
+        const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
+        set(roomPresenceRef, minimalStatus).catch(() => {});
         // No cleanup here — Part 2 (stable effect) owns the offline transition
     }, [roomId, user?.uid]);
 
