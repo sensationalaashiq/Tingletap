@@ -8953,8 +8953,8 @@ html.dark-mode .reject-btn:hover,
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 8px !important;
-  gap: 4px !important;
+  padding: 0 6px !important;
+  gap: 2px !important;
   height: 50px !important;
   min-height: 50px !important;
   max-height: 50px !important;
@@ -8989,7 +8989,7 @@ html.dark-mode .reject-btn:hover,
   right: auto !important;
   display: flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 1px !important;
   flex-shrink: 0 !important;
   flex-wrap: nowrap !important;
   padding-right: 2px !important;
@@ -9012,12 +9012,12 @@ html.dark-mode .reject-btn:hover,
 
 /* --- Header Buttons (icon-only, no background) --- */
 .homepage-container .header-action-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -9040,8 +9040,8 @@ html.dark-mode .reject-btn:hover,
 .homepage-container .header-action-btn svg {
   color: #7c3aed !important;
   fill: #7c3aed !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 22px !important;
+  height: 22px !important;
   flex-shrink: 0 !important;
 }
 
@@ -9209,16 +9209,16 @@ html.dark-mode .reject-btn:hover,
     gap: 3px !important;
   }
   .homepage-container .header-action-btn {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
-    max-width: 32px !important;
-    max-height: 32px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 18px !important;
+    height: 18px !important;
   }
   .homepage-container .header-right {
     gap: 2px !important;
@@ -9241,16 +9241,16 @@ html.dark-mode .reject-btn:hover,
     gap: 2px !important;
   }
   .homepage-container .header-action-btn {
-    width: 29px !important;
-    height: 29px !important;
-    min-width: 29px !important;
-    min-height: 29px !important;
-    max-width: 29px !important;
-    max-height: 29px !important;
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px !important;
+    min-height: 27px !important;
+    max-width: 27px !important;
+    max-height: 27px !important;
   }
   .homepage-container .header-action-btn svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
   .homepage-container .header-right {
     gap: 2px !important;
@@ -10518,18 +10518,18 @@ body .homepage-container .menu-trigger {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
 }
 
 /* Icons — visible on light lavender header */
 body .homepage-container .header-action-btn svg {
-  width: 24px !important;
-  height: 24px !important;
+  width: 22px !important;
+  height: 22px !important;
   flex-shrink: 0 !important;
 }
 
