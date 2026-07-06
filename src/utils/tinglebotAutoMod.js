@@ -1813,6 +1813,15 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
 };
 
 /**
+ * isAdultRoomSafe(text, hit)
+ * Returns true when a detection hit should be ALLOWED in the Adult Room
+ * (i.e. it is NOT always-protected content).
+ * Exported so the pre-send abuseDetection.js can apply the same adult-room
+ * exemption as the post-send processAutoMod scanner, keeping both paths in sync.
+ */
+export const isAdultRoomSafe = (text, hit) => !isAlwaysProtectedContent(text, hit);
+
+/**
  * resetAutoModState — call when user leaves or changes room.
  */
 export const resetAutoModState = () => {

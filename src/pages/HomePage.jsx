@@ -15,7 +15,7 @@ import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
 import { processAutoMod, resetAutoModState, postNotice } from '../utils/tinglebotAutoMod';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 // Firebase Storage import removed - using IMGBB instead
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
 import AddFriendConfirmModal from '../components/AddFriendConfirmModal';
@@ -1225,14 +1225,20 @@ const HomePage = ({ user, roomIdOverride }) => {
     //   • beforeunload sets window._tbPageUnloading so the cleanup function
     //     can skip the leave message on reload/tab-close (onDisconnect handles
     //     the offline state; the leave noise is not needed).
+    //
+    // Guest-user auth timing fix:
+    //   • Firestore rules validate request.resource.data.uid == request.auth.uid.
+    //     For anonymous (guest) sessions, auth.currentUser may still be null when
+    //     the effect first fires because Firebase restores the anonymous session
+    //     asynchronously. If we fall back to loggedInUserProfile.uid (a locally
+    //     generated id) the Firestore write is rejected and the message appears
+    //     for ~1 s then vanishes (optimistic rollback).
+    //   • Fix: always use the real Firebase auth uid. If it is not available yet,
+    //     subscribe once to onAuthStateChanged and send the join message as soon
+    //     as the session is confirmed, then unsubscribe immediately.
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
         const name = loggedInUserProfile.displayName || 'Someone';
-        // Always use the real Firebase auth uid so Firestore security rules pass
-        // (rules check request.auth.uid == message.uid; loggedInUserProfile.uid
-        // for guests may be a local id that differs from the anonymous auth uid).
-        const currentUid = auth.currentUser?.uid || loggedInUserProfile.uid;
-        if (!currentUid) return; // no Firebase auth uid — skip join/leave
         const roleLabel = getRoleDisplayLabel({
             role: loggedInUserProfile.role,
             gender: loggedInUserProfile.gender,
@@ -1240,43 +1246,64 @@ const HomePage = ({ user, roomIdOverride }) => {
             badge: loggedInUserProfile.badge,
         });
 
-        // ── Reload detection ──────────────────────────────────────────────────
-        const joinKey = `tbt_joined_${roomId}_${currentUid}`;
-        const alreadyJoinedThisSession = !!sessionStorage.getItem(joinKey);
-
         const handleBeforeUnload = () => { window._tbPageUnloading = true; };
         window.addEventListener('beforeunload', handleBeforeUnload);
 
-        if (!alreadyJoinedThisSession) {
-            sessionStorage.setItem(joinKey, '1');
-            // Broadcast join message globally.
-            // NOTE: uid must be the real auth UID (not 'tinglebot_system_official_2024') so
-            // Firestore rules accept the write from regular users/guests.
-            // isBot/systemBot flags are omitted for the same reason — those require staff auth.
-            // The tinglebotType field is enough for the UI to render it as a TingleBot strip.
-            addDoc(collection(db, 'rooms', roomId, 'messages'), {
-                text: `${name} (${roleLabel}) joined the room.`,
-                uid: currentUid,
-                displayName: 'TingleBot',
-                tinglebotType: 'join',
-                createdAt: serverTimestamp(),
-                noReply: true,
-                noReaction: true,
-                noReport: true,
-                noUnread: true,
-            }).then(ref => {
-                if (ref?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
+        let authUnsub = null;
+        let effectCleaned = false;
+
+        const doJoin = (firebaseUid) => {
+            if (effectCleaned) return; // effect was cleaned up before auth resolved
+            joinedFirebaseUidRef.current = firebaseUid;
+
+            // ── Reload detection ──────────────────────────────────────────────
+            const joinKey = `tbt_joined_${roomId}_${firebaseUid}`;
+            if (!sessionStorage.getItem(joinKey)) {
+                sessionStorage.setItem(joinKey, '1');
+                // Broadcast join message globally.
+                // NOTE: uid must be the real Firebase auth UID so Firestore rules
+                // accept the write. isBot/systemBot flags are omitted — those require
+                // staff auth. tinglebotType is enough for the UI to render as TingleBot.
+                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                    text: `${name} (${roleLabel}) joined the room.`,
+                    uid: firebaseUid,
+                    displayName: 'TingleBot',
+                    tinglebotType: 'join',
+                    createdAt: serverTimestamp(),
+                    noReply: true,
+                    noReaction: true,
+                    noReport: true,
+                    noUnread: true,
+                }).then(ref => {
+                    if (ref?.id) {
+                        scheduledTinglebotDeletionsRef.current.add(ref.id);
+                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
+                    }
+                }).catch(e => console.error('TingleBot join error', e));
+            }
+
+            window._tingleBotRoomId = roomId;
+        };
+
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+            doJoin(firebaseUid);
+        } else {
+            // Firebase anonymous auth session not yet restored — subscribe once
+            // and send the join message as soon as the uid becomes available.
+            authUnsub = onAuthStateChanged(auth, (user) => {
+                if (user?.uid) {
+                    authUnsub?.();
+                    authUnsub = null;
+                    doJoin(user.uid);
                 }
-            }).catch(e => console.error('TingleBot join error', e));
+            });
         }
 
-        // expose room id for SettingsSidebar announcements
-        window._tingleBotRoomId = roomId;
-
         return () => {
+            effectCleaned = true;
             window.removeEventListener('beforeunload', handleBeforeUnload);
+            if (authUnsub) { authUnsub(); authUnsub = null; }
 
             // Skip leave on page reload / tab close — onDisconnect handles
             // the RTDB offline state; the chat message is just noise.
@@ -1285,11 +1312,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return; // ← no leave message on reload
             }
 
-            // Genuine navigation away or room switch — send leave + clear key
-            sessionStorage.removeItem(joinKey);
+            // Genuine navigation away or room switch — send leave + clear key.
+            // Use the uid that was actually used for join (stored in ref); fall
+            // back to auth.currentUser?.uid if ref hasn't been set yet (edge case
+            // where auth resolved but doJoin hasn't run — leave is a no-op then).
+            const usedUid = joinedFirebaseUidRef.current || auth.currentUser?.uid;
+            if (!usedUid) return;
+
+            sessionStorage.removeItem(`tbt_joined_${roomId}_${usedUid}`);
             addDoc(collection(db, 'rooms', roomId, 'messages'), {
                 text: `${name} (${roleLabel}) left the room.`,
-                uid: currentUid,
+                uid: usedUid,
                 displayName: 'TingleBot',
                 tinglebotType: 'leave',
                 createdAt: serverTimestamp(),
@@ -1370,6 +1403,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const ruleIntervalRef = useRef(null);
     // Track TingleBot message IDs that already have a deletion scheduled
     const scheduledTinglebotDeletionsRef = useRef(new Set());
+    const joinedFirebaseUidRef = useRef(null);
     // Holds latest profile data so presence effect can read it WITHOUT being in its dep array
     const loggedInUserProfileRef = useRef(null);
 
@@ -3745,7 +3779,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // Abuse / toxicity check
-                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest');
+                const _isAdultRoom = (roomName || '').toLowerCase().includes('adult') || (roomName || '').toLowerCase().includes('18+');
+                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest', { isAdultRoom: _isAdultRoom });
                 if (abuseResult.isAbusive) {
                     // Send the message first so we have the doc ref, then delete it
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
