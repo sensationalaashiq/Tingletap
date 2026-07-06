@@ -355,10 +355,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const actualDisplayName = message.displayName || displayName || 'Guest';
     
     const canDelete = viewerRole === 'owner' || viewerRole === 'admin' || viewerRole === 'moderator' || isMyMessage;
-    const canKick = !isMyMessage && (
-        (viewerRole === 'owner') ||
-        (viewerRole === 'admin' && !['owner', 'admin'].includes(role))
-    );
+    // Owner can never be kicked, by anyone (including other owners) — enforced regardless of viewer role.
+    const kickRoleHierarchy = { owner: 4, admin: 3, moderator: 2, user: 1, guest: 0 };
+    const targetKickLevel = kickRoleHierarchy[(role || 'user').toLowerCase()] ?? 1;
+    const viewerKickLevel = kickRoleHierarchy[viewerRole?.toLowerCase()] ?? 0;
+    const canKick = !isMyMessage &&
+        role?.toLowerCase() !== 'owner' &&
+        ['owner', 'admin', 'moderator'].includes(viewerRole) &&
+        viewerKickLevel > targetKickLevel;
 
     // Check if this whisper message should be visible to current user
     const isWhisperVisible = !isWhisper || 

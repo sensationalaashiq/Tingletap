@@ -56,36 +56,24 @@
    FLOATING ADMIN CONSOLE BUTTON
 ══════════════════════════════════════════════════════ */
 .rl-admin-float-wrap {
-  position: fixed; top: 20px; right: 20px; z-index: 500;
+  position: fixed; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 600;
   display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
 }
+.rl-admin-float-wrap > * { pointer-events: auto; }
 .rl-admin-float {
   position: relative;
-  display: flex; align-items: center; gap: 8px;
-  padding: 11px 20px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(135deg,#f59e0b,#d97706);
-  color: #fff; font-size: 13.5px; font-weight: 800;
-  border: none; cursor: pointer; font-family: 'Inter', sans-serif;
-  box-shadow: 0 6px 24px rgba(245,158,11,.45);
+  color: #fff; border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+  box-shadow: 0 6px 20px rgba(245,158,11,.5);
   animation: rlAdminPulse 2.5s ease-in-out infinite;
   transition: transform .25s ease, box-shadow .25s ease;
 }
-.rl-admin-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 36px rgba(245,158,11,.6); }
-.rl-admin-float span { color: #fff; }
-.rl-modpanel-float {
-  position: relative;
-  display: flex; align-items: center; gap: 8px;
-  padding: 11px 20px; border-radius: 14px;
-  background: linear-gradient(135deg,#7c3aed,#6d28d9);
-  color: #fff; font-size: 13.5px; font-weight: 800;
-  border: none; cursor: pointer; font-family: 'Inter', sans-serif;
-  box-shadow: 0 6px 24px rgba(109,40,217,.45);
-  transition: transform .25s ease, box-shadow .25s ease;
-}
-.rl-modpanel-float:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 36px rgba(109,40,217,.6); }
-.rl-modpanel-float span { color: #fff; }
+.rl-admin-float:hover { transform: translateY(-2px) scale(1.06); box-shadow: 0 10px 28px rgba(245,158,11,.65); }
 .rl-admin-pulse {
-  position: absolute; inset: 0; border-radius: 14px;
+  position: absolute; inset: -4px; border-radius: 50%;
   border: 2px solid rgba(251,191,36,.7);
   animation: rlRingPulse 2s ease-in-out infinite;
   pointer-events: none;
@@ -322,7 +310,7 @@
   .rl-main { padding: 28px 14px 120px; gap: 22px; }
   .rl-brand-logo { width: 72px; height: 72px; border-radius: 22px; }
   .rl-brand-name { font-size: 36px; }
-  .rl-admin-float { top: 14px; right: 14px; padding: 9px 14px; font-size: 12.5px; }
+  .rl-admin-float { width: 42px; height: 42px; }
   .rl-card-inner { padding: 14px; gap: 0; }
   .rl-card-ico { width: 46px; height: 46px; border-radius: 14px; }
   .rl-card-name { font-size: 15px; }

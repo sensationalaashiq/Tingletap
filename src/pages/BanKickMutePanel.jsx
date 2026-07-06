@@ -76,7 +76,9 @@ const BanKickMutePanel = () => {
     if (!isRoleReady) return;
     const usersQuery = query(collection(db, 'users'), limit(150));
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-      const usersData = snapshot.docs.map(d => ({ id: d.id, uid: d.id, ...d.data() }));
+      const usersData = snapshot.docs
+        .map(d => ({ id: d.id, uid: d.id, ...d.data() }))
+        .filter(u => (u.role || '').toLowerCase() !== 'owner' && (u.role || '').toLowerCase() !== 'superowner');
       setUsers(usersData);
       setLoading(false);
     }, () => setLoading(false));

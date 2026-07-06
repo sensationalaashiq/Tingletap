@@ -1074,6 +1074,7 @@ const Sidebar = ({
         currentUserProfile={loggedInUserProfile}
         currentRoomId={roomId}
         currentRoomName={rooms.find(r => r.id === roomId)?.name || ''}
+        hideBanTab={loggedInUserProfile?.role?.toLowerCase() === 'moderator'}
       />
 
       {showEditProfileModal && (
