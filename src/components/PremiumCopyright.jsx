@@ -16,8 +16,8 @@ const DiamondSvg = () => (
   </svg>
 );
 
-const GlowHeartSvg = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="pco-heart-svg" style={{ display:'block', flexShrink:0 }}>
+const GlowHeartSvg = ({ size = 20 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="pco-heart-svg" style={{ display:'block', flexShrink:0 }}>
     <defs>
       <linearGradient id="pco-hg2" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#ff6b6b"/>
@@ -58,6 +58,7 @@ const IndiaSvg = () => (
 
 const PremiumCopyright = () => (
   <div className="pco-root">
+    <span className="pco-shimmer-line" aria-hidden="true" />
     <div className="pco-inner">
       <div className="pco-top-row">
         <DiamondSvg />
@@ -66,17 +67,15 @@ const PremiumCopyright = () => (
         <span className="pco-sep">·</span>
         <span className="pco-rights">All Rights Reserved</span>
       </div>
-      <div className="pco-bottom-row">
+      <div className="pco-merged-row">
         <span className="pco-craft-text">Crafted with</span>
-        <GlowHeartSvg />
+        <GlowHeartSvg size={14} />
         <span className="pco-craft-text">by</span>
         <span className="pco-adrashtra">Adrashtra Inc.</span>
-      </div>
-      <div className="pco-india-row">
+        <span className="pco-dot" aria-hidden="true" />
         <IndiaSvg />
         <span className="pco-india-text">Developed in India</span>
         <span className="pco-india-sep">·</span>
-        <GlowHeartSvg />
         <span className="pco-india-text">Loved by India</span>
       </div>
     </div>
