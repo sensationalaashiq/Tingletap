@@ -1,3 +1,11 @@
+# Recent Changes (July 6, 2026) — Real Room Count + Fake Stats Removal (Session 10)
+
+No UI redesign, no schema changes. Verified with `npm run build` + workflow restart + console check.
+
+✅ **Applied**: Removed every fake/hardcoded user-count number from `LandingPage.jsx` (hero "555+ Active Users"/"138 Online Now", footer stat, and the "Thousands of users are chatting" CTA line). The "Chat Rooms" stat now comes from a real live Firestore count (`getCountFromServer`, refreshed every 60s) instead of a hardcoded `9`. In place of a fake user number, added a plain-text "Users Growing" label (no number) next to the room count.
+
+⚠️ **Needs a manual step from the user**: the live room count requires `firestore.rules` to allow public read on the `rooms` collection (previously `auth != null`-gated, which blocked the pre-login landing page). This repo's `firestore.rules` was updated accordingly, but rule files are **not auto-deployed** in this dev environment — the user must publish the updated rules via Firebase Console → Firestore Database → Rules. Until then the stat shows a neutral "—" placeholder (never a fake number).
+
 # Recent Changes (July 6, 2026) — Zero-Gap Chat Footer (Session 9)
 
 No UI redesign, no schema/permissions changes. Verified with `npm run build` + workflow restart.

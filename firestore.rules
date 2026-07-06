@@ -285,7 +285,9 @@ service cloud.firestore {
     // ================================================================
 
     match /rooms/{roomId} {
-      allow read:   if request.auth != null;
+      // Public read (room name/order/icon only — no messages) so the
+      // landing page can show a real, live "Chat Rooms" count before login.
+      allow read:   if true;
       allow create: if isStaff();
       allow update: if isStaff();
       allow delete: if isOwner() || isAdmin();

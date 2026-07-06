@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, getCountFromServer } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
 import SEO from '../seo/SEO';
@@ -69,6 +71,16 @@ const IconChatRooms = ({ size = 30 }) => (
     <defs>
       <linearGradient id="ic1a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient>
       <linearGradient id="ic1b" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+    </defs>
+  </svg>
+);
+
+const TrendUpIcon = ({ size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 17L9 11L13 15L21 7" stroke="url(#trendUpGrad)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 7H21V13" stroke="url(#trendUpGrad)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+    <defs>
+      <linearGradient id="trendUpGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4f46e5"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient>
     </defs>
   </svg>
 );
@@ -255,13 +267,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
-  const [realTimeStats, setRealTimeStats] = useState({ activeUsers: 555, totalRooms: 9, onlineNow: 138 });
-
-  const incrementUserCount = () => {
-    const n = (parseInt(localStorage.getItem('currentActiveUsers')) || 555) + 1;
-    localStorage.setItem('currentActiveUsers', n.toString());
-    setRealTimeStats(p => ({ ...p, activeUsers: n, onlineNow: Math.floor(n * 0.25) }));
-  };
+  const [totalRooms, setTotalRooms] = useState(null);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
@@ -269,14 +275,20 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  // Real room count straight from Firestore — no hardcoded/fake number.
   useEffect(() => {
-    const check = () => {
-      const n = parseInt(localStorage.getItem('currentActiveUsers')) || 555;
-      setRealTimeStats(p => ({ ...p, activeUsers: n, totalRooms: 9, onlineNow: Math.floor(n * 0.25) }));
+    let cancelled = false;
+    const fetchRoomCount = async () => {
+      try {
+        const snap = await getCountFromServer(collection(db, 'rooms'));
+        if (!cancelled) setTotalRooms(snap.data().count);
+      } catch (err) {
+        console.warn('Room count fetch failed:', err?.message);
+      }
     };
-    const iv = setInterval(check, 30000);
-    check();
-    return () => clearInterval(iv);
+    fetchRoomCount();
+    const iv = setInterval(fetchRoomCount, 60000);
+    return () => { cancelled = true; clearInterval(iv); };
   }, []);
 
   const features = [
@@ -370,7 +382,7 @@ const LandingPage = () => {
             <button className="lp-btn-ghost" onClick={() => navigate('/login')}>
               Sign In
             </button>
-            <button className="lp-btn-primary" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
+            <button className="lp-btn-primary" onClick={() => navigate('/signup')}>
               <span>Get Started</span>
               <LuxuryWhiteGem size={15} />
             </button>
@@ -399,18 +411,23 @@ const LandingPage = () => {
 
           <div className="lp-stats lp-anim-up lp-d2">
             <div className="lp-stat">
-              <span className="lp-stat-n">{realTimeStats.totalRooms}+</span>
+              <span className="lp-stat-n">{totalRooms !== null ? `${totalRooms}+` : '—'}</span>
               <span className="lp-stat-l">Chat Rooms</span>
+            </div>
+            <div className="lp-stat-sep" />
+            <div className="lp-stat">
+              <span className="lp-stat-growing-icon"><TrendUpIcon size={18} /></span>
+              <span className="lp-stat-l lp-stat-growing">Users Growing</span>
             </div>
           </div>
 
           <div className="lp-hero-btns lp-anim-up lp-d3">
-            <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
+            <button className="lp-cta-main" onClick={() => navigate('/rooms')}>
               <span>Start Chatting Now</span>
               <LuxuryWhiteGem size={18} />
               <span className="lp-shimmer" aria-hidden="true" />
             </button>
-            <button className="lp-cta-outline" onClick={() => { incrementUserCount(); navigate('/signup'); }}>
+            <button className="lp-cta-outline" onClick={() => navigate('/signup')}>
               <span>Create Free Account</span>
             </button>
           </div>
@@ -492,7 +509,6 @@ const LandingPage = () => {
                   style={t.btnStyle}
                   onClick={() => {
                     if (t.name === 'Staff Access') { setShowStaffModal(true); return; }
-                    incrementUserCount();
                     navigate(t.name === 'Free User' ? '/rooms' : '/signup');
                   }}
                 >
@@ -516,10 +532,10 @@ const LandingPage = () => {
               <span className="lp-grad">Chat Community?</span>
             </h2>
             <p className="lp-cta-p">
-              Thousands of users are chatting right now. Join free today.
+              Our community is growing every day. Join free today.
             </p>
             <div className="lp-hero-btns" style={{ maxWidth: 460, margin: '0 auto' }}>
-              <button className="lp-cta-main" onClick={() => { incrementUserCount(); navigate('/rooms'); }}>
+              <button className="lp-cta-main" onClick={() => navigate('/rooms')}>
                 <span>Start Chatting Now</span>
                 <LuxuryWhiteGem size={18} />
                 <span className="lp-shimmer" aria-hidden="true" />
@@ -553,12 +569,12 @@ const LandingPage = () => {
                 </div>
               </div>
               <p className="lp-footer-desc">
-                Connect with thousands of users across India in our beautifully designed platform.
+                Connect with a growing community across India in our beautifully designed platform.
                 Real-time conversations with premium customization and powerful features.
               </p>
               <div className="lp-footer-stats">
                 <div className="lp-footer-stat">
-                  <span className="lp-fs-num">{realTimeStats.totalRooms}+</span>
+                  <span className="lp-fs-num">{totalRooms !== null ? `${totalRooms}+` : '—'}</span>
                   <span className="lp-fs-lbl">Chat Rooms</span>
                 </div>
                 <div className="lp-fs-sep" />

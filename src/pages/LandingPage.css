@@ -319,6 +319,10 @@
   width: 1.5px; flex-shrink: 0;
   background: linear-gradient(180deg, transparent, rgba(99,102,241,0.18), transparent);
 }
+.lp-stat-growing-icon { display: block; margin-bottom: 4px; }
+.lp-stat-l.lp-stat-growing {
+  font-size: 12px; margin-top: 0; opacity: 0.85;
+}
 
 /* Hero CTA buttons — full width stacked */
 .lp-hero-btns {
