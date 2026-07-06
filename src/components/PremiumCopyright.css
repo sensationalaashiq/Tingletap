@@ -7,10 +7,12 @@
   left: 0;
   right: 0;
   width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
   background: linear-gradient(180deg, rgba(247,244,255,0.97) 0%, rgba(230,223,255,0.99) 100%);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  padding: 7px 20px 8px;
+  padding: 7px 16px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,7 +20,8 @@
   z-index: 900;
   border-radius: 0;
   border: none;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow: 0 -6px 28px rgba(99,102,241,0.14), 0 -1px 0 rgba(255,255,255,0.6) inset;
 }
@@ -124,8 +127,10 @@
   border: 1px solid rgba(99,102,241,0.14);
   border-radius: 999px;
   box-shadow: 0 2px 12px rgba(99,102,241,0.08), 0 1px 0 rgba(255,255,255,0.7) inset;
-  max-width: calc(100vw - 24px);
+  max-width: 100%;
   min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pco-craft-text {
@@ -189,9 +194,19 @@
   animation: pco-heartbeat 1.8s ease-in-out infinite;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  .pco-root { padding: 6px 10px 7px; }
   .pco-brand { font-size: 17px; }
   .pco-top-row { gap: 6px; }
-  .pco-merged-row { padding: 4px 12px; gap: 5px; }
+  .pco-merged-row { padding: 4px 10px; gap: 4px 6px; }
   .pco-dot { display: none; }
+  .pco-craft-text, .pco-india-text { font-size: 10.5px; }
+  .pco-adrashtra { font-size: 14px; }
+}
+
+@media (max-width: 360px) {
+  .pco-merged-row { padding: 4px 8px; gap: 3px 5px; }
+  .pco-craft-text, .pco-india-text { font-size: 9.5px; }
+  .pco-adrashtra { font-size: 13px; }
+  .pco-india-sep { display: none; }
 }
