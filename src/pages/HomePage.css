@@ -11026,17 +11026,17 @@ body.dark-mode .homepage-container .chat-footer,
 .dark-mode .homepage-container .chat-footer,
 .homepage-container .chat-footer {
   height: auto !important;
-  min-height: 44px !important;
+  min-height: 40px !important;
   max-height: none !important;
   align-items: flex-end !important;
-  padding: 5px 8px !important;
+  padding: 4px 8px !important;
 }
 
 /* Form: flex-end so buttons align with bottom of textarea */
 body .homepage-container .message-form,
 .homepage-container .message-form {
   height: auto !important;
-  min-height: 34px !important;
+  min-height: 32px !important;
   align-items: flex-end !important;
 }
 
@@ -11068,9 +11068,9 @@ body .homepage-container .message-form,
 body .homepage-container .premium-input-field.premium-textarea,
 body .homepage-container .premium-textarea {
   height: auto !important;
-  min-height: 34px !important;
+  min-height: 32px !important;
   max-height: 120px !important;
-  padding: 8px 4px 4px 4px !important;
+  padding: 6px 4px 4px 4px !important;
   resize: none !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -11087,10 +11087,10 @@ body .homepage-container .premium-textarea {
 /* Buttons: align to bottom of expanding textarea */
 body .homepage-container .premium-footer-btn.attachment-btn,
 body .homepage-container .attachment-btn {
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  max-width: 46px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
   align-self: flex-end !important;
   flex-shrink: 0 !important;
   display: flex !important;
@@ -11099,16 +11099,16 @@ body .homepage-container .attachment-btn {
 }
 body .homepage-container .premium-footer-btn.attachment-btn svg,
 body .homepage-container .attachment-btn svg {
-  width: 28px !important;
-  height: 28px !important;
+  width: 25px !important;
+  height: 25px !important;
   flex-shrink: 0 !important;
 }
 body .homepage-container .premium-footer-btn.send-btn,
 body .homepage-container .send-btn {
-  width: 46px !important;
-  height: 46px !important;
-  min-width: 46px !important;
-  max-width: 46px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
   align-self: flex-end !important;
   flex-shrink: 0 !important;
   display: flex !important;
@@ -11117,8 +11117,8 @@ body .homepage-container .send-btn {
 }
 body .homepage-container .premium-footer-btn.send-btn svg,
 body .homepage-container .send-btn svg {
-  width: 30px !important;
-  height: 30px !important;
+  width: 27px !important;
+  height: 27px !important;
   flex-shrink: 0 !important;
 }
 

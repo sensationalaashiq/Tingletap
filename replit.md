@@ -1,3 +1,9 @@
+# Recent Changes (July 6, 2026) — Zero-Gap Chat Footer (Session 9)
+
+No UI redesign, no schema/permissions changes. Verified with `npm run build` + workflow restart.
+
+✅ **Applied**: The visible white gap between the last chat message and the message-input bar (reported via screenshot) was caused by `HomePage.css` having dozens of conflicting `!important` rules for `.chat-feed`'s `bottom` offset and `.chat-footer`'s height, built up across many past sessions — the two values had drifted out of sync. Fixed at the root by adding a `ResizeObserver`-driven effect in `HomePage.jsx` that measures the real rendered footer height live and applies `chat-feed`'s `bottom`/`height` via inline `style.setProperty(..., 'important')` (which beats stylesheet `!important`), so the two are always pixel-perfect in sync regardless of textarea growth/shrink. Also trimmed the footer's own padding/button/textarea sizing (46px→40px buttons, tighter padding) for a more compact, premium input bar per user request.
+
 # Recent Changes (July 6, 2026) — Emoji-Free Warning Modal + Owner-Only Admin Panel + New Ban/Kick/Mute Panel (Session 8)
 
 No UI theme/schema/rules changes, no duplicate Firebase listeners/collections. Verified with `npm run build` + workflow restart + log check.

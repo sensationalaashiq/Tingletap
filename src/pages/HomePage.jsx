@@ -1063,6 +1063,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     });
     const uid = loggedInUserProfile?.uid || null;
     const chatFeedRef = useRef(null);
+    const footerRef = useRef(null);
     const textareaRef = useRef(null);
     const fontPopupRef = useRef(null);
     const [liveUsers, setLiveUsers] = useState([]);
@@ -1229,6 +1230,35 @@ const HomePage = ({ user, roomIdOverride }) => {
         setSendProgress(100);
         progressTimerRef.current = setTimeout(() => setSendProgress(null), 650);
     }, []);
+
+    // Keep chat-feed's bottom offset perfectly synced to the footer's real
+    // rendered height (no gap, no overlap) — footer height changes as the
+    // multiline composer grows/shrinks, so this is measured live.
+    useEffect(() => {
+        const feedEl = chatFeedRef.current;
+        const footerEl = footerRef.current;
+        if (!feedEl || !footerEl) return;
+
+        const syncHeight = () => {
+            const h = footerEl.offsetHeight;
+            if (!h) return;
+            feedEl.style.setProperty('bottom', `${h}px`, 'important');
+            feedEl.style.setProperty('height', `calc(100dvh - 55px - ${h}px)`, 'important');
+            feedEl.style.setProperty('min-height', `calc(100dvh - 55px - ${h}px)`, 'important');
+            feedEl.style.setProperty('max-height', `calc(100dvh - 55px - ${h}px)`, 'important');
+            feedEl.style.setProperty('padding-bottom', '0px', 'important');
+            feedEl.style.setProperty('margin-bottom', '0px', 'important');
+        };
+
+        syncHeight();
+        const ro = new ResizeObserver(syncHeight);
+        ro.observe(footerEl);
+        window.addEventListener('resize', syncHeight);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', syncHeight);
+        };
+    }, [textareaRows, newMessage, whisperTarget]);
 
     // Listen for user-initiated notification setting changes from SettingsSidebar
     useEffect(() => {
@@ -8650,7 +8680,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </button>
             )}
 
-            <div className="chat-footer" style={{
+            <div className="chat-footer" ref={footerRef} style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
                 width: '100vw',
                 padding: '5px 8px',
