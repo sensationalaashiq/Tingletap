@@ -22,3 +22,5 @@
 - [Speaker-side WebRTC reconnect symmetry](speaker-webrtc-reconnect.md) — host-only reconnect logic isn't enough; peer must also rebuild its RTCPeerConnection or a fresh offer is silently ignored
 - [TingleBot avatar](tinglebot-avatar.md) — TingleBot has no Firestore user doc, so getDefaultAvatarUrl() fell back to a random human stock photo; fixed by special-casing its uid to a dedicated bot image
 - [Chat message flicker fixes](chat-flicker-fixes.md) — 5 root causes of rapid-message flicker; key fix: docChanges()+messageCacheRef for stable object refs, userOnlineStatuses→ref, ChatMessage custom memo comparator
+- [Emoji-free select pattern](emoji-free-select-pattern.md) — native `<option>` can't render SVG; replace emoji-laden `<select>` with a custom button/list picker when icons must be SVG
+- [Owner vs admin panel split](owner-admin-panel-split.md) — AdminPanelPage is owner-only; Owner+Admin moderation lives in a separate lightweight page reusing the same Firestore/RTDB logic, no duplicate listeners

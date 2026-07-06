@@ -1,3 +1,13 @@
+# Recent Changes (July 6, 2026) — Emoji-Free Warning Modal + Owner-Only Admin Panel + New Ban/Kick/Mute Panel (Session 8)
+
+No UI theme/schema/rules changes, no duplicate Firebase listeners/collections. Verified with `npm run build` + workflow restart + log check.
+
+✅ **Applied**:
+1. **Warning/Announcement modal & manager — emoji removed**: `WarningAnnouncementModal.jsx` and `WarningAnnouncementManager.jsx` no longer use any emoji anywhere (tabs, severity picker, send-to picker, banners, inline severity edit). Since native `<select><option>` can't render SVG, the severity/send-to `<select>` elements were replaced with custom SVG-icon button/list pickers (new `SEVERITY_OPTS`/`TARGET_OPTS` arrays + hand-rolled SVG icon set matching the existing design system).
+2. **AdminPanelPage restricted to Owner only**: internal role check now rejects anyone whose role isn't `owner` (previously allowed `owner`/`admin`), including direct URL access. All entry points (RoomListPage floating button, SettingsSidebar nav item) now show "Admin Console" only to owners.
+3. **New Ban/Kick/Mute Panel** (`src/pages/BanKickMutePanel.jsx`, route `/mod-panel`): lightweight page accessible to Owner + Admin, reusing the exact same Firestore/RTDB moderation logic as AdminPanelPage (ban/unban/mute/unmute/kick/unkick via `users/{uid}` fields, `rooms/{roomId}/kickedUsers/{uid}`, `IPBanSystem`) and the same `AdminBanKickModal` component — no new listeners/collections added, just a single capped `users` query (`limit(150)`) and the shared RTDB `status` presence tree. Includes searchable user list (registered + guest Purush/Stree/Navrang via `getRoleDisplayLabel`), live moderation status badges, and search/filter by type/status. Styled with the same `AdminPanelPage.css` luxury design system plus a small companion `BanKickMutePanel.css` for panel-specific grid tweaks.
+4. New entry points added to both `RoomListPage.jsx` (floating buttons split into "Admin Console" for owners and "Ban / Kick / Mute" for owner+admin) and `SettingsSidebar.jsx` (same split in the Admin Controls section).
+
 # Recent Changes (July 5, 2026) — Speaker Auto-Reconnect + TingleBot Avatar (Session 7)
 
 No UI redesign, no schema/permissions/routing changes. Verified with `npm run build` + workflow restart + log check.

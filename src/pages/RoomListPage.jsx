@@ -262,7 +262,6 @@ const RoomListPage = () => {
   const [rooms, setRooms]           = useState([]);
   const [roomCounts, setRoomCounts] = useState({});
   const [loading, setLoading]       = useState(true);
-  const [isAdmin, setIsAdmin]       = useState(false);
   const [isOwner, setIsOwner]       = useState(false);
   const [isModPanelUser, setIsModPanelUser] = useState(false);
   const [userRole, setUserRole]     = useState('user');
@@ -337,7 +336,6 @@ const RoomListPage = () => {
           role = 'owner';
         }
         setUserRole(role);
-        if (['admin', 'owner', 'moderator'].includes(role)) setIsAdmin(true);
         setIsOwner(role === 'owner');
         setIsModPanelUser(['owner', 'admin'].includes(role));
       }
