@@ -1632,7 +1632,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       bpToast.mic('You are now LIVE! Listeners can hear you.');
 
       if (roomId) {
-        _postSystemMessage(roomId, `${myName} is now LIVE on Broadcast! Tune in to the Broadcast tab.`, 'broadcast_live', 10 * 60 * 1000);
+        _postSystemMessage(roomId, `${myName} is now LIVE on Broadcast! Tune in to the Broadcast tab.`, 'broadcast_live', 1 * 60 * 1000);
       }
     } catch (err) {
       console.error('Go Live error:', err);
@@ -1675,7 +1675,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       bpToast.success('Broadcast ended.');
 
       if (roomId) {
-        _postSystemMessage(roomId, `${endingName}'s Broadcast has ended.`, 'broadcast_ended', 5 * 60 * 1000);
+        _postSystemMessage(roomId, `${endingName}'s Broadcast has ended.`, 'broadcast_ended', 1 * 60 * 1000);
       }
     } catch (err) {
       console.error('End broadcast error:', err);

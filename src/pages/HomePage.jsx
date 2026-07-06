@@ -1228,7 +1228,11 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         if (!roomId || !loggedInUserProfile) return;
         const name = loggedInUserProfile.displayName || 'Someone';
-        const currentUid = loggedInUserProfile.uid || auth.currentUser?.uid;
+        // Always use the real Firebase auth uid so Firestore security rules pass
+        // (rules check request.auth.uid == message.uid; loggedInUserProfile.uid
+        // for guests may be a local id that differs from the anonymous auth uid).
+        const currentUid = auth.currentUser?.uid || loggedInUserProfile.uid;
+        if (!currentUid) return; // no Firebase auth uid — skip join/leave
         const roleLabel = getRoleDisplayLabel({
             role: loggedInUserProfile.role,
             gender: loggedInUserProfile.gender,
@@ -1263,7 +1267,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             }).then(ref => {
                 if (ref?.id) {
                     scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
                 }
             }).catch(e => console.error('TingleBot join error', e));
         }
@@ -1296,7 +1300,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             }).then(ref => {
                 if (ref?.id) {
                     scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
                 }
             }).catch(e => console.error('TingleBot leave error', e));
         };
@@ -1323,7 +1327,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 });
                 if (ref?.id) {
                     scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', rid, 'messages', ref.id)).catch(() => {}), 3 * 60 * 1000);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', rid, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
                 }
             } catch (e) { console.error('TingleBot announcement error', e); }
         };
@@ -1440,12 +1444,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                     noReport: true,
                     noUnread: true,
                 });
-                // Schedule auto-deletion after 3 minutes
+                // Schedule auto-deletion after 1 minute
                 if (ruleDocRef?.id) {
                     scheduledTinglebotDeletionsRef.current.add(ruleDocRef.id);
                     setTimeout(() => {
                         deleteDoc(doc(db, 'rooms', roomId, 'messages', ruleDocRef.id)).catch(() => {});
-                    }, 3 * 60 * 1000);
+                    }, 1 * 60 * 1000);
                 }
             } catch (_) {}
         };
@@ -2900,7 +2904,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         scheduledTinglebotDeletionsRef.current.add(msg.id);
                         const createdMs = msg.createdAt?.toMillis?.() || Date.now();
                         const ageMs = Date.now() - createdMs;
-                        const remainingMs = 3 * 60 * 1000 - ageMs;
+                        const remainingMs = 1 * 60 * 1000 - ageMs;
                         if (remainingMs <= 0) {
                             deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
                         } else if (remainingMs > 30 * 1000) {
@@ -4035,7 +4039,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             }).then(r => {
                 if (r?.id) {
                     scheduledTinglebotDeletionsRef.current.add(r.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
                 }
             }).catch(() => {});
             setHomePageKickModal({ visible: false, user: null });
@@ -4061,7 +4065,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             }).then(r => {
                 if (r?.id) {
                     scheduledTinglebotDeletionsRef.current.add(r.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
                 }
             }).catch(() => {});
         } catch (err) {
@@ -4090,7 +4094,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }).then(r => {
                     if (r?.id) {
                         scheduledTinglebotDeletionsRef.current.add(r.id);
-                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
                     }
                 }).catch(() => {});
             } catch (error) {
@@ -4126,7 +4130,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }).then(r => {
                     if (r?.id) {
                         scheduledTinglebotDeletionsRef.current.add(r.id);
-                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 3 * 60 * 1000);
+                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
                     }
                 }).catch(() => {});
             } catch (error) {

@@ -74,7 +74,7 @@ export const CFG = {
     MUTE_24H_AT          : 5,
     KICK_AT              : 6,
     // TTLs
-    NOTICE_TTL_MS        : 3 * 60 * 1000,
+    NOTICE_TTL_MS        : 1 * 60 * 1000,
     CLAIM_TTL_MS         : 30 * 60 * 1000,
     // Fuzzy matching — max edit distance per length band
     FUZZY_SHORT          : 1,   // 4-7 chars  → ≤1 substitution
@@ -968,16 +968,29 @@ const INDIAN_CASUAL_SLANG = new Set([
 const CASUAL_TOLERANT_WORDS = new Set([
     // Casual daily-use Hindi/English insults & filler
     'chutiya','chutiye','chutia','chutiyo','chootiya','chuitya','chutiyap','chootiyapa','chutiyagiri',
+    'chtiya','chtiye',                  // short-form spelling variants
     'chut','choot',
-    'lund','land','loda','lavda','lauda','laude','lode','lun',
+    'lund','land','loda','lavda','lauda','laude','lode','lun','lawda',
     'gaand','gand','gaandu','gandu',
     'kameena','kamina','kamine','kaminey',
     'kutta','kutte','kuttiya','kutiya','kutia','naaye','naai','naye','nayi',
     'saala','saale','saali','sala','sale','sali',
     'harami','haraami',
-    'pagal','pagli','paglu',
+    'pagal','pagli','paglu','pgl',      // pgl = pagal abbreviation
     'bewakoof','bevkoof','bewkoof',
+    'gadha','gadhe',                    // donkey → fool (casual teasing)
+    'ullu','ullo',                      // owl → fool (casual)
+    'baklol','bkl',                     // bakwas ka log → fool (casual slang)
+    'lodu',                             // casual Hindi filler insult
+    'lafanga',                          // rogue/rascal (casual)
+    'nautanki',                         // drama queen / over-actor (casual)
     'idiot','stupid','loser','noob','dumb',
+    'joker','clown',                    // casual English insults
+    'nibba','nibbi',                    // gen-Z casual slang
+    // bsdk/bsdc: casual exclamation widely used in Indian chat like OMG/WTF.
+    // ADULT_AMBIGUOUS_FAMILY_ABBREVS gates these in isAlwaysProtectedContent so they
+    // are still strictly enforced when paired with explicit family-targeting phrases.
+    'bsdk','bsdc',
     // Consensual-adult vocabulary (allowed unless minors/coercion/threat/non-consent involved)
     'sex','kiss','boobs','tits','titties','boobies',
     // Devanagari equivalents
@@ -1206,7 +1219,7 @@ const hasTargetingContext = (text) =>
  * possessive family-targeting phrase ("your mom", "teri maa", etc.).
  * All other FAMILY_ABUSE_ROOTS words remain strictly enforced everywhere.
  */
-const ADULT_AMBIGUOUS_FAMILY_ABBREVS = new Set(['mf','mfkr']);
+const ADULT_AMBIGUOUS_FAMILY_ABBREVS = new Set(['mf','mfkr','bsdk','bsdc']);
 
 /** Matches explicit possessive family targeting even without the abuse word */
 const FAMILY_TARGETING_RX = /\b(your|teri|tera|tere|tumhari|tumhare)\s+(mom|maa|ma|mother|sister|behen|behan|baap|dad|father|bhai)\b/i;

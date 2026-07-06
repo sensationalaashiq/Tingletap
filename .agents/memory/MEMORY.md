@@ -1,4 +1,4 @@
-- [Join/Leave notifications](join-leave-notifications.md) — use real uid + only tinglebotType (no isBot/systemBot) or Firestore rejects write; update all detection guards too
+- [Join/Leave notifications](join-leave-notifications.md) — use auth.currentUser?.uid (not loggedInUserProfile.uid) for message uid or Firestore rejects guest writes; guard with !currentUid return; BroadcastPanel has its own _postSystemMessage timers
 - [RJ voice persistence](rj-voice-persistence.md) — don't call rjLeaveAudio() on panel close; add visibilitychange resume handler for background tab throttling
 - [Admin panel last-seen & reports](admin-panel-fixes.md) — lastSeen must use status.lastChanged from RTDB (not lastLoginAt); reports tab reads `reports` Firestore collection
 - [Role display labels](role-labels.md) — shared getRoleDisplayLabel() in src/utils/roleUtils.js; owner→Godfather, admin→High Council, moderator→Guardian, user→Member, badge→badge name, guest+male→Purush, guest+female→Stree, guest+trans→Navrang
