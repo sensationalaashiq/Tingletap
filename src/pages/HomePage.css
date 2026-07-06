@@ -10599,10 +10599,10 @@ body.dark-mode .homepage-container .chat-footer:focus-within,
   border-top: none !important;
   border: none !important;
   box-shadow: none !important;
-  height: 44px !important;
+  height: auto !important;
   min-height: 44px !important;
-  max-height: 44px !important;
-  padding: 0 8px !important;
+  max-height: none !important;
+  padding: 5px 8px !important;
 }
 
 /* Kill attachment button capsule/circle styling */
@@ -10614,7 +10614,7 @@ body .homepage-container .attachment-btn {
   border-radius: 0 !important;
   box-shadow: none !important;
   width: 36px !important;
-  height: 44px !important;
+  height: 34px !important;
 }
 
 /* Kill send button capsule/circle styling */
@@ -10625,7 +10625,7 @@ body .homepage-container .premium-footer-btn.send-btn {
   border-radius: 0 !important;
   box-shadow: none !important;
   width: 36px !important;
-  height: 44px !important;
+  height: 34px !important;
 }
 
 /* Kill any wrapper capsule that might appear */
@@ -10658,14 +10658,15 @@ body .homepage-container .message-form {
   border: none !important;
 }
 
-/* Form fills footer exactly */
+/* Form fills footer — auto height for multiline textarea */
 body .homepage-container .message-form {
   width: 100% !important;
-  height: 44px !important;
+  height: auto !important;
+  min-height: 34px !important;
   margin: 0 !important;
   padding: 0 !important;
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   background: transparent !important;
   flex: 1 !important;
 }
@@ -11165,3 +11166,201 @@ body .homepage-container .attachment-dropdown {
 .dark-mode .rxn-chip-count {
   color: #a5b4fc;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MULTILINE COMPOSER — overrides all earlier fixed-height footer rules
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Allow footer to grow with textarea */
+body .homepage-container .chat-footer,
+body .homepage-container .chat-footer:focus-within,
+body.dark-mode .homepage-container .chat-footer,
+.dark-mode .homepage-container .chat-footer,
+.homepage-container .chat-footer {
+  height: auto !important;
+  min-height: 44px !important;
+  max-height: none !important;
+  align-items: flex-end !important;
+  padding: 5px 8px !important;
+}
+
+/* Form: flex-end so buttons align with bottom of textarea */
+body .homepage-container .message-form,
+.homepage-container .message-form {
+  height: auto !important;
+  min-height: 34px !important;
+  align-items: flex-end !important;
+}
+
+/* Textarea — auto-expanding, full-width */
+.premium-textarea {
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  min-height: 34px;
+  max-height: 120px;
+  line-height: 1.4;
+  box-sizing: border-box;
+  display: block;
+  font-size: 15px;
+  font-weight: 450;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 8px 4px 18px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,58,237,0.3) transparent;
+}
+.premium-textarea::-webkit-scrollbar { width: 3px; }
+.premium-textarea::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 2px; }
+
+body .homepage-container .premium-input-field.premium-textarea,
+body .homepage-container .premium-textarea {
+  height: auto !important;
+  min-height: 34px !important;
+  max-height: 120px !important;
+  padding: 8px 4px 18px 4px !important;
+  resize: none !important;
+  overflow: hidden !important;
+  line-height: 1.4 !important;
+  align-self: flex-end !important;
+}
+
+/* Buttons: fixed height regardless of textarea size */
+body .homepage-container .premium-footer-btn.attachment-btn,
+body .homepage-container .attachment-btn {
+  height: 34px !important;
+  align-self: flex-end !important;
+}
+body .homepage-container .premium-footer-btn.send-btn {
+  height: 34px !important;
+  align-self: flex-end !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RELATIONSHIP MARK SYSTEM
+   ══════════════════════════════════════════════════════════════════════ */
+
+.vpm-rel-section {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(236,72,153,0.04), rgba(139,92,246,0.06));
+  border: 1px solid rgba(236,72,153,0.12);
+}
+.vpm-rel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.vpm-rel-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+.vpm-rel-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vpm-rel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.vpm-rel-chip svg { flex-shrink: 0; }
+.vpm-rel-mark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.2);
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+}
+.vpm-rel-mark-btn:hover {
+  background: rgba(124,58,237,0.15);
+  border-color: rgba(124,58,237,0.4);
+}
+.vpm-rel-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(139,92,246,0.1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+  animation: relPopIn 0.15s ease-out;
+}
+@keyframes relPopIn {
+  from { opacity:0; transform: translateY(-4px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0)    scale(1);    }
+}
+.dark-mode .vpm-rel-popover {
+  background: #1a0f3a;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.2);
+}
+.vpm-rel-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s;
+}
+.vpm-rel-option:hover { background: rgba(139,92,246,0.08); }
+.vpm-rel-option.active { background: rgba(139,92,246,0.12); }
+.vpm-rel-option-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.vpm-rel-remove {
+  margin-top: 2px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: 5px;
+  color: #ef4444;
+}
+.dark-mode .vpm-rel-section {
+  background: linear-gradient(135deg, rgba(236,72,153,0.06), rgba(139,92,246,0.08));
+  border-color: rgba(236,72,153,0.18);
+}
+.dark-mode .vpm-rel-mark-btn {
+  color: #c4b5fd;
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.25);
+}
+.dark-mode .vpm-rel-mark-btn:hover {
+  background: rgba(139,92,246,0.22);
+}
+.dark-mode .vpm-rel-option { color: #e9d5ff; }
+.dark-mode .vpm-rel-option:hover { background: rgba(139,92,246,0.15); }
+.dark-mode .vpm-rel-remove { color: #fca5a5; border-top-color: rgba(255,255,255,0.08); }

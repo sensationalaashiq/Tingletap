@@ -7,7 +7,7 @@ import { db, auth, rtdb } from '../firebase/config';
 import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where, limit,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch,
-    arrayUnion, arrayRemove
+    arrayUnion, arrayRemove, deleteField
 } from 'firebase/firestore';
 import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
 import { checkSpam } from '../utils/antiSpamSystem';
@@ -1108,6 +1108,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [profileUser, setProfileUser] = useState(null);
   const [activeProfileTab, setActiveProfileTab] = useState('info');
     const [vpmEnlarged, setVpmEnlarged] = useState(null); // null | { type:'avatar'|'cover', url:string }
+    const [relPopoverOpen, setRelPopoverOpen] = useState(false); // relationship mark popover
+    const [relTargetNames, setRelTargetNames] = useState({}); // uid -> displayName cache for relationship targets
   const [userFriends, setUserFriends] = useState([]);
     const [isWhisperPopupOpen, setWhisperPopupOpen] = useState(false);
     const [whisperTarget, setWhisperTarget] = useState(null);
@@ -3475,7 +3477,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!roomId) {
             setOnlineUserIds([]);
             setOnlineUsers(new Set());
-            setUserOnlineStatuses({});
+            userOnlineStatusesRef.current = {};
+            window.userOnlineStatuses = {};
+            window.onlineUsers = new Set();
             return;
         }
         
@@ -3731,9 +3735,18 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     
 
+    const MAX_CHAT_CHARS = 240;
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (newMessage.trim() === '' || !roomId) return;
+
+        // 240-character hard limit — never store more than this in Firebase
+        // Validate raw length (not just trimmed) so no circumvention via whitespace padding
+        if (newMessage.length > MAX_CHAT_CHARS || newMessage.trim().length > MAX_CHAT_CHARS) {
+            pt.error(`Message too long — maximum ${MAX_CHAT_CHARS} characters allowed.`);
+            return;
+        }
 
         // Handle both authenticated users and guests
         const isGuest = localStorage.getItem('isGuest') === 'true';
@@ -4433,6 +4446,34 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const handleViewProfile = (user) => {
         setProfileUser(user);
+        setRelPopoverOpen(false);
+    };
+
+    // ── Relationship Mark System ─────────────────────────────────────────────
+    // One-way: viewer sets a label on another user. One Firestore write per change.
+    // Stored as relationships: { [targetUid]: type } on the viewer's own doc.
+    const RELATIONSHIP_TYPES = [
+        { value: 'friend',      label: 'Friend',      gradient: 'linear-gradient(135deg,#10b981,#34d399)', icon: <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><circle cx="9" cy="8" r="3" stroke="#fff" strokeWidth="1.8"/><path d="M2 20c0-3 3.13-5 7-5s7 2 7 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/><circle cx="17" cy="8" r="2.5" stroke="#fff" strokeWidth="1.6"/><path d="M19 15c2 .5 4 1.8 4 4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round"/></svg> },
+        { value: 'best_friend', label: 'Best Friend', gradient: 'linear-gradient(135deg,#6366f1,#8b5cf6)', icon: <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="#fff"/><path d="M18 18l1.5 1.5M18 21v-1.5M21 18h-1.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg> },
+        { value: 'partner',     label: 'Partner',     gradient: 'linear-gradient(135deg,#ec4899,#f43f5e)', icon: <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#fff"/></svg> },
+        { value: 'family',      label: 'Family',      gradient: 'linear-gradient(135deg,#f59e0b,#f97316)', icon: <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-4h4v4h4a1 1 0 001-1v-9" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+        { value: 'favourite',   label: 'Favourite',   gradient: 'linear-gradient(135deg,#eab308,#f59e0b)', icon: <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#fff"/></svg> },
+    ];
+
+    const handleSetRelationship = async (targetUid, relType) => {
+        const currentUid = auth.currentUser?.uid;
+        if (!currentUid || !targetUid || currentUid === targetUid) return;
+        setRelPopoverOpen(false);
+        try {
+            const userDocRef = doc(db, 'users', currentUid);
+            if (relType === null) {
+                await updateDoc(userDocRef, { [`relationships.${targetUid}`]: deleteField() });
+            } else {
+                await updateDoc(userDocRef, { [`relationships.${targetUid}`]: relType });
+            }
+        } catch (err) {
+            console.error('[Relationship] write failed:', err);
+        }
     };
 
     // handleAddFriend — quick local checks, then show premium confirmation modal
@@ -7915,7 +7956,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                     <div className="vpm-ic-icon" style={{background:'#fce7f3'}}>
                                                         <svg viewBox="0 0 24 24" width="14" height="14" fill="#db2777"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                                                     </div>
-                                                    <div className="vpm-ic-label">Relationship</div>
+                                                    <div className="vpm-ic-label">Relationship Status</div>
                                                     <div className="vpm-ic-value" style={{textTransform:'capitalize'}}>{profileUser.relationship}</div>
                                                 </div>
                                             )}
@@ -7991,6 +8032,105 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                                         {/* ── Achievement Titles ── */}
                                         <AchievementsSection userProfile={profileUser} />
+
+                                        {/* ── Relationship Mark System ── */}
+                                        {(() => {
+                                            const viewerUid = auth.currentUser?.uid;
+                                            const isSelf = viewerUid && viewerUid === profileUser.uid;
+                                            const isGuest = !viewerUid || localStorage.getItem('isGuest') === 'true';
+
+                                            // Relationships are private: only the viewer sees their own marks
+                                            const viewerRels = loggedInUserProfile?.relationships || {};
+                                            const viewerMarkOnThis = viewerUid ? viewerRels[profileUser.uid] : null;
+
+                                            const relConfig = RELATIONSHIP_TYPES;
+
+                                            const getRelConfig = (val) => relConfig.find(r => r.value === val);
+
+                                            const canMark = !isSelf && !isGuest;
+
+                                            return (
+                                                <div className="vpm-rel-section" onClick={e => e.stopPropagation()}>
+                                                    <div className="vpm-rel-header">
+                                                        <span className="vpm-rel-title">Relationships</span>
+                                                        {canMark && (
+                                                            <div style={{position:'relative'}}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="vpm-rel-mark-btn"
+                                                                    onClick={(e) => { e.stopPropagation(); setRelPopoverOpen(p => !p); }}
+                                                                >
+                                                                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none">
+                                                                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                                                                    </svg>
+                                                                    {viewerMarkOnThis ? 'Change' : 'Mark'}
+                                                                </button>
+                                                                {relPopoverOpen && (
+                                                                    <div className="vpm-rel-popover">
+                                                                        {relConfig.map(rc => (
+                                                                            <button
+                                                                                key={rc.value}
+                                                                                type="button"
+                                                                                className={`vpm-rel-option${viewerMarkOnThis === rc.value ? ' active' : ''}`}
+                                                                                onClick={() => handleSetRelationship(profileUser.uid, rc.value)}
+                                                                            >
+                                                                                <span className="vpm-rel-option-icon" style={{background: rc.gradient}}>{rc.icon}</span>
+                                                                                <span style={{color: isDarkMode ? '#e9d5ff' : '#1e1b4b'}}>{rc.label}</span>
+                                                                                {viewerMarkOnThis === rc.value && (
+                                                                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" style={{marginLeft:'auto'}}>
+                                                                                        <path d="M5 12l5 5L20 7" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                                    </svg>
+                                                                                )}
+                                                                            </button>
+                                                                        ))}
+                                                                        {viewerMarkOnThis && (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="vpm-rel-option vpm-rel-remove"
+                                                                                onClick={() => handleSetRelationship(profileUser.uid, null)}
+                                                                            >
+                                                                                <span className="vpm-rel-option-icon" style={{background:'rgba(239,68,68,0.1)'}}>
+                                                                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg>
+                                                                                </span>
+                                                                                Remove
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* What the VIEWER has privately marked this person as */}
+                                                    {viewerMarkOnThis ? (
+                                                        <div>
+                                                            <div style={{fontSize:'9px',color:'#9ca3af',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'5px'}}>
+                                                                You marked this person as
+                                                            </div>
+                                                            <div className="vpm-rel-list">
+                                                                {(() => {
+                                                                    const rc = getRelConfig(viewerMarkOnThis);
+                                                                    if (!rc) return null;
+                                                                    return (
+                                                                        <span className="vpm-rel-chip" style={{background: rc.gradient}}>
+                                                                            {rc.icon}
+                                                                            {rc.label}
+                                                                        </span>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        /* Empty state — only show to logged-in non-self viewers */
+                                                        canMark && (
+                                                            <div style={{fontSize:'11px',color:'#9ca3af',textAlign:'center',padding:'4px 0'}}>
+                                                                Only you can see your relationship marks.
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
 
                                     </div>
                                 )}
@@ -8499,9 +8639,10 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             <div className="chat-footer" style={{
                 position: 'fixed', bottom: 0, left: 0, right: 0,
-                width: '100vw', height: '44px', minHeight: '44px', maxHeight: '44px',
-                padding: '0 8px', boxSizing: 'border-box',
-                display: 'flex', alignItems: 'center',
+                width: '100vw',
+                padding: '5px 8px',
+                boxSizing: 'border-box',
+                display: 'flex', alignItems: 'flex-end',
                 background: 'transparent',
                 borderTop: 'none',
                 boxShadow: 'none',
@@ -8510,14 +8651,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                 pointerEvents: loggedInUserProfile?.mutedInfo?.isMuted ? 'none' : 'auto',
             }}>
                 <form onSubmit={handleSendMessage} className="message-form" style={{
-                    width: '100%', height: '100%', margin: 0, padding: 0,
-                    display: 'flex', alignItems: 'center', background: 'transparent', gap: '4px'
+                    width: '100%', margin: 0, padding: 0,
+                    display: 'flex', alignItems: 'flex-end', background: 'transparent', gap: '4px'
                 }}>
                     <button
                         type="button"
                         className="premium-footer-btn attachment-btn"
                         style={{
-                            width: '40px', height: '100%', minWidth: '40px', flexShrink: 0,
+                            width: '40px', height: '34px', minWidth: '40px', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none', padding: 0, cursor: 'pointer'
                         }}
@@ -8553,27 +8694,74 @@ const HomePage = ({ user, roomIdOverride }) => {
                             </button>
                         </div>
                     )}
-                    <input
-                        type="text"
-                        className="premium-input-field"
-                        style={{
-                            flex: '1 1 auto', height: '100%', background: 'transparent',
-                            border: 'none', outline: 'none', fontSize: '15px',
-                            fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
-                            caretColor: '#7c3aed', padding: '0 4px', margin: 0, minWidth: 0
-                        }}
-                        placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? '🔇 You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...')}
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => { if (e.key === 'Enter') handleSendMessage(e); }}
-                        disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
-                        readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
-                    />
+                    {/* ── Multiline Composer ── */}
+                    <div style={{ flex: '1 1 auto', position: 'relative', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <textarea
+                            ref={textareaRef}
+                            className="premium-input-field premium-textarea"
+                            rows={1}
+                            maxLength={MAX_CHAT_CHARS}
+                            style={{
+                                width: '100%', background: 'transparent',
+                                border: 'none', outline: 'none', fontSize: '15px',
+                                fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
+                                caretColor: '#7c3aed', padding: '8px 4px 18px 4px', margin: 0,
+                                resize: 'none', overflow: 'hidden',
+                                minHeight: '34px', maxHeight: '120px',
+                                lineHeight: '1.4', boxSizing: 'border-box',
+                                display: 'block',
+                            }}
+                            placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...')}
+                            value={newMessage}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val.length <= MAX_CHAT_CHARS) {
+                                    setNewMessage(val);
+                                }
+                                // Auto-expand
+                                const el = e.target;
+                                el.style.height = 'auto';
+                                const newH = Math.min(el.scrollHeight, 120);
+                                el.style.height = newH + 'px';
+                                el.style.overflow = el.scrollHeight > 120 ? 'auto' : 'hidden';
+                            }}
+                            onKeyDown={(e) => {
+                                // Enter = new line only; send via button
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    // Default: insert newline (do nothing special)
+                                }
+                            }}
+                            onPaste={(e) => {
+                                const text = e.clipboardData?.getData('text') || '';
+                                const current = newMessage;
+                                const combined = current + text;
+                                if (combined.length > MAX_CHAT_CHARS) {
+                                    e.preventDefault();
+                                    const truncated = combined.slice(0, MAX_CHAT_CHARS);
+                                    setNewMessage(truncated);
+                                }
+                            }}
+                            disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                            readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                        />
+                        {/* Live character counter */}
+                        <div style={{
+                            position: 'absolute', bottom: 2, right: 5,
+                            fontSize: '9px', fontWeight: 700, letterSpacing: '0.02em',
+                            color: newMessage.length > 220
+                                ? (newMessage.length >= MAX_CHAT_CHARS ? '#ef4444' : '#f97316')
+                                : 'rgba(124,58,237,0.35)',
+                            pointerEvents: 'none', userSelect: 'none',
+                            transition: 'color 0.2s',
+                        }}>
+                            {newMessage.length}/{MAX_CHAT_CHARS}
+                        </div>
+                    </div>
                     <button
                         type="submit"
                         className="premium-footer-btn send-btn"
                         style={{
-                            width: '40px', height: '100%', minWidth: '40px', flexShrink: 0,
+                            width: '40px', height: '34px', minWidth: '40px', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
                             opacity: (!newMessage.trim() || loggedInUserProfile?.mutedInfo?.isMuted) ? 0.5 : 1

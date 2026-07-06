@@ -1,3 +1,4 @@
+- [Relationship/Composer/Presence fixes](relationship-composer-presence-fixes.md) — presence useRef bug, textarea composer (ref required), one-way public relationship marks, deleteField import
 - [Join/Leave notifications](join-leave-notifications.md) — use auth.currentUser?.uid (not loggedInUserProfile.uid) for message uid or Firestore rejects guest writes; guard with !currentUid return; BroadcastPanel has its own _postSystemMessage timers
 - [RJ voice persistence](rj-voice-persistence.md) — don't call rjLeaveAudio() on panel close; add visibilitychange resume handler for background tab throttling
 - [Admin panel last-seen & reports](admin-panel-fixes.md) — lastSeen must use status.lastChanged from RTDB (not lastLoginAt); reports tab reads `reports` Firestore collection
