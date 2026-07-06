@@ -102,8 +102,8 @@
 }
 
 .header-action-btn.settings-btn {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   border: none;
   border-radius: 50%;
@@ -207,10 +207,10 @@
     font-size: 0.68rem;
   }
   .header-action-btn {
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
   }
 }
 
@@ -246,12 +246,12 @@
 }
 
 .header-action-btn {
-  width: 30px !important;
-  height: 30px !important;
-  min-width: 30px !important;
-  min-height: 30px !important;
-  max-width: 30px !important;
-  max-height: 30px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   border: 1px solid #e5e7eb;
   border-radius: 50%;
@@ -275,8 +275,8 @@
 }
 
 .header-action-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   pointer-events: none;
   color: var(--header-text, white);
   fill: white;
@@ -285,17 +285,17 @@
 /* ── Sidebar + Friend Request: bigger than default ── */
 .header-action-btn.menu-trigger,
 .header-action-btn.friend-request-btn {
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  min-height: 38px !important;
-  max-width: 38px !important;
-  max-height: 38px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
 }
 .header-action-btn.menu-trigger svg,
 .header-action-btn.friend-request-btn svg {
-  width: 24px !important;
-  height: 24px !important;
+  width: 26px !important;
+  height: 26px !important;
 }
 
 /* Specific styles for clear chat and PM buttons */
@@ -451,10 +451,10 @@
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -472,10 +472,10 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   margin: 0;
 }
 
@@ -774,12 +774,12 @@
 }
 
 .header-action-btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  max-width: 40px;
-  max-height: 40px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 44px;
+  max-height: 44px;
   margin: 0;
   flex-shrink: 0;
   display: flex;
@@ -3448,8 +3448,8 @@ html body.theme-sunset .message-body p {
     background: #e6e6fa;
     border: none;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     color: #7c3aed;
     cursor: pointer;
     display: flex;
@@ -3473,8 +3473,8 @@ html body.theme-sunset .message-body p {
 }
 
 .attachment-btn svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 22px !important;
+    height: 22px !important;
     color: currentColor !important;
     fill: currentColor !important;
     stroke: currentColor !important;
@@ -3737,7 +3737,7 @@ html body.theme-sunset .message-body p {
   font-weight: 400 !important;
 }
 
-/* Send Button - Streamlined SVG Only - Exactly 28px for 42px footer */
+/* Send Button - Streamlined SVG Only - 32px container, 24px icon */
 .send-btn {
   background: transparent !important;
   border: none !important;
@@ -3746,12 +3746,12 @@ html body.theme-sunset .message-body p {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  max-width: 28px !important;
-  min-height: 28px !important;
-  max-height: 28px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
   flex-shrink: 0 !important;
   transition: transform 0.2s ease !important;
 }
@@ -3765,8 +3765,8 @@ html body.theme-sunset .message-body p {
 }
 
 .send-btn svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 24px !important;
+  height: 24px !important;
   color: #10b981 !important;
   fill: #10b981 !important;
 }

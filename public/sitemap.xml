@@ -7,7 +7,7 @@
   <!-- Home / Landing -->
   <url>
     <loc>https://tingletap.com/</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -15,7 +15,7 @@
   <!-- About -->
   <url>
     <loc>https://tingletap.com/about</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -23,7 +23,7 @@
   <!-- Contact -->
   <url>
     <loc>https://tingletap.com/contact</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -31,7 +31,7 @@
   <!-- FAQ -->
   <url>
     <loc>https://tingletap.com/faq</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -39,7 +39,7 @@
   <!-- Terms of Service -->
   <url>
     <loc>https://tingletap.com/terms</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -47,7 +47,7 @@
   <!-- Privacy Policy -->
   <url>
     <loc>https://tingletap.com/privacy</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -55,7 +55,7 @@
   <!-- Disclaimer -->
   <url>
     <loc>https://tingletap.com/disclaimer</loc>
-    <lastmod>2025-10-10</lastmod>
+    <lastmod>2026-07-06</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>

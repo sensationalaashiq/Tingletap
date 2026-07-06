@@ -142,6 +142,20 @@ export const checkAndGrantAchievements = async (uid, userProfile, opts = {}) => 
   const current = Array.isArray(userProfile.achievements) ? userProfile.achievements : [];
   if (current.length >= CRITERIA.length) return [];
 
+  // Owner fast-path: grant all titles immediately as a platform perk
+  if (userProfile.role === 'owner') {
+    const toGrant = CRITERIA.map(c => c.id).filter(id => !current.includes(id));
+    if (toGrant.length === 0) return [];
+    const updated = [...new Set([...current, ...toGrant])];
+    try {
+      await updateDoc(doc(db, 'users', uid), { achievements: updated });
+    } catch (err) {
+      console.error('[Achievements] Owner grant failed:', err);
+      return [];
+    }
+    return toGrant;
+  }
+
   // In-session cooldown: prevents redundant evaluations on rapid sends
   const lastEval = _evalCache.get(uid) || 0;
   if (Date.now() - lastEval < COOLDOWN_MS) return [];

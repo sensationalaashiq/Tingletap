@@ -46,6 +46,113 @@
     <meta name="twitter:image" content="https://tingletap.com/tingletap-logo.jpg" />
     <meta name="twitter:image:alt" content="TingleTap — India's Premier Chat Platform" />
 
+    <!-- Structured Data (Schema.org JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://tingletap.com/#organization",
+          "name": "TingleTap",
+          "alternateName": "Tingle, Tap, Talk",
+          "url": "https://tingletap.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://tingletap.com/#logo",
+            "url": "https://tingletap.com/tingletap-logo.jpg",
+            "contentUrl": "https://tingletap.com/tingletap-logo.jpg",
+            "width": 512,
+            "height": 512,
+            "caption": "TingleTap Logo"
+          },
+          "image": { "@id": "https://tingletap.com/#logo" },
+          "description": "India's premier real-time chat platform. Connect through public chat rooms, private messaging, voice and video calls, and premium customization.",
+          "foundingLocation": {
+            "@type": "Country",
+            "name": "India"
+          },
+          "areaServed": "IN",
+          "knowsAbout": ["Online Chat", "Real-time Communication", "Private Messaging", "Voice Chat", "Video Calls"]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://tingletap.com/#website",
+          "url": "https://tingletap.com/",
+          "name": "TingleTap",
+          "alternateName": "Tingle, Tap, Talk",
+          "description": "Connect with India's most vibrant chat community on TingleTap. Enjoy public chat rooms, private messaging, voice and video calls, GIFs, and premium customization.",
+          "publisher": { "@id": "https://tingletap.com/#organization" },
+          "inLanguage": "en-IN",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://tingletap.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://tingletap.com/#webapp",
+          "name": "TingleTap",
+          "url": "https://tingletap.com/",
+          "applicationCategory": "CommunicationApplication",
+          "applicationSubCategory": "Chat Application",
+          "operatingSystem": "Web",
+          "browserRequirements": "Requires JavaScript. Requires a modern browser.",
+          "description": "India's premier real-time chat platform with public rooms, private messaging, voice and video calls, GIF support, and premium customization.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR",
+            "availability": "https://schema.org/InStock",
+            "description": "Free to join and use core features."
+          },
+          "featureList": [
+            "Public Chat Rooms",
+            "Private Messaging",
+            "Voice Calls",
+            "Video Calls",
+            "GIF Support",
+            "Premium Customization",
+            "Real-time Notifications",
+            "Gender-based Filters"
+          ],
+          "countriesSupported": "IN",
+          "inLanguage": "en-IN",
+          "publisher": { "@id": "https://tingletap.com/#organization" }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://tingletap.com/#webpage",
+          "url": "https://tingletap.com/",
+          "name": "TingleTap — Tingle, Tap, Talk | India's Premier Chat Platform",
+          "description": "Connect with India's most vibrant chat community on TingleTap. Join free today.",
+          "isPartOf": { "@id": "https://tingletap.com/#website" },
+          "about": { "@id": "https://tingletap.com/#organization" },
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://tingletap.com/"
+              }
+            ]
+          },
+          "inLanguage": "en-IN",
+          "potentialAction": {
+            "@type": "ReadAction",
+            "target": ["https://tingletap.com/"]
+          }
+        }
+      ]
+    }
+    </script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
