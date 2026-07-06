@@ -3752,18 +3752,31 @@ const AdminPanelPage = () => {
                 ) : (
                   <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                     {filtered.map(v => {
-                      const vc = VC[v.type] || { bg:'#f9fafb', border:'#e5e7eb', badge:'#6b7280', text: v.type ? v.type.replace(/_/g,' ') : 'Violation', svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'A rule violation was detected.' };
+                      // ── Backward-compat field aliases ──────────────────────────────────────────
+                      // Old logs used: uid, text, violationType, action
+                      // New logs use:  userId, message, type, actionTaken  (plus username, photoURL, matchedWord)
+                      const vType      = v.type       || v.violationType || '';
+                      const vAction    = v.actionTaken|| v.action        || '';
+                      const vMessage   = v.message    || v.text          || '';
+                      const vUserId    = v.userId     || v.uid           || '';
+                      const vUsername  = v.username   || v.displayName   || '';
+                      const vPhotoURL  = v.photoURL   || '';
+                      const vMatched   = v.matchedWord|| '';
+                      // ──────────────────────────────────────────────────────────────────────────
+
+                      const vc = VC[vType] || { bg:'#f9fafb', border:'#e5e7eb', badge:'#6b7280', text: vType ? vType.replace(/_/g,' ') : 'Violation', svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'A rule violation was detected.' };
                       const sevColor = SEV[v.severity] || '#6b7280';
                       const sevBg    = SEV_BG[v.severity] || '#f3f4f6';
-                      const act = ACT[v.actionTaken] || { color:'#6b7280', bg:'#f3f4f6', label: v.actionTaken || 'NOTICE', desc:'Automated action was taken.' };
+                      const act = ACT[vAction] || { color:'#6b7280', bg:'#f3f4f6', label: vAction || 'NOTICE', desc:'Automated action was taken.' };
                       const ts = v.timestamp?.toDate ? v.timestamp.toDate() : (v.timestamp ? new Date(v.timestamp) : null);
                       const timeStr = ts ? ts.toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-                      const matchedUser = users.find(u => u.uid === v.userId);
+                      const matchedUser = users.find(u => u.uid === vUserId);
                       const userEmail = matchedUser?.email || v.email || null;
 
-                      const resolvedUsername = v.username && v.username !== 'Unknown User' && v.username !== 'Unknown'
-                        ? v.username
-                        : (matchedUser?.displayName || (v.userId ? `UID:${v.userId.slice(0,10)}` : 'Unknown User'));
+                      const resolvedUsername = (vUsername && vUsername !== 'Unknown User' && vUsername !== 'Unknown')
+                        ? vUsername
+                        : (matchedUser?.displayName || (vUserId ? `UID:${vUserId.slice(0,10)}` : 'Unknown User'));
+                      const avatarUrl = vPhotoURL || matchedUser?.photoURL || getDefaultAvatarUrl(vUserId, matchedUser?.gender || 'male');
                       return (
                         <div key={v.id} style={{
                           background: v.resolved ? '#f8fafc' : '#fff',
@@ -3798,8 +3811,21 @@ const AdminPanelPage = () => {
 
                             {/* User identity */}
                             <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                              <div style={{ width:42, height:42, borderRadius:'50%', background:`linear-gradient(135deg,${vc.badge}22,${vc.badge}44)`, border:`2px solid ${vc.badge}66`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:900, color:vc.badge, flexShrink:0 }}>
-                                {resolvedUsername[0].toUpperCase()}
+                              {/* Real DP — falls back to deterministic avatar */}
+                              <div style={{ width:44, height:44, borderRadius:'50%', border:`2px solid ${vc.badge}66`, flexShrink:0, overflow:'hidden', background:`linear-gradient(135deg,${vc.badge}22,${vc.badge}44)`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <img
+                                  src={avatarUrl}
+                                  alt={resolvedUsername}
+                                  style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }}
+                                  onError={e => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentNode.setAttribute('data-fallback', resolvedUsername[0]?.toUpperCase() || '?');
+                                    e.target.parentNode.style.fontSize = '17px';
+                                    e.target.parentNode.style.fontWeight = '900';
+                                    e.target.parentNode.style.color = vc.badge;
+                                    e.target.parentNode.textContent = resolvedUsername[0]?.toUpperCase() || '?';
+                                  }}
+                                />
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
@@ -3817,22 +3843,31 @@ const AdminPanelPage = () => {
                                     {userEmail}
                                   </div>
                                 )}
-                                {v.userId && (
-                                  <div style={{ fontSize:10.5, color:'#9ca3af', fontFamily:'monospace' }}>UID: {v.userId}</div>
+                                {vUserId && (
+                                  <div style={{ fontSize:10.5, color:'#9ca3af', fontFamily:'monospace' }}>UID: {vUserId}</div>
                                 )}
                               </div>
                             </div>
 
                             {/* Offending message */}
-                            {v.message && (
+                            {vMessage && (
                               <div style={{ background:'rgba(0,0,0,0.04)', borderLeft:`3px solid ${vc.badge}`, borderRadius:'0 8px 8px 0', padding:'8px 12px' }}>
                                 <div style={{ fontSize:10, fontWeight:800, color:vc.badge, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4, display:'flex', alignItems:'center', gap:5 }}>
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill={vc.badge} d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
                                   Offending Message
                                 </div>
                                 <div style={{ fontSize:12.5, color:'#1e1b4b', fontStyle:'italic', wordBreak:'break-word', lineHeight:1.5 }}>
-                                  "{v.message.slice(0, 300)}{v.message.length > 300 ? '…' : ''}"
+                                  "{vMessage.slice(0, 300)}{vMessage.length > 300 ? '…' : ''}"
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Exact trigger word */}
+                            {vMatched && (
+                              <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#fff1f2', border:'1.5px solid #fecdd3', borderRadius:10, padding:'7px 12px', alignSelf:'flex-start' }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}><path fill="#e11d48" d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z"/></svg>
+                                <span style={{ fontSize:11, fontWeight:800, color:'#9f1239', textTransform:'uppercase', letterSpacing:'0.05em' }}>Trigger Word:</span>
+                                <code style={{ fontSize:12.5, fontWeight:900, color:'#e11d48', background:'#ffe4e6', borderRadius:6, padding:'2px 8px', letterSpacing:'0.02em' }}>{vMatched}</code>
                               </div>
                             )}
 

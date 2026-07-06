@@ -1587,14 +1587,36 @@ const kickUser = async (roomId, uid, displayName, reason) => {
 };
 
 /** Log to dedicated modLogs collection + user doc (v3.0) */
-const logViolation = async (uid, roomId, msgId, text, detection, action) => {
+const logViolation = async (uid, roomId, msgId, text, detection, action, extra = {}) => {
+    const { displayName = 'Unknown User', photoURL = '', roomName = '', matchedWord = '' } = extra;
     const entry = {
-        uid, roomId, messageId: msgId,
+        // ── identity fields (both naming conventions for backward compat) ──
+        uid,          userId: uid,
+        roomId,       roomName,
+        messageId: msgId,
+
+        // ── content (both naming conventions) ──
         text: (text||'').slice(0, 200),
+        message: (text||'').slice(0, 200),   // Admin Panel reads v.message
+
+        // ── violation detail ──
         violationType: detection.type,
+        type: detection.type,                 // Admin Panel reads v.type
         severity: detection.severity,
         label: detection.label,
+
+        // ── action taken (both naming conventions) ──
         action,
+        actionTaken: action,                  // Admin Panel reads v.actionTaken
+
+        // ── user info ──
+        username: displayName,
+        displayName,
+        photoURL,
+
+        // ── exact trigger ──
+        matchedWord: matchedWord || detection.matched || '',
+
         timestamp: new Date().toISOString(),
         ts: Date.now(),
     };
@@ -1784,8 +1806,13 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     if (muteDuration > 0) await muteUser(uid, muteDuration, `TingleBot: ${hit.label} (violation #${priorTotal+1})`);
     if (shouldKick)       await kickUser(roomId, uid, displayName, `AutoMod: ${priorTotal+1} violations`);
 
-    // Persist cross-session violation record
-    await logViolation(uid, roomId, msg.id, text, hit, action);
+    // Persist cross-session violation record (pass user info so Admin Panel shows real name/DP)
+    await logViolation(uid, roomId, msg.id, text, hit, action, {
+        displayName,
+        photoURL: msg.photoURL || '',
+        roomName,
+        matchedWord: hit.matched || '',
+    });
     if (sv.total >= CFG.PERSIST_AT) {
         persistViolationCount(uid, hit.type).catch(()=>{});
     }
