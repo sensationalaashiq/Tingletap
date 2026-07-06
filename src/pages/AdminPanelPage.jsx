@@ -13,6 +13,7 @@ import AdminCoinsPanel from '../components/admin/AdminCoinsPanel';
 import '../components/admin/AdminCoinsPanel.css';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
+import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { Badges } from '../data/Badges.jsx';
 import RoyalTrustBadge from '../components/RoyalTrustBadge';
 import { TRUST_RANKS, getRankFromScore, updateTrustScore } from '../utils/trustSystem';
@@ -1604,45 +1605,13 @@ const AdminPanelPage = () => {
       deviceType = 'Mobile';
     }
     
-    // Parse specific device model name from user agent
-    let deviceModel = '';
-    if (userAgent !== 'Unknown') {
-      if (/iPhone/i.test(userAgent)) {
-        const osMatch = userAgent.match(/CPU iPhone OS ([\d_]+)/);
-        deviceModel = osMatch ? `iPhone (iOS ${osMatch[1].replace(/_/g,'.')})` : 'Apple iPhone';
-      } else if (/iPad/i.test(userAgent)) {
-        const osMatch = userAgent.match(/CPU OS ([\d_]+)/);
-        deviceModel = osMatch ? `iPad (iPadOS ${osMatch[1].replace(/_/g,'.')})` : 'Apple iPad';
-      } else if (/SM-([A-Z0-9]+)/i.test(userAgent)) {
-        const m = userAgent.match(/SM-([A-Z0-9]+)/i);
-        deviceModel = m ? `Samsung SM-${m[1]}` : 'Samsung Galaxy';
-      } else if (/HUAWEI|HWI-|ELE-|CLT-|JSN-/i.test(userAgent)) {
-        const m = userAgent.match(/(?:HUAWEI|HWI-|ELE-|CLT-|JSN-)([A-Z0-9\-]+)/i);
-        deviceModel = m ? `Huawei ${m[1]}` : 'Huawei Device';
-      } else if (/Xiaomi|Redmi|POCO/i.test(userAgent)) {
-        deviceModel = 'Xiaomi / Redmi';
-      } else if (/OnePlus/i.test(userAgent)) {
-        const m = userAgent.match(/OnePlus([A-Z0-9 ]+)/i);
-        deviceModel = m ? `OnePlus ${m[1].trim()}` : 'OnePlus';
-      } else if (/Android/i.test(userAgent)) {
-        const m = userAgent.match(/Android [^;]+; ([^)]+)\)/);
-        const raw = m ? m[1].trim() : '';
-        deviceModel = raw ? raw.split(' Build')[0].split(';')[0].trim() : 'Android Device';
-      } else if (/Windows NT 10\.0/i.test(userAgent)) {
-        deviceModel = 'Windows 10 / 11 PC';
-      } else if (/Windows NT 6\.3/i.test(userAgent)) {
-        deviceModel = 'Windows 8.1 PC';
-      } else if (/Windows/i.test(userAgent)) {
-        deviceModel = 'Windows PC';
-      } else if (/Macintosh|Mac OS X/i.test(userAgent)) {
-        deviceModel = 'Apple Mac / MacBook';
-      } else if (/CrOS/i.test(userAgent)) {
-        deviceModel = 'Chromebook';
-      } else if (/Linux/i.test(userAgent)) {
-        deviceModel = 'Linux PC';
-      } else {
-        deviceModel = deviceType !== 'Unknown' ? deviceType : 'Unknown Device';
-      }
+    // Parse device model — prefer the value stored at login time (set by the
+    // updated DeviceFingerprint.getDeviceInfo), then fall back to a full UA parse.
+    // The shared parser handles all major Indian brands correctly: Oppo (CPH codes),
+    // Vivo (V/Y codes), Realme (RMX codes), Xiaomi/Redmi (full model string), etc.
+    let deviceModel = deviceInfo?.deviceModel || '';
+    if (!deviceModel && userAgent !== 'Unknown') {
+      deviceModel = DeviceFingerprint._parseDeviceModel(userAgent);
     }
     if (!deviceModel) deviceModel = `${deviceType} Device`;
 

@@ -93,8 +93,9 @@ export class DeviceFingerprint {
       platform: navigator.platform || 'Unknown',
       os: this.getOSInfo(),
       
-      // Device
+      // Device — deviceModel is stored so Admin Panel always has the real name
       deviceType: this.getDeviceType(),
+      deviceModel: this.getDeviceModel(),
       isMobile: /Mobi|Android/i.test(navigator.userAgent),
       isTablet: /Tablet|iPad/i.test(navigator.userAgent),
       
@@ -113,6 +114,131 @@ export class DeviceFingerprint {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
       timestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * Detect the real device brand + model from the User-Agent string.
+   * Covers all major Indian Android brands: Oppo, Vivo, Realme, Xiaomi,
+   * Redmi, POCO, Samsung, OnePlus, Motorola, Nokia, Nothing, Infinix, Tecno.
+   */
+  static getDeviceModel() {
+    const ua = navigator.userAgent;
+    return DeviceFingerprint._parseDeviceModel(ua);
+  }
+
+  /**
+   * Shared UA parser used by getDeviceModel() and by the Admin Panel
+   * fallback path (exported via DeviceFingerprint.parseDeviceModel).
+   */
+  static _parseDeviceModel(ua) {
+    if (!ua || ua === 'Unknown') return 'Unknown Device';
+
+    // ── Apple ──────────────────────────────────────────────────────────
+    if (/iPhone/i.test(ua)) {
+      const v = ua.match(/CPU iPhone OS ([\d_]+)/);
+      return v ? `iPhone (iOS ${v[1].replace(/_/g, '.')})` : 'Apple iPhone';
+    }
+    if (/iPad/i.test(ua)) {
+      const v = ua.match(/CPU OS ([\d_]+)/);
+      return v ? `iPad (iPadOS ${v[1].replace(/_/g, '.')})` : 'Apple iPad';
+    }
+
+    // ── Android — extract raw model string first ────────────────────────
+    // Standard format: (Linux; Android X.Y; MODEL_STRING) AppleWebKit/...
+    const am = ua.match(/Android\s[\d.]+;\s([^)]+)\)/i);
+    if (am) {
+      // Strip trailing Build/xxx, wv, etc.
+      let raw = am[1].split(/\s+Build\//i)[0].split(';')[0].trim();
+
+      // ── Samsung ──────────────────────────────────────────────────────
+      // UA: SM-A546B, SM-G991B, SM-S911B, etc.
+      if (/^SM-/i.test(raw) || /SM-[A-Z0-9]+/i.test(ua)) {
+        const code = ua.match(/SM-([A-Z0-9]+)/i);
+        return code ? `Samsung SM-${code[1]}` : 'Samsung Galaxy';
+      }
+      // Older Samsung Galaxy Note/S series written out
+      if (/Samsung/i.test(raw)) return raw;
+
+      // ── Xiaomi / Redmi / POCO ─────────────────────────────────────────
+      // UA: "Redmi Note 12", "POCO M4 Pro", "Xiaomi 13 Pro", "2201116TG"
+      if (/Xiaomi|Redmi|POCO/i.test(raw)) return raw;         // full name already present
+      if (/Xiaomi|Redmi|POCO/i.test(ua) && /^[A-Z0-9]{6,}$/i.test(raw)) {
+        // codename like 2201116TG — still label the brand
+        return `Xiaomi / Redmi (${raw})`;
+      }
+      if (/Xiaomi|Redmi|POCO/i.test(ua)) return raw || 'Xiaomi / Redmi';
+
+      // ── Oppo ─────────────────────────────────────────────────────────
+      // Branded: "OPPO A54", "OPPO Reno8"
+      // Unbranded codes: CPH2269, CPH2395, etc. (ColorOS Phone Handset)
+      if (/^OPPO /i.test(raw)) return raw;
+      if (/OPPO/i.test(ua)) return raw ? `OPPO ${raw}` : 'OPPO Device';
+      if (/^CPH\d+/i.test(raw)) return `OPPO ${raw}`;  // CPH = Oppo model codes
+
+      // ── Vivo ──────────────────────────────────────────────────────────
+      // "vivo V23", "vivo Y20G", raw code "V2109", "V2307", "Y16"
+      if (/^vivo /i.test(raw)) return raw;
+      if (/vivo/i.test(ua)) return raw ? `vivo ${raw}` : 'Vivo Device';
+      // Vivo model codes: V####, Y###, X### — need to distinguish from others
+      if (/^(V|Y|X)\d{2,4}[A-Z]?$/i.test(raw) && !/OnePlus/i.test(ua)) {
+        return `Vivo ${raw}`;
+      }
+
+      // ── Realme ────────────────────────────────────────────────────────
+      // "realme C35", "realme 9 Pro", RMX3511, RMX2202
+      if (/^realme /i.test(raw)) return raw;
+      if (/realme/i.test(ua)) return raw ? `Realme ${raw}` : 'Realme Device';
+      if (/^RMX\d+/i.test(raw)) return `Realme ${raw}`;
+
+      // ── OnePlus ───────────────────────────────────────────────────────
+      // "OnePlus 9 Pro", "OnePlus Nord CE 2"
+      if (/OnePlus/i.test(raw) || /OnePlus/i.test(ua)) {
+        return raw && /OnePlus/i.test(raw) ? raw : `OnePlus ${raw || ''}`.trim();
+      }
+
+      // ── Nothing Phone ─────────────────────────────────────────────────
+      // Model code "A063", "A065"
+      if (/Nothing|^A06[0-9]/i.test(raw) || /Nothing/i.test(ua)) {
+        return raw ? `Nothing Phone (${raw})` : 'Nothing Phone';
+      }
+
+      // ── Huawei / Honor ────────────────────────────────────────────────
+      if (/HUAWEI|Honor/i.test(raw) || /HUAWEI|ELE-|CLT-|JSN-|HWI-/i.test(ua)) {
+        return raw || 'Huawei Device';
+      }
+
+      // ── Motorola ──────────────────────────────────────────────────────
+      // "moto g82 5G", "motorola edge 30"
+      if (/^moto|^motorola/i.test(raw) || /motorola/i.test(ua)) {
+        return raw || 'Motorola Device';
+      }
+
+      // ── Nokia ─────────────────────────────────────────────────────────
+      if (/Nokia/i.test(raw) || /Nokia/i.test(ua)) return raw || 'Nokia Device';
+
+      // ── Infinix ───────────────────────────────────────────────────────
+      if (/Infinix/i.test(raw) || /Infinix/i.test(ua)) return raw || 'Infinix Device';
+
+      // ── Tecno ─────────────────────────────────────────────────────────
+      if (/Tecno/i.test(raw) || /Tecno/i.test(ua)) return raw || 'Tecno Device';
+
+      // ── Itel ──────────────────────────────────────────────────────────
+      if (/itel/i.test(raw) || /itel/i.test(ua)) return raw || 'Itel Device';
+
+      // ── Generic Android — raw model string is good enough ─────────────
+      if (raw) return raw;
+      return 'Android Device';
+    }
+
+    // ── Non-Android ───────────────────────────────────────────────────────
+    if (/Windows NT 10\.0/i.test(ua)) return 'Windows 10 / 11 PC';
+    if (/Windows NT 6\.3/i.test(ua))  return 'Windows 8.1 PC';
+    if (/Windows/i.test(ua))           return 'Windows PC';
+    if (/Macintosh|Mac OS X/i.test(ua)) return 'Apple Mac / MacBook';
+    if (/CrOS/i.test(ua))              return 'Chromebook';
+    if (/Linux/i.test(ua))             return 'Linux PC';
+
+    return 'Unknown Device';
   }
 
   /**
