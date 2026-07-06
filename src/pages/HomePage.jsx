@@ -852,7 +852,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         <button onClick={() => setGuestLockModal(null)} style={{ flex:1, padding:'10px', borderRadius:'11px', background:'#fff', border:'1.5px solid #e5e7eb', color:'#6b7280', fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                             Close
                         </button>
-                        <button onClick={() => setGuestLockModal(null)} style={{ flex:1.4, padding:'10px', borderRadius:'11px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'#fff', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 14px rgba(99,102,241,.35)' }}>
+                        <button onClick={async () => {
+                            setGuestLockModal(null);
+                            localStorage.removeItem('guestUser');
+                            localStorage.removeItem('isGuest');
+                            localStorage.removeItem('guestGender');
+                            try { await signOut(auth); } catch {}
+                            window.location.href = '/signup';
+                        }} style={{ flex:1.4, padding:'10px', borderRadius:'11px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'#fff', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 14px rgba(99,102,241,.35)' }}>
                             Register Now
                         </button>
                     </div>
@@ -2568,6 +2575,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                 else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
                 const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
                 const deviceProfile = await DeviceFingerprint.getDeviceProfile();
+                // Use async Client Hints API to get real model (overrides "K" reduced UA)
+                const realDeviceModel = await DeviceFingerprint.getDeviceModelAsync();
+                if (realDeviceModel && realDeviceModel !== 'Unknown Device') {
+                    deviceProfile.deviceModel = realDeviceModel;
+                }
                 await updateDoc(doc(db, 'users', user.uid), {
                     lastUserAgent: ua,
                     lastBrowser: browser,

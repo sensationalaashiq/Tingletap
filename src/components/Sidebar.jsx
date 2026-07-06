@@ -949,13 +949,18 @@ const Sidebar = ({
                             View Profile
                           </button>
 
-                          {!limited && (
+
+                          {!limited ? (
                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleAddFriendFromSidebar) window.handleAddFriendFromSidebar(userItem); else toast.info(`Adding ${userItem.displayName} as friend`); setDropdownUser(null); }}>
                               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#10b981" d="M15 14c-2.67 0-8 1.33-8 4v2h16v-2c0-2.67-5.33-4-8-4m0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 10H2v2h3v3h2v-3h3v-2H7V7H5v3z"/></svg>
                               Add Friend
                             </button>
-                          )}
-
+                          ) : isGuest ? (
+                            <button className="sb-apd-btn" style={{background:'rgba(99,102,241,0.08)',color:'#6366f1'}} onClick={(e) => { e.stopPropagation(); setDropdownUser(null); try { signOut(auth).catch(()=>{}); } catch {} localStorage.removeItem('guestUser'); localStorage.removeItem('isGuest'); localStorage.removeItem('guestGender'); navigate('/signup'); }}>
+                              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                              Register Now
+                            </button>
+                          ) : null}
                           <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); else toast.info(`Opening PM with ${userItem.displayName}`); setDropdownUser(null); }}>
                             <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#3b82f6" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                             Send Message

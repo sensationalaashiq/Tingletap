@@ -127,6 +127,55 @@ export class DeviceFingerprint {
   }
 
   /**
+   * Async version — uses User-Agent Client Hints (navigator.userAgentData) when
+   * available to get the real device model even when Chrome sends the reduced UA
+   * string (model = "K") for Android privacy. Falls back to _parseDeviceModel.
+   */
+  static async getDeviceModelAsync() {
+    const ua = navigator.userAgent;
+    // Check if UA would return a reduced/useless model
+    const syncModel = DeviceFingerprint._parseDeviceModel(ua);
+
+    // Try Client Hints API (Chrome 90+ on Android)
+    if (navigator.userAgentData?.getHighEntropyValues) {
+      try {
+        const hints = await navigator.userAgentData.getHighEntropyValues([
+          'model', 'platform', 'platformVersion'
+        ]);
+        if (hints.model && hints.model.trim() && hints.model !== 'K') {
+          // Got real model from Client Hints
+          const model = hints.model.trim();
+          const platform = hints.platform || '';
+          // Prefix brand if recognisable and not already in model string
+          const knownBrands = ['Samsung','Xiaomi','Redmi','POCO','Realme','OPPO','Vivo','OnePlus','Motorola','Nokia','Nothing','Infinix','Tecno','itel','Huawei','Honor'];
+          const hasBrand = knownBrands.some(b => model.toLowerCase().startsWith(b.toLowerCase()));
+          if (!hasBrand && platform === 'Android') {
+            // Try to read brand from UA brands list
+            const brandObj = navigator.userAgentData?.brands?.find(b =>
+              !b.brand.includes('Not') && b.brand !== 'Chromium' && b.brand !== 'Google Chrome'
+            );
+            const brand = brandObj?.brand || '';
+            return brand ? `${brand} ${model}` : model;
+          }
+          return model;
+        }
+      } catch {}
+    }
+
+    // If sync model came back as just "K" or a single letter (Chrome reduced UA),
+    // return a friendlier label using the brand from userAgentData if available.
+    if (syncModel === 'K' || (syncModel.length <= 2 && /^[A-Z]$/.test(syncModel))) {
+      const brandObj = navigator.userAgentData?.brands?.find(b =>
+        !b.brand.includes('Not') && b.brand !== 'Chromium' && b.brand !== 'Google Chrome'
+      );
+      if (brandObj?.brand) return `Android (${brandObj.brand})`;
+      return 'Android Device';
+    }
+
+    return syncModel;
+  }
+
+  /**
    * Shared UA parser used by getDeviceModel() and by the Admin Panel
    * fallback path (exported via DeviceFingerprint.parseDeviceModel).
    */

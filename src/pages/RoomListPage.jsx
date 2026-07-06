@@ -333,12 +333,17 @@ const RoomListPage = () => {
     // Save device fingerprint with proper OS detection (not navigator.platform)
     const ua = navigator.userAgent;
     const { os: detectedOS, browser: detectedBrowser } = detectOSAndBrowser(ua);
-    DeviceFingerprint.generateFingerprint().then(deviceId => {
+    Promise.all([
+      DeviceFingerprint.generateFingerprint(),
+      DeviceFingerprint.getDeviceModelAsync(),
+    ]).then(([deviceId, deviceModel]) => {
       if (!deviceId) return;
       const deviceInfo = {
         browser: detectedBrowser,
         os: detectedOS,
         userAgent: ua,
+        deviceModel: deviceModel || DeviceFingerprint._parseDeviceModel(ua),
+        deviceType: /iPad|Tablet/i.test(ua) ? 'Tablet' : /Mobile|Android|iPhone/i.test(ua) ? 'Mobile' : 'Desktop',
         lastSeen: new Date().toISOString()
       };
       updateDoc(doc(db, 'users', cu.uid), {

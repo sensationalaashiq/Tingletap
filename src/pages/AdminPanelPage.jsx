@@ -476,6 +476,89 @@ const AdminPanelPage = () => {
     return () => unsub();
   }, [isRoleReady]);
 
+  // Auto-cleanup: 48h violations/spam/abuse/reports, 24h guest sessions
+  useEffect(() => {
+    if (!isRoleReady) return;
+    const runCleanup = async () => {
+      try {
+        const now = Date.now();
+        const cutoff48hMs = now - 48 * 60 * 60 * 1000;
+        const cutoff24hMs = now - 24 * 60 * 60 * 1000;
+        const cutoff48hDate = new Date(cutoff48hMs);
+
+        // Helper: parse any timestamp value (Firestore Timestamp, ISO string, or millis number)
+        const parseTs = (ts) => {
+          if (!ts) return null;
+          if (ts?.toDate) return ts.toDate().getTime();        // Firestore Timestamp
+          if (typeof ts === 'number') return ts;               // epoch ms
+          const d = new Date(ts);
+          return isNaN(d.getTime()) ? null : d.getTime();      // ISO string
+        };
+
+        // 1. Delete reports older than 48h — use single-field range (timestamp index already exists)
+        const reportsSnap = await getDocs(
+          query(collection(db, 'reports'), where('timestamp', '<', Timestamp.fromDate(cutoff48hDate)), limit(150))
+        );
+        await Promise.all(reportsSnap.docs.map(d => deleteDoc(d.ref)));
+
+        // 2. Delete guest users/guestSessions older than 24h
+        // Fetch all guests by single field (no composite index needed) then filter age client-side
+        const guestsSnap = await getDocs(
+          query(collection(db, 'users'), where('isGuest', '==', true), limit(300))
+        );
+        const staleGuests = guestsSnap.docs.filter(d => {
+          const ts = parseTs(d.data().createdAt);
+          return ts !== null && ts < cutoff24hMs;
+        });
+        await Promise.all(staleGuests.map(async d => {
+          try { await deleteDoc(doc(db, 'guestSessions', d.id)); } catch {}
+          try { await deleteDoc(d.ref); } catch {}
+        }));
+
+        // 3. Clean spamViolations and abuseHistory arrays older than 48h (uses already-loaded users state)
+        const updatePromises = [];
+        const usersSnap = await getDocs(query(collection(db, 'users'), limit(250)));
+        usersSnap.docs.forEach(d => {
+          const data = d.data();
+          const updates = {};
+          let needsUpdate = false;
+
+          if (Array.isArray(data.spamViolations) && data.spamViolations.length > 0) {
+            const fresh = data.spamViolations.filter(v => {
+              const t = parseTs(v.timestamp || v.time || v.at);
+              return t !== null && t > cutoff48hMs;
+            });
+            if (fresh.length !== data.spamViolations.length) {
+              updates.spamViolations = fresh;
+              if (data.trustData) updates['trustData.spamCount'] = fresh.length;
+              needsUpdate = true;
+            }
+          }
+
+          if (Array.isArray(data.abuseHistory) && data.abuseHistory.length > 0) {
+            const fresh = data.abuseHistory.filter(v => {
+              const t = parseTs(v.timestamp || v.time || v.at);
+              return t !== null && t > cutoff48hMs;
+            });
+            if (fresh.length !== data.abuseHistory.length) {
+              updates.abuseHistory = fresh;
+              if (data.trustData) updates['trustData.abuseCount'] = fresh.length;
+              needsUpdate = true;
+            }
+          }
+
+          if (needsUpdate) updatePromises.push(updateDoc(d.ref, updates));
+        });
+        await Promise.all(updatePromises);
+
+        console.log('[AutoCleanup] Done — reports:', reportsSnap.size, '| guests:', staleGuests.length, '| violation arrays:', updatePromises.length);
+      } catch (err) {
+        console.error('[AutoCleanup] Error:', err.message);
+      }
+    };
+    runCleanup();
+  }, [isRoleReady]);
+
   // Mark feedback read/unread
   const handleFeedbackMarkRead = async (id, isRead) => {
     try {
@@ -576,24 +659,6 @@ const AdminPanelPage = () => {
     setDeleting(true);
     try {
       const userRef = doc(db, 'users', deleteTarget.uid);
-      await updateDoc(userRef, {
-        isBanned: true,
-        banInfo: {
-          reason: 'Profile deleted by administrator',
-          bannedBy: currentUserProfile?.displayName || 'Admin',
-          bannedAt: new Date().toISOString(),
-          deletedProfile: true
-        }
-      });
-      try {
-        await IPBanSystem.banUserWithIP(
-          deleteTarget.uid,
-          { displayName: deleteTarget.displayName, email: deleteTarget.email },
-          { reason: 'Profile deleted by administrator', bannedBy: currentUserProfile?.displayName || 'Admin', location: 'Admin Panel' }
-        );
-      } catch (ipError) {
-        console.error('IP ban failed during profile deletion:', ipError);
-      }
       remove(ref(rtdb, `status/${deleteTarget.uid}`));
       await deleteDoc(userRef);
       pt.success(`${deleteTarget.displayName}'s profile permanently deleted.`);
@@ -1605,13 +1670,17 @@ const AdminPanelPage = () => {
       deviceType = 'Mobile';
     }
     
-    // Parse device model — prefer the value stored at login time (set by the
-    // updated DeviceFingerprint.getDeviceInfo), then fall back to a full UA parse.
-    // The shared parser handles all major Indian brands correctly: Oppo (CPH codes),
-    // Vivo (V/Y codes), Realme (RMX codes), Xiaomi/Redmi (full model string), etc.
-    let deviceModel = deviceInfo?.deviceModel || '';
+    // Parse device model — prefer the value stored at login time, then fall back.
+    // Guard against Chrome's reduced UA privacy feature which stores "K" as the
+    // Android device model for all users since Chrome 85+. Treat single-letter
+    // or "K"-only values as missing and use a friendlier label instead.
+    const _rawStoredModel = deviceInfo?.deviceModel || '';
+    const _isReducedUA = _rawStoredModel === 'K' || (_rawStoredModel.length <= 2 && /^[A-Z]$/i.test(_rawStoredModel));
+    let deviceModel = _isReducedUA ? '' : _rawStoredModel;
     if (!deviceModel && userAgent !== 'Unknown') {
-      deviceModel = DeviceFingerprint._parseDeviceModel(userAgent);
+      const _parsed = DeviceFingerprint._parseDeviceModel(userAgent);
+      const _parsedReduced = _parsed === 'K' || (_parsed.length <= 2 && /^[A-Z]$/i.test(_parsed));
+      deviceModel = _parsedReduced ? '' : _parsed;
     }
     if (!deviceModel) deviceModel = `${deviceType} Device`;
 
@@ -2825,7 +2894,7 @@ const AdminPanelPage = () => {
                     Banned IP Addresses
                   </h3>
                   <div className="luxury-banned-ips-list">
-                    {bannedIPs.slice(0, 10).map(ipBan => (
+                    {bannedIPs.slice(0, 20).map(ipBan => (
                       <div key={ipBan.id} className="luxury-banned-ip-item">
                         <div className="luxury-ip-info">
                           <span className="luxury-ip-address">{ipBan.ip}</span>
@@ -2837,6 +2906,24 @@ const AdminPanelPage = () => {
                           </span>
                           <span className="luxury-ip-by">by {ipBan.bannedBy}</span>
                         </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await IPBanSystem.unbanIP(ipBan.ip);
+                              pt.success(`IP ${ipBan.ip} unbanned successfully.`);
+                            } catch (e) {
+                              pt.error(`Failed to unban: ${e.message}`);
+                            }
+                          }}
+                          style={{
+                            marginTop: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700,
+                            background: 'rgba(16,185,129,0.1)', color: '#059669',
+                            border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
+                            cursor: 'pointer', alignSelf: 'flex-start'
+                          }}
+                        >
+                          Unban IP
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -3343,6 +3430,11 @@ const AdminPanelPage = () => {
                               <div style={{ fontSize:12, fontWeight:700, color:'#1e1b4b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                 {u.displayName || 'Unknown'}
                               </div>
+                              {u.username && (
+                                <div style={{ fontSize:10, color:'#7c3aed', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                  @{u.username}
+                                </div>
+                              )}
                               <div style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                 {u.email || '—'}
                               </div>
@@ -4058,7 +4150,10 @@ const AdminPanelPage = () => {
                   const accentColor = isFeedback ? '#a855f7' : '#ef4444';
                   const accentBg = isFeedback ? 'rgba(168,85,247,0.07)' : 'rgba(239,68,68,0.07)';
                   const accentBorder = isFeedback ? 'rgba(168,85,247,0.2)' : 'rgba(239,68,68,0.2)';
-                  const avatarUrl = item.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid || 'user'}`;
+                  // Always show current username — look up user's latest data from loaded users list
+                  const _currentUser = users.find(u => u.uid === item.uid || u.id === item.uid);
+                  const _currentDisplayName = _currentUser?.username || _currentUser?.displayName || item.username || item.displayName || 'Unknown';
+                  const avatarUrl = _currentUser?.photoURL || item.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid || 'user'}`;
 
                   return (
                     <div key={item.id} style={{
@@ -4073,9 +4168,9 @@ const AdminPanelPage = () => {
                         <img src={avatarUrl} alt="" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:`2px solid ${accentColor}40`, flexShrink:0 }} onError={e=>{ e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid||'user'}`; }} />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                            <span style={{ fontWeight:800, fontSize:13.5, color:'#1e293b' }}>{item.username || item.displayName || 'Unknown'}</span>
-                            {item.displayName && item.displayName !== item.username && (
-                              <span style={{ fontSize:11, color:'#64748b', fontWeight:500 }}>({item.displayName})</span>
+                            <span style={{ fontWeight:800, fontSize:13.5, color:'#1e293b' }}>{_currentDisplayName}</span>
+                            {_currentUser?.username && _currentUser.username !== _currentUser.displayName && (
+                              <span style={{ fontSize:11, color:'#7c3aed', fontWeight:600 }}>@{_currentUser.username}</span>
                             )}
                             {/* Type badge */}
                             <span style={{
