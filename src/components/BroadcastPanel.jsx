@@ -572,6 +572,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [pubMicLevel, setPubMicLevel] = useState(0);
   const [pubMicMuted, setPubMicMuted] = useState(false);
 
+  /* ── Join flash notifications ── */
+  const [rjJoinFlashes, setRjJoinFlashes] = useState([]);
+  const [pubJoinFlashes, setPubJoinFlashes] = useState([]);
+  const rjJoinWatchStartRef = useRef(0);
+  const pubJoinWatchStartRef = useRef(0);
+  const rjJoinFlashTimersRef = useRef({});
+  const pubJoinFlashTimersRef = useRef({});
+
   /* ── WebRTC refs — RJ broadcaster side ── */
   const rjHostPCs = useRef({});
   const localStream = useRef(null);
@@ -792,6 +800,62 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     });
     return () => unsub();
   }, [isOpen, myUid]);
+
+  /* ── RJ broadcast: detect new listeners joining → show flash notification (host only) ── */
+  useEffect(() => {
+    if (!isOpen || !rjIsLive || !canManageRJ) return;
+    rjJoinWatchStartRef.current = Date.now();
+    const lisRef = ref(rtdb, 'broadcasts/rj/listeners');
+    const unsub = onChildAdded(lisRef, (snap) => {
+      const data = snap.val();
+      if (!data || !data.name) return;
+      // Skip listeners who were already present before we opened
+      if (data.joinedAt && data.joinedAt < rjJoinWatchStartRef.current - 3000) return;
+      const uid = snap.key;
+      if (uid === myUid) return; // don't flash own join
+      const flashId = `rj_${uid}_${Date.now()}`;
+      setRjJoinFlashes(prev => [...prev.slice(-2), { id: flashId, name: data.name, uid }]);
+      const timer = setTimeout(() => {
+        setRjJoinFlashes(prev => prev.filter(f => f.id !== flashId));
+        delete rjJoinFlashTimersRef.current[flashId];
+      }, 10000);
+      rjJoinFlashTimersRef.current[flashId] = timer;
+    });
+    return () => {
+      unsub();
+      Object.values(rjJoinFlashTimersRef.current).forEach(t => clearTimeout(t));
+      rjJoinFlashTimersRef.current = {};
+      setRjJoinFlashes([]);
+    };
+  }, [isOpen, rjIsLive, myUid]);
+
+  /* ── Public broadcast: detect new listeners joining → show flash notification ── */
+  useEffect(() => {
+    if (!isOpen || !myActiveBroadcast) return;
+    const broadcastId = myActiveBroadcast.id;
+    pubJoinWatchStartRef.current = Date.now();
+    const lisRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners`);
+    const unsub = onChildAdded(lisRef, (snap) => {
+      const data = snap.val();
+      if (!data || !data.name) return;
+      if (data.joinedAt && data.joinedAt < pubJoinWatchStartRef.current - 3000) return;
+      const uid = snap.key;
+      if (uid === myUid) return;
+      const flashId = `pub_${uid}_${Date.now()}`;
+      setPubJoinFlashes(prev => [...prev.slice(-2), { id: flashId, name: data.name, uid }]);
+      const timer = setTimeout(() => {
+        setPubJoinFlashes(prev => prev.filter(f => f.id !== flashId));
+        delete pubJoinFlashTimersRef.current[flashId];
+      }, 10000);
+      pubJoinFlashTimersRef.current[flashId] = timer;
+    });
+    return () => {
+      unsub();
+      Object.values(pubJoinFlashTimersRef.current).forEach(t => clearTimeout(t));
+      pubJoinFlashTimersRef.current = {};
+      setPubJoinFlashes([]);
+    };
+  }, [isOpen, myActiveBroadcast?.id, myUid]);
 
   /* ── Duration timer ── */
   useEffect(() => {
@@ -2895,7 +2959,111 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   /* ── TAB 0 router ── */
-  const renderRJTab = () => canManageRJ ? renderRJControls() : renderListenerView();
+  /* ── Dismiss a join flash by id ── */
+  const dismissRjFlash = (id) => {
+    setRjJoinFlashes(prev => prev.filter(f => f.id !== id));
+    if (rjJoinFlashTimersRef.current[id]) {
+      clearTimeout(rjJoinFlashTimersRef.current[id]);
+      delete rjJoinFlashTimersRef.current[id];
+    }
+  };
+  const dismissPubFlash = (id) => {
+    setPubJoinFlashes(prev => prev.filter(f => f.id !== id));
+    if (pubJoinFlashTimersRef.current[id]) {
+      clearTimeout(pubJoinFlashTimersRef.current[id]);
+      delete pubJoinFlashTimersRef.current[id];
+    }
+  };
+
+  /* ── Join Flash Banner component (rendered inline) ── */
+  /* count prop: pass the correct listener count for the context (rj vs pub) */
+  const JoinFlashArea = ({ flashes, onDismiss, count }) => {
+    if (!flashes || flashes.length === 0) return null;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+        {flashes.map(f => (
+          <div
+            key={f.id}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 13px',
+              background: 'linear-gradient(90deg, rgba(124,58,237,0.18) 0%, rgba(168,85,247,0.10) 100%)',
+              border: '1.5px solid rgba(139,92,246,0.32)',
+              borderRadius: 11,
+              animation: 'bp-join-flash-in 0.35s cubic-bezier(0.34,1.56,0.64,1) both',
+              boxShadow: '0 2px 12px rgba(109,40,217,0.13)',
+            }}
+          >
+            {/* Wave icon */}
+            <span style={{ fontSize: 16, flexShrink: 0 }}>👋</span>
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: '#a78bfa' }}>{f.name}</span>
+              <span style={{ fontSize: 12, color: 'var(--bp-text-muted, #c4b5fd)', fontWeight: 500 }}> joined the broadcast</span>
+            </div>
+            {/* Listener count pill — uses the count prop, not the RJ-scope listenerCount closure */}
+            {(count > 0) && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '2px 9px', borderRadius: 20, fontSize: 10.5, fontWeight: 700,
+                background: 'rgba(124,58,237,0.18)', color: '#c4b5fd',
+                border: '1px solid rgba(139,92,246,0.3)', flexShrink: 0,
+              }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                {count}
+              </span>
+            )}
+            {/* Dismiss X */}
+            <button
+              onClick={() => onDismiss(f.id)}
+              style={{
+                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                border: '1px solid rgba(139,92,246,0.28)',
+                background: 'rgba(139,92,246,0.12)',
+                color: '#a78bfa', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, lineHeight: 1,
+              }}
+            >✕</button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  /* ── Listener count indicator badge (for public broadcasts) ── */
+  const ListenerCountBadge = ({ count }) => (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '5px 12px', borderRadius: 20,
+      background: 'linear-gradient(90deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.12) 100%)',
+      border: '1.5px solid rgba(34,197,94,0.3)',
+      fontSize: 12, fontWeight: 700, color: '#34d399',
+    }}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+      {count} listener{count !== 1 ? 's' : ''}
+    </div>
+  );
+
+  const renderRJTab = () => (
+    <div>
+      {/* Only show join flashes to the RJ host (they watch the listeners path) */}
+      {canManageRJ && (
+        <JoinFlashArea flashes={rjJoinFlashes} onDismiss={dismissRjFlash} count={listenerCount} />
+      )}
+      {canManageRJ ? renderRJControls() : renderListenerView()}
+    </div>
+  );
 
   /* ── TAB 1: Join Stage ── */
   const renderJoinTab = () => {
@@ -3387,9 +3555,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── TAB 4: Public Broadcasts ── */
   const renderPublicTab = () => {
     const others = publicBroadcasts.filter(b => b.hostUid !== myUid);
+    const myPubListenerCount = myActiveBroadcast?.listenerCount || 0;
 
     return (
       <div>
+        {/* Join flash notifications for public broadcast host */}
+        {myActiveBroadcast && (
+          <JoinFlashArea flashes={pubJoinFlashes} onDismiss={dismissPubFlash} count={myPubListenerCount} />
+        )}
+
         {myActiveBroadcast && (
           <>
             <div className="bp-my-broadcast-banner">
@@ -3398,7 +3572,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               </div>
               <div className="bp-my-broadcast-info">
                 <h4>You are live — {myActiveBroadcast.title}</h4>
-                <p>Others can join and listen to you</p>
+                <p>
+                  <ListenerCountBadge count={myPubListenerCount} />
+                </p>
               </div>
               <button className="bp-stop-broadcast-btn" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={handleStopPublicBroadcast}>Stop</button>
             </div>

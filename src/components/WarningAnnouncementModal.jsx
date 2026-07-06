@@ -103,7 +103,7 @@ const CheckRow = ({ checked, onChange, accentC, children }) => (
     onClick={onChange}
     style={{
       display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 14px', borderRadius: 11, cursor: 'pointer',
+      padding: '11px 14px', borderRadius: 11, cursor: 'pointer',
       border: `1.5px solid ${checked ? `${accentC}55` : 'rgba(139,92,246,0.18)'}`,
       background: checked ? `${accentC}0d` : '#fafafa',
       transition: 'all 0.15s', userSelect: 'none',
@@ -122,7 +122,7 @@ const CheckRow = ({ checked, onChange, accentC, children }) => (
   </div>
 );
 
-/* ── IconPicker: MUST be outside component ─────────────────── */
+/* ── IconPicker ─────────────────────────────────────────────── */
 const ICON_OPTS = [
   { v: 'warning',      label: 'Warning',   icon: ICONS.iconWarning,  color: '#d97706' },
   { v: 'info',         label: 'Info',       icon: ICONS.iconInfo,     color: '#2563eb' },
@@ -278,335 +278,539 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
     !(targetType === 'selected_rooms' && selectedRooms.length === 0) &&
     !(targetType === 'selected_users' && selectedUsers.length === 0);
 
-  const LBL = ({ icon, children, right }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '11px', fontWeight: 800, color: '#4c1d95', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-        {icon}{children}
-      </div>
-      {right && <div style={{ fontSize: '10.5px', color: '#9ca3af', fontWeight: 500 }}>{right}</div>}
-    </div>
-  );
-
-  const inp = {
-    width: '100%', padding: '9px 13px', borderRadius: 10, fontSize: '13px',
-    border: '1.5px solid rgba(139,92,246,0.25)', background: '#fff',
-    color: '#1e1b4b', outline: 'none', boxSizing: 'border-box',
-    fontFamily: "'Inter',-apple-system,sans-serif",
-  };
-
   const toggleRoom = (id) => setSelectedRooms(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   const toggleUser = (id) => setSelectedUsers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
   const showRoomList = targetType === 'selected_rooms';
   const showUserList = targetType === 'selected_users';
 
+  /* ── Shared input style ── */
+  const inp = {
+    width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: '13.5px',
+    border: '1.5px solid rgba(139,92,246,0.25)', background: '#fff',
+    color: '#1e1b4b', outline: 'none', boxSizing: 'border-box',
+    fontFamily: "'Inter',-apple-system,sans-serif",
+    transition: 'border-color 0.15s',
+  };
+
+  /* ── Label component ── */
+  const Lbl = ({ icon, children, right }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '10.5px', fontWeight: 800, color: '#4c1d95', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+        {icon}{children}
+      </div>
+      {right && <div style={{ fontSize: '10.5px', color: '#9ca3af', fontWeight: 500 }}>{right}</div>}
+    </div>
+  );
+
+  /* ── Divider ── */
+  const Divider = () => (
+    <div style={{ height: '1px', background: 'rgba(139,92,246,0.10)', margin: '2px 0' }} />
+  );
+
   return ReactDOM.createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(109,40,217,0.13)', backdropFilter: 'blur(7px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'linear-gradient(135deg, rgba(30,8,80,0.72) 0%, rgba(109,40,217,0.18) 100%)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '12px 12px',
+        fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+        boxSizing: 'border-box',
+        overflowY: 'auto',
+      }}
       onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <style>{`
-        @keyframes wamUp { from{opacity:0;transform:scale(0.9) translateY(22px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        .wam-inp:focus { border-color:rgba(109,40,217,0.55)!important; background:rgba(237,233,254,0.25)!important; outline:none; }
+        @keyframes wamUp { from{opacity:0;transform:scale(0.93) translateY(24px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .wam-inp:focus { border-color:rgba(109,40,217,0.6)!important; background:rgba(237,233,254,0.2)!important; outline:none; }
+        .wam-sel { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237c3aed' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px!important; cursor:pointer; }
         .wam-sel option { background:#fff; color:#1e1b4b; }
         .wam-list-row:hover { background:rgba(237,233,254,0.55)!important; }
-        .wam-type-btn:hover { opacity:.9; }
-        .wam-submit:hover:not(:disabled) { filter:brightness(1.07); transform:translateY(-1px); box-shadow:0 8px 24px rgba(109,40,217,0.4)!important; }
+        .wam-type-btn:hover { opacity:.88; }
+        .wam-submit:hover:not(:disabled) { filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 8px 24px rgba(109,40,217,0.42)!important; }
         .wam-submit:active:not(:disabled) { transform:scale(0.98); }
-        ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:rgba(139,92,246,0.06)} ::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.3);border-radius:4px}
+        .wam-cancel:hover { background:rgba(237,233,254,0.9)!important; }
+        .wam-scrollbox::-webkit-scrollbar{width:5px} .wam-scrollbox::-webkit-scrollbar-track{background:rgba(139,92,246,0.06)} .wam-scrollbox::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.28);border-radius:4px}
+        .wam-check-item:hover { background:rgba(237,233,254,0.5)!important; }
       `}</style>
 
       <div style={{
-        background: 'linear-gradient(160deg,#fbf9ff 0%,#f5f3ff 50%,#fdf4ff 100%)',
-        border: '1.5px solid rgba(139,92,246,0.22)',
-        borderRadius: 22, width: '100%', maxWidth: 700,
-        boxShadow: '0 0 0 1px rgba(255,255,255,0.88) inset, 0 28px 70px rgba(109,40,217,0.2)',
-        animation: 'wamUp 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
-        maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        background: 'linear-gradient(160deg,#fbf9ff 0%,#f5f3ff 55%,#fdf4ff 100%)',
+        border: '1.5px solid rgba(139,92,246,0.2)',
+        borderRadius: 22,
+        width: '100%',
+        maxWidth: 520,
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.9) inset, 0 32px 80px rgba(109,40,217,0.28), 0 4px 16px rgba(109,40,217,0.14)',
+        animation: 'wamUp 0.32s cubic-bezier(0.34,1.56,0.64,1) both',
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: '96vh',
+        overflow: 'hidden',
       }}>
 
-        {/* Top accent */}
-        <div style={{ height: 4, background: `linear-gradient(90deg,${accentC},${isWarning ? '#f59e0b' : '#a855f7'},#ec4899)`, borderRadius: '22px 22px 0 0', flexShrink: 0 }} />
+        {/* Top accent strip */}
+        <div style={{
+          height: 5,
+          background: `linear-gradient(90deg,${accentC},${isWarning ? '#f59e0b' : '#a855f7'},#ec4899,#7c3aed)`,
+          borderRadius: '22px 22px 0 0',
+          flexShrink: 0,
+        }} />
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 22px 14px', borderBottom: '1.5px solid rgba(139,92,246,0.1)', flexShrink: 0 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 13, background: `linear-gradient(135deg,${accentC}20,${accentC}0c)`, border: `1.5px solid ${accentC}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {/* ── Header ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '16px 20px 14px',
+          borderBottom: '1.5px solid rgba(139,92,246,0.1)',
+          flexShrink: 0,
+          background: 'rgba(250,248,255,0.6)',
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+            background: `linear-gradient(135deg,${accentC}22,${accentC}0c)`,
+            border: `1.5px solid ${accentC}35`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
             {isWarning ? ICONS.warning : ICONS.announcement}
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#1e1b4b', letterSpacing: '-0.02em' }}>
               Create {isWarning ? 'Warning' : 'Announcement'}
             </div>
-            <div style={{ fontSize: 12, color: '#7c3aed', fontWeight: 500, marginTop: 2, opacity: 0.75 }}>
+            <div style={{ fontSize: 11.5, color: '#7c3aed', fontWeight: 500, marginTop: 2, opacity: 0.8 }}>
               Broadcast to users across the platform
             </div>
           </div>
-          <button onClick={handleClose} style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid rgba(139,92,246,0.22)', background: 'rgba(237,233,254,0.6)', color: '#7c3aed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            onClick={handleClose}
+            style={{
+              width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+              border: '1.5px solid rgba(139,92,246,0.22)',
+              background: 'rgba(237,233,254,0.6)',
+              color: '#7c3aed', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
             {ICONS.close}
           </button>
         </div>
 
-        {/* Body — Two columns */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px', display: 'flex', gap: 18, minHeight: 0 }}>
+        {/* ── Scrollable Body ── */}
+        <div
+          className="wam-scrollbox"
+          style={{
+            flex: 1, overflowY: 'auto', overflowX: 'hidden',
+            padding: '18px 20px',
+            display: 'flex', flexDirection: 'column', gap: 16,
+            minHeight: 0,
+          }}
+        >
 
-          {/* ── LEFT column ── */}
-          <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            {/* Type toggle */}
-            <div>
-              <LBL>Type</LBL>
-              <div style={{ display: 'flex', gap: 5, padding: 4, background: 'rgba(237,233,254,0.55)', borderRadius: 12, border: '1.5px solid rgba(139,92,246,0.15)' }}>
-                {[['warning','⚠️ Warning', ICONS.warning], ['announcement','📢 Announcement', ICONS.announcement]].map(([v, label]) => (
-                  <button key={v} type="button" className="wam-type-btn" onClick={() => setType(v)} style={{
-                    flex: 1, padding: '8px 0', borderRadius: 9, fontSize: '12px', fontWeight: 700,
-                    border: `1.5px solid ${type === v ? accentC + '70' : 'transparent'}`,
-                    background: type === v ? '#fff' : 'transparent',
-                    color: type === v ? accentC : '#9ca3af',
-                    cursor: 'pointer', transition: 'all 0.15s',
-                    boxShadow: type === v ? '0 2px 8px rgba(109,40,217,0.12)' : 'none',
-                  }}>{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <LBL icon={ICONS.title} right={`${title.length}/100`}>Title <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span></LBL>
-              <input
-                className="wam-inp"
-                style={inp}
-                placeholder={`${isWarning ? 'Warning' : 'Announcement'} title…`}
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                maxLength={100}
-              />
-            </div>
-
-            {/* Message */}
-            <div>
-              <LBL icon={ICONS.msg} right={`${message.length}/500`}>Message <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span></LBL>
-              <textarea
-                className="wam-inp"
-                style={{ ...inp, minHeight: 90, resize: 'vertical' }}
-                placeholder="Message content…"
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                maxLength={500}
-              />
-            </div>
-
-            {/* Severity (warning only) */}
-            {isWarning && (
-              <div>
-                <LBL icon={ICONS.severity}>Severity</LBL>
-                <select className="wam-inp wam-sel" style={inp} value={severity} onChange={e => setSeverity(e.target.value)}>
-                  <option value="low">🟡 Low</option>
-                  <option value="medium">🟠 Medium</option>
-                  <option value="high">🔴 High</option>
-                  <option value="critical">⚫ Critical</option>
-                </select>
-              </div>
-            )}
-
-            {/* Icon Style */}
-            <div>
-              <LBL>Icon Style</LBL>
-              <IconPicker iconType={iconType} setIconType={setIconType} />
-            </div>
-
-            {/* Expiry */}
-            <div>
-              <LBL icon={ICONS.clock} right="optional">Expiry</LBL>
-              <input
-                type="datetime-local"
-                className="wam-inp"
-                style={inp}
-                value={expiresAt}
-                onChange={e => setExpiresAt(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-              />
+          {/* ── Type Toggle ── */}
+          <div>
+            <Lbl>Type</Lbl>
+            <div style={{
+              display: 'flex', gap: 5, padding: 4,
+              background: 'rgba(237,233,254,0.55)',
+              borderRadius: 13, border: '1.5px solid rgba(139,92,246,0.15)',
+            }}>
+              {[['warning','⚠️ Warning'], ['announcement','📢 Announcement']].map(([v, label]) => (
+                <button key={v} type="button" className="wam-type-btn" onClick={() => setType(v)} style={{
+                  flex: 1, padding: '9px 8px', borderRadius: 10, fontSize: '12.5px', fontWeight: 700,
+                  border: `1.5px solid ${type === v ? accentC + '70' : 'transparent'}`,
+                  background: type === v ? '#fff' : 'transparent',
+                  color: type === v ? accentC : '#9ca3af',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  boxShadow: type === v ? '0 2px 10px rgba(109,40,217,0.14)' : 'none',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>{label}</button>
+              ))}
             </div>
           </div>
 
-          {/* ── RIGHT column ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+          <Divider />
 
-            {/* Send To */}
+          {/* ── Title ── */}
+          <div>
+            <Lbl icon={ICONS.title} right={`${title.length}/100`}>
+              Title <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+            </Lbl>
+            <input
+              className="wam-inp"
+              style={inp}
+              placeholder={`${isWarning ? 'Warning' : 'Announcement'} title…`}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              maxLength={100}
+            />
+          </div>
+
+          {/* ── Message ── */}
+          <div>
+            <Lbl icon={ICONS.msg} right={`${message.length}/500`}>
+              Message <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+            </Lbl>
+            <textarea
+              className="wam-inp"
+              style={{ ...inp, minHeight: 80, resize: 'vertical', lineHeight: 1.5 }}
+              placeholder="Message content…"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              maxLength={500}
+            />
+          </div>
+
+          <Divider />
+
+          {/* ── Severity (warning only) ── */}
+          {isWarning && (
             <div>
-              <LBL icon={ICONS.target}>Send To</LBL>
-              <select className="wam-inp wam-sel" style={inp} value={targetType} onChange={e => setTargetType(e.target.value)}>
-                <option value="room">📍 Current Room</option>
-                <option value="selected_rooms">🏠 Selected Rooms</option>
-                <option value="all_rooms">🌐 All Rooms</option>
-                <option value="selected_users">👥 Selected Users</option>
-                <option value="all_users">🌍 All Users</option>
+              <Lbl icon={ICONS.severity}>Severity</Lbl>
+              <select className="wam-inp wam-sel" style={inp} value={severity} onChange={e => setSeverity(e.target.value)}>
+                <option value="low">🟡 Low — informational nudge</option>
+                <option value="medium">🟠 Medium — needs attention</option>
+                <option value="high">🔴 High — important action required</option>
+                <option value="critical">⚫ Critical — urgent & visible</option>
               </select>
             </div>
+          )}
 
-            {/* ── Room list ── */}
-            {showRoomList && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <LBL icon={ICONS.room} right={`${selectedRooms.length} selected`}>Rooms</LBL>
-                <div style={{
-                  flex: 1, overflowY: 'auto', minHeight: 200, maxHeight: 280,
-                  border: '1.5px solid rgba(139,92,246,0.22)', borderRadius: 12,
-                  background: '#fff', padding: '6px 4px',
+          {/* ── Icon Style ── */}
+          <div>
+            <Lbl>Icon Style</Lbl>
+            <IconPicker iconType={iconType} setIconType={setIconType} />
+          </div>
+
+          <Divider />
+
+          {/* ── Send To ── */}
+          <div>
+            <Lbl icon={ICONS.target}>Send To</Lbl>
+            <select className="wam-inp wam-sel" style={inp} value={targetType} onChange={e => setTargetType(e.target.value)}>
+              <option value="room">📍 Current Room only</option>
+              <option value="selected_rooms">🏠 Choose specific rooms…</option>
+              <option value="all_rooms">🌐 All rooms simultaneously</option>
+              <option value="selected_users">👥 Choose specific users…</option>
+              <option value="all_users">🌍 All registered users</option>
+            </select>
+          </div>
+
+          {/* ── Selected Rooms List ── */}
+          {showRoomList && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Lbl icon={ICONS.room} right={
+                selectedRooms.length > 0
+                  ? <span style={{ color: accentC, fontWeight: 700 }}>{selectedRooms.length} selected</span>
+                  : 'none selected'
+              }>
+                Choose Rooms
+              </Lbl>
+              <div
+                className="wam-scrollbox"
+                style={{
+                  overflowY: 'auto', overflowX: 'hidden',
+                  maxHeight: 200,
+                  border: '1.5px solid rgba(139,92,246,0.2)',
+                  borderRadius: 12,
+                  background: '#fff',
                   boxShadow: 'inset 0 2px 8px rgba(109,40,217,0.04)',
-                }}>
-                  {rooms.length === 0 && (
-                    <div style={{ padding: 20, textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>No rooms found</div>
-                  )}
-                  {rooms.map(room => {
-                    const sel = selectedRooms.includes(room.id);
-                    return (
-                      <div key={room.id} className="wam-list-row"
-                        onClick={() => toggleRoom(room.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 9, cursor: 'pointer', background: sel ? `${accentC}0f` : 'transparent', margin: '1px 2px', transition: 'all 0.12s' }}>
-                        <div style={{ width: 17, height: 17, borderRadius: 5, flexShrink: 0, border: `2px solid ${sel ? accentC : '#d1d5db'}`, background: sel ? `linear-gradient(135deg,${accentC},${accentC}cc)` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s' }}>
-                          {sel && ICONS.check}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 12.5, color: '#1e1b4b', fontWeight: sel ? 700 : 500 }}>{room.name || room.id}</div>
-                          {room.slug && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>/{room.slug}</div>}
-                        </div>
+                }}
+              >
+                {rooms.length === 0 ? (
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>
+                    Loading rooms…
+                  </div>
+                ) : rooms.map(room => {
+                  const sel = selectedRooms.includes(room.id);
+                  return (
+                    <div
+                      key={room.id}
+                      className="wam-check-item"
+                      onClick={() => toggleRoom(room.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 14px', cursor: 'pointer',
+                        background: sel ? `${accentC}0f` : 'transparent',
+                        borderBottom: '1px solid rgba(139,92,246,0.07)',
+                        transition: 'background 0.12s',
+                        boxSizing: 'border-box', width: '100%',
+                      }}
+                    >
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                        border: `2px solid ${sel ? accentC : '#d1d5db'}`,
+                        background: sel ? `linear-gradient(135deg,${accentC},${accentC}cc)` : '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.12s',
+                        boxShadow: sel ? `0 2px 6px ${accentC}35` : 'none',
+                      }}>
+                        {sel && ICONS.check}
                       </div>
-                    );
-                  })}
-                </div>
-                {rooms.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4, fontWeight: 600 }}>⚠️ No rooms loaded yet — wait a moment and try again</div>
-                )}
-              </div>
-            )}
-
-            {/* ── User list ── */}
-            {showUserList && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, gap: 8 }}>
-                <LBL icon={ICONS.user} right={`${selectedUsers.length} selected`}>Users</LBL>
-                {/* Search box */}
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>{ICONS.search}</div>
-                  <input
-                    className="wam-inp"
-                    style={{ ...inp, paddingLeft: 32, paddingTop: 8, paddingBottom: 8 }}
-                    placeholder="Search by name…"
-                    value={userSearch}
-                    onChange={e => setUserSearch(e.target.value)}
-                  />
-                  {isSearching && (
-                    <div style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#9ca3af' }}>…</div>
-                  )}
-                </div>
-                {/* List */}
-                <div style={{
-                  flex: 1, overflowY: 'auto', minHeight: 180, maxHeight: 260,
-                  border: '1.5px solid rgba(139,92,246,0.22)', borderRadius: 12,
-                  background: '#fff', padding: '6px 4px',
-                  boxShadow: 'inset 0 2px 8px rgba(109,40,217,0.04)',
-                }}>
-                  {filteredUsers.length === 0 && (
-                    <div style={{ padding: 20, textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>
-                      {userSearch ? 'No users match this search' : 'No users loaded'}
-                    </div>
-                  )}
-                  {filteredUsers.slice(0, 50).map(u => {
-                    const sel = selectedUsers.includes(u.id);
-                    return (
-                      <div key={u.id} className="wam-list-row"
-                        onClick={() => toggleUser(u.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 9, cursor: 'pointer', background: sel ? `${accentC}0f` : 'transparent', margin: '1px 2px', transition: 'all 0.12s' }}>
-                        <div style={{ width: 17, height: 17, borderRadius: 5, flexShrink: 0, border: `2px solid ${sel ? accentC : '#d1d5db'}`, background: sel ? `linear-gradient(135deg,${accentC},${accentC}cc)` : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s' }}>
-                          {sel && ICONS.check}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 13, color: '#1e1b4b', fontWeight: sel ? 700 : 500,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {room.name || room.id}
                         </div>
-                        <div>
-                          <div style={{ fontSize: 12.5, color: '#1e1b4b', fontWeight: sel ? 700 : 500 }}>{u.displayName || u.email || 'Unknown'}</div>
-                          {u.email && u.displayName && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{u.email}</div>}
-                        </div>
-                        {sel && (
-                          <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: accentC, flexShrink: 0 }} />
+                        {room.slug && (
+                          <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>/{room.slug}</div>
                         )}
                       </div>
-                    );
-                  })}
-                  {filteredUsers.length > 50 && (
-                    <div style={{ padding: '6px 14px', fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>
-                      Showing 50 of {filteredUsers.length} users — use search to find more
+                      {sel && (
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: accentC, flexShrink: 0 }} />
+                      )}
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+              {selectedRooms.length === 0 && (
+                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
+                  ⚠️ Select at least one room to send
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Fallback when no list is shown — show info card */}
-            {!showRoomList && !showUserList && (
-              <div style={{ padding: '14px 16px', borderRadius: 12, background: `${accentC}08`, border: `1.5px dashed ${accentC}40`, color: accentC, fontSize: 12, fontWeight: 600, textAlign: 'center' }}>
-                {targetType === 'room' && '📍 Will be sent to the current room only'}
-                {targetType === 'all_rooms' && '🌐 Will be sent to ALL rooms simultaneously'}
-                {targetType === 'all_users' && '🌍 Will be sent to ALL registered users'}
-              </div>
-            )}
+          {/* ── Selected Users List ── */}
+          {showUserList && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Lbl icon={ICONS.user} right={
+                selectedUsers.length > 0
+                  ? <span style={{ color: accentC, fontWeight: 700 }}>{selectedUsers.length} selected</span>
+                  : 'none selected'
+              }>
+                Choose Users
+              </Lbl>
 
-            {/* ── Urgent + Dismissible ── */}
-            <div>
-              <LBL>Options</LBL>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <CheckRow checked={isUrgent} onChange={() => setIsUrgent(v => !v)} accentC="#ef4444">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {ICONS.urgent(isUrgent)}
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: isUrgent ? '#dc2626' : '#374151' }}>Urgent</div>
-                      <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>Red accent, priority display</div>
-                    </div>
-                  </div>
-                </CheckRow>
-                <CheckRow checked={allowDismiss} onChange={() => setAllowDismiss(v => !v)} accentC="#10b981">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {ICONS.dismiss(allowDismiss)}
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: allowDismiss ? '#059669' : '#374151' }}>Dismissible</div>
-                      <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>Users can close this notification</div>
-                    </div>
-                  </div>
-                </CheckRow>
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  position: 'absolute', left: 12, top: '50%',
+                  transform: 'translateY(-50%)', pointerEvents: 'none',
+                }}>
+                  {ICONS.search}
+                </div>
+                <input
+                  className="wam-inp"
+                  style={{ ...inp, paddingLeft: 34 }}
+                  placeholder="Search by name…"
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                />
+                {isSearching && (
+                  <div style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    fontSize: 10, color: '#9ca3af',
+                  }}>•••</div>
+                )}
               </div>
+
+              {/* User list */}
+              <div
+                className="wam-scrollbox"
+                style={{
+                  overflowY: 'auto', overflowX: 'hidden',
+                  maxHeight: 200,
+                  border: '1.5px solid rgba(139,92,246,0.2)',
+                  borderRadius: 12,
+                  background: '#fff',
+                  boxShadow: 'inset 0 2px 8px rgba(109,40,217,0.04)',
+                }}
+              >
+                {filteredUsers.length === 0 ? (
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: '#9ca3af', fontSize: 12 }}>
+                    {userSearch ? 'No users match this search' : 'No users loaded'}
+                  </div>
+                ) : filteredUsers.slice(0, 50).map(u => {
+                  const sel = selectedUsers.includes(u.id);
+                  return (
+                    <div
+                      key={u.id}
+                      className="wam-check-item"
+                      onClick={() => toggleUser(u.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 14px', cursor: 'pointer',
+                        background: sel ? `${accentC}0f` : 'transparent',
+                        borderBottom: '1px solid rgba(139,92,246,0.07)',
+                        transition: 'background 0.12s',
+                        boxSizing: 'border-box', width: '100%',
+                      }}
+                    >
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                        border: `2px solid ${sel ? accentC : '#d1d5db'}`,
+                        background: sel ? `linear-gradient(135deg,${accentC},${accentC}cc)` : '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.12s',
+                        boxShadow: sel ? `0 2px 6px ${accentC}35` : 'none',
+                      }}>
+                        {sel && ICONS.check}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 13, color: '#1e1b4b', fontWeight: sel ? 700 : 500,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {u.displayName || u.email || 'Unknown'}
+                        </div>
+                        {u.email && u.displayName && (
+                          <div style={{
+                            fontSize: 10.5, color: '#9ca3af', marginTop: 1,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {u.email}
+                          </div>
+                        )}
+                      </div>
+                      {sel && (
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: accentC, flexShrink: 0 }} />
+                      )}
+                    </div>
+                  );
+                })}
+                {filteredUsers.length > 50 && (
+                  <div style={{ padding: '8px 14px', fontSize: 11, color: '#9ca3af', fontWeight: 600, textAlign: 'center' }}>
+                    Showing 50 of {filteredUsers.length} — use search to narrow down
+                  </div>
+                )}
+              </div>
+              {selectedUsers.length === 0 && (
+                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>
+                  ⚠️ Select at least one user to send
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Info card when no list shown ── */}
+          {!showRoomList && !showUserList && (
+            <div style={{
+              padding: '12px 16px', borderRadius: 11,
+              background: `${accentC}08`,
+              border: `1.5px dashed ${accentC}40`,
+              color: accentC, fontSize: 12.5, fontWeight: 600, textAlign: 'center',
+            }}>
+              {targetType === 'room' && '📍 Will be sent to the current room only'}
+              {targetType === 'all_rooms' && '🌐 Will be sent to ALL rooms simultaneously'}
+              {targetType === 'all_users' && '🌍 Will be sent to ALL registered users'}
+            </div>
+          )}
+
+          <Divider />
+
+          {/* ── Options: Urgent + Dismissible ── */}
+          <div>
+            <Lbl>Options</Lbl>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <CheckRow checked={isUrgent} onChange={() => setIsUrgent(v => !v)} accentC="#ef4444">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {ICONS.urgent(isUrgent)}
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: isUrgent ? '#dc2626' : '#374151' }}>Urgent</div>
+                    <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>Red accent, priority display</div>
+                  </div>
+                </div>
+              </CheckRow>
+              <CheckRow checked={allowDismiss} onChange={() => setAllowDismiss(v => !v)} accentC="#10b981">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {ICONS.dismiss(allowDismiss)}
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: allowDismiss ? '#059669' : '#374151' }}>Dismissible</div>
+                    <div style={{ fontSize: 10.5, color: '#9ca3af', marginTop: 1 }}>Users can close this notification</div>
+                  </div>
+                </div>
+              </CheckRow>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div style={{ padding: '13px 22px 18px', borderTop: '1.5px solid rgba(139,92,246,0.1)', display: 'flex', gap: 10, flexShrink: 0, background: 'rgba(250,248,255,0.8)' }}>
-          {/* Selection summary */}
+          <Divider />
+
+          {/* ── Expiry ── */}
+          <div>
+            <Lbl icon={ICONS.clock} right="optional">Expiry Date & Time</Lbl>
+            <input
+              type="datetime-local"
+              className="wam-inp"
+              style={inp}
+              value={expiresAt}
+              onChange={e => setExpiresAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+            />
+          </div>
+
+        </div>
+        {/* end scrollable body */}
+
+        {/* ── Footer ── */}
+        <div style={{
+          padding: '13px 20px 16px',
+          borderTop: '1.5px solid rgba(139,92,246,0.1)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+          flexShrink: 0,
+          background: 'rgba(250,248,255,0.85)',
+        }}>
+          {/* Selection summary badge */}
           {(selectedRooms.length > 0 || selectedUsers.length > 0) && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', fontSize: 11.5, color: '#7c3aed', fontWeight: 700, gap: 5, background: 'rgba(109,40,217,0.06)', borderRadius: 9, padding: '6px 12px', border: '1px solid rgba(109,40,217,0.15)' }}>
-              ✓ {selectedRooms.length > 0 ? `${selectedRooms.length} room${selectedRooms.length > 1 ? 's' : ''} selected` : ''}
-              {selectedRooms.length > 0 && selectedUsers.length > 0 && ' · '}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: 11.5, color: '#7c3aed', fontWeight: 700,
+              background: 'rgba(109,40,217,0.07)',
+              borderRadius: 9, padding: '7px 12px',
+              border: '1px solid rgba(109,40,217,0.16)',
+            }}>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none">
+                <polyline points="20 6 9 17 4 12" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {selectedRooms.length > 0 ? `${selectedRooms.length} room${selectedRooms.length > 1 ? 's' : ''} selected` : ''}
+              {selectedRooms.length > 0 && selectedUsers.length > 0 && <span style={{ opacity: 0.4 }}> · </span>}
               {selectedUsers.length > 0 ? `${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''} selected` : ''}
             </div>
           )}
-          <button
-            onClick={handleClose}
-            disabled={isLoading}
-            style={{ flex: '0 0 88px', height: 44, borderRadius: 11, border: '1.5px solid rgba(139,92,246,0.25)', background: 'rgba(237,233,254,0.6)', color: '#6d28d9', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-          >Cancel</button>
-          <button
-            className="wam-submit"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            style={{
-              flex: 1, height: 44, borderRadius: 11, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed',
-              background: canSubmit ? `linear-gradient(135deg,${accentC},${isWarning ? '#f59e0b' : '#a855f7'})` : 'rgba(139,92,246,0.12)',
-              fontSize: 13.5, fontWeight: 800, letterSpacing: '0.02em',
-              boxShadow: canSubmit ? `0 5px 18px ${accentC}45` : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'all 0.18s',
-            }}
-          >
-            {canSubmit ? ICONS.send : ICONS.sendDisabled}
-            <span style={{ color: canSubmit ? '#fff' : 'rgba(109,40,217,0.4)' }}>
-              {isLoading ? 'Creating…' : `Send Broadcast`}
-            </span>
-          </button>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              className="wam-cancel"
+              onClick={handleClose}
+              disabled={isLoading}
+              style={{
+                flex: '0 0 90px', height: 46, borderRadius: 12,
+                border: '1.5px solid rgba(139,92,246,0.25)',
+                background: 'rgba(237,233,254,0.6)',
+                color: '#6d28d9', fontSize: 13.5, fontWeight: 700,
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="wam-submit"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              style={{
+                flex: 1, height: 46, borderRadius: 12, border: 'none',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                background: canSubmit
+                  ? `linear-gradient(135deg,${accentC} 0%,${isWarning ? '#f59e0b' : '#a855f7'} 100%)`
+                  : 'rgba(139,92,246,0.12)',
+                fontSize: 14, fontWeight: 800, letterSpacing: '0.02em',
+                boxShadow: canSubmit ? `0 5px 20px ${accentC}45` : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 0.18s',
+              }}
+            >
+              {canSubmit ? ICONS.send : ICONS.sendDisabled}
+              <span style={{ color: canSubmit ? '#fff' : 'rgba(109,40,217,0.4)' }}>
+                {isLoading ? 'Sending…' : 'Send Broadcast'}
+              </span>
+            </button>
+          </div>
         </div>
+
       </div>
     </div>,
     document.body

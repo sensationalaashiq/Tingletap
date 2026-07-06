@@ -7,6 +7,7 @@
 @keyframes bp-fadein    { from { opacity:0 } to { opacity:1 } }
 @keyframes bp-slidein   { from { transform:translateY(28px) scale(0.96); opacity:0 } to { transform:translateY(0) scale(1); opacity:1 } }
 @keyframes bp-pulse     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.78)} }
+@keyframes bp-join-flash-in { from{opacity:0;transform:translateY(-8px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 @keyframes bp-live-ring { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(1.06)} }
 @keyframes bp-shimmer   { 0%{background-position:-200% center} 100%{background-position:200% center} }
 @keyframes bp-bar-anim  { 0%,100%{transform:scaleY(.25);opacity:.5} 50%{transform:scaleY(1);opacity:1} }
