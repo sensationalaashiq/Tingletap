@@ -59,7 +59,7 @@ import './HomePage.css';
 // --- SVG Icons (No changes here) ---
 
 const SendIconSVG = () => (
-  <svg id="Capa_1" enableBackground="new 0 0 512.019 512.019" viewBox="0 0 512.019 512.019" xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+  <svg id="Capa_1" enableBackground="new 0 0 512.019 512.019" viewBox="0 0 512.019 512.019" xmlns="http://www.w3.org/2000/svg" width="30" height="30">
     <g>
       <path d="m242.532 355.703 168.472 85.314c.021-.147 59.984-430.889 60-431l-12.56 17.699z" fill="#e2c4ff"/>
       <path d="m41.003 231.017 150 80 267.44-283.301 12.56-17.699c-49.879 25.251-143.984 73.988-430 221z" fill="#e2c4ff"/>
@@ -70,7 +70,7 @@ const SendIconSVG = () => (
   </svg>
 );
 const AttachmentIconSVG = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 231.8828 202.3201" width="20" height="20">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 231.8828 202.3201" width="28" height="28">
     <g>
       <path fill="#5CB0FF" d="M118.7695,98.3201c24.2617,0,44-19.7383,44-44s-19.7383-44-44-44s-44,19.7383-44,44 S94.5078,98.3201,118.7695,98.3201z M90.7695,50.3201h24v-24c0-2.209,1.7891-4,4-4s4,1.791,4,4v24h24c2.2109,0,4,1.791,4,4 s-1.7891,4-4,4h-24v24c0,2.209-1.7891,4-4,4s-4-1.791-4-4v-24h-24c-2.2109,0-4-1.791-4-4S88.5586,50.3201,90.7695,50.3201z"/>
       <path fill="#1C71DA" d="M8,162.4509c0-17.5742,14.3086-31.8711,31.8984-31.8711h80.0859c17.5898,0,31.8984,14.2969,31.8984,31.8711 v4h8v-4c0-21.9844-17.8984-39.8711-39.8984-39.8711H39.8984c-22,0-39.8984,17.8867-39.8984,39.8711 s17.8984,39.8691,39.8984,39.8691h31.0039v-8H39.8984C22.3086,194.3201,8,180.0232,8,162.4509z"/>
@@ -1789,9 +1789,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     useEffect(() => {
         if (textareaRef.current) {
-            textareaRef.current.style.height = "auto";
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-            
+            const el = textareaRef.current;
+            el.style.height = 'auto';
+            const newH = Math.min(el.scrollHeight, 120);
+            el.style.height = newH + 'px';
+            // Switch to scrollable once content overflows the max height
+            el.style.overflowY = el.scrollHeight > 120 ? 'auto' : 'hidden';
             // Auto-scroll when textarea content changes
             if (newMessage.length > 0) {
                 scrollToBottom(true);
@@ -8676,7 +8679,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         type="button"
                         className="premium-footer-btn attachment-btn"
                         style={{
-                            width: '40px', height: '34px', minWidth: '40px', flexShrink: 0,
+                            width: '46px', height: '42px', minWidth: '46px', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none', padding: 0, cursor: 'pointer'
                         }}
@@ -8724,10 +8727,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 border: 'none', outline: 'none', fontSize: '15px',
                                 fontWeight: 450, color: isDarkMode ? '#e9d5ff' : '#2e1065',
                                 caretColor: '#7c3aed', padding: '8px 4px 18px 4px', margin: 0,
-                                resize: 'none', overflow: 'hidden',
+                                resize: 'none', overflowY: 'hidden', overflowX: 'hidden',
                                 minHeight: '34px', maxHeight: '120px',
                                 lineHeight: '1.4', boxSizing: 'border-box',
-                                display: 'block',
+                                display: 'block', scrollBehavior: 'smooth',
+                                WebkitOverflowScrolling: 'touch',
                             }}
                             placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...')}
                             value={newMessage}
@@ -8779,7 +8783,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         type="submit"
                         className="premium-footer-btn send-btn"
                         style={{
-                            width: '40px', height: '34px', minWidth: '40px', flexShrink: 0,
+                            width: '46px', height: '42px', minWidth: '46px', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
                             opacity: (!newMessage.trim() || loggedInUserProfile?.mutedInfo?.isMuted) ? 0.5 : 1
