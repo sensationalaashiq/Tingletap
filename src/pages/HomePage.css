@@ -11028,16 +11028,20 @@ body.dark-mode .homepage-container .chat-footer,
   height: auto !important;
   min-height: 40px !important;
   max-height: none !important;
-  align-items: flex-end !important;
-  padding: 4px 8px !important;
+  align-items: center !important;
+  padding: 0 8px !important;
+  box-sizing: border-box !important;
 }
 
-/* Form: flex-end so buttons align with bottom of textarea */
+/* Form: fills the footer's full height exactly — no extra top/bottom
+   padding strip so the footer's rendered height equals the form's
+   rendered height (eliminates the residual gap above the input row). */
 body .homepage-container .message-form,
 .homepage-container .message-form {
-  height: auto !important;
-  min-height: 32px !important;
-  align-items: flex-end !important;
+  height: 100% !important;
+  min-height: 40px !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
 }
 
 /* Textarea — auto-expanding, full-width */
@@ -11068,14 +11072,15 @@ body .homepage-container .message-form,
 body .homepage-container .premium-input-field.premium-textarea,
 body .homepage-container .premium-textarea {
   height: auto !important;
-  min-height: 32px !important;
+  min-height: 40px !important;
   max-height: 120px !important;
-  padding: 6px 4px 4px 4px !important;
+  padding: 9px 4px !important;
   resize: none !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   line-height: 1.45 !important;
-  align-self: flex-end !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
   word-break: break-word !important;
   white-space: pre-wrap !important;
   scroll-behavior: smooth !important;
@@ -11084,14 +11089,14 @@ body .homepage-container .premium-textarea {
   scrollbar-color: rgba(124,58,237,0.35) transparent !important;
 }
 
-/* Buttons: align to bottom of expanding textarea */
+/* Buttons: fill the footer's full height exactly, centered */
 body .homepage-container .premium-footer-btn.attachment-btn,
 body .homepage-container .attachment-btn {
   width: 40px !important;
   height: 40px !important;
   min-width: 40px !important;
   max-width: 40px !important;
-  align-self: flex-end !important;
+  align-self: center !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -11109,7 +11114,7 @@ body .homepage-container .send-btn {
   height: 40px !important;
   min-width: 40px !important;
   max-width: 40px !important;
-  align-self: flex-end !important;
+  align-self: center !important;
   flex-shrink: 0 !important;
   display: flex !important;
   align-items: center !important;
