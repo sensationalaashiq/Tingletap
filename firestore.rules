@@ -1086,6 +1086,12 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
+    // ── Owner Email Center: sent email history ──────────────────────────
+    // Only owners can read/write this collection.
+    match /emailHistory/{docId} {
+      allow read, write: if isOwner();
+    }
+
     // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.

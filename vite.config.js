@@ -13,6 +13,13 @@ export default defineConfig({
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
-    }
+    },
+    proxy: {
+      // Owner Email Center API (dev only — Express server on port 5001)
+      '/api': {
+        target:      'http://localhost:5001',
+        changeOrigin: true,
+      },
+    },
   }
 })

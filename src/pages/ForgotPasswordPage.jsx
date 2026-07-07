@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import SEO from '../seo/SEO';
 import { PAGES } from '../seo/seoConfig';
 import { useNavigate, Link } from 'react-router-dom';
-import { sendPasswordResetEmail } from 'firebase/auth';
+// sendPasswordResetEmail replaced by Netlify Function (Brevo delivery)
 import { auth, db } from '../firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP, initializeEmailJS } from '../utils/emailService';
@@ -126,15 +126,20 @@ const ForgotPasswordPage = () => {
     if (isValid) {
       clearOTP(email.trim());
       try {
-        await sendPasswordResetEmail(auth, email.trim());
+        // Send branded password reset email via Brevo (Netlify Function)
+        const resp = await fetch('/.netlify/functions/sendPasswordReset', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email: email.trim(), userName: null }),
+        });
+        if (!resp.ok) {
+          const d = await resp.json().catch(() => ({}));
+          throw new Error(d.error || 'Failed to send reset email');
+        }
         setStep(3);
         toast.success('OTP verified! Password reset link sent to your email.');
       } catch (err) {
-        if (err.code === 'auth/user-not-found') {
-          setError('No account found with this email address.');
-        } else {
-          setError('OTP verified but failed to send reset email. Please try again.');
-        }
+        setError(err.message || 'OTP verified but failed to send reset email. Please try again.');
       }
     } else {
       setError('Invalid or expired OTP. Please try again or request a new one.');

@@ -33,6 +33,8 @@ const CoinWalletPage = lazy(() => import('./components/coins/CoinWalletPage'));
 const Leaderboard = lazy(() => import('./components/coins/Leaderboard'));
 const RJEarningsDashboard = lazy(() => import('./components/rj/RJEarningsDashboard'));
 const RJWithdrawal = lazy(() => import('./components/rj/RJWithdrawal'));
+const OwnerEmailCenter = lazy(() => import('./pages/OwnerEmailCenter'));
+const VerifyEmailPage  = lazy(() => import('./pages/VerifyEmailPage'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthRoute from './components/AuthRoute';
@@ -943,6 +945,8 @@ function App() {
         <Route path="/login" element={<AuthRoute user={user}><LoginPage /></AuthRoute>} />
         <Route path="/forgot-password" element={<AuthRoute user={user}><ForgotPasswordPage /></AuthRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<Suspense fallback={null}><VerifyEmailPage /></Suspense>} />
+        <Route path="/owner/email-center" element={<Suspense fallback={null}><OwnerEmailCenter /></Suspense>} />
 
         {/* ✅ FIX: Pass 'profile' to all ProtectedRoutes for consistency */}
         <Route path="/rooms" element={<ProtectedRoute user={user} profile={userProfile}><RoomListPage /></ProtectedRoute>} />

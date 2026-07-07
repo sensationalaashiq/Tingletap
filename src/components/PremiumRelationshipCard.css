@@ -318,6 +318,104 @@
 .prc-dark .prc-pop-label--remove { color: #fca5a5 !important; }
 .prc-dark .prc-popover-label { color: #6b7280 !important; border-bottom-color: rgba(139, 92, 246, 0.15) !important; }
 
+/* ══ Compact mode ═════════════════════════════════════════════════════════════ */
+.prc-compact {
+  position: relative;
+}
+.prc-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(168,85,247,0.03));
+  border: 1px solid rgba(124,58,237,0.12);
+  border-radius: 10px;
+}
+.prc-compact-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7c3aed;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.prc-compact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.01em;
+}
+.prc-compact-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.prc-compact-chip-icon svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+.prc-compact-empty {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+.prc-compact-spacer {
+  flex: 1;
+}
+.prc-compact-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(124,58,237,0.2);
+  background: rgba(124,58,237,0.06);
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.prc-compact-btn:hover {
+  background: rgba(124,58,237,0.12);
+  border-color: rgba(124,58,237,0.3);
+}
+.prc-popover--compact {
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+}
+
+/* ── Compact dark mode ── */
+.prc-dark .prc-compact-row {
+  background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(168,85,247,0.06));
+  border-color: rgba(167,139,250,0.16);
+}
+.prc-dark .prc-compact-title { color: #a78bfa; }
+.prc-dark .prc-compact-empty { color: #6b7280; }
+.prc-dark .prc-compact-btn {
+  border-color: rgba(167,139,250,0.22);
+  background: rgba(124,58,237,0.1);
+  color: #a78bfa;
+}
+.prc-dark .prc-compact-btn:hover {
+  background: rgba(124,58,237,0.18);
+  border-color: rgba(167,139,250,0.34);
+}
+
 /* ══ Responsive ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .prc-card { border-radius: 12px; }

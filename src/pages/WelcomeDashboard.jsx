@@ -899,6 +899,17 @@ const WelcomeDashboard = () => {
                 <span>RJ Earnings</span>
               </button>
             )}
+            {userRole === 'owner' && (
+              <button className="wd-coin-btn wd-coin-btn--owner-email" onClick={() => navigate('/owner/email-center')}
+                      title="Owner Email Center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="4" width="20" height="16" rx="3" fill="#a855f7" opacity=".18"/>
+                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c3aed" strokeWidth="1.8"/>
+                  <path d="M2 8l10 6 10-6" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <span>Email Center</span>
+              </button>
+            )}
           </div>
         )}
 

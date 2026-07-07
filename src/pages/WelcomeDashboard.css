@@ -175,10 +175,13 @@
 .wd-coin-btn--lb:hover { background:rgba(253,230,138,0.22); transform:translateY(-2px); }
 .wd-coin-btn--rj { background:rgba(52,211,153,0.15); border:1.5px solid rgba(5,150,105,0.2); color:#065f46; }
 .wd-coin-btn--rj:hover { background:rgba(52,211,153,0.25); transform:translateY(-2px); }
+.wd-coin-btn--owner-email { background:rgba(124,58,237,0.09); border:1.5px solid rgba(124,58,237,0.2); color:#5b21b6; }
+.wd-coin-btn--owner-email:hover { background:rgba(124,58,237,0.16); transform:translateY(-2px); box-shadow:0 4px 14px rgba(124,58,237,0.18); }
 html.dark-mode .wd-coin-btn--wallet { color:#fde68a; border-color:rgba(253,230,138,0.2); background:rgba(217,119,6,0.12); }
 html.dark-mode .wd-coin-btn--buy { color:#c4b5fd; border-color:rgba(167,139,250,0.2); background:rgba(124,58,237,0.12); }
 html.dark-mode .wd-coin-btn--lb { color:#fcd34d; border-color:rgba(253,211,77,0.18); background:rgba(180,83,9,0.12); }
 html.dark-mode .wd-coin-btn--rj { color:#6ee7b7; border-color:rgba(52,211,153,0.2); background:rgba(5,150,105,0.1); }
+html.dark-mode .wd-coin-btn--owner-email { color:#c4b5fd; border-color:rgba(192,132,252,0.22); background:rgba(124,58,237,0.12); }
 
 /* Launch Chat — purple gradient */
 .wd-launch-btn { display:flex; align-items:center; justify-content:center; gap:10px; padding:18px 28px; border-radius:18px; background:linear-gradient(135deg,#5b5bd6 0%,#7c3aed 50%,#a855f7 100%); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(91,91,214,.45); transition:all .3s ease; position:relative; overflow:hidden; font-family:'Inter',sans-serif; color:#fff; font-size:17px; font-weight:800; letter-spacing:.01em; }
