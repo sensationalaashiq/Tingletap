@@ -2,11 +2,28 @@
 // Runs alongside Vite in development. Proxied by Vite at /api/*.
 import express from 'express';
 import cors    from 'cors';
+import admin   from 'firebase-admin';
 
 const app  = express();
 const PORT = 5001;
-const FIREBASE_PROJECT_ID = 'tingletapofraj';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+// ── Optional Firebase Admin init (needs FIREBASE_PROJECT_ID / CLIENT_EMAIL / PRIVATE_KEY) ──
+let adminDb = null;
+try {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey  = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (clientEmail && privateKey && FIREBASE_PROJECT_ID && !admin.apps.length) {
+    admin.initializeApp({ credential: admin.credential.cert({ projectId: FIREBASE_PROJECT_ID, clientEmail, privateKey }) });
+    adminDb = admin.firestore();
+    console.log('[EmailCenter] Firebase Admin initialized ✓');
+  } else {
+    console.warn('[EmailCenter] Firebase Admin credentials missing — contact form Firestore write disabled in dev');
+  }
+} catch (e) {
+  console.warn('[EmailCenter] Firebase Admin init failed:', e.message);
+}
 
 // ── Owner → sender mapping (server-only, never exposed to frontend) ───────────
 const OWNER_MAP = {

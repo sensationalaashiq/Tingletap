@@ -25,6 +25,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: () => '/api/email-action',
       },
+      '/.netlify/functions/contact': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/contact',
+      },
     },
   }
 })
