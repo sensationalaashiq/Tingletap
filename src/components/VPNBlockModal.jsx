@@ -1,143 +1,88 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import './VPNBlockModal.css';
 
 const VPNBlockModal = React.memo(({ vpnInfo, onRetry }) => {
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
+  // Derive which threat types were detected for the subtitle line
+  const threats = [
+    vpnInfo?.is_vpn     && 'VPN',
+    vpnInfo?.is_proxy   && 'Proxy',
+    vpnInfo?.is_tor     && 'Tor',
+    vpnInfo?.is_relay   && 'Relay',
+    vpnInfo?.is_hosting && 'Datacenter',
+  ].filter(Boolean);
 
-  const handleAdminBypass = () => {
-    // FIX 8: Compare against env variable — never hardcode passwords
-    const bypassPassword = import.meta.env.VITE_ADMIN_BYPASS_PASSWORD;
-    if (!bypassPassword) {
-      console.warn('⚠️ VITE_ADMIN_BYPASS_PASSWORD is not set in .env.local');
-      alert('Admin bypass is not configured. Set VITE_ADMIN_BYPASS_PASSWORD in .env.local');
-      return;
-    }
-    if (adminPassword === bypassPassword) {
-      localStorage.setItem('vpn_bypass', 'true');
-      window.location.reload();
-    } else {
-      alert('Invalid admin password');
-    }
-  };
+  const detectedLabel = threats.length > 0 ? threats.join(' · ') : 'Restricted Connection';
+
+  // API temporarily unavailable (not a VPN block, just a check failure)
+  const isUnavailable = vpnInfo?._unavailable;
 
   return (
-    <div className="vpn-block-overlay">
-      <div className="vpn-block-modal">
-        <div className="vpn-block-header">
-          <div className="vpn-block-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-              <path 
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z" 
-                fill="#ef4444"
+    <div className="vpn-overlay" role="alertdialog" aria-modal="true" aria-label="Access Restricted">
+      <div className="vpn-card">
+
+        {/* Shield icon */}
+        <div className="vpn-icon-wrap">
+          <svg className="vpn-shield" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6L12 2z"
+              fill="currentColor" opacity=".15"
+            />
+            <path
+              d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6L12 2z"
+              stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" fill="none"
+            />
+            <path
+              d="M8.5 12.5l2.5 2.5 5-5"
+              stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        {isUnavailable ? (
+          <>
+            <h1 className="vpn-title">Verification Temporarily Unavailable</h1>
+            <p className="vpn-subtitle">Security Status · Unable to verify</p>
+            <p className="vpn-message">
+              We were unable to verify your connection at this time.
+              Please wait a moment and try again.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="vpn-title">Access Restricted</h1>
+            <p className="vpn-subtitle">Security Status · {detectedLabel}</p>
+            <p className="vpn-message">
+              VPN, Proxy, Tor, or Datacenter connections are not allowed.
+              Please disable them and try again.
+            </p>
+          </>
+        )}
+
+        <div className="vpn-divider" />
+
+        {/* Action buttons */}
+        <div className="vpn-actions">
+          <button className="vpn-btn vpn-btn--primary" onClick={onRetry}>
+            <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+              <path
+                d="M4 10a6 6 0 1 0 1.17-3.55M4 10V6m0 4H8"
+                stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
               />
             </svg>
-          </div>
-          <div className="vpn-block-title">
-            <h2>🚫 Access Denied</h2>
-            <p>VPN/Proxy Detected</p>
-          </div>
+            Check Again
+          </button>
+          <a className="vpn-btn vpn-btn--secondary" href="/contact">
+            Contact Support
+          </a>
         </div>
 
-        <div className="vpn-block-content">
-          <div className="vpn-block-message">
-            <h3>🛡️ Security Notice</h3>
-            <p>
-              We've detected that you're using a VPN, proxy, or similar service. 
-              For security and compliance reasons, access to our platform is restricted 
-              when using these services.
-            </p>
-          </div>
-
-          {vpnInfo && (
-            <div className="vpn-detection-details">
-              <div className="detail-item">
-                <span className="label">Your IP:</span>
-                <span className="value">{vpnInfo.ip}</span>
-              </div>
-              {vpnInfo.location && (
-                <div className="detail-item">
-                  <span className="label">Location:</span>
-                  <span className="value">{vpnInfo.location}</span>
-                </div>
-              )}
-              {vpnInfo.provider && (
-                <div className="detail-item">
-                  <span className="label">Provider:</span>
-                  <span className="value">{vpnInfo.provider}</span>
-                </div>
-              )}
-              {vpnInfo.detectedBy?.length > 0 && (
-                <div className="detail-item">
-                  <span className="label">Detected by:</span>
-                  <span className="value">{vpnInfo.detectedBy.join(', ')}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="vpn-instructions">
-            <h4>📋 To access our platform:</h4>
-            <ol>
-              <li>Disconnect from your VPN or proxy service</li>
-              <li>Close and restart your browser</li>
-              <li>Visit our site using your regular internet connection</li>
-              <li>If issues persist, try clearing your browser cache</li>
-            </ol>
-          </div>
-
-          <div className="vpn-actions">
-            <button 
-              className="retry-button"
-              onClick={onRetry}
-            >
-              🔄 Check Again
-            </button>
-            <button 
-              className="help-button"
-              onClick={() => window.open('/contact', '_blank')}
-            >
-              🆘 Need Help?
-            </button>
-            <button 
-              className="admin-button"
-              onClick={() => setShowAdminPanel(!showAdminPanel)}
-              style={{ display: process.env.NODE_ENV === 'development' ? 'block' : 'none' }}
-            >
-              🔧 Admin
-            </button>
-          </div>
-
-          {showAdminPanel && (
-            <div className="admin-bypass-panel">
-              <h4>🔧 Admin Bypass (Development Only)</h4>
-              <div className="admin-input-group">
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Admin password"
-                  className="admin-password-input"
-                />
-                <button onClick={handleAdminBypass} className="admin-bypass-button">
-                  Bypass
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="vpn-footer">
-            <p>
-              <strong>Why do we block VPNs?</strong><br/>
-              We block VPNs and proxies to prevent abuse, ensure compliance with regional regulations, 
-              and maintain the security and integrity of our platform for all users.
-            </p>
-          </div>
-        </div>
+        <p className="vpn-footer-note">
+          Your account is not affected. Connect without VPN/Proxy/Tor to continue.
+        </p>
       </div>
     </div>
   );
 });
 
+VPNBlockModal.displayName = 'VPNBlockModal';
 export default VPNBlockModal;

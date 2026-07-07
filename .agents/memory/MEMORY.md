@@ -28,3 +28,4 @@
 - [Achievement system](achievement-system.md) — 5 sequential titles in users/{uid}.achievements; event-driven from handleSendMessage; 45s cooldown; single updateDoc per batch; birthday badge is pure client-side isTodayBirthday()
 - [Owner Email Center architecture](owner-email-center.md) — ownerEmails Firestore collection; ownerInbox field gates per-owner inbox; 3 Netlify functions: contact.js (form→inbox), email-action.js (reply/forward), receive-webhook.js (Brevo inbound); OwnerEmailCenter.jsx is Gmail-like 3-panel rebuild at /owner/email-center
 - [Netlify email functions](netlify-email-functions.md) — templateLoader import.meta.url undefined in esbuild; emailService.js doesn't use templates; REST fallbacks for sendPasswordReset/sendVerification; check-config diagnostic URL
+- [VPN Detection System](vpn-detection-system.md) — server-side Abstract API proxy; POST logs blocked users to securityLogs; 45-min cache; is_hosting via org heuristics

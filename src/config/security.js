@@ -5,7 +5,7 @@ export const SECURITY_CONFIG = {
   VPN_DETECTION: {
     enabled: true, // Set to false to disable VPN detection
     strictMode: true, // If true, blocks even low-confidence VPN detections
-    cacheTimeout: 5 * 60 * 1000, // 5 minutes cache
+    cacheTimeout: 45 * 60 * 1000, // 45 minutes cache
     retryAttempts: 3,
     retryDelay: 5000, // 5 seconds
   },

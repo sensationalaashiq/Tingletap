@@ -1,237 +1,213 @@
+// src/utils/vpnDetection.js
+// Client-side VPN/Proxy/Tor/Datacenter detection.
+// API key NEVER touches the client — all Abstract API calls go through the
+// Netlify Function proxy at /.netlify/functions/vpn-check.
+
 import { SECURITY_CONFIG, isWhitelistedIP, isWhitelistedCountry } from '../config/security.js';
 
-// Abstract API VPN Detection Utility
-export class VPNDetector {
-  static async checkIP(ip) {
+// ─── IP resolution ───────────────────────────────────────────────────────────
+const IP_SERVICES = [
+  { url: 'https://api.ipify.org?format=json', key: 'ip' },
+  { url: 'https://api.myip.com',              key: 'ip' },
+  { url: 'https://ipapi.co/json/',            key: 'ip' },
+];
+
+const IPv4_RE = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+
+async function getUserIP() {
+  for (const { url, key } of IP_SERVICES) {
     try {
-      // Call proxy endpoint (Netlify Function in production) to avoid exposing the API key
-      // in client-side code. Falls back gracefully when the function is unavailable.
-      let data;
-      try {
-        const fnUrl = `/.netlify/functions/vpn-check?ip=${encodeURIComponent(ip)}`;
-        const fnResp = await fetch(fnUrl);
-        if (fnResp.ok) {
-          data = await fnResp.json();
-        } else {
-          throw new Error(`Proxy HTTP ${fnResp.status}`);
-        }
-      } catch (proxyErr) {
-        // In development (Replit) the Netlify Function does not exist — skip silently.
-        console.warn('[VPNDetector] Proxy unavailable, skipping VPN check:', proxyErr.message);
-        return { isVPN: false, confidence: 'unavailable', service: 'AbstractAPI' };
-      }
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 3000);
+      const resp = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const ip   = data[key] || data.ip_address || data.query;
+      if (ip && IPv4_RE.test(ip)) return ip;
+    } catch { /* try next */ }
+  }
+  return null;
+}
 
-      console.log('Abstract API VPN check (via proxy):', { ip, data });
+// ─── Browser / device fingerprint helpers ────────────────────────────────────
+function getBrowserInfo() {
+  const ua = navigator.userAgent || '';
+  let browser = 'Unknown';
+  if (ua.includes('Firefox'))        browser = 'Firefox';
+  else if (ua.includes('Edg/'))      browser = 'Edge';
+  else if (ua.includes('OPR/'))      browser = 'Opera';
+  else if (ua.includes('Chrome'))    browser = 'Chrome';
+  else if (ua.includes('Safari'))    browser = 'Safari';
 
-      // Check if it's a VPN/Proxy based on Abstract API response
-      const isVPN = data.security?.is_vpn || 
-                   data.security?.is_proxy || 
-                   data.security?.is_tor || 
-                   data.security?.is_relay ||
-                   data.is_vpn ||
-                   data.is_proxy ||
-                   false;
+  let deviceType = 'Desktop';
+  if (/Mobi|Android/i.test(ua))      deviceType = 'Mobile';
+  else if (/Tablet|iPad/i.test(ua))  deviceType = 'Tablet';
 
-      const confidence = isVPN ? 'high' : 'low';
+  return { browser, deviceType, userAgent: ua, platform: navigator.platform || 'Unknown' };
+}
 
-      return {
-        isVPN,
-        confidence,
-        data,
-        service: 'AbstractAPI',
-        country: data.country,
-        city: data.city,
-        isp: data.connection?.isp || data.isp,
-        organization: data.connection?.organization || data.organization
-      };
-    } catch (error) {
-      console.error('Abstract API VPN detection error:', error);
-      return { isVPN: false, confidence: 'error', error: error.message };
+// ─── Server-side check (Netlify Function proxy) ──────────────────────────────
+async function callVPNServer(ip, userContext = null) {
+  const fnBase = '/.netlify/functions/vpn-check';
+
+  try {
+    let resp;
+
+    if (userContext) {
+      // POST — includes user context for server-side Firestore logging
+      resp = await fetch(fnBase, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ip, ...userContext }),
+        signal:  AbortSignal.timeout(10000),
+      });
+    } else {
+      // GET — anonymous / pre-auth check
+      resp = await fetch(`${fnBase}?ip=${encodeURIComponent(ip)}`, {
+        signal: AbortSignal.timeout(10000),
+      });
     }
-  }
 
-  static httpGetAsync(url) {
-    return new Promise((resolve, reject) => {
-      const xmlHttp = new XMLHttpRequest();
-      xmlHttp.onreadystatechange = function() {
-        if (xmlHttp.readyState === 4) {
-          if (xmlHttp.status === 200) {
-            resolve(xmlHttp.responseText);
-          } else {
-            reject(new Error(`HTTP ${xmlHttp.status}`));
-          }
-        }
-      }
-      xmlHttp.open("GET", url, true); // true for asynchronous
-      xmlHttp.send(null);
-    });
-  }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
 
-  static async getUserIP() {
-    try {
-      // Get user's real IP address with proper error handling and faster timeout
-      const services = [
-        'https://api.ipify.org?format=json',
-        'https://ipapi.co/json/',
-        'https://api.myip.com'
-      ];
-
-      for (const service of services) {
-        try {
-          // Use AbortController for faster timeout control
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 1500); // Reduced to 1.5 seconds
-          
-          const response = await fetch(service, { 
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json'
-            }
-          });
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          
-          const data = await response.json();
-          const ip = data.ip || data.query || data.ip_address;
-
-          if (ip && this.isValidIP(ip)) {
-            return ip;
-          }
-        } catch (error) {
-          console.warn(`IP service ${service} failed:`, error);
-        }
-      }
-
-      throw new Error('Could not determine IP address');
-    } catch (error) {
-      console.error('Failed to get user IP:', error);
-      return null;
-    }
-  }
-
-  static isValidIP(ip) {
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-    return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+  } catch (err) {
+    // Netlify Function unavailable in dev / network error — fail open
+    console.warn('[VPNCheck] Server proxy unavailable:', err.message);
+    return { allowed: true, blocked: false, _error: 'api_unavailable' };
   }
 }
 
-// Cache results to avoid repeated checks
-const vpnCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// ─── In-memory cache (45-minute TTL) ─────────────────────────────────────────
+const cache      = new Map();
+const CACHE_TTL  = 45 * 60 * 1000; // 45 minutes
 
-// Periodic VPN check functions
-let vpnCheckInterval = null;
+function getCached(ip) {
+  const entry = cache.get(ip);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.result;
+  cache.delete(ip);
+  return null;
+}
+function setCache(ip, result) {
+  cache.set(ip, { result, ts: Date.now() });
+}
 
-export const startPeriodicVPNCheck = (callback) => {
-  if (vpnCheckInterval) clearInterval(vpnCheckInterval);
+// ─── Periodic check ──────────────────────────────────────────────────────────
+let _periodicTimer = null;
 
-  vpnCheckInterval = setInterval(async () => {
-    console.log('🔍 Performing periodic VPN check...');
+export const startPeriodicVPNCheck = (onBlocked) => {
+  if (_periodicTimer) clearInterval(_periodicTimer);
+  _periodicTimer = setInterval(async () => {
+    // Clear cache so the periodic check always hits the server
+    const ip = await getUserIP();
+    if (ip) cache.delete(ip);
     const result = await checkUserVPN();
-    if (!result.allowed) {
-      console.log('❌ VPN detected during periodic check - blocking access');
-      callback(result);
-    }
-  }, 10 * 60 * 1000); // Check every 10 minutes
+    if (!result.allowed) onBlocked(result);
+  }, 10 * 60 * 1000); // every 10 minutes
 };
 
 export const stopPeriodicVPNCheck = () => {
-  if (vpnCheckInterval) {
-    clearInterval(vpnCheckInterval);
-    vpnCheckInterval = null;
-  }
+  if (_periodicTimer) { clearInterval(_periodicTimer); _periodicTimer = null; }
 };
 
-export const checkUserVPN = async () => {
+// ─── Main exported check ─────────────────────────────────────────────────────
+/**
+ * @param {object|null} userContext  Optional — { uid, email, username } for
+ *   server-side logging. Pass null / omit for pre-auth / guest checks.
+ */
+export const checkUserVPN = async (userContext = null) => {
   try {
-    // Check for admin bypass
-    const adminBypass = localStorage.getItem('vpn_bypass');
-    if (adminBypass === 'true' && SECURITY_CONFIG.ADMIN_BYPASS.enabled) {
-      console.log('Admin bypass active - allowing access');
-      return { allowed: true, reason: 'Admin bypass active' };
+    // Admin bypass (dev only)
+    if (SECURITY_CONFIG.ADMIN_BYPASS.enabled && localStorage.getItem('vpn_bypass') === 'true') {
+      return { allowed: true, reason: 'Admin bypass' };
     }
 
-    // Check if VPN detection is enabled
+    // Detection globally disabled
     if (!SECURITY_CONFIG.VPN_DETECTION.enabled) {
-      console.log('VPN detection disabled by configuration');
       return { allowed: true, reason: 'VPN detection disabled' };
     }
 
-    const userIP = await VPNDetector.getUserIP();
-    if (!userIP) {
-      console.warn('Could not determine user IP for VPN check');
-      return { allowed: true, reason: 'IP detection failed' };
+    const ip = await getUserIP();
+    if (!ip) {
+      console.warn('[VPNCheck] Could not determine public IP — failing open');
+      return { allowed: true, reason: 'IP resolution failed' };
     }
 
-    // Check if IP is whitelisted
-    if (isWhitelistedIP(userIP)) {
-      console.log(`IP ${userIP} is whitelisted - allowing access`);
-      return { allowed: true, reason: 'Whitelisted IP', ip: userIP };
+    // Whitelisted IP
+    if (isWhitelistedIP(ip)) {
+      return { allowed: true, reason: 'Whitelisted IP', ip };
     }
 
-    // Check cache first
-    const cacheKey = userIP;
-    const cached = vpnCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('Using cached VPN result for IP:', userIP);
-      return cached.result;
+    // Cache hit (only for anonymous checks — authenticated checks always go through
+    // to ensure server-side logging happens at least once per session)
+    if (!userContext) {
+      const cached = getCached(ip);
+      if (cached) {
+        console.log('[VPNCheck] Cache hit for', ip);
+        return cached;
+      }
     }
 
-    console.log(`Checking VPN status for IP: ${userIP} with Abstract API`);
+    // Enrich user context with browser fingerprint
+    const fullCtx = userContext
+      ? { ...userContext, ...getBrowserInfo() }
+      : null;
 
-    // Perform VPN detection using Abstract API
-    const vpnResult = await VPNDetector.checkIP(userIP);
+    console.log(`[VPNCheck] Checking ${ip} via Abstract API…`);
+    const data = await callVPNServer(ip, fullCtx);
 
-    // Check if country is whitelisted
-    const countryCode = vpnResult.country;
-    if (countryCode && isWhitelistedCountry(countryCode)) {
-      console.log(`Country ${countryCode} is whitelisted - allowing access`);
-      return { 
-        allowed: true, 
-        reason: 'Whitelisted country', 
-        ip: userIP,
-        location: `${vpnResult.city}, ${vpnResult.country}`
-      };
+    // API unavailable → fail open
+    if (data._error === 'api_unavailable' || data._skipped) {
+      console.warn('[VPNCheck] API unavailable — allowing access (fail open)');
+      return { allowed: true, reason: 'Verification temporarily unavailable', ip, _unavailable: true };
     }
 
-    // Determine if should be blocked based on configuration
-    let isBlocked = false;
-
-    if (SECURITY_CONFIG.VPN_DETECTION.strictMode) {
-      // Strict mode: block any VPN detection
-      isBlocked = vpnResult.isVPN;
-    } else {
-      // Normal mode: block only high-confidence VPN detections
-      isBlocked = vpnResult.isVPN && vpnResult.confidence !== 'low';
+    // Country whitelist
+    if (data.country_code && isWhitelistedCountry(data.country_code)) {
+      const result = { allowed: true, reason: 'Whitelisted country', ip, country: data.country_code };
+      setCache(ip, result);
+      return result;
     }
+
+    // Blocking decision — strict: block VPN | Proxy | Tor | Relay | Hosting
+    const isBlocked =
+      data.is_vpn     ||
+      data.is_proxy   ||
+      data.is_tor     ||
+      data.is_relay   ||
+      data.is_hosting ||
+      false;
 
     const result = {
-      allowed: !isBlocked,
-      ip: userIP,
-      vpnDetected: vpnResult.isVPN,
-      confidence: vpnResult.confidence,
-      detectedBy: isBlocked ? ['AbstractAPI'] : [],
-      provider: vpnResult.isp || vpnResult.organization,
-      location: `${vpnResult.city}, ${vpnResult.country}`,
-      countryCode: countryCode,
-      reason: isBlocked ? 'VPN/Proxy detected by Abstract API' : 'Clean IP',
-      strictMode: SECURITY_CONFIG.VPN_DETECTION.strictMode
+      allowed:    !isBlocked,
+      blocked:    isBlocked,
+      ip,
+      reason:     data.reason || (isBlocked ? 'VPN/Proxy/Tor/Datacenter detected' : 'Clean IP'),
+      is_vpn:     data.is_vpn,
+      is_proxy:   data.is_proxy,
+      is_tor:     data.is_tor,
+      is_relay:   data.is_relay,
+      is_hosting: data.is_hosting,
+      country:    data.country,
+      city:       data.city,
+      isp:        data.isp,
+      organization: data.organization,
     };
 
-    // Cache the result
-    vpnCache.set(cacheKey, {
-      result,
-      timestamp: Date.now()
-    });
-
-    console.log('Abstract API VPN check completed:', result);
+    setCache(ip, result);
+    console.log('[VPNCheck] Result:', result);
     return result;
-  } catch (error) {
-    console.error('VPN check failed:', error);
-    return { allowed: true, reason: 'Check failed', error: error.message };
+
+  } catch (err) {
+    console.error('[VPNCheck] Unexpected error:', err);
+    return { allowed: true, reason: 'Check error — failing open', _error: err.message };
   }
 };
+
+// Legacy export kept for backward compatibility
+export class VPNDetector {
+  static async checkIP(ip) { return callVPNServer(ip, null); }
+  static async getUserIP()  { return getUserIP(); }
+  static isValidIP(ip)      { return IPv4_RE.test(ip); }
+}

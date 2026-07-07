@@ -29,13 +29,13 @@
       "src": "/tingletap-logo.jpg",
       "type": "image/jpeg",
       "sizes": "192x192",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/tingletap-logo.jpg",
       "type": "image/jpeg",
       "sizes": "512x512",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
@@ -45,6 +45,13 @@
       "sizes": "512x512",
       "form_factor": "narrow",
       "label": "TingleTap Chat Rooms"
+    },
+    {
+      "src": "/tingletap-logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "form_factor": "wide",
+      "label": "TingleTap — Desktop Chat Experience"
     }
   ],
   "shortcuts": [

@@ -202,16 +202,41 @@ function App() {
           syncAllUsersMessageStyles();
         }, 500);
 
-        // Capture and store real IP address for admin panel
+        // Capture IP + run authenticated VPN check (with user context for server logging)
         try {
           const ipRes = await fetch('https://api.ipify.org?format=json');
           const { ip } = await ipRes.json();
           if (ip) {
             const userRef = doc(db, 'users', currentUser.uid);
+            // Read username before the VPN check so we can log it server-side
+            let username = null;
+            try {
+              const snap = await getDoc(userRef);
+              username = snap.data()?.displayName || snap.data()?.username || null;
+            } catch { /* non-fatal */ }
+
+            // Update Firestore with current IP
             await updateDoc(userRef, {
               lastIP: ip,
               lastIPUpdate: new Date().toISOString()
             });
+
+            // Authenticated VPN check — POST to server so blocked attempts are logged
+            try {
+              const { checkUserVPN: _authVPNCheck } = await import('./utils/vpnDetection.js');
+              const vpnResult = await _authVPNCheck({
+                uid:      currentUser.uid,
+                email:    currentUser.email || null,
+                username: username,
+              });
+              if (!vpnResult.allowed && !vpnResult._unavailable) {
+                console.warn('[VPN] Authenticated user on restricted connection — blocking');
+                setVpnInfo(vpnResult);
+                setVpnBlocked(true);
+              }
+            } catch (vpnErr) {
+              console.warn('[VPN] Auth VPN check error (fail open):', vpnErr.message);
+            }
           }
         } catch (e) {
           console.log('IP capture skipped:', e.message);
@@ -928,24 +953,26 @@ function App() {
   if (vpnChecking) {
     return (
       <div style={{
-        padding: '40px',
-        textAlign: 'center',
-        fontSize: '18px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh'
+        position: 'fixed', inset: 0, zIndex: 2147483646,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.18) 0%, transparent 70%), linear-gradient(160deg,#0a0118 0%,#0c0220 50%,#0b011c 100%)',
+        gap: '16px',
       }}>
-        <div style={{ marginBottom: '20px' }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#3b82f6"/>
+        {/* Pulsing shield */}
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%',
+          background: 'rgba(124,58,237,.15)', border: '1px solid rgba(124,58,237,.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'vpn-pulse 1.8s ease-in-out infinite',
+        }}>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6L12 2z"
+              stroke="#7c3aed" strokeWidth="1.6" strokeLinejoin="round" fill="rgba(124,58,237,.2)"/>
           </svg>
         </div>
-        <div>Checking network security...</div>
-        <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '10px' }}>
-          Verifying your connection for safe access
-        </div>
+        <div style={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>Checking network security…</div>
+        <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>Verifying your connection</div>
+        <style>{`@keyframes vpn-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.94)}}`}</style>
       </div>
     );
   }
