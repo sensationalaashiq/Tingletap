@@ -53,6 +53,7 @@ export const sendOTPEmail = async (email, otp) => {
   };
 
   // 1️⃣ REST API (fastest, no SDK init needed)
+  let lastError = '';
   try {
     const r = await restSend(OTP_TEMPLATE, params);
     const body = await r.text();
@@ -60,24 +61,28 @@ export const sendOTPEmail = async (email, otp) => {
       console.log('✅ OTP sent via REST');
       return { success: true };
     }
-    console.error('❌ EmailJS REST Error —', r.status, body);
-    console.error('   Service:', SERVICE_ID, '| Template:', OTP_TEMPLATE, '| Key:', PUBLIC_KEY);
-  } catch (e) { console.error('❌ EmailJS REST Exception:', e.message); }
+    lastError = `EmailJS HTTP ${r.status}: ${body}`;
+    console.error('❌', lastError);
+  } catch (e) {
+    lastError = `EmailJS network error: ${e.message}`;
+    console.error('❌', lastError);
+  }
 
-  // 2️⃣ SDK
+  // 2️⃣ SDK fallback
   try {
     await sdkSend(OTP_TEMPLATE, params);
     console.log('✅ OTP sent via SDK');
     return { success: true };
   } catch (e) {
-    console.error('❌ EmailJS SDK Error:', e?.status, e?.text || e?.message || e);
+    const sdkErr = `EmailJS SDK ${e?.status ?? ''}: ${e?.text ?? e?.message ?? JSON.stringify(e)}`;
+    console.error('❌', sdkErr);
+    lastError = sdkErr;
   }
 
-  // OTP hash is in sessionStorage → verification still works even without email
-  console.warn('⚠️ Email delivery failed; OTP hash stored in sessionStorage for dev testing');
+  console.warn('⚠️ Both EmailJS methods failed. OTP hash stored in sessionStorage.');
   return {
     success: false,
-    error: 'Could not send the OTP email. Check EmailJS template settings or spam folder.'
+    error: lastError || 'Could not send OTP email.'
   };
 };
 

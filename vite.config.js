@@ -14,12 +14,6 @@ export default defineConfig({
       'Pragma': 'no-cache',
       'Expires': '0',
     },
-    proxy: {
-      // Netlify Functions — run `netlify dev` on port 8888 to test locally
-      '/.netlify/functions': {
-        target:      'http://localhost:8888',
-        changeOrigin: true,
-      },
-    },
+    proxy: {},
   }
 })
