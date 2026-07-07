@@ -1979,6 +1979,20 @@ const AdminPanelPage = () => {
                 </button>
               );
             })}
+            {/* Email Center — owner only */}
+            {currentUserProfile?.role === 'owner' && (
+              <button
+                className="luxury-nav-tab"
+                onClick={() => navigate('/owner/email-center')}
+                title="Owner Email Center"
+              >
+                <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22, flexShrink: 0 }}>
+                  <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="#a855f7" strokeWidth="1.9"/>
+                  <path d="M2 8l10 6 10-6" stroke="#a855f7" strokeWidth="1.9" strokeLinecap="round"/>
+                </svg>
+                <span className="luxury-tab-label">Email Center</span>
+              </button>
+            )}
           </div>
         </div>
 

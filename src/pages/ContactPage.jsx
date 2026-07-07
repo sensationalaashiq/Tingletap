@@ -72,9 +72,14 @@ const SUBJECT_LABELS = {
   general: 'General Inquiry',
 };
 
+const ROUTE_LABELS = {
+  support:        'Support Team',
+  administration: 'Administration',
+};
+
 const ContactPage = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', route: 'support', subject: '', message: '' });
   const [sending, setSending] = useState(false);
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleSubmit = async e => {
@@ -82,26 +87,23 @@ const ContactPage = () => {
     setSending(true);
     const subjectLabel = SUBJECT_LABELS[form.subject] || form.subject || 'General Inquiry';
     try {
-      const res = await fetch('https://formsubmit.co/ajax/Support@tingletap.com', {
+      const res = await fetch('/.netlify/functions/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          _subject: `[TingleTap Support] ${subjectLabel} – from ${form.name}`,
-          _replyto: form.email,
-          issue_type: subjectLabel,
+          name:    form.name,
+          email:   form.email,
+          subject: subjectLabel,
           message: form.message,
-          _template: 'table',
-          _captcha: 'false',
+          route:   form.route,
         }),
       });
       const data = await res.json();
-      if (data.success === 'true' || data.success === true) {
+      if (res.ok && data.ok) {
         toast.success('Message sent! We will respond within 2–4 hours.');
-        setForm({ name: '', email: '', subject: '', message: '' });
+        setForm({ name: '', email: '', route: 'support', subject: '', message: '' });
       } else {
-        toast.error('Something went wrong. Please try again.');
+        toast.error(data.error || 'Something went wrong. Please try again.');
       }
     } catch {
       toast.error('Failed to send. Please check your connection and try again.');
@@ -166,6 +168,13 @@ const ContactPage = () => {
               <div className="lp-form-group">
                 <label className="lp-label">Email Address</label>
                 <input className="lp-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com" required/>
+              </div>
+              <div className="lp-form-group">
+                <label className="lp-label">Send To</label>
+                <select className="lp-input" name="route" value={form.route} onChange={handleChange} required>
+                  <option value="support">Support Team — support@tingletap.com</option>
+                  <option value="administration">Administration — admin@tingletap.com</option>
+                </select>
               </div>
               <div className="lp-form-group">
                 <label className="lp-label">Issue Type</label>

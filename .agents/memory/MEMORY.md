@@ -26,3 +26,4 @@
 - [Emoji-free select pattern](emoji-free-select-pattern.md) — native `<option>` can't render SVG; replace emoji-laden `<select>` with a custom button/list picker when icons must be SVG
 - [Owner vs admin panel split](owner-admin-panel-split.md) — AdminPanelPage is owner-only; Owner+Admin moderation lives in a separate lightweight page reusing the same Firestore/RTDB logic, no duplicate listeners
 - [Achievement system](achievement-system.md) — 5 sequential titles in users/{uid}.achievements; event-driven from handleSendMessage; 45s cooldown; single updateDoc per batch; birthday badge is pure client-side isTodayBirthday()
+- [Owner Email Center architecture](owner-email-center.md) — ownerEmails Firestore collection; ownerInbox field gates per-owner inbox; 3 Netlify functions: contact.js (form→inbox), email-action.js (reply/forward), receive-webhook.js (Brevo inbound); OwnerEmailCenter.jsx is Gmail-like 3-panel rebuild at /owner/email-center
