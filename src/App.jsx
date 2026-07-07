@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth';
 import { auth, rtdb, db } from './firebase/config';
 import { ref, onValue, set, onDisconnect, serverTimestamp, remove, get, update } from "firebase/database";
@@ -44,6 +44,8 @@ import VPNBlockModal from './components/VPNBlockModal';
 // Removed toast notifications
 import { checkUserVPN } from './utils/vpnDetection';
 import { getStoredGuestGender } from './utils/roleUtils';
+import { initGA, trackPageView } from './utils/analytics';
+import { initVisitorTracking, updateVisitorPage, updateVisitorIdentity } from './utils/visitorTracking';
 import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
 import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
 import BanKickModal from './components/BanKickModal';
@@ -51,6 +53,18 @@ import { WarningsProvider } from './contexts/WarningsContext'; // FIX 6
 import './App.css';
 import './styles/DarkMode.css';
 import './styles/Themes.css';
+
+// RouteTracker: must live inside BrowserRouter to use useLocation
+function RouteTracker() {
+  const location = useLocation();
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    trackPageView(location.pathname + location.search);
+    updateVisitorPage(location.pathname);
+  }, [location.pathname, location.search]);
+  return null;
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -74,6 +88,14 @@ function App() {
   const [banModalData, setBanModalData] = useState({}); // Added state for ban modal data
   const [showBanModal, setShowBanModal] = useState(false); // Added state for ban modal visibility
   const [error, setError] = useState(''); // Added state for error messages
+
+  // Initialize GA4 and visitor tracking once on mount
+  useEffect(() => {
+    initGA();
+    const initialPage = window.location.pathname + window.location.search;
+    initVisitorTracking({ page: initialPage });
+    trackPageView(initialPage);
+  }, []);
 
   // VPN Detection Effect
   useEffect(() => {
@@ -471,6 +493,10 @@ function App() {
                   }
                 : profile;
               setUserProfile(resolvedProfile);
+              // Update visitor identity — map role to tracking type
+              const _vRole = resolvedProfile.role || 'user';
+              const _vType = _vRole === 'guest' ? 'guest' : 'registered';
+              updateVisitorIdentity(currentUser.uid, _vType);
               // FIX 5: Broadcast profile to HomePage via window event (single Firestore listener)
               window._appUserProfile = resolvedProfile;
               window.dispatchEvent(new CustomEvent('_appUserProfileChanged', { detail: resolvedProfile }));
@@ -940,6 +966,7 @@ function App() {
   return (
     <WarningsProvider>
     <BrowserRouter>
+      <RouteTracker />
       <Routes>
         <Route path="/signup" element={<AuthRoute user={user}><SignupPage /></AuthRoute>} />
         <Route path="/login" element={<AuthRoute user={user}><LoginPage /></AuthRoute>} />

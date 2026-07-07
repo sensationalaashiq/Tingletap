@@ -7749,7 +7749,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onClose={() => setGiphyStickersModalOpen(false)}
                     onSelectGif={handleGifSelect}
                     onStickerSelect={handleStickerSelect}
-                    giphyApiKey="GlVGYHkr3WSBnllca54iNt0yFbjz7L65"
                 />
 
                 {/* New Stylish Font Popup */}

@@ -11,6 +11,8 @@ import { ToastContainer } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
 import AdminCoinsPanel from '../components/admin/AdminCoinsPanel';
 import '../components/admin/AdminCoinsPanel.css';
+import AdminVisitorsPanel from '../components/admin/AdminVisitorsPanel';
+import '../components/admin/AdminVisitorsPanel.css';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
@@ -1955,6 +1957,18 @@ const AdminPanelPage = () => {
                     </defs>
                     <circle cx="12" cy="12" r="10" fill="url(#adm_coins_g)"/>
                     <path fill="#92400e" d="M13.5 8H10v1.5h1.5v5H10V16h4v-1.5h-1.5v-5H14L13.5 8zm-2-2a1 1 0 112 0 1 1 0 01-2 0z"/>
+                  </>
+                )
+              },
+              {
+                id: 'visitors', label: 'Visitors',
+                iconColor: '#0ea5e9',
+                renderIcon: (c) => (
+                  <>
+                    <circle cx="12" cy="8" r="3.5" fill={c}/>
+                    <path fill={c} d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8H4z"/>
+                    <circle cx="19" cy="7" r="2.5" fill={c} opacity="0.6"/>
+                    <path fill={c} d="M16.5 16c.5-1 1.5-1.8 2.5-2s2.1.1 3 .8c-.5.7-1.4 1.2-2 1.2H16.5z" opacity="0.6"/>
                   </>
                 )
               }
@@ -4166,6 +4180,9 @@ const AdminPanelPage = () => {
               <AdminCoinsPanel />
             </div>
           )}
+
+          {/* ── Visitors Tab ── */}
+          {activeTab === 'visitors' && <AdminVisitorsPanel />}
 
         </div>
       </div>
