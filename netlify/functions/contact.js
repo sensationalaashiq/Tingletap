@@ -117,6 +117,11 @@ export const handler = async (event) => {
     log.info('Contact form stored', { id: emailId, route, from: email.replace(/(.{2}).+(@.+)/, '$1***$2') });
   } catch (err) {
     log.error('Firestore write failed for contact', { message: err.message });
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: `Server error saving message: ${err.message}` }),
+    };
   }
 
   try {
@@ -131,6 +136,11 @@ export const handler = async (event) => {
     });
   } catch (err) {
     log.error('Brevo send failed for contact', { message: err.message });
+    return {
+      statusCode: 502,
+      headers,
+      body: JSON.stringify({ error: `Failed to send notification email: ${err.message}` }),
+    };
   }
 
   return {
