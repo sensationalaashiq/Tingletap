@@ -222,11 +222,14 @@
 .ec-mobile-compose-btn {
   display: none; align-items: center; gap: 6px;
   background: linear-gradient(135deg, var(--ec-violet) 0%, #a78bfa 100%);
-  color: #fff; border: none; border-radius: 10px;
+  color: #ffffff !important; border: none; border-radius: 10px;
   padding: 7px 13px; font-size: 13px; font-weight: 700;
   cursor: pointer; white-space: nowrap; flex-shrink: 0;
   box-shadow: 0 3px 12px rgba(109,40,217,.28);
 }
+.ec-mobile-compose-btn span,
+.ec-mobile-compose-btn svg,
+.ec-mobile-compose-btn * { color: #ffffff !important; }
 @media (max-width: 900px) { .ec-mobile-compose-btn { display: flex; } }
 
 /* ────────────────────────────────────────────────

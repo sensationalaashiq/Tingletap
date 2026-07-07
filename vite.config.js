@@ -14,6 +14,17 @@ export default defineConfig({
       'Pragma': 'no-cache',
       'Expires': '0',
     },
-    proxy: {},
+    proxy: {
+      '/.netlify/functions/send-email': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/send-email',
+      },
+      '/.netlify/functions/email-action': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/email-action',
+      },
+    },
   }
 })
