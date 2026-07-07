@@ -15,9 +15,9 @@ export default defineConfig({
       'Expires': '0',
     },
     proxy: {
-      // Owner Email Center API (dev only — Express server on port 5001)
-      '/api': {
-        target:      'http://localhost:5001',
+      // Netlify Functions — run `netlify dev` on port 8888 to test locally
+      '/.netlify/functions': {
+        target:      'http://localhost:8888',
         changeOrigin: true,
       },
     },
