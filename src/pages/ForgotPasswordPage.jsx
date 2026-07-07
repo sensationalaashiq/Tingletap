@@ -46,13 +46,23 @@ const ForgotPasswordPage = () => {
         setSending(false);
         return;
       }
-      // For all other responses (200, 500, etc.) show success to prevent account enumeration
+      if (resp.status === 404) {
+        // Email not registered
+        setError('No account found with this email. Please use your registered login email for password reset.');
+        setSending(false);
+        return;
+      }
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        setError(data.error || 'Something went wrong. Please try again.');
+        setSending(false);
+        return;
+      }
+      // Success — email sent
       setStep(2);
-      toast.success('If an account exists for this email, a reset link has been sent.');
+      toast.success('Password reset link sent! Check your inbox.');
     } catch (err) {
-      // Network error — still show success to avoid enumeration
-      setStep(2);
-      toast.success('If an account exists for this email, a reset link has been sent.');
+      setError('Network error. Please check your connection and try again.');
     } finally {
       setSending(false);
     }

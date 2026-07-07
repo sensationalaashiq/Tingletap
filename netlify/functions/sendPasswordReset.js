@@ -1,8 +1,6 @@
 // Standalone password reset sender — no shared imports, no file system, HTML inline.
-// Falls back to Firebase Auth REST API if Admin SDK credentials are unavailable.
 import admin from 'firebase-admin';
 
-// Firebase Web API key (public — same key used in frontend firebase config)
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyAp6KtSg_7kbGwyffC7sFJxuuxB-wwPj-w';
 
 const CORS = {
@@ -17,10 +15,32 @@ function ensureFirebase() {
   const projectId   = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey  = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  if (!projectId || !clientEmail || !privateKey) throw new Error('Firebase env vars missing: FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY');
+  if (!projectId || !clientEmail || !privateKey) throw new Error('Firebase env vars missing');
   admin.initializeApp({ credential: admin.credential.cert({ projectId, clientEmail, privateKey }) });
   fbInit = true;
 }
+
+const PREMIUM_FOOTER = `
+  <tr><td style="padding:0 28px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.18),transparent);"></div></td></tr>
+  <tr><td align="center" style="padding:16px 28px 8px;background:#faf8ff;">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;">
+      <tr>
+        <td style="padding-right:8px;vertical-align:middle;">
+          <svg class="heart" width="20" height="20" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg>
+        </td>
+        <td style="vertical-align:middle;">
+          <span style="font-size:12px;font-weight:800;color:#7c3aed;letter-spacing:.3px;">Developed by Adrashtra</span>
+          <span style="font-size:12px;color:#d8b4fe;margin:0 6px;">&middot;</span>
+          <span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>
+        </td>
+        <td style="padding-left:8px;vertical-align:middle;">
+          <svg class="heart" width="20" height="20" viewBox="0 0 24 24" style="animation-delay:.4s"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 4px;font-size:10.5px;color:#a78bca;">This is an automated security email. Please do not reply directly.</p>
+    <p style="margin:0;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">TingleTap&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+  </td></tr>`;
 
 function buildResetHtml(name, email, link) {
   const n = String(name  || 'there').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -33,16 +53,16 @@ function buildResetHtml(name, email, link) {
 @keyframes logo-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.03)}}
 @keyframes star-twirl{0%,100%{transform:rotate(0deg) scale(.85);opacity:.45}50%{transform:rotate(72deg) scale(1.15);opacity:1}}
 @keyframes shield-pulse{0%,100%{box-shadow:0 0 0 0 rgba(109,40,217,.15),0 8px 28px rgba(109,40,217,.12)}50%{box-shadow:0 0 0 8px rgba(109,40,217,.06),0 14px 40px rgba(109,40,217,.2)}}
-@keyframes badge-pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes heart-beat{0%,100%{transform:scale(1);opacity:.9}25%{transform:scale(1.25);opacity:1}50%{transform:scale(1);opacity:.9}75%{transform:scale(1.18);opacity:1}}
 .bar{animation:bar-slide 4s linear infinite}
 .logo-img{animation:logo-float 3.5s ease-in-out infinite;display:block}
 .star-a{animation:star-twirl 2.8s ease-in-out infinite}
 .star-b{animation:star-twirl 3.4s ease-in-out infinite .5s}
 .shield{animation:shield-pulse 2.4s ease-in-out infinite}
-.badge{animation:badge-pop .5s cubic-bezier(.34,1.56,.64,1) .9s both}
+.heart{animation:heart-beat 1.4s ease-in-out infinite;transform-origin:center;display:block}
 @media(max-width:600px){.outer{padding:16px 8px!important}.inner{padding:24px 18px 22px!important}.cta-btn{font-size:15px!important;padding:14px 24px!important}}
 </style></head>
-<body style="margin:0;padding:0;background:#ede9f9;">
+<body style="margin:0;padding:0;background:#ede9f9;font-family:'Inter',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(155deg,#f2effe 0%,#ede9f9 55%,#e8e2f6 100%);min-height:100vh;">
 <tr><td class="outer" align="center" style="padding:28px 12px;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;width:100%;background:#ffffff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1),0 2px 12px rgba(109,40,217,.06);overflow:hidden;">
@@ -85,14 +105,9 @@ function buildResetHtml(name, email, link) {
       <p style="margin:0;font-size:13px;color:#b91c1c;font-weight:600;">Didn't request this?</p>
       <p style="margin:4px 0 0;font-size:12px;color:#9b1c1c;line-height:1.5;">If you did not request a password reset, please ignore this email. Your account remains secure and no changes have been made.</p>
     </div>
+    <p style="margin:16px 0 0;font-size:11px;color:#b09dcc;text-align:center;line-height:1.5;">If the button above doesn't work, copy and paste this link into your browser:<br><span style="color:#9333ea;word-break:break-all;">${l}</span></p>
   </td></tr>
-  <tr><td style="padding:0 28px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.15),transparent);"></div></td></tr>
-  <tr><td align="center" style="padding:18px 28px 24px;">
-    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated security email from TingleTap. Please do not reply.</p>
-    <p style="margin:0 0 10px;font-size:11px;color:#c4b5fd;line-height:1.5;">If you have trouble with the button above, copy and paste this URL into your browser:</p>
-    <p style="margin:0 0 14px;font-size:10px;color:#a78bca;word-break:break-all;">${l}</p>
-    <p style="margin:12px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 TingleTap&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
-  </td></tr>
+  ${PREMIUM_FOOTER}
   <tr><td style="height:4px;padding:0;line-height:0;"><div class="bar" style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;font-size:0;"></div></td></tr>
 </table></td></tr></table>
 </body></html>`;
@@ -150,7 +165,7 @@ export const handler = async (event) => {
   const rl = rateLimit(`reset:${ip}`, 3, 5 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: { ...headers, 'Retry-After': String(rl.retryAfter) }, body: JSON.stringify({ error: 'Too many requests. Please wait a few minutes before trying again.' }) };
 
-  // ── Try Firebase Admin path (branded Brevo email) ────────────────────────────
+  // ── Firebase Admin path ───────────────────────────────────────────────────────
   let adminWorking = false;
   try { ensureFirebase(); adminWorking = true; }
   catch (err) {
@@ -158,47 +173,62 @@ export const handler = async (event) => {
   }
 
   if (adminWorking) {
-    let firebaseLink;
+    // First check if the user exists
+    let userRecord = null;
     try {
-      firebaseLink = await admin.auth().generatePasswordResetLink(email, {
-        url: 'https://tingletap.com/reset-password',
-        handleCodeInApp: false,
-      });
+      userRecord = await admin.auth().getUserByEmail(email);
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-        // Silent success — don't reveal whether account exists
-        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+        // User does NOT exist — tell them clearly
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'No account found with this email. Please use your registered login email for password reset.' }),
+        };
       }
-      console.warn('[sendPasswordReset] generatePasswordResetLink failed, falling back to REST:', err.message);
+      console.warn('[sendPasswordReset] getUserByEmail failed, falling back to REST:', err.message);
       adminWorking = false;
     }
 
-    if (adminWorking && firebaseLink) {
-      let resetUrl = firebaseLink;
+    if (adminWorking && userRecord) {
+      // User exists — generate reset link and send branded email
+      let firebaseLink;
       try {
-        const parsed  = new URL(firebaseLink);
-        const oobCode = parsed.searchParams.get('oobCode');
-        if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
-      } catch {}
-
-      const displayName = userName || email.split('@')[0];
-      try {
-        await sendViaBrevo({
-          to:      email,
-          subject: 'Reset Your TingleTap Password',
-          html:    buildResetHtml(displayName, email, resetUrl),
-          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+        firebaseLink = await admin.auth().generatePasswordResetLink(email, {
+          url: 'https://tingletap.com/reset-password',
+          handleCodeInApp: false,
         });
-        console.log('[sendPasswordReset] ✓ Branded email sent via Brevo');
-        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
       } catch (err) {
-        console.warn('[sendPasswordReset] Brevo send failed, falling back to Firebase REST:', err.message);
+        console.warn('[sendPasswordReset] generatePasswordResetLink failed, falling back to REST:', err.message);
+        adminWorking = false;
+      }
+
+      if (adminWorking && firebaseLink) {
+        let resetUrl = firebaseLink;
+        try {
+          const parsed  = new URL(firebaseLink);
+          const oobCode = parsed.searchParams.get('oobCode');
+          if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+        } catch {}
+
+        const displayName = userName || userRecord.displayName || email.split('@')[0];
+        try {
+          await sendViaBrevo({
+            to:      email,
+            subject: 'Reset Your TingleTap Password',
+            html:    buildResetHtml(displayName, email, resetUrl),
+            text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+          });
+          console.log('[sendPasswordReset] ✓ Branded email sent via Brevo');
+          return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+        } catch (err) {
+          console.warn('[sendPasswordReset] Brevo send failed, falling back to Firebase REST:', err.message);
+        }
       }
     }
   }
 
-  // ── Fallback: Firebase Auth REST API (sends standard Firebase reset email) ────
-  // Used when Firebase Admin credentials are missing/invalid OR Brevo fails.
+  // ── Fallback: Firebase Auth REST API ─────────────────────────────────────────
   console.log('[sendPasswordReset] Using Firebase REST API fallback for:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
   try {
     const fbRes = await fetch(
@@ -210,17 +240,21 @@ export const handler = async (event) => {
       }
     );
     const fbData = await fbRes.json().catch(() => ({}));
-    if (fbRes.ok) {
-      console.log('[sendPasswordReset] ✓ Firebase REST fallback succeeded');
-    } else if (fbData.error?.message === 'EMAIL_NOT_FOUND') {
-      // Silent success — don't reveal account existence
-    } else {
-      console.error('[sendPasswordReset] Firebase REST fallback error:', fbData.error?.message);
+    if (fbData.error?.message === 'EMAIL_NOT_FOUND') {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: 'No account found with this email. Please use your registered login email for password reset.' }),
+      };
     }
-    // Always return 200 to prevent account enumeration
+    if (!fbRes.ok) {
+      console.error('[sendPasswordReset] Firebase REST fallback error:', fbData.error?.message);
+    } else {
+      console.log('[sendPasswordReset] ✓ Firebase REST fallback succeeded');
+    }
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (err) {
     console.error('[sendPasswordReset] All methods failed:', err.message);
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) }; // still silent
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Unable to send reset email. Please try again later.' }) };
   }
 };
