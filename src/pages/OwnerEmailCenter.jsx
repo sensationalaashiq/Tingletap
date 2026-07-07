@@ -487,25 +487,25 @@ function EmailDetail({ email, threads, folder, ownerName, senderEmail, onAction 
       {/* Toolbar */}
       <div className="ec-detail-toolbar">
         <button className="ec-tool-btn primary" onClick={() => setShowReply(r => !r)}>
-          <span style={{ color: '#1d4ed8', display:'flex' }}><Ic.Reply /></span> Reply
+          <Ic.Reply /> Reply
         </button>
-        <button className="ec-tool-btn" onClick={() => setShowForward(true)}>
-          <span style={{ color: '#4f46e5', display:'flex' }}><Ic.Forward /></span> Forward
+        <button className="ec-tool-btn ec-tool-fwd" onClick={() => setShowForward(true)}>
+          <Ic.Forward /> Forward
         </button>
         <div className="ec-tool-sep" />
         <button className={`ec-tool-btn ${email.starred ? 'star-active' : ''}`} onClick={handleStar}>
           <Ic.Star filled={email.starred} /> {email.starred ? 'Unstar' : 'Star'}
         </button>
-        <button className="ec-tool-btn" onClick={handleMarkRead}>
-          <span style={{ color: '#047857', display:'flex' }}><Ic.MailOpen /></span> {email.read ? 'Mark Unread' : 'Mark Read'}
+        <button className="ec-tool-btn ec-tool-read" onClick={handleMarkRead}>
+          <Ic.MailOpen /> {email.read ? 'Mark Unread' : 'Mark Read'}
         </button>
         <div className="ec-tool-sep" />
-        <button className="ec-tool-btn" onClick={handleArchive}>
-          <span style={{ color: '#047857', display:'flex' }}><Ic.Archive2 /></span> {folder === 'archived' ? 'Unarchive' : 'Archive'}
+        <button className="ec-tool-btn ec-tool-read" onClick={handleArchive}>
+          <Ic.Archive2 /> {folder === 'archived' ? 'Unarchive' : 'Archive'}
         </button>
         {folder === 'trash' && (
-          <button className="ec-tool-btn" onClick={handleRestore}>
-            <span style={{ color: '#1d4ed8', display:'flex' }}><Ic.Restore /></span> Restore
+          <button className="ec-tool-btn ec-tool-restore" onClick={handleRestore}>
+            <Ic.Restore /> Restore
           </button>
         )}
         <button className="ec-tool-btn danger" onClick={handleDelete}>
@@ -752,13 +752,18 @@ const OwnerEmailCenter = () => {
       {/* Header */}
       <header className="ec-header">
         <div className="ec-header-inner">
-          <button className="ec-back-btn" onClick={() => { setMobileSidebarOpen(v => !v); }}>
+          {/* Hamburger — always visible */}
+          <button className="ec-menu-btn" onClick={() => setMobileSidebarOpen(v => !v)} aria-label="Menu">
             <Ic.MenuLeft />
           </button>
-          <button className="ec-back-btn" onClick={() => navigate('/welcome')}>
-            <Ic.Back /> Dashboard
+
+          {/* Dashboard back — hidden on small mobile */}
+          <button className="ec-back-btn ec-dash-btn" onClick={() => navigate('/welcome')}>
+            <Ic.Back />
+            <span className="ec-dash-label">Dashboard</span>
           </button>
 
+          {/* Title block */}
           <div className="ec-header-title">
             <div className="ec-header-icon">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
@@ -766,19 +771,22 @@ const OwnerEmailCenter = () => {
                 <path d="M2 8l10 6 10-6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
             </div>
-            <div>
+            <div className="ec-header-text">
               <div className="ec-header-name">Email Center</div>
-              <div className="ec-header-sub">Owner Communications · TingleTap™</div>
+              <div className="ec-header-sub">Owner · TingleTap™</div>
             </div>
           </div>
 
+          {/* Sender pill — hidden on mobile */}
           <div className="ec-header-sender">
             <span className="ec-sender-dot" />
             <span className="ec-sender-email">{senderEmail}</span>
           </div>
 
+          {/* Compose — mobile only */}
           <button className="ec-mobile-compose-btn" onClick={() => setShowCompose(true)}>
-            <Ic.Compose /> Compose
+            <Ic.Compose />
+            <span>Compose</span>
           </button>
         </div>
       </header>
@@ -800,7 +808,7 @@ const OwnerEmailCenter = () => {
                 role="listitem"
                 onClick={() => { setFolder(f.id); setMobileSidebarOpen(false); }}
               >
-                <span className="ec-folder-icon" style={{ color: f.color }}><f.Icon /></span>
+                <span className={`ec-folder-icon ec-fi-${f.id}`}><f.Icon /></span>
                 <span className="ec-folder-label">{f.label}</span>
                 {f.badge > 0 && <span className="ec-folder-badge">{f.badge > 99 ? '99+' : f.badge}</span>}
               </div>

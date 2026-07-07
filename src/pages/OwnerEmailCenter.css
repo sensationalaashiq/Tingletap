@@ -7,6 +7,68 @@
 @keyframes ecOrb2     { 0%,100%{transform:translate(0,0) scale(1);opacity:.16;} 50%{transform:translate(-28px,-20px) scale(1.08);opacity:.26;} }
 @keyframes ecBadgePop { 0%{transform:scale(.6);opacity:0;} 80%{transform:scale(1.12);} 100%{transform:scale(1);opacity:1;} }
 
+/* ════════════════════════════════════════════
+   GUARANTEED SVG ICON COLOURS
+   (Direct path/rect targeting bypasses currentColor inheritance issues)
+   ════════════════════════════════════════════ */
+
+/* Folder icons in sidebar */
+.ec-fi-inbox    svg path, .ec-fi-inbox    svg polyline, .ec-fi-inbox    svg rect,
+.ec-fi-inbox    svg line, .ec-fi-inbox    svg circle   { stroke: #6d28d9; }
+.ec-fi-sent     svg path, .ec-fi-sent     svg polyline                          { stroke: #1d4ed8; }
+.ec-fi-drafts   svg path, .ec-fi-drafts   svg polyline, .ec-fi-drafts   svg rect { stroke: #b45309; }
+.ec-fi-archived svg path, .ec-fi-archived svg polyline, .ec-fi-archived svg rect,
+.ec-fi-archived svg line                                                          { stroke: #047857; }
+.ec-fi-trash    svg path, .ec-fi-trash    svg polyline, .ec-fi-trash    svg line  { stroke: #b91c1c; }
+
+/* Header icon (envelope on purple bg) */
+.ec-header-icon svg path, .ec-header-icon svg rect { stroke: #ffffff; }
+
+/* Menu / back buttons */
+.ec-menu-btn svg path  { stroke: #6d28d9; }
+.ec-back-btn svg path  { stroke: #6d28d9; }
+
+/* Sidebar Compose button — white icon */
+.ec-compose-btn svg path, .ec-compose-btn svg polyline { stroke: #ffffff; }
+
+/* Mobile Compose button — white icon */
+.ec-mobile-compose-btn svg path, .ec-mobile-compose-btn svg polyline { stroke: #ffffff; }
+
+/* Send button in modals/reply — white */
+.ec-send-btn svg path, .ec-send-btn svg polyline { stroke: #ffffff; }
+
+/* Toolbar action icons */
+.ec-tool-btn.primary        svg path, .ec-tool-btn.primary        svg polyline { stroke: #1d4ed8; }
+.ec-tool-btn.danger         svg path, .ec-tool-btn.danger         svg polyline,
+.ec-tool-btn.danger         svg line                                            { stroke: #b91c1c; }
+.ec-tool-btn.star-active    svg polygon { fill: #d97706; stroke: #d97706; }
+
+/* Forward button icon — indigo */
+.ec-tool-fwd svg path, .ec-tool-fwd svg polyline { stroke: #4f46e5; }
+/* Read / archive button icon — green */
+.ec-tool-read svg path, .ec-tool-read svg polyline { stroke: #047857; }
+/* Restore button icon — blue */
+.ec-tool-restore svg path, .ec-tool-restore svg polyline { stroke: #1d4ed8; }
+/* Default non-danger non-primary tool button — violet */
+.ec-tool-btn:not(.primary):not(.danger):not(.star-active) svg path,
+.ec-tool-btn:not(.primary):not(.danger):not(.star-active) svg polyline,
+.ec-tool-btn:not(.primary):not(.danger):not(.star-active) svg circle,
+.ec-tool-btn:not(.primary):not(.danger):not(.star-active) svg line  { stroke: #6d28d9; }
+
+/* Modal title icons */
+.ec-modal-title svg path, .ec-modal-title svg polyline { stroke: #6d28d9; }
+
+/* Modal close */
+.ec-modal-close svg path { stroke: #7c6fa8; }
+.ec-modal-close:hover svg path { stroke: #4b3b7a; }
+
+/* Search icon */
+.ec-search-icon svg circle, .ec-search-icon svg path { stroke: #6d28d9; }
+
+/* Empty state envelope */
+.ec-empty-state svg rect, .ec-empty-state svg path { stroke: #b39ddb; }
+.ec-detail-empty svg rect, .ec-detail-empty svg path { stroke: #c4b5fd; }
+
 /* ── CSS Variables (Light Lavender Palette) ── */
 :root {
   --ec-bg-start:    #ede8ff;
@@ -106,19 +168,30 @@
   padding: 0 18px;
   overflow: hidden;
 }
+/* Menu (hamburger) button */
+.ec-menu-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none;
+  color: var(--ec-violet); cursor: pointer;
+  padding: 7px; border-radius: 8px;
+  transition: background .14s; flex-shrink: 0;
+}
+.ec-menu-btn:hover { background: var(--ec-violet-pale); }
+
+/* Dashboard back button */
 .ec-back-btn {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 5px;
   background: none; border: none;
   color: var(--ec-violet); font-size: 13px; font-weight: 600;
-  cursor: pointer; padding: 6px 10px; border-radius: 8px;
+  cursor: pointer; padding: 6px 9px; border-radius: 8px;
   transition: background .14s; white-space: nowrap; flex-shrink: 0;
 }
 .ec-back-btn:hover { background: var(--ec-violet-pale); }
-.ec-back-btn svg { color: var(--ec-violet); }
 
 .ec-header-title {
-  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; overflow: hidden;
 }
+.ec-header-text { min-width: 0; overflow: hidden; }
 .ec-header-icon {
   width: 36px; height: 36px; border-radius: 10px;
   background: linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%);
@@ -129,7 +202,8 @@
   font-size: 15px; font-weight: 800; color: var(--ec-text-dark); letter-spacing: -.3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ec-header-sub { font-size: 11px; color: var(--ec-text-faint); font-weight: 500; }
+.ec-header-sub  { font-size: 11px; color: var(--ec-text-faint); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ec-dash-label  { /* visible on ≥480px; hidden below */ }
 
 .ec-header-sender {
   display: flex; align-items: center; gap: 7px;
@@ -697,30 +771,52 @@
 /* ────────────────────────────────────────────────
    RESPONSIVE
 ───────────────────────────────────────────────── */
+/* ── Responsive breakpoints ── */
 @media (max-width: 1100px) {
   .ec-list-panel { width: 300px; }
 }
+
 @media (max-width: 900px) {
   .ec-sidebar { width: 196px; }
   .ec-list-panel { width: 256px; }
   .ec-header-sender { display: none; }
 }
+
+/* Compact header — hide Dashboard text, keep icon only */
+@media (max-width: 600px) {
+  .ec-dash-label { display: none; }
+  .ec-back-btn.ec-dash-btn { padding: 6px 7px; }
+  .ec-header-sub { display: none; }
+  .ec-header-icon { width: 30px; height: 30px; border-radius: 8px; }
+  .ec-header-inner { gap: 6px; padding: 0 10px; }
+  .ec-header-name { font-size: 13px; }
+}
+
+/* Mobile (≤700px) — sidebar overlay, single panel at a time */
 @media (max-width: 700px) {
   .ec-sidebar {
-    position: absolute; z-index: 20; height: 100%; left: 0;
+    position: absolute; z-index: 20;
+    height: 100%; left: 0;
     transform: translateX(-100%);
-    box-shadow: 4px 0 28px rgba(20,10,45,.16);
+    box-shadow: 6px 0 32px rgba(20,10,45,.18);
+    width: 240px;
   }
   .ec-sidebar.mobile-open { transform: translateX(0); }
-  .ec-list-panel { width: 100%; }
+  .ec-list-panel { width: 100%; border-right: none; }
   .ec-detail-panel {
     position: absolute; inset: 0; z-index: 10;
-    background: rgba(246,243,255,.98); display: none;
+    background: rgba(246,243,255,.98);
+    backdrop-filter: blur(16px);
+    display: none;
   }
   .ec-detail-panel.mobile-open { display: flex; }
-  .ec-modal-overlay { padding: 10px; align-items: center; justify-content: center; }
-  .ec-modal-card { max-height: 95vh; }
-  .ec-detail-scroll { padding: 14px 16px; }
-  .ec-detail-toolbar { padding: 8px 12px; gap: 4px; }
-  .ec-tool-btn { padding: 5px 8px; font-size: 11px; }
+  .ec-modal-overlay { padding: 8px; align-items: center; justify-content: center; }
+  .ec-modal-card { max-height: 96vh; max-width: 100%; }
+  .ec-detail-scroll { padding: 14px 14px; }
+  .ec-detail-toolbar { padding: 8px 10px; gap: 4px; flex-wrap: wrap; }
+  .ec-tool-btn { padding: 5px 8px; font-size: 11px; gap: 4px; }
+  .ec-tool-btn svg { width: 12px; height: 12px; }
+  .ec-detail-subject { font-size: 16px; }
+  .ec-reply-area { padding: 10px 14px 12px; }
+  .ec-reply-textarea { min-height: 70px; }
 }
