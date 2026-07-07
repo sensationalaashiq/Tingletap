@@ -390,6 +390,357 @@ app.post('/api/email-action', async (req, res) => {
   return res.json({ ok: true, messageId: brData.messageId });
 });
 
+// ── Shared rate-limit store (in-memory, resets on restart) ────────────────────
+const _rateLimits = new Map();
+function _rateLimit(key, max, windowMs) {
+  const now   = Date.now();
+  const entry = _rateLimits.get(key) || { count: 0, start: now };
+  if (now - entry.start > windowMs) { _rateLimits.set(key, { count: 1, start: now }); return { ok: true }; }
+  if (entry.count >= max) return { ok: false, retryAfter: Math.ceil((entry.start + windowMs - now) / 1000) };
+  entry.count++;
+  _rateLimits.set(key, entry);
+  return { ok: true };
+}
+
+async function _sendViaBrevo({ to, subject, html, text, sender, replyTo, tags = [] }) {
+  if (!BREVO_API_KEY) throw new Error('BREVO_API_KEY not set');
+  const payload = {
+    sender:      sender || { name: 'TingleTap', email: 'alerts@tingletap.com' },
+    to:          Array.isArray(to) ? to : [{ email: to }],
+    subject,
+    htmlContent: html,
+    textContent: text,
+    tags:        ['tingletap-transactional', ...tags],
+  };
+  if (replyTo) payload.replyTo = replyTo;
+  const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(`Brevo ${r.status}: ${e.message || JSON.stringify(e)}`); }
+  return r.json();
+}
+
+// ── POST /api/sendOTP ──────────────────────────────────────────────────────────
+app.post('/api/sendOTP', async (req, res) => {
+  const { email: rawEmail, otp: rawOtp, userName: rawName } = req.body || {};
+  const email    = String(rawEmail || '').trim().slice(0, 254);
+  const otp      = String(rawOtp   || '').trim().slice(0, 10);
+  const userName = String(rawName  || '').trim().slice(0, 100);
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: 'Valid email required' });
+  if (!otp || !/^\d{6}$/.test(otp))
+    return res.status(400).json({ error: '6-digit OTP required' });
+
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl = _rateLimit(`otp:${ip}`, 5, 10 * 60 * 1000);
+  if (!rl.ok) return res.status(429).set('Retry-After', String(rl.retryAfter)).json({ error: 'Too many requests. Please wait a few minutes.' });
+
+  const n = userName || email.split('@')[0];
+  const otpHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Verify Your Email</title></head>
+<body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+  <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Email Verification</div>
+  </div>
+  <div style="padding:24px 36px 28px;">
+    <h2 style="color:#1e0a3c;font-size:22px;font-weight:800;text-align:center;margin:0 0 10px;">Verify Your Email Address</h2>
+    <p style="color:#5c4080;font-size:14px;text-align:center;margin:0 0 24px;line-height:1.65;">Hello <strong style="color:#6d28d9;">${String(n).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong>, welcome to <strong style="color:#9333ea;">TingleTap</strong>!<br>Enter the one-time code below to complete sign-up.</p>
+    <div style="background:linear-gradient(135deg,#f8f5ff,#f0ebff);border:1.5px solid rgba(109,40,217,.22);border-radius:18px;padding:22px 20px;margin-bottom:16px;text-align:center;">
+      <div style="color:#a78bca;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">Your One-Time Code</div>
+      <div style="background:#fff;border:2px solid rgba(109,40,217,.28);border-radius:14px;padding:14px 12px;display:inline-block;min-width:200px;">
+        <span style="font-size:34px;font-weight:900;letter-spacing:8px;color:#3b0764;font-family:'Courier New',monospace;">${otp}</span>
+      </div>
+      <p style="color:#dc2626;font-size:12px;font-weight:700;margin:14px 0 0;">Expires in 10 minutes</p>
+    </div>
+    <p style="color:#a78bca;font-size:12px;text-align:center;margin:0;line-height:1.6;">Enter this code on the sign-up page to verify your address.<br>Didn't request this? You can safely ignore this email.</p>
+  </div>
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+</div></body></html>`;
+
+  try {
+    await _sendViaBrevo({
+      to: email, subject: `${otp} — Your TingleTap Verification Code`,
+      html: otpHtml,
+      text: `Hi ${n},\n\nYour TingleTap verification code is: ${otp}\n\nExpires in 10 minutes. If you did not request this, ignore this email.\n\nTingleTap Team`,
+      tags: ['otp-verification'],
+    });
+    console.log(`[sendOTP] ✓ OTP sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[sendOTP] Brevo error:', err.message);
+    return res.status(502).json({ error: `Failed to send email: ${err.message}` });
+  }
+});
+
+// ── POST /api/sendPasswordReset ────────────────────────────────────────────────
+app.post('/api/sendPasswordReset', async (req, res) => {
+  const email    = String(req.body?.email    || '').trim().slice(0, 254);
+  const userName = String(req.body?.userName || '').trim().slice(0, 100);
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: 'Valid email required' });
+
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl = _rateLimit(`reset:${ip}`, 3, 5 * 60 * 1000);
+  if (!rl.ok) return res.status(429).set('Retry-After', String(rl.retryAfter)).json({ error: 'Too many requests. Please wait a few minutes before trying again.' });
+
+  if (!adminDb) {
+    console.error('[sendPasswordReset] Firebase Admin not initialized — check FIREBASE_* env vars');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  let firebaseLink;
+  try {
+    firebaseLink = await admin.auth().generatePasswordResetLink(email, {
+      url: 'https://tingletap.com/reset-password',
+      handleCodeInApp: false,
+    });
+  } catch (err) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+      return res.json({ ok: true }); // silent — don't reveal account existence
+    }
+    console.error('[sendPasswordReset] Firebase link error:', err.message);
+    return res.status(500).json({ error: 'Could not generate reset link' });
+  }
+
+  let resetUrl = firebaseLink;
+  try {
+    const parsed  = new URL(firebaseLink);
+    const oobCode = parsed.searchParams.get('oobCode');
+    if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+  } catch {}
+
+  const displayName = userName || email.split('@')[0];
+  const eHtml = String(email).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nHtml = String(displayName).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const resetHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Reset Your Password</title></head>
+<body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+  <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Password Reset</div>
+  </div>
+  <div style="padding:24px 36px 28px;">
+    <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#2d1b4e;text-align:center;">Password Reset Request</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">We received a request to reset the password for your TingleTap account.</p>
+    <p style="margin:0 0 6px;font-size:15px;color:#3d2565;font-weight:600;">Hi ${nHtml},</p>
+    <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">Someone requested a password reset for the account associated with <strong style="color:#7c3aed;">${eHtml}</strong>. Click the button below to create a new password.</p>
+    <div style="text-align:center;margin-bottom:22px;">
+      <a href="${resetUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 50%,#c084fc 100%);color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 36px;border-radius:14px;box-shadow:0 8px 28px rgba(109,40,217,.35);">Reset My Password →</a>
+    </div>
+    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(139,92,246,.15);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+      <p style="margin:0;font-size:13px;color:#5b21b6;font-weight:600;">Link expires in 1 hour</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#7e6ca8;">For your security, this reset link is only valid for 60 minutes from when it was requested.</p>
+    </div>
+    <div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:10px;padding:12px 16px;">
+      <p style="margin:0;font-size:13px;color:#b91c1c;font-weight:600;">Didn't request this?</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#9b1c1c;">If you did not request a password reset, please ignore this email. Your account remains secure.</p>
+    </div>
+  </div>
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+</div></body></html>`;
+
+  try {
+    await _sendViaBrevo({
+      to: email, subject: 'Reset Your TingleTap Password',
+      html: resetHtml,
+      text: `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team`,
+      tags: ['password-reset'],
+    });
+    console.log(`[sendPasswordReset] ✓ Reset email sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[sendPasswordReset] Brevo error:', err.message);
+    return res.status(502).json({ error: `Failed to send email: ${err.message}` });
+  }
+});
+
+// ── POST /api/sendVerification ─────────────────────────────────────────────────
+app.post('/api/sendVerification', async (req, res) => {
+  const email    = String(req.body?.email    || '').trim().slice(0, 254);
+  const userName = String(req.body?.userName || '').trim().slice(0, 100);
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return res.status(400).json({ error: 'Valid email required' });
+
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl = _rateLimit(`verify:${ip}`, 5, 60 * 60 * 1000);
+  if (!rl.ok) return res.status(429).set('Retry-After', String(rl.retryAfter)).json({ error: 'Too many requests. Please try again later.' });
+
+  if (!adminDb) {
+    console.error('[sendVerification] Firebase Admin not initialized — check FIREBASE_* env vars');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  let firebaseLink;
+  try {
+    firebaseLink = await admin.auth().generateEmailVerificationLink(email, {
+      url: 'https://tingletap.com/verify-email',
+      handleCodeInApp: false,
+    });
+  } catch (err) {
+    console.error('[sendVerification] Firebase link error:', err.message);
+    return res.status(500).json({ error: 'Could not generate verification link' });
+  }
+
+  let verifyUrl = firebaseLink;
+  try {
+    const parsed  = new URL(firebaseLink);
+    const oobCode = parsed.searchParams.get('oobCode');
+    if (oobCode) verifyUrl = `https://tingletap.com/verify-email?oobCode=${encodeURIComponent(oobCode)}`;
+  } catch {}
+
+  const displayName = userName || email.split('@')[0];
+  const eHtml = String(email).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nHtml = String(displayName).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const verifyHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Verify Your Email</title></head>
+<body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+  <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Email Verification</div>
+  </div>
+  <div style="padding:24px 36px 28px;">
+    <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#2d1b4e;text-align:center;">Verify Your Email Address</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">You're just one click away from joining TingleTap.</p>
+    <p style="margin:0 0 6px;font-size:15px;color:#3d2565;font-weight:600;">Hi ${nHtml},</p>
+    <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">We received a request to verify the email address <strong style="color:#7c3aed;">${eHtml}</strong> for your TingleTap account. Click the button below to confirm your address.</p>
+    <div style="text-align:center;margin-bottom:22px;">
+      <a href="${verifyUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 50%,#c084fc 100%);color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 36px;border-radius:14px;box-shadow:0 8px 28px rgba(109,40,217,.35);">Verify My Email →</a>
+    </div>
+    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(139,92,246,.15);border-radius:10px;padding:12px 16px;">
+      <p style="margin:0;font-size:13px;color:#5b21b6;font-weight:600;">Link expires in 24 hours</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#7e6ca8;">If you didn't create a TingleTap account, you can safely ignore this email.</p>
+    </div>
+  </div>
+  <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
+</div></body></html>`;
+
+  try {
+    await _sendViaBrevo({
+      to: email, subject: 'Verify Your TingleTap Email Address',
+      html: verifyHtml,
+      text: `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team`,
+      tags: ['email-verification'],
+    });
+    console.log(`[sendVerification] ✓ Verification email sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[sendVerification] Brevo error:', err.message);
+    return res.status(502).json({ error: `Failed to send email: ${err.message}` });
+  }
+});
+
+// ── POST /api/contact ──────────────────────────────────────────────────────────
+const CONTACT_ROUTE_MAP = {
+  support:        { ownerInbox: 'VyomAI', toEmail: 'support@tingletap.com', toName: 'VyomAI — TingleTap' },
+  administration: { ownerInbox: 'Blurry', toEmail: 'admin@tingletap.com',   toName: 'Blurry — TingleTap'  },
+};
+
+app.post('/api/contact', async (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl = _rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000);
+  if (!rl.ok) return res.status(429).json({ error: `Too many messages. Try again in ${rl.retryAfter}s.` });
+
+  const name    = String(req.body?.name    || '').trim().slice(0, 100);
+  const email   = String(req.body?.email   || '').trim().slice(0, 254);
+  const subject = String(req.body?.subject || '').trim().slice(0, 255);
+  const message = String(req.body?.message || '').trim().slice(0, 10000);
+  const route   = ['support','administration'].includes(req.body?.route) ? req.body.route : 'support';
+
+  if (!name || name.length < 2)        return res.status(400).json({ error: 'Name is required (min 2 chars)' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Valid email is required' });
+  if (!subject || subject.length < 3) return res.status(400).json({ error: 'Subject is required' });
+  if (!message || message.length < 10) return res.status(400).json({ error: 'Message is too short' });
+
+  const target = CONTACT_ROUTE_MAP[route];
+  const date   = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const tag    = route === 'administration' ? 'Administration' : 'Support Team';
+
+  const escH = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const msgH = message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+  const contactHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escH(subject)}</title></head>
+<body style="margin:0;padding:0;background:#f3f0ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:620px;margin:40px auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 48px rgba(124,58,237,.1);">
+  <div style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 55%,#6366f1 100%);padding:32px 36px 26px;">
+    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">TingleTap™ · Contact Form · ${escH(tag)}</div>
+    <div style="color:#fff;font-size:20px;font-weight:800;">${escH(subject)}</div>
+    <div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:4px;">${escH(date)}</div>
+  </div>
+  <div style="padding:32px 36px 28px;">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:22px;">
+      <tr><td style="padding:7px 12px;background:#f5f3ff;border-radius:8px 8px 0 0;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">From</td></tr>
+      <tr><td style="padding:10px 12px;border:1px solid #f3f4f6;border-top:none;border-radius:0 0 8px 8px;">
+        <span style="font-weight:700;color:#1e1b4b;font-size:15px;">${escH(name)}</span>
+        <span style="color:#9ca3af;font-size:13px;margin-left:8px;">&lt;${escH(email)}&gt;</span>
+      </td></tr>
+    </table>
+    <div style="background:#fafafa;border-left:3px solid #a855f7;border-radius:0 10px 10px 0;padding:16px 20px;color:#374151;font-size:15px;line-height:1.85;">${msgH}</div>
+    <div style="margin-top:20px;padding:14px 16px;background:#fdf4ff;border-radius:10px;border:1px solid #e9d5ff;">
+      <p style="margin:0;color:#7c3aed;font-size:12px;font-weight:600;">Reply directly to <a href="mailto:${escH(email)}" style="color:#7c3aed;">${escH(email)}</a></p>
+    </div>
+  </div>
+  <div style="background:#fafafa;border-top:1px solid #f3f4f6;padding:14px 36px;text-align:center;">
+    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 TingleTap™ · India's Premium Chat Community</p>
+  </div>
+</div></body></html>`;
+
+  const textContent = `Contact Form · ${tag}\n\nFrom: ${name} <${email}>\nSubject: ${subject}\n\n${message}`;
+  const emailId     = `${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
+
+  // Store in Firestore (if Admin is available)
+  if (adminDb) {
+    try {
+      await adminDb.collection('ownerEmails').doc(emailId).set({
+        threadId: emailId, ownerInbox: target.ownerInbox, folder: 'inbox',
+        from: { name, email }, to: [{ name: target.toName, email: target.toEmail }],
+        replyTo: { email, name }, subject, body: message, htmlBody: contactHtml,
+        read: false, starred: false, replied: false, forwarded: false,
+        source: 'contact_form', labels: [], parentEmailId: null, senderIp: ip,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`[contact] ✓ Stored in Firestore: ${emailId} → ownerInbox:${target.ownerInbox}`);
+    } catch (err) {
+      console.error('[contact] Firestore write failed:', err.message);
+      return res.status(500).json({ error: `Server error saving message: ${err.message}` });
+    }
+  } else {
+    console.warn('[contact] Firebase Admin not available — Firestore write skipped');
+  }
+
+  // Send Brevo notification email to owner inbox
+  try {
+    await _sendViaBrevo({
+      sender:  { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      to:      [{ email: target.toEmail, name: target.toName }],
+      replyTo: { email, name },
+      subject: `[Contact · ${route === 'administration' ? 'Admin' : 'Support'}] ${subject}`,
+      html: contactHtml,
+      text: textContent,
+      tags: ['contact-form', route],
+    });
+    console.log(`[contact] ✓ Notification sent to ${target.toEmail} | from: ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
+  } catch (err) {
+    console.error('[contact] Brevo send failed:', err.message);
+    return res.status(502).json({ error: `Failed to send notification email: ${err.message}` });
+  }
+
+  return res.json({ ok: true, message: 'Message sent successfully. We will respond within 2–4 hours.' });
+});
+
 // ── GET /api/health ────────────────────────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({ ok: true, service: 'TingleTap Email Center API', port: PORT }));
 

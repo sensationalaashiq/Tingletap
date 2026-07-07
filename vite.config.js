@@ -30,6 +30,21 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: () => '/api/contact',
       },
+      '/.netlify/functions/sendOTP': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/sendOTP',
+      },
+      '/.netlify/functions/sendPasswordReset': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/sendPasswordReset',
+      },
+      '/.netlify/functions/sendVerification': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/sendVerification',
+      },
     },
   }
 })
