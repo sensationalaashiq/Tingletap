@@ -2,7 +2,7 @@
 import emailjs from '@emailjs/browser';
 import CryptoJS from 'crypto-js';
 
-const SERVICE_ID  = 'service_4bfjmzq';
+const SERVICE_ID  = 'service_ki69cuc';
 const PUBLIC_KEY  = '3Dza90dvmw142K5uD';
 const OTP_TEMPLATE    = 'template_5yk012w';
 const RESET_TEMPLATE  = 'template_rynlsk5';
