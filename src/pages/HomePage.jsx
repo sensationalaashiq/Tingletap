@@ -4504,11 +4504,53 @@ const HomePage = ({ user, roomIdOverride }) => {
         const currentUid = auth.currentUser?.uid;
         if (!currentUid || !targetUid || currentUid === targetUid) return;
         try {
-            const userDocRef = doc(db, 'users', currentUid);
+            const currentDocRef = doc(db, 'users', currentUid);
+            const targetDocRef  = doc(db, 'users', targetUid);
+
+            // 1. Write private mark (or remove it)
             if (relType === null) {
-                await updateDoc(userDocRef, { [`relationships.${targetUid}`]: deleteField() });
+                await updateDoc(currentDocRef, { [`relationships.${targetUid}`]: deleteField() });
             } else {
-                await updateDoc(userDocRef, { [`relationships.${targetUid}`]: relType });
+                await updateDoc(currentDocRef, { [`relationships.${targetUid}`]: relType });
+            }
+
+            // 2. Fetch target doc to check for mutual mark
+            const targetSnap = await getDoc(targetDocRef);
+            const targetData = targetSnap.exists() ? (targetSnap.data() || {}) : {};
+            const targetMarkOnMe = targetData.relationships?.[currentUid] ?? null;
+
+            // 3. Mutual = both sides have marked each other with the SAME type
+            const isMutual = relType !== null && targetMarkOnMe === relType;
+
+            const myData = loggedInUserProfile || {};
+
+            if (isMutual) {
+                // Both sides confirmed — publish to both docs so ALL users can see
+                await updateDoc(currentDocRef, {
+                    publicMutualRelationship: {
+                        uid:         targetUid,
+                        displayName: targetData.displayName || '',
+                        photoURL:    targetData.photoURL    || '',
+                        type:        relType,
+                    },
+                });
+                await updateDoc(targetDocRef, {
+                    publicMutualRelationship: {
+                        uid:         currentUid,
+                        displayName: myData.displayName || auth.currentUser?.displayName || '',
+                        photoURL:    myData.photoURL    || auth.currentUser?.photoURL    || '',
+                        type:        relType,
+                    },
+                });
+            } else {
+                // Not mutual (or mark removed) — clear publicMutualRelationship on BOTH sides
+                // if they were pointing to each other
+                if (myData.publicMutualRelationship?.uid === targetUid) {
+                    await updateDoc(currentDocRef, { publicMutualRelationship: deleteField() });
+                }
+                if (targetData.publicMutualRelationship?.uid === currentUid) {
+                    await updateDoc(targetDocRef, { publicMutualRelationship: deleteField() });
+                }
             }
         } catch (err) {
             console.error('[Relationship] write failed:', err);

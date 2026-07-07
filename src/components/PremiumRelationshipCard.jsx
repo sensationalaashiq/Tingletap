@@ -129,8 +129,12 @@ const PremiumRelationshipCard = ({
   const viewerMark = loggedInUserProfile?.relationships?.[profileUser.uid] ?? null;
   const publicStatus = profileUser?.relationship ?? null;
 
+  // Mutual relationship — stored on profileUser's doc, visible to ALL users
+  const mutualData = profileUser?.publicMutualRelationship ?? null;
+  const mutualCfg  = mutualData ? FULL_RELATIONSHIP_CONFIG.find(r => r.value === mutualData.type) : null;
+
   // Nothing to display and can't mark → hide
-  if (!viewerMark && !publicStatus && !canMark) return null;
+  if (!viewerMark && !publicStatus && !canMark && !mutualData) return null;
 
   const markCfg = FULL_RELATIONSHIP_CONFIG.find(r => r.value === viewerMark);
 
@@ -336,7 +340,62 @@ const PremiumRelationshipCard = ({
         {/* ── Body ── */}
         <div className="prc-body">
 
-          {/* Viewer's private mark */}
+          {/* ── Mutual relationship — visible to ALL users ── */}
+          {mutualData && mutualCfg && (
+            <div className="prc-mutual-section">
+              <div className="prc-mutual-eyebrow">Mutual Relationship</div>
+              <div className="prc-mutual-banner" role="status" aria-label={`${profileUser.displayName} and ${mutualData.displayName} are mutual ${mutualCfg.label}`}>
+                {/* Overlapping avatars */}
+                <div className="prc-mutual-avatars" aria-hidden="true">
+                  <div className="prc-mutual-avatar">
+                    {profileUser.photoURL
+                      ? <img src={profileUser.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
+                      : (profileUser.displayName?.[0] || '?').toUpperCase()
+                    }
+                  </div>
+                  <div className="prc-mutual-avatar">
+                    {mutualData.photoURL
+                      ? <img src={mutualData.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
+                      : (mutualData.displayName?.[0] || '?').toUpperCase()
+                    }
+                  </div>
+                </div>
+
+                {/* Names + sub-label */}
+                <div className="prc-mutual-text-wrap">
+                  <div className="prc-mutual-names">
+                    <strong>{profileUser.displayName || 'User'}</strong>
+                    {' & '}
+                    <strong>{mutualData.displayName || 'User'}</strong>
+                  </div>
+                  <div className="prc-mutual-sublabel">Mutual {mutualCfg.label}</div>
+                </div>
+
+                {/* Type chip */}
+                <div className="prc-mutual-chip" style={{ background: mutualCfg.gradient }} aria-hidden="true">
+                  <span className="prc-mutual-chip-icon">{mutualCfg.icon}</span>
+                  {mutualCfg.label}
+                </div>
+              </div>
+
+              {/* Visible-to-all badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                <span className="prc-mutual-public-badge">
+                  <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
+                  </svg>
+                  Visible to Everyone
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Divider between mutual and private sections */}
+          {mutualData && (viewerMark || canMark || publicStatus) && (
+            <div className="prc-section-divider" aria-hidden="true" />
+          )}
+
+          {/* ── Viewer's private mark (only viewer sees this) ── */}
           {viewerMark && markCfg ? (
             <div className="prc-mark-display">
               <div className="prc-mark-eyebrow">You see them as</div>
@@ -363,7 +422,7 @@ const PremiumRelationshipCard = ({
             </div>
           ) : null}
 
-          {/* Profile's public relationship status */}
+          {/* Profile's public self-declared relationship status */}
           {publicStatus && (
             <div className={`prc-public-row${viewerMark ? ' prc-public-row--below' : ''}`}>
               <div className="prc-public-eyebrow">Their status</div>

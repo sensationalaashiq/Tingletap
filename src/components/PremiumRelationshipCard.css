@@ -416,10 +416,168 @@
   border-color: rgba(167,139,250,0.34);
 }
 
+/* ══ Mutual relationship section ═══════════════════════════════════════════ */
+@keyframes prcMutualGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(236,72,153,0.25), 0 4px 18px rgba(139,92,246,0.15); }
+  50%       { box-shadow: 0 0 20px rgba(236,72,153,0.4),  0 6px 26px rgba(139,92,246,0.22); }
+}
+
+.prc-mutual-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.prc-mutual-eyebrow {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.prc-mutual-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  background: linear-gradient(135deg, rgba(252,231,243,0.95), rgba(237,233,254,0.95));
+  border: 1px solid rgba(219,39,119,0.2);
+  border-radius: 12px;
+  animation: prcMutualGlow 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+.prc-mutual-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(236,72,153,0.04), rgba(139,92,246,0.04));
+  pointer-events: none;
+}
+.prc-mutual-avatars {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.prc-mutual-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  background: linear-gradient(135deg, #c084fc, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.prc-mutual-avatar:nth-child(2) {
+  margin-left: -9px;
+  border-color: rgba(255,255,255,0.9);
+}
+.prc-mutual-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.prc-mutual-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.prc-mutual-names {
+  font-size: 12px;
+  font-weight: 700;
+  color: #831843;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.prc-mutual-names strong { color: #be185d; }
+.prc-mutual-sublabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9d174d;
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+}
+.prc-mutual-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.prc-mutual-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.prc-mutual-chip-icon svg { width: 12px !important; height: 12px !important; }
+.prc-mutual-public-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(5,150,105,0.09);
+  border: 1px solid rgba(5,150,105,0.2);
+  border-radius: 20px;
+  padding: 2px 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Dark mode — mutual section */
+.prc-dark .prc-mutual-banner {
+  background: linear-gradient(135deg, rgba(76,29,149,0.3), rgba(112,26,117,0.2)) !important;
+  border-color: rgba(168,85,247,0.35) !important;
+}
+.prc-dark .prc-mutual-names { color: #e9d5ff !important; }
+.prc-dark .prc-mutual-names strong { color: #f0abfc !important; }
+.prc-dark .prc-mutual-sublabel { color: #c4b5fd !important; opacity: 0.7; }
+.prc-dark .prc-mutual-eyebrow { color: #6b7280 !important; }
+.prc-dark .prc-mutual-public-badge {
+  color: #34d399 !important;
+  background: rgba(52,211,153,0.1) !important;
+  border-color: rgba(52,211,153,0.22) !important;
+}
+
+/* divider between sections */
+.prc-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139,92,246,0.12), transparent);
+  margin: 0 -2px;
+}
+.prc-dark .prc-section-divider {
+  background: linear-gradient(90deg, transparent, rgba(139,92,246,0.22), transparent);
+}
+
 /* ══ Responsive ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .prc-card { border-radius: 12px; }
   .prc-chip { font-size: 12px; padding: 6px 12px 6px 8px; }
   .prc-chip-icon { width: 24px; height: 24px; }
   .prc-popover { min-width: 160px; }
+  .prc-mutual-banner { gap: 8px; padding: 8px 10px; }
+  .prc-mutual-names { font-size: 11px; }
 }
