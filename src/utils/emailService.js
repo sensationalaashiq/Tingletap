@@ -55,19 +55,23 @@ export const sendOTPEmail = async (email, otp) => {
   // 1️⃣ REST API (fastest, no SDK init needed)
   try {
     const r = await restSend(OTP_TEMPLATE, params);
+    const body = await r.text();
     if (r.ok) {
       console.log('✅ OTP sent via REST');
       return { success: true };
     }
-    console.warn('REST failed:', r.status, await r.text());
-  } catch (e) { console.warn('REST error:', e.message); }
+    console.error('❌ EmailJS REST Error —', r.status, body);
+    console.error('   Service:', SERVICE_ID, '| Template:', OTP_TEMPLATE, '| Key:', PUBLIC_KEY);
+  } catch (e) { console.error('❌ EmailJS REST Exception:', e.message); }
 
   // 2️⃣ SDK
   try {
     await sdkSend(OTP_TEMPLATE, params);
     console.log('✅ OTP sent via SDK');
     return { success: true };
-  } catch (e) { console.warn('SDK error:', e.message); }
+  } catch (e) {
+    console.error('❌ EmailJS SDK Error:', e?.status, e?.text || e?.message || e);
+  }
 
   // OTP hash is in sessionStorage → verification still works even without email
   console.warn('⚠️ Email delivery failed; OTP hash stored in sessionStorage for dev testing');
