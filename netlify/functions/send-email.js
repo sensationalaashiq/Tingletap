@@ -8,17 +8,11 @@ import { sanitizeString } from './shared/validation.js';
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-const ALLOWED_ORIGINS = ['https://tingletap.com', 'https://www.tingletap.com'];
-
-function corsHeaders(event) {
-  const origin  = event.headers.origin || '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin':  allowed,
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 const OWNER_MAP = {
   'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
@@ -116,7 +110,7 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
 }
 
 export const handler = async (event) => {
-  const headers = { 'Content-Type': 'application/json', ...corsHeaders(event) };
+  const headers = { 'Content-Type': 'application/json', ...CORS_HEADERS };
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };

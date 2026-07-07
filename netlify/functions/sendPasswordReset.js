@@ -8,30 +8,18 @@ import { loadTemplate } from './shared/templateLoader.js';
 import { log } from './shared/logger.js';
 import { validateEmail, rateLimitCheck, sanitizeString } from './shared/validation.js';
 
-const adminModule = await import('firebase-admin');
-const admin = adminModule.default;
-initFirebaseAdmin();
-
-const ALLOWED_ORIGINS = ['https://tingletap.com', 'https://www.tingletap.com'];
-
-function corsHeaders(event) {
-  const origin = event.headers.origin || '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 export const handler = async (event) => {
-  const headers = { 'Content-Type': 'application/json', ...corsHeaders(event) };
+  const headers = { 'Content-Type': 'application/json', ...CORS_HEADERS };
 
-  // CORS pre-flight
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 
-  // Parse body
   let body;
   try { body = JSON.parse(event.body || '{}'); }
   catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body' }) }; }
@@ -55,10 +43,21 @@ export const handler = async (event) => {
     };
   }
 
+  // Initialize Firebase Admin inside handler (not at module load) so env var errors surface cleanly
+  let admin;
+  try {
+    initFirebaseAdmin();
+    const adminModule = await import('firebase-admin');
+    admin = adminModule.default;
+  } catch (err) {
+    log.error('Firebase Admin init failed', { message: err.message });
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
+  }
+
   // Generate Firebase action link (Admin SDK — no email sent by Firebase)
   const actionCodeSettings = {
-    url:              'https://tingletap.com/reset-password',
-    handleCodeInApp:  false,
+    url:             'https://tingletap.com/reset-password',
+    handleCodeInApp: false,
   };
 
   let firebaseLink;

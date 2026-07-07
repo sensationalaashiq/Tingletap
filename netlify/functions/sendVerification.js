@@ -1,6 +1,6 @@
 // Netlify Function: sendVerification
 // Generates a Firebase email verification link via Admin SDK,
-// then sends it through Brevo using the branded OneTimePassword.html template.
+// then sends it through Brevo using the branded EmailVerification.html template.
 // Firebase NEVER sends an email — all email delivery goes through Brevo.
 import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
 import { sendEmailWithTemplate } from './shared/emailService.js';
@@ -8,24 +8,14 @@ import { loadTemplate } from './shared/templateLoader.js';
 import { log } from './shared/logger.js';
 import { validateEmail, rateLimitCheck, sanitizeString } from './shared/validation.js';
 
-const adminModule = await import('firebase-admin');
-const admin = adminModule.default;
-initFirebaseAdmin();
-
-const ALLOWED_ORIGINS = ['https://tingletap.com', 'https://www.tingletap.com'];
-
-function corsHeaders(event) {
-  const origin  = event.headers.origin || '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin':  allowed,
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-}
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 export const handler = async (event) => {
-  const headers = { 'Content-Type': 'application/json', ...corsHeaders(event) };
+  const headers = { 'Content-Type': 'application/json', ...CORS_HEADERS };
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -51,6 +41,17 @@ export const handler = async (event) => {
       headers: { ...headers, 'Retry-After': String(rl.retryAfter) },
       body: JSON.stringify({ error: 'Too many requests. Please try again later.' }),
     };
+  }
+
+  // Initialize Firebase Admin inside handler (not at module load) so env var errors surface cleanly
+  let admin;
+  try {
+    initFirebaseAdmin();
+    const adminModule = await import('firebase-admin');
+    admin = adminModule.default;
+  } catch (err) {
+    log.error('Firebase Admin init failed', { message: err.message });
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
   }
 
   // Generate Firebase verification link
@@ -82,14 +83,13 @@ export const handler = async (event) => {
   const displayName = userName || email.split('@')[0];
   let html;
   try {
-    // Use EmailVerification.html (distinct from OneTimePassword.html which uses {{otp_code}} for EmailJS)
     const template = await loadTemplate('EmailVerification.html');
     html = template
       .replace(/\{\{user_name\}\}/g,         displayName)
       .replace(/\{\{user_email\}\}/g,        email)
       .replace(/\{\{verification_link\}\}/g, customVerifyUrl);
   } catch (err) {
-    log.error('OneTimePassword template load failed', { message: err.message });
+    log.error('EmailVerification template load failed', { message: err.message });
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Email template error' }) };
   }
 
