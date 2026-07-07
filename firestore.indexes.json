@@ -182,7 +182,35 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "ownerEmails",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerInbox", "order": "ASCENDING" },
+        { "fieldPath": "folder",     "order": "ASCENDING" },
+        { "fieldPath": "createdAt",  "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ownerEmails",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerInbox", "order": "ASCENDING" },
+        { "fieldPath": "folder",     "order": "ASCENDING" },
+        { "fieldPath": "read",       "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ownerEmails",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "threadId", "order": "ASCENDING" },
+        { "fieldPath": "source",   "order": "ASCENDING" },
+        { "fieldPath": "createdAt","order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
 }
+

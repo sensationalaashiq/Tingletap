@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase/config';
 import {
-  collection, query, where, orderBy, limit, onSnapshot,
+  collection, query, where, limit, onSnapshot,
   doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-  serverTimestamp, startAfter,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
 import './OwnerEmailCenter.css';
@@ -646,15 +646,19 @@ const OwnerEmailCenter = () => {
       collection(db, 'ownerEmails'),
       where('ownerInbox', '==', ownerName),
       where('folder', '==', folder),
-      orderBy('createdAt', 'desc'),
-      limit(PAGE_SIZE + 1),
+      limit(150),
     );
 
     const unsub = onSnapshot(q, snap => {
-      const docs = snap.docs.slice(0, PAGE_SIZE).map(d => ({ id: d.id, ...d.data() }));
-      setEmails(docs);
-      setHasMore(snap.docs.length > PAGE_SIZE);
-      if (snap.docs.length > PAGE_SIZE) setLastDoc(snap.docs[PAGE_SIZE - 1]);
+      const docs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const ta = a.createdAt?.seconds ?? 0;
+          const tb = b.createdAt?.seconds ?? 0;
+          return tb - ta;
+        });
+      setEmails(docs.slice(0, PAGE_SIZE));
+      setHasMore(docs.length > PAGE_SIZE);
       setEmailsLoading(false);
     }, () => setEmailsLoading(false));
 
@@ -681,10 +685,11 @@ const OwnerEmailCenter = () => {
       collection(db, 'ownerEmails'),
       where('threadId', '==', selectedEmail.threadId),
       where('source', 'in', ['reply', 'forward']),
-      orderBy('createdAt', 'asc'),
     );
     const unsub = onSnapshot(q, snap => {
-      const replies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const replies = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
       setThreads(t => ({ ...t, [selectedEmail.id]: replies }));
     });
     return unsub;
