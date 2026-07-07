@@ -3,6 +3,7 @@
 // then sends it through Brevo using the branded EmailVerification.html template.
 // Firebase NEVER sends an email — all email delivery goes through Brevo.
 import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
+import adminSdk from './shared/firebaseAdmin.js';
 import { sendEmailWithTemplate } from './shared/emailService.js';
 import { loadTemplate } from './shared/templateLoader.js';
 import { log } from './shared/logger.js';
@@ -44,15 +45,13 @@ export const handler = async (event) => {
   }
 
   // Initialize Firebase Admin inside handler (not at module load) so env var errors surface cleanly
-  let admin;
   try {
     initFirebaseAdmin();
-    const adminModule = await import('firebase-admin');
-    admin = adminModule.default;
   } catch (err) {
     log.error('Firebase Admin init failed', { message: err.message });
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
   }
+  const admin = adminSdk;
 
   // Generate Firebase verification link
   const actionCodeSettings = {
