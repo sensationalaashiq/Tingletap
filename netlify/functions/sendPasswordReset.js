@@ -120,7 +120,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      sender:      { name: 'TingleTap', email: 'support@tingletap.com' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,

@@ -161,8 +161,14 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
   };
 
   const handleSend = async () => {
-    if (!selectedRecipient?.email || !subject.trim() || !body.trim()) {
-      pt.error('Please fill in all fields and select a recipient');
+    // Support direct-typed email (e.g. user typed email but didn't click dropdown)
+    let recipient = selectedRecipient;
+    if (!recipient && isValidEmail(recipientQuery)) {
+      recipient = { id: recipientQuery.trim(), displayName: recipientQuery.trim(), email: recipientQuery.trim(), _directEmail: true };
+      setSelected(recipient);
+    }
+    if (!recipient?.email || !subject.trim() || !body.trim()) {
+      pt.error('Please fill in To email, Subject and Message');
       return;
     }
     setSending(true);
@@ -172,8 +178,8 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          recipientEmail: selectedRecipient.email,
-          recipientName:  selectedRecipient.displayName || '',
+          recipientEmail: recipient.email,
+          recipientName:  recipient._directEmail ? '' : (recipient.displayName || ''),
           subject,
           message: body,
         }),
@@ -186,7 +192,7 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
         ownerInbox:    ownerName,
         folder:        'sent',
         from:          { name: ownerName, email: senderEmail },
-        to:            [{ name: selectedRecipient.displayName || '', email: selectedRecipient.email }],
+        to:            [{ name: recipient._directEmail ? '' : (recipient.displayName || ''), email: recipient.email }],
         replyTo:       { email: senderEmail },
         subject,
         body,
@@ -202,7 +208,7 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
         messageId:     data.messageId || null,
       });
 
-      pt.success(`Email sent to ${selectedRecipient.displayName || selectedRecipient.email}`);
+      pt.success(`Email sent to ${recipient.email}`);
       onSent?.();
       onClose();
     } catch (err) {
@@ -211,7 +217,7 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
     setSending(false);
   };
 
-  const canSend = !!selectedRecipient?.email && subject.trim() && body.trim();
+  const canSend = (!!selectedRecipient?.email || isValidEmail(recipientQuery)) && subject.trim() && body.trim();
 
   return (
     <div className="ec-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -253,6 +259,11 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
                   onKeyDown={e => {
                     if (e.key === 'Enter' && isValidEmail(recipientQuery)) {
                       e.preventDefault();
+                      handleSelectEmail(recipientQuery.trim());
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!selectedRecipient && isValidEmail(recipientQuery)) {
                       handleSelectEmail(recipientQuery.trim());
                     }
                   }}
