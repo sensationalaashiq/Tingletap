@@ -121,19 +121,26 @@ const PremiumRelationshipCard = ({
     return () => document.removeEventListener('mousedown', handler);
   }, [popoverOpen]);
 
-  // ── Guest: hide entire section ──
+  // ── Guest viewer: hide entire section ──
   if (isGuest) return null;
   if (!profileUser?.uid) return null;
 
-  const canMark    = !isSelf && !isGuest;
+  // Guest profiles (Purush / Stree / Navrang) cannot be marked and their section is hidden
+  // Normalized: handles boolean true, string 'true', and any role casing
+  const isTargetGuest =
+    profileUser?.isGuest === true || String(profileUser?.isGuest) === 'true' ||
+    (profileUser?.role || '').toLowerCase() === 'guest';
+
+  const canMark    = !isSelf && !isGuest && !isTargetGuest;
   const viewerMark = loggedInUserProfile?.relationships?.[profileUser.uid] ?? null;
   const publicStatus = profileUser?.relationship ?? null;
 
-  // Mutual relationship — stored on profileUser's doc, visible to ALL users
+  // Mutual relationship — stored on profileUser's doc, visible to ALL non-guest users
   const mutualData = profileUser?.publicMutualRelationship ?? null;
   const mutualCfg  = mutualData ? FULL_RELATIONSHIP_CONFIG.find(r => r.value === mutualData.type) : null;
 
-  // Nothing to display and can't mark → hide
+  // Nothing to display and can't mark → hide (also hide if target is a guest)
+  if (isTargetGuest) return null;
   if (!viewerMark && !publicStatus && !canMark && !mutualData) return null;
 
   const markCfg = FULL_RELATIONSHIP_CONFIG.find(r => r.value === viewerMark);
@@ -143,100 +150,157 @@ const PremiumRelationshipCard = ({
     onMark(profileUser.uid, val);
   };
 
-  // ── COMPACT MODE: inline strip for Relationship Marking only ──────────────
+  // ── COMPACT MODE: mutual banner (all non-guest viewers) + mark row (self only) ──
   if (compact) {
-    if (!canMark) return null;
+    // Nothing to show at all
+    if (!canMark && !mutualData) return null;
     return (
       <div className={`prc-wrap${isDarkMode ? ' prc-dark' : ''}`}>
         <div className="prc-compact" onClick={e => e.stopPropagation()}>
-          <div className="prc-compact-row">
-            <span className="prc-compact-title">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              Your mark:
-            </span>
 
-            {viewerMark && markCfg ? (
-              <span className="prc-compact-chip" style={{ background: markCfg.gradient }}>
-                <span className="prc-compact-chip-icon" aria-hidden="true">{markCfg.icon}</span>
-                {markCfg.label}
-              </span>
-            ) : (
-              <span className="prc-compact-empty">Not marked</span>
-            )}
-
-            <span className="prc-compact-spacer" />
-
-            <div style={{ position: 'relative' }}>
-              <button
-                ref={btnRef}
-                type="button"
-                className="prc-compact-btn"
-                onClick={(e) => { e.stopPropagation(); setPopoverOpen(p => !p); }}
-                aria-haspopup="listbox"
-                aria-expanded={popoverOpen}
-                aria-label={viewerMark ? 'Change relationship mark' : 'Mark relationship'}
+          {/* ── Mutual relationship — visible to every non-guest viewer ── */}
+          {mutualData && mutualCfg && (
+            <div className="prc-mutual-section">
+              <div className="prc-mutual-eyebrow">Mutual Relationship</div>
+              <div
+                className="prc-mutual-banner"
+                role="status"
+                aria-label={`${profileUser.displayName} and ${mutualData.displayName} are mutual ${mutualCfg.label}`}
               >
-                {viewerMark ? (
-                  <>
-                    <svg viewBox="0 0 24 24" width="9" height="9" fill="none" aria-hidden="true">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Change
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" width="9" height="9" fill="none" aria-hidden="true">
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
-                    </svg>
-                    Mark
-                  </>
-                )}
-              </button>
-
-              {popoverOpen && (
-                <div
-                  ref={popoverRef}
-                  className="prc-popover prc-popover--compact"
-                  role="listbox"
-                  aria-label="Choose relationship"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="prc-popover-label">Mark as</div>
-                  {FULL_RELATIONSHIP_CONFIG.map(rc => (
-                    <button
-                      key={rc.value}
-                      type="button"
-                      role="option"
-                      aria-selected={viewerMark === rc.value}
-                      className={`prc-pop-item${viewerMark === rc.value ? ' prc-pop-active' : ''}`}
-                      onClick={() => handleMark(rc.value)}
-                    >
-                      <span className="prc-pop-icon" style={{ background: rc.gradient }} aria-hidden="true">{rc.icon}</span>
-                      <span className="prc-pop-label">{rc.label}</span>
-                      {viewerMark === rc.value && (
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" className="prc-pop-check" aria-hidden="true">
-                          <path d="M5 12l5 5 9-10" stroke="#7c3aed" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                  {viewerMark && (
-                    <button type="button" className="prc-pop-item prc-pop-remove" onClick={() => handleMark(null)}>
-                      <span className="prc-pop-icon prc-pop-icon--remove" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="#ef4444" strokeWidth="2.1" strokeLinecap="round"/>
-                        </svg>
-                      </span>
-                      <span className="prc-pop-label prc-pop-label--remove">Remove mark</span>
-                    </button>
-                  )}
+                <div className="prc-mutual-avatars" aria-hidden="true">
+                  <div className="prc-mutual-avatar">
+                    {profileUser.photoURL
+                      ? <img src={profileUser.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
+                      : (profileUser.displayName?.[0] || '?').toUpperCase()
+                    }
+                  </div>
+                  <div className="prc-mutual-avatar">
+                    {mutualData.photoURL
+                      ? <img src={mutualData.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
+                      : (mutualData.displayName?.[0] || '?').toUpperCase()
+                    }
+                  </div>
                 </div>
-              )}
+                <div className="prc-mutual-text-wrap">
+                  <div className="prc-mutual-names">
+                    <strong>{profileUser.displayName || 'User'}</strong>
+                    {' & '}
+                    <strong>{mutualData.displayName || 'User'}</strong>
+                  </div>
+                  <div className="prc-mutual-sublabel">Mutual {mutualCfg.label}</div>
+                </div>
+                <div className="prc-mutual-chip" style={{ background: mutualCfg.gradient }} aria-hidden="true">
+                  <span className="prc-mutual-chip-icon">{mutualCfg.icon}</span>
+                  {mutualCfg.label}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                <span className="prc-mutual-public-badge">
+                  <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
+                  </svg>
+                  Visible to Everyone
+                </span>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Divider between mutual banner and mark row */}
+          {mutualData && canMark && (
+            <div className="prc-section-divider" aria-hidden="true" />
+          )}
+
+          {/* ── Mark row — only shown to the viewer themselves (canMark) ── */}
+          {canMark && (
+            <div className="prc-compact-row">
+              <span className="prc-compact-title">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                Your mark:
+              </span>
+
+              {viewerMark && markCfg ? (
+                <span className="prc-compact-chip" style={{ background: markCfg.gradient }}>
+                  <span className="prc-compact-chip-icon" aria-hidden="true">{markCfg.icon}</span>
+                  {markCfg.label}
+                </span>
+              ) : (
+                <span className="prc-compact-empty">Not marked</span>
+              )}
+
+              <span className="prc-compact-spacer" />
+
+              <div style={{ position: 'relative' }}>
+                <button
+                  ref={btnRef}
+                  type="button"
+                  className="prc-compact-btn"
+                  onClick={(e) => { e.stopPropagation(); setPopoverOpen(p => !p); }}
+                  aria-haspopup="listbox"
+                  aria-expanded={popoverOpen}
+                  aria-label={viewerMark ? 'Change relationship mark' : 'Mark relationship'}
+                >
+                  {viewerMark ? (
+                    <>
+                      <svg viewBox="0 0 24 24" width="9" height="9" fill="none" aria-hidden="true">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Change
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" width="9" height="9" fill="none" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+                      </svg>
+                      Mark
+                    </>
+                  )}
+                </button>
+
+                {popoverOpen && (
+                  <div
+                    ref={popoverRef}
+                    className="prc-popover prc-popover--compact"
+                    role="listbox"
+                    aria-label="Choose relationship"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="prc-popover-label">Mark as</div>
+                    {FULL_RELATIONSHIP_CONFIG.map(rc => (
+                      <button
+                        key={rc.value}
+                        type="button"
+                        role="option"
+                        aria-selected={viewerMark === rc.value}
+                        className={`prc-pop-item${viewerMark === rc.value ? ' prc-pop-active' : ''}`}
+                        onClick={() => handleMark(rc.value)}
+                      >
+                        <span className="prc-pop-icon" style={{ background: rc.gradient }} aria-hidden="true">{rc.icon}</span>
+                        <span className="prc-pop-label">{rc.label}</span>
+                        {viewerMark === rc.value && (
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" className="prc-pop-check" aria-hidden="true">
+                            <path d="M5 12l5 5 9-10" stroke="#7c3aed" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                    {viewerMark && (
+                      <button type="button" className="prc-pop-item prc-pop-remove" onClick={() => handleMark(null)}>
+                        <span className="prc-pop-icon prc-pop-icon--remove" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="#ef4444" strokeWidth="2.1" strokeLinecap="round"/>
+                          </svg>
+                        </span>
+                        <span className="prc-pop-label prc-pop-label--remove">Remove mark</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

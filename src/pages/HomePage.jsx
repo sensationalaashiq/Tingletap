@@ -4500,23 +4500,32 @@ const HomePage = ({ user, roomIdOverride }) => {
     // RELATIONSHIP_TYPES is now sourced from FULL_RELATIONSHIP_CONFIG (PremiumRelationshipCard)
     const RELATIONSHIP_TYPES = FULL_RELATIONSHIP_CONFIG;
 
+    // Shared guest-detection helper (handles boolean true, string 'true', and any role casing)
+    const _isGuestProfile = (profile) =>
+        profile?.isGuest === true || String(profile?.isGuest) === 'true' ||
+        (profile?.role || '').toLowerCase() === 'guest';
+
     const handleSetRelationship = async (targetUid, relType) => {
         const currentUid = auth.currentUser?.uid;
-        if (!currentUid || !targetUid || currentUid === targetUid) return;
+        // Guests must never write relationship marks (check localStorage + profile, normalized)
+        const callerIsGuest = localStorage.getItem('isGuest') === 'true' || _isGuestProfile(loggedInUserProfile);
+        if (!currentUid || !targetUid || currentUid === targetUid || callerIsGuest) return;
         try {
             const currentDocRef = doc(db, 'users', currentUid);
             const targetDocRef  = doc(db, 'users', targetUid);
 
-            // 1. Write private mark (or remove it)
+            // 1. Fetch target doc first — abort if target is a guest profile
+            const targetSnap = await getDoc(targetDocRef);
+            const targetData = targetSnap.exists() ? (targetSnap.data() || {}) : {};
+            if (_isGuestProfile(targetData)) return;
+
+            // 2. Write private mark (or remove it)
             if (relType === null) {
                 await updateDoc(currentDocRef, { [`relationships.${targetUid}`]: deleteField() });
             } else {
                 await updateDoc(currentDocRef, { [`relationships.${targetUid}`]: relType });
             }
 
-            // 2. Fetch target doc to check for mutual mark
-            const targetSnap = await getDoc(targetDocRef);
-            const targetData = targetSnap.exists() ? (targetSnap.data() || {}) : {};
             const targetMarkOnMe = targetData.relationships?.[currentUid] ?? null;
 
             // 3. Mutual = both sides have marked each other with the SAME type
