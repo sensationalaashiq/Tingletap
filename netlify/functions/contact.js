@@ -121,7 +121,7 @@ export const handler = async (event) => {
 
   try {
     await sendEmailWithTemplate({
-      sender:      { name: 'TingleTap Contact Form', email: target.toEmail },
+      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
       to:          [{ email: target.toEmail, name: target.toName }],
       replyTo:     { email, name },
       subject:     `[Contact · ${route === 'administration' ? 'Admin' : 'Support'}] ${subject}`,
