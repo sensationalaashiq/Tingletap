@@ -487,25 +487,25 @@ function EmailDetail({ email, threads, folder, ownerName, senderEmail, onAction 
       {/* Toolbar */}
       <div className="ec-detail-toolbar">
         <button className="ec-tool-btn primary" onClick={() => setShowReply(r => !r)}>
-          <Ic.Reply /> Reply
+          <span style={{ color: '#1d4ed8', display:'flex' }}><Ic.Reply /></span> Reply
         </button>
         <button className="ec-tool-btn" onClick={() => setShowForward(true)}>
-          <Ic.Forward /> Forward
+          <span style={{ color: '#4f46e5', display:'flex' }}><Ic.Forward /></span> Forward
         </button>
         <div className="ec-tool-sep" />
         <button className={`ec-tool-btn ${email.starred ? 'star-active' : ''}`} onClick={handleStar}>
           <Ic.Star filled={email.starred} /> {email.starred ? 'Unstar' : 'Star'}
         </button>
         <button className="ec-tool-btn" onClick={handleMarkRead}>
-          <Ic.MailOpen /> {email.read ? 'Mark Unread' : 'Mark Read'}
+          <span style={{ color: '#047857', display:'flex' }}><Ic.MailOpen /></span> {email.read ? 'Mark Unread' : 'Mark Read'}
         </button>
         <div className="ec-tool-sep" />
         <button className="ec-tool-btn" onClick={handleArchive}>
-          <Ic.Archive2 /> {folder === 'archived' ? 'Unarchive' : 'Archive'}
+          <span style={{ color: '#047857', display:'flex' }}><Ic.Archive2 /></span> {folder === 'archived' ? 'Unarchive' : 'Archive'}
         </button>
         {folder === 'trash' && (
           <button className="ec-tool-btn" onClick={handleRestore}>
-            <Ic.Restore /> Restore
+            <span style={{ color: '#1d4ed8', display:'flex' }}><Ic.Restore /></span> Restore
           </button>
         )}
         <button className="ec-tool-btn danger" onClick={handleDelete}>
@@ -729,11 +729,11 @@ const OwnerEmailCenter = () => {
   }, [emails, search, filter]);
 
   const FOLDERS = [
-    { id: 'inbox',    label: 'Inbox',   Icon: Ic.Inbox,   badge: unreadCount },
-    { id: 'sent',     label: 'Sent',    Icon: Ic.Sent },
-    { id: 'drafts',   label: 'Drafts',  Icon: Ic.Draft },
-    { id: 'archived', label: 'Archive', Icon: Ic.Archive },
-    { id: 'trash',    label: 'Trash',   Icon: Ic.Trash },
+    { id: 'inbox',    label: 'Inbox',   Icon: Ic.Inbox,   badge: unreadCount, color: '#6d28d9' },
+    { id: 'sent',     label: 'Sent',    Icon: Ic.Sent,    color: '#1d4ed8' },
+    { id: 'drafts',   label: 'Drafts',  Icon: Ic.Draft,   color: '#b45309' },
+    { id: 'archived', label: 'Archive', Icon: Ic.Archive, color: '#047857' },
+    { id: 'trash',    label: 'Trash',   Icon: Ic.Trash,   color: '#b91c1c' },
   ];
 
   if (authLoading) return (
@@ -800,7 +800,7 @@ const OwnerEmailCenter = () => {
                 role="listitem"
                 onClick={() => { setFolder(f.id); setMobileSidebarOpen(false); }}
               >
-                <span className="ec-folder-icon"><f.Icon /></span>
+                <span className="ec-folder-icon" style={{ color: f.color }}><f.Icon /></span>
                 <span className="ec-folder-label">{f.label}</span>
                 {f.badge > 0 && <span className="ec-folder-badge">{f.badge > 99 ? '99+' : f.badge}</span>}
               </div>
@@ -808,9 +808,9 @@ const OwnerEmailCenter = () => {
           </div>
 
           <div className="ec-sidebar-sep" />
-          <div style={{ padding: '8px 14px' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Sending as</div>
-            <div style={{ fontSize: 12, color: '#7c3aed', fontWeight: 700 }}>{senderEmail}</div>
+          <div className="ec-sidebar-footer">
+            <div className="ec-sidebar-footer-label">Sending as</div>
+            <div className="ec-sidebar-footer-email">{senderEmail}</div>
           </div>
         </nav>
 
