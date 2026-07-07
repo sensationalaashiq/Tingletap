@@ -18,6 +18,7 @@ const OWNER_MAP = {
   'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
   'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — TingleTap'  },
 };
+const DEFAULT_SENDER_EMAIL = process.env.OWNER_DEFAULT_EMAIL || 'admin@tingletap.com';
 
 function decodeJwt(token) {
   try {
@@ -131,11 +132,10 @@ export const handler = async (event) => {
     return { statusCode: 403, headers, body: JSON.stringify({ error: v.err }) };
   }
 
-  const sender = OWNER_MAP[v.displayName];
-  if (!sender) {
-    log.warn('Unknown owner displayName', { displayName: v.displayName });
-    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Unrecognized owner account' }) };
-  }
+  const sender = OWNER_MAP[v.displayName] || {
+    email: DEFAULT_SENDER_EMAIL,
+    name: `${v.displayName} — TingleTap`,
+  };
 
   let body;
   try { body = JSON.parse(event.body || '{}'); }

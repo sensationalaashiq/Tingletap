@@ -7,6 +7,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './OwnerEmailCenter.css';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -63,6 +65,9 @@ const Spinner = ({ size = 22 }) => (
   <div className="ec-spinner" style={{ width: size, height: size }} />
 );
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const isValidEmail = (str) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((str || '').trim());
+
 // ── Compose Modal ──────────────────────────────────────────────────────────────
 function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -111,6 +116,12 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
     setRecipientQuery(v);
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => searchUsers(v), 300);
+  };
+
+  const handleSelectEmail = (emailAddr) => {
+    setSelected({ id: emailAddr, displayName: emailAddr, email: emailAddr, _directEmail: true });
+    setRecipientQuery('');
+    setSearchResults([]);
   };
 
   const handleSelect = user => {
@@ -229,34 +240,51 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
             <div className="ec-recipient-wrap" ref={dropRef}>
               {selectedRecipient ? (
                 <div className="ec-selected-recipient">
-                  <span className="ec-selected-name">{selectedRecipient.displayName}</span>
-                  <span className="ec-selected-email">{selectedRecipient.email}</span>
+                  <span className="ec-selected-name">{selectedRecipient._directEmail ? selectedRecipient.email : selectedRecipient.displayName}</span>
+                  <span className="ec-selected-email">{selectedRecipient._directEmail ? '' : selectedRecipient.email}</span>
                   <button className="ec-clear-btn" onClick={() => setSelected(null)}><Ic.Close /></button>
                 </div>
               ) : (
                 <input
                   className="ec-recipient-input"
-                  placeholder="Search by name, email or UID…"
+                  placeholder="Type email address or search by name/UID…"
                   value={recipientQuery}
                   onChange={handleQueryChange}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && isValidEmail(recipientQuery)) {
+                      e.preventDefault();
+                      handleSelectEmail(recipientQuery.trim());
+                    }
+                  }}
                   autoFocus
                 />
               )}
-              {(searchResults.length > 0 || searching) && !selectedRecipient && (
+              {!selectedRecipient && (recipientQuery.length >= 2) && (
                 <div className="ec-dropdown">
+                  {isValidEmail(recipientQuery) && (
+                    <div
+                      className="ec-dropdown-item ec-dd-direct-email"
+                      onClick={() => handleSelectEmail(recipientQuery.trim())}
+                      style={{ borderBottom: searchResults.length > 0 ? '1px solid #f3f4f6' : 'none' }}
+                    >
+                      <div className="ec-dd-avatar" style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', fontSize: 10 }}>@</div>
+                      <div>
+                        <div className="ec-dd-name" style={{ color: '#7c3aed', fontWeight: 700 }}>Send to {recipientQuery.trim()}</div>
+                        <div className="ec-dd-email">Direct email — press Enter or click to select</div>
+                      </div>
+                    </div>
+                  )}
                   {searching
-                    ? <div className="ec-dd-no-results" style={{display:'flex',alignItems:'center',gap:8}}><Spinner size={14}/> Searching…</div>
-                    : searchResults.length === 0
-                      ? <div className="ec-dd-no-results">No users found</div>
-                      : searchResults.map(u => (
-                          <div key={u.id} className="ec-dropdown-item" onClick={() => handleSelect(u)}>
-                            <div className="ec-dd-avatar">{initials(u.displayName)}</div>
-                            <div>
-                              <div className="ec-dd-name">{u.displayName}</div>
-                              <div className="ec-dd-email">{u.email}</div>
-                            </div>
+                    ? <div className="ec-dd-no-results" style={{display:'flex',alignItems:'center',gap:8}}><Spinner size={14}/> Searching users…</div>
+                    : searchResults.map(u => (
+                        <div key={u.id} className="ec-dropdown-item" onClick={() => handleSelect(u)}>
+                          <div className="ec-dd-avatar">{initials(u.displayName)}</div>
+                          <div>
+                            <div className="ec-dd-name">{u.displayName}</div>
+                            <div className="ec-dd-email">{u.email}</div>
                           </div>
-                        ))
+                        </div>
+                      ))
                   }
                 </div>
               )}
@@ -325,6 +353,12 @@ function ForwardModal({ email, ownerName, senderEmail, onClose, onForwarded }) {
     timerRef.current = setTimeout(() => searchUsers(e.target.value), 300);
   };
 
+  const handleSelectDirect = (emailAddr) => {
+    setSelected({ id: emailAddr, displayName: emailAddr, email: emailAddr, _directEmail: true });
+    setRecipientQuery('');
+    setSearchResults([]);
+  };
+
   const handleSend = async () => {
     if (!selected?.email) { pt.error('Select a recipient'); return; }
     setSending(true);
@@ -338,7 +372,7 @@ function ForwardModal({ email, ownerName, senderEmail, onClose, onForwarded }) {
           emailId:        email.id,
           body,
           recipientEmail: selected.email,
-          recipientName:  selected.displayName || '',
+          recipientName:  selected._directEmail ? '' : (selected.displayName || ''),
           subject:        `Fwd: ${email.subject || ''}`,
         }),
       });
@@ -366,17 +400,41 @@ function ForwardModal({ email, ownerName, senderEmail, onClose, onForwarded }) {
             <div className="ec-recipient-wrap" ref={dropRef}>
               {selected ? (
                 <div className="ec-selected-recipient">
-                  <span className="ec-selected-name">{selected.displayName}</span>
-                  <span className="ec-selected-email">{selected.email}</span>
+                  <span className="ec-selected-name">{selected.email}</span>
                   <button className="ec-clear-btn" onClick={() => setSelected(null)}><Ic.Close /></button>
                 </div>
               ) : (
-                <input className="ec-recipient-input" placeholder="Search recipient…" value={recipientQuery} onChange={handleQueryChange} autoFocus />
+                <input
+                  className="ec-recipient-input"
+                  placeholder="Type email or search by name…"
+                  value={recipientQuery}
+                  onChange={handleQueryChange}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && isValidEmail(recipientQuery)) {
+                      e.preventDefault();
+                      handleSelectDirect(recipientQuery.trim());
+                    }
+                  }}
+                  autoFocus
+                />
               )}
-              {searchResults.length > 0 && !selected && (
+              {!selected && recipientQuery.length >= 2 && (
                 <div className="ec-dropdown">
+                  {isValidEmail(recipientQuery) && (
+                    <div
+                      className="ec-dropdown-item ec-dd-direct-email"
+                      onClick={() => handleSelectDirect(recipientQuery.trim())}
+                      style={{ borderBottom: searchResults.length > 0 ? '1px solid #f3f4f6' : 'none' }}
+                    >
+                      <div className="ec-dd-avatar" style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', fontSize: 10 }}>@</div>
+                      <div>
+                        <div className="ec-dd-name" style={{ color: '#7c3aed', fontWeight: 700 }}>Forward to {recipientQuery.trim()}</div>
+                        <div className="ec-dd-email">Direct email — press Enter or click</div>
+                      </div>
+                    </div>
+                  )}
                   {searchResults.map(u => (
-                    <div key={u.id} className="ec-dropdown-item" onClick={() => { setSelected(u); setSearchResults([]); }}>
+                    <div key={u.id} className="ec-dropdown-item" onClick={() => { setSelected(u); setSearchResults([]); setRecipientQuery(''); }}>
                       <div className="ec-dd-avatar">{initials(u.displayName)}</div>
                       <div><div className="ec-dd-name">{u.displayName}</div><div className="ec-dd-email">{u.email}</div></div>
                     </div>
@@ -976,6 +1034,16 @@ const OwnerEmailCenter = () => {
           onSent={() => setFolder('sent')}
         />
       )}
+
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        style={{ zIndex: 99999 }}
+      />
     </div>
   );
 };

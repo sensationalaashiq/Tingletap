@@ -13,6 +13,7 @@ const OWNER_MAP = {
   'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
   'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — TingleTap'  },
 };
+const DEFAULT_SENDER_EMAIL = process.env.OWNER_DEFAULT_EMAIL || 'admin@tingletap.com';
 
 const headers = {
   'Content-Type': 'application/json',
@@ -96,8 +97,10 @@ export const handler = async (event) => {
   const v = await verifyOwner(authHeader.slice(7));
   if (!v.ok) return { statusCode: 403, headers, body: JSON.stringify({ error: v.err }) };
 
-  const sender = OWNER_MAP[v.displayName];
-  if (!sender) return { statusCode: 403, headers, body: JSON.stringify({ error: 'Unrecognized owner' }) };
+  const sender = OWNER_MAP[v.displayName] || {
+    email: DEFAULT_SENDER_EMAIL,
+    name: `${v.displayName} — TingleTap`,
+  };
 
   let body;
   try { body = JSON.parse(event.body || '{}'); }

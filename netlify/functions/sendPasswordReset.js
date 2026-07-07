@@ -165,33 +165,38 @@ export const handler = async (event) => {
   const rl = rateLimit(`reset:${ip}`, 3, 5 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: { ...headers, 'Retry-After': String(rl.retryAfter) }, body: JSON.stringify({ error: 'Too many requests. Please wait a few minutes before trying again.' }) };
 
-  // ── Firebase Admin path ───────────────────────────────────────────────────────
+  // ── Try Firebase Admin first ───────────────────────────────────────────────
   let adminWorking = false;
   try { ensureFirebase(); adminWorking = true; }
   catch (err) {
-    console.warn('[sendPasswordReset] Firebase Admin init failed, will use REST fallback:', err.message);
+    console.error('[sendPasswordReset] Firebase Admin init failed:', err.message);
   }
 
   if (adminWorking) {
-    // First check if the user exists
+    // Check if user exists
     let userRecord = null;
     try {
       userRecord = await admin.auth().getUserByEmail(email);
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-        // User does NOT exist — tell them clearly
+        // User definitely does NOT exist
         return {
           statusCode: 404,
           headers,
           body: JSON.stringify({ error: 'No account found with this email. Please use your registered login email for password reset.' }),
         };
       }
-      console.warn('[sendPasswordReset] getUserByEmail failed, falling back to REST:', err.message);
-      adminWorking = false;
+      console.error('[sendPasswordReset] getUserByEmail error:', err.message);
+      // Unknown error — don't reveal email status, return generic error
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({ error: 'Unable to process your request right now. Please try again in a moment.' }),
+      };
     }
 
-    if (adminWorking && userRecord) {
-      // User exists — generate reset link and send branded email
+    if (userRecord) {
+      // User confirmed to exist — generate reset link
       let firebaseLink;
       try {
         firebaseLink = await admin.auth().generatePasswordResetLink(email, {
@@ -199,37 +204,50 @@ export const handler = async (event) => {
           handleCodeInApp: false,
         });
       } catch (err) {
-        console.warn('[sendPasswordReset] generatePasswordResetLink failed, falling back to REST:', err.message);
-        adminWorking = false;
+        console.error('[sendPasswordReset] generatePasswordResetLink failed:', err.message);
+        // Even if link generation fails, try Firebase REST as last resort (user is verified to exist)
+        return await sendViaFirebaseRest(email, headers);
       }
 
-      if (adminWorking && firebaseLink) {
-        let resetUrl = firebaseLink;
-        try {
-          const parsed  = new URL(firebaseLink);
-          const oobCode = parsed.searchParams.get('oobCode');
-          if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
-        } catch {}
+      // Extract clean URL with just the oobCode pointing to our page
+      let resetUrl = firebaseLink;
+      try {
+        const parsed  = new URL(firebaseLink);
+        const oobCode = parsed.searchParams.get('oobCode');
+        if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+      } catch {}
 
-        const displayName = userName || userRecord.displayName || email.split('@')[0];
-        try {
-          await sendViaBrevo({
-            to:      email,
-            subject: 'Reset Your TingleTap Password',
-            html:    buildResetHtml(displayName, email, resetUrl),
-            text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
-          });
-          console.log('[sendPasswordReset] ✓ Branded email sent via Brevo');
-          return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
-        } catch (err) {
-          console.warn('[sendPasswordReset] Brevo send failed, falling back to Firebase REST:', err.message);
-        }
+      const displayName = userName || userRecord.displayName || email.split('@')[0];
+
+      // Send branded email via Brevo
+      try {
+        await sendViaBrevo({
+          to:      email,
+          subject: 'Reset Your TingleTap Password',
+          html:    buildResetHtml(displayName, email, resetUrl),
+          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+        });
+        console.log('[sendPasswordReset] ✓ Branded email sent via Brevo to:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      } catch (brevoErr) {
+        console.warn('[sendPasswordReset] Brevo failed, trying Firebase REST (user is verified):', brevoErr.message);
+        // User is verified to exist — use Firebase REST just to send the email
+        return await sendViaFirebaseRest(email, headers);
       }
     }
   }
 
-  // ── Fallback: Firebase Auth REST API ─────────────────────────────────────────
-  console.log('[sendPasswordReset] Using Firebase REST API fallback for:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
+  // ── Admin SDK not available — can't safely verify email ───────────────────
+  // Instead of silently succeeding for any email, return a service error
+  console.error('[sendPasswordReset] Firebase Admin unavailable, cannot safely verify email');
+  return {
+    statusCode: 503,
+    headers,
+    body: JSON.stringify({ error: 'Password reset service is temporarily unavailable. Please try again in a few minutes or contact support at support@tingletap.com' }),
+  };
+};
+
+async function sendViaFirebaseRest(email, headers) {
   try {
     const fbRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_WEB_API_KEY}`,
@@ -240,21 +258,18 @@ export const handler = async (event) => {
       }
     );
     const fbData = await fbRes.json().catch(() => ({}));
-    if (fbData.error?.message === 'EMAIL_NOT_FOUND') {
+    if (!fbRes.ok) {
+      console.error('[sendPasswordReset] Firebase REST error:', fbData.error?.message);
       return {
-        statusCode: 404,
+        statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'No account found with this email. Please use your registered login email for password reset.' }),
+        body: JSON.stringify({ error: 'Unable to send reset email. Please try again later.' }),
       };
     }
-    if (!fbRes.ok) {
-      console.error('[sendPasswordReset] Firebase REST fallback error:', fbData.error?.message);
-    } else {
-      console.log('[sendPasswordReset] ✓ Firebase REST fallback succeeded');
-    }
+    console.log('[sendPasswordReset] ✓ Firebase REST fallback succeeded');
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (err) {
-    console.error('[sendPasswordReset] All methods failed:', err.message);
+    console.error('[sendPasswordReset] Firebase REST failed:', err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Unable to send reset email. Please try again later.' }) };
   }
-};
+}

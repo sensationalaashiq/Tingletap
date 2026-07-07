@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { pt } from '../utils/premiumToast';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 import SEO from '../seo/SEO';
@@ -100,13 +102,13 @@ const ContactPage = () => {
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        toast.success('Message sent! We will respond within 2–4 hours.');
+        pt.success('Message sent! We will respond within 2–4 hours.');
         setForm({ name: '', email: '', route: 'support', subject: '', message: '' });
       } else {
-        toast.error(data.error || 'Something went wrong. Please try again.');
+        pt.error(data.error || 'Something went wrong. Please try again.');
       }
     } catch {
-      toast.error('Failed to send. Please check your connection and try again.');
+      pt.error('Failed to send. Please check your connection and try again.');
     }
     setSending(false);
   };
@@ -195,7 +197,7 @@ const ContactPage = () => {
                 <textarea className="lp-input" name="message" value={form.message} onChange={handleChange} placeholder="Describe your issue in detail…" required rows={4} style={{resize:'vertical',minHeight:'90px'}}/>
               </div>
               <button type="submit" className="lp-submit-btn" disabled={sending}>
-                <SendIcon /><span>{sending ? 'Opening…' : 'Send Message'}</span>
+                <SendIcon /><span>{sending ? 'Sending…' : 'Send Message'}</span>
               </button>
             </form>
           </div>
@@ -239,6 +241,15 @@ const ContactPage = () => {
         </nav>
       </footer>
       <PremiumCopyright />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        style={{ zIndex: 99999 }}
+      />
     </div>
   );
 };
