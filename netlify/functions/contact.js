@@ -88,6 +88,8 @@ export const handler = async (event) => {
 
   const emailId = `${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
 
+  // ── Step 1: Firestore write (non-fatal — email send always proceeds) ──────────
+  let firestoreOk = false;
   try {
     initFirebaseAdmin();
     const db = admin.firestore();
@@ -114,16 +116,14 @@ export const handler = async (event) => {
     };
 
     await db.collection('ownerEmails').doc(emailId).set(emailDoc);
+    firestoreOk = true;
     log.info('Contact form stored', { id: emailId, route, from: email.replace(/(.{2}).+(@.+)/, '$1***$2') });
   } catch (err) {
-    log.error('Firestore write failed for contact', { message: err.message });
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: `Server error saving message: ${err.message}` }),
-    };
+    // Non-fatal: log error but continue — Brevo email is still sent so owner gets notified
+    log.error('Firestore write failed for contact (continuing to email send)', { message: err.message });
   }
 
+  // ── Step 2: Brevo email notification to owner (always attempted) ──────────────
   try {
     await sendEmailWithTemplate({
       sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
@@ -146,6 +146,10 @@ export const handler = async (event) => {
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ ok: true, message: 'Message sent successfully. We will respond within 2–4 hours.' }),
+    body: JSON.stringify({
+      ok: true,
+      message: 'Message sent successfully. We will respond within 2–4 hours.',
+      inboxSaved: firestoreOk,
+    }),
   };
 };

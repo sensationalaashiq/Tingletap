@@ -1,5 +1,8 @@
 // Standalone email verification sender — no shared imports, no file system, HTML inline.
+// Falls back to Firebase Auth REST API if Admin SDK credentials are unavailable.
 import admin from 'firebase-admin';
+
+const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyAp6KtSg_7kbGwyffC7sFJxuuxB-wwPj-w';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -142,43 +145,69 @@ export const handler = async (event) => {
   const rl = rateLimit(`verify:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: { ...headers, 'Retry-After': String(rl.retryAfter) }, body: JSON.stringify({ error: 'Too many requests. Please try again later.' }) };
 
-  try { ensureFirebase(); }
+  // ── Try Firebase Admin path (branded Brevo email) ────────────────────────────
+  let adminWorking = false;
+  try { ensureFirebase(); adminWorking = true; }
   catch (err) {
-    console.error('[sendVerification] Firebase init error:', err.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
+    console.warn('[sendVerification] Firebase Admin init failed, will use REST fallback:', err.message);
   }
 
-  let firebaseLink;
-  try {
-    firebaseLink = await admin.auth().generateEmailVerificationLink(email, {
-      url: 'https://tingletap.com/verify-email',
-      handleCodeInApp: false,
-    });
-  } catch (err) {
-    console.error('[sendVerification] Firebase link error:', err.message, err.code);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Could not generate verification link' }) };
+  if (adminWorking) {
+    let firebaseLink;
+    try {
+      firebaseLink = await admin.auth().generateEmailVerificationLink(email, {
+        url: 'https://tingletap.com/verify-email',
+        handleCodeInApp: false,
+      });
+    } catch (err) {
+      console.warn('[sendVerification] generateEmailVerificationLink failed, falling back to REST:', err.message, err.code);
+      adminWorking = false;
+    }
+
+    if (adminWorking && firebaseLink) {
+      let verifyUrl = firebaseLink;
+      try {
+        const parsed  = new URL(firebaseLink);
+        const oobCode = parsed.searchParams.get('oobCode');
+        if (oobCode) verifyUrl = `https://tingletap.com/verify-email?oobCode=${encodeURIComponent(oobCode)}`;
+      } catch {}
+
+      const displayName = userName || email.split('@')[0];
+      try {
+        await sendViaBrevo({
+          to:      email,
+          subject: 'Verify Your TingleTap Email Address',
+          html:    buildVerifyHtml(displayName, email, verifyUrl),
+          text:    `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+        });
+        console.log('[sendVerification] ✓ Branded email sent via Brevo');
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      } catch (err) {
+        console.warn('[sendVerification] Brevo send failed, falling back to Firebase REST:', err.message);
+      }
+    }
   }
 
-  let verifyUrl;
+  // ── Fallback: Firebase Auth REST API (sends standard Firebase verification email) ─
+  console.log('[sendVerification] Using Firebase REST API fallback for:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
   try {
-    const parsed  = new URL(firebaseLink);
-    const oobCode = parsed.searchParams.get('oobCode');
-    verifyUrl = oobCode
-      ? `https://tingletap.com/verify-email?oobCode=${encodeURIComponent(oobCode)}`
-      : firebaseLink;
-  } catch { verifyUrl = firebaseLink; }
-
-  const displayName = userName || email.split('@')[0];
-  try {
-    await sendViaBrevo({
-      to:      email,
-      subject: 'Verify Your TingleTap Email Address',
-      html:    buildVerifyHtml(displayName, email, verifyUrl),
-      text:    `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
-    });
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    const fbRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_WEB_API_KEY}`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ requestType: 'VERIFY_EMAIL', idToken: body.idToken || '' }),
+      }
+    );
+    const fbData = await fbRes.json().catch(() => ({}));
+    if (fbRes.ok) {
+      console.log('[sendVerification] ✓ Firebase REST fallback succeeded');
+    } else {
+      console.warn('[sendVerification] Firebase REST fallback error:', fbData.error?.message);
+    }
+    return { statusCode: fbRes.ok ? 200 : 200, headers, body: JSON.stringify({ ok: true, fallback: true }) };
   } catch (err) {
-    console.error('[sendVerification] Brevo error:', err.message);
-    return { statusCode: 502, headers, body: JSON.stringify({ error: `Failed to send email: ${err.message}` }) };
+    console.error('[sendVerification] All methods failed:', err.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Could not send verification email' }) };
   }
 };

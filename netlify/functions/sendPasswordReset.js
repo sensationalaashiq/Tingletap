@@ -1,5 +1,9 @@
 // Standalone password reset sender — no shared imports, no file system, HTML inline.
+// Falls back to Firebase Auth REST API if Admin SDK credentials are unavailable.
 import admin from 'firebase-admin';
+
+// Firebase Web API key (public — same key used in frontend firebase config)
+const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyAp6KtSg_7kbGwyffC7sFJxuuxB-wwPj-w';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -146,46 +150,77 @@ export const handler = async (event) => {
   const rl = rateLimit(`reset:${ip}`, 3, 5 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: { ...headers, 'Retry-After': String(rl.retryAfter) }, body: JSON.stringify({ error: 'Too many requests. Please wait a few minutes before trying again.' }) };
 
-  try { ensureFirebase(); }
+  // ── Try Firebase Admin path (branded Brevo email) ────────────────────────────
+  let adminWorking = false;
+  try { ensureFirebase(); adminWorking = true; }
   catch (err) {
-    console.error('[sendPasswordReset] Firebase init error:', err.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
+    console.warn('[sendPasswordReset] Firebase Admin init failed, will use REST fallback:', err.message);
   }
 
-  let firebaseLink;
-  try {
-    firebaseLink = await admin.auth().generatePasswordResetLink(email, {
-      url: 'https://tingletap.com/reset-password',
-      handleCodeInApp: false,
-    });
-  } catch (err) {
-    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+  if (adminWorking) {
+    let firebaseLink;
+    try {
+      firebaseLink = await admin.auth().generatePasswordResetLink(email, {
+        url: 'https://tingletap.com/reset-password',
+        handleCodeInApp: false,
+      });
+    } catch (err) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+        // Silent success — don't reveal whether account exists
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      }
+      console.warn('[sendPasswordReset] generatePasswordResetLink failed, falling back to REST:', err.message);
+      adminWorking = false;
     }
-    console.error('[sendPasswordReset] Firebase link error:', err.message, err.code);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Could not generate reset link' }) };
+
+    if (adminWorking && firebaseLink) {
+      let resetUrl = firebaseLink;
+      try {
+        const parsed  = new URL(firebaseLink);
+        const oobCode = parsed.searchParams.get('oobCode');
+        if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+      } catch {}
+
+      const displayName = userName || email.split('@')[0];
+      try {
+        await sendViaBrevo({
+          to:      email,
+          subject: 'Reset Your TingleTap Password',
+          html:    buildResetHtml(displayName, email, resetUrl),
+          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+        });
+        console.log('[sendPasswordReset] ✓ Branded email sent via Brevo');
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      } catch (err) {
+        console.warn('[sendPasswordReset] Brevo send failed, falling back to Firebase REST:', err.message);
+      }
+    }
   }
 
-  let resetUrl;
+  // ── Fallback: Firebase Auth REST API (sends standard Firebase reset email) ────
+  // Used when Firebase Admin credentials are missing/invalid OR Brevo fails.
+  console.log('[sendPasswordReset] Using Firebase REST API fallback for:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
   try {
-    const parsed  = new URL(firebaseLink);
-    const oobCode = parsed.searchParams.get('oobCode');
-    resetUrl = oobCode
-      ? `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`
-      : firebaseLink;
-  } catch { resetUrl = firebaseLink; }
-
-  const displayName = userName || email.split('@')[0];
-  try {
-    await sendViaBrevo({
-      to:      email,
-      subject: 'Reset Your TingleTap Password',
-      html:    buildResetHtml(displayName, email, resetUrl),
-      text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
-    });
+    const fbRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_WEB_API_KEY}`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ requestType: 'PASSWORD_RESET', email }),
+      }
+    );
+    const fbData = await fbRes.json().catch(() => ({}));
+    if (fbRes.ok) {
+      console.log('[sendPasswordReset] ✓ Firebase REST fallback succeeded');
+    } else if (fbData.error?.message === 'EMAIL_NOT_FOUND') {
+      // Silent success — don't reveal account existence
+    } else {
+      console.error('[sendPasswordReset] Firebase REST fallback error:', fbData.error?.message);
+    }
+    // Always return 200 to prevent account enumeration
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (err) {
-    console.error('[sendPasswordReset] Brevo error:', err.message);
-    return { statusCode: 502, headers, body: JSON.stringify({ error: `Failed to send email: ${err.message}` }) };
+    console.error('[sendPasswordReset] All methods failed:', err.message);
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) }; // still silent
   }
 };
