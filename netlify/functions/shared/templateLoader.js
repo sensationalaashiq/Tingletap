@@ -3,18 +3,24 @@ import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
 
-// With esbuild bundling, __dirname points to the bundled function directory.
-// process.cwd() is the repo root on Netlify Lambda (/var/task).
-// We try multiple candidate paths so it works both locally and on Netlify.
+// With esbuild bundling, import.meta.url may be undefined — evaluate it lazily
+// so the array construction doesn't throw before we can try process.cwd().
 function getTemplatesDir() {
+  // process.cwd() on Netlify Lambda = /var/task (repo root) — always try first.
   const candidates = [
-    // Netlify Lambda: process.cwd() = /var/task (repo root)
     join(process.cwd(), 'Templates'),
-    // Local dev: 3 levels up from netlify/functions/shared/
-    join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'Templates'),
-    // Fallback: 2 levels up (if bundled file lives in netlify/functions/)
-    join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'Templates'),
+    '/var/task/Templates', // explicit Netlify Lambda path as a safe fallback
   ];
+
+  // import.meta.url is unreliable in some esbuild bundle modes; guard it.
+  try {
+    if (typeof import.meta.url === 'string') {
+      const dir = dirname(fileURLToPath(import.meta.url));
+      candidates.push(join(dir, '..', '..', '..', 'Templates')); // local: from shared/
+      candidates.push(join(dir, '..', '..', 'Templates'));        // local: from functions/
+    }
+  } catch { /* import.meta.url unavailable in this bundle context — skip */ }
+
   return candidates;
 }
 
