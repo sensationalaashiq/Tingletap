@@ -1,11 +1,11 @@
 // Netlify Function: send-email
 // Owner Email Center — sends branded transactional emails via Brevo.
-// Mirrors the server.js /api/send-email endpoint for production Netlify deployments.
-// Requires: BREVO_API_KEY, FIREBASE_PROJECT_ID env vars.
+// Requires: BREVO_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY env vars.
+import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
+import admin from 'firebase-admin';
 import { log } from './shared/logger.js';
 import { sanitizeString } from './shared/validation.js';
 
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 const CORS_HEADERS = {
@@ -20,37 +20,23 @@ const OWNER_MAP = {
 };
 const DEFAULT_SENDER_EMAIL = process.env.OWNER_DEFAULT_EMAIL || 'admin@tingletap.com';
 
-function decodeJwt(token) {
-  try {
-    const b64 = token.split('.')[1];
-    return JSON.parse(Buffer.from(b64, 'base64url').toString('utf8'));
-  } catch { return null; }
-}
-
+// Uses Firebase Admin SDK (same as email-action.js) — no manual JWT / Firestore REST
 async function verifyOwner(token) {
-  const p = decodeJwt(token);
-  if (!p) return { ok: false, err: 'Invalid token format' };
-
-  const uid = p.user_id || p.sub;
-  if (!uid)  return { ok: false, err: 'Token missing UID' };
-  if (p.exp && Date.now() / 1000 > p.exp) return { ok: false, err: 'Token expired' };
-  if (p.aud !== FIREBASE_PROJECT_ID) return { ok: false, err: 'Token audience mismatch' };
-
-  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}?fields=role,displayName`;
-  let res;
   try {
-    res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    initFirebaseAdmin();
+    // Verify the ID token properly with Admin SDK
+    const decoded = await admin.auth().verifyIdToken(token);
+    const uid = decoded.uid;
+    if (!uid) return { ok: false, err: 'Token missing UID' };
+
+    const userDoc = await admin.firestore().collection('users').doc(uid).get();
+    const data = userDoc.data() || {};
+    if (data.role !== 'owner') return { ok: false, err: 'Access denied — owners only' };
+    return { ok: true, uid, displayName: data.displayName || '' };
   } catch (err) {
-    return { ok: false, err: 'Network error verifying token' };
+    log.warn('verifyOwner failed', { message: err.message });
+    return { ok: false, err: 'Auth verification failed' };
   }
-  if (!res.ok) return { ok: false, err: `Auth failed (${res.status})` };
-
-  const data = await res.json();
-  const role        = data.fields?.role?.stringValue;
-  const displayName = data.fields?.displayName?.stringValue || '';
-
-  if (role !== 'owner') return { ok: false, err: 'Access denied — owners only' };
-  return { ok: true, uid, displayName };
 }
 
 function esc(str) {
