@@ -6,14 +6,115 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA fallback — all paths serve index.html
+# ── SPA fallback — /landing canonical-redirects to / ──────────────────────────
+[[redirects]]
+  from   = "/landing"
+  to     = "/"
+  status = 301
+  force  = true
+
+# SPA fallback for all other routes
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
   status = 200
 
-# Allow Netlify Functions to be called from the frontend
+# ── Netlify Functions ──────────────────────────────────────────────────────────
 [functions]
-  node_bundler = "esbuild"
+  node_bundler          = "esbuild"
   external_node_modules = ["firebase-admin"]
-  included_files = ["Templates/**"]
+  included_files        = ["Templates/**"]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HEADERS — Security + Performance + SEO
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Security headers for ALL pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options            = "SAMEORIGIN"
+    X-XSS-Protection           = "1; mode=block"
+    X-Content-Type-Options     = "nosniff"
+    Referrer-Policy            = "strict-origin-when-cross-origin"
+    Permissions-Policy         = "camera=(self), microphone=(self), geolocation=(), payment=()"
+    Strict-Transport-Security  = "max-age=31536000; includeSubDomains; preload"
+
+# Cache: Vite hashed assets (JS/CSS bundles) — immutable 1 year
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache: images in public/ — 30 days
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+# Cache: fonts — 1 year
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# No-cache: HTML (always fresh so updates are picked up instantly)
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma        = "no-cache"
+    Expires       = "0"
+
+# No-cache: Service Worker (must always be fresh)
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma        = "no-cache"
+
+# Manifest — short cache with revalidation
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=3600"
+    Content-Type  = "application/manifest+json; charset=utf-8"
+
+# Sitemap — daily cache
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=3600"
+    Content-Type  = "application/xml; charset=utf-8"
+
+# Robots.txt — 24h cache
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type  = "text/plain; charset=utf-8"

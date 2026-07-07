@@ -1,52 +1,111 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-    <!-- Primary SEO (fallback before React Helmet renders) -->
-    <title>TingleTap — Tingle, Tap, Talk | India's Premier Chat Platform</title>
-    <meta name="description" content="Connect with India's most vibrant chat community on TingleTap. Enjoy public chat rooms, private messaging, voice &amp; video calls, GIFs, and premium customization. Join free today." />
-    <meta name="keywords" content="TingleTap, Indian chat app, online chat India, live chat rooms, free chat platform, voice chat, video call, private messaging, public chat rooms India" />
+    <!-- Viewport — no user-scalable=no (accessibility + SEO penalty removed) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         PRIMARY SEO — Fallback before React Helmet renders
+    ══════════════════════════════════════════════════════════ -->
+    <title>TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls</title>
+    <meta name="description" content="TingleTap is India's #1 free online chat platform. Join live chat rooms, send private messages, make voice & video calls, share GIFs. Connect with Indians across the country — free forever." />
+    <meta name="keywords" content="TingleTap, Indian chat app, online chat India free, desi chat rooms, Hindi chat room, free chatting India, live chat rooms India, voice chat India, video call India, chat with strangers India, best chat app India, Indian chat community, chat online without registration India, free chat app India 2025, online mitra chat" />
     <meta name="author" content="TingleTap — Adrashtra Inc." />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="theme-color" content="#7c3aed" />
-    <meta name="language" content="en" />
+    <meta name="language" content="en-IN" />
     <meta name="rating" content="general" />
-    <meta name="revisit-after" content="7 days" />
+    <meta name="revisit-after" content="3 days" />
+    <meta name="copyright" content="TingleTap — Adrashtra Inc." />
+    <meta name="application-name" content="TingleTap" />
+    <meta name="generator" content="TingleTap v1.0" />
 
-    <!-- Canonical -->
-    <link rel="canonical" href="https://tingletap.com/" />
+    <!-- Geo targeting — India -->
+    <meta name="geo.region" content="IN" />
+    <meta name="geo.country" content="India" />
+    <meta name="ICBM" content="20.5937, 78.9629" />
 
-    <!-- Favicon & Icons -->
+    <!-- ══════════════════════════════════════════════════════════
+         PWA / Mobile App Meta Tags
+    ══════════════════════════════════════════════════════════ -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TingleTap" />
+    <meta name="msapplication-TileColor" content="#7c3aed" />
+    <meta name="msapplication-TileImage" content="/tingletap-logo.jpg" />
+    <meta name="msapplication-config" content="none" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         Alternate hreflang (canonical is set per-route by React Helmet)
+    ══════════════════════════════════════════════════════════ -->
+    <link rel="alternate" hreflang="en-IN" href="https://tingletap.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://tingletap.com/" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         Favicon & Icons
+    ══════════════════════════════════════════════════════════ -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/tingletap-logo.jpg" />
     <link rel="apple-touch-icon" href="/tingletap-logo.jpg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#7c3aed" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Open Graph -->
+    <!-- ══════════════════════════════════════════════════════════
+         Performance — Preconnect & DNS Prefetch
+    ══════════════════════════════════════════════════════════ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://firebase.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    <link rel="dns-prefetch" href="https://tingletapofraj-default-rtdb.asia-southeast1.firebasedatabase.app" />
+    <link rel="dns-prefetch" href="https://randomuser.me" />
+    <link rel="dns-prefetch" href="https://api.giphy.com" />
+
+    <!-- Preload critical logo image (LCP element) -->
+    <link rel="preload" as="image" href="/tingletap-logo.jpg" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         Open Graph (Facebook, WhatsApp, Telegram, Discord)
+    ══════════════════════════════════════════════════════════ -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="TingleTap" />
-    <meta property="og:title" content="TingleTap — Tingle, Tap, Talk | India's Premier Chat Platform" />
-    <meta property="og:description" content="Connect with India's most vibrant chat community on TingleTap. Enjoy public chat rooms, private messaging, voice &amp; video calls, GIFs, and premium customization. Join free today." />
+    <meta property="og:title" content="TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls" />
+    <meta property="og:description" content="Join TingleTap — India's #1 free chat platform. Live chat rooms, private messaging, voice & video calls, GIFs and premium customization. Join free today." />
     <meta property="og:url" content="https://tingletap.com/" />
     <meta property="og:image" content="https://tingletap.com/tingletap-logo.jpg" />
-    <meta property="og:image:alt" content="TingleTap — India's Premier Chat Platform" />
+    <meta property="og:image:secure_url" content="https://tingletap.com/tingletap-logo.jpg" />
+    <meta property="og:image:alt" content="TingleTap — India's #1 Free Chat Platform" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:locale" content="en_IN" />
+    <meta property="og:locale:alternate" content="hi_IN" />
 
-    <!-- Twitter / X Card -->
+    <!-- ══════════════════════════════════════════════════════════
+         Twitter / X Card
+    ══════════════════════════════════════════════════════════ -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@TingleTap" />
-    <meta name="twitter:title" content="TingleTap — Tingle, Tap, Talk | India's Premier Chat Platform" />
-    <meta name="twitter:description" content="Connect with India's most vibrant chat community on TingleTap. Enjoy public chat rooms, private messaging, voice &amp; video calls, GIFs, and premium customization. Join free today." />
+    <meta name="twitter:creator" content="@TingleTap" />
+    <meta name="twitter:title" content="TingleTap — India's #1 Free Chat App" />
+    <meta name="twitter:description" content="India's most vibrant chat community. Live chat rooms, private messaging, voice & video calls. Join free." />
     <meta name="twitter:image" content="https://tingletap.com/tingletap-logo.jpg" />
-    <meta name="twitter:image:alt" content="TingleTap — India's Premier Chat Platform" />
+    <meta name="twitter:image:alt" content="TingleTap — India's #1 Free Chat Platform" />
 
-    <!-- Structured Data (Schema.org JSON-LD) -->
+    <!-- ══════════════════════════════════════════════════════════
+         Structured Data — Global schema only (pre-render fallback).
+         Page-specific schemas (WebPage, SoftwareApplication, FAQPage, etc.)
+         are injected per-route by React Helmet via StructuredData.jsx —
+         keeping one source of truth and avoiding duplicate @id conflicts.
+    ══════════════════════════════════════════════════════════ -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -55,7 +114,8 @@
           "@type": "Organization",
           "@id": "https://tingletap.com/#organization",
           "name": "TingleTap",
-          "alternateName": "Tingle, Tap, Talk",
+          "legalName": "Adrashtra Inc.",
+          "alternateName": ["Tingle Tap", "TingleTap Chat", "Tingle, Tap, Talk"],
           "url": "https://tingletap.com/",
           "logo": {
             "@type": "ImageObject",
@@ -68,12 +128,17 @@
           },
           "image": { "@id": "https://tingletap.com/#logo" },
           "description": "India's premier real-time chat platform. Connect through public chat rooms, private messaging, voice and video calls, and premium customization.",
-          "foundingLocation": {
-            "@type": "Country",
-            "name": "India"
-          },
+          "foundingDate": "2024",
+          "foundingLocation": { "@type": "Country", "name": "India" },
           "areaServed": "IN",
-          "knowsAbout": ["Online Chat", "Real-time Communication", "Private Messaging", "Voice Chat", "Video Calls"]
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            "url": "https://tingletap.com/contact",
+            "availableLanguage": ["English", "Hindi"]
+          },
+          "sameAs": [],
+          "knowsAbout": ["Online Chat", "Real-time Communication", "Private Messaging", "Voice Chat", "Video Calls", "Social Networking"]
         },
         {
           "@type": "WebSite",
@@ -81,82 +146,26 @@
           "url": "https://tingletap.com/",
           "name": "TingleTap",
           "alternateName": "Tingle, Tap, Talk",
-          "description": "Connect with India's most vibrant chat community on TingleTap. Enjoy public chat rooms, private messaging, voice and video calls, GIFs, and premium customization.",
+          "description": "India's #1 free online chat platform with live chat rooms, private messaging, voice & video calls, and premium customization.",
           "publisher": { "@id": "https://tingletap.com/#organization" },
-          "inLanguage": "en-IN",
+          "inLanguage": ["en-IN", "hi"],
           "potentialAction": {
             "@type": "SearchAction",
             "target": {
               "@type": "EntryPoint",
-              "urlTemplate": "https://tingletap.com/?q={search_term_string}"
+              "urlTemplate": "https://tingletap.com/faq?q={search_term_string}"
             },
             "query-input": "required name=search_term_string"
-          }
-        },
-        {
-          "@type": "WebApplication",
-          "@id": "https://tingletap.com/#webapp",
-          "name": "TingleTap",
-          "url": "https://tingletap.com/",
-          "applicationCategory": "CommunicationApplication",
-          "applicationSubCategory": "Chat Application",
-          "operatingSystem": "Web",
-          "browserRequirements": "Requires JavaScript. Requires a modern browser.",
-          "description": "India's premier real-time chat platform with public rooms, private messaging, voice and video calls, GIF support, and premium customization.",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "INR",
-            "availability": "https://schema.org/InStock",
-            "description": "Free to join and use core features."
-          },
-          "featureList": [
-            "Public Chat Rooms",
-            "Private Messaging",
-            "Voice Calls",
-            "Video Calls",
-            "GIF Support",
-            "Premium Customization",
-            "Real-time Notifications",
-            "Gender-based Filters"
-          ],
-          "countriesSupported": "IN",
-          "inLanguage": "en-IN",
-          "publisher": { "@id": "https://tingletap.com/#organization" }
-        },
-        {
-          "@type": "WebPage",
-          "@id": "https://tingletap.com/#webpage",
-          "url": "https://tingletap.com/",
-          "name": "TingleTap — Tingle, Tap, Talk | India's Premier Chat Platform",
-          "description": "Connect with India's most vibrant chat community on TingleTap. Join free today.",
-          "isPartOf": { "@id": "https://tingletap.com/#website" },
-          "about": { "@id": "https://tingletap.com/#organization" },
-          "breadcrumb": {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "https://tingletap.com/"
-              }
-            ]
-          },
-          "inLanguage": "en-IN",
-          "potentialAction": {
-            "@type": "ReadAction",
-            "target": ["https://tingletap.com/"]
           }
         }
       ]
     }
     </script>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;500;600;700&family=Allura&family=Pacifico&family=Satisfy&family=Courgette&family=Mr+De+Haviland&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;500;600;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+    <!-- ══════════════════════════════════════════════════════════
+         Google Fonts — render-blocking minimized, display=swap
+    ══════════════════════════════════════════════════════════ -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;500;600;700&family=Allura&family=Pacifico&family=Satisfy&family=Courgette&family=Mr+De+Haviland&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;500;600;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Shadows+Into+Light&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

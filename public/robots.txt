@@ -1,3 +1,6 @@
+# TingleTap — robots.txt
+# https://tingletap.com/sitemap.xml
+
 User-agent: *
 Allow: /
 Allow: /about
@@ -6,10 +9,13 @@ Allow: /faq
 Allow: /terms
 Allow: /privacy
 Allow: /disclaimer
-Allow: /landing
 
+# App routes — private / authenticated / admin
 Disallow: /admin-panel
 Disallow: /admin-panel/
+Disallow: /mod-panel
+Disallow: /mod-panel/
+Disallow: /owner/
 Disallow: /welcome
 Disallow: /rooms
 Disallow: /room/
@@ -19,63 +25,29 @@ Disallow: /wallet
 Disallow: /leaderboard
 Disallow: /rj-earnings
 Disallow: /rj-withdrawal
+
+# Auth pages — no indexing
 Disallow: /login
 Disallow: /signup
 Disallow: /forgot-password
 Disallow: /reset-password
+Disallow: /verify-email
 
-User-agent: Googlebot
-Allow: /
-Allow: /about
-Allow: /contact
-Allow: /faq
-Allow: /terms
-Allow: /privacy
-Allow: /disclaimer
-Disallow: /admin-panel
-Disallow: /welcome
-Disallow: /rooms
-Disallow: /room/
-Disallow: /r/
+# Utility / redirect
+Disallow: /landing
 
-User-agent: Bingbot
-Allow: /
-Allow: /about
-Allow: /contact
-Allow: /faq
-Allow: /terms
-Allow: /privacy
-Allow: /disclaimer
-Disallow: /admin-panel
-Disallow: /welcome
-Disallow: /rooms
-Disallow: /room/
-Disallow: /r/
+# Slow down aggressive SEO crawlers
+User-agent: AhrefsBot
+Crawl-delay: 10
 
-User-agent: DuckDuckBot
-Allow: /
-Allow: /about
-Allow: /contact
-Allow: /faq
-Allow: /terms
-Allow: /privacy
-Allow: /disclaimer
-Disallow: /admin-panel
-Disallow: /welcome
+User-agent: SemrushBot
+Crawl-delay: 10
 
-User-agent: Slurp
-Allow: /
-Allow: /about
-Allow: /contact
-Allow: /faq
-Allow: /terms
-Allow: /privacy
-Allow: /disclaimer
-Disallow: /admin-panel
-Disallow: /welcome
+# Block harmful scrapers
+User-agent: MJ12bot
+Disallow: /
 
-User-agent: Brave
-Allow: /
-Disallow: /admin-panel
+User-agent: DotBot
+Disallow: /
 
 Sitemap: https://tingletap.com/sitemap.xml

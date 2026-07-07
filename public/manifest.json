@@ -1,21 +1,29 @@
 {
+  "id": "https://tingletap.com/",
   "name": "TingleTap — Tingle, Tap, Talk",
   "short_name": "TingleTap",
   "description": "India's premier real-time chat platform. Connect through public chat rooms, private messages, voice & video calls, and premium customization.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "orientation": "portrait-primary",
   "theme_color": "#7c3aed",
   "background_color": "#f5f3ff",
   "lang": "en-IN",
+  "dir": "ltr",
   "scope": "/",
   "categories": ["social", "communication", "entertainment"],
+  "iarc_rating_id": "",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "icons": [
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/tingletap-logo.jpg",
@@ -30,7 +38,24 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/tingletap-logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "form_factor": "narrow",
+      "label": "TingleTap Chat Rooms"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Join Chat Rooms",
+      "short_name": "Chat Rooms",
+      "description": "Browse and join public chat rooms",
+      "url": "/rooms",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
   "related_applications": [],
   "prefer_related_applications": false
 }

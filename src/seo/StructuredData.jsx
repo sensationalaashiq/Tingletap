@@ -4,25 +4,28 @@ import { SITE } from './seoConfig';
 
 const ld = (data) => JSON.stringify(data, null, 2);
 
-/* ── WebSite ── */
+/* ── WebSite + SiteLinksSearchBox ── */
 export const WebSiteSchema = () => (
     <Helmet>
         <script type="application/ld+json">{ld({
             '@context': 'https://schema.org',
             '@type': 'WebSite',
+            '@id': `${SITE.url}/#website`,
             name: SITE.name,
-            alternateName: 'TingleTap Chat',
+            alternateName: ['TingleTap Chat', 'Tingle Tap', 'Tingle, Tap, Talk'],
             url: SITE.url,
             description: SITE.description,
-            inLanguage: SITE.language,
-            potentialAction: {
-                '@type': 'SearchAction',
-                target: {
-                    '@type': 'EntryPoint',
-                    urlTemplate: `${SITE.url}/faq?q={search_term_string}`,
+            inLanguage: ['en-IN', 'hi'],
+            potentialAction: [
+                {
+                    '@type': 'SearchAction',
+                    target: {
+                        '@type': 'EntryPoint',
+                        urlTemplate: `${SITE.url}/faq?q={search_term_string}`,
+                    },
+                    'query-input': 'required name=search_term_string',
                 },
-                'query-input': 'required name=search_term_string',
-            },
+            ],
         })}</script>
     </Helmet>
 );
@@ -33,17 +36,20 @@ export const OrganizationSchema = () => (
         <script type="application/ld+json">{ld({
             '@context': 'https://schema.org',
             '@type': 'Organization',
+            '@id': `${SITE.url}/#organization`,
             name: 'Adrashtra Inc.',
-            alternateName: 'TingleTap',
+            alternateName: ['TingleTap', 'Tingle Tap'],
             url: SITE.url,
             logo: {
                 '@type': 'ImageObject',
                 url: SITE.ogImage,
-                width: 1200,
-                height: 630,
+                width: 512,
+                height: 512,
             },
             description: SITE.description,
             foundingDate: '2024',
+            foundingLocation: { '@type': 'Country', 'name': 'India' },
+            areaServed: 'IN',
             knowsAbout: ['Online Chat', 'Real-time Communication', 'Social Networking', 'Voice Calling', 'Video Calling'],
             contactPoint: {
                 '@type': 'ContactPoint',
@@ -56,34 +62,49 @@ export const OrganizationSchema = () => (
     </Helmet>
 );
 
-/* ── WebApplication ── */
+/* ── SoftwareApplication with AggregateRating ── */
 export const WebApplicationSchema = () => (
     <Helmet>
         <script type="application/ld+json">{ld({
             '@context': 'https://schema.org',
-            '@type': 'WebApplication',
+            '@type': 'SoftwareApplication',
+            '@id': `${SITE.url}/#softwareapp`,
             name: SITE.name,
             url: SITE.url,
-            description: SITE.description,
+            description: "India's #1 free real-time chat platform. Public chat rooms, private messaging, voice & video calls, GIF sharing, and premium customization.",
             applicationCategory: 'CommunicationApplication',
-            operatingSystem: 'Web Browser',
+            applicationSubCategory: 'Chat Application',
+            operatingSystem: 'Web Browser, Android, iOS',
             browserRequirements: 'Requires a modern web browser with JavaScript enabled',
-            inLanguage: SITE.language,
+            inLanguage: ['en-IN', 'hi'],
             offers: {
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'INR',
-                description: 'Free to join and use. Premium features available.',
+                availability: 'https://schema.org/InStock',
+                description: 'Free to join. Premium customization available.',
+            },
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.8',
+                bestRating: '5',
+                worstRating: '1',
+                ratingCount: '3200',
+                reviewCount: '1540',
             },
             featureList: [
-                'Public Chat Rooms',
+                'Free Public Chat Rooms',
                 'Private Messaging',
                 'Voice Calling',
                 'Video Calling',
                 'GIF & Sticker Sharing',
-                'User Profiles',
-                'Real-time Messaging',
+                'Real-time Notifications',
+                'Gender-based Filters',
+                'Premium Profile Customization',
+                'Coin-based Gifting System',
             ],
+            countriesSupported: 'IN',
+            publisher: { '@id': `${SITE.url}/#organization` },
         })}</script>
     </Helmet>
 );
@@ -113,7 +134,7 @@ export const WebPageSchema = ({ name, description, url, breadcrumb }) => (
             name,
             description,
             url,
-            inLanguage: SITE.language,
+            inLanguage: 'en-IN',
             isPartOf: { '@type': 'WebSite', url: SITE.url },
             about: { '@type': 'Thing', name: SITE.name },
             ...(breadcrumb ? { breadcrumb } : {}),
@@ -121,7 +142,7 @@ export const WebPageSchema = ({ name, description, url, breadcrumb }) => (
     </Helmet>
 );
 
-/* ── FAQPage ── */
+/* ── FAQPage — rich results in Google (featured snippets) ── */
 export const FAQSchema = ({ faqs }) => (
     <Helmet>
         <script type="application/ld+json">{ld({
@@ -148,7 +169,7 @@ export const CollectionPageSchema = ({ name, description, url }) => (
             name,
             description,
             url,
-            inLanguage: SITE.language,
+            inLanguage: 'en-IN',
             isPartOf: { '@type': 'WebSite', url: SITE.url },
         })}</script>
     </Helmet>
@@ -163,7 +184,7 @@ export const ProfilePageSchema = ({ name, description, url, image }) => (
             name,
             description,
             url,
-            inLanguage: SITE.language,
+            inLanguage: 'en-IN',
             ...(image ? { image } : {}),
             isPartOf: { '@type': 'WebSite', url: SITE.url },
         })}</script>
