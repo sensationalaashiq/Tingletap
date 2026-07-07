@@ -15,6 +15,77 @@ const ROUTE_MAP = {
   administration: { ownerInbox: 'Blurry',  toEmail: 'admin@tingletap.com',   toName: 'Blurry — TingleTap'  },
 };
 
+// ── Email themes (inline-style only — email-client safe, no SVG, no @keyframes) ──
+const EMAIL_THEMES = {
+  purple: {
+    gradient: 'linear-gradient(135deg,#7c3aed 0%,#a855f7 55%,#6366f1 100%)',
+    bar:      'linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9)',
+    accent:   '#7c3aed', accent2: '#a855f7', tag: 'Official Communication',
+    border:   'rgba(124,58,237,.18)',
+  },
+  blue: {
+    gradient: 'linear-gradient(135deg,#1d4ed8 0%,#3b82f6 55%,#0ea5e9 100%)',
+    bar:      'linear-gradient(90deg,#1e40af,#2563eb,#60a5fa,#38bdf8,#60a5fa,#2563eb,#1e40af)',
+    accent:   '#1d4ed8', accent2: '#3b82f6', tag: 'Technical Support',
+    border:   'rgba(59,130,246,.18)',
+  },
+  amber: {
+    gradient: 'linear-gradient(135deg,#b45309 0%,#d97706 55%,#f59e0b 100%)',
+    bar:      'linear-gradient(90deg,#92400e,#b45309,#fbbf24,#fcd34d,#fbbf24,#b45309,#92400e)',
+    accent:   '#b45309', accent2: '#d97706', tag: 'Account Support',
+    border:   'rgba(217,119,6,.18)',
+  },
+  red: {
+    gradient: 'linear-gradient(135deg,#dc2626 0%,#f43f5e 55%,#e11d48 100%)',
+    bar:      'linear-gradient(90deg,#b91c1c,#dc2626,#f87171,#fb7185,#f87171,#dc2626,#b91c1c)',
+    accent:   '#dc2626', accent2: '#f43f5e', tag: 'Alert &amp; Report',
+    border:   'rgba(220,38,38,.18)',
+  },
+  gold: {
+    gradient: 'linear-gradient(135deg,#78350f 0%,#b45309 35%,#d97706 65%,#f59e0b 100%)',
+    bar:      'linear-gradient(90deg,#78350f,#b45309,#f59e0b,#fde68a,#f59e0b,#b45309,#78350f)',
+    accent:   '#92400e', accent2: '#d97706', tag: 'Badge &amp; Verification',
+    border:   'rgba(217,119,6,.2)',
+  },
+  green: {
+    gradient: 'linear-gradient(135deg,#065f46 0%,#059669 55%,#10b981 100%)',
+    bar:      'linear-gradient(90deg,#064e3b,#059669,#34d399,#6ee7b7,#34d399,#059669,#064e3b)',
+    accent:   '#065f46', accent2: '#059669', tag: 'Premium Support',
+    border:   'rgba(5,150,105,.18)',
+  },
+  teal: {
+    gradient: 'linear-gradient(135deg,#0f766e 0%,#0d9488 55%,#14b8a6 100%)',
+    bar:      'linear-gradient(90deg,#134e4a,#0d9488,#2dd4bf,#5eead4,#2dd4bf,#0d9488,#134e4a)',
+    accent:   '#0f766e', accent2: '#0d9488', tag: 'Feature &amp; Suggestions',
+    border:   'rgba(13,148,136,.18)',
+  },
+  pink: {
+    gradient: 'linear-gradient(135deg,#9d174d 0%,#db2777 55%,#ec4899 100%)',
+    bar:      'linear-gradient(90deg,#831843,#db2777,#f472b6,#fbcfe8,#f472b6,#db2777,#831843)',
+    accent:   '#9d174d', accent2: '#db2777', tag: 'Welcome',
+    border:   'rgba(219,39,119,.18)',
+  },
+  indigo: {
+    gradient: 'linear-gradient(135deg,#3730a3 0%,#4f46e5 55%,#6366f1 100%)',
+    bar:      'linear-gradient(90deg,#312e81,#4338ca,#818cf8,#a5b4fc,#818cf8,#4338ca,#312e81)',
+    accent:   '#3730a3', accent2: '#4f46e5', tag: 'General Inquiry',
+    border:   'rgba(79,70,229,.18)',
+  },
+};
+
+function getThemeBySubject(subject) {
+  const s = (subject || '').toLowerCase();
+  if (s.includes('technical') || s.includes('support'))        return EMAIL_THEMES.blue;
+  if (s.includes('account') || s.includes('id issue'))         return EMAIL_THEMES.amber;
+  if (s.includes('report') || s.includes('bug'))               return EMAIL_THEMES.red;
+  if (s.includes('badge') || s.includes('verification'))       return EMAIL_THEMES.gold;
+  if (s.includes('premium') || s.includes('billing'))          return EMAIL_THEMES.green;
+  if (s.includes('feature') || s.includes('suggestion')
+   || s.includes('request'))                                   return EMAIL_THEMES.teal;
+  if (s.includes('welcome') || s.includes('greeting'))         return EMAIL_THEMES.pink;
+  return EMAIL_THEMES.indigo;
+}
+
 // ── Firebase Admin (singleton) ─────────────────────────────────────────────────
 let fbReady = false;
 function ensureFirebase() {
@@ -65,37 +136,39 @@ function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function buildContactHtml({ name, email, subject, message, route, date }) {
+// Static heart — email-client safe Unicode (no SVG, no CSS animation)
+const HEART = `<span style="color:#f43f5e;font-size:20px;line-height:1;display:inline-block;vertical-align:middle;">&#10084;</span>`;
+
+function buildContactHtml({ name, email, subject, message, route, date, theme }) {
+  const t   = theme || getThemeBySubject(subject);
   const tag = route === 'administration' ? 'Administration' : 'Support Team';
-  const accentColor = route === 'administration' ? '#6366f1' : '#7c3aed';
   const escapedMsg = String(message || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(subject)}</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-@keyframes bar-slide{0%{background-position:-300% center}100%{background-position:300% center}}
-@keyframes heart-beat{0%,100%{transform:scale(1);opacity:.9}25%{transform:scale(1.28);opacity:1}50%{transform:scale(1);opacity:.9}75%{transform:scale(1.2);opacity:1}}
-.bar{animation:bar-slide 4s linear infinite}
-.heart{animation:heart-beat 1.4s ease-in-out infinite;transform-origin:center;display:block}
-.heart-b{animation:heart-beat 1.4s ease-in-out infinite .4s;transform-origin:center;display:block}
-</style></head>
-<body style="margin:0;padding:0;background:#f3f0ff;font-family:'Inter',Arial,sans-serif;">
+</head>
+<body style="margin:0;padding:0;background:#f3f0ff;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(155deg,#f2effe 0%,#ede9f9 55%,#e8e2f6 100%);min-height:100vh;">
 <tr><td align="center" style="padding:28px 12px;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;background:#fff;border-radius:22px;border:1px solid ${t.border};box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
 
   <!-- Top bar -->
-  <tr><td style="height:4px;padding:0;line-height:0;"><div class="bar" style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;font-size:0;"></div></td></tr>
+  <tr><td style="height:4px;padding:0;line-height:0;font-size:0;background:${t.bar};">&nbsp;</td></tr>
 
   <!-- Header -->
-  <tr><td style="background:linear-gradient(135deg,${accentColor} 0%,#a855f7 55%,#6366f1 100%);padding:28px 36px 24px;">
-    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">TingleTap&trade; &middot; Contact Form &middot; ${esc(tag)}</div>
-    <div style="color:#fff;font-size:20px;font-weight:800;">${esc(subject)}</div>
-    <div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:4px;">${esc(date)}</div>
+  <tr><td style="background:${t.gradient};padding:28px 36px 24px;">
+    <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">TingleTap&trade; &middot; Contact Form &middot; ${esc(tag)}</p>
+    <p style="margin:0 0 4px;color:#fff;font-size:20px;font-weight:800;">${esc(subject)}</p>
+    <p style="margin:0;color:rgba(255,255,255,.75);font-size:12px;">${esc(date)}</p>
   </td></tr>
 
   <!-- Body -->
   <tr><td style="padding:28px 36px 24px;">
+
     <!-- From -->
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr><td style="padding:7px 12px;background:#f5f3ff;border-radius:8px 8px 0 0;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">From</td></tr>
@@ -105,43 +178,35 @@ function buildContactHtml({ name, email, subject, message, route, date }) {
       </td></tr>
     </table>
 
+    <!-- Category badge -->
+    <p style="margin:0 0 14px;"><span style="display:inline-block;background:${t.gradient};color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 12px;border-radius:20px;">${t.tag}</span></p>
+
     <!-- Message -->
-    <div style="background:#fafafa;border-left:3px solid #a855f7;border-radius:0 10px 10px 0;padding:16px 20px;color:#374151;font-size:14px;line-height:1.85;margin-bottom:18px;">${escapedMsg}</div>
+    <div style="background:#fafafa;border-left:3px solid ${t.accent2};border-radius:0 10px 10px 0;padding:16px 20px;color:#374151;font-size:14px;line-height:1.85;margin-bottom:18px;">${escapedMsg}</div>
 
     <!-- Reply hint -->
     <div style="padding:14px 16px;background:#fdf4ff;border-radius:10px;border:1px solid #e9d5ff;margin-bottom:6px;">
-      <p style="margin:0;color:${accentColor};font-size:12px;font-weight:600;">Reply directly to <a href="mailto:${esc(email)}" style="color:${accentColor};">${esc(email)}</a></p>
+      <p style="margin:0;color:${t.accent};font-size:12px;font-weight:600;">Reply directly to <a href="mailto:${esc(email)}" style="color:${t.accent2};">${esc(email)}</a></p>
     </div>
   </td></tr>
 
   <!-- Divider -->
-  <tr><td style="padding:0 28px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.18),transparent);"></div></td></tr>
+  <tr><td style="padding:0 28px;"><div style="height:1px;background:linear-gradient(90deg,transparent,${t.border},transparent);"></div></td></tr>
 
-  <!-- Premium footer -->
+  <!-- Footer -->
   <tr><td align="center" style="padding:16px 28px 10px;background:#faf8ff;">
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 10px;">
-      <tr>
-        <td style="padding-right:8px;vertical-align:middle;">
-          <svg class="heart" width="20" height="20" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg>
-        </td>
-        <td style="vertical-align:middle;">
-          <span style="font-size:12px;font-weight:800;color:#7c3aed;letter-spacing:.3px;">Developed by Adrashtra</span>
-          <span style="font-size:12px;color:#d8b4fe;margin:0 6px;">&middot;</span>
-          <span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>
-        </td>
-        <td style="padding-left:8px;vertical-align:middle;">
-          <svg class="heart-b" width="20" height="20" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg>
-        </td>
-      </tr>
-    </table>
+    <p style="margin:0 0 10px;">${HEART}&nbsp;<span style="font-size:12px;font-weight:800;color:${t.accent};letter-spacing:.3px;">Developed by Adrashtra</span>&nbsp;<span style="font-size:12px;color:#d8b4fe;">&middot;</span>&nbsp;<span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>&nbsp;${HEART}</p>
     <p style="margin:0 0 4px;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">TingleTap&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
   </td></tr>
 
   <!-- Bottom bar -->
-  <tr><td style="height:4px;padding:0;line-height:0;"><div class="bar" style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;font-size:0;"></div></td></tr>
+  <tr><td style="height:4px;padding:0;line-height:0;font-size:0;background:${t.bar};">&nbsp;</td></tr>
+
 </table>
-</td></tr></table>
-</body></html>`;
+</td></tr>
+</table>
+</body>
+</html>`;
 }
 
 // ── Rate limiter ───────────────────────────────────────────────────────────────
@@ -184,15 +249,16 @@ export const handler = async (event) => {
   const message = sanitize(body.message, 10000);
   const route   = ['support', 'administration'].includes(body.route) ? body.route : 'support';
 
-  if (!name || name.length < 2)    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Name is required (min 2 chars)' }) };
-  if (!validEmail(email))           return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Valid email is required' }) };
-  if (!subject || subject.length < 3) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Subject is required' }) };
-  if (!message || message.length < 10) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Message is too short' }) };
+  if (!name || name.length < 2)         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Name is required (min 2 chars)' }) };
+  if (!validEmail(email))                return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Valid email is required' }) };
+  if (!subject || subject.length < 3)   return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Subject is required' }) };
+  if (!message || message.length < 10)  return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Message is too short' }) };
 
   const target  = ROUTE_MAP[route];
+  const theme   = getThemeBySubject(subject);
   const emailId = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const date    = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
-  const html    = buildContactHtml({ name, email, subject, message, route, date });
+  const html    = buildContactHtml({ name, email, subject, message, route, date, theme });
   const text    = `Contact Form · ${route === 'administration' ? 'Administration' : 'Support Team'}\n\nFrom: ${name} <${email}>\nDate: ${date}\n\n${message}\n\n---\nDeveloped by Adrashtra · Loved by India\n© 2026 TingleTap™`;
 
   // ── Step 1: Firestore write (non-fatal) ──────────────────────────────────────
@@ -242,7 +308,6 @@ export const handler = async (event) => {
     console.log('[contact] ✓ Brevo email sent to', target.toEmail);
   } catch (err) {
     console.error('[contact] Brevo send failed:', err.message);
-    // If Firestore also failed → no delivery at all → return error
     if (!firestoreOk) {
       return {
         statusCode: 502,
@@ -250,7 +315,6 @@ export const handler = async (event) => {
         body: JSON.stringify({ error: 'Failed to send your message. Please try again later.' }),
       };
     }
-    // Firestore saved → owner will see it in Email Center; still return success
     console.warn('[contact] Brevo failed but Firestore saved — returning success');
   }
 

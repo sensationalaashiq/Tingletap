@@ -68,19 +68,46 @@ const Spinner = ({ size = 22 }) => (
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const isValidEmail = (str) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((str || '').trim());
 
+// ── Email Type options (drives the theme + suggested subject prefix) ───────────
+const EMAIL_TYPES = [
+  { key: 'purple', label: 'Official',      desc: 'Announcement / Godfather message',  swatch: 'linear-gradient(135deg,#7c3aed,#a855f7)' },
+  { key: 'blue',   label: 'Technical',     desc: 'Technical support reply',           swatch: 'linear-gradient(135deg,#1d4ed8,#3b82f6)' },
+  { key: 'amber',  label: 'Account',       desc: 'Account notice / ID issue',         swatch: 'linear-gradient(135deg,#b45309,#d97706)' },
+  { key: 'red',    label: 'Alert',         desc: 'Security alert / Urgent notice',    swatch: 'linear-gradient(135deg,#dc2626,#f43f5e)' },
+  { key: 'gold',   label: 'Verification',  desc: 'Badge / Profile verification',      swatch: 'linear-gradient(135deg,#78350f,#d97706)' },
+  { key: 'green',  label: 'Premium',       desc: 'Premium feature / Billing support', swatch: 'linear-gradient(135deg,#065f46,#10b981)' },
+  { key: 'teal',   label: 'Feature',       desc: 'Feature update / Suggestion reply', swatch: 'linear-gradient(135deg,#0f766e,#14b8a6)' },
+  { key: 'pink',   label: 'Welcome',       desc: 'Welcome / Greeting message',        swatch: 'linear-gradient(135deg,#9d174d,#ec4899)' },
+  { key: 'indigo', label: 'General',       desc: 'General communication',             swatch: 'linear-gradient(135deg,#3730a3,#6366f1)' },
+];
+
 // ── Compose Modal ──────────────────────────────────────────────────────────────
 function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
   const [recipientQuery, setRecipientQuery] = useState('');
   const [searchResults, setSearchResults]   = useState([]);
   const [searching, setSearching]           = useState(false);
   const [selectedRecipient, setSelected]    = useState(null);
+  const [emailType, setEmailType]           = useState('purple');
   const [subject, setSubject]               = useState('');
   const [body, setBody]                     = useState('');
   const [sending, setSending]               = useState(false);
   const [showPreview, setShowPreview]       = useState(false);
+  const [showTypeMenu, setShowTypeMenu]     = useState(false);
   const [savingDraft, setSavingDraft]       = useState(false);
-  const timerRef = useRef(null);
-  const dropRef  = useRef(null);
+  const timerRef    = useRef(null);
+  const dropRef     = useRef(null);
+  const typeMenuRef = useRef(null);
+
+  const selectedType = EMAIL_TYPES.find(t => t.key === emailType) || EMAIL_TYPES[0];
+
+  // Close type menu on outside click
+  useEffect(() => {
+    const handler = e => {
+      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target)) setShowTypeMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const handler = e => { if (dropRef.current && !dropRef.current.contains(e.target)) setSearchResults([]); };
@@ -182,6 +209,7 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
           recipientName:  recipient._directEmail ? '' : (recipient.displayName || ''),
           subject,
           message: body,
+          theme:   emailType,
         }),
       });
       const data = await res.json();
@@ -297,6 +325,47 @@ function ComposeModal({ ownerName, senderEmail, onClose, onSent }) {
                         </div>
                       ))
                   }
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Email Type (drives theme) */}
+          <div className="ec-field">
+            <div className="ec-field-label">Email Type</div>
+            <div className="ec-type-wrap" ref={typeMenuRef}>
+              <button
+                type="button"
+                className="ec-type-btn"
+                onClick={() => setShowTypeMenu(v => !v)}
+                style={{ borderColor: 'transparent' }}
+              >
+                <span className="ec-type-swatch" style={{ background: selectedType.swatch }} />
+                <span className="ec-type-label">{selectedType.label}</span>
+                <span className="ec-type-desc">{selectedType.desc}</span>
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" style={{ marginLeft: 'auto', flexShrink: 0, opacity: .5 }}>
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+              {showTypeMenu && (
+                <div className="ec-type-menu">
+                  {EMAIL_TYPES.map(t => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      className={`ec-type-option${emailType === t.key ? ' active' : ''}`}
+                      onClick={() => { setEmailType(t.key); setShowTypeMenu(false); }}
+                    >
+                      <span className="ec-type-swatch" style={{ background: t.swatch }} />
+                      <span className="ec-type-label">{t.label}</span>
+                      <span className="ec-type-desc">{t.desc}</span>
+                      {emailType === t.key && (
+                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                          <path d="M3 8l4 4 6-7" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
