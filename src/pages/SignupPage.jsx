@@ -257,10 +257,13 @@ const SignupPage = () => {
       pt.success('Account created successfully! Welcome to TingleTap!');
       // Send branded email verification link via Brevo (Netlify Function)
       // Fire-and-forget — account is already created, don't block navigation on email delivery
-      fetch('/.netlify/functions/sendVerification', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: formData.email, userName: formData.fullName }),
+      // idToken is passed so the REST API fallback can work if Firebase Admin is unavailable
+      user.getIdToken().then(idToken => {
+        fetch('/.netlify/functions/sendVerification', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email: formData.email, userName: formData.fullName, idToken }),
+        }).catch(() => {});
       }).catch(() => {});
       navigate('/rooms');
     } catch (err) {

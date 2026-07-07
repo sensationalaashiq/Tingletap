@@ -188,24 +188,31 @@ export const handler = async (event) => {
     }
   }
 
-  // ── Fallback: Firebase Auth REST API (sends standard Firebase verification email) ─
-  console.log('[sendVerification] Using Firebase REST API fallback for:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
+  // ── Fallback: Firebase Auth REST API (requires idToken from the client) ─────────
+  // idToken must be provided by caller; without it the REST flow cannot authenticate.
+  const idToken = String(body.idToken || '').trim();
+  if (!idToken) {
+    console.error('[sendVerification] All methods failed — no idToken for REST fallback');
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Could not send verification email' }) };
+  }
+
+  console.log('[sendVerification] Using Firebase REST API fallback');
   try {
     const fbRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_WEB_API_KEY}`,
       {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ requestType: 'VERIFY_EMAIL', idToken: body.idToken || '' }),
+        body:    JSON.stringify({ requestType: 'VERIFY_EMAIL', idToken }),
       }
     );
     const fbData = await fbRes.json().catch(() => ({}));
     if (fbRes.ok) {
       console.log('[sendVerification] ✓ Firebase REST fallback succeeded');
-    } else {
-      console.warn('[sendVerification] Firebase REST fallback error:', fbData.error?.message);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, fallback: true }) };
     }
-    return { statusCode: fbRes.ok ? 200 : 200, headers, body: JSON.stringify({ ok: true, fallback: true }) };
+    console.error('[sendVerification] Firebase REST fallback error:', fbData.error?.message);
+    return { statusCode: 502, headers, body: JSON.stringify({ error: `Verification email failed: ${fbData.error?.message || 'Unknown error'}` }) };
   } catch (err) {
     console.error('[sendVerification] All methods failed:', err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Could not send verification email' }) };
