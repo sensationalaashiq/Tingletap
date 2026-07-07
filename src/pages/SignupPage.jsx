@@ -257,6 +257,13 @@ const SignupPage = () => {
         throw new Error('Failed to create user profile. Please try again.');
       }
       pt.success('Account created successfully! Welcome to TingleTap!');
+      // Send branded email verification link via Brevo (Netlify Function)
+      // Fire-and-forget — account is already created, don't block navigation on email delivery
+      fetch('/.netlify/functions/sendVerification', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: formData.email, userName: formData.fullName }),
+      }).catch(() => {});
       navigate('/rooms');
     } catch (err) {
       let errorMessage = 'Account creation failed. Please try again.';

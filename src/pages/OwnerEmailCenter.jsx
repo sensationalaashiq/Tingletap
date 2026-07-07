@@ -153,7 +153,7 @@ const OwnerEmailCenter = () => {
     setSending(true);
     try {
       const token = await auth.currentUser.getIdToken(true);
-      const res = await fetch('/api/send-email', {
+      const res = await fetch('/.netlify/functions/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

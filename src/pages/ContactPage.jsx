@@ -89,6 +89,7 @@ const ContactPage = () => {
           name: form.name,
           email: form.email,
           _subject: `[TingleTap Support] ${subjectLabel} – from ${form.name}`,
+          _replyto: form.email,
           issue_type: subjectLabel,
           message: form.message,
           _template: 'table',
