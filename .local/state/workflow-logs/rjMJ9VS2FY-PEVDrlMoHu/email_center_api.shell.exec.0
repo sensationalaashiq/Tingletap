@@ -1,0 +1,2 @@
+[EmailCenter] API server running on port 5001
+[EmailCenter] ⚠ BREVO_API_KEY not set — emails will fail
