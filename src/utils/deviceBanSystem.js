@@ -131,7 +131,10 @@ export class DeviceBanSystem {
         return existingBan;
       }
 
-      const deviceInfo = await DeviceFingerprint.getDeviceInfo();
+      // Use provided deviceInfo (target user's device) when available.
+      // Do NOT fall back to DeviceFingerprint.getDeviceInfo() here — that would
+      // capture the ADMIN's device, not the banned user's device.
+      const deviceInfo = banInfo.deviceInfo || null;
 
       const banData = {
         deviceId: deviceId,

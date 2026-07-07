@@ -189,10 +189,17 @@ export const checkUserVPN = async (userContext = null) => {
       is_tor:     data.is_tor,
       is_relay:   data.is_relay,
       is_hosting: data.is_hosting,
-      country:    data.country,
-      city:       data.city,
-      isp:        data.isp,
-      organization: data.organization,
+      // Full geo data for admin panel and Firestore storage
+      country:         data.country,
+      country_code:    data.country_code,
+      city:            data.city,
+      region:          data.region,
+      lat:             data.lat     ?? null,
+      lon:             data.lon     ?? null,
+      timezone:        data.timezone,
+      isp:             data.isp,
+      organization:    data.organization,
+      connection_type: data.connection_type,
     };
 
     setCache(ip, result);

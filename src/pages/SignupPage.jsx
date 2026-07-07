@@ -11,6 +11,7 @@ import { pt } from '../utils/premiumToast';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP } from '../utils/emailService';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
+import { DeviceBanSystem } from '../utils/deviceBanSystem';
 import './LandingPage.css';
 
 const EyeOpenSVG = () => (
@@ -87,10 +88,10 @@ const SignupPage = () => {
         try {
           const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
           setIPCheckPerformed(true);
-          if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
-            setIPBanData(accessResult.banInfo);
+
+          const _showBanLockSU = (data) => {
+            setIPBanData(data);
             setShowIPBanModal(true);
-            // FIX-PERF-6: CSS-only lock — no 50 ms polling interval needed.
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
@@ -99,7 +100,22 @@ const SignupPage = () => {
             lockStyle.id = 'ip-ban-lock-su';
             lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
             if (!document.getElementById('ip-ban-lock-su')) document.head.appendChild(lockStyle);
+          };
+
+          if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
+            _showBanLockSU(accessResult.banInfo);
             return;
+          }
+
+          // Device ban check — prevents banned devices from creating new accounts
+          try {
+            const deviceResult = await DeviceBanSystem.checkDeviceAccess();
+            if (!deviceResult.allowed && deviceResult.reason === 'device_banned') {
+              _showBanLockSU({ ...deviceResult.banInfo, _isDeviceBan: true });
+              return;
+            }
+          } catch (devErr) {
+            console.warn('[SignupPage] Device ban check failed (fail-open):', devErr.message);
           }
         } catch (error) {
           setIPCheckPerformed(true);

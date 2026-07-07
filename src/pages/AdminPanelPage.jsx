@@ -201,10 +201,21 @@ const AdminPanelPage = () => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
     setIpGeoCache(prev => ({ ...prev, [ip]: null }));
     try {
-      const res = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,city,regionName,lat,lon`);
+      // Use our server-side Netlify function — never exposes ABSTRACT_API_KEY to client
+      const res = await fetch(`/.netlify/functions/ip-geo?ip=${encodeURIComponent(ip)}`);
       const data = await res.json();
-      if (data.status === 'success') {
-        setIpGeoCache(prev => ({ ...prev, [ip]: data }));
+      if (data && !data._error) {
+        setIpGeoCache(prev => ({ ...prev, [ip]: {
+          status:     'success',
+          country:    data.country    || null,
+          city:       data.city       || null,
+          regionName: data.region     || null,
+          lat:        data.lat        ?? null,
+          lon:        data.lon        ?? null,
+          isp:        data.isp        || null,
+          org:        data.organization || null,
+          timezone:   data.timezone   || null,
+        }}));
       } else {
         setIpGeoCache(prev => ({ ...prev, [ip]: false }));
       }
@@ -699,7 +710,9 @@ const AdminPanelPage = () => {
         reason: devBanReason.trim() || 'Device banned by administrator',
         bannedBy: currentUserProfile?.displayName || 'Admin',
         userInfo: { uid: devBanTarget.uid, displayName: devBanTarget.displayName, email: devBanTarget.email },
-        associatedUIDs: [devBanTarget.uid]
+        associatedUIDs: [devBanTarget.uid],
+        // Pass the TARGET user's stored device info — not the admin's device
+        deviceInfo: devBanTarget.lastDeviceInfo || null,
       });
       const userRef = doc(db, 'users', devBanTarget.uid);
       await updateDoc(userRef, {

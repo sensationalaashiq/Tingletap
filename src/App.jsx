@@ -221,7 +221,9 @@ function App() {
               lastIPUpdate: new Date().toISOString()
             });
 
-            // Authenticated VPN check — POST to server so blocked attempts are logged
+            // Authenticated VPN check — POST to server so blocked attempts are logged.
+            // The response also includes full geo data (lat/lon/city/country) from
+            // Abstract API which we store to Firestore for the Admin Panel.
             try {
               const { checkUserVPN: _authVPNCheck } = await import('./utils/vpnDetection.js');
               const vpnResult = await _authVPNCheck({
@@ -229,6 +231,23 @@ function App() {
                 email:    currentUser.email || null,
                 username: username,
               });
+
+              // Store full geo data from Abstract API to Firestore user doc.
+              // Admin Panel reads lastLat/lastLon/lastCity/lastCountry from here.
+              if (vpnResult && (vpnResult.city || vpnResult.country || vpnResult.lat != null)) {
+                const geoUpdate = {};
+                if (vpnResult.lat      != null) geoUpdate.lastLat      = vpnResult.lat;
+                if (vpnResult.lon      != null) geoUpdate.lastLon      = vpnResult.lon;
+                if (vpnResult.city)             geoUpdate.lastCity     = vpnResult.city;
+                if (vpnResult.country)          geoUpdate.lastCountry  = vpnResult.country;
+                if (vpnResult.region)           geoUpdate.lastRegion   = vpnResult.region;
+                if (vpnResult.timezone)         geoUpdate.lastTimezone = vpnResult.timezone;
+                if (vpnResult.isp)              geoUpdate.lastISP      = vpnResult.isp;
+                if (Object.keys(geoUpdate).length) {
+                  updateDoc(userRef, geoUpdate).catch(() => {}); // non-blocking
+                }
+              }
+
               if (!vpnResult.allowed && !vpnResult._unavailable) {
                 console.warn('[VPN] Authenticated user on restricted connection — blocking');
                 setVpnInfo(vpnResult);

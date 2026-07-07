@@ -80,7 +80,7 @@ export const handler = async (event) => {
       `https://ipgeolocation.abstractapi.com/v1/` +
       `?api_key=${encodeURIComponent(apiKey)}` +
       `&ip_address=${encodeURIComponent(ip)}` +
-      `&fields=ip_address,country,country_code,region,city,timezone,connection,security`;
+      `&fields=ip_address,city,region,country,country_code,latitude,longitude,timezone,connection,security`;
 
     const resp = await fetch(url, { signal: AbortSignal.timeout(7000) });
 
@@ -125,8 +125,10 @@ export const handler = async (event) => {
         country_code:    data.country_code || null,
         region:          data.region       || null,
         city:            data.city         || null,
+        lat:             data.latitude     ?? null,
+        lon:             data.longitude    ?? null,
         timezone:        data.timezone?.name || null,
-        isp:             conn.isp          || null,
+        isp:             conn.isp_name || conn.isp || null,
         asn:             conn.autonomous_system_number || null,
         organization:    conn.autonomous_system_organization || conn.organization || null,
         connection_type: conn.connection_type || null,

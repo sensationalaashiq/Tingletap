@@ -11,6 +11,7 @@ import HCaptcha from '@hcaptcha/react-hcaptcha';
 import BanKickModal from '../components/BanKickModal';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
+import { DeviceBanSystem } from '../utils/deviceBanSystem';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import './LandingPage.css';
 
@@ -105,12 +106,10 @@ const LoginPage = () => {
         try {
           const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
           setIPCheckPerformed(true);
-          if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
-            setIPBanData(accessResult.banInfo);
+
+          const _showBanLock = (data) => {
+            setIPBanData(data);
             setShowIPBanModal(true);
-            // FIX-PERF-6: CSS-only lock — no 50 ms polling interval needed.
-            // A <style> tag + position:fixed overlay beats the browser's ability
-            // to remove DOM nodes, and costs zero CPU.
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
@@ -119,7 +118,22 @@ const LoginPage = () => {
             lockStyle.id = 'ip-ban-lock';
             lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
             if (!document.getElementById('ip-ban-lock')) document.head.appendChild(lockStyle);
+          };
+
+          if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
+            _showBanLock(accessResult.banInfo);
             return;
+          }
+
+          // Device ban check — runs after IP ban (fail-open if fingerprint unavailable)
+          try {
+            const deviceResult = await DeviceBanSystem.checkDeviceAccess();
+            if (!deviceResult.allowed && deviceResult.reason === 'device_banned') {
+              _showBanLock({ ...deviceResult.banInfo, _isDeviceBan: true });
+              return;
+            }
+          } catch (devErr) {
+            console.warn('[LoginPage] Device ban check failed (fail-open):', devErr.message);
           }
         } catch (error) {
           setIPCheckPerformed(true);

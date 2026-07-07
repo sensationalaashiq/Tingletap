@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import './IPBanModal.css';
 
 const IPBanModal = React.memo(({ banInfo, onRetry }) => {
+  const isDeviceBan = !!(banInfo?._isDeviceBan);
   // Aggressive anti-bypass measures
   useEffect(() => {
     // Block browser back/forward
@@ -83,8 +84,8 @@ const IPBanModal = React.memo(({ banInfo, onRetry }) => {
             </svg>
           </div>
           <div className="ip-ban-title">
-            <h1>🚫 IP ADDRESS BANNED</h1>
-            <p>Network Access Permanently Restricted</p>
+            <h1>🚫 {isDeviceBan ? 'DEVICE BANNED' : 'IP ADDRESS BANNED'}</h1>
+            <p>{isDeviceBan ? 'Device Access Permanently Restricted' : 'Network Access Permanently Restricted'}</p>
           </div>
         </div>
 
@@ -92,8 +93,9 @@ const IPBanModal = React.memo(({ banInfo, onRetry }) => {
           <div className="ban-notice">
             <h2>🛡️ Security Alert</h2>
             <p>
-              Your IP address has been permanently banned from accessing TingleTap. 
-              This restriction applies to all devices connected from your network location.
+              {isDeviceBan
+                ? 'Your device has been permanently banned from accessing TingleTap. This restriction applies to this specific device regardless of network or IP address.'
+                : 'Your IP address has been permanently banned from accessing TingleTap. This restriction applies to all devices connected from your network location.'}
             </p>
           </div>
 
@@ -101,10 +103,17 @@ const IPBanModal = React.memo(({ banInfo, onRetry }) => {
             <div className="ban-details">
               <h3>📋 Ban Information</h3>
               <div className="ban-info-grid">
-                <div className="ban-info-item">
-                  <span className="label">🌐 Your IP Address:</span>
-                  <span className="value ip-highlight">{banInfo.ip}</span>
-                </div>
+                {isDeviceBan ? (
+                  <div className="ban-info-item">
+                    <span className="label">📱 Device ID:</span>
+                    <span className="value ip-highlight">{banInfo.deviceId ? banInfo.deviceId.substring(0, 16) + '…' : 'Registered Device'}</span>
+                  </div>
+                ) : (
+                  <div className="ban-info-item">
+                    <span className="label">🌐 Your IP Address:</span>
+                    <span className="value ip-highlight">{banInfo.ip}</span>
+                  </div>
+                )}
                 
                 {banInfo.bannedAt && (
                   <div className="ban-info-item">
@@ -146,13 +155,23 @@ const IPBanModal = React.memo(({ banInfo, onRetry }) => {
 
           <div className="ban-consequences">
             <h3>⚠️ What This Means</h3>
-            <ul>
-              <li>🚫 <strong>Complete Access Block:</strong> You cannot access TingleTap from this IP address</li>
-              <li>🌐 <strong>Network-Wide Ban:</strong> All devices on your network are affected</li>
-              <li>🔒 <strong>Permanent Restriction:</strong> This ban does not expire automatically</li>
-              <li>📱 <strong>Device Independent:</strong> Changing devices won't restore access</li>
-              <li>🛡️ <strong>Security Measure:</strong> This protects our community from harmful behavior</li>
-            </ul>
+            {isDeviceBan ? (
+              <ul>
+                <li>🚫 <strong>Complete Access Block:</strong> You cannot access TingleTap from this device</li>
+                <li>📱 <strong>Device-Level Ban:</strong> This specific device hardware is restricted</li>
+                <li>🔒 <strong>Permanent Restriction:</strong> This ban does not expire automatically</li>
+                <li>🌐 <strong>Network Independent:</strong> Changing your network or IP won't restore access</li>
+                <li>🛡️ <strong>Security Measure:</strong> This protects our community from harmful behavior</li>
+              </ul>
+            ) : (
+              <ul>
+                <li>🚫 <strong>Complete Access Block:</strong> You cannot access TingleTap from this IP address</li>
+                <li>🌐 <strong>Network-Wide Ban:</strong> All devices on your network are affected</li>
+                <li>🔒 <strong>Permanent Restriction:</strong> This ban does not expire automatically</li>
+                <li>📱 <strong>Device Independent:</strong> Changing devices won't restore access</li>
+                <li>🛡️ <strong>Security Measure:</strong> This protects our community from harmful behavior</li>
+              </ul>
+            )}
           </div>
 
           <div className="ban-appeal">
