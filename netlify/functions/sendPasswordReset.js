@@ -120,7 +120,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap', email: 'support@tingletap.com' },
+      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -199,13 +199,13 @@ export const handler = async (event) => {
       // User confirmed to exist — generate reset link
       let firebaseLink;
       try {
-        firebaseLink = await admin.auth().generatePasswordResetLink(email, {
-          url: 'https://tingletap.com/reset-password',
-          handleCodeInApp: false,
-        });
+        // Do NOT pass continueUrl — doing so requires tingletap.com to be in Firebase
+        // "Authorized Domains" list; if it's not, Admin SDK throws and we fall back to
+        // plain Firebase REST (which sends the generic noreply@ email that lands in spam).
+        // We extract the oobCode from the generated link and build our own URL below.
+        firebaseLink = await admin.auth().generatePasswordResetLink(email);
       } catch (err) {
         console.error('[sendPasswordReset] generatePasswordResetLink failed:', err.message);
-        // Even if link generation fails, try Firebase REST as last resort (user is verified to exist)
         return await sendViaFirebaseRest(email, headers);
       }
 
