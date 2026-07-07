@@ -1,12 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SEO from '../seo/SEO';
 import { PAGES } from '../seo/seoConfig';
 import { useNavigate, Link } from 'react-router-dom';
-// sendPasswordResetEmail replaced by Netlify Function (Brevo delivery)
-import { auth, db } from '../firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { generateOTP, sendOTPEmail, verifyOTP, clearOTP, initializeEmailJS } from '../utils/emailService';
 import { toast } from 'react-toastify';
 
 const LockSVG = () => (
@@ -24,127 +20,42 @@ const LockSVG = () => (
   </svg>
 );
 
-const MailSVG = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="fpMailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c084fc"/>
-        <stop offset="100%" stopColor="#7c3aed"/>
-      </linearGradient>
-    </defs>
-    <rect x="2" y="4" width="20" height="16" rx="3" fill="url(#fpMailGrad)"/>
-    <path d="M2 8l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
-    <circle cx="18" cy="7" r="4" fill="#22c55e"/>
-    <path d="M16.2 7l1.4 1.4 2.2-2.2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const ShieldSVG = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="fpShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c084fc"/>
-        <stop offset="100%" stopColor="#7c3aed"/>
-      </linearGradient>
-    </defs>
-    <path d="M12 2l8 4v6c0 5-4 9-8 10C8 21 4 17 4 12V6l8-4z" fill="url(#fpShieldGrad)"/>
-    <path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
 
-  useEffect(() => { initializeEmailJS(); }, []);
-
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-      return () => clearTimeout(t);
-    }
-  }, [resendCooldown]);
-
-  const handleSendOTP = async (e) => {
+  const handleSendResetLink = async (e) => {
     if (e) e.preventDefault();
     setError('');
     if (!email.trim()) { setError('Please enter your email address'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) { setError('Please enter a valid email address'); return; }
-    setOtpSending(true);
-    try {
-      initializeEmailJS();
-      const otpCode = generateOTP();
-      const result = await sendOTPEmail(email.trim(), otpCode);
-      if (result.success) {
-        setOtpSent(true);
-        setStep(2);
-        setResendCooldown(60);
-        toast.success('OTP sent! Check your inbox and spam folder.');
-      } else {
-        setError(result.error || 'Failed to send OTP. Please try again.');
-      }
-    } catch (err) {
-      setError('Failed to send OTP. Please check your email and try again.');
-    }
-    setOtpSending(false);
-  };
 
-  const handleResendOTP = async () => {
-    if (resendCooldown > 0) return;
-    setError('');
-    setOtpSending(true);
+    setSending(true);
     try {
-      initializeEmailJS();
-      const otpCode = generateOTP();
-      const result = await sendOTPEmail(email.trim(), otpCode);
-      if (result.success) {
-        setResendCooldown(60);
-        toast.success('New OTP sent! Check your inbox.');
-      } else {
-        setError(result.error || 'Failed to resend OTP. Please try again.');
+      const resp = await fetch('/.netlify/functions/sendPasswordReset', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.trim(), userName: null }),
+      });
+      if (resp.status === 429) {
+        setError('Too many requests. Please wait a few minutes and try again.');
+        setSending(false);
+        return;
       }
+      // For all other responses (200, 500, etc.) show success to prevent account enumeration
+      setStep(2);
+      toast.success('If an account exists for this email, a reset link has been sent.');
     } catch (err) {
-      setError('Failed to resend OTP. Please try again.');
+      // Network error — still show success to avoid enumeration
+      setStep(2);
+      toast.success('If an account exists for this email, a reset link has been sent.');
+    } finally {
+      setSending(false);
     }
-    setOtpSending(false);
-  };
-
-  const handleVerifyOTP = async () => {
-    setError('');
-    if (!otp.trim()) { setError('Please enter the 6-digit OTP'); return; }
-    if (otp.length !== 6) { setError('OTP must be exactly 6 digits'); return; }
-    setVerifying(true);
-    const isValid = verifyOTP(email.trim(), otp);
-    if (isValid) {
-      clearOTP(email.trim());
-      try {
-        // Send branded password reset email via Brevo (Netlify Function)
-        const resp = await fetch('/.netlify/functions/sendPasswordReset', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ email: email.trim(), userName: null }),
-        });
-        if (!resp.ok) {
-          const d = await resp.json().catch(() => ({}));
-          throw new Error(d.error || 'Failed to send reset email');
-        }
-        setStep(3);
-        toast.success('OTP verified! Password reset link sent to your email.');
-      } catch (err) {
-        setError(err.message || 'OTP verified but failed to send reset email. Please try again.');
-      }
-    } else {
-      setError('Invalid or expired OTP. Please try again or request a new one.');
-    }
-    setVerifying(false);
   };
 
   return (
@@ -201,19 +112,11 @@ const ForgotPasswordPage = () => {
           0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 12px 28px rgba(139,92,246,0.35)); }
           50% { transform: translateY(-10px) scale(1.03); filter: drop-shadow(0 22px 36px rgba(139,92,246,0.5)); }
         }
-        @keyframes fpStepPop {
-          0% { transform: scale(0.7); opacity: 0; }
-          70% { transform: scale(1.1); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
         @keyframes fpSuccessBounce {
           0% { transform: scale(0) rotate(-15deg); opacity: 0; }
           60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
           80% { transform: scale(0.95) rotate(-2deg); }
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes fpSlide {
-          0%{left:-100%} 100%{left:100%}
         }
 
         .fp-card {
@@ -287,7 +190,6 @@ const ForgotPasswordPage = () => {
           background: linear-gradient(135deg, #9333ea, #c084fc);
           color: white;
           box-shadow: 0 6px 20px rgba(147,51,234,0.38);
-          animation: fpStepPop 0.4s ease forwards;
         }
         .fp-step-done {
           background: linear-gradient(135deg, #22c55e, #4ade80);
@@ -300,7 +202,7 @@ const ForgotPasswordPage = () => {
           border: 2px solid rgba(192,132,252,0.25);
         }
         .fp-step-line {
-          height: 2.5px; width: 44px;
+          height: 2.5px; width: 60px;
           border-radius: 2px;
           transition: all 0.4s ease;
         }
@@ -344,29 +246,6 @@ const ForgotPasswordPage = () => {
           transform: translateY(-1px);
         }
         .fp-input::placeholder { color: #b09dcc; }
-
-        .fp-otp-input {
-          width: 100%;
-          padding: 14px 20px;
-          border: 2.5px solid rgba(192,132,252,0.3);
-          border-radius: 14px;
-          font-size: 1.5rem;
-          font-weight: 700;
-          letter-spacing: 0.55rem;
-          text-align: center;
-          font-family: 'Courier New', monospace;
-          background: rgba(255,255,255,0.9);
-          color: #3d2565;
-          transition: all 0.3s ease;
-          outline: none;
-          box-sizing: border-box;
-        }
-        .fp-otp-input:focus {
-          border-color: #a855f7;
-          box-shadow: 0 0 0 4px rgba(168,85,247,0.12);
-          background: white;
-        }
-        .fp-otp-input::placeholder { color: rgba(176,157,204,0.5); letter-spacing: 0.3rem; font-size: 1rem; }
 
         .fp-error {
           background: rgba(239,68,68,0.08);
@@ -434,7 +313,6 @@ const ForgotPasswordPage = () => {
           box-shadow: 0 6px 20px rgba(168,85,247,0.18);
           color: #6d28d9;
         }
-        .fp-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .fp-spinner {
           width: 18px; height: 18px;
@@ -443,27 +321,6 @@ const ForgotPasswordPage = () => {
           border-radius: 50%;
           animation: fpSpin 0.7s linear infinite;
         }
-        .fp-spinner-purple {
-          width: 16px; height: 16px;
-          border: 2px solid rgba(124,58,237,0.25);
-          border-top-color: #7c3aed;
-          border-radius: 50%;
-          animation: fpSpin 0.7s linear infinite;
-        }
-
-        .fp-icon-wrap {
-          display: flex; flex-direction: column; align-items: center;
-          background: rgba(168,85,247,0.06);
-          border: 1.5px solid rgba(168,85,247,0.18);
-          border-radius: 16px;
-          padding: 16px 14px;
-          margin-bottom: 16px;
-          text-align: center;
-        }
-        .fp-email-highlight {
-          color: #7c3aed; font-size: 0.92rem; font-weight: 700;
-          margin-top: 6px; word-break: break-all;
-        }
 
         .fp-footer {
           text-align: center; margin-top: 18px;
@@ -471,15 +328,6 @@ const ForgotPasswordPage = () => {
         }
         .fp-footer a { color: #9333ea; text-decoration: none; font-weight: 700; }
         .fp-footer a:hover { color: #a855f7; text-decoration: underline; }
-
-        .fp-divider {
-          display: flex; align-items: center; gap: 12px;
-          margin: 12px 0; color: #a99cc4; font-size: 0.8rem; font-weight: 500;
-        }
-        .fp-divider::before, .fp-divider::after {
-          content: ''; flex: 1; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(192,132,252,0.35), transparent);
-        }
 
         .fp-success-icon {
           width: 80px; height: 80px;
@@ -497,7 +345,6 @@ const ForgotPasswordPage = () => {
           .fp-logo-img { width: 72px; height: 72px; }
           .fp-input { height: 46px; font-size: 16px; }
           .fp-btn-primary, .fp-btn-secondary { min-height: 46px; font-size: 0.88rem; }
-          .fp-otp-input { font-size: 1.2rem; letter-spacing: 0.4rem; }
         }
       `}</style>
 
@@ -510,7 +357,11 @@ const ForgotPasswordPage = () => {
       <div className="fp-card" style={{position:'relative',zIndex:1}}>
         {/* Logo */}
         <div className="fp-logo-wrap">
-          <img src="/tingletap-logo.jpg" alt="TingleTap Logo" className="fp-logo-img"/>
+          <img
+            src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png"
+            alt="TingleTap Logo"
+            className="fp-logo-img"
+          />
           <h1 className="fp-logo-title">TingleTap</h1>
           <p className="fp-logo-sub">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginRight:'5px'}}>
@@ -523,24 +374,18 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator — 2 steps only */}
         <div className="fp-steps">
-          <div className={`fp-step-circle ${step > 1 ? 'fp-step-done' : step === 1 ? 'fp-step-active' : 'fp-step-inactive'}`}>
+          <div className={`fp-step-circle ${step === 1 ? 'fp-step-active' : 'fp-step-done'}`}>
             {step > 1
               ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               : '1'}
           </div>
           <div className={`fp-step-line ${step >= 2 ? 'fp-line-active' : 'fp-line-inactive'}`}/>
-          <div className={`fp-step-circle ${step > 2 ? 'fp-step-done' : step === 2 ? 'fp-step-active' : 'fp-step-inactive'}`}>
-            {step > 2
+          <div className={`fp-step-circle ${step === 2 ? 'fp-step-done' : 'fp-step-inactive'}`}>
+            {step === 2
               ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               : '2'}
-          </div>
-          <div className={`fp-step-line ${step >= 3 ? 'fp-line-active' : 'fp-line-inactive'}`}/>
-          <div className={`fp-step-circle ${step === 3 ? 'fp-step-done' : 'fp-step-inactive'}`}>
-            {step === 3
-              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              : '3'}
           </div>
         </div>
 
@@ -555,10 +400,10 @@ const ForgotPasswordPage = () => {
               Enter Your Email
             </h3>
             <p className="fp-step-desc">
-              We'll send a 6-digit verification code to your email address
+              We'll send a secure password reset link directly to your email
             </p>
 
-            <form onSubmit={handleSendOTP}>
+            <form onSubmit={handleSendResetLink}>
               <div className="fp-group">
                 <label className="fp-label">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -589,16 +434,16 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
-              <button type="submit" className="fp-btn-primary" disabled={otpSending}>
-                {otpSending ? (
-                  <><div className="fp-spinner"/><span>Sending OTP...</span></>
+              <button type="submit" className="fp-btn-primary" disabled={sending}>
+                {sending ? (
+                  <><div className="fp-spinner"/><span>Sending Reset Link...</span></>
                 ) : (
                   <>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M22 2L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="rgba(255,255,255,0.2)"/>
+                      <rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="white" strokeWidth="2"/>
+                      <path d="M2 8l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    Send Verification Code
+                    Send Reset Link
                   </>
                 )}
               </button>
@@ -611,116 +456,8 @@ const ForgotPasswordPage = () => {
           </div>
         )}
 
-        {/* ─── STEP 2: Enter OTP ─── */}
+        {/* ─── STEP 2: Success ─── */}
         {step === 2 && (
-          <div style={{animation:'fpFadeUp 0.4s ease forwards'}}>
-            <h3 className="fp-step-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{verticalAlign:'middle',marginRight:'6px'}}>
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="#9333ea" strokeWidth="2"/>
-              </svg>
-              Enter Verification Code
-            </h3>
-
-            <div className="fp-icon-wrap">
-              <MailSVG/>
-              <p style={{margin:'8px 0 2px',color:'#7e6ca8',fontSize:'0.8rem'}}>6-digit OTP sent to:</p>
-              <p className="fp-email-highlight">{email}</p>
-              <p style={{margin:'4px 0 0',color:'#a99cc4',fontSize:'0.75rem'}}>Check inbox & spam folder</p>
-            </div>
-
-            <div className="fp-group">
-              <label className="fp-label">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="#a855f7" strokeWidth="2"/>
-                  <path d="M9 12l2 2 4-4" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                6-Digit Verification Code
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={otp}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setOtp(val);
-                }}
-                placeholder="• • • • • •"
-                className="fp-otp-input"
-                maxLength={6}
-              />
-            </div>
-
-            {error && (
-              <div className="fp-error">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
-                  <circle cx="12" cy="12" r="10" fill="rgba(239,68,68,0.15)" stroke="#ef4444" strokeWidth="2"/>
-                  <path d="M12 7v5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
-                  <circle cx="12" cy="16" r="1" fill="#ef4444"/>
-                </svg>
-                {error}
-              </div>
-            )}
-
-            <button
-              className="fp-btn-primary"
-              onClick={handleVerifyOTP}
-              disabled={verifying || otp.length !== 6}
-            >
-              {verifying ? (
-                <><div className="fp-spinner"/><span>Verifying...</span></>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
-                  </svg>
-                  Verify Code
-                </>
-              )}
-            </button>
-
-            <div style={{display:'flex',gap:'8px',marginTop:'2px'}}>
-              <button
-                className="fp-btn-secondary"
-                onClick={() => { setStep(1); setOtp(''); setError(''); }}
-                style={{flex:1}}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <button
-                className="fp-btn-secondary"
-                onClick={handleResendOTP}
-                disabled={otpSending || resendCooldown > 0}
-                style={{flex:1}}
-              >
-                {otpSending ? (
-                  <><div className="fp-spinner-purple"/>Sending...</>
-                ) : resendCooldown > 0 ? (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="#b09dcc" strokeWidth="2"/>
-                      <path d="M12 7v5l3 3" stroke="#b09dcc" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Resend ({resendCooldown}s)
-                  </>
-                ) : (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Resend OTP
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 3: Success ─── */}
-        {step === 3 && (
           <div style={{animation:'fpFadeUp 0.4s ease forwards',textAlign:'center'}}>
             <div className="fp-success-icon">
               <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
@@ -735,7 +472,7 @@ const ForgotPasswordPage = () => {
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               backgroundClip:'text', margin:'0 0 10px'
             }}>
-              Identity Verified!
+              Check Your Inbox!
             </h3>
 
             <div style={{
@@ -744,16 +481,27 @@ const ForgotPasswordPage = () => {
               borderRadius:'16px', padding:'16px 14px',
               marginBottom:'18px'
             }}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style={{marginBottom:'10px'}}>
-                <defs>
-                  <linearGradient id="fpMailGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#c084fc"/>
-                    <stop offset="100%" stopColor="#7c3aed"/>
-                  </linearGradient>
-                </defs>
-                <rect x="2" y="4" width="20" height="16" rx="3" fill="url(#fpMailGrad2)"/>
-                <path d="M2 8l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              </svg>
+              {/* Inline email SVG — renders in Gmail */}
+              <table cellPadding="0" cellSpacing="0" style={{margin:'0 auto 10px'}}>
+                <tbody>
+                  <tr>
+                    <td>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                          <linearGradient id="fpMailSucc" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#c084fc"/>
+                            <stop offset="100%" stopColor="#7c3aed"/>
+                          </linearGradient>
+                        </defs>
+                        <rect x="2" y="4" width="20" height="16" rx="3" fill="url(#fpMailSucc)"/>
+                        <path d="M2 8l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                        <circle cx="18" cy="6" r="4" fill="#22c55e"/>
+                        <path d="M16.2 6l1.4 1.4 2.2-2.2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
               <p style={{margin:'0 0 6px',color:'#4c366b',fontSize:'0.9rem',fontWeight:600}}>
                 Password reset link sent to:
               </p>
@@ -793,7 +541,7 @@ const ForgotPasswordPage = () => {
 
             <button
               className="fp-btn-secondary"
-              onClick={() => { setStep(1); setEmail(''); setOtp(''); setError(''); setOtpSent(false); setResendCooldown(0); }}
+              onClick={() => { setStep(1); setEmail(''); setError(''); }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

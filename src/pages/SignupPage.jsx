@@ -8,7 +8,7 @@ import { auth, createUserProfile, checkUsernameAvailability, reserveUsername } f
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
-import { generateOTP, sendOTPEmail, verifyOTP, clearOTP, initializeEmailJS } from '../utils/emailService';
+import { generateOTP, sendOTPEmail, verifyOTP, clearOTP } from '../utils/emailService';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import './LandingPage.css';
@@ -80,7 +80,6 @@ const SignupPage = () => {
 
   const navigate = useNavigate();
 
-  React.useEffect(() => { initializeEmailJS(); }, []);
 
   useEffect(() => {
     const checkIPBanOnLoad = async () => {
@@ -127,9 +126,8 @@ const SignupPage = () => {
   const sendOTP = async () => {
     setOtpLoading(true);
     try {
-      initializeEmailJS();
       const otpCode = generateOTP();
-      const result = await sendOTPEmail(formData.email, otpCode);
+      const result = await sendOTPEmail(formData.email, otpCode, formData.fullName || formData.username);
       if (result.success) { setOtpSent(true); pt.otp('OTP sent to your email! Check inbox and spam folder.'); }
       else { pt.error(result.error || 'Failed to send OTP. Please try again.'); }
     } catch (err) {
