@@ -127,6 +127,21 @@
       }
     },
 
+    "siteVisitors": {
+      ".read": "auth != null",
+      "active": {
+        "$sid": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['device','browser','joinedAt'])"
+        }
+      },
+      "daily": {
+        "$date": {
+          ".write": true
+        }
+      }
+    },
+
     "privateMessages": {
       "$conversationId": {
         // FIX 10: Conversation IDs are uid1_uid2 (UIDs separated by _).

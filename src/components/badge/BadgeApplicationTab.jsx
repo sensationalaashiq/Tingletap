@@ -151,6 +151,70 @@ function MaleCountdownCard({ remainingMs, accountAgeDays }) {
   );
 }
 
+// ─── Account Age Timeline (shown on idle/qualify screen) ─────────────────────
+function AccountAgeTimeline({ accountAgeDays, gender }) {
+  const isMale    = gender === 'male';
+  const required  = 60;
+  const pct       = isMale ? Math.min(100, Math.round((accountAgeDays / required) * 100)) : 100;
+  const radius    = 44;
+  const circ      = 2 * Math.PI * radius;
+  const dashOffset = circ * (1 - pct / 100);
+
+  return (
+    <div className="bv-age-timeline bv-fade-up">
+      {/* Circular progress ring */}
+      <div className="bv-age-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#ede9fe" strokeWidth="7"/>
+          <circle
+            cx="50" cy="50" r={radius} fill="none"
+            stroke={pct >= 100 ? '#10b981' : '#a855f7'}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={dashOffset}
+            style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px', transition: 'stroke-dashoffset 0.8s ease' }}
+          />
+        </svg>
+        <div className="bv-age-ring-center">
+          <span className="bv-age-ring-num">{accountAgeDays}</span>
+          <span className="bv-age-ring-unit">days</span>
+        </div>
+      </div>
+
+      <div className="bv-age-info">
+        <div className="bv-age-label">
+          {isMale
+            ? (pct >= 100 ? '✓ Account age requirement met' : `${required - accountAgeDays} days remaining`)
+            : '✓ No age requirement for you'}
+        </div>
+
+        {/* Progress bar */}
+        {isMale && (
+          <div className="bv-age-bar-wrap">
+            <div className="bv-age-bar">
+              <div
+                className="bv-age-bar-fill"
+                style={{
+                  width: `${pct}%`,
+                  background: pct >= 100 ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#a78bfa,#7c3aed)',
+                }}
+              />
+            </div>
+            <span className="bv-age-bar-cap">{required}d</span>
+          </div>
+        )}
+
+        <div className="bv-age-milestones">
+          <span className={`bv-age-ms ${accountAgeDays >= 1  ? 'done' : ''}`}>Day 1</span>
+          {isMale && <span className={`bv-age-ms ${accountAgeDays >= 30 ? 'done' : ''}`}>30d</span>}
+          {isMale && <span className={`bv-age-ms ${accountAgeDays >= 60 ? 'done' : ''}`}>60d ✓</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function BadgeApplicationTab({ loggedInUserProfile }) {
   const [pageState, setPageState]           = useState('loading');
@@ -387,21 +451,13 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
           </div>
         </div>
 
-        {/* Account age pill — always visible */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div className="bv-account-age-badge">
-            <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
-              <circle cx="12" cy="12" r="9" stroke="#7c3aed" strokeWidth="2"/>
-              <path d="M12 7v5l3 3" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Account age: <strong style={{ marginLeft: 4 }}>{accountAgeDays} day{accountAgeDays !== 1 ? 's' : ''}</strong>
-          </div>
-        </div>
-
         {maleBlocked ? (
           <MaleCountdownCard remainingMs={remainingMs} accountAgeDays={accountAgeDays} />
         ) : (
           <>
+            {/* Account Age Timeline — shown immediately on idle/qualify screen */}
+            <AccountAgeTimeline accountAgeDays={accountAgeDays} gender={g} />
+
             <div className="bv-info-card">
               <div className="bv-info-title">
                 <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
@@ -418,7 +474,7 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
                 {g === 'male' && (
                   <li>
                     <CheckIcon />
-                    Account at least 60 days old — <strong style={{ color: '#10b981' }}>you qualify ({accountAgeDays} days)</strong>
+                    Account at least 60 days old — <strong style={{ color: '#10b981' }}>you qualify ({accountAgeDays} day{accountAgeDays !== 1 ? 's' : ''})</strong>
                   </li>
                 )}
                 {g === 'female' && (

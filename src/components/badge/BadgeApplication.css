@@ -16,14 +16,14 @@
    HERO CARD
 ══════════════════════════════════════════════════════ */
 .bv-hero-card {
-  background: linear-gradient(135deg, #6d28d9 0%, #9333ea 45%, #c084fc 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c084fc 100%);
   border-radius: 20px;
   padding: 26px 22px 22px;
-  color: #fff;
+  color: #fff !important;
   text-align: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(109, 40, 217, 0.38), 0 2px 8px rgba(109, 40, 217, 0.2);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.42), 0 2px 8px rgba(124, 58, 237, 0.22);
 }
 .bv-hero-card::before {
   content: '';
@@ -60,13 +60,16 @@
   letter-spacing: 0.01em;
   margin: 0 0 7px;
   position: relative; z-index: 1;
+  color: #fff !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.18);
 }
 .bv-hero-sub {
   font-size: 12.5px;
-  opacity: 0.9;
   margin: 0;
   line-height: 1.55;
   position: relative; z-index: 1;
+  color: rgba(255,255,255,0.93) !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.12);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -116,6 +119,123 @@
   color: #6d28d9;
   margin-top: 2px;
 }
+
+/* ══════════════════════════════════════════════════════
+   ACCOUNT AGE TIMELINE (idle / qualify screen)
+══════════════════════════════════════════════════════ */
+.bv-age-timeline {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(135deg, #faf8ff, #f3eeff);
+  border: 1.5px solid #ddd6fe;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 3px 14px rgba(109,40,217,0.07);
+}
+.bv-age-ring {
+  position: relative;
+  width: 100px; height: 100px;
+  flex-shrink: 0;
+}
+.bv-age-ring svg { display: block; }
+.bv-age-ring-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.bv-age-ring-num {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+  color: #6d28d9;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.bv-age-ring-unit {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9333ea;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+.bv-age-info {
+  flex: 1;
+  min-width: 0;
+}
+.bv-age-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #4c1d95;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.bv-age-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+.bv-age-bar {
+  flex: 1;
+  background: #ede9fe;
+  border-radius: 99px;
+  height: 7px;
+  overflow: hidden;
+}
+.bv-age-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.8s ease;
+}
+.bv-age-bar-cap {
+  font-size: 10px;
+  font-weight: 800;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+.bv-age-milestones {
+  display: flex;
+  gap: 8px;
+}
+.bv-age-ms {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #c4b5fd;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1.5px solid #ddd6fe;
+  transition: all 0.3s;
+}
+.bv-age-ms.done {
+  color: #10b981;
+  border-color: #10b981;
+  background: rgba(16,185,129,0.08);
+}
+
+/* Dark mode for age timeline */
+.dark-mode .bv-age-timeline,
+.dark-theme-variant .bv-age-timeline {
+  background: linear-gradient(135deg, rgba(20,8,45,0.95), rgba(30,12,60,0.9));
+  border-color: rgba(109,40,217,0.3);
+}
+.dark-mode .bv-age-ring-num,
+.dark-theme-variant .bv-age-ring-num { color: #c4b5fd; }
+.dark-mode .bv-age-ring-unit,
+.dark-theme-variant .bv-age-ring-unit { color: #a78bfa; }
+.dark-mode .bv-age-label,
+.dark-theme-variant .bv-age-label { color: #d8b4fe; }
+.dark-mode .bv-age-bar,
+.dark-theme-variant .bv-age-bar { background: rgba(109,40,217,0.25); }
+.dark-mode .bv-age-bar-cap,
+.dark-theme-variant .bv-age-bar-cap { color: #c4b5fd; }
+.dark-mode .bv-age-ms,
+.dark-theme-variant .bv-age-ms { color: #7c5dba; border-color: rgba(109,40,217,0.3); }
+.dark-mode .bv-age-ring svg circle:first-child,
+.dark-theme-variant .bv-age-ring svg circle:first-child { stroke: rgba(109,40,217,0.25); }
 
 /* ══════════════════════════════════════════════════════
    COUNTDOWN CARD (male < 60 days)
@@ -772,8 +892,8 @@
 .bv-btn--primary:hover:not(:disabled)::after { left: 100%; }
 
 .bv-btn--primary {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a855f7 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a855f7 100%) !important;
+  color: #fff !important;
   box-shadow: 0 5px 18px rgba(109,40,217,0.38), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 .bv-btn--primary:hover:not(:disabled) {

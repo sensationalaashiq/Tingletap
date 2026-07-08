@@ -29,9 +29,13 @@
   background: linear-gradient(135deg, #7c3aed, #a855f7);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
+  color: #fff !important;
   box-shadow: 0 4px 12px rgba(124,58,237,0.3);
 }
+/* Force SVG paths inside header icon to always be white */
+.bvp-header-icon svg { color: #fff !important; }
+.bvp-header-icon svg path { stroke: #fff !important; }
+.bvp-header-icon svg circle { stroke: #fff !important; }
 .bvp-title {
   font-size: 20px;
   font-weight: 900;
