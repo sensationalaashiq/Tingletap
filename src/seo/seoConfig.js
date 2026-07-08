@@ -372,6 +372,18 @@ export const PAGES = {
         robots: 'index, follow',
         ogType: 'website',
     },
+    forgotPassword: {
+        title: "Forgot Password — Reset Your TingleTap Account",
+        description: "Forgot your TingleTap password? Enter your registered email and we'll send you a secure reset link instantly. Regain access to your account in seconds.",
+        keywords: [
+            'TingleTap forgot password', 'TingleTap reset password',
+            'TingleTap account recovery', 'reset TingleTap password',
+            'TingleTap password help', KW_BRAND,
+        ].join(', '),
+        canonical: 'https://tingletap.com/forgot-password',
+        robots: 'noindex, nofollow',
+        ogType: 'website',
+    },
     rooms: {
         title: "Live Chat Rooms — Explore All Rooms on TingleTap | Free Join",
         description: "Browse all live chat rooms on TingleTap. Indian rooms, desi chat, Hindi rooms, regional language rooms, and topic-based global rooms. Join free — connect with Indians and the global desi community in real-time. No download needed.",
