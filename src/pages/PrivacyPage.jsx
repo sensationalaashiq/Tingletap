@@ -287,9 +287,11 @@ const PrivacyPage = () => {
         ogType={PAGES.privacy.ogType}
       />
       <WebPageSchema
-        name="Privacy Policy — TingleTap"
+        name="Privacy Policy — How TingleTap Protects Your Data"
         description={PAGES.privacy.description}
         url={PAGES.privacy.canonical}
+        type="WebPage"
+        speakable={true}
       />
       <BreadcrumbSchema crumbs={[
         { name: 'Home', url: SITE.url },

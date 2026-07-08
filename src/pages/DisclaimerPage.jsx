@@ -233,9 +233,11 @@ const DisclaimerPage = () => {
         ogType={PAGES.disclaimer.ogType}
       />
       <WebPageSchema
-        name="Disclaimer — TingleTap"
+        name="Disclaimer — TingleTap Legal Notice, Liability & Content Policy"
         description={PAGES.disclaimer.description}
         url={PAGES.disclaimer.canonical}
+        type="WebPage"
+        speakable={true}
       />
       <BreadcrumbSchema crumbs={[
         { name: 'Home', url: SITE.url },

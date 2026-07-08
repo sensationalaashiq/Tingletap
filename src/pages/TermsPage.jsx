@@ -264,9 +264,11 @@ const TermsPage = () => {
         ogType={PAGES.terms.ogType}
       />
       <WebPageSchema
-        name="Terms of Service — TingleTap"
+        name="Terms of Service — TingleTap User Agreement & Community Rules"
         description={PAGES.terms.description}
         url={PAGES.terms.canonical}
+        type="WebPage"
+        speakable={true}
       />
       <BreadcrumbSchema crumbs={[
         { name: 'Home', url: SITE.url },
