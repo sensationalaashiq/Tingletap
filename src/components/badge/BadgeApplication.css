@@ -960,11 +960,33 @@
   box-shadow: 0 4px 14px rgba(16,185,129,0.3);
 }
 .bv-btn:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
 }
+/* Light/outlined buttons (secondary) can safely dim — they're already
+   dark-text-on-light so faded state stays legible. */
+.bv-btn--secondary:disabled {
+  opacity: 0.5;
+}
+/* Solid colour buttons (primary/danger/green) must NOT lose opacity while
+   disabled (e.g. "Stop Recording" during the minimum-duration countdown) —
+   fading white text/icons on a lightened gradient made them unreadable
+   ("whitewashed"). Keep full colour + a subtle desaturation instead. */
+.bv-btn--primary:disabled,
+.bv-btn--danger:disabled,
+.bv-btn--green:disabled {
+  opacity: 1;
+  filter: saturate(0.85) brightness(0.97);
+}
+.bv-btn--primary:disabled *,
+.bv-btn--danger:disabled *,
+.bv-btn--green:disabled * {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1 !important;
+}
+.bv-btn--primary:disabled::after { display: none; }
 .bv-btn-row {
   display: flex; gap: 10px;
 }

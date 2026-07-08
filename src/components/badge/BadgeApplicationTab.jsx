@@ -314,7 +314,13 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
   const goBack = useCallback(() => setStep(s => Math.max(0, s - 1)), []);
 
   // ── Upload & Submit ─────────────────────────────────────────────────────────
+  const submitInFlightRef = React.useRef(false);
   const handleSubmit = useCallback(async () => {
+    // Guard against duplicate concurrent submissions (e.g. rapid Retry taps
+    // before the pageState re-render lands) creating duplicate applications
+    // or duplicate media uploads.
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
     setPageState('uploading');
     setSubmitError('');
 
@@ -361,6 +367,8 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
       console.error('[BadgeApplicationTab] submit error:', e);
       setSubmitError(e.message || 'Submission failed. Please try again.');
       setPageState('apply');
+    } finally {
+      submitInFlightRef.current = false;
     }
   }, [videoBlob, audioBlob, livenessResult, gender, loggedInUserProfile, accountAgeDays, user]);
 
@@ -638,6 +646,42 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
               </svg>
               Back
             </button>
+          </div>
+        )}
+
+        {/* Fallback: step index has advanced past the last known step (e.g. female
+            flow right after audio). handleSubmit() is triggered by the effect below;
+            this covers the brief window before it flips pageState, and — critically —
+            surfaces submitError with a retry button if the upload/submit call failed,
+            instead of leaving the panel blank forever. */}
+        {!currentStepName && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} className="bv-fade-up">
+            {submitError ? (
+              <>
+                <div className="bv-error-card">
+                  <svg viewBox="0 0 24 24" fill="none" width="20" height="20" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" stroke="#f43f5e" strokeWidth="2"/>
+                    <path d="M12 8v4M12 16h.01" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>{submitError}</p>
+                </div>
+                <button className="bv-btn bv-btn--primary" onClick={handleSubmit}>
+                  <ShieldIcon size={18} stroke="#fff" />
+                  Retry Submission
+                </button>
+                <button className="bv-btn bv-btn--secondary" onClick={goBack}>
+                  <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
+                    <path d="M15 18l-6-6 6-6" stroke="#6d28d9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Back
+                </button>
+              </>
+            ) : (
+              <div className="bv-liveness-loading">
+                <div className="bv-liveness-spinner" />
+                <p>Preparing submission…</p>
+              </div>
+            )}
           </div>
         )}
       </div>
