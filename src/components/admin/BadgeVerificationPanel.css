@@ -321,16 +321,20 @@
   border-radius: 9px;
   border: 1.5px solid var(--border-color, #e5e7eb);
   background: var(--bg-secondary, #f8fafc);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
 }
+.bvp-icon-btn svg { color: inherit !important; stroke: currentColor; }
 .bvp-icon-btn:hover { border-color: #a78bfa; color: #7c3aed; }
 .dark-mode .bvp-icon-btn {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: #fff;
 }
+.dark-mode .bvp-icon-btn:hover,
+.dark-theme-variant .bvp-icon-btn:hover { color: #e9d5ff; border-color: rgba(167,139,250,0.5); }
 
 /* ── Detail Panel ── */
 .bvp-detail-overlay {

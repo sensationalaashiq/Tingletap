@@ -12,7 +12,7 @@ import {
   invalidateCache,
   formatReviewTimeRemaining,
 } from '../../services/badgeApplicationService';
-import { getSignedMediaUrl, reviewApplication } from '../../services/r2StorageService';
+import { getBadgeMedia, getSignedMediaUrl, reviewApplication } from '../../services/r2StorageService';
 import { pt } from '../../utils/premiumToast';
 import { db } from '../../firebase/config';
 import { doc, updateDoc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
@@ -167,10 +167,22 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
   const [audioUrl, setAudioUrl]   = useState('');
   const [loadingV, setLoadingV]   = useState(false);
   const [loadingA, setLoadingA]   = useState(false);
-  const [vidExpiry, setVidExpiry] = useState('');
-  const [audExpiry, setAudExpiry] = useState('');
+  const [vidLabel, setVidLabel]   = useState('');
+  const [audLabel, setAudLabel]   = useState('');
   const [videoError, setVideoError] = useState(false);
   const [audioError, setAudioError] = useState(false);
+
+  // Refs to track active blob URLs so we can revoke them on reload / unmount
+  const videoBlobRef = useRef(null);
+  const audioBlobRef = useRef(null);
+
+  // Revoke blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (videoBlobRef.current) URL.revokeObjectURL(videoBlobRef.current);
+      if (audioBlobRef.current) URL.revokeObjectURL(audioBlobRef.current);
+    };
+  }, []);
 
   // Local geo override — populated when admin clicks Refresh Geo
   const [geo, setGeo]               = useState({
@@ -202,15 +214,21 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
     <span style={{ color: '#10b981', fontWeight: 700 }}>No</span>
   );
 
+  // Fetch media via server-side proxy → blob → objectURL.
+  // The proxy (getBadgeMedia Netlify function) fetches from R2 server-side so
+  // the browser never makes a cross-origin request — no CORS config needed.
+  // Falls back to presigned URL (direct tab) if the proxy itself errors.
   const loadVideo = async () => {
     if (!app.videoKey) return;
     setLoadingV(true);
     setVideoError(false);
     try {
-      const url = await getSignedMediaUrl(app.videoKey);
-      setVideoUrl(url);
-      const exp = new Date(Date.now() + 5 * 60 * 1000);
-      setVidExpiry(`Expires ${exp.toLocaleTimeString()}`);
+      const blob = await getBadgeMedia(app.videoKey);
+      if (videoBlobRef.current) URL.revokeObjectURL(videoBlobRef.current);
+      const blobUrl = URL.createObjectURL(blob);
+      videoBlobRef.current = blobUrl;
+      setVideoUrl(blobUrl);
+      setVidLabel(`${(blob.size / 1024 / 1024).toFixed(1)} MB · Loaded ✓`);
     } catch (e) {
       pt.error(e.message || 'Failed to load video');
     } finally { setLoadingV(false); }
@@ -221,10 +239,12 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
     setLoadingA(true);
     setAudioError(false);
     try {
-      const url = await getSignedMediaUrl(app.audioKey);
-      setAudioUrl(url);
-      const exp = new Date(Date.now() + 5 * 60 * 1000);
-      setAudExpiry(`Expires ${exp.toLocaleTimeString()}`);
+      const blob = await getBadgeMedia(app.audioKey);
+      if (audioBlobRef.current) URL.revokeObjectURL(audioBlobRef.current);
+      const blobUrl = URL.createObjectURL(blob);
+      audioBlobRef.current = blobUrl;
+      setAudioUrl(blobUrl);
+      setAudLabel(`${(blob.size / 1024).toFixed(0)} KB · Loaded ✓`);
     } catch (e) {
       pt.error(e.message || 'Failed to load audio');
     } finally { setLoadingA(false); }
@@ -347,6 +367,13 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
               <tr><td>Timezone</td><td>{fmt(geo.timezone)}</td></tr>
               <tr><td>ISP</td><td>{fmt(geo.isp)}</td></tr>
               <tr><td>ASN</td><td>{fmt(geo.asn)}</td></tr>
+              {app.ipAddress && !geo.country && !geo.city && !geo.isp && (
+                <tr>
+                  <td colSpan="2" style={{ fontSize: 11, color: '#f59e0b', fontStyle: 'italic', paddingTop: 6 }}>
+                    📍 Location data not collected — click Refresh to fetch from IP
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
@@ -409,14 +436,14 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                 <VideoIcon />
                 <span style={{ fontWeight: 700, fontSize: 13 }}>Selfie Video</span>
-                {vidExpiry && <span style={{ fontSize: 11, color: '#f59e0b', marginLeft: 'auto' }}>{vidExpiry}</span>}
+                {vidLabel && <span style={{ fontSize: 11, color: '#10b981', marginLeft: 'auto' }}>{vidLabel}</span>}
                 <button
                   className="bvp-btn bvp-btn--primary"
-                  style={{ padding: '6px 14px', fontSize: 12, marginLeft: vidExpiry ? 0 : 'auto' }}
+                  style={{ padding: '6px 14px', fontSize: 12, marginLeft: vidLabel ? 0 : 'auto' }}
                   onClick={loadVideo}
                   disabled={loadingV}
                 >
-                  {loadingV ? '…' : videoUrl ? 'Refresh URL' : 'View Video'}
+                  {loadingV ? 'Loading…' : videoUrl ? 'Reload' : 'Load Video'}
                 </button>
               </div>
               {videoUrl && !videoError && (
@@ -426,22 +453,20 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
                   controls
                   playsInline
                   className="bvp-media-player"
-                  style={{ width: '100%', borderRadius: 10, background: '#000', maxHeight: 300 }}
+                  style={{ width: '100%', borderRadius: 10, background: '#000', maxHeight: 320 }}
                   onError={() => setVideoError(true)}
                 />
               )}
-              {videoUrl && videoError && (
+              {videoError && (
                 <div className="bvp-media-error">
-                  <span>⚠️ Video could not be played in browser.</span>
-                  <a
-                    href={videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <span>⚠️ Playback error — click Reload to try again.</span>
+                  <button
                     className="bvp-btn bvp-btn--primary"
-                    style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}
+                    style={{ padding: '5px 12px', fontSize: 12 }}
+                    onClick={() => { setVideoError(false); loadVideo(); }}
                   >
-                    Open Video ↗
-                  </a>
+                    Reload
+                  </button>
                 </div>
               )}
             </div>
@@ -452,14 +477,14 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                 <AudioIcon />
                 <span style={{ fontWeight: 700, fontSize: 13 }}>Spoken Declaration</span>
-                {audExpiry && <span style={{ fontSize: 11, color: '#f59e0b', marginLeft: 'auto' }}>{audExpiry}</span>}
+                {audLabel && <span style={{ fontSize: 11, color: '#10b981', marginLeft: 'auto' }}>{audLabel}</span>}
                 <button
                   className="bvp-btn bvp-btn--primary"
-                  style={{ padding: '6px 14px', fontSize: 12, marginLeft: audExpiry ? 0 : 'auto' }}
+                  style={{ padding: '6px 14px', fontSize: 12, marginLeft: audLabel ? 0 : 'auto' }}
                   onClick={loadAudio}
                   disabled={loadingA}
                 >
-                  {loadingA ? '…' : audioUrl ? 'Refresh URL' : 'Play Audio'}
+                  {loadingA ? 'Loading…' : audioUrl ? 'Reload' : 'Load Audio'}
                 </button>
               </div>
               {audioUrl && !audioError && (
@@ -467,22 +492,20 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
                   key={audioUrl}
                   src={audioUrl}
                   controls
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', borderRadius: 8 }}
                   onError={() => setAudioError(true)}
                 />
               )}
-              {audioUrl && audioError && (
+              {audioError && (
                 <div className="bvp-media-error">
-                  <span>⚠️ Audio could not be played in browser.</span>
-                  <a
-                    href={audioUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <span>⚠️ Playback error — click Reload to try again.</span>
+                  <button
                     className="bvp-btn bvp-btn--primary"
-                    style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}
+                    style={{ padding: '5px 12px', fontSize: 12 }}
+                    onClick={() => { setAudioError(false); loadAudio(); }}
                   >
-                    Open Audio ↗
-                  </a>
+                    Reload
+                  </button>
                 </div>
               )}
             </div>

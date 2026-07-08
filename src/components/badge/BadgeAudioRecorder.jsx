@@ -1,7 +1,7 @@
 // src/components/badge/BadgeAudioRecorder.jsx
 // 5–15 second spoken declaration recording with animated waveform.
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAudioRecorder } from '../../hooks/useMediaRecorder';
 
 const DECLARATION_SCRIPT =
@@ -42,6 +42,17 @@ export default function BadgeAudioRecorder({ onRecorded, onBack }) {
     requestMic, startRecording, stopRecording, reset,
   } = useAudioRecorder({ minDuration: 5, maxDuration: 15 });
 
+  // Stable blob URL — created once when blob is set, revoked on change/unmount.
+  // Creating URL.createObjectURL inside the render body causes a new URL on
+  // every re-render which resets the <audio> element mid-playback.
+  const [audioPlayUrl, setAudioPlayUrl] = useState('');
+  useEffect(() => {
+    if (!blob) { setAudioPlayUrl(''); return; }
+    const url = URL.createObjectURL(blob);
+    setAudioPlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [blob]);
+
   useEffect(() => {
     requestMic();
   }, []);
@@ -74,7 +85,6 @@ export default function BadgeAudioRecorder({ onRecorded, onBack }) {
   }
 
   if (status === 'stopped' && blob) {
-    const audioUrl = URL.createObjectURL(blob);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ textAlign: 'center' }}>
@@ -86,25 +96,28 @@ export default function BadgeAudioRecorder({ onRecorded, onBack }) {
           </p>
         </div>
 
-        {/* Audio player */}
+        {/* Audio player — uses stable audioPlayUrl from useEffect, not inline createObjectURL */}
         <div className="bv-audio-recorder" style={{ padding: '18px 16px' }}>
           <div className="bv-audio-mic-icon" style={{ width: 56, height: 56, background: 'linear-gradient(135deg,#10b981,#059669)' }}>
             <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
               <path d="M5 12l5 5 9-9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <audio controls src={audioUrl} style={{ width: '100%', marginTop: 12, borderRadius: 8 }} />
+          {audioPlayUrl
+            ? <audio controls src={audioPlayUrl} style={{ width: '100%', marginTop: 12, borderRadius: 8 }} />
+            : <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 12, textAlign: 'center' }}>Preparing audio…</p>
+          }
         </div>
 
         <div className="bv-btn-row">
-          <button className="bv-btn bv-btn--secondary" onClick={() => { URL.revokeObjectURL(audioUrl); reset(); requestMic(); }}>
+          <button className="bv-btn bv-btn--secondary" onClick={() => { reset(); requestMic(); }}>
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
               <path d="M23 4v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Re-record
           </button>
-          <button className="bv-btn bv-btn--primary" onClick={() => { onRecorded?.(blob); URL.revokeObjectURL(audioUrl); }}>
+          <button className="bv-btn bv-btn--primary" onClick={() => onRecorded?.(blob)}>
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
               <path d="M5 12l5 5 9-9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>

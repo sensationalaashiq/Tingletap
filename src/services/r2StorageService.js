@@ -19,7 +19,15 @@ async function getIdToken() {
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(/** @type {string} */(reader.result).split(',')[1]);
+    reader.onload = () => {
+      const result = /** @type {string} */ (reader.result);
+      // Split on ';base64,' — NOT ',' — because codec strings can contain commas,
+      // e.g. "data:video/webm;codecs=vp8,opus;base64,<data>".
+      // Using split(',')[1] would yield "opus;base64" instead of the actual data.
+      const base64 = result.split(';base64,')[1];
+      if (!base64) reject(new Error('Failed to extract base64 from DataURL'));
+      else resolve(base64);
+    };
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(blob);
   });
@@ -82,7 +90,27 @@ export async function submitBadgeApplication(data) {
 }
 
 /**
- * Get a 5-minute presigned GET URL for admin media viewing.
+ * Fetch badge media as a Blob via a server-side proxy (no browser CORS needed).
+ * Owner/admin only.
+ * @param {string} key  R2 object key
+ * @returns {Promise<Blob>}
+ */
+export async function getBadgeMedia(key) {
+  const token = await getIdToken();
+  const res = await fetch(`${BASE}/getBadgeMedia`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ key }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to fetch media (${res.status})`);
+  }
+  return res.blob();
+}
+
+/**
+ * Get a 5-minute presigned GET URL for admin media viewing (fallback).
  * @param {string} key  R2 object key
  * @returns {Promise<string>} temporary signed URL
  */

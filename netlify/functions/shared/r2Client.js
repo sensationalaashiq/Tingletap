@@ -106,7 +106,12 @@ export async function createPresignedPutUrl(key, contentType, expiresIn = 300) {
 export async function createPresignedGetUrl(key, expiresIn = 300) {
   const client = createR2Client();
   const bucket = getBucketName();
-  const cmd = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const cmd = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    // Force inline display so browsers render media instead of downloading
+    ResponseContentDisposition: 'inline',
+  });
   return getSignedUrl(client, cmd, { expiresIn });
 }
 
