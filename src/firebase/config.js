@@ -154,15 +154,12 @@ export const createUserProfile = async (userData) => {
             dateOfBirth: userData.dateOfBirth || '',
 
             // System fields
+            // NOTE: isBanned/bannedBy/bannedAt/mutedInfo are intentionally NOT set here.
+            // Firestore security rules block self-assignment of these fields on account
+            // creation (users/{userId} allow create rule), so including them here causes
+            // every signup's profile write to fail with permission-denied. Staff-only
+            // actions (ban/mute) set these fields later via update, not create.
             role: 'user',
-            isBanned: false,
-            mutedInfo: {
-                isMuted: false,
-                mutedBy: null,
-                mutedByRole: null,
-                muteReason: null,
-                muteTime: null
-            },
 
             // Timestamps
             createdAt: new Date().toISOString(),

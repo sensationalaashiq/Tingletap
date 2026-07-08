@@ -2028,9 +2028,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         status: "I'm new here!",
                         bio: '',
                         createdAt: serverTimestamp(),
-                        isOnline: true,
-                        isBanned: false,
-                        isMuted: false
+                        isOnline: true
                     };
 
                     try {
@@ -3865,7 +3863,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -4035,7 +4033,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -4127,7 +4125,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -5103,7 +5101,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -6430,7 +6428,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true, isBanned: false, isMuted: false
+                        isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -6531,7 +6529,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true, isBanned: false, isMuted: false
+                        isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -6719,7 +6717,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
                         role: 'user', gender: 'male', country: 'Unknown', 
                         status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true, isBanned: false, isMuted: false
+                        isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -6941,7 +6939,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
@@ -7021,7 +7019,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
                     const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true, isBanned: false, isMuted: false
+                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
                     };
                     await setDoc(userDocRef, defaultUserData);
                     userProfile = defaultUserData;
