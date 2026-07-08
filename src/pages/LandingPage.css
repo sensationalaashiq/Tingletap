@@ -602,6 +602,7 @@
   color: #fff; text-decoration: none; flex-shrink: 0;
   box-shadow: 0 3px 12px rgba(0,0,0,0.14);
 }
+.lp-social-btn svg { color: #fff; fill: currentColor; flex-shrink: 0; display: block; }
 .lp-social-btn:hover { transform: translateY(-3px) scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.22); }
 .lp-social-instagram {
   background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
