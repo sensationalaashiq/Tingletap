@@ -950,14 +950,31 @@
 }
 
 .bv-btn--danger {
-  background: linear-gradient(135deg, #f43f5e, #dc2626);
-  color: #fff;
+  /* !important required — SettingsSidebar theme CSS overrides button
+     backgrounds/colors at lower specificity without !important. Same
+     fix that was applied to --primary. */
+  background: linear-gradient(135deg, #f43f5e, #dc2626) !important;
+  color: #fff !important;
   box-shadow: 0 4px 14px rgba(244,63,94,0.35);
 }
+.bv-btn--danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(244,63,94,0.45);
+}
 .bv-btn--green {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
   box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+}
+.bv-btn--green:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16,185,129,0.4);
+}
+/* Ensure SVG icons inside danger/green buttons stay white */
+.bv-btn--danger svg,
+.bv-btn--green svg {
+  color: #fff !important;
+  stroke: currentColor;
 }
 .bv-btn:disabled {
   cursor: not-allowed;

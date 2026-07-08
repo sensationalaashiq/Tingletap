@@ -1,50 +1,40 @@
 ---
 name: Badge Verification System
-description: Architecture decisions, critical bugs fixed, and env vars required for the badge verification feature.
+description: Female badge verification flow architecture, known pitfalls, CSS rules, and Netlify function fixes.
 ---
 
-## Core architecture
+## Flow
+- Female: STEPS_FEMALE = ['declaration', 'liveness', 'video', 'audio'] — no separate 'upload' step; auto-submits via useEffect when step === steps.length
+- Male: STEPS_MALE = ['declaration', 'upload'] — manual submit button on 'upload' step
 
-- **Firestore key = user UID** (`badgeApplications/{uid}`) — O(1) lookups, overwrite on reapply.
-- **Presigned PUT URL flow** — client uploads media directly to Cloudflare R2 (avoids 6 MB Netlify body limit).
-- **MediaPipe from CDN** (`@mediapipe/tasks-vision@0.10.14`) — lazy-loaded only for female liveness flow.
-- **Gender never classified by AI** — MediaPipe only proves a live person completed challenges.
+## CSS — critical !important rules
+- ALL solid-colour `.bv-btn` variants (--primary, --danger, --green) MUST use `!important` on `background` and `color`.
+- Without `!important`, SettingsSidebar theme CSS overrides them to near-white ("whitewashed"), making text/icons invisible.
+- `.bv-btn--secondary` does NOT need !important (dark text on light bg is fine without it).
+- `.bv-hero-card` and `.bv-declaration-header` text also need `!important` + `text-shadow` for white-on-gradient visibility.
 
-## Flow steps
+## Disabled button styling
+- Global `opacity: 0.5` on `:disabled` washes out solid-colour buttons (white text on faded gradient ≈ invisible).
+- Fix: Only apply `opacity: 0.5` to `--secondary:disabled`; use `opacity: 1; filter: saturate(0.85)` for --primary/--danger/--green:disabled.
 
-- **Female**: `['declaration', 'liveness', 'video', 'audio']` — auto-submits after audio step when `step === steps.length`. Do NOT add an 'upload' step for females; it leaves an unrendered dead-end.
-- **Male**: `['declaration', 'upload']` — the 'upload' step renders a confirm-and-submit UI.
+## Netlify function: submitBadgeApplication
+- `verifyToken()` in `firestoreAdmin.js` previously fetched `users/{uid}?fields=role,...` — the `?fields=` query param is NOT valid Firestore REST v1; Firestore returns 400 for it. **Fix: fetch full document (no query params) and extract fields from response.**
+- The 400 response is caught and returned as `{ ok: false, err: 'Firestore error 400' }`, which then surfaces in the UI — this is how "Firestore error 400" appears after audio submission.
+- `writeApplication` originally used the user's Firebase ID token for the REST PATCH. Firestore security rules (catch-all: owner/admin only) block this. **Fix: use `getAdminDb()` (Firebase Admin SDK) which bypasses rules. REST-with-user-token is now a fallback only when Admin credentials are absent.**
 
-## Critical bugs fixed (post code-review)
+## Client-side: getMyApplication() after submit
+- Called after `setPageState('done')` inside the main try/catch. If it fails (rules, network), the catch sets `submitError` and reverts `pageState` to 'apply' — undoing the success screen.
+- **Fix: wrap `getMyApplication()` in its own try/catch; failure is non-fatal and does not revert the success state.**
 
-1. **Female flow dead-end** — removed 'upload' from `STEPS_FEMALE`; auto-submit fires at `step === 4`.
-2. **MIME codec param rejection** — `getUploadUrl.js` strips codec qualifiers: `blob.type.split(';')[0].trim()` before allowlist check. MediaRecorder emits `video/webm;codecs=vp8,opus`.
-3. **Firestore PATCH full-doc wipeout** — `fsPatch` in `reviewBadgeApplication.js` now builds `?updateMask.fieldPaths=…` query params so only the supplied fields are updated. Without this, patching `users/{uid}` would wipe the entire user profile.
-4. **Media key ownership** — `submitBadgeApplication.js` enforces `videoKey/audioKey` must start with `verifications/${user.uid}/` to prevent foreign-key injection.
-5. **Camera error swallowed** — `BadgeLivenessChecker.jsx` now calls `onFailed?.(msg)` in the getUserMedia catch block, surfacing `NotAllowedError`/`NotFoundError` to the UI.
+## Stuck panel (female flow)
+- After audio step, `step` becomes 4 (=== steps.length), `currentStepName` = '' — no step block renders.
+- Added `{!currentStepName && ...}` fallback that shows spinner while waiting for auto-submit, or error + Retry button if submission failed.
+- Reentrancy guard: `submitInFlightRef` prevents concurrent submissions from rapid Retry taps.
 
-## Required Netlify environment variables
+## MIME / R2
+- MIME codec-stripped server-side (video/webm;codecs=... → video/webm) to match R2 presigned URL signature.
+- Key ownership enforced: keys must start with `verifications/{uid}/`.
 
-```
-R2_ACCOUNT_ID          # Cloudflare account ID
-R2_ACCESS_KEY_ID       # R2 API token key ID
-R2_SECRET_ACCESS_KEY   # R2 API token secret
-R2_BUCKET_NAME         # R2 bucket name (e.g. "badge-verifications")
-R2_ENDPOINT            # https://<account_id>.r2.cloudflarestorage.com
-FIREBASE_PROJECT_ID    # Firebase project ID (e.g. "your-project-id")
-FIREBASE_CLIENT_EMAIL  # (optional) Service account for scheduled cleanup
-FIREBASE_PRIVATE_KEY   # (optional) Service account for scheduled cleanup
-VPNAPI_KEY             # (optional) vpnapi.io key for VPN detection on submit
-```
-
-**Why:** Without `FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY` the cleanup job falls back to a no-op (non-fatal). The core review functions use the caller's ID token via Firestore REST — no Admin SDK needed for those paths.
-
-## Firestore rules
-
-`badgeApplications/{uid}`: user create/update own doc; owner/admin full access.
-
-## npm packages added
-
-- `@aws-sdk/client-s3`
-- `@aws-sdk/s3-request-presigner`
-- `@netlify/functions` (for `@hourly` scheduled cleanup)
+## Composite index
+- Index in firestore.indexes.json enables `where(status) + orderBy(submittedAt DESC)`.
+- Must be deployed via Firebase console or CI (no Firebase CLI in this Replit env).

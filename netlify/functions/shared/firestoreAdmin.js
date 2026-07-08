@@ -57,7 +57,10 @@ export async function verifyToken(token, requiredRoles = null) {
   if (p.aud !== PROJECT_ID)
     return { ok: false, err: 'Token audience mismatch' };
 
-  const url = `${FS_BASE}/users/${uid}?fields=role,displayName,email,gender,createdAt`;
+  // NOTE: `?fields=` is a Google APIs standard partial-response param, but
+  // Firestore REST v1 returns 400 for it. Fetch the full document (small)
+  // and extract the fields we need from the response instead.
+  const url = `${FS_BASE}/users/${uid}`;
   let res;
   try {
     res = await fetch(url, {

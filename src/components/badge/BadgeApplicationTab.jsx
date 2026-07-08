@@ -361,8 +361,15 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
 
       setUploadProgress(100);
       setPageState('done');
-      const newApp = await getMyApplication();
-      setExistingApp(newApp);
+      // getMyApplication is best-effort — if it fails (e.g. Firestore
+      // rules not yet updated, or network hiccup) we still show the
+      // success screen. The application was already submitted above.
+      try {
+        const newApp = await getMyApplication();
+        if (newApp) setExistingApp(newApp);
+      } catch (fetchErr) {
+        console.warn('[BadgeApplicationTab] post-submit fetch failed (non-fatal):', fetchErr);
+      }
     } catch (e) {
       console.error('[BadgeApplicationTab] submit error:', e);
       setSubmitError(e.message || 'Submission failed. Please try again.');

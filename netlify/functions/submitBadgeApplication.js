@@ -6,7 +6,7 @@
 // 4. Writes a badgeApplications/{uid} document to Firestore
 
 import { objectExists } from './shared/r2Client.js';
-import { verifyToken } from './shared/firestoreAdmin.js';
+import { verifyToken, getAdminDb } from './shared/firestoreAdmin.js';
 
 const CORS = {
   'Content-Type': 'application/json',
@@ -73,31 +73,49 @@ async function checkVPN(ip) {
   }
 }
 
-// Write badge application to Firestore via REST
+// Write badge application to Firestore.
+// Tries Firebase Admin SDK first (bypasses security rules — correct for
+// server-side writes). Falls back to REST with the user's ID token only
+// if Admin credentials are unavailable (local dev / missing env vars).
 async function writeApplication(uid, data, token) {
+  const adminDb = getAdminDb();
+
+  const now    = new Date();
+  const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const docData = {
+    ...data,
+    submittedAt:       now,
+    expiresAt:         expiry,
+    reviewedAt:        null,
+    reviewNotes:       '',
+    reviewedBy:        '',
+    reapplyEligibleAt: null,
+  };
+
+  // ── Admin SDK path ────────────────────────────────────────────────────────
+  if (adminDb) {
+    await adminDb.collection('badgeApplications').doc(uid).set(docData);
+    return;
+  }
+
+  // ── REST fallback (user token) ────────────────────────────────────────────
+  // NOTE: this path requires Firestore rules to allow the user to write their
+  // own badgeApplications/{uid} document. If rules block it, the write will
+  // fail with 403. Prefer setting up Admin credentials in Netlify env vars.
   const url = `${FS_BASE}/badgeApplications/${uid}`;
   const fields = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (v === null || v === undefined) fields[k] = { nullValue: null };
-    else if (typeof v === 'boolean')   fields[k] = { booleanValue: v };
-    else if (typeof v === 'number')    fields[k] = { integerValue: String(Math.round(v)) };
-    else if (Array.isArray(v))         fields[k] = { arrayValue: { values: v.map(i => ({ stringValue: String(i) })) } };
-    else                               fields[k] = { stringValue: String(v) };
+  for (const [k, v] of Object.entries(docData)) {
+    if (v === null || v === undefined)    fields[k] = { nullValue: null };
+    else if (v instanceof Date)           fields[k] = { timestampValue: v.toISOString() };
+    else if (typeof v === 'boolean')      fields[k] = { booleanValue: v };
+    else if (typeof v === 'number')       fields[k] = { integerValue: String(Math.round(v)) };
+    else if (Array.isArray(v))            fields[k] = { arrayValue: { values: v.map(i => ({ stringValue: String(i) })) } };
+    else                                  fields[k] = { stringValue: String(v) };
   }
-  // serverTimestamp fields
-  fields.submittedAt = { timestampValue: new Date().toISOString() };
-  fields.expiresAt   = { timestampValue: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() };
-  fields.reviewedAt  = { nullValue: null };
-  fields.reviewNotes = { stringValue: '' };
-  fields.reviewedBy  = { stringValue: '' };
-  fields.reapplyEligibleAt = { nullValue: null };
 
   const res = await fetch(url, {
     method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields }),
     signal: AbortSignal.timeout(10000),
   });
@@ -105,7 +123,6 @@ async function writeApplication(uid, data, token) {
     const err = await res.text();
     throw new Error(`Firestore write failed ${res.status}: ${err}`);
   }
-  return res.json();
 }
 
 // Read existing application to enforce one-pending-per-user
