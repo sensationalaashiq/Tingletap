@@ -1,6 +1,6 @@
 // src/services/r2StorageService.js
-// Client-side R2 storage service — proxies through Netlify Functions.
-// Never exposes credentials. Handles presigned URL retrieval and direct uploads.
+// Client-side R2 storage service — all uploads proxy through Netlify Functions.
+// Never exposes credentials. No direct browser→R2 connection (avoids CORS).
 
 import { auth } from '../firebase/config';
 
@@ -13,50 +13,55 @@ async function getIdToken() {
 }
 
 /**
- * Upload a Blob/File directly to Cloudflare R2 via a presigned PUT URL.
+ * Convert a Blob to a base64 string (no data-URL prefix).
+ * Used to send binary media through a JSON Netlify function body.
+ */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(/** @type {string} */(reader.result).split(',')[1]);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Upload a Blob/File to Cloudflare R2 via the Netlify proxy function.
+ * The proxy uses the server-side S3 SDK — no browser CORS required.
+ *
  * @param {Blob|File} blob
  * @param {'video'|'audio'} mediaType
  * @param {(progress: number) => void} [onProgress]  0–100
  * @returns {Promise<string>} R2 object key
  */
 export async function uploadMedia(blob, mediaType, onProgress) {
-  const token       = await getIdToken();
-  const contentType = blob.type || (mediaType === 'video' ? 'video/webm' : 'audio/webm');
+  const token = await getIdToken();
 
-  // Step 1: get presigned PUT URL
-  const urlRes = await fetch(`${BASE}/getUploadUrl`, {
+  // Strip codec qualifiers so the content-type matches what the server expects
+  // (e.g. "video/webm;codecs=vp8,opus" → "video/webm")
+  const rawType    = blob.type || (mediaType === 'video' ? 'video/webm' : 'audio/webm');
+  const contentType = rawType.split(';')[0].trim().toLowerCase();
+
+  // Encode blob to base64 — report ~10% progress while encoding
+  if (onProgress) onProgress(5);
+  const base64Data = await blobToBase64(blob);
+  if (onProgress) onProgress(15);
+
+  // POST to proxy upload function
+  const res = await fetch(`${BASE}/uploadBadgeMedia`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ mediaType, contentType, fileSize: blob.size }),
+    body: JSON.stringify({ mediaType, contentType, data: base64Data }),
   });
-  if (!urlRes.ok) {
-    const err = await urlRes.json().catch(() => ({}));
-    throw new Error(err.error || `Failed to get upload URL (${urlRes.status})`);
+
+  if (onProgress) onProgress(90);
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed (${res.status})`);
   }
-  const { uploadUrl, key, contentType: signedContentType } = await urlRes.json();
-  // Use the canonical content-type returned by the server — it strips codec
-  // qualifiers (e.g., video/webm;codecs=vp8,opus → video/webm) to match the
-  // signed value. Mismatching causes SignatureDoesNotMatch on R2/S3.
-  const putContentType = signedContentType || contentType;
 
-  // Step 2: PUT blob directly to R2
-  await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', uploadUrl, true);
-    xhr.setRequestHeader('Content-Type', putContentType);
-    if (onProgress) {
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-      };
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
-    };
-    xhr.onerror = () => reject(new Error('Network error during upload'));
-    xhr.send(blob);
-  });
-
+  const { key } = await res.json();
   if (onProgress) onProgress(100);
   return key;
 }
