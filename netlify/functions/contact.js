@@ -115,7 +115,7 @@ async function sendViaBrevo({ to, toName, replyToEmail, replyToName, subject, ht
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap Contact Form', email: 'alerts@tingletap.com' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap Contact Form', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to, name: toName }],
       replyTo:     { email: replyToEmail, name: replyToName },
       subject,

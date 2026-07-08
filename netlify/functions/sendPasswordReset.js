@@ -123,7 +123,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -228,7 +228,7 @@ export const handler = async (event) => {
           to:      email,
           subject: 'Reset Your TingleTap Password',
           html:    buildResetHtml(displayName, email, resetUrl),
-          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
         });
         console.log('[sendPasswordReset] ✓ Branded email sent via Brevo to:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };

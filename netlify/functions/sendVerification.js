@@ -103,7 +103,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -181,7 +181,7 @@ export const handler = async (event) => {
           to:      email,
           subject: 'Verify Your TingleTap Email Address',
           html:    buildVerifyHtml(displayName, email, verifyUrl),
-          text:    `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team\nalerts@tingletap.com`,
+          text:    `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
         });
         console.log('[sendVerification] ✓ Branded email sent via Brevo');
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };

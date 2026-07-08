@@ -1,7 +1,10 @@
 // Brevo transactional email service for Netlify Functions
 // Env var: BREVO_API_KEY
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
-const DEFAULT_SENDER = { name: 'TingleTap', email: 'alerts@tingletap.com' };
+const DEFAULT_SENDER = () => ({
+  name:  process.env.BREVO_SENDER_NAME  || 'TingleTap',
+  email: process.env.BREVO_SENDER_EMAIL || '',
+});
 
 /**
  * Send a transactional email via Brevo REST API.
@@ -19,7 +22,7 @@ export async function sendEmailWithTemplate({ to, subject, htmlContent, textCont
   if (!apiKey) throw new Error('[emailService] BREVO_API_KEY not set');
 
   const payload = {
-    sender:      sender  || DEFAULT_SENDER,
+    sender:      sender  || DEFAULT_SENDER(),
     to,
     subject,
     htmlContent,

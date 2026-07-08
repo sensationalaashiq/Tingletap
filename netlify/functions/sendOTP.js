@@ -56,7 +56,7 @@ function buildOTPHtml(name, otp) {
     <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.2),transparent);margin:24px 0 20px;"></div>
     <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background:linear-gradient(135deg,#faf8ff,#f3effe);border:1px solid rgba(139,92,246,.16);border-radius:14px;overflow:hidden;">
       <tr><td style="width:4px;padding:0;background:linear-gradient(180deg,#6d28d9,#c084fc);"></td>
-      <td style="padding:16px 18px;"><div style="font-size:15px;font-weight:800;color:#4c1d95;">TingleTap</div><div style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:2px;">alerts@tingletap.com</div></td>
+      <td style="padding:16px 18px;"><div style="font-size:15px;font-weight:800;color:#4c1d95;">TingleTap</div><div style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:2px;">${process.env.BREVO_SENDER_EMAIL || ''}</div></td>
       <td style="padding-right:14px;"><svg class="heart" width="22" height="22" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg></td>
       </tr>
     </table>
@@ -93,7 +93,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,

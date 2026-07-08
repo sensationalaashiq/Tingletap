@@ -11,10 +11,10 @@ export const handler = async (event) => {
   if (!to)  return { statusCode: 400, headers: h, body: JSON.stringify({ error: 'Add ?to=your@email.com in URL' }) };
 
   const payload = {
-    sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+    sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
     to:          [{ email: to }],
     subject:     'TingleTap — Direct Email Test',
-    htmlContent: '<h2 style="color:#7c3aed">TingleTap Email Test</h2><p>Agar yeh email aayi hai toh Brevo working hai!</p><p>Sent from: alerts@tingletap.com</p>',
+    htmlContent: `<h2 style="color:#7c3aed">TingleTap Email Test</h2><p>Agar yeh email aayi hai toh Brevo working hai!</p><p>Sent from: ${process.env.BREVO_SENDER_EMAIL || 'configured sender'}</p>`,
     textContent: 'TingleTap email test working! Brevo is configured correctly.',
   };
 

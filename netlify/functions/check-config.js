@@ -69,8 +69,9 @@ export const handler = async (event) => {
           active: s.active,
         }));
         const activeEmails = results.verified_senders.filter(s => s.active).map(s => s.email);
-        if (!activeEmails.includes('alerts@tingletap.com')) {
-          errors.push('alerts@tingletap.com is NOT in active senders — emails will be rejected by Brevo');
+        const senderEmail = process.env.BREVO_SENDER_EMAIL || '';
+        if (senderEmail && !activeEmails.includes(senderEmail)) {
+          errors.push(`${senderEmail} is NOT in active senders — emails will be rejected by Brevo`);
         }
       } else {
         const e = await r.json().catch(() => ({}));
@@ -160,11 +161,11 @@ export const handler = async (event) => {
           method:  'POST',
           headers: { 'api-key': brevoKey, 'content-type': 'application/json' },
           body: JSON.stringify({
-            sender:      { name: 'TingleTap', email: 'alerts@tingletap.com' },
+            sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
             to:          [{ email: testEmail }],
             subject:     '[TingleTap] Email Config Test',
-            htmlContent: '<h2 style="color:#7c3aed">TingleTap Email Working!</h2><p>If you see this, Brevo + alerts@tingletap.com is configured correctly.</p>',
-            textContent: 'TingleTap Email Working! Brevo + alerts@tingletap.com is configured correctly.',
+            htmlContent: `<h2 style="color:#7c3aed">TingleTap Email Working!</h2><p>If you see this, Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.</p>`,
+            textContent: `TingleTap Email Working! Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.`,
           }),
         });
         if (res.ok) {

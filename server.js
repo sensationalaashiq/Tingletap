@@ -405,7 +405,7 @@ function _rateLimit(key, max, windowMs) {
 async function _sendViaBrevo({ to, subject, html, text, sender, replyTo, tags = [] }) {
   if (!BREVO_API_KEY) throw new Error('BREVO_API_KEY not set');
   const payload = {
-    sender:      sender || { name: 'TingleTap', email: 'alerts@tingletap.com' },
+    sender:      sender || { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
     to:          Array.isArray(to) ? to : [{ email: to }],
     subject,
     htmlContent: html,
@@ -724,7 +724,7 @@ app.post('/api/contact', async (req, res) => {
   // Send Brevo notification email to owner inbox
   try {
     await _sendViaBrevo({
-      sender:  { name: 'TingleTap', email: 'alerts@tingletap.com' },
+      sender:  { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:      [{ email: target.toEmail, name: target.toName }],
       replyTo: { email, name },
       subject: `[Contact · ${route === 'administration' ? 'Admin' : 'Support'}] ${subject}`,
