@@ -29,7 +29,7 @@
 # HEADERS — Security + Performance + SEO
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Security + internationalisation headers for ALL pages
+# Security + performance + internationalisation headers for ALL pages
 [[headers]]
   for = "/*"
   [headers.values]
@@ -39,10 +39,16 @@
     Referrer-Policy            = "strict-origin-when-cross-origin"
     Permissions-Policy         = "camera=(self), microphone=(self), geolocation=(), payment=()"
     Strict-Transport-Security  = "max-age=31536000; includeSubDomains; preload"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
     # Tell CDNs/proxies to serve different cached versions per language preference
     Vary                       = "Accept-Language"
     # Primary content language — India English; app also serves English globally
     Content-Language           = "en-IN, en, hi"
+    # Enable browser DNS prefetching (speeds up third-party resource loading)
+    X-DNS-Prefetch-Control     = "on"
+    # HTTP Early Hints / preconnect — browser starts TCP+TLS before HTML is parsed
+    # Covers Google Fonts, Firebase Auth, Firestore, Firebase Storage
+    Link                       = "<https://fonts.googleapis.com>; rel=preconnect, <https://fonts.gstatic.com>; rel=preconnect; crossorigin, <https://firestore.googleapis.com>; rel=preconnect; crossorigin, <https://identitytoolkit.googleapis.com>; rel=preconnect; crossorigin, <https://securetoken.googleapis.com>; rel=preconnect; crossorigin, <https://firebasestorage.googleapis.com>; rel=preconnect; crossorigin, <https://www.googleapis.com>; rel=preconnect; crossorigin"
 
 # Cache: Vite hashed assets (JS/CSS bundles) — immutable 1 year
 [[headers]]

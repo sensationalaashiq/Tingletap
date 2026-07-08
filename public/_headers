@@ -1,0 +1,86 @@
+## ══════════════════════════════════════════════════════════════════════════
+## TingleTap — Cloudflare Pages / Generic CDN Headers
+## Compatible with: Cloudflare Pages, Vercel, GitHub Pages (via CF proxy),
+##                  any host that supports _headers file convention.
+## Netlify uses netlify.toml [[headers]] — this file is a portable fallback.
+## ══════════════════════════════════════════════════════════════════════════
+
+## ── ALL ROUTES: Security + Performance ─────────────────────────────────────
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-XSS-Protection: 1; mode=block
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Vary: Accept-Language
+  Content-Language: en-IN, en, hi
+  X-DNS-Prefetch-Control: on
+  Link: <https://fonts.googleapis.com>; rel=preconnect, <https://fonts.gstatic.com>; rel=preconnect; crossorigin, <https://firestore.googleapis.com>; rel=preconnect; crossorigin, <https://identitytoolkit.googleapis.com>; rel=preconnect; crossorigin, <https://securetoken.googleapis.com>; rel=preconnect; crossorigin, <https://firebasestorage.googleapis.com>; rel=preconnect; crossorigin, <https://www.googleapis.com>; rel=preconnect; crossorigin
+
+## ── HTML PAGES: Never cache (SPA — always fetch fresh) ────────────────────
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+## ── SERVICE WORKER: Never cache ────────────────────────────────────────────
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+
+## ── VITE HASHED ASSETS (JS/CSS): Immutable 1 year ─────────────────────────
+## Vite appends a content hash (e.g. main-Bq8iEtkE.js) — safe to cache forever
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+## ── FONTS: Immutable 1 year ────────────────────────────────────────────────
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+/*.ttf
+  Cache-Control: public, max-age=31536000, immutable
+
+## ── IMAGES: 30 days + stale-while-revalidate ──────────────────────────────
+/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.jpeg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.svg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.gif
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.avif
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/*.ico
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+## ── MANIFEST + OPENSEARCH: 1 day with revalidation ───────────────────────
+/manifest.json
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: application/manifest+json; charset=utf-8
+
+/opensearch.xml
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: application/opensearchdescription+xml; charset=utf-8
+
+## ── SITEMAP: 24 hours ──────────────────────────────────────────────────────
+/sitemap.xml
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+  Content-Type: application/xml; charset=utf-8
+
+## ── ROBOTS.TXT: 24 hours ───────────────────────────────────────────────────
+/robots.txt
+  Cache-Control: public, max-age=86400
+  Content-Type: text/plain; charset=utf-8
+
+## ── NETLIFY FUNCTIONS / API: Never cache ──────────────────────────────────
+/.netlify/functions/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache

@@ -166,18 +166,39 @@
 
     <!-- ══════════════════════════════════════════════════════════
          Performance — Preconnect & DNS Prefetch
+         Tier 1 — preconnect: full TCP+TLS+HTTP negotiation saved
+         Tier 2 — dns-prefetch: DNS lookup only (lower priority origins)
     ══════════════════════════════════════════════════════════ -->
+
+    <!-- Google Fonts (render-critical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
-    <link rel="dns-prefetch" href="https://firebase.googleapis.com" />
-    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+
+    <!-- Firebase — all SDK endpoints used at startup -->
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://firebase.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
+
+    <!-- Firebase RTDB — dns-prefetch (subdomain, preconnect would be wasted) -->
     <link rel="dns-prefetch" href="https://tingletapofraj-default-rtdb.asia-southeast1.firebasedatabase.app" />
+
+    <!-- Secondary services — dns-prefetch -->
     <link rel="dns-prefetch" href="https://randomuser.me" />
     <link rel="dns-prefetch" href="https://api.giphy.com" />
+    <link rel="dns-prefetch" href="https://api.agora.io" />
+    <link rel="dns-prefetch" href="https://api.abstractapi.com" />
+    <link rel="dns-prefetch" href="https://api.emailjs.com" />
+    <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com" />
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
 
-    <!-- Preload critical logo image (LCP element) -->
-    <link rel="preload" as="image" href="/tingletap-logo.jpg" />
+    <!-- Preload LCP element (logo — above-the-fold on all pages) -->
+    <link rel="preload" as="image" href="/tingletap-logo.jpg" fetchpriority="high" />
+
+    <!-- Preload Google Fonts stylesheet (non-blocking via media trick) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;500;600;700&family=Allura&family=Pacifico&family=Satisfy&family=Courgette&family=Mr+De+Haviland&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;500;600;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Shadows+Into+Light&display=swap" />
 
     <!-- ══════════════════════════════════════════════════════════
          Open Graph (Facebook, WhatsApp, Telegram, Discord)
