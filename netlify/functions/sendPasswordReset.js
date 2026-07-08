@@ -1,7 +1,10 @@
 // Standalone password reset sender — no shared imports, no file system, HTML inline.
 import admin from 'firebase-admin';
 
-const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyAp6KtSg_7kbGwyffC7sFJxuuxB-wwPj-w';
+// FIREBASE_WEB_API_KEY is the Firebase Web API key (same value as VITE_FIREBASE_API_KEY).
+// Set it as a Netlify environment variable; VITE_FIREBASE_API_KEY is used as fallback
+// since it is already present in the Netlify build environment.
+const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY;
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',

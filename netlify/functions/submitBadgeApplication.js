@@ -15,7 +15,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
+const PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 function resp(data, status = 200) {

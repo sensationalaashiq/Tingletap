@@ -6,7 +6,7 @@ import admin   from 'firebase-admin';
 
 const app  = express();
 const PORT = 5001;
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 // ── Optional Firebase Admin init (needs FIREBASE_PROJECT_ID / CLIENT_EMAIL / PRIVATE_KEY) ──

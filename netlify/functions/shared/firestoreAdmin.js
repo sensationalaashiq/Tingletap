@@ -6,7 +6,7 @@
 
 import admin from 'firebase-admin';
 
-const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tingletapofraj';
+const PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 // ─── Firebase Admin (optional, needed for server-initiated writes) ─────────────
