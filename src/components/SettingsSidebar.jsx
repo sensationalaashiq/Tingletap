@@ -13,6 +13,7 @@ import ChangeUsernameModal from './ChangeUsernameModal';
 import WarningAnnouncementModal from './WarningAnnouncementModal';
 import WarningAnnouncementManager from './WarningAnnouncementManager';
 import FeedbackPage from './FeedbackPage';
+import BadgeApplicationTab from './badge/BadgeApplicationTab';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 
@@ -3413,6 +3414,17 @@ const SettingsSidebar = ({
                     </div>
                 );
 
+            case 'badge-apply': {
+                const isGuest = !loggedInUserProfile || loggedInUserProfile.role === 'guest' || auth.currentUser?.isAnonymous;
+                const hasVerifiedBadge = loggedInUserProfile?.badge === 'verified';
+                if (isGuest || hasVerifiedBadge) return null;
+                return (
+                    <div className="settings-tab-content">
+                        <BadgeApplicationTab loggedInUserProfile={loggedInUserProfile} />
+                    </div>
+                );
+            }
+
             case 'feedback':
                 return (
                     <div className="settings-tab-content">
@@ -4194,6 +4206,27 @@ const SettingsSidebar = ({
                             </svg>
                             <span>Feedback</span>
                         </button>
+
+                        {/* Badge Apply tab — visible to registered users without verified badge */}
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'verified' && (
+                            <button
+                                className={`settings-tab ${activeTab === 'badge-apply' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('badge-apply')}
+                                title="Apply for Verified Badge"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                                    <defs>
+                                        <linearGradient id="badge_tab_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor={activeTab === 'badge-apply' ? '#ffffff' : '#8b5cf6'}/>
+                                            <stop offset="100%" stopColor={activeTab === 'badge-apply' ? '#ffffff' : '#a855f7'}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M9 12l2 2 4-4" stroke="url(#badge_tab_g)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z" stroke="url(#badge_tab_g)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                <span>Verify</span>
+                            </button>
+                        )}
 
                         {/* TingleBot tab — owner only */}
                         {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && (

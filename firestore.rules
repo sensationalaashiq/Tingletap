@@ -1135,6 +1135,24 @@ service cloud.firestore {
     }
 
     // ================================================================
+    // BADGE APPLICATIONS
+    // Users write/read their own doc; owner and admin read all.
+    // ================================================================
+
+    match /badgeApplications/{uid} {
+      // Applicant can create or overwrite their own document only
+      allow create, update: if isAuthenticated()
+                            && request.auth.uid == uid
+                            && !isGuest();
+
+      // Applicant reads their own document
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+
+      // Owner and admin have full access (for review dashboard)
+      allow read, write: if isOwner() || isAdmin();
+    }
+
+    // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.
     // This prevents accidental exposure of new collections.

@@ -29,3 +29,4 @@
 - [Owner Email Center architecture](owner-email-center.md) — ownerEmails Firestore collection; ownerInbox field gates per-owner inbox; 3 Netlify functions: contact.js (form→inbox), email-action.js (reply/forward), receive-webhook.js (Brevo inbound); OwnerEmailCenter.jsx is Gmail-like 3-panel rebuild at /owner/email-center
 - [Netlify email functions](netlify-email-functions.md) — templateLoader import.meta.url undefined in esbuild; emailService.js doesn't use templates; REST fallbacks for sendPasswordReset/sendVerification; check-config diagnostic URL
 - [VPN Detection System](vpn-detection-system.md) — server-side Abstract API proxy; POST logs blocked users to securityLogs; 45-min cache; is_hosting via org heuristics
+- [Badge Verification System](badge-verification-system.md) — female STEPS_FEMALE has no 'upload' step (auto-submit); MIME codec-stripped server-side; fsPatch uses updateMask; key ownership enforced

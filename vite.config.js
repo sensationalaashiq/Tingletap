@@ -132,6 +132,26 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: () => '/api/sendVerification',
       },
+      '/.netlify/functions/getUploadUrl': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/getUploadUrl',
+      },
+      '/.netlify/functions/submitBadgeApplication': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/submitBadgeApplication',
+      },
+      '/.netlify/functions/generateSignedMediaUrl': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/generateSignedMediaUrl',
+      },
+      '/.netlify/functions/reviewBadgeApplication': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/reviewBadgeApplication',
+      },
     },
   },
 })

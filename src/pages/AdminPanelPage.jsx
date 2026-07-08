@@ -20,6 +20,8 @@ import { Badges } from '../data/Badges.jsx';
 import RoyalTrustBadge from '../components/RoyalTrustBadge';
 import { TRUST_RANKS, getRankFromScore, updateTrustScore } from '../utils/trustSystem';
 import { pt } from '../utils/premiumToast';
+import BadgeVerificationPanel from '../components/admin/BadgeVerificationPanel';
+import '../components/admin/BadgeVerificationPanel.css';
 import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
 
@@ -1982,6 +1984,18 @@ const AdminPanelPage = () => {
                     <path fill={c} d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8H4z"/>
                     <circle cx="19" cy="7" r="2.5" fill={c} opacity="0.6"/>
                     <path fill={c} d="M16.5 16c.5-1 1.5-1.8 2.5-2s2.1.1 3 .8c-.5.7-1.4 1.2-2 1.2H16.5z" opacity="0.6"/>
+                  </>
+                )
+              },
+              {
+                id: 'badge-verify', label: 'Badges',
+                iconColor: '#8b5cf6',
+                renderIcon: (c) => (
+                  <>
+                    <path fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                      d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z"/>
+                    <path fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                      d="M9 12l2 2 4-4"/>
                   </>
                 )
               }
@@ -4196,6 +4210,11 @@ const AdminPanelPage = () => {
 
           {/* ── Visitors Tab ── */}
           {activeTab === 'visitors' && <AdminVisitorsPanel />}
+
+          {/* ── Badge Verification Tab ── */}
+          {activeTab === 'badge-verify' && (
+            <BadgeVerificationPanel currentUserProfile={currentUserProfile} />
+          )}
 
         </div>
       </div>
