@@ -2957,24 +2957,45 @@ const AdminPanelPage = () => {
                           </span>
                           <span className="luxury-ip-by">by {ipBan.bannedBy}</span>
                         </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await IPBanSystem.unbanIP(ipBan.ip);
-                              pt.success(`IP ${ipBan.ip} unbanned successfully.`);
-                            } catch (e) {
-                              pt.error(`Failed to unban: ${e.message}`);
-                            }
-                          }}
-                          style={{
-                            marginTop: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700,
-                            background: 'rgba(16,185,129,0.1)', color: '#059669',
-                            border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
-                            cursor: 'pointer', alignSelf: 'flex-start'
-                          }}
-                        >
-                          Unban IP
-                        </button>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await IPBanSystem.unbanIP(ipBan.ip);
+                                pt.success(`IP ${ipBan.ip} unbanned successfully.`);
+                              } catch (e) {
+                                pt.error(`Failed to unban: ${e.message}`);
+                              }
+                            }}
+                            style={{
+                              padding: '3px 10px', fontSize: 11, fontWeight: 700,
+                              background: 'rgba(16,185,129,0.1)', color: '#059669',
+                              border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Unban IP
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm(`Delete ban record for ${ipBan.ip}? This will permanently remove it from the database.`)) return;
+                              try {
+                                await deleteDoc(doc(db, 'bannedIPs', ipBan.id));
+                                pt.success(`Ban record for ${ipBan.ip} deleted.`);
+                              } catch (e) {
+                                pt.error(`Failed to delete: ${e.message}`);
+                              }
+                            }}
+                            style={{
+                              padding: '3px 10px', fontSize: 11, fontWeight: 700,
+                              background: 'rgba(244,63,94,0.1)', color: '#e11d48',
+                              border: '1px solid rgba(244,63,94,0.3)', borderRadius: 6,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            🗑 Delete Record
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

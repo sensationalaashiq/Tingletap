@@ -15,7 +15,7 @@ import {
 import { getSignedMediaUrl, reviewApplication } from '../../services/r2StorageService';
 import { pt } from '../../utils/premiumToast';
 import { db } from '../../firebase/config';
-import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import './BadgeVerificationPanel.css';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ const CloseIcon   = () => <svg viewBox="0 0 24 24" fill="none" width="18" height
 const RefreshIcon = () => <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M23 4v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const CheckIcon   = () => <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const ClockIcon   = () => <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const TrashIcon   = () => <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 
 const STATUS_BADGE = {
   pending:           { label: 'Pending',     bg: '#fef3c7', color: '#92400e' },
@@ -82,6 +83,7 @@ function ConfirmDialog({ action, applicant, notes, onNotesChange, onConfirm, onC
     approve:          { title: 'Approve Badge',         btn: 'Approve',    cls: 'bvp-btn--green' },
     reject:           { title: 'Reject Application',    btn: 'Reject',     cls: 'bvp-btn--danger' },
     request_resubmit: { title: 'Request Resubmission',  btn: 'Send',       cls: 'bvp-btn--primary' },
+    delete:           { title: 'Delete Application',    btn: 'Delete',     cls: 'bvp-btn--danger' },
   }[action] || {};
 
   return (
@@ -523,6 +525,13 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
           </button>
         </div>
       )}
+
+      {/* Delete — always visible for all statuses */}
+      <div className="bvp-action-row" style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border-color, rgba(0,0,0,0.08))' }}>
+        <button className="bvp-btn bvp-btn--danger" style={{ opacity: 0.85 }} onClick={() => onAction('delete')}>
+          <TrashIcon /> Delete Request
+        </button>
+      </div>
     </div>
   );
 }
@@ -614,6 +623,17 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
     }
     setActionLoading(true);
     try {
+      // Delete: remove the Firestore document entirely
+      if (confirmAction === 'delete') {
+        await deleteDoc(doc(db, 'badgeApplications', selectedApp.uid));
+        pt.success('Application deleted successfully.');
+        invalidateCache();
+        setConfirmAction(null);
+        setSelectedApp(null);
+        loadApps(true);
+        return;
+      }
+
       await reviewApplication(selectedApp.uid, confirmAction, reviewNotes);
 
       // On resubmit: send TingleBot DM to the user (same pattern as Feedback & Complaints)
