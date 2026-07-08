@@ -110,9 +110,10 @@ const StylishFontPopup = React.memo(({
       { name: 'Open Sans', value: 'Open Sans, sans-serif' },
       { name: 'Lato', value: 'Lato, sans-serif' },
       { name: 'Montserrat', value: 'Montserrat, sans-serif' },
-      { name: 'Source Sans Pro', value: 'Source Sans Pro, sans-serif' },
+      { name: 'Source Sans Pro', value: "'Source Sans 3', sans-serif" },
       { name: 'Raleway', value: 'Raleway, sans-serif' },
-      { name: 'Ubuntu', value: 'Ubuntu, sans-serif' }
+      { name: 'Ubuntu', value: 'Ubuntu, sans-serif' },
+      { name: 'Forte', value: "'Forte', 'Pinyon Script', cursive" }
     ];
 
     if (isGuest) return basicFonts.slice(0, 3);

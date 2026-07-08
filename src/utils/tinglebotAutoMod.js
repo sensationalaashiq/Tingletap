@@ -991,8 +991,25 @@ const CASUAL_TOLERANT_WORDS = new Set([
     // ADULT_AMBIGUOUS_FAMILY_ABBREVS gates these in isAlwaysProtectedContent so they
     // are still strictly enforced when paired with explicit family-targeting phrases.
     'bsdk','bsdc',
+    // Family-abuse root words — added so applyGlobalContextTolerance can gate them on @mention only.
+    // Single-word entries from FAMILY_ABUSE_ROOTS (multi-word entries handled by the phrase scan).
+    'madarchod','madarchode','madarchodi','madarchot',
+    'maderchod','madrchod','madarjaat','madrjat','mdrchd',
+    'behenchod','bhenchod','behnchod','bhainchod','bnchd',
+    'bhosdike','bhosadike','bhosdiwala','bhosdiwale','bhosdiwali','bhosad','bhosdi',
+    'bhosdya','bhosdich','maaki',
+    'motherfucker','motherf*cker','muthafucker','mfkr',
     // Consensual-adult vocabulary (allowed unless minors/coercion/threat/non-consent involved)
-    'sex','kiss','boobs','tits','titties','boobies',
+    'sex','kiss','boobs','tits','titties','boobies','penis','vagina','cock','dick','pussy',
+    // Hindi sex/adult words — allowed in casual/adult chat (adult room already permits; this
+    // ensures general chat leniency for non-targeted, consensual adult conversation)
+    'chod','chodo','choda','chodi','chude','chudai','chuda','chudi','chudakkad','chodna',
+    'chuchi','choochiyan','chuchiya',   // breasts (casual/adult)
+    'chup','chupkar','chupkaro',        // "shut up" — very common casual expression
+    'gandmada','gandmade',              // casual variant of gaand
+    'kuta',                             // variant spelling of kutta
+    'randi','rande',                    // only truly harmful when targeted (handled by targeting check)
+    'suar','suwar','suwarr',            // pig — casual desi abuse among friends
     // Devanagari equivalents
     'चुतिया','चूत','गांड','गंड','लंड','कुत्ता','साला','हरामी','पागल','बेवकूफ','कमीना',
 ]);
@@ -1170,24 +1187,13 @@ const checkCapsAbuse = (text) => {
     return null;
 };
 
-/** Emoji abuse detection (NEW) */
-const checkEmojiAbuse = (text) => {
-    // Count abuse emojis present
-    let abuseCount = 0;
-    for (const e of ABUSE_EMOJIS) {
-        if (text.includes(e)) abuseCount++;
-    }
-    if (abuseCount >= 2) return { type:'abuse', severity:'medium', label:'Abusive emoji usage', score: 1.5 };
-    if (text.includes('🖕')) return { type:'abuse', severity:'medium', label:'Abusive gesture', score: 2.0 };
-
-    // Explicit emoji combos
-    for (const [a, b] of EXPLICIT_EMOJI_COMBOS) {
-        if (text.includes(a) && text.includes(b)) {
-            return { type:'explicit', severity:'medium', label:'Explicit emoji content', score: 1.5 };
-        }
-    }
-    return null;
-};
+/**
+ * Emoji abuse detection — DISABLED.
+ * All emojis are freely usable by users. Emoji spam (flood/repeat) is still
+ * handled separately by the spam/flood detector. Individual emoji use is never restricted.
+ */
+// eslint-disable-next-line no-unused-vars
+const checkEmojiAbuse = (_text) => null;
 
 /* ════════════════════════════════════════════════════════════════════════════
    §G2  ROOM-AWARE HELPER FUNCTIONS
@@ -1201,6 +1207,15 @@ const checkEmojiAbuse = (text) => {
  */
 const hasTargetingContext = (text) =>
     TARGETING_INDICATORS_RX.some(rx => rx.test(text));
+
+/**
+ * hasMentionTag(text)
+ * Returns true ONLY when the message contains a direct @username mention.
+ * Used specifically for family-abuse enforcement — per policy, family-abuse
+ * words are only actioned when a user is explicitly @tagged, not for
+ * possessive phrases or pronoun-insult constructions.
+ */
+const hasMentionTag = (text) => /@[a-z0-9_]{2,}/i.test(text);
 
 /**
  * isAdultRoomProtected(text, hit)
@@ -1245,7 +1260,13 @@ const isAlwaysProtectedContent = (text, hit) => {
         const skipFamilyRootCheck = ADULT_AMBIGUOUS_FAMILY_ABBREVS.has(matchedLower)
             && !FAMILY_TARGETING_RX.test(text);
 
-        if (!skipFamilyRootCheck && FAMILY_ABUSE_ROOTS.has(matchedLower)) return true;
+        if (!skipFamilyRootCheck && FAMILY_ABUSE_ROOTS.has(matchedLower)) {
+            // Family abuse words are only enforced when the sender @mentions a specific user.
+            // Per policy: "Tags wale abusing hi Moderate hone chahiye" — only @tagged abuse is actioned.
+            // Possessive phrases / pronoun constructs alone do not trigger enforcement here.
+            if (hasMentionTag(text)) return true;
+            return false;
+        }
         if (MINOR_RELATED_WORDS.has(matchedLower)) return true;
     }
 
@@ -1254,12 +1275,14 @@ const isAlwaysProtectedContent = (text, hit) => {
     // ensuring that "mf [incest phrase]" or "mfkr [minor reference]" is still enforced.
     if (ADULT_PROTECTED_RX.some(rx => rx.test(text))) return true;
 
-    // 5. Multi-word family abuse — phrase hits don't always set hit.matched to the full phrase.
-    // Re-scan the raw text against every multi-word FAMILY_ABUSE_ROOTS entry regardless of
-    // what the initial matched token was, so mixed messages are never missed.
-    const lower = text.toLowerCase();
-    for (const root of FAMILY_ABUSE_ROOTS) {
-        if (root.includes(' ') && lower.includes(root)) return true;
+    // 5. Multi-word family abuse — only enforce when the message contains an @mention.
+    // Without a direct @tag, multi-word family abuse phrases are treated as general
+    // expressions and are not always-protected (same policy as single-word family roots).
+    if (hasMentionTag(text)) {
+        const lower = text.toLowerCase();
+        for (const root of FAMILY_ABUSE_ROOTS) {
+            if (root.includes(' ') && lower.includes(root)) return true;
+        }
     }
 
     return false;
@@ -1305,6 +1328,12 @@ const applyGlobalContextTolerance = (text, hit) => {
 
     const matchedLower = (hit.matched || '').toLowerCase();
     if (CASUAL_TOLERANT_WORDS.has(matchedLower)) {
+        // Family-abuse root words: per policy, only enforced when the user directly @tags someone.
+        // Possessive phrases or pronoun constructs alone do not trigger enforcement for these.
+        if (FAMILY_ABUSE_ROOTS.has(matchedLower)) {
+            if (hasMentionTag(text)) return hit; // @mention present — enforce
+            return null; // no @mention — treat as general expression, no action
+        }
         if (hasTargetingContext(text)) return hit; // targeted abuse — still enforced
         return null; // casual / friendly banter / consensual adult chat — no action
     }

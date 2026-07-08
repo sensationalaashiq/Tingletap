@@ -1571,26 +1571,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     // Helper function for private message avatar cache busting - DEFINE FIRST
     const getPrivateMessageAvatarUrl = useCallback((user) => {
-        const timestamp = Date.now();
-        const randomSeed = Math.random().toString(36).substring(7);
-        
-        if (user.photoURL) {
-            const separator = user.photoURL.includes('?') ? '&' : '?';
-            return `${user.photoURL}${separator}t=${timestamp}&v=${randomSeed}&pm=true`;
+        if (!user) return getDefaultAvatarUrl('default', 'male');
+        // Use uploaded photo if available; skip randomuser.me URLs (those are auto-generated defaults)
+        if (user.photoURL && !user.photoURL.includes('randomuser.me')) {
+            return user.photoURL;
         }
-        
-        const gender = user.gender?.toLowerCase() === 'female' ? 'female' : 'male';
-        return `${getDefaultAvatarUrl(user.uid, user.gender)}`;
+        return getDefaultAvatarUrl(user.uid, user.gender);
     }, []);
 
     // Helper function to update user avatars in real-time with comprehensive private message support
     const updateUserAvatarInHomePage = useCallback((userId, userData) => {
-        const avatarTimestamp = Date.now();
-        const randomSeed = Math.random().toString(36).substring(7);
-        
-        const newAvatarUrl = userData.photoURL ? 
-            `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}&v=${randomSeed}&cb=${Date.now()}` :
-            `${getDefaultAvatarUrl(userId, userData.gender)}`;
+        const newAvatarUrl = (userData.photoURL && !userData.photoURL.includes('randomuser.me'))
+            ? userData.photoURL
+            : getDefaultAvatarUrl(userId, userData.gender);
 
         // Comprehensive avatar selectors including all private message locations
         const avatarSelectors = [
@@ -1664,9 +1657,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                         avatar.style.opacity = '1';
                     };
                     
-                    // Add data attributes for tracking
-                    avatar.setAttribute('data-last-updated', avatarTimestamp.toString());
-                    avatar.setAttribute('data-user-cache-id', `${userId}-${randomSeed}`);
+                    // Add data attribute for tracking
+                    avatar.setAttribute('data-last-updated', Date.now().toString());
                 }
             });
         });
@@ -1869,10 +1861,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                 ));
 
                 // Update avatars in real-time for this specific user
-                const avatarTimestamp = Date.now();
-                const newAvatarUrl = updatedUserData.photoURL ? 
-                    `${updatedUserData.photoURL}${updatedUserData.photoURL.includes('?') ? '&' : '?'}t=${avatarTimestamp}` :
-                    `${getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender)}`;
+                const newAvatarUrl = (updatedUserData.photoURL && !updatedUserData.photoURL.includes('randomuser.me'))
+                    ? updatedUserData.photoURL
+                    : getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender);
 
                 // Update all avatars for this user in chat messages
                 const messageAvatars = document.querySelectorAll(`[data-message-uid="${updatedUserData.uid}"] .message-avatar`);
@@ -2154,7 +2145,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                         // Dispatch update event for avatar / display-name refresh
                         const newAvatarUrl = userData.photoURL
-                            ? `${userData.photoURL}${userData.photoURL.includes('?') ? '&' : '?'}t=${now}`
+                            ? (userData.photoURL && !userData.photoURL.includes('randomuser.me') ? userData.photoURL : getDefaultAvatarUrl(uid, userData.gender))
                             : getDefaultAvatarUrl(uid, userData.gender);
                         window.dispatchEvent(new CustomEvent('userProfileUpdated', {
                             detail: { userId: uid, userData, newAvatarUrl }
