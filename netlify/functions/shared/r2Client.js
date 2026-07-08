@@ -2,9 +2,15 @@
 // Reusable Cloudflare R2 client (S3-compatible) for badge verification media.
 // Never import this in frontend code — server-side only.
 
-import { S3Client, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  GetObjectCommand,
+  PutBucketCorsCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 function getR2Config() {
   const accountId     = process.env.R2_ACCOUNT_ID;
@@ -33,6 +39,46 @@ export function createR2Client() {
 
 export function getBucketName() {
   return getR2Config().bucket;
+}
+
+// Module-level flag: only attempt CORS setup once per warm function instance.
+// PutBucketCors is idempotent on R2, so calling it multiple times is safe.
+let _corsApplied = false;
+
+/**
+ * Ensure the R2 bucket has CORS rules that allow direct browser PUT uploads.
+ * Without this, XHR PUT to a presigned URL is blocked by the browser (CORS error).
+ * Cloudflare R2 supports PutBucketCors via the S3-compatible API.
+ */
+export async function ensureR2Cors() {
+  if (_corsApplied) return;
+  try {
+    const client = createR2Client();
+    const bucket = getBucketName();
+    await client.send(new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            // Allow browser direct-upload PUT from any origin.
+            // GET/HEAD are needed so presigned download URLs also work.
+            AllowedOrigins: ['*'],
+            AllowedMethods: ['PUT', 'GET', 'HEAD'],
+            AllowedHeaders: ['*'],
+            ExposeHeaders:  ['ETag'],
+            MaxAgeSeconds:  3600,
+          },
+        ],
+      },
+    }));
+    _corsApplied = true;
+    console.log('[r2Client] CORS configured on R2 bucket');
+  } catch (e) {
+    // Don't block the upload if CORS setup fails (bucket may already be configured,
+    // or credentials may lack the s3:PutBucketCors permission).
+    console.warn('[r2Client] CORS setup skipped:', e.message);
+    _corsApplied = true; // Don't retry on error — avoid stalling every request.
+  }
 }
 
 /**

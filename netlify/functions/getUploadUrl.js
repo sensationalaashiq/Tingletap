@@ -2,7 +2,7 @@
 // Returns a presigned PUT URL for uploading verification media directly to Cloudflare R2.
 // Validates the user's Firebase ID token and enforces one-pending-per-user.
 
-import { createPresignedPutUrl } from './shared/r2Client.js';
+import { createPresignedPutUrl, ensureR2Cors } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
 import { randomUUID } from 'crypto';
 
@@ -56,6 +56,10 @@ export const handler = async (event) => {
              : contentType.includes('wav') ? 'wav'
              : 'webm';
   const key = `verifications/${user.uid}/${mediaType}-${uuid}.${ext}`;
+
+  // Ensure R2 bucket has CORS rules that allow direct browser PUT uploads.
+  // Without this the XHR PUT is blocked by the browser before it even reaches R2.
+  await ensureR2Cors();
 
   let uploadUrl;
   try {
