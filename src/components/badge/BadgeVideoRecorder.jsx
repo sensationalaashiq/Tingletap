@@ -1,7 +1,7 @@
 // src/components/badge/BadgeVideoRecorder.jsx
 // 10–15 second selfie video recording with preview, countdown, and camera mirroring.
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { useVideoRecorder } from '../../hooks/useMediaRecorder';
 
 function formatTime(s) {
@@ -39,12 +39,22 @@ export default function BadgeVideoRecorder({ onRecorded, onBack }) {
     }
   }, [blob]);
 
-  // Sync live stream to video element when in preview mode
-  useEffect(() => {
-    if (status === 'preview' && videoRef.current && !blob) {
-      // Handled by requestCamera
+  // requestCamera() calls setStatus('requesting') synchronously, which
+  // unmounts the <video> element (the "Opening camera…" branch renders no
+  // video tag). By the time getUserMedia() resolves and requestCamera
+  // assigns srcObject, it's writing to that now-detached DOM node — the
+  // element that mounts afterwards for 'preview'/'recording' never gets the
+  // stream, so the camera preview looked solid black even after permission
+  // was granted. Re-attach the live stream whenever the video node (re)mounts
+  // or the stream reference changes, using a callback ref so it always
+  // targets whichever node is actually in the DOM.
+  const attachLiveVideo = useCallback((node) => {
+    videoRef.current = node;
+    if (node && stream && !blob && node.srcObject !== stream) {
+      node.srcObject = stream;
+      node.play().catch(() => {});
     }
-  }, [status, blob]);
+  }, [stream, blob]);
 
   if (status === 'requesting') {
     return (
@@ -136,7 +146,7 @@ export default function BadgeVideoRecorder({ onRecorded, onBack }) {
       {/* Camera view */}
       <div className="bv-recorder" style={{ position: 'relative' }}>
         <video
-          ref={videoRef}
+          ref={attachLiveVideo}
           playsInline muted autoPlay
           style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block', transform: 'scaleX(-1)' }}
         />

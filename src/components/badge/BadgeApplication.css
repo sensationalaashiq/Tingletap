@@ -16,7 +16,8 @@
    HERO CARD
 ══════════════════════════════════════════════════════ */
 .bv-hero-card {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c084fc 100%);
+  /* Lighter lavender gradient (was #7c3aed/#a855f7/#c084fc — noticeably deeper purple) */
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 55%, #c4b5fd 100%);
   border-radius: 20px;
   padding: 26px 22px 22px;
   color: #fff !important;
@@ -411,6 +412,7 @@
   align-items: center; gap: 5px;
   position: relative;
   flex: 1;
+  min-width: 0; /* let labels wrap instead of overflowing into the next step */
 }
 .bv-step + .bv-step::before {
   content: '';
@@ -452,10 +454,17 @@
   font-weight: 700;
   color: #b8a8d0;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  /* Reduced letter-spacing + wrapping instead of a fixed 56px box: longer
+     words like "Liveness" overflowed their box and visually ran into the
+     neighboring step's label (e.g. "DECLARATIONIVENESS"). */
+  letter-spacing: 0.02em;
   text-align: center;
-  width: 56px;
-  line-height: 1.3;
+  width: 100%;
+  max-width: 72px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.25;
 }
 .bv-step--active .bv-step-label { color: #7c3aed; }
 .bv-step--done  .bv-step-label  { color: #10b981; }
@@ -471,21 +480,31 @@
   box-shadow: 0 4px 20px rgba(109,40,217,0.07);
 }
 .bv-declaration-header {
-  background: linear-gradient(135deg, #6d28d9, #9333ea);
+  /* Lighter lavender gradient (was a much deeper #6d28d9/#9333ea purple) */
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
   padding: 18px 20px;
   text-align: center;
   color: #fff;
 }
+/* Explicit !important — a global rule (App.css `h3,p,...{color:var(--text-primary)}`)
+   directly targets these tags and otherwise wins over the inherited white from
+   the parent, since inheritance always loses to any matching rule regardless
+   of specificity. That's what made the header text look dark/grey instead of
+   white-on-purple. */
 .bv-declaration-header h3 {
   margin: 0;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.01em;
+  color: #fff !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 .bv-declaration-header p {
   margin: 5px 0 0;
   font-size: 11.5px;
-  opacity: 0.85;
+  color: #fff !important;
+  opacity: 0.92;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 .bv-declaration-body {
   padding: 18px 20px 4px;
@@ -529,11 +548,21 @@
   margin-bottom: 14px;
 }
 .bv-declaration-check input[type="checkbox"] {
-  width: 18px; height: 18px;
-  margin-top: 2px;
-  accent-color: #7c3aed;
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  margin: 2px 0 0 !important;
+  background: #fff !important;
+  border: 2px solid #a78bfa !important;
+  border-radius: 4px !important;
+  accent-color: #7c3aed !important;
   cursor: pointer;
   flex-shrink: 0;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-block !important;
 }
 .bv-declaration-check span {
   font-size: 12px;
@@ -892,9 +921,11 @@
 .bv-btn--primary:hover:not(:disabled)::after { left: 100%; }
 
 .bv-btn--primary {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a855f7 100%) !important;
+  /* Lighter lavender gradient (was #7c3aed/#9333ea/#a855f7) while keeping a
+     premium, high-contrast look for white button text. */
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 60%, #c4b5fd 100%) !important;
   color: #fff !important;
-  box-shadow: 0 5px 18px rgba(109,40,217,0.38), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 5px 18px rgba(139,92,246,0.38), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .bv-btn--primary:hover:not(:disabled) {
   transform: translateY(-2px);

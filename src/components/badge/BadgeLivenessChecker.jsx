@@ -45,27 +45,47 @@ const CheckIcon = () => (
 );
 
 export default function BadgeLivenessChecker({ onPassed, onFailed, onBack }) {
-  const videoRef = useRef(null);
+  const videoRef  = useRef(null);
+  // Holds the live MediaStream. The <video> element only renders once
+  // `status` leaves 'loading'/'idle', so at the moment getUserMedia()
+  // resolves the element may not exist yet (or may have been swapped for a
+  // new DOM node). We re-attach the stream via a callback ref below so it
+  // always lands on whichever node is actually mounted — fixing the
+  // "camera shows solid black even after granting permission" bug.
+  const streamRef = useRef(null);
   const {
     status, challenges, currentChallenge, completed,
     instruction, faceDetected, error,
     startDetection, stopDetection, loadMediaPipe, reset,
   } = useLivenessDetection();
 
+  const attachVideo = useCallback((node) => {
+    videoRef.current = node;
+    if (node && streamRef.current && node.srcObject !== streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(() => {});
+    }
+  }, []);
+
   // Start as soon as component mounts
   useEffect(() => {
-    let stream = null;
+    let cancelled = false;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
           audio: false,
         });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
         }
-        await startDetection(videoRef.current);
+        // Pass the ref OBJECT (not .current) — the video element may still
+        // be unmounted here while the face-detection model downloads; the
+        // hook re-reads ref.current live once detection starts running.
+        await startDetection(videoRef);
       } catch (e) {
         console.error('[BadgeLivenessChecker]', e);
         // Surface camera or permission errors to the UI via onFailed
@@ -79,8 +99,9 @@ export default function BadgeLivenessChecker({ onPassed, onFailed, onBack }) {
     })();
 
     return () => {
+      cancelled = true;
       stopDetection();
-      if (stream) stream.getTracks().forEach(t => t.stop());
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -132,7 +153,7 @@ export default function BadgeLivenessChecker({ onPassed, onFailed, onBack }) {
       {/* Camera feed */}
       <div className="bv-liveness" style={{ borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
         <video
-          ref={videoRef}
+          ref={attachVideo}
           className="bv-liveness-video"
           playsInline muted autoPlay
           style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block', transform: 'scaleX(-1)' }}

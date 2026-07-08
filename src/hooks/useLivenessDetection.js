@@ -57,7 +57,12 @@ export function useLivenessDetection() {
     return () => {
       mountedRef.current = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      landmarkerRef.current?.close().catch(() => {});
+      // NOTE: FaceLandmarker.close() is SYNCHRONOUS (returns void, not a Promise).
+      // Chaining .catch() on it throws "Cannot read properties of undefined
+      // (reading 'catch')" during unmount — this was crashing the app whenever
+      // the badge panel unmounted mid-liveness-check (e.g. closing the sidebar),
+      // leaving the UI stuck. Use try/catch instead.
+      try { landmarkerRef.current?.close(); } catch (_) { /* ignore */ }
     };
   }, []);
 
@@ -83,8 +88,14 @@ export function useLivenessDetection() {
     }
   }, []);
 
-  const startDetection = useCallback(async (videoElement) => {
-    videoRef.current = videoElement;
+  // Accepts a React ref OBJECT (not a raw DOM node). The caller's <video>
+  // element often hasn't mounted yet at call time (it's behind a "loading"
+  // branch while the model downloads), so capturing videoElement.current once
+  // here would freeze forever on `null` and detect() would never start —
+  // the camera looked "black"/frozen even after permission was granted.
+  // By storing the ref object we always read the *live* .current below.
+  const startDetection = useCallback(async (videoRefObject) => {
+    videoRef.current = videoRefObject;
     await loadMediaPipe();
     if (!landmarkerRef.current || !mountedRef.current) return;
 
@@ -101,7 +112,11 @@ export function useLivenessDetection() {
 
     const detect = () => {
       if (!mountedRef.current) return;
-      if (!videoRef.current || videoRef.current.readyState < 2) {
+      // videoRef.current holds the *ref object* passed to startDetection —
+      // dereference it here (live) so we pick up the DOM node whenever it
+      // actually mounts, instead of the stale null captured at call time.
+      const videoEl = videoRef.current?.current;
+      if (!videoEl || videoEl.readyState < 2) {
         rafRef.current = requestAnimationFrame(detect);
         return;
       }
@@ -113,7 +128,7 @@ export function useLivenessDetection() {
       lastStampRef.current = now;
 
       try {
-        const result = landmarkerRef.current.detectForVideo(videoRef.current, now);
+        const result = landmarkerRef.current.detectForVideo(videoEl, now);
         processFrame(result, selected);
       } catch (e) {
         console.warn('[livenessDetect] frame error', e.message);
