@@ -9,6 +9,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP } from '../utils/emailService';
+import { validateSignupEmail } from '../utils/emailValidator';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
@@ -182,9 +183,12 @@ const SignupPage = () => {
   };
 
   const validateEmail = (email) => {
-    const validDomains = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'yahoo.co.in'];
-    const emailDomain = email.split('@')[1]?.toLowerCase();
-    return validDomains.includes(emailDomain);
+    const result = validateSignupEmail(email);
+    if (!result.valid) {
+      setError(result.reason);
+      return false;
+    }
+    return true;
   };
 
   const handleInputChange = (e) => {
@@ -214,7 +218,7 @@ const SignupPage = () => {
       if (!formData.password.trim()) { setError('Please enter a password'); return; }
       if (formData.password.length < 6) { setError('Password must be at least 6 characters long'); return; }
       if (!formData.confirmPassword.trim()) { setError('Please confirm your password'); return; }
-      if (!validateEmail(formData.email)) { setError('Please use a valid email from Gmail, Hotmail, Outlook, or Yahoo'); return; }
+      if (!validateEmail(formData.email)) { return; }
       if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
       const usernameAvail = await checkUsernameAvailability(formData.username.toLowerCase());
       if (!usernameAvail) { setError('This username was just taken. Please choose another.'); return; }

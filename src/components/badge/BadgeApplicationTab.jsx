@@ -205,6 +205,19 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
     })();
   }, []);
 
+  // Live countdown: re-calculate remainingMs every 30 seconds
+  useEffect(() => {
+    const meta = auth.currentUser?.metadata;
+    if (!meta?.creationTime) return;
+    const tick = () => {
+      const ms = msUntil60Days(meta.creationTime);
+      setRemainingMs(ms);
+      setAccountAgeDays(getAccountAgeDays(meta.creationTime));
+    };
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   // ── Age eligibility check (re-evaluated at call time, not just at mount) ───
   const isEligibleToApply = useCallback(() => {
     const g   = gender || loggedInUserProfile?.gender || 'male';
@@ -287,11 +300,12 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
     }
   }, [videoBlob, audioBlob, livenessResult, gender, loggedInUserProfile, accountAgeDays, user]);
 
-  // Auto-submit when all steps are done
+  // Auto-submit when all steps are done (female flow: audio is last step)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (steps.length === 0) return;
     if (step === steps.length) handleSubmit();
-  }, [step, steps.length]);
+  }, [step, steps.length]); // handleSubmit intentionally excluded — batched state update guarantees blobs are current
 
   // ── LOADING ─────────────────────────────────────────────────────────────────
   if (pageState === 'loading') {

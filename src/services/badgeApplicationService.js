@@ -95,6 +95,8 @@ export async function getApplicationsPage(statusFilter = 'all', searchTerm = '',
   let q = collection(db, COLLECTION);
   const constraints = [];
 
+  // A composite index on (status ASC, submittedAt DESC) is defined in firestore.indexes.json.
+  // Both filter strategies therefore use server-side orderBy + cursor pagination.
   if (statusFilter !== 'all') {
     constraints.push(where('status', '==', statusFilter));
   }
@@ -119,7 +121,8 @@ export async function getApplicationsPage(statusFilter = 'all', searchTerm = '',
       })
     : docs;
 
-  const result = { docs: filtered, lastDoc: snap.docs[snap.docs.length - 1] || null, hasMore: snap.docs.length === PAGE_SIZE };
+  const hasMore = snap.docs.length === PAGE_SIZE;
+  const result = { docs: filtered, lastDoc: snap.docs[snap.docs.length - 1] || null, hasMore };
   _cache.set(cacheKey, result);
   return result;
 }
