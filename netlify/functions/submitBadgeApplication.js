@@ -32,22 +32,50 @@ function getClientIP(event) {
   );
 }
 
-// Fetch geo info for IP
+// Fetch geo info for IP — Abstract API first (supports IPv4 + IPv6), fallback to ip-api.com (IPv4 only)
+const IPv4_RE = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+
 async function fetchGeoInfo(ip) {
+  // ── Abstract API (supports IPv4 and IPv6) ────────────────────────────────
+  const abstractKey = process.env.ABSTRACT_API_KEY;
+  if (abstractKey) {
+    try {
+      const url =
+        `https://ipgeolocation.abstractapi.com/v1/?api_key=${encodeURIComponent(abstractKey)}` +
+        `&ip_address=${encodeURIComponent(ip)}&fields=ip_address,city,region,country,timezone,connection`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      if (res.ok) {
+        const d = await res.json();
+        const conn = d.connection || {};
+        return {
+          country:  d.country    || '',
+          region:   d.region     || '',
+          city:     d.city       || '',
+          timezone: d.timezone?.name || '',
+          isp:      conn.isp_name || conn.isp || '',
+          asn:      conn.autonomous_system_number ? String(conn.autonomous_system_number) : '',
+        };
+      }
+    } catch { /* fall through */ }
+  }
+
+  // ── ip-api.com fallback (IPv4 only, free tier) ───────────────────────────
+  if (!IPv4_RE.test(ip)) return {}; // Skip for IPv6 if no Abstract key
   try {
-    const res = await fetch(`https://ip-api.com/json/${ip}?fields=status,country,regionName,city,timezone,isp,org,as`, {
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await fetch(
+      `https://ip-api.com/json/${ip}?fields=status,country,regionName,city,timezone,isp,org,as`,
+      { signal: AbortSignal.timeout(5000) }
+    );
     if (!res.ok) return {};
     const d = await res.json();
     if (d.status !== 'success') return {};
     return {
-      country:  d.country   || '',
-      region:   d.regionName|| '',
-      city:     d.city      || '',
-      timezone: d.timezone  || '',
-      isp:      d.isp       || '',
-      asn:      d.as        || '',
+      country:  d.country    || '',
+      region:   d.regionName || '',
+      city:     d.city       || '',
+      timezone: d.timezone   || '',
+      isp:      d.isp        || '',
+      asn:      d.as         || '',
     };
   } catch { return {}; }
 }

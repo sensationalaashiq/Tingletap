@@ -272,13 +272,49 @@
   color: var(--text-secondary);
 }
 .bvp-btn--green {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
   box-shadow: 0 3px 10px rgba(16,185,129,0.28);
 }
+.bvp-btn--green svg path,
+.bvp-btn--green svg circle,
+.bvp-btn--green svg rect { stroke: #fff !important; }
+
 .bvp-btn--danger {
-  background: linear-gradient(135deg, #f43f5e, #dc2626);
-  color: #fff;
+  background: linear-gradient(135deg, #f43f5e, #dc2626) !important;
+  color: #fff !important;
+}
+.bvp-btn--danger svg path,
+.bvp-btn--danger svg circle { stroke: #fff !important; }
+
+/* Request Resubmission — orange/amber so it's clearly distinct and visible */
+.bvp-btn--resubmit {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #fff !important;
+  box-shadow: 0 3px 10px rgba(245,158,11,0.28);
+}
+.bvp-btn--resubmit svg path,
+.bvp-btn--resubmit svg circle { stroke: #fff !important; }
+.bvp-btn--resubmit:hover:not(:disabled) { box-shadow: 0 5px 16px rgba(245,158,11,0.42); }
+
+/* Media error fallback block */
+.bvp-media-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: rgba(244,63,94,0.06);
+  border: 1px solid rgba(244,63,94,0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.dark-mode .bvp-media-error,
+.dark-theme-variant .bvp-media-error {
+  background: rgba(244,63,94,0.12);
+  border-color: rgba(244,63,94,0.3);
+  color: #fda4af;
 }
 .bvp-icon-btn {
   width: 36px; height: 36px;

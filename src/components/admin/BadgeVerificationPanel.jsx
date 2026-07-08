@@ -14,6 +14,8 @@ import {
 } from '../../services/badgeApplicationService';
 import { getSignedMediaUrl, reviewApplication } from '../../services/r2StorageService';
 import { pt } from '../../utils/premiumToast';
+import { db } from '../../firebase/config';
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import './BadgeVerificationPanel.css';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -131,16 +133,67 @@ function ConfirmDialog({ action, applicant, notes, onNotesChange, onConfirm, onC
   );
 }
 
+// ── Send TingleBot badge resubmission DM ─────────────────────────────────────
+async function sendTinglebotBadgeDM(uid, displayName, notes) {
+  const TINGLEBOT_UID = 'tinglebot_system_official_2024';
+  const conversationId = [TINGLEBOT_UID, uid].sort().join('_');
+  const notesPart = notes?.trim()
+    ? `\n\n📋 Admin Notes:\n${notes.trim()}`
+    : '';
+  await addDoc(collection(db, 'privateMessages'), {
+    senderId: TINGLEBOT_UID,
+    senderName: 'TingleBot',
+    receiverId: uid,
+    participants: [TINGLEBOT_UID, uid],
+    conversationId,
+    text:
+      `🔄 Badge Verification — Resubmission Required\n\nHi ${displayName || 'there'}, your badge verification application requires resubmission. ` +
+      `Please visit Settings → Badge Verification to submit a fresh application.${notesPart}\n\n— TingleTap Admin Team`,
+    isBot: true,
+    isBotNotification: true,
+    botStatusKey: 'badge_resubmit',
+    tinglebotType: 'badge_resubmit',
+    badgeResubmit: true,
+    isRead: false,
+    createdAt: serverTimestamp(),
+  });
+}
+
 // ── Application Detail Panel ───────────────────────────────────────────────────
-function ApplicationDetail({ app, onClose, onAction }) {
+function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
   const [videoUrl, setVideoUrl]   = useState('');
   const [audioUrl, setAudioUrl]   = useState('');
   const [loadingV, setLoadingV]   = useState(false);
   const [loadingA, setLoadingA]   = useState(false);
   const [vidExpiry, setVidExpiry] = useState('');
   const [audExpiry, setAudExpiry] = useState('');
+  const [videoError, setVideoError] = useState(false);
+  const [audioError, setAudioError] = useState(false);
 
-  const fmt = (v) => v ?? '—';
+  // Local geo override — populated when admin clicks Refresh Geo
+  const [geo, setGeo]               = useState({
+    country:  app.country  || '',
+    region:   app.region   || '',
+    city:     app.city     || '',
+    timezone: app.timezone || '',
+    isp:      app.isp      || '',
+    asn:      app.asn      || '',
+  });
+  const [refreshingGeo, setRefreshingGeo] = useState(false);
+
+  // Sync local geo when a different application is opened in the panel
+  useEffect(() => {
+    setGeo({
+      country:  app.country  || '',
+      region:   app.region   || '',
+      city:     app.city     || '',
+      timezone: app.timezone || '',
+      isp:      app.isp      || '',
+      asn:      app.asn      || '',
+    });
+  }, [app.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fmt = (v) => (v && String(v).trim()) ? v : '—';
   const bool = (v) => v ? (
     <span style={{ color: '#f43f5e', fontWeight: 700 }}>Yes</span>
   ) : (
@@ -150,6 +203,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
   const loadVideo = async () => {
     if (!app.videoKey) return;
     setLoadingV(true);
+    setVideoError(false);
     try {
       const url = await getSignedMediaUrl(app.videoKey);
       setVideoUrl(url);
@@ -163,6 +217,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
   const loadAudio = async () => {
     if (!app.audioKey) return;
     setLoadingA(true);
+    setAudioError(false);
     try {
       const url = await getSignedMediaUrl(app.audioKey);
       setAudioUrl(url);
@@ -171,6 +226,42 @@ function ApplicationDetail({ app, onClose, onAction }) {
     } catch (e) {
       pt.error(e.message || 'Failed to load audio');
     } finally { setLoadingA(false); }
+  };
+
+  const refreshGeo = async () => {
+    if (!app.ipAddress) return pt.error('No IP address stored for this application.');
+    setRefreshingGeo(true);
+    try {
+      const res = await fetch(`/.netlify/functions/ip-geo?ip=${encodeURIComponent(app.ipAddress)}`);
+      if (!res.ok) { pt.error('Geo lookup service unavailable.'); return; }
+      const data = await res.json();
+      if (data._error || data.error) {
+        pt.error('Geo lookup unavailable for this IP address.');
+        return;
+      }
+      // Guard: only write if at least one field came back
+      const hasAnyGeo = !!(data.country || data.region || data.city || data.isp);
+      if (!hasAnyGeo) { pt.error('No location data found for this IP.'); return; }
+      const updated = {
+        country:  data.country  || '',
+        region:   data.region   || '',
+        city:     data.city     || '',
+        timezone: data.timezone || '',
+        isp:      data.isp      || '',
+        asn:      data.asn ? String(data.asn) : '',
+      };
+      // Update local display immediately
+      setGeo(updated);
+      // Persist to Firestore
+      await updateDoc(doc(db, 'badgeApplications', app.uid), updated);
+      // Notify parent to refresh selectedApp
+      if (onGeoUpdate) onGeoUpdate(app.uid, updated);
+      pt.success('Location data refreshed!');
+    } catch (e) {
+      pt.error('Failed to refresh geo: ' + e.message);
+    } finally {
+      setRefreshingGeo(false);
+    }
   };
 
   const submittedDate = app.submittedAt?.toDate
@@ -229,18 +320,31 @@ function ApplicationDetail({ app, onClose, onAction }) {
 
         {/* Geo / Network */}
         <div className="bvp-detail-section">
-          <div className="bvp-section-title">
-            <GlobeIcon /> Network &amp; Location
+          <div className="bvp-section-title" style={{ justifyContent: 'space-between' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <GlobeIcon /> Network &amp; Location
+            </span>
+            {app.ipAddress && (
+              <button
+                className="bvp-btn bvp-btn--primary"
+                style={{ padding: '3px 10px', fontSize: 11, marginLeft: 'auto' }}
+                onClick={refreshGeo}
+                disabled={refreshingGeo}
+                title="Re-fetch geo data from IP (useful when location fields are empty)"
+              >
+                {refreshingGeo ? '…' : <><RefreshIcon /> Refresh</>}
+              </button>
+            )}
           </div>
           <table className="bvp-info-table">
             <tbody>
               <tr><td>IP Address</td><td><code style={{ fontSize: 11 }}>{fmt(app.ipAddress)}</code></td></tr>
-              <tr><td>Country</td><td>{fmt(app.country)}</td></tr>
-              <tr><td>Region</td><td>{fmt(app.region)}</td></tr>
-              <tr><td>City</td><td>{fmt(app.city)}</td></tr>
-              <tr><td>Timezone</td><td>{fmt(app.timezone)}</td></tr>
-              <tr><td>ISP</td><td>{fmt(app.isp)}</td></tr>
-              <tr><td>ASN</td><td>{fmt(app.asn)}</td></tr>
+              <tr><td>Country</td><td>{fmt(geo.country)}</td></tr>
+              <tr><td>Region</td><td>{fmt(geo.region)}</td></tr>
+              <tr><td>City</td><td>{fmt(geo.city)}</td></tr>
+              <tr><td>Timezone</td><td>{fmt(geo.timezone)}</td></tr>
+              <tr><td>ISP</td><td>{fmt(geo.isp)}</td></tr>
+              <tr><td>ASN</td><td>{fmt(geo.asn)}</td></tr>
             </tbody>
           </table>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
@@ -300,7 +404,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
 
           {app.videoKey && (
             <div className="bvp-media-block">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                 <VideoIcon />
                 <span style={{ fontWeight: 700, fontSize: 13 }}>Selfie Video</span>
                 {vidExpiry && <span style={{ fontSize: 11, color: '#f59e0b', marginLeft: 'auto' }}>{vidExpiry}</span>}
@@ -313,21 +417,37 @@ function ApplicationDetail({ app, onClose, onAction }) {
                   {loadingV ? '…' : videoUrl ? 'Refresh URL' : 'View Video'}
                 </button>
               </div>
-              {videoUrl && (
+              {videoUrl && !videoError && (
                 <video
                   key={videoUrl}
                   src={videoUrl}
                   controls
+                  playsInline
                   className="bvp-media-player"
                   style={{ width: '100%', borderRadius: 10, background: '#000', maxHeight: 300 }}
+                  onError={() => setVideoError(true)}
                 />
+              )}
+              {videoUrl && videoError && (
+                <div className="bvp-media-error">
+                  <span>⚠️ Video could not be played in browser.</span>
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bvp-btn bvp-btn--primary"
+                    style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}
+                  >
+                    Open Video ↗
+                  </a>
+                </div>
               )}
             </div>
           )}
 
           {app.audioKey && (
             <div className="bvp-media-block" style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                 <AudioIcon />
                 <span style={{ fontWeight: 700, fontSize: 13 }}>Spoken Declaration</span>
                 {audExpiry && <span style={{ fontSize: 11, color: '#f59e0b', marginLeft: 'auto' }}>{audExpiry}</span>}
@@ -340,8 +460,28 @@ function ApplicationDetail({ app, onClose, onAction }) {
                   {loadingA ? '…' : audioUrl ? 'Refresh URL' : 'Play Audio'}
                 </button>
               </div>
-              {audioUrl && (
-                <audio key={audioUrl} src={audioUrl} controls style={{ width: '100%' }} />
+              {audioUrl && !audioError && (
+                <audio
+                  key={audioUrl}
+                  src={audioUrl}
+                  controls
+                  style={{ width: '100%' }}
+                  onError={() => setAudioError(true)}
+                />
+              )}
+              {audioUrl && audioError && (
+                <div className="bvp-media-error">
+                  <span>⚠️ Audio could not be played in browser.</span>
+                  <a
+                    href={audioUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bvp-btn bvp-btn--primary"
+                    style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}
+                  >
+                    Open Audio ↗
+                  </a>
+                </div>
               )}
             </div>
           )}
@@ -378,7 +518,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
           <button className="bvp-btn bvp-btn--danger" onClick={() => onAction('reject')}>
             <CloseIcon /> Reject
           </button>
-          <button className="bvp-btn bvp-btn--secondary" onClick={() => onAction('request_resubmit')}>
+          <button className="bvp-btn bvp-btn--resubmit" onClick={() => onAction('request_resubmit')}>
             <RefreshIcon /> Request Resubmission
           </button>
         </div>
@@ -475,7 +615,21 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
     setActionLoading(true);
     try {
       await reviewApplication(selectedApp.uid, confirmAction, reviewNotes);
-      pt.success(`Application ${confirmAction.replace('_', ' ')}d successfully.`);
+
+      // On resubmit: send TingleBot DM to the user (same pattern as Feedback & Complaints)
+      if (confirmAction === 'request_resubmit') {
+        try {
+          await sendTinglebotBadgeDM(
+            selectedApp.uid,
+            selectedApp.displayName || selectedApp.username,
+            reviewNotes
+          );
+        } catch (dmErr) {
+          console.warn('[BadgeVerificationPanel] TingleBot DM failed (non-fatal):', dmErr.message);
+        }
+      }
+
+      pt.success(`Application ${confirmAction.replace(/_/g, ' ')} successfully.`);
       invalidateCache();
       setConfirmAction(null);
       setSelectedApp(null);
@@ -483,6 +637,10 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
     } catch (e) {
       pt.error(e.message || 'Action failed');
     } finally { setActionLoading(false); }
+  };
+
+  const handleGeoUpdate = (uid, geoData) => {
+    setSelectedApp(prev => prev && prev.uid === uid ? { ...prev, ...geoData } : prev);
   };
 
   const filters = [
@@ -672,6 +830,7 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
                   app={selectedApp}
                   onClose={() => setSelectedApp(null)}
                   onAction={handleAction}
+                  onGeoUpdate={handleGeoUpdate}
                 />
               )}
             </motion.div>

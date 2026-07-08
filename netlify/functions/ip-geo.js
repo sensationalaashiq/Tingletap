@@ -6,6 +6,7 @@
 // Used by: Admin Panel (live IP geo lookup), App.jsx (store geo on login)
 
 const IPv4_RE = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+const IPv6_RE = /^[0-9a-fA-F:]+$/;
 
 const CORS = {
   'Content-Type': 'application/json',
@@ -19,6 +20,9 @@ function jsonResp(data, status = 200) {
 }
 
 async function fallbackGeo(ip) {
+  // ip-api.com only supports IPv4 on free tier
+  const ipv4 = IPv4_RE.test(ip);
+  if (!ipv4) return jsonResp({ ip, _error: 'geo_unavailable_ipv6' });
   try {
     const fb = await fetch(
       `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,regionName,city,lat,lon,timezone,isp,org,as`,
@@ -55,7 +59,9 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'GET') return jsonResp({ error: 'Method not allowed' }, 405);
 
   const ip = (event.queryStringParameters?.ip || '').trim();
-  if (!ip || !IPv4_RE.test(ip)) return jsonResp({ error: 'Valid IPv4 required as ?ip= param' }, 400);
+  const isIPv4 = IPv4_RE.test(ip);
+  const isIPv6 = !isIPv4 && IPv6_RE.test(ip) && ip.includes(':');
+  if (!ip || (!isIPv4 && !isIPv6)) return jsonResp({ error: 'Valid IP address required as ?ip= param' }, 400);
 
   const apiKey = process.env.ABSTRACT_API_KEY;
   if (!apiKey) {
