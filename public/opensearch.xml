@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>TingleTap</ShortName>
+  <Description>Search TingleTap FAQ &amp; Help Center — India's #1 Free Chat Platform</Description>
+  <Tags>chat India desi NRI voice broadcast free</Tags>
+  <Contact>support@tingletap.com</Contact>
+  <Url type="text/html"
+       template="https://tingletap.com/faq?q={searchTerms}" />
+  <LongName>TingleTap — India's #1 Free Chat Platform Search</LongName>
+  <Image height="16" width="16" type="image/x-icon">https://tingletap.com/favicon.ico</Image>
+  <Image height="64" width="64" type="image/jpeg">https://tingletap.com/tingletap-logo.jpg</Image>
+  <Query role="example" searchTerms="chat rooms India" />
+  <Developer>Adrashtra Inc.</Developer>
+  <Attribution>TingleTap — Adrashtra Inc. © 2024</Attribution>
+  <SyndicationRight>open</SyndicationRight>
+  <AdultContent>false</AdultContent>
+  <Language>en-IN</Language>
+  <Language>hi</Language>
+  <Language>en</Language>
+  <OutputEncoding>UTF-8</OutputEncoding>
+  <InputEncoding>UTF-8</InputEncoding>
+  <moz:SearchForm>https://tingletap.com/faq</moz:SearchForm>
+</OpenSearchDescription>

@@ -6,7 +6,7 @@ import { pt } from '../utils/premiumToast';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 import SEO from '../seo/SEO';
-import { WebPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { ContactPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
 import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
@@ -123,11 +123,7 @@ const ContactPage = () => {
         robots={PAGES.contact.robots}
         ogType={PAGES.contact.ogType}
       />
-      <WebPageSchema
-        name="Contact TingleTap"
-        description={PAGES.contact.description}
-        url={PAGES.contact.canonical}
-      />
+      <ContactPageSchema />
       <BreadcrumbSchema crumbs={[
         { name: 'Home', url: SITE.url },
         { name: 'Contact', url: PAGES.contact.canonical },

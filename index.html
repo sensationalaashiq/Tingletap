@@ -6,6 +6,10 @@
     <!-- Viewport — no user-scalable=no (accessibility + SEO penalty removed) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
+    <!-- Mobile-specific — recognized by older crawlers & Yandex ── -->
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+
     <!-- ══════════════════════════════════════════════════════════
          PRIMARY SEO — Fallback before React Helmet renders
     ══════════════════════════════════════════════════════════ -->
@@ -21,6 +25,41 @@
     <meta name="copyright" content="TingleTap — Adrashtra Inc." />
     <meta name="application-name" content="TingleTap" />
     <meta name="generator" content="TingleTap v1.0" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         Content classification — used by Yandex, Baidu, gov & academic crawlers
+    ══════════════════════════════════════════════════════════ -->
+    <meta name="abstract"        content="TingleTap is India's #1 free real-time chat platform — live chat rooms, voice broadcasts, RJ radio shows, private messaging, and virtual gifting. Free forever. No download needed." />
+    <meta name="subject"         content="Online Chat Platform, Real-time Communication, Social Networking India" />
+    <meta name="category"        content="Social Networking, Communication, Entertainment" />
+    <meta name="classification"  content="Social Networking" />
+    <meta name="page-topic"      content="Online Chat, Real-time Communication, Social Networking, Indian Community" />
+    <meta name="page-type"       content="Website" />
+
+    <!-- Dublin Core — recognized by Yandex, Baidu, academic & government crawlers -->
+    <meta name="DC.title"        content="TingleTap — India's #1 Free Chat App" />
+    <meta name="DC.description"  content="India's #1 free real-time chat platform — live chat rooms, private messaging, voice & video calls, RJ radio shows. Connect with Indians worldwide, free forever." />
+    <meta name="DC.creator"      content="Adrashtra Inc." />
+    <meta name="DC.publisher"    content="TingleTap" />
+    <meta name="DC.subject"      content="Online Chat, Social Networking, Real-time Communication" />
+    <meta name="DC.language"     content="en-IN" />
+    <meta name="DC.type"         content="Text" />
+    <meta name="DC.format"       content="text/html" />
+    <meta name="DC.identifier"   content="https://tingletap.com/" />
+    <meta name="DC.rights"       content="© 2024 Adrashtra Inc. — All Rights Reserved" />
+    <meta name="DC.coverage"     content="Worldwide" />
+
+    <!-- Per-bot robot directives (fallback — per-page overrides handled by React Helmet) -->
+    <meta name="googlebot"         content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot-image"   content="index, follow" />
+    <meta name="googlebot-news"    content="index, follow" />
+    <meta name="bingbot"           content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta name="Slurp"             content="index, follow" />
+    <meta name="yandex"            content="index, follow" />
+    <meta name="Baiduspider"       content="index, follow" />
+    <meta name="Applebot"          content="index, follow" />
+    <meta name="teoma"             content="index, follow" />
+    <meta name="msnbot"            content="index, follow" />
 
     <!-- Geo targeting — Primary: India (founding country & largest audience) -->
     <meta name="geo.region" content="IN" />
@@ -121,6 +160,9 @@
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- OpenSearch — allows browsers & Bing to add TingleTap as a search engine -->
+    <link rel="search" type="application/opensearchdescription+xml" title="TingleTap" href="/opensearch.xml" />
 
     <!-- ══════════════════════════════════════════════════════════
          Performance — Preconnect & DNS Prefetch

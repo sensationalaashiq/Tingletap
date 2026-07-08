@@ -8,44 +8,49 @@
   <!-- Home / Landing — highest priority, indexed as root -->
   <url>
     <loc>https://tingletap.com/</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://tingletap.com/tingletap-logo.jpg</image:loc>
-      <image:title>TingleTap — India's Premier Chat Platform</image:title>
-      <image:caption>Connect with India's most vibrant chat community. Free public chat rooms, private messaging, voice & video calls.</image:caption>
+      <image:title>TingleTap — India's #1 Free Chat Platform</image:title>
+      <image:caption>Connect with India's most vibrant chat community. Free public chat rooms, private messaging, voice &amp; video calls, RJ radio shows. No download required.</image:caption>
     </image:image>
   </url>
 
   <!-- About -->
   <url>
     <loc>https://tingletap.com/about</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://tingletap.com/tingletap-logo.jpg</image:loc>
+      <image:title>About TingleTap — India's Free Chat Platform</image:title>
+      <image:caption>Learn about TingleTap — built in India, used worldwide by Indians and the global desi community.</image:caption>
+    </image:image>
+  </url>
+
+  <!-- FAQ — high value for featured snippets & voice search -->
+  <url>
+    <loc>https://tingletap.com/faq</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 
   <!-- Contact -->
   <url>
     <loc>https://tingletap.com/contact</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>
-
-  <!-- FAQ — high value for featured snippets -->
-  <url>
-    <loc>https://tingletap.com/faq</loc>
-    <lastmod>2026-07-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
   </url>
 
   <!-- Terms of Service -->
   <url>
     <loc>https://tingletap.com/terms</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
@@ -53,7 +58,7 @@
   <!-- Privacy Policy -->
   <url>
     <loc>https://tingletap.com/privacy</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
@@ -61,7 +66,7 @@
   <!-- Disclaimer -->
   <url>
     <loc>https://tingletap.com/disclaimer</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

@@ -1,6 +1,8 @@
 # TingleTap — robots.txt
 # https://tingletap.com/sitemap.xml
+# Last updated: 2026-07-08
 
+# ── Default: all crawlers ─────────────────────────────────────────────────────
 User-agent: *
 Allow: /
 Allow: /about
@@ -9,6 +11,16 @@ Allow: /faq
 Allow: /terms
 Allow: /privacy
 Allow: /disclaimer
+Allow: /tingletap-logo.jpg
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon-16x16.png
+Allow: /favicon-32x32.png
+Allow: /favicon-192x192.png
+Allow: /apple-touch-icon.png
+Allow: /manifest.json
+Allow: /sitemap.xml
+Allow: /opensearch.xml
 
 # App routes — private / authenticated / admin
 Disallow: /admin-panel
@@ -26,7 +38,7 @@ Disallow: /leaderboard
 Disallow: /rj-earnings
 Disallow: /rj-withdrawal
 
-# Auth pages — no indexing
+# Auth pages — no indexing needed
 Disallow: /login
 Disallow: /signup
 Disallow: /forgot-password
@@ -36,14 +48,344 @@ Disallow: /verify-email
 # Utility / redirect
 Disallow: /landing
 
-# Slow down aggressive SEO crawlers
-User-agent: AhrefsBot
+# ── Google ────────────────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /rj-earnings
+Disallow: /rj-withdrawal
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /tingletap-logo.jpg
+Allow: /favicon.ico
+Allow: /favicon.svg
+Allow: /favicon-16x16.png
+Allow: /favicon-32x32.png
+Allow: /favicon-192x192.png
+Allow: /apple-touch-icon.png
+Crawl-delay: 3
+
+User-agent: Googlebot-Video
+Allow: /
+Crawl-delay: 5
+
+User-agent: Googlebot-News
+Allow: /
+Allow: /about
+Allow: /faq
+Allow: /contact
+Crawl-delay: 5
+
+User-agent: AdsBot-Google
+Disallow: /
+
+User-agent: Google-InspectionTool
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+Allow: /about
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
 Crawl-delay: 10
+
+# ── Bing ──────────────────────────────────────────────────────────────────────
+User-agent: bingbot
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /rj-earnings
+Disallow: /rj-withdrawal
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Crawl-delay: 2
+
+User-agent: msnbot
+Allow: /
+Crawl-delay: 5
+
+User-agent: msnbot-media
+Allow: /tingletap-logo.jpg
+Allow: /favicon.svg
+Crawl-delay: 5
+
+User-agent: BingPreview
+Allow: /
+Crawl-delay: 5
+
+# ── Yahoo (Slurp) — Yahoo uses Bing index ────────────────────────────────────
+User-agent: Slurp
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /login
+Disallow: /signup
+Crawl-delay: 3
+
+# ── Yandex ────────────────────────────────────────────────────────────────────
+User-agent: Yandex
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /welcome
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /rj-earnings
+Disallow: /rj-withdrawal
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Crawl-delay: 2
+
+User-agent: YandexImages
+Allow: /tingletap-logo.jpg
+Allow: /favicon.svg
+Crawl-delay: 5
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: YandexRenderResourcesBot
+Allow: /
+Crawl-delay: 5
+
+# ── Baidu ─────────────────────────────────────────────────────────────────────
+User-agent: Baiduspider
+Allow: /
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Disallow: /buy-coins
+Disallow: /wallet
+Disallow: /leaderboard
+Disallow: /login
+Disallow: /signup
+Crawl-delay: 5
+
+User-agent: Baiduspider-image
+Allow: /tingletap-logo.jpg
+Allow: /favicon.svg
+Crawl-delay: 10
+
+# ── DuckDuckGo — uses Bing index, own crawler ─────────────────────────────────
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 3
+
+# ── Brave — uses Google index ─────────────────────────────────────────────────
+User-agent: Brave Bot
+Allow: /
+Crawl-delay: 5
+
+# ── Apple / Safari / Spotlight / Siri ────────────────────────────────────────
+User-agent: Applebot
+Allow: /
+Crawl-delay: 5
+
+User-agent: Applebot-Extended
+Allow: /
+Crawl-delay: 10
+
+# ── Sogou (Chinese SE) ────────────────────────────────────────────────────────
+User-agent: Sogou web spider
+Allow: /
+Crawl-delay: 10
+
+User-agent: Sogouwebspider
+Allow: /
+Crawl-delay: 10
+
+# ── Naver (South Korean SE) ───────────────────────────────────────────────────
+User-agent: Yeti
+Allow: /
+Crawl-delay: 10
+
+# ── Social media crawlers — allow for link previews ──────────────────────────
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slack-ImgProxy
+Allow: /
+
+# ── AI / LLM crawlers — allow public pages for AI knowledge bases ────────────
+User-agent: GPTBot
+Allow: /
+Allow: /about
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /disclaimer
+Allow: /contact
+Disallow: /admin-panel
+Disallow: /mod-panel
+Disallow: /owner/
+Disallow: /rooms
+Disallow: /room/
+Disallow: /r/
+Crawl-delay: 10
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /about
+Allow: /faq
+Crawl-delay: 10
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /about
+Allow: /faq
+Allow: /terms
+Allow: /privacy
+Allow: /contact
+Crawl-delay: 10
+
+User-agent: Claude-Web
+Allow: /
+Crawl-delay: 10
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /about
+Allow: /faq
+Crawl-delay: 10
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /about
+Allow: /faq
+Allow: /contact
+Crawl-delay: 10
+
+User-agent: cohere-ai
+Allow: /
+Crawl-delay: 10
+
+User-agent: OAI-SearchBot
+Allow: /
+Crawl-delay: 10
+
+User-agent: Bytespider
+Allow: /
+Crawl-delay: 10
+
+User-agent: Diffbot
+Allow: /
+Crawl-delay: 10
+
+# ── Slow down aggressive SEO audit crawlers ──────────────────────────────────
+User-agent: AhrefsBot
+Crawl-delay: 15
 
 User-agent: SemrushBot
-Crawl-delay: 10
+Crawl-delay: 15
 
-# Block harmful scrapers
+User-agent: MajesticBot
+Crawl-delay: 15
+
+User-agent: rogerbot
+Crawl-delay: 15
+
+User-agent: exabot
+Crawl-delay: 15
+
+# ── Block harmful scrapers with no SEO value ─────────────────────────────────
 User-agent: MJ12bot
 Disallow: /
 

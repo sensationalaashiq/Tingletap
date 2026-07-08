@@ -5,7 +5,7 @@ import { db } from '../firebase/config';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
 import SEO from '../seo/SEO';
-import { WebSiteSchema, OrganizationSchema, WebApplicationSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { WebSiteSchema, OrganizationSchema, WebApplicationSchema, BreadcrumbSchema, ServiceSchema, FeaturesListSchema } from '../seo/StructuredData';
 import { PAGES, SITE } from '../seo/seoConfig';
 
 /* ═══════════════════════════════════════════════════════
@@ -360,6 +360,8 @@ const LandingPage = () => {
       <WebSiteSchema />
       <OrganizationSchema />
       <WebApplicationSchema />
+      <ServiceSchema />
+      <FeaturesListSchema />
       <BreadcrumbSchema crumbs={[{ name: 'Home', url: SITE.url }]} />
       {/* Ambient Background */}
       <div className="lp-bg" aria-hidden="true">

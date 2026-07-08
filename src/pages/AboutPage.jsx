@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 import SEO from '../seo/SEO';
-import { WebPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
+import { AboutPageSchema, BreadcrumbSchema } from '../seo/StructuredData';
 import { PAGES, SITE } from '../seo/seoConfig';
 
 const BackIcon = () => (
@@ -158,11 +158,7 @@ const AboutPage = () => {
         robots={PAGES.about.robots}
         ogType={PAGES.about.ogType}
       />
-      <WebPageSchema
-        name="About TingleTap"
-        description={PAGES.about.description}
-        url={PAGES.about.canonical}
-      />
+      <AboutPageSchema />
       <BreadcrumbSchema crumbs={[
         { name: 'Home', url: SITE.url },
         { name: 'About', url: PAGES.about.canonical },
