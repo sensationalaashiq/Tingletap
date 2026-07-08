@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './GiphyStickersModal.css';
 
-const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY || 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
+const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
 const PAGE_LIMIT = 24;
 
 const GiphyStickersModal = React.memo(({ isOpen, onClose, onSelectGif }) => {

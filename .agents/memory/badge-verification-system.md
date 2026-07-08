@@ -31,7 +31,7 @@ R2_ACCESS_KEY_ID       # R2 API token key ID
 R2_SECRET_ACCESS_KEY   # R2 API token secret
 R2_BUCKET_NAME         # R2 bucket name (e.g. "badge-verifications")
 R2_ENDPOINT            # https://<account_id>.r2.cloudflarestorage.com
-FIREBASE_PROJECT_ID    # Firebase project ID (e.g. "tingletapofraj")
+FIREBASE_PROJECT_ID    # Firebase project ID (e.g. "your-project-id")
 FIREBASE_CLIENT_EMAIL  # (optional) Service account for scheduled cleanup
 FIREBASE_PRIVATE_KEY   # (optional) Service account for scheduled cleanup
 VPNAPI_KEY             # (optional) vpnapi.io key for VPN detection on submit
