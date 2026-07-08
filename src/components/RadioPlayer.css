@@ -457,12 +457,14 @@
 .rp-np-controls {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
+  overflow: hidden;   /* no horizontal bleed */
+  min-width: 0;
 }
 
 /* Play/Pause — station gradient circle */
 .rp-play-btn {
-  width: 46px; height: 46px;
+  width: 42px; height: 42px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -482,7 +484,7 @@
 
 /* Stop — vivid red gradient */
 .rp-stop-btn {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   border-radius: 10px;
   border: none;
   background: linear-gradient(135deg, #f87171, #dc2626);
@@ -504,13 +506,15 @@
 /* Volume row */
 .rp-volume {
   flex: 1;
+  min-width: 0;          /* ← prevents flex child from overflowing */
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(139,92,246,0.06);
   border: 1px solid rgba(139,92,246,0.14);
   border-radius: 10px;
-  padding: 5px 9px;
+  padding: 5px 7px;
+  overflow: hidden;
 }
 
 .rp-volume-slider {
@@ -544,11 +548,13 @@
 }
 
 .rp-vol-pct {
-  font-size: 0.62rem;
+  font-size: 0.60rem;
   font-weight: 800;
   color: #7c3aed;
-  min-width: 28px;
+  min-width: 22px;
+  flex-shrink: 0;
   text-align: right;
+  white-space: nowrap;
   background: linear-gradient(135deg, #8b5cf6, #6d28d9);
   -webkit-background-clip: text;
   background-clip: text;
@@ -628,4 +634,10 @@ html.dark-theme-variant .rp-vol-pct { color: #a78bfa; }
 @media (max-width: 768px) {
   .radio-popup-container { top: 80px; right: 12px; }
   .radio-popup { width: calc(100vw - 24px); max-width: 308px; }
+  .rp-np-controls { gap: 6px; }
+  .rp-play-btn { width: 38px; height: 38px; }
+  .rp-stop-btn { width: 30px; height: 30px; }
+  .rp-now-playing { padding: 11px 10px 10px; }
+  .rp-volume { padding: 4px 6px; gap: 4px; }
+  .rp-vol-pct { min-width: 20px; font-size: 0.58rem; }
 }

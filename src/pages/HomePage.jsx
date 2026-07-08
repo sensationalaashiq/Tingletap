@@ -8284,11 +8284,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             background:'linear-gradient(145deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%)',
                                             border:'1.5px solid rgba(167,139,250,0.5)',
                                             borderRadius:'18px',
-                                            padding:'10px 10px 8px',
+                                            padding:'12px 12px 10px',
                                             boxShadow:'0 8px 28px rgba(109,40,217,0.22), 0 2px 8px rgba(109,40,217,0.10), inset 0 1px 0 rgba(255,255,255,0.9)',
                                             display:'flex', flexDirection:'column',
-                                            alignItems:'center', gap:'7px',
-                                            maxWidth:'calc(100% - 28px)',
+                                            alignItems:'center', gap:'8px',
+                                            width:'min(88vw, 400px)',
                                             maxHeight:'calc(100% - 28px)',
                                             position:'relative',
                                         }}>
@@ -8330,17 +8330,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             {vpmEnlarged.type === 'avatar' ? 'Profile Photo' : 'Cover Photo'}
                                         </div>
 
-                                        {/* Image */}
+                                        {/* Image — full size, no circular crop */}
                                         <img
                                             src={vpmEnlarged.url}
                                             alt="Enlarged"
                                             style={{
-                                                maxWidth:'100%',
-                                                maxHeight:'calc(100% - 44px)',
-                                                borderRadius: vpmEnlarged.type === 'avatar' ? '50%' : '11px',
+                                                width:'100%',
+                                                maxHeight:'65vh',
+                                                borderRadius: vpmEnlarged.type === 'avatar' ? '16px' : '11px',
                                                 objectFit:'contain',
                                                 boxShadow: vpmEnlarged.type === 'avatar'
-                                                    ? '0 0 0 3px rgba(167,139,250,0.6), 0 8px 24px rgba(109,40,217,0.3)'
+                                                    ? '0 0 0 3px rgba(167,139,250,0.6), 0 12px 32px rgba(109,40,217,0.35)'
                                                     : '0 6px 20px rgba(109,40,217,0.2)',
                                                 animation:'vpmSlideUp 0.2s cubic-bezier(0.34,1.56,0.64,1)',
                                                 display:'block',
