@@ -252,11 +252,25 @@ function AccountAgeTimeline({ accountAgeDays, gender }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function BadgeApplicationTab({ loggedInUserProfile }) {
-  const [pageState, setPageState]           = useState('loading');
+  // Compute gender / age data synchronously from already-loaded auth metadata
+  // so male users blocked by the 60-day rule see the countdown card instantly
+  // (no Firestore round-trip needed to know they can't apply yet).
+  const [gender, setGender]                 = useState(
+    () => loggedInUserProfile?.gender || 'male'
+  );
+  const [accountAgeDays, setAccountAgeDays] = useState(
+    () => getAccountAgeDays(auth.currentUser?.metadata?.creationTime)
+  );
+  const [remainingMs, setRemainingMs]       = useState(
+    () => msUntil60Days(auth.currentUser?.metadata?.creationTime)
+  );
+  const [pageState, setPageState]           = useState(() => {
+    const g  = loggedInUserProfile?.gender || 'male';
+    const ms = msUntil60Days(auth.currentUser?.metadata?.creationTime);
+    // Skip loading spinner for male users who definitely can't apply yet
+    return (g === 'male' && ms > 0) ? 'idle' : 'loading';
+  });
   const [existingApp, setExistingApp]       = useState(null);
-  const [gender, setGender]                 = useState(null);
-  const [accountAgeDays, setAccountAgeDays] = useState(0);
-  const [remainingMs, setRemainingMs]       = useState(0);
 
   // Flow state
   const [step, setStep]         = useState(0);
