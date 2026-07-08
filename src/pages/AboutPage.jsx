@@ -351,18 +351,18 @@ const AboutPage = () => {
 
             <SectionItem
               icon="tech"
-              title="The Technology Behind TingleTap"
-              text="TingleTap is built on a modern, scalable technology stack chosen specifically to deliver low-latency real-time experiences for Indian users:"
+              title="Built for Speed, Scale & Security"
+              text="Under the hood, TingleTap is engineered to the same standard as world-class consumer platforms — delivering instant, reliable, encrypted experiences regardless of your device or connection:"
               items={[
-                'React 18 + Vite front-end for fast initial load, hot-reload development, and progressive rendering that keeps the interface snappy even on lower-powered devices',
-                'Firebase Firestore for real-time data synchronisation — user profiles, friend requests, coin wallets, and room metadata delivered with sub-second consistency',
-                'Firebase Realtime Database for live chat — messages, presence, and broadcast state delivered in milliseconds across all connected clients simultaneously',
-                'WebRTC peer-to-peer technology for RJ voice broadcasts and user voice calls — direct audio connections between participants for the lowest possible latency and inherent DTLS-SRTP encryption',
-                'TingleBot AutoMod runs entirely on-device in the browser — no API call needed, no latency, no external dependency for real-time moderation decisions',
-                'Google Generative AI integration powering TingleBot\'s conversational assistant features',
-                'Agora RTC SDK providing additional voice and video call infrastructure for high-reliability connections',
-                'Device fingerprinting using browser-level signals — canvas fingerprint, WebGL renderer, screen characteristics, installed fonts — for security without storing biometric data',
-                'Code-split bundle architecture with React.lazy() — admin tools, coin dashboards, and other specialist pages load on-demand, keeping the main chat experience lean and fast',
+                'Sub-second message delivery — every chat message, reaction, and status update reaches all room members in real-time, with no perceptible delay',
+                'Crystal-clear live voice — RJ broadcasts and stage calls use direct peer-to-peer encrypted audio pipelines, eliminating server-side audio degradation and achieving near-zero latency',
+                'Always-on AI moderation — TingleBot runs its full intelligence engine locally in your browser, making moderation decisions in real-time without a single server round-trip',
+                'Instant-load architecture — the platform loads the chat experience first and defers everything else, keeping the core product fast even on mid-range phones and 4G networks',
+                'Military-grade encrypted private messages — private conversations are end-to-end encrypted and cannot be read by our team, our servers, or any third party',
+                'Smart identity protection — sophisticated multi-signal security prevents ban evasion and fake accounts without ever storing biometric data or compromising user privacy',
+                'Reliable connections everywhere — dual-path audio infrastructure ensures voice calls and broadcasts stay stable even when network conditions fluctuate',
+                'AI-assisted features — conversational intelligence powers TingleBot\'s assistant mode, smart auto-moderation classification, and contextual content understanding',
+                'Always up, always fast — our infrastructure is engineered for continuous availability with no scheduled downtime and automatic failover for all critical services',
               ]}
             />
 
