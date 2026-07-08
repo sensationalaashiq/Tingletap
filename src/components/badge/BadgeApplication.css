@@ -321,6 +321,84 @@
   font-weight: 800;
 }
 
+/* ── Live D : H : M : S ticker ── */
+.bv-countdown-ticker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 16px;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow: hidden;
+}
+.bv-tick-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(145deg, #ede9fe, #ddd6fe);
+  border: 1.5px solid #c4b5fd;
+  border-radius: 10px;
+  padding: 8px 10px 6px;
+  min-width: 48px;
+  flex: 1;
+  max-width: 62px;
+}
+.bv-tick-num {
+  font-size: 20px;
+  font-weight: 900;
+  color: #6d28d9;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.bv-tick-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: #9333ea;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+.bv-tick-sep {
+  font-size: 18px;
+  font-weight: 900;
+  color: #a78bfa;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-bottom: 14px; /* align with num vertically */
+}
+
+/* Dark mode */
+.dark-mode .bv-tick-unit,
+.dark-theme-variant .bv-tick-unit {
+  background: linear-gradient(145deg, rgba(109,40,217,0.25), rgba(109,40,217,0.15));
+  border-color: rgba(167,139,250,0.3);
+}
+.dark-mode .bv-tick-num,
+.dark-theme-variant .bv-tick-num { color: #c4b5fd; }
+.dark-mode .bv-tick-lbl,
+.dark-theme-variant .bv-tick-lbl { color: #a78bfa; }
+.dark-mode .bv-tick-sep,
+.dark-theme-variant .bv-tick-sep { color: #7c5dba; }
+.dark-mode .bv-countdown-card,
+.dark-theme-variant .bv-countdown-card {
+  background: linear-gradient(145deg, rgba(20,8,45,0.95), rgba(30,12,60,0.9));
+  border-color: rgba(109,40,217,0.3);
+}
+.dark-mode .bv-countdown-title,
+.dark-theme-variant .bv-countdown-title { color: #e9d5ff; }
+.dark-mode .bv-countdown-sub,
+.dark-theme-variant .bv-countdown-sub { color: #c4b5fd; }
+.dark-mode .bv-countdown-detail,
+.dark-theme-variant .bv-countdown-detail { color: #a78bfa; }
+.dark-mode .bv-countdown-detail strong,
+.dark-theme-variant .bv-countdown-detail strong { color: #c4b5fd; }
+.dark-mode .bv-countdown-ring-track,
+.dark-theme-variant .bv-countdown-ring-track { stroke: rgba(109,40,217,0.25); }
+.dark-mode .bv-countdown-progress,
+.dark-theme-variant .bv-countdown-progress { background: rgba(109,40,217,0.2); }
+
 /* ══════════════════════════════════════════════════════
    STATUS CARDS
 ══════════════════════════════════════════════════════ */

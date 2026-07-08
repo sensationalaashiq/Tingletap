@@ -4207,8 +4207,8 @@ const SettingsSidebar = ({
                             <span>Feedback</span>
                         </button>
 
-                        {/* Badge Apply tab — visible to registered users without verified badge */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'verified' && (
+                        {/* Badge Apply tab — visible only to regular registered members (role=user), not staff/badge-holders/guests */}
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'verified' && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'badge-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('badge-apply')}

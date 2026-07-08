@@ -99,15 +99,26 @@ function DeclarationContent({ gender }) {
 // ─── Male Countdown Card ──────────────────────────────────────────────────────
 function MaleCountdownCard({ remainingMs, accountAgeDays }) {
   const totalMs  = 60 * 24 * 60 * 60 * 1000;
-  const elapsed  = totalMs - Math.max(0, remainingMs);
+  const safe     = Math.max(0, remainingMs);
+  const elapsed  = totalMs - safe;
   const pct      = Math.min(100, Math.max(0, (elapsed / totalMs) * 100));
-  const daysLeft = remainingMs > 0 ? Math.ceil(remainingMs / (24 * 60 * 60 * 1000)) : 0;
+  const daysLeft = safe > 0 ? Math.ceil(safe / (24 * 60 * 60 * 1000)) : 0;
   const radius   = 56;
   const circ     = 2 * Math.PI * radius;
   const dash     = circ * (1 - pct / 100);
 
+  // Live D / H / M / S breakdown
+  const totalSec = Math.floor(safe / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+
   return (
     <div className="bv-countdown-card bv-fade-up">
+
+      {/* Circular ring — shows days remaining */}
       <div className="bv-countdown-ring">
         <svg width="124" height="124" viewBox="0 0 124 124">
           <circle cx="62" cy="62" r={radius} fill="none" className="bv-countdown-ring-track" strokeWidth="8"/>
@@ -122,7 +133,7 @@ function MaleCountdownCard({ remainingMs, accountAgeDays }) {
         </svg>
         <div className="bv-countdown-center">
           <div className="bv-countdown-days">{daysLeft}</div>
-          <div className="bv-countdown-label">days left</div>
+          <div className="bv-countdown-label">DAYS LEFT</div>
         </div>
       </div>
 
@@ -132,20 +143,44 @@ function MaleCountdownCard({ remainingMs, accountAgeDays }) {
           <circle cx="12" cy="12" r="9" stroke="#7c3aed" strokeWidth="2"/>
           <path d="M12 7v5l3 3" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
         </svg>
-        Your account: <strong style={{ marginLeft: 3 }}>{accountAgeDays} day{accountAgeDays !== 1 ? 's' : ''} old</strong>
+        Your account:&nbsp;<strong>{accountAgeDays} day{accountAgeDays !== 1 ? 's' : ''} old</strong>
       </div>
 
       <div className="bv-countdown-title">Account too new to apply</div>
       <div className="bv-countdown-sub">
-        Male accounts must be at least <strong style={{ color: '#6d28d9' }}>60 days old</strong> before applying for a verified badge.
+        Male accounts must be at least&nbsp;<strong style={{ color: '#6d28d9' }}>60 days</strong>&nbsp;old before applying for a verified badge.
       </div>
 
+      {/* Live D : H : M : S ticker */}
+      <div className="bv-countdown-ticker">
+        <div className="bv-tick-unit">
+          <span className="bv-tick-num">{pad(d)}</span>
+          <span className="bv-tick-lbl">Days</span>
+        </div>
+        <span className="bv-tick-sep">:</span>
+        <div className="bv-tick-unit">
+          <span className="bv-tick-num">{pad(h)}</span>
+          <span className="bv-tick-lbl">Hours</span>
+        </div>
+        <span className="bv-tick-sep">:</span>
+        <div className="bv-tick-unit">
+          <span className="bv-tick-num">{pad(m)}</span>
+          <span className="bv-tick-lbl">Mins</span>
+        </div>
+        <span className="bv-tick-sep">:</span>
+        <div className="bv-tick-unit">
+          <span className="bv-tick-num">{pad(s)}</span>
+          <span className="bv-tick-lbl">Secs</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
       <div className="bv-countdown-progress">
         <div className="bv-countdown-progress-fill" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="bv-countdown-detail">
-        Come back in <strong>{formatRemainingTime(remainingMs)}</strong>
+        Come back in&nbsp;<strong>{d > 0 ? `${d}d ` : ''}{pad(h)}h {pad(m)}m</strong>
       </div>
     </div>
   );
@@ -269,16 +304,20 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
     })();
   }, []);
 
-  // Live countdown: re-calculate remainingMs every 30 seconds
+  // Live countdown: re-calculate remainingMs every second so D/H/M/S ticker is smooth
   useEffect(() => {
     const meta = auth.currentUser?.metadata;
     if (!meta?.creationTime) return;
     const tick = () => {
       const ms = msUntil60Days(meta.creationTime);
       setRemainingMs(ms);
-      setAccountAgeDays(getAccountAgeDays(meta.creationTime));
+      // Only update accountAgeDays when it actually changes (once per day)
+      setAccountAgeDays(prev => {
+        const next = getAccountAgeDays(meta.creationTime);
+        return next !== prev ? next : prev;
+      });
     };
-    const id = setInterval(tick, 30_000);
+    const id = setInterval(tick, 1_000);
     return () => clearInterval(id);
   }, []);
 
