@@ -104,12 +104,19 @@
     <link rel="alternate" hreflang="x-default" href="https://tingletap.com/" />
 
     <!-- ══════════════════════════════════════════════════════════
-         Favicon & Icons
+         Favicon & Icons — Multi-format for Google Search & all browsers
+         ICO  → IE / old crawlers / Google favicon fallback
+         PNG  → Chrome, Firefox, modern crawlers (16×16 & 32×32 required by Google)
+         SVG  → Modern browsers (Chrome 80+, Firefox 41+)
+         Apple → iOS home-screen icon
     ══════════════════════════════════════════════════════════ -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16"  href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32"  href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="shortcut icon" href="/favicon.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/tingletap-logo.jpg" />
-    <link rel="apple-touch-icon" href="/tingletap-logo.jpg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/favicon.svg" color="#7c3aed" />
 
     <!-- PWA Manifest -->
@@ -157,8 +164,8 @@
          Twitter / X Card
     ══════════════════════════════════════════════════════════ -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@TingleTap" />
-    <meta name="twitter:creator" content="@TingleTap" />
+    <meta name="twitter:site" content="@tingletaps" />
+    <meta name="twitter:creator" content="@tingletaps" />
     <meta name="twitter:title" content="TingleTap — India's #1 Free Chat App" />
     <meta name="twitter:description" content="India's #1 free chat app — loved by Indians at home and worldwide. Live rooms, private chats, voice & video calls. Join free, no download needed." />
     <meta name="twitter:image" content="https://tingletap.com/tingletap-logo.jpg" />
@@ -206,7 +213,14 @@
             "availableLanguage": ["English", "Hindi"],
             "areaServed": "Worldwide"
           },
-          "sameAs": [],
+          "sameAs": [
+            "https://www.instagram.com/tingletap",
+            "https://www.facebook.com/share/18uwA1Ybpd/",
+            "https://x.com/tingletaps",
+            "https://youtube.com/@tingletaps",
+            "https://www.linkedin.com/in/tingle-tap-b8aa38253",
+            "https://www.threads.com/@tingletap"
+          ],
           "knowsAbout": ["Online Chat", "Real-time Communication", "Private Messaging", "Voice Chat", "Video Calls", "Social Networking"]
         },
         {

@@ -556,7 +556,7 @@
 /* ════════════════════════════════════════════════════════════
    FOOTER — light lavender
 ════════════════════════════════════════════════════════════ */
-.lp-footer { position: relative; z-index: 1; overflow: hidden; display: block; padding-bottom: 100px; }
+.lp-footer { position: relative; z-index: 1; overflow: hidden; display: block; padding-bottom: 48px; }
 .lp-footer-bg {
   position: absolute; inset: 0; z-index: 0;
   background: linear-gradient(160deg, #f0ecff 0%, #ede8ff 35%, #f5f0ff 65%, #ece6ff 100%);
@@ -587,7 +587,39 @@
 .lp-footer-main {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
-  gap: 72px; padding-bottom: 56px;
+  gap: 72px; padding-bottom: 36px;
+}
+
+/* ── Social icons in footer ── */
+.lp-footer-social-col { gap: 12px; }
+.lp-footer-social-row {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+}
+.lp-social-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 11px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+  color: #fff; text-decoration: none; flex-shrink: 0;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.14);
+}
+.lp-social-btn:hover { transform: translateY(-3px) scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,0.22); }
+.lp-social-instagram {
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+.lp-social-facebook {
+  background: #1877f2;
+}
+.lp-social-x {
+  background: #000000;
+}
+.lp-social-youtube {
+  background: #ff0000;
+}
+.lp-social-linkedin {
+  background: #0077b5;
+}
+.lp-social-threads {
+  background: linear-gradient(135deg, #101010, #2a2a2a);
 }
 
 /* Brand column */

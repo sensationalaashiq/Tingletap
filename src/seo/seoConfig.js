@@ -5,11 +5,19 @@ export const SITE = {
     description: "TingleTap is India's #1 free real-time chat platform — trusted by users worldwide. Join live chat rooms, send private messages, make voice & video calls, share GIFs, and connect with people across India and the globe — free forever.",
     ogImage: 'https://tingletap.com/tingletap-logo.jpg',
     ogImageAlt: "TingleTap — Free Chat Rooms, Voice & Video Calls",
-    twitterHandle: '@TingleTap',
+    twitterHandle: '@tingletaps',
     locale: 'en_IN',
     language: 'en-IN',
     themeColor: '#7c3aed',
     author: 'TingleTap — Adrashtra Inc.',
+    social: {
+        instagram: 'https://www.instagram.com/tingletap',
+        facebook:  'https://www.facebook.com/share/18uwA1Ybpd/',
+        twitter:   'https://x.com/tingletaps',
+        youtube:   'https://youtube.com/@tingletaps',
+        linkedin:  'https://www.linkedin.com/in/tingle-tap-b8aa38253',
+        threads:   'https://www.threads.com/@tingletap',
+    },
 };
 
 // ── Shared keyword banks ──────────────────────────────────────────────────────

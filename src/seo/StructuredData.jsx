@@ -98,7 +98,14 @@ export const OrganizationSchema = () => (
                 availableLanguage: ['English', 'Hindi'],
                 areaServed: 'Worldwide',
             },
-            sameAs: [],
+            sameAs: [
+                'https://www.instagram.com/tingletap',
+                'https://www.facebook.com/share/18uwA1Ybpd/',
+                'https://x.com/tingletaps',
+                'https://youtube.com/@tingletaps',
+                'https://www.linkedin.com/in/tingle-tap-b8aa38253',
+                'https://www.threads.com/@tingletap',
+            ],
         })}</script>
     </Helmet>
 );

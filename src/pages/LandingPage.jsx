@@ -585,9 +585,61 @@ const LandingPage = () => {
               </div>
             </div>
 
-            {/* Support & Legal only */}
+            {/* Right column: social icons + quick links */}
             <div className="lp-footer-links">
-              <div className="lp-footer-col">
+
+              {/* ── Follow Us ── */}
+              <div className="lp-footer-col lp-footer-social-col">
+                <h4 className="lp-footer-col-title">Follow Us</h4>
+                <div className="lp-footer-social-row">
+
+                  {/* Instagram */}
+                  <a href="https://www.instagram.com/tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-instagram" aria-label="TingleTap on Instagram">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                  </a>
+
+                  {/* Facebook */}
+                  <a href="https://www.facebook.com/share/18uwA1Ybpd/" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-facebook" aria-label="TingleTap on Facebook">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </a>
+
+                  {/* X / Twitter */}
+                  <a href="https://x.com/tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-x" aria-label="TingleTap on X">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.26 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </a>
+
+                  {/* YouTube */}
+                  <a href="https://youtube.com/@tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-youtube" aria-label="TingleTap on YouTube">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                  </a>
+
+                  {/* LinkedIn */}
+                  <a href="https://www.linkedin.com/in/tingle-tap-b8aa38253" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-linkedin" aria-label="TingleTap on LinkedIn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </a>
+
+                  {/* Threads */}
+                  <a href="https://www.threads.com/@tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-threads" aria-label="TingleTap on Threads">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.01v-.017c0-3.578.85-6.43 2.495-8.483C5.845 1.208 8.6.026 12.18.001h.014c2.746.018 5.143.908 6.951 2.572 1.881 1.729 2.917 4.1 3.099 7.02l.012.217h-3.035l-.019-.207c-.174-1.95-.928-3.499-2.24-4.604-1.253-1.058-2.858-1.589-4.773-1.589h-.016c-3.084.022-5.318.973-6.644 2.831C4.2 7.611 3.605 9.605 3.605 12c0 2.393.595 4.388 1.834 6.096 1.327 1.858 3.568 2.809 6.66 2.831h.016c2.484-.018 4.42-.619 5.757-1.789 1.306-1.143 2.04-2.784 2.178-4.865l.017-.254h3.023l-.011.262c-.216 2.9-1.268 5.208-3.129 6.858C17.735 22.976 15.188 24 12.186 24zM13.69 5.76c1.49.098 2.827.613 3.774 1.536.956.919 1.498 2.25 1.614 3.96l.03.432h-1.92l-.018-.237c-.111-1.46-.603-2.491-1.462-3.063-.81-.539-1.877-.792-3.165-.772-.78.012-1.553.176-2.298.49-.722.304-1.329.76-1.803 1.354-.54.674-.851 1.474-1.002 2.34H5.62c.147-.998.451-1.906.913-2.72.518-.912 1.232-1.65 2.121-2.196.87-.534 1.85-.841 2.897-.919a8.37 8.37 0 0 1 2.139.013zm-.014 7.354c-.34 0-.676.03-.998.09-.562.105-1.046.347-1.437.72-.388.371-.65.87-.78 1.481-.1.47-.115.954-.044 1.438.07.484.236.921.492 1.302.32.472.765.82 1.323 1.034.505.192 1.07.284 1.678.274 1.198-.019 2.112-.417 2.716-1.183.55-.696.839-1.683.852-2.936v-.02l-.003-.2h-3.8z"/>
+                    </svg>
+                  </a>
+
+                </div>
+              </div>
+
+              {/* ── Support & Legal ── */}
+              <div className="lp-footer-col" style={{marginTop: 28}}>
                 <h4 className="lp-footer-col-title">Support & Legal</h4>
                 <ul>
                   <li><button onClick={() => navigate('/about')}>About TingleTap</button></li>
