@@ -1153,6 +1153,48 @@ service cloud.firestore {
     }
 
     // ================================================================
+    // RJ FOLLOW SYSTEM
+    // Subcollections: users/{rjUid}/followers/{followerUid}
+    //                 users/{uid}/following/{rjUid}
+    //
+    // Read:   any authenticated user (follower counts, follow-state checks)
+    // Create: registered, non-banned user writing their own document only
+    // Delete: only the document owner (unfollow action)
+    // Staff:  full bypass for admin cleanup
+    // ================================================================
+
+    match /users/{rjUid}/followers/{followerUid} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && isRegistered()
+                    && notBanned()
+                    && request.auth.uid == followerUid
+                    && request.resource.data.uid == followerUid;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == followerUid;
+
+      allow write: if isOwner() || isAdmin();
+    }
+
+    match /users/{uid}/following/{rjUid} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && isRegistered()
+                    && notBanned()
+                    && request.auth.uid == uid
+                    && request.resource.data.uid == uid;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == uid;
+
+      allow write: if isOwner() || isAdmin();
+    }
+
+
+    // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.
     // This prevents accidental exposure of new collections.
