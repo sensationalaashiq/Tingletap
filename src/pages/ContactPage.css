@@ -215,7 +215,7 @@ textarea.ct-input {
   border: none;
   border-radius: 16px;
   background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%);
-  color: #fff;
+  color: #fff !important;
   font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.2px;
@@ -228,6 +228,10 @@ textarea.ct-input {
   box-shadow: 0 6px 24px rgba(124,58,237,0.38);
   position: relative;
   overflow: hidden;
+}
+.ct-submit-btn span,
+.ct-submit-btn svg {
+  color: #fff !important;
 }
 .ct-submit-btn::after {
   content: '';
