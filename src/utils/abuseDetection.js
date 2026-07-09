@@ -30,15 +30,15 @@ const OFFENSE_CONFIG = {
   OFFENSE_COOLDOWN_MS: 7 * 24 * 60 * 60 * 1000,
 };
 
-// detectAbuse(messageText, role)
+// detectAbuse(messageText, role, opts)
 // Owners are never automatically moderated — if the sender's role is 'owner'
 // this always returns not-abusive, regardless of message content.
-// Note: an `opts` object with isAdultRoom may still be passed by callers for
-// backward compatibility, but it is intentionally ignored — detectModerationContent()
-// only ever flags always-enforced safety categories, so there is nothing left
-// to exempt for the Adult Room here. Ordinary adult conversation, profanity,
-// and slang were never routed through this detector as violations.
-export const detectAbuse = (messageText, role) => {
+// opts.roomName is passed straight through to detectModerationContent() so
+// the one room-based exception that still exists — family-abuse words being
+// allowed in the Adult Room only — is applied consistently with the post-send
+// engine in tinglebotAutoMod.js. (opts.isAdultRoom, if passed by an older
+// caller, is ignored — roomName is now the single source of truth.)
+export const detectAbuse = (messageText, role, opts = {}) => {
   if (!messageText || typeof messageText !== 'string') {
     return { isAbusive: false };
   }
@@ -46,7 +46,7 @@ export const detectAbuse = (messageText, role) => {
     return { isAbusive: false };
   }
 
-  const hit = detectModerationContent(messageText);
+  const hit = detectModerationContent(messageText, opts.roomName);
   if (!hit.detected) {
     return { isAbusive: false };
   }

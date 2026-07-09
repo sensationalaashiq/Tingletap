@@ -3934,8 +3934,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // Abuse / toxicity check
-                const _isAdultRoom = (roomName || '').toLowerCase().includes('adult') || (roomName || '').toLowerCase().includes('18+');
-                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest', { isAdultRoom: _isAdultRoom });
+                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest', { roomName });
                 if (abuseResult.isAbusive) {
                     // Send the message first so we have the doc ref, then delete it
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);

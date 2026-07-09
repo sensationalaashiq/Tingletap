@@ -226,33 +226,35 @@ const SCAM_PHISHING_RX = [
     /\b(pirated|cracked)\s*(software|movie|game)\s*(download|link)\b/i,
 ];
 
-const SAFE_DOMAINS_SET = new Set([
-    'youtube.com','youtu.be','music.youtube.com','google.com','google.co.in',
-    'instagram.com','facebook.com','twitter.com','x.com','tiktok.com',
-    'reddit.com','wikipedia.org','tenor.com','giphy.com','imgbb.com','imgur.com',
-    'open.spotify.com','soundcloud.com','amazon.com','amazon.in','flipkart.com',
-    'whatsapp.com','wa.me','linkedin.com','github.com','replit.com',
-]);
-
-const SUSPICIOUS_LINK_RX = [
-    /https?:\/\/(\d{1,3}\.){3}\d{1,3}/,
-    /https?:\/\/[^\s/]+\.(xyz|tk|ml|ga|cf|pw|top|icu|vip|buzz|gq|loan|work|click|win|bid)\b/i,
-    /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|short\.link|is\.gd|lnk\.bio)\//i,
-];
-
-const isSafeDomain = (url) => {
-    try {
-        const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
-        return SAFE_DOMAINS_SET.has(host) || [...SAFE_DOMAINS_SET].some(d => host.endsWith('.' + d));
-    } catch { return false; }
-};
+// NOTE: per explicit product decision, links are NOT judged "suspicious vs
+// safe" — users may not send ANY link at all, in any room. Every link in a
+// message is blocked.
+const ANY_LINK_RX = /\b(?:https?:\/\/|www\.)\S+\.\S{2,}\b|\b[a-z0-9-]+\.(?:com|in|net|org|co|io|me|xyz|ly|gg|to|app|link|club|info|biz)\b(?:\/\S*)?/i;
 
 /**
- * checkImmediateAction(text) — runs every message through the always-enforced
- * safety categories. Returns a hit object or null. This is the ONLY part of
- * the engine that fires regardless of room type or context, per policy.
+ * §E6 — Family-abuse words (mother/sister-targeting abuse + explicit "randi").
+ * Per explicit product policy: these are enforced in EVERY room EXCEPT the
+ * Adult Room. All other casual slang (pagal, bewakoof, chutiya, lund, chut,
+ * gaand, kutta, harami, kamina, saala, bhosdi, etc.) stays allowed everywhere,
+ * including the Indian Room — this is a narrow, explicitly-named exception,
+ * not a return to a general profanity blacklist.
  */
-const checkImmediateAction = (text) => {
+const FAMILY_ABUSE_RX = [
+    /\b(madarchod|madarchode|madarchodi|madarchot|maderchod|madrchod|mdrchd)\b/i,
+    /\b(behenchod|bhenchod|behnchod|bhainchod|bnchd|bhai\s*chod|bhen\s*chod)\b/i,
+    /\brandi\b/i, /\brandee\b/i, /\brande\b/i, /\braand\b/i, /\braandi\b/i,
+    /\b(teri|tera|tere|tumhari|tumhare)\s+(maa|ma|mother)\s*(ki|ko|ka)?\b.{0,10}\b(chod|gaali|gali|maar|randi)\b/i,
+    /\bmaa\s*ki\s*(chod|gaali|gali|aankh)\b/i, /\bmaa\s*chod\b/i,
+    /\b(teri|tera|tere|tumhari|tumhare)\s+(behen|behan|sister)\s*(ki|ko|ka)?\b.{0,10}\b(chod|gaali|gali|randi)\b/i,
+    /\bbehen\s*ki\s*(chod|gaali|gali)\b/i,
+];
+
+/**
+ * checkImmediateAction(text, roomType) — runs every message through the
+ * always-enforced safety categories, plus the family-abuse exception which
+ * is enforced everywhere except the Adult Room. Returns a hit object or null.
+ */
+const checkImmediateAction = (text, roomType = ROOM_TYPES.GENERAL) => {
     const { norm } = normalize(text);
     const test = (rx) => rx.test(text) || rx.test(norm);
 
@@ -274,12 +276,19 @@ const checkImmediateAction = (text) => {
     if (SCAM_PHISHING_RX.some(test)) {
         return { type: 'scam', severity: 'high', label: 'Scam / phishing / illegal activity' };
     }
-    const urls = text.match(/https?:\/\/[^\s]+/gi) || [];
-    for (const url of urls) {
-        if (!isSafeDomain(url) && SUSPICIOUS_LINK_RX.some(p => p.test(url))) {
-            return { type: 'scam', severity: 'medium', label: 'Suspicious / malicious link' };
-        }
+
+    // Links: per explicit product policy, users may not send ANY link, in
+    // ANY room. Matches http(s)://, bare www./domain.tld, and shortener-style
+    // hostnames without a scheme.
+    if (ANY_LINK_RX.test(text)) {
+        return { type: 'link', severity: 'medium', label: 'Link sharing is not allowed' };
     }
+
+    // Family-abuse exception — enforced everywhere EXCEPT the Adult Room.
+    if (roomType !== ROOM_TYPES.ADULT && FAMILY_ABUSE_RX.some(test)) {
+        return { type: 'family_abuse', severity: 'high', label: 'Family-targeting abuse' };
+    }
+
     return null;
 };
 
@@ -449,9 +458,10 @@ const detectSpam = (uid, text, now) => {
    answers "is this content in an always-enforced safety category?".
 ════════════════════════════════════════════════════════════════════════════ */
 
-export const detectModerationContent = (text) => {
+export const detectModerationContent = (text, roomName) => {
     if (!text || typeof text !== 'string') return { detected: false };
-    const hit = checkImmediateAction(text);
+    const roomType = getRoomType(roomName);
+    const hit = checkImmediateAction(text, roomType);
     if (hit) return { detected: true, ...hit };
     return { detected: false };
 };
@@ -461,7 +471,8 @@ export const detectModerationContent = (text) => {
  * abuseDetection.js. Under v5.0, ALL detectModerationContent hits are
  * immediate-action categories, so nothing is ever "safe" to allow through
  * regardless of room — the room-based leniency now only applies to slang/
- * profanity, which is no longer detected as a violation at all.
+ * profanity (never detected) and to family-abuse words, which are already
+ * gated by room inside detectModerationContent/checkImmediateAction itself.
  */
 export const isAdultRoomSafe = () => false;
 
@@ -651,8 +662,9 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     const now = Date.now();
     const roomType = getRoomType(roomName);
 
-    // 1. Immediate-action categories — always enforced, no room exemption.
-    let hit = checkImmediateAction(text);
+    // 1. Immediate-action categories — always enforced except family-abuse,
+    // which is exempted only in the Adult Room (see checkImmediateAction).
+    let hit = checkImmediateAction(text, roomType);
 
     // 2. Harassment — targeted + repeated + (objection/threat), room-agnostic.
     if (!hit) {
