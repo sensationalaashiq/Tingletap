@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION = 'badgeApplications';
-const PAGE_SIZE  = 20;
+const PAGE_SIZE  = 30;
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
 

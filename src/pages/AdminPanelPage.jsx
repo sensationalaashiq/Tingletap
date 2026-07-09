@@ -421,18 +421,11 @@ const AdminPanelPage = () => {
 
   // Real-time banned IPs data
   useEffect(() => {
-    const bannedIPsQuery = query(collection(db, 'bannedIPs'), where('isActive', '!=', false), limit(500));
+    const bannedIPsQuery = query(collection(db, 'bannedIPs'), where('isActive', '!=', false), limit(30));
     const unsubscribe = onSnapshot(bannedIPsQuery, (snapshot) => {
-      const ipsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const ipsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setBannedIPs(ipsData);
-      
-      setStats(prev => ({
-        ...prev,
-        bannedIPs: ipsData.length
-      }));
+      setStats(prev => ({ ...prev, bannedIPs: ipsData.length }));
     });
     
     return () => unsubscribe();
@@ -475,7 +468,7 @@ const AdminPanelPage = () => {
   // Real-time violations (modLogs from TingleBot AutoMod)
   useEffect(() => {
     if (!isRoleReady) return;
-    const q = query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(300));
+    const q = query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(30));
     const unsub = onSnapshot(q, snap => {
       setViolations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => console.error('modLogs listener error:', err.message));
@@ -485,7 +478,7 @@ const AdminPanelPage = () => {
   // Real-time feedback & complaints
   useEffect(() => {
     if (!isRoleReady) return;
-    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'), limit(100));
+    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'), limit(30));
     const unsub = onSnapshot(q, snap => {
       setFeedbackItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => console.error('feedback listener error:', err.message));
@@ -2540,7 +2533,6 @@ const AdminPanelPage = () => {
               
               <div className="luxury-rooms-grid">
                 {rooms.map((room, idx) => {
-                  const activeInRoom = Object.values(onlineStatuses).filter(s => s?.state === 'online' && s.currentRoomId === room.id).length;
                   const roomColors = [
                     { from: '#7c3aed', to: '#a855f7' },
                     { from: '#3b82f6', to: '#6366f1' },
@@ -2595,14 +2587,6 @@ const AdminPanelPage = () => {
                       </div>
                       
                       <div className="luxury-room-stats">
-                        <div className="luxury-room-stat">
-                          <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
-                            <path fill={activeInRoom > 0 ? '#10b981' : '#818cf8'} d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z"/>
-                          </svg>
-                          <span style={{ color: activeInRoom > 0 ? '#059669' : '#6366f1', fontWeight: activeInRoom > 0 ? 800 : 600 }}>
-                            {activeInRoom} online
-                          </span>
-                        </div>
                         <div className="luxury-room-stat">
                           <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
                             {room.isActive !== false ? <path fill="#6366f1" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/> : <path fill="#ef4444" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>}
@@ -2945,7 +2929,7 @@ const AdminPanelPage = () => {
                     Banned IP Addresses
                   </h3>
                   <div className="luxury-banned-ips-list">
-                    {bannedIPs.slice(0, 20).map(ipBan => (
+                    {bannedIPs.slice(0, 30).map(ipBan => (
                       <div key={ipBan.id} className="luxury-banned-ip-item">
                         <div className="luxury-ip-info">
                           <span className="luxury-ip-address">{ipBan.ip}</span>
@@ -2957,7 +2941,8 @@ const AdminPanelPage = () => {
                           </span>
                           <span className="luxury-ip-by">by {ipBan.bannedBy}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                          {/* Premium Unban Button */}
                           <button
                             onClick={async () => {
                               try {
@@ -2968,17 +2953,26 @@ const AdminPanelPage = () => {
                               }
                             }}
                             style={{
-                              padding: '3px 10px', fontSize: 11, fontWeight: 700,
-                              background: 'rgba(16,185,129,0.1)', color: '#059669',
-                              border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
-                              cursor: 'pointer'
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                              background: 'linear-gradient(135deg, #10b981, #059669)',
+                              color: '#fff', border: 'none', borderRadius: 9,
+                              cursor: 'pointer', letterSpacing: '0.02em',
+                              boxShadow: '0 2px 10px rgba(16,185,129,0.35)',
+                              transition: 'all 0.18s ease',
                             }}
+                            onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform='none'}
                           >
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                              <path fill="white" d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-5 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-9H8V6a4 4 0 0 1 8 0v2z"/>
+                            </svg>
                             Unban IP
                           </button>
+                          {/* Premium Delete Button */}
                           <button
                             onClick={async () => {
-                              if (!window.confirm(`Delete ban record for ${ipBan.ip}? This will permanently remove it from the database.`)) return;
+                              if (!window.confirm(`Permanently delete ban record for ${ipBan.ip}?`)) return;
                               try {
                                 await deleteDoc(doc(db, 'bannedIPs', ipBan.id));
                                 pt.success(`Ban record for ${ipBan.ip} deleted.`);
@@ -2987,13 +2981,21 @@ const AdminPanelPage = () => {
                               }
                             }}
                             style={{
-                              padding: '3px 10px', fontSize: 11, fontWeight: 700,
-                              background: 'rgba(244,63,94,0.1)', color: '#e11d48',
-                              border: '1px solid rgba(244,63,94,0.3)', borderRadius: 6,
-                              cursor: 'pointer'
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                              color: '#fff', border: 'none', borderRadius: 9,
+                              cursor: 'pointer', letterSpacing: '0.02em',
+                              boxShadow: '0 2px 10px rgba(239,68,68,0.35)',
+                              transition: 'all 0.18s ease',
                             }}
+                            onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform='none'}
                           >
-                            🗑 Delete Record
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                              <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+                            </svg>
+                            Delete Record
                           </button>
                         </div>
                       </div>
@@ -3447,184 +3449,236 @@ const AdminPanelPage = () => {
                   </select>
                 </div>
 
-                {/* Leaderboard Table */}
-                <div style={{
-                  background:'#fff', borderRadius:16, border:'1.5px solid rgba(0,0,0,0.07)',
-                  boxShadow:'0 4px 24px rgba(0,0,0,0.07)', overflow:'hidden'
-                }}>
-                  {/* Table Header */}
-                  <div style={{
-                    display:'grid', gridTemplateColumns:'40px 1fr 160px 100px 90px 90px 110px',
-                    padding:'10px 16px', background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',
-                    borderBottom:'1.5px solid rgba(124,58,237,0.1)', gap:8
-                  }}>
-                    {['#','User','Royal Rank','Score','Msgs','Violations','Actions'].map(h => (
-                      <div key={h} style={{ fontSize:10, fontWeight:800, color:'#7c3aed', textTransform:'uppercase', letterSpacing:'0.08em', display:'flex', alignItems:'center' }}>{h}</div>
-                    ))}
+                {/* ── Leaderboard Cards ── */}
+                {filtered.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'48px 20px', background:'linear-gradient(135deg,#f8f7ff,#f0ebff)', borderRadius:18, border:'2px dashed rgba(124,58,237,0.18)' }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{width:44,height:44,margin:'0 auto 12px',display:'block',opacity:0.35}}><path fill="#7c3aed" d="M12,1L9.5,8H2L7.72,12.27L5.82,19.27L12,15.27L18.18,19.27L16.28,12.27L22,8H14.5Z"/></svg>
+                    <div style={{fontWeight:800,fontSize:15,color:'#7c3aed',marginBottom:5}}>No users found</div>
+                    <div style={{fontSize:12,color:'#a78bfa'}}>Try adjusting your search or sort options.</div>
                   </div>
-
-                  {/* Table Rows */}
-                  <div style={{ maxHeight: 480, overflowY:'auto' }}>
-                    {filtered.length === 0 ? (
-                      <div style={{ textAlign:'center', padding:'40px 20px', color:'#9ca3af', fontSize:14 }}>
-                        No users found
-                      </div>
-                    ) : filtered.map((u, idx) => {
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    {filtered.map((u, idx) => {
                       const score = u.trustScore ?? 10;
                       const rank = getRankFromScore(score);
                       const violations = u.trustData?.violationsCount || 0;
                       const msgs = u.trustData?.messagesCount || 0;
                       const isTop3 = idx < 3;
                       const medalColors = ['#FFD700','#C0C0C0','#CD7F32'];
+                      const medalBg = ['rgba(255,215,0,0.12)','rgba(192,192,192,0.12)','rgba(205,127,50,0.12)'];
                       const isAdjusting = trustAdjustTarget === u.uid;
+
+                      // Build username style from the flat settings fields stored on user doc
+                      const us = u.settings || {};
+                      const hasGrad = !!us.usernameGradientEnabled;
+                      const gradDir = us.usernameGradientDirection || 'to right';
+                      const gradType = gradDir === 'radial' ? 'radial-gradient(circle' : `linear-gradient(${gradDir}`;
+                      const nameStyle = hasGrad ? {
+                        background: `${gradType}, ${us.usernameGradientStart || '#7c3aed'}, ${us.usernameGradientEnd || '#a855f7'})`,
+                        WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text',
+                        fontWeight: us.usernameIsBold ? 900 : 700,
+                        fontFamily: us.usernameFont || 'inherit',
+                        letterSpacing: us.usernameLetterSpacing || '-0.01em',
+                        textShadow: 'none',
+                      } : {
+                        color: us.usernameFontColor || '#1e1b4b',
+                        fontWeight: us.usernameIsBold ? 900 : 700,
+                        fontFamily: us.usernameFont || 'inherit',
+                        letterSpacing: us.usernameLetterSpacing || '-0.01em',
+                        textShadow: us.usernameTextShadow || 'none',
+                      };
 
                       return (
                         <div key={u.uid} style={{
-                          display:'grid', gridTemplateColumns:'44px 1fr 150px 90px 80px 90px 110px',
-                          padding:'11px 16px', gap:8, alignItems:'center',
-                          borderBottom:'1px solid rgba(0,0,0,0.04)',
-                          background: isTop3
-                            ? `linear-gradient(135deg, rgba(255,215,0,${0.06 - idx*0.015}), rgba(255,255,255,0))`
-                            : (violations > 3 ? 'rgba(239,68,68,0.02)' : '#fff'),
-                          transition:'background 0.2s',
-                          borderLeft: isTop3 ? `3px solid ${medalColors[idx]}` : '3px solid transparent',
+                          background: isTop3 ? `linear-gradient(135deg, ${medalBg[idx]}, rgba(255,255,255,0.95))` : '#fff',
+                          border: isTop3 ? `2px solid ${medalColors[idx]}44` : '1.5px solid rgba(0,0,0,0.06)',
+                          borderLeft: isTop3 ? `4px solid ${medalColors[idx]}` : `4px solid ${rank.color}44`,
+                          borderRadius: 16,
+                          boxShadow: isTop3 ? `0 4px 20px ${medalColors[idx]}22` : '0 2px 10px rgba(0,0,0,0.05)',
+                          overflow: 'hidden',
+                          transition: 'box-shadow 0.2s',
                         }}>
-                          {/* Rank # */}
-                          <div style={{ fontSize:15, fontWeight:900, color: isTop3 ? medalColors[idx] : '#9ca3af', textAlign:'center', filter: isTop3 ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.18))' : 'none' }}>
-                            {isTop3 ? ['🥇','🥈','🥉'][idx] : <span style={{fontSize:12}}>{idx+1}</span>}
-                          </div>
+                          {/* Card Main Row */}
+                          <div style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', flexWrap:'wrap' }}>
 
-                          {/* User — name is the hero */}
-                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                            <img
-                              src={u.photoURL || `${getDefaultAvatarUrl(u.uid, u.gender)}`}
-                              style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, border:`2.5px solid ${rank.color}`, objectFit:'cover', boxShadow:`0 0 8px ${rank.color}44` }}
-                              alt=""
-                            />
-                            <div style={{ minWidth:0 }}>
-                              <div style={{ fontSize:13.5, fontWeight:900, color:'#1e1b4b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', letterSpacing:'-0.01em' }}>
-                                {u.displayName || u.username || 'Unknown'}
-                              </div>
-                              {u.username && u.displayName && (
-                                <div style={{ fontSize:11, color:'#7c3aed', fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                  @{u.username}
+                            {/* Position */}
+                            <div style={{ width:32, textAlign:'center', flexShrink:0 }}>
+                              {isTop3 ? (
+                                <div style={{ fontSize:22, lineHeight:1, filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.2))' }}>
+                                  {['🥇','🥈','🥉'][idx]}
                                 </div>
-                              )}
-                              {!u.username && (
-                                <div style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                  {u.email || u.uid?.slice(0,10)}
+                              ) : (
+                                <div style={{ fontSize:13, fontWeight:900, color:'#9ca3af', background:'rgba(0,0,0,0.04)', borderRadius:8, padding:'3px 0', lineHeight:1.4 }}>
+                                  #{idx+1}
                                 </div>
                               )}
                             </div>
-                          </div>
 
-                          {/* Royal Rank Badge — compact, name visible */}
-                          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:2 }}>
-                            <RoyalTrustBadge trustScore={score} trustRank={u.trustRank} size="sm" showLabel={false} showTooltip={false} />
-                            <span style={{ fontSize:10, fontWeight:800, color: rank.color, letterSpacing:'0.02em', whiteSpace:'nowrap', overflow:'hidden', maxWidth:138, textOverflow:'ellipsis' }}>
-                              {rank.name}
-                            </span>
-                          </div>
-
-                          {/* Score bar */}
-                          <div>
-                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                              <div style={{ flex:1, height:5, background:'rgba(0,0,0,0.06)', borderRadius:3, overflow:'hidden' }}>
-                                <div style={{
-                                  height:'100%', width:`${score}%`,
-                                  background: rank.gradient, borderRadius:3,
-                                  transition:'width 0.6s ease'
-                                }}/>
-                              </div>
-                              <span style={{ fontSize:11, fontWeight:800, color:rank.color, flexShrink:0 }}>{score}</span>
+                            {/* Avatar with rank ring */}
+                            <div style={{ position:'relative', flexShrink:0 }}>
+                              <img
+                                src={u.photoURL || getDefaultAvatarUrl(u.uid, u.gender)}
+                                alt={u.displayName}
+                                style={{
+                                  width: 52, height: 52, borderRadius:'50%', objectFit:'cover',
+                                  border: `3px solid ${rank.color}`,
+                                  boxShadow: `0 0 0 2px ${rank.color}33, 0 3px 12px ${rank.color}44`,
+                                  display:'block',
+                                }}
+                                onError={e => { e.target.src = getDefaultAvatarUrl(u.uid, u.gender); }}
+                              />
+                              {/* Online dot */}
+                              <div style={{
+                                position:'absolute', bottom:2, right:2,
+                                width:12, height:12, borderRadius:'50%',
+                                background: onlineStatuses[u.uid]?.state === 'online' ? '#10b981' : '#d1d5db',
+                                border:'2px solid #fff',
+                              }}/>
                             </div>
-                          </div>
 
-                          {/* Messages */}
-                          <div style={{ fontSize:12, color:'#6b7280', fontWeight:600 }}>
-                            {msgs.toLocaleString()}
-                          </div>
-
-                          {/* Violations */}
-                          <div>
-                            <span style={{
-                              display:'inline-flex', alignItems:'center', gap:3,
-                              padding:'2px 7px', borderRadius:20, fontSize:11, fontWeight:700,
-                              background: violations === 0 ? 'rgba(16,185,129,0.12)' : violations > 5 ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
-                              color: violations === 0 ? '#065f46' : violations > 5 ? '#b91c1c' : '#92400e'
-                            }}>
-                              {violations === 0 ? '✓ Clean' : `⚠ ${violations}`}
-                            </span>
-                          </div>
-
-                          {/* Actions */}
-                          <div>
-                            {isAdjusting ? (
-                              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                                <input
-                                  type="number"
-                                  value={trustAdjustDelta}
-                                  onChange={e => setTrustAdjustDelta(e.target.value)}
-                                  placeholder="±pts"
-                                  style={{
-                                    width:48, padding:'3px 6px', borderRadius:6,
-                                    border:'1.5px solid #7c3aed', fontSize:12,
-                                    textAlign:'center', outline:'none', color:'#1e1b4b'
-                                  }}
-                                  autoFocus
-                                  onKeyDown={e => { if(e.key==='Enter') handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName); if(e.key==='Escape'){setTrustAdjustTarget(null);setTrustAdjustDelta('');} }}
-                                />
-                                <button
-                                  onClick={() => handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName)}
-                                  disabled={trustAdjusting}
-                                  style={{
-                                    padding:'3px 7px', borderRadius:6, border:'none', cursor:'pointer',
-                                    background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', fontSize:11, fontWeight:700
-                                  }}
-                                >{trustAdjusting ? '…' : '✓'}</button>
-                                <button
-                                  onClick={() => { setTrustAdjustTarget(null); setTrustAdjustDelta(''); }}
-                                  style={{ padding:'3px 6px', borderRadius:6, border:'1px solid #e5e7eb', cursor:'pointer', background:'#f9fafb', color:'#6b7280', fontSize:11 }}
-                                >✕</button>
+                            {/* Identity block */}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              {/* Username with stored styles */}
+                              <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
+                                <span style={{ fontSize:15, ...nameStyle, maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                  {u.displayName || u.username || 'Unknown'}
+                                </span>
+                                {/* Badge pill */}
+                                {u.badge && (
+                                  <span style={{
+                                    fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:99,
+                                    background:'linear-gradient(135deg,#fde68a,#f59e0b)',
+                                    color:'#78350f', letterSpacing:'0.04em', flexShrink:0,
+                                    border:'1px solid #fcd34d',
+                                  }}>
+                                    {u.badge.toUpperCase()}
+                                  </span>
+                                )}
                               </div>
-                            ) : (
-                              <div style={{ display:'flex', gap:4 }}>
-                                <button
-                                  onClick={() => { setTrustAdjustTarget(u.uid); setTrustAdjustDelta(''); }}
-                                  title="Adjust trust score"
-                                  style={{
-                                    padding:'3px 8px', borderRadius:7, border:'1.5px solid rgba(124,58,237,0.2)',
-                                    background:'rgba(124,58,237,0.06)', color:'#7c3aed', fontSize:11,
-                                    fontWeight:700, cursor:'pointer', whiteSpace:'nowrap'
-                                  }}
-                                >⚖ Adjust</button>
-                                <button
-                                  onClick={() => handleTrustAdjust(u.uid, '-5', u.displayName)}
-                                  title="Quick -5 penalty"
-                                  style={{
-                                    padding:'3px 7px', borderRadius:7, border:'1.5px solid rgba(239,68,68,0.2)',
-                                    background:'rgba(239,68,68,0.06)', color:'#ef4444', fontSize:11,
-                                    fontWeight:700, cursor:'pointer'
-                                  }}
-                                >−5</button>
+                              {/* Sub-info row */}
+                              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                                {u.username && (
+                                  <span style={{ fontSize:11, color:'#7c3aed', fontWeight:700 }}>@{u.username}</span>
+                                )}
+                                {u.role && u.role !== 'user' && (
+                                  <span style={{
+                                    fontSize:10, padding:'1px 7px', borderRadius:99, fontWeight:700,
+                                    background: u.role==='owner'?'#fef3c7': u.role==='admin'?'#ede9fe': u.role==='moderator'?'#dcfce7':'#f1f5f9',
+                                    color: u.role==='owner'?'#92400e': u.role==='admin'?'#5b21b6': u.role==='moderator'?'#15803d':'#475569',
+                                  }}>
+                                    {u.role}
+                                  </span>
+                                )}
+                                {u.email && (
+                                  <span style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', maxWidth:140 }}>{u.email}</span>
+                                )}
                               </div>
-                            )}
+                            </div>
+
+                            {/* Royal Rank + score bar */}
+                            <div style={{ flexShrink:0, minWidth:130, display:'flex', flexDirection:'column', gap:5 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                                <RoyalTrustBadge trustScore={score} trustRank={u.trustRank} size="sm" showLabel={false} showTooltip={false} />
+                                <div>
+                                  <div style={{ fontSize:11, fontWeight:800, color:rank.color, lineHeight:1 }}>{rank.name}</div>
+                                  <div style={{ fontSize:10, color:'#9ca3af' }}>{rank.emoji} Royal Rank</div>
+                                </div>
+                              </div>
+                              {/* Score bar */}
+                              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                <div style={{ flex:1, height:6, background:'rgba(0,0,0,0.07)', borderRadius:3, overflow:'hidden' }}>
+                                  <div style={{ height:'100%', width:`${score}%`, background:rank.gradient, borderRadius:3, transition:'width 0.6s ease' }}/>
+                                </div>
+                                <span style={{ fontSize:12, fontWeight:900, color:rank.color, flexShrink:0, minWidth:24, textAlign:'right' }}>{score}</span>
+                              </div>
+                            </div>
+
+                            {/* Stats pills */}
+                            <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:12,height:12,flexShrink:0}}><path fill="#6366f1" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2Z"/></svg>
+                                <span style={{ fontSize:11, fontWeight:700, color:'#6366f1' }}>{msgs.toLocaleString()} msgs</span>
+                              </div>
+                              <span style={{
+                                display:'inline-flex', alignItems:'center', gap:4,
+                                padding:'3px 9px', borderRadius:20, fontSize:11, fontWeight:800,
+                                background: violations === 0 ? 'rgba(16,185,129,0.12)' : violations > 5 ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+                                color: violations === 0 ? '#065f46' : violations > 5 ? '#b91c1c' : '#92400e',
+                              }}>
+                                {violations === 0 ? (
+                                  <><svg viewBox="0 0 24 24" fill="none" style={{width:10,height:10}}><path fill="#065f46" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>Clean</>
+                                ) : (
+                                  <><svg viewBox="0 0 24 24" fill="none" style={{width:10,height:10}}><path fill="currentColor" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>{violations} violations</>
+                                )}
+                              </span>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ flexShrink:0 }}>
+                              {isAdjusting ? (
+                                <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                                  <input
+                                    type="number"
+                                    value={trustAdjustDelta}
+                                    onChange={e => setTrustAdjustDelta(e.target.value)}
+                                    placeholder="±pts"
+                                    style={{ width:52, padding:'5px 6px', borderRadius:7, border:'1.5px solid #7c3aed', fontSize:12, textAlign:'center', outline:'none', color:'#1e1b4b' }}
+                                    autoFocus
+                                    onKeyDown={e => { if(e.key==='Enter') handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName); if(e.key==='Escape'){setTrustAdjustTarget(null);setTrustAdjustDelta('');} }}
+                                  />
+                                  <button onClick={() => handleTrustAdjust(u.uid, trustAdjustDelta, u.displayName)} disabled={trustAdjusting}
+                                    style={{ padding:'5px 8px', borderRadius:7, border:'none', cursor:'pointer', background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', fontSize:11, fontWeight:800 }}>
+                                    {trustAdjusting ? '…' : '✓'}
+                                  </button>
+                                  <button onClick={() => { setTrustAdjustTarget(null); setTrustAdjustDelta(''); }}
+                                    style={{ padding:'5px 7px', borderRadius:7, border:'1px solid #e5e7eb', cursor:'pointer', background:'#f9fafb', color:'#6b7280', fontSize:11 }}>
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                                  <button onClick={() => { setTrustAdjustTarget(u.uid); setTrustAdjustDelta(''); }}
+                                    style={{
+                                      display:'flex', alignItems:'center', gap:5,
+                                      padding:'6px 12px', borderRadius:8,
+                                      background:'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(168,85,247,0.1))',
+                                      border:'1.5px solid rgba(124,58,237,0.25)', color:'#7c3aed',
+                                      fontSize:11, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap',
+                                    }}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#7c3aed" d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm1 13h-2v-2h2zm0-4h-2V7h2z"/></svg>
+                                    Adjust Score
+                                  </button>
+                                  <button onClick={() => handleTrustAdjust(u.uid, '-5', u.displayName)}
+                                    style={{
+                                      display:'flex', alignItems:'center', gap:5,
+                                      padding:'6px 12px', borderRadius:8,
+                                      background:'rgba(239,68,68,0.06)',
+                                      border:'1.5px solid rgba(239,68,68,0.2)', color:'#ef4444',
+                                      fontSize:11, fontWeight:800, cursor:'pointer',
+                                    }}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#ef4444" d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/></svg>
+                                    −5 Penalty
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
+                )}
 
-                  {/* Footer */}
-                  <div style={{
+                {/* Footer */}
+                <div style={{
                     padding:'10px 16px', background:'#faf9ff',
                     borderTop:'1px solid rgba(124,58,237,0.08)',
-                    fontSize:11, color:'#9ca3af', textAlign:'center'
+                    fontSize:11, color:'#9ca3af', textAlign:'center',
+                    borderRadius:'0 0 16px 16px', marginTop:8,
                   }}>
                     Showing {filtered.length} of {users.filter(u=>!u.isGuest).length} registered users
                     {trustSearch && ` matching "${trustSearch}"`}
                   </div>
-                </div>
 
                 {/* Rank Legend */}
                 <div style={{ marginTop:20, padding:'16px 20px', background:'linear-gradient(145deg,#faf5ff,#ede9fe)', borderRadius:14, border:'1px solid rgba(124,58,237,0.1)' }}>
@@ -3916,26 +3970,55 @@ const AdminPanelPage = () => {
                             )}
 
                             {/* Action buttons */}
-                            {!v.resolved && (
-                              <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:4 }}>
-                                {v.actionTaken === 'KICK' && v.userId && v.roomId && (
-                                  <button onClick={() => { setUnkickTarget(v); setShowUnkickModal(true); }} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, padding:'7px 14px', borderRadius:9, border:'1.5px solid #f97316', background:'#fff7ed', color:'#ea580c', fontWeight:800, cursor:'pointer' }}>
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#ea580c" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/></svg>
-                                    Unkick User
-                                  </button>
-                                )}
-                                {v.actionTaken === 'MUTE' && v.userId && (
-                                  <button onClick={() => { setUnmuteTarget(v); setShowUnmuteModal(true); }} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, padding:'7px 14px', borderRadius:9, border:'1.5px solid #3b82f6', background:'#eff6ff', color:'#2563eb', fontWeight:800, cursor:'pointer' }}>
-                                    <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#2563eb" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
-                                    Unmute User
-                                  </button>
-                                )}
+                            <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:4, alignItems:'center' }}>
+                              {!v.resolved && v.actionTaken === 'KICK' && v.userId && v.roomId && (
+                                <button onClick={() => { setUnkickTarget(v); setShowUnkickModal(true); }} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, padding:'7px 14px', borderRadius:9, border:'1.5px solid #f97316', background:'#fff7ed', color:'#ea580c', fontWeight:800, cursor:'pointer' }}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#ea580c" d="M16,13V10L11,15L16,20V17H22V13H16M14,2A2,2 0 0,0 12,4V6H14V4H5V20H14V18H12A2,2 0 0,1 10,16H5A2,2 0 0,1 3,14V4A2,2 0 0,1 5,2H14Z"/></svg>
+                                  Unkick User
+                                </button>
+                              )}
+                              {!v.resolved && v.actionTaken === 'MUTE' && v.userId && (
+                                <button onClick={() => { setUnmuteTarget(v); setShowUnmuteModal(true); }} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, padding:'7px 14px', borderRadius:9, border:'1.5px solid #3b82f6', background:'#eff6ff', color:'#2563eb', fontWeight:800, cursor:'pointer' }}>
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#2563eb" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/></svg>
+                                  Unmute User
+                                </button>
+                              )}
+                              {!v.resolved && (
                                 <button onClick={() => { setResolveTarget(v); setShowResolveModal(true); }} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, padding:'7px 14px', borderRadius:9, border:'1.5px solid #10b981', background:'#f0fdf4', color:'#059669', fontWeight:800, cursor:'pointer' }}>
                                   <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#059669" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>
                                   Mark Resolved
                                 </button>
-                              </div>
-                            )}
+                              )}
+                              {/* Premium Delete button — always visible */}
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm('Permanently delete this violation record?')) return;
+                                  try {
+                                    await deleteDoc(doc(db, 'modLogs', v.id));
+                                    pt.success('Violation record deleted.');
+                                  } catch (e) {
+                                    pt.error('Delete failed: ' + e.message);
+                                  }
+                                }}
+                                style={{
+                                  display:'flex', alignItems:'center', gap:6,
+                                  fontSize:12, padding:'7px 14px', borderRadius:9,
+                                  background:'linear-gradient(135deg,#ef4444,#dc2626)',
+                                  color:'#fff', border:'none', fontWeight:800, cursor:'pointer',
+                                  boxShadow:'0 2px 10px rgba(239,68,68,0.32)',
+                                  marginLeft:'auto', letterSpacing:'0.02em',
+                                  transition:'all 0.18s ease',
+                                }}
+                                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-1px)'}
+                                onMouseLeave={e=>e.currentTarget.style.transform='none'}
+                                title="Delete this violation record"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}>
+                                  <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+                                </svg>
+                                Delete Record
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
