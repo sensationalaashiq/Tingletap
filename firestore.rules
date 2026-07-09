@@ -1141,12 +1141,12 @@ service cloud.firestore {
 
     match /badgeApplications/{uid} {
       // Applicant can create or overwrite their own document only
-      allow create, update: if isAuthenticated()
+      allow create, update: if request.auth != null
                             && request.auth.uid == uid
                             && !isGuest();
 
       // Applicant reads their own document
-      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
 
       // Owner and admin have full access (for review dashboard)
       allow read, write: if isOwner() || isAdmin();
@@ -1159,11 +1159,11 @@ service cloud.firestore {
     // ================================================================
 
     match /rjApplications/{uid} {
-      allow create, update: if isAuthenticated()
+      allow create, update: if request.auth != null
                             && request.auth.uid == uid
                             && !isGuest();
 
-      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
 
       allow read, write: if isOwner() || isAdmin();
     }

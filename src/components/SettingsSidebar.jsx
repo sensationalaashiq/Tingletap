@@ -14,6 +14,7 @@ import WarningAnnouncementModal from './WarningAnnouncementModal';
 import WarningAnnouncementManager from './WarningAnnouncementManager';
 import FeedbackPage from './FeedbackPage';
 import BadgeApplicationTab from './badge/BadgeApplicationTab';
+import RJApplicationTab from './rj/RJApplicationTab';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 
@@ -3567,6 +3568,19 @@ const SettingsSidebar = ({
                 );
             }
 
+            case 'rj-apply': {
+                // Visible only to authenticated normal users; hidden for guests, owner, admin, moderator.
+                const isGuestRJ = !loggedInUserProfile || loggedInUserProfile.role === 'guest' || auth.currentUser?.isAnonymous;
+                const isNormalUser = loggedInUserProfile?.role?.toLowerCase() === 'user';
+                const isRJVerified = loggedInUserProfile?.badge === 'rj';
+                if (isGuestRJ || !isNormalUser || isRJVerified) return null;
+                return (
+                    <div className="settings-tab-content">
+                        <RJApplicationTab loggedInUserProfile={loggedInUserProfile} />
+                    </div>
+                );
+            }
+
             case 'feedback':
                 return (
                     <div className="settings-tab-content">
@@ -4377,6 +4391,28 @@ const SettingsSidebar = ({
                                     <path d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z" stroke="url(#badge_tab_g)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                                 <span>Verify</span>
+                            </button>
+                        )}
+
+                        {/* RJ Apply tab — visible ONLY to registered members with role=user AND not already RJ-badged; hidden for staff, guests */}
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'rj' && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
+                            <button
+                                className={`settings-tab ${activeTab === 'rj-apply' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('rj-apply')}
+                                title="Apply for RJ Verification"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                                    <defs>
+                                        <linearGradient id="rj_tab_g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stopColor={activeTab === 'rj-apply' ? '#ffffff' : '#a78bfa'}/>
+                                            <stop offset="100%" stopColor={activeTab === 'rj-apply' ? '#ffffff' : '#6d28d9'}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="9" y="2" width="6" height="12" rx="3" stroke="url(#rj_tab_g)" strokeWidth="2"/>
+                                    <path d="M5 11a7 7 0 0 0 14 0" stroke="url(#rj_tab_g)" strokeWidth="2" strokeLinecap="round"/>
+                                    <path d="M12 19v3M9 22h6" stroke="url(#rj_tab_g)" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <span>RJ Verify</span>
                             </button>
                         )}
 

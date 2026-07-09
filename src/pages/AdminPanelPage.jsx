@@ -22,6 +22,7 @@ import { TRUST_RANKS, getRankFromScore, updateTrustScore } from '../utils/trustS
 import { pt } from '../utils/premiumToast';
 import BadgeVerificationPanel from '../components/admin/BadgeVerificationPanel';
 import '../components/admin/BadgeVerificationPanel.css';
+import RJVerificationPanel from '../components/admin/RJVerificationPanel';
 import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
 
@@ -1989,6 +1990,17 @@ const AdminPanelPage = () => {
                       d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z"/>
                     <path fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
                       d="M9 12l2 2 4-4"/>
+                  </>
+                )
+              },
+              {
+                id: 'rj-verify', label: 'RJ Verify',
+                iconColor: '#6d28d9',
+                renderIcon: (c) => (
+                  <>
+                    <rect x="9" y="2" width="6" height="12" rx="3" fill="none" stroke={c} strokeWidth="2"/>
+                    <path fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" d="M5 11a7 7 0 0 0 14 0"/>
+                    <path fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" d="M12 19v3M9 22h6"/>
                   </>
                 )
               }
@@ -4318,6 +4330,11 @@ const AdminPanelPage = () => {
           {/* ── Badge Verification Tab ── */}
           {activeTab === 'badge-verify' && (
             <BadgeVerificationPanel currentUserProfile={currentUserProfile} />
+          )}
+
+          {/* ── RJ Verification Tab ── */}
+          {activeTab === 'rj-verify' && (
+            <RJVerificationPanel currentUserProfile={currentUserProfile} />
           )}
 
         </div>
