@@ -533,7 +533,7 @@ const Sidebar = ({
                       {loggedInUserProfile.displayName || user.displayName || 'User'}
                     </span>
                     {loggedInUserProfile.badge && badges[loggedInUserProfile.badge] && (
-                      <span className="inline-badge" title={badges[loggedInUserProfile.badge].name}
+                      <span className={`inline-badge badge-${loggedInUserProfile.badge}`} title={badges[loggedInUserProfile.badge].name}
                         dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
                     )}
                     {isTodayBirthday(loggedInUserProfile.dateOfBirth) && (
@@ -837,7 +837,7 @@ const Sidebar = ({
                             {userItem.displayName || 'Anonymous'}
                           </span>
                           {userItem.badge && badges[userItem.badge] && (
-                            <span className="inline-badge" title={badges[userItem.badge].name}
+                            <span className={`inline-badge badge-${userItem.badge}`} title={badges[userItem.badge].name}
                               dangerouslySetInnerHTML={{ __html: badges[userItem.badge].svg }} />
                           )}
                           {isTodayBirthday(userItem.dateOfBirth) && (

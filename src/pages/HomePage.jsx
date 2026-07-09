@@ -591,7 +591,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     actualDisplayName
                                 )}
                             </span>
-                            {badge && badges[badge] && (<span className="inline-badge" dangerouslySetInnerHTML={{ __html: badges[badge].svg }} title={badges[badge].name} />)}
+                            {badge && badges[badge] && (<span className={`inline-badge badge-${badge}`} dangerouslySetInnerHTML={{ __html: badges[badge].svg }} title={badges[badge].name} />)}
                             
                             {showUserDropdown && !isBot && isMyMessage && (
                                 <div className="user-dropdown">
@@ -3809,9 +3809,14 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
         } else if (auth.currentUser) {
             uid = auth.currentUser.uid;
-            // For anonymous (guest) Firebase users displayName is null — fall back to profile
-            displayName = auth.currentUser.displayName
-                || loggedInUserProfile?.displayName
+            // Prefer the live Firestore profile name over the Firebase Auth
+            // profile field: admin-panel username changes only update
+            // Firestore/RTDB (not Auth), so auth.currentUser.displayName can
+            // go stale until the user re-logs in. loggedInUserProfile is kept
+            // in sync in real time via the users/{uid} onSnapshot listener in
+            // App.jsx, so it always reflects admin-panel renames immediately.
+            displayName = loggedInUserProfile?.displayName
+                || auth.currentUser.displayName
                 || (auth.currentUser.isAnonymous ? 'Guest' : 'Anonymous');
             email = auth.currentUser.email;
             photoURL = auth.currentUser.photoURL || loggedInUserProfile?.photoURL;
@@ -7908,7 +7913,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 <div className="vpm-name-row">
                                     <span className="vpm-name" data-user-id={profileUser.uid} data-user-uid={profileUser.uid}>{profileUser.displayName || 'Anonymous'}</span>
                                     {profileUser.badge && badges[profileUser.badge] && (
-                                        <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
+                                        <span className={`vpm-badge-wrap badge-${profileUser.badge}`} title={badges[profileUser.badge].name}
                                             dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
                                     )}
                                     {isTodayBirthday(profileUser.dateOfBirth) && (

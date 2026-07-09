@@ -1726,7 +1726,7 @@ const SettingsSidebar = ({
 
                         {blockedUserProfiles.length === 0 ? (
                             <div className="empty-state">
-                                <svg viewBox="0 0 24 24" width="48" height="48" fill="#9ca3af">
+                                <svg viewBox="0 0 24 24" width="48" height="48" fill="#a78bfa">
                                     <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V9M12,19C8.13,19 5,15.87 5,12C5,8.13 8.13,5 12,5C15.87,5 19,8.13 19,12C19,15.87 15.87,19 12,19M7.5,12C7.5,15.04 9.96,17.5 13,17.5V6.5C9.96,6.5 7.5,8.96 7.5,12Z"/>
                                 </svg>
                                 <p>No blocked users</p>

@@ -1592,6 +1592,16 @@ html body.theme-sunset .message-body p {
   height: 14px !important;
 }
 
+/* Emerald Empress / Sapphire Goddess artwork has more internal whitespace
+   than Godfather/High Council/Ruby Queen, so it visually renders smaller at
+   the same box size — scale it up so all badges look the same size wherever
+   used (chat messages, sidebar, profile view). */
+.inline-badge.badge-emerald_empress svg,
+.inline-badge.badge-sapphire_goddess svg {
+  transform: scale(1.55);
+  transform-origin: center;
+}
+
 .message-body {
   margin-top: -4px;
   text-align: left;
@@ -7444,6 +7454,11 @@ html.dark-mode .reject-btn:hover,
     flex-shrink: 0;
 }
 .vpm-badge-wrap svg { width: 22px !important; height: 22px !important; }
+.vpm-badge-wrap.badge-emerald_empress svg,
+.vpm-badge-wrap.badge-sapphire_goddess svg {
+  transform: scale(1.55);
+  transform-origin: center;
+}
 
 /* Latest earned achievement — small premium chip near name */
 .vpm-ach-chip {

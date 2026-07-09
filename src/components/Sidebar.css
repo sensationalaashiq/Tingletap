@@ -690,6 +690,18 @@
   vertical-align: -4px;
 }
 
+/* Emerald Empress / Sapphire Goddess have more internal SVG whitespace than
+   the other badges, so scale them up here too to keep sizes consistent. */
+.sb-list-username .inline-badge.badge-emerald_empress svg,
+.sb-profile-name .inline-badge.badge-emerald_empress svg,
+.sb-apd-name .inline-badge.badge-emerald_empress svg,
+.sb-list-username .inline-badge.badge-sapphire_goddess svg,
+.sb-profile-name .inline-badge.badge-sapphire_goddess svg,
+.sb-apd-name .inline-badge.badge-sapphire_goddess svg {
+  transform: scale(1.55);
+  transform-origin: center;
+}
+
 /* Latest achievement chip — small icon next to DP/username */
 .sb-ach-chip {
   display: inline-flex;
