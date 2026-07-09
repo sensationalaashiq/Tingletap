@@ -412,7 +412,25 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     .author-name[data-user-id="${userId}"],
     .user-label[data-user-id="${userId}"],
     .display-name[data-user-id="${userId}"],
-    .name-display[data-user-id="${userId}"] {
+    .name-display[data-user-id="${userId}"],
+
+    /* ── ViewProfile modal ── */
+    .vpm-name[data-user-id="${userId}"],
+    .vpm-name[data-user-uid="${userId}"],
+
+    /* ── Settings sidebar: friends list + team tab ── */
+    .sf-friend-name[data-user-id="${userId}"],
+    .sf-friend-name[data-user-uid="${userId}"],
+
+    /* ── Settings sidebar: account tab profile name ── */
+    .modern-profile-name[data-user-id="${userId}"],
+    .modern-profile-name[data-user-uid="${userId}"],
+
+    /* ── Welcome Dashboard (always own user) ── */
+    .wd-chip-name[data-user-id="${userId}"],
+    .wd-drop-uname[data-user-id="${userId}"],
+    .wd-hero-name[data-user-id="${userId}"],
+    .wd-panel-uname[data-user-id="${userId}"] {
       ${customStyles}
     }
 

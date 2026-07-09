@@ -1818,7 +1818,7 @@ const SettingsSidebar = ({
                                                     onClick={() => { if (window.setProfileUser) { window.setProfileUser(friend); onClose(); } }}
                                                 />
                                                 <div className="sf-friend-info" style={{ flex: 1 }}>
-                                                    <div className="sf-friend-name">{friend.displayName}</div>
+                                                    <div className="sf-friend-name" data-user-id={friend.id} data-user-uid={friend.id}>{friend.displayName}</div>
                                                     <div className="sf-friend-role">{friend.role || 'Member'}</div>
                                                 </div>
                                                 <div className="sf-friend-btns">
@@ -2382,7 +2382,7 @@ const SettingsSidebar = ({
                                                             onClick={() => { if (window.setProfileUser) { window.setProfileUser(member); onClose(); } }}
                                                         />
                                                         <div className="sf-friend-info">
-                                                            <div className="sf-friend-name">{member.displayName || 'Unknown'}</div>
+                                                            <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}>{member.displayName || 'Unknown'}</div>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}`, fontSize: '9px', fontWeight: 700, color: cfg.color, marginTop: '2px' }}>
                                                                 {cfg.icon}{cfg.label}
                                                             </div>
@@ -2422,7 +2422,7 @@ const SettingsSidebar = ({
                                     <div className="modern-status-indicator"></div>
                                 </div>
                                 <div className="modern-profile-info">
-                                    <h4 className="modern-profile-name">{
+                                    <h4 className="modern-profile-name" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>{
                                         loggedInUserProfile?.displayName ||
                                         auth.currentUser?.displayName ||
                                         (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').displayName || null; } catch { return null; } })() ||

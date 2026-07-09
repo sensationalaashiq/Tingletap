@@ -789,7 +789,7 @@ const WelcomeDashboard = () => {
                     : null}
                   <span className="wd-chip-init" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
                 </span>
-                <span className="wd-chip-name">{displayName.split(' ')[0]}</span>
+                <span className="wd-chip-name" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>{displayName.split(' ')[0]}</span>
                 <span className={`wd-chip-arrow${showUserDrop ? ' open' : ''}`}><ChevronDown color="#7c3aed" /></span>
               </button>
 
@@ -797,7 +797,7 @@ const WelcomeDashboard = () => {
                 <div className="wd-drop">
                   <div className="wd-drop-head">
                     <span className="wd-drop-tag">SIGNED IN AS</span>
-                    <span className="wd-drop-uname">{displayName}</span>
+                    <span className="wd-drop-uname" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>{displayName}</span>
                     {maskedEmail && <span className="wd-drop-email">{maskedEmail}</span>}
                   </div>
                   <div className="wd-drop-sep" />
@@ -829,7 +829,7 @@ const WelcomeDashboard = () => {
 
         <div className="wd-hero-text">
           <h1 className="wd-hero-h1">
-            Welcome back,<span className="wd-hero-name"> {displayName.split(' ')[0]}</span>
+            Welcome back,<span className="wd-hero-name" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}> {displayName.split(' ')[0]}</span>
             <span className={`wd-role-chip ${roleConfig.cls}`}>
               {roleConfig.icon}
               <span className="wd-role-label">({roleConfig.label})</span>
@@ -1188,7 +1188,7 @@ const WelcomeDashboard = () => {
                   <span className="wd-panel-av-i" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
                 </div>
                 <div className="wd-panel-meta">
-                  <span className="wd-panel-uname">{displayName}</span>
+                  <span className="wd-panel-uname" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>{displayName}</span>
                   {maskedEmail && <span className="wd-panel-email">{maskedEmail}</span>}
                   {isVerified && <span className="wd-panel-verified"><ShieldOkIcon /> Verified</span>}
                 </div>

@@ -289,43 +289,38 @@ const StylishFontPopup = React.memo(({
     onClose();
   }, [fontSettings, onApplyFont, onClose]);
 
-  // Apply immediate message styles for better persistence
+  // Apply immediate message styles — SCOPED to the current user's UID only.
+  // Previously used broad class selectors (.message-content, .message-body p …)
+  // which overwrote every other user's message text on the page.
   const applyImmediateMessageStyles = (userSettings) => {
+    const userId = window.auth?.currentUser?.uid;
+    if (!userId) return;                          // no-op if not logged in
+
     // Remove existing immediate styles
     const existingImmediateStyle = document.getElementById('immediate-message-styles');
-    if (existingImmediateStyle) {
-      existingImmediateStyle.remove();
-    }
+    if (existingImmediateStyle) existingImmediateStyle.remove();
 
     const decorations = [];
     if (userSettings.isUnderline) decorations.push('underline');
     if (userSettings.isStrikethrough) decorations.push('line-through');
+    const decStr = decorations.length ? decorations.join(' ') : 'none';
+    const ff = userSettings.fontFamily === 'inherit' ? 'inherit' : userSettings.fontFamily;
 
-    // Create comprehensive immediate style rules for better persistence
+    // All selectors are scoped to [data-user-id="<uid>"] — safe for multi-user chat
     const immediateStyleRules = `
-      /* Immediate Message Text Styling - High Priority */
-      .message-content,
-      .message-text,
-      .chat-message-text,
-      .user-message-text,
-      .message-body,
-      .message-content p,
-      .message-text p,
-      .chat-message-text p,
-      .user-message-text p,
-      .message-body p,
-      div[class*="message"] p:not(.message-displayname):not(.username):not(.user-name):not(.message-username),
-      div[class*="chat"] p:not(.message-displayname):not(.username):not(.user-name):not(.message-username),
-      .chat-container .message-content,
-      .chat-container .message-text,
-      .messages-container .message-content,
-      .messages-container .message-text {
+      /* Immediate message styles — own user only (${userId}) */
+      [data-user-id="${userId}"] .message-body p,
+      [data-user-id="${userId}"] .message-body,
+      [data-user-id="${userId}"] .message-content p,
+      [data-user-id="${userId}"] .message-content,
+      [data-user-id="${userId}"] .message-text p,
+      [data-user-id="${userId}"] .message-text {
           font-size: ${userSettings.fontSize} !important;
           color: ${userSettings.fontColor} !important;
-          font-family: ${userSettings.fontFamily === 'inherit' ? 'inherit' : userSettings.fontFamily} !important;
+          font-family: ${ff} !important;
           font-weight: ${userSettings.isBold ? 'bold' : 'normal'} !important;
           font-style: ${userSettings.isItalic ? 'italic' : 'normal'} !important;
-          text-decoration: ${decorations.length > 0 ? decorations.join(' ') : 'none'} !important;
+          text-decoration: ${decStr} !important;
           line-height: 1.4 !important;
       }
     `;
@@ -335,7 +330,7 @@ const StylishFontPopup = React.memo(({
     immediateStyleElement.textContent = immediateStyleRules;
     document.head.appendChild(immediateStyleElement);
 
-    console.log('✅ Immediate message styles applied:', userSettings);
+    console.log('✅ Immediate message styles applied for own user:', userId);
   };
 
   // Direct global message styling application

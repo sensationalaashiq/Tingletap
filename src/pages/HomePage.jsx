@@ -7907,7 +7907,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                                 {/* Name + badge */}
                                 <div className="vpm-name-row">
-                                    <span className="vpm-name">{profileUser.displayName || 'Anonymous'}</span>
+                                    <span className="vpm-name" data-user-id={profileUser.uid} data-user-uid={profileUser.uid}>{profileUser.displayName || 'Anonymous'}</span>
                                     {profileUser.badge && badges[profileUser.badge] && (
                                         <span className="vpm-badge-wrap" title={badges[profileUser.badge].name}
                                             dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
