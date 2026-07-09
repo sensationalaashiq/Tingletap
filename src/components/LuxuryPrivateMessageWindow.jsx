@@ -70,31 +70,49 @@ const BotIconThankYou = () => (
     <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z" fill="rgba(236,72,153,0.15)" stroke="#ec4899" strokeWidth="1.5"/>
   </svg>
 );
+const BotIconBadgeResubmit = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z" fill="rgba(16,185,129,0.12)" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M9 12l2 2 4-4" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M18 3v4M16 5h4" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const BotIconBadgeAwarded = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="8" r="5" fill="rgba(251,191,36,0.15)" stroke="#f59e0b" strokeWidth="1.7"/>
+    <path d="M9 8l2 2 4-4" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 13l-3 8 7-3 7 3-3-8" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const BOT_STATUS_ICONS = {
-  feedback_received: BotIconFeedbackReceived,
+  feedback_received:  BotIconFeedbackReceived,
   complaint_received: BotIconComplaintReceived,
-  under_review: BotIconUnderReview,
-  checking_issue: BotIconChecking,
-  in_progress: BotIconInProgress,
-  info_required: BotIconInfoRequired,
-  resolved: BotIconResolved,
-  closed: BotIconClosed,
-  warning_issued: BotIconWarning,
-  thank_you: BotIconThankYou,
+  under_review:       BotIconUnderReview,
+  checking_issue:     BotIconChecking,
+  in_progress:        BotIconInProgress,
+  info_required:      BotIconInfoRequired,
+  resolved:           BotIconResolved,
+  closed:             BotIconClosed,
+  warning_issued:     BotIconWarning,
+  thank_you:          BotIconThankYou,
+  badge_resubmit:     BotIconBadgeResubmit,
+  badge_awarded:      BotIconBadgeAwarded,
 };
 
 const BOT_STATUS_COLORS = {
-  feedback_received: { accent: '#a855f7', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
+  feedback_received:  { accent: '#a855f7', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
   complaint_received: { accent: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.2)' },
-  under_review:      { accent: '#60a5fa', bg: 'rgba(96,165,250,0.07)', border: 'rgba(96,165,250,0.2)' },
-  checking_issue:    { accent: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.2)' },
-  in_progress:       { accent: '#6ee7b7', bg: 'rgba(110,231,183,0.07)', border: 'rgba(110,231,183,0.2)' },
-  info_required:     { accent: '#f97316', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
-  resolved:          { accent: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.22)' },
-  closed:            { accent: '#64748b', bg: 'rgba(100,116,139,0.07)', border: 'rgba(100,116,139,0.2)' },
-  warning_issued:    { accent: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.24)' },
-  thank_you:         { accent: '#ec4899', bg: 'rgba(236,72,153,0.07)', border: 'rgba(236,72,153,0.2)' },
+  under_review:       { accent: '#60a5fa', bg: 'rgba(96,165,250,0.07)', border: 'rgba(96,165,250,0.2)' },
+  checking_issue:     { accent: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.2)' },
+  in_progress:        { accent: '#6ee7b7', bg: 'rgba(110,231,183,0.07)', border: 'rgba(110,231,183,0.2)' },
+  info_required:      { accent: '#f97316', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
+  resolved:           { accent: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.22)' },
+  closed:             { accent: '#64748b', bg: 'rgba(100,116,139,0.07)', border: 'rgba(100,116,139,0.2)' },
+  warning_issued:     { accent: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.24)' },
+  thank_you:          { accent: '#ec4899', bg: 'rgba(236,72,153,0.07)', border: 'rgba(236,72,153,0.2)' },
+  badge_resubmit:     { accent: '#10b981', bg: 'rgba(16,185,129,0.07)', border: 'rgba(16,185,129,0.22)' },
+  badge_awarded:      { accent: '#f59e0b', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.25)' },
 };
 
 /* ─── UltraPMBotNotice — renders TingleBot DM notifications ─── */

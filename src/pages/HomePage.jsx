@@ -8288,8 +8288,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             boxShadow:'0 8px 28px rgba(109,40,217,0.22), 0 2px 8px rgba(109,40,217,0.10), inset 0 1px 0 rgba(255,255,255,0.9)',
                                             display:'flex', flexDirection:'column',
                                             alignItems:'center', gap:'8px',
-                                            width:'min(88vw, 400px)',
-                                            maxHeight:'calc(100% - 28px)',
+                                            width:'min(94vw, 640px)',
+                                            maxHeight:'calc(100vh - 40px)',
                                             position:'relative',
                                         }}>
 
@@ -8297,8 +8297,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         <button
                                             onClick={() => setVpmEnlarged(null)}
                                             style={{
-                                                position:'absolute', top:8, right:8,
-                                                width:26, height:26, borderRadius:'50%',
+                                                position:'absolute', top:10, right:10,
+                                                width:32, height:32, borderRadius:'50%',
                                                 background:'linear-gradient(135deg,#7c3aed,#6d28d9)',
                                                 border:'1.5px solid rgba(196,181,253,0.6)',
                                                 display:'flex', alignItems:'center', justifyContent:'center',
@@ -8319,7 +8319,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             display:'flex', alignItems:'center', gap:5,
                                             fontSize:'9px', fontWeight:700,
                                             color:'#5b21b6', letterSpacing:'0.05em',
-                                            textTransform:'uppercase', paddingRight:28,
+                                            textTransform:'uppercase', paddingRight:38,
                                         }}>
                                             <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed">
                                                 {vpmEnlarged.type === 'avatar'
@@ -8336,7 +8336,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             alt="Enlarged"
                                             style={{
                                                 width:'100%',
-                                                maxHeight:'65vh',
+                                                maxHeight:'82vh',
                                                 borderRadius: vpmEnlarged.type === 'avatar' ? '16px' : '11px',
                                                 objectFit:'contain',
                                                 boxShadow: vpmEnlarged.type === 'avatar'

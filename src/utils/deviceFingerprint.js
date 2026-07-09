@@ -210,12 +210,19 @@ export class DeviceFingerprint {
 
       // ── Xiaomi / Redmi / POCO ─────────────────────────────────────────
       // UA: "Redmi Note 12", "POCO M4 Pro", "Xiaomi 13 Pro", "2201116TG"
-      if (/Xiaomi|Redmi|POCO/i.test(raw)) return raw;         // full name already present
-      if (/Xiaomi|Redmi|POCO/i.test(ua) && /^[A-Z0-9]{6,}$/i.test(raw)) {
-        // codename like 2201116TG — still label the brand
-        return `Xiaomi / Redmi (${raw})`;
+      if (/Redmi/i.test(ua)) {
+        // Return brand + human model if present, or just brand
+        if (/Redmi/i.test(raw) && !/^[A-Z0-9]{6,}$/i.test(raw)) return raw; // "Redmi Note 12"
+        return 'Redmi';
       }
-      if (/Xiaomi|Redmi|POCO/i.test(ua)) return raw || 'Xiaomi / Redmi';
+      if (/POCO/i.test(ua)) {
+        if (/POCO/i.test(raw) && !/^[A-Z0-9]{6,}$/i.test(raw)) return raw; // "POCO M4 Pro"
+        return 'POCO';
+      }
+      if (/Xiaomi/i.test(ua)) {
+        if (/Xiaomi/i.test(raw) && !/^[A-Z0-9]{6,}$/i.test(raw)) return raw; // "Xiaomi 13 Pro"
+        return 'Xiaomi';
+      }
 
       // ── Oppo ─────────────────────────────────────────────────────────
       // Branded: "OPPO A54", "OPPO Reno8"

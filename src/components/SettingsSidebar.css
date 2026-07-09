@@ -120,13 +120,13 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 11px 4px;
+    padding: 10px 4px;
     border: none;
     background: transparent;
     cursor: pointer;
     font-size: 9px;
     font-weight: 700;
-    color: #9ca3af;
+    color: #7c6aaa;
     text-align: center;
     transition: all .2s ease;
     border-left: 3px solid transparent;
@@ -150,15 +150,18 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    stroke: currentColor;
+    flex-shrink: 0;
+    opacity: 0.85;
+    transition: opacity .2s ease;
 }
+.settings-tab:hover svg, .settings-tab.active svg { opacity: 1; }
 
 /* ── BODY ── */
 .settings-body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px 10px 0 10px;   /* bottom-padding removed — sticky btn handles it */
+    padding: 10px 10px 90px 10px;  /* bottom-padding so last elements are always reachable */
     min-width: 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(139,92,246,.25) transparent;
@@ -265,7 +268,7 @@
 .setting-info small {
     display: block;
     font-size: 10px;
-    color: #9ca3af;
+    color: #7c6aaa;
     line-height: 1.3;
 }
 
@@ -295,10 +298,10 @@
     color: #1e1b4b;
     margin-bottom: 1px;
 }
-.modern-setting-info small {
+.modern-setting-info small { /* helper text under setting label */
     display: block;
     font-size: 10px;
-    color: #9ca3af;
+    color: #7c6aaa;
     line-height: 1.3;
 }
 
@@ -578,7 +581,7 @@
 }
 .modern-profile-email {
     font-size: 10px;
-    color: #9ca3af;
+    color: #7c6aaa;
     margin: 0 0 5px 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -631,7 +634,7 @@
 .account-details p {
     margin: 0 0 2px 0;
     font-size: 11px;
-    color: #9ca3af;
+    color: #7c6aaa;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1026,8 +1029,8 @@
     padding: 28px 16px;
     text-align: center;
 }
-.empty-state svg { margin-bottom: 10px; opacity: .3; stroke: #9ca3af; }
-.empty-state p { margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #9ca3af; }
+.empty-state svg { margin-bottom: 10px; opacity: .55; stroke: #a78bfa; }
+.empty-state p { margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #7c6aaa; }
 .empty-state small { font-size: 11px; color: #c4b5fd; }
 
 /* ── NEW PREMIUM FRIENDS SECTION (sf-*) ── */
@@ -1106,7 +1109,7 @@
 }
 .sf-friend-info { flex: 1; min-width: 0; overflow: hidden; }
 .sf-friend-name { font-size: 12px; font-weight: 700; color: #1e1b4b; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sf-friend-role { font-size: 10px; color: #9ca3af; margin: 0; }
+.sf-friend-role { font-size: 10px; color: #7c6aaa; margin: 0; }
 
 .sf-friend-btns { display: flex; gap: 4px; flex-shrink: 0; }
 .sf-btn {
@@ -1129,7 +1132,7 @@
 
 .sf-empty { text-align: center; padding: 18px 12px; }
 .sf-empty svg { opacity: .5; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; }
-.sf-empty-title { font-size: 12px; font-weight: 700; color: #9ca3af; margin-bottom: 3px; }
+.sf-empty-title { font-size: 12px; font-weight: 700; color: #7c6aaa; margin-bottom: 3px; }
 .sf-empty-sub { font-size: 10px; color: #c4b5fd; }
 
 /* ── FRIENDS (legacy) ── */
@@ -1156,7 +1159,7 @@
 }
 .friend-info { flex: 1; min-width: 0; }
 .friend-name { font-size: 11px; font-weight: 700; color: #1e1b4b; margin: 0; }
-.friend-status { font-size: 10px; color: #9ca3af; margin: 0; }
+.friend-status { font-size: 10px; color: #7c6aaa; margin: 0; }
 .friend-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .friend-action-btn {
     border: none;
@@ -1177,7 +1180,7 @@
 
 .empty-friends { text-align: center; padding: 20px 10px; }
 .empty-friends svg { opacity: .25; margin-bottom: 8px; stroke: #a78bfa; }
-.empty-friends p { font-size: 12px; color: #9ca3af; margin: 0 0 3px 0; }
+.empty-friends p { font-size: 12px; color: #7c6aaa; margin: 0 0 3px 0; }
 .empty-friends small { font-size: 10px; color: #c4b5fd; }
 
 .friends-section {
@@ -1429,7 +1432,7 @@
     box-sizing: border-box;
 }
 .spotify-url-input:focus { outline: none; border-color: #1DB954; box-shadow: 0 0 0 2px rgba(29,185,84,.15); }
-.spotify-url-input::placeholder { color: #9ca3af; }
+.spotify-url-input::placeholder { color: #7c6aaa; }
 .spotify-set-button {
     padding: 10px 16px;
     background: linear-gradient(135deg, #1DB954, #1ED760) !important;
@@ -1567,7 +1570,7 @@
 }
 .st3-preset:hover { background: rgba(245,243,255,.9); border-color: rgba(139,92,246,.3); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(109,40,217,.1); }
 .st3-preset-aa { font-size: 13px; font-weight: 900; display: block; }
-.st3-preset-name { font-size: 7.5px; font-weight: 700; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.st3-preset-name { font-size: 7.5px; font-weight: 700; color: #7c6aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
 .st3-card {
     background: rgba(255,255,255,.75);
@@ -1626,7 +1629,7 @@
     border: 1.5px solid rgba(167,139,250,.2);
     border-radius: 7px;
     background: rgba(245,243,255,.7);
-    color: #9ca3af;
+    color: #7c6aaa;
     font-size: 10px;
     font-weight: 700;
     cursor: pointer;
@@ -1683,7 +1686,7 @@
 }
 .st3-sel:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,.15); }
 .st3-sel option { background: #f5f3ff; color: #4c1d95; }
-.st3-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: #9ca3af; pointer-events: none; }
+.st3-chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; fill: #a78bfa; pointer-events: none; }
 
 .st3-color-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .st3-color-input {
@@ -1869,7 +1872,7 @@
 .stylish-setting-item:last-child { border-bottom: none; }
 .setting-label { margin-bottom: 7px; }
 .setting-label span { display: block; font-size: 12px; font-weight: 600; color: #1e1b4b; margin-bottom: 2px; }
-.setting-label small { display: block; font-size: 10px; color: #9ca3af; }
+.setting-label small { display: block; font-size: 10px; color: #7c6aaa; }
 
 /* Stylish select */
 .stylish-select-wrapper { position: relative; display: inline-block; min-width: 160px; }
@@ -1888,7 +1891,7 @@
 }
 .stylish-select option { background: #f5f3ff; color: #4c1d95; }
 .stylish-select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,.15); }
-.select-arrow { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; }
+.select-arrow { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #7c6aaa; }
 
 /* Font style grid */
 .font-style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
@@ -1945,7 +1948,7 @@
     border-radius: 8px;
     background: rgba(255,255,255,.7);
     cursor: pointer;
-    color: #9ca3af;
+    color: #7c6aaa;
     font-size: 14px;
     display: flex; align-items: center; justify-content: center;
     transition: all .2s ease;
@@ -1970,7 +1973,7 @@
 .shadow-preset-btn:hover { border-color: rgba(139,92,246,.3); background: rgba(245,243,255,.8); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(109,40,217,.1); }
 .shadow-preset-btn.active { border-color: #8b5cf6; background: rgba(237,233,254,.6); }
 .shadow-preview { font-size: 14px; font-weight: 800; color: #1e1b4b; }
-.shadow-label { font-size: 9px; font-weight: 700; color: #9ca3af; }
+.shadow-label { font-size: 9px; font-weight: 700; color: #7c6aaa; }
 
 /* Color mode toggle */
 .color-mode-toggle {
@@ -1987,14 +1990,14 @@
     padding: 7px 10px;
     border-radius: 7px;
     cursor: pointer;
-    font-size: 11px; font-weight: 600; color: #9ca3af;
+    font-size: 11px; font-weight: 600; color: #7c6aaa;
     transition: all .2s ease;
 }
 .mode-option:hover { background: rgba(139,92,246,.08); color: #6d28d9; }
 .mode-selector {
     width: 24px; height: 24px; border-radius: 6px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(245,243,255,.7); color: #9ca3af;
+    background: rgba(245,243,255,.7); color: #7c6aaa;
     transition: all .2s ease;
 }
 .mode-option .mode-selector.active {
@@ -2024,7 +2027,7 @@
     animation: shimmer 3s infinite;
 }
 @keyframes shimmer { 0% { left: -100%; } 100% { left: 100%; } }
-.preview-info { display: flex; align-items: center; justify-content: center; gap: 6px; color: #9ca3af; font-size: 10px; }
+.preview-info { display: flex; align-items: center; justify-content: center; gap: 6px; color: #7c6aaa; font-size: 10px; }
 .live-indicator { color: #10b981; animation: pulse 2s infinite; }
 
 /* ── USERNAME FONT TAB HEADER (legacy) ── */

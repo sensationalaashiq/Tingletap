@@ -4166,11 +4166,19 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('general')}
                             title="General"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
-                                <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/>
-                                <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>
-                                <circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <defs>
+                                    <linearGradient id="st_gen" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stopColor={activeTab==='general'?'#fff':'#6366f1'}/>
+                                        <stop offset="100%" stopColor={activeTab==='general'?'#fff':'#818cf8'}/>
+                                    </linearGradient>
+                                </defs>
+                                <line x1="4" y1="6" x2="20" y2="6" stroke="url(#st_gen)" strokeWidth="1.8" strokeLinecap="round"/>
+                                <line x1="4" y1="12" x2="20" y2="12" stroke="url(#st_gen)" strokeWidth="1.8" strokeLinecap="round"/>
+                                <line x1="4" y1="18" x2="20" y2="18" stroke="url(#st_gen)" strokeWidth="1.8" strokeLinecap="round"/>
+                                <circle cx="8" cy="6" r="2.2" fill={activeTab==='general'?'#fff':'#6366f1'}/>
+                                <circle cx="16" cy="12" r="2.2" fill={activeTab==='general'?'#fff':'#818cf8'}/>
+                                <circle cx="10" cy="18" r="2.2" fill={activeTab==='general'?'#fff':'#6366f1'}/>
                             </svg>
                             <span>General</span>
                         </button>
@@ -4199,10 +4207,10 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('notifications')}
                             title="Notifications"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                                <circle cx="18" cy="5" r="3" fill="#f97316" stroke="none"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={activeTab==='notifications'?'#fff':'#f97316'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={activeTab==='notifications'?'#fff':'#f97316'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="18" cy="5" r="3" fill={activeTab==='notifications'?'#fff':'#f97316'} opacity={activeTab==='notifications'?0.9:1}/>
                             </svg>
                             <span>Alerts</span>
                         </button>
@@ -4212,9 +4220,9 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('privacy')}
                             title="Privacy"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                <polyline points="9 12 11 14 15 10"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill={activeTab==='privacy'?'rgba(255,255,255,0.2)':'rgba(16,185,129,0.15)'} stroke={activeTab==='privacy'?'#fff':'#10b981'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                <polyline points="9 12 11 14 15 10" stroke={activeTab==='privacy'?'#fff':'#10b981'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                             <span>Privacy</span>
                         </button>
@@ -4224,9 +4232,9 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('blocked')}
                             title="Blocked Users"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <circle cx="12" cy="12" r="9" fill={activeTab==='blocked'?'rgba(255,255,255,0.18)':'rgba(239,68,68,0.12)'} stroke={activeTab==='blocked'?'#fff':'#ef4444'} strokeWidth="1.8"/>
+                                <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" stroke={activeTab==='blocked'?'#fff':'#ef4444'} strokeWidth="2" strokeLinecap="round"/>
                             </svg>
                             <span>Blocked</span>
                         </button>
@@ -4236,14 +4244,14 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('bot-notif')}
                             title="TingleBot Notifications"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="7" y="10" width="10" height="9" rx="2"/>
-                                <path d="M9 10V8a3 3 0 0 1 6 0v2"/>
-                                <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/>
-                                <circle cx="14" cy="14" r="1" fill="currentColor" stroke="none"/>
-                                <path d="M10 18h4"/>
-                                <path d="M12 4v2"/>
-                                <path d="M5 13H7M17 13H19"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <rect x="7" y="10" width="10" height="9" rx="2" fill={activeTab==='bot-notif'?'rgba(255,255,255,0.18)':'rgba(6,182,212,0.15)'} stroke={activeTab==='bot-notif'?'#fff':'#06b6d4'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M9 10V8a3 3 0 0 1 6 0v2" stroke={activeTab==='bot-notif'?'#fff':'#06b6d4'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="10" cy="14" r="1.1" fill={activeTab==='bot-notif'?'#fff':'#06b6d4'}/>
+                                <circle cx="14" cy="14" r="1.1" fill={activeTab==='bot-notif'?'#fff':'#06b6d4'}/>
+                                <path d="M10 18h4" stroke={activeTab==='bot-notif'?'#fff':'#06b6d4'} strokeWidth="1.6" strokeLinecap="round"/>
+                                <path d="M12 4v2" stroke={activeTab==='bot-notif'?'#fff':'#06b6d4'} strokeWidth="1.7" strokeLinecap="round"/>
+                                <path d="M5 13H7M17 13H19" stroke={activeTab==='bot-notif'?'#fff':'#06b6d4'} strokeWidth="1.7" strokeLinecap="round"/>
                             </svg>
                             <span>TingleBot</span>
                         </button>
@@ -4259,11 +4267,11 @@ const SettingsSidebar = ({
                                     title="Friends"
                                     style={{ position: 'relative' }}
                                 >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={activeTab==='friends'?'#fff':'#ec4899'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <circle cx="9" cy="7" r="4" fill={activeTab==='friends'?'rgba(255,255,255,0.2)':'rgba(236,72,153,0.15)'} stroke={activeTab==='friends'?'#fff':'#ec4899'} strokeWidth="1.8"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke={activeTab==='friends'?'#fff':'#f472b6'} strokeWidth="1.8" strokeLinecap="round"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke={activeTab==='friends'?'#fff':'#f472b6'} strokeWidth="1.8" strokeLinecap="round"/>
                                     </svg>
                                     <span>Friends</span>
                                     {!hasFriendsAccess && <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#ef4444',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>}
@@ -4283,12 +4291,18 @@ const SettingsSidebar = ({
                                     title="Username Style"
                                     style={{ position: 'relative' }}
                                 >
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>
-                                        <circle cx="6.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
-                                        <circle cx="9.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/>
-                                        <circle cx="14.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/>
-                                        <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                        <defs>
+                                            <linearGradient id="st_style" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                                <stop offset="0%" stopColor={activeTab==='username-font'?'#fff':'#a855f7'}/>
+                                                <stop offset="100%" stopColor={activeTab==='username-font'?'#fff':'#ec4899'}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z" stroke="url(#st_style)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <circle cx="6.5" cy="11.5" r="1.5" fill={activeTab==='username-font'?'#fff':'#a855f7'}/>
+                                        <circle cx="9.5" cy="7.5" r="1.5" fill={activeTab==='username-font'?'#fff':'#c084fc'}/>
+                                        <circle cx="14.5" cy="7.5" r="1.5" fill={activeTab==='username-font'?'#fff':'#ec4899'}/>
+                                        <circle cx="17.5" cy="11.5" r="1.5" fill={activeTab==='username-font'?'#fff':'#f472b6'}/>
                                     </svg>
                                     <span>Style</span>
                                     {!hasAccess && <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#ef4444',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>}
@@ -4301,9 +4315,9 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('account')}
                             title="Account"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <circle cx="12" cy="7" r="4" fill={activeTab==='account'?'rgba(255,255,255,0.22)':'rgba(124,58,237,0.18)'} stroke={activeTab==='account'?'#fff':'#7c3aed'} strokeWidth="1.8"/>
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke={activeTab==='account'?'#fff':'#7c3aed'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                             <span>Account</span>
                         </button>
@@ -4314,13 +4328,13 @@ const SettingsSidebar = ({
                             onClick={() => setActiveTab('team')}
                             title="Team"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                <line x1="19" y1="8" x2="19" y2="14"/>
-                                <line x1="22" y1="11" x2="16" y2="11"/>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={activeTab==='team'?'#fff':'#3b82f6'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="9" cy="7" r="4" fill={activeTab==='team'?'rgba(255,255,255,0.2)':'rgba(59,130,246,0.15)'} stroke={activeTab==='team'?'#fff':'#3b82f6'} strokeWidth="1.8"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke={activeTab==='team'?'#fff':'#60a5fa'} strokeWidth="1.8" strokeLinecap="round"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke={activeTab==='team'?'#fff':'#60a5fa'} strokeWidth="1.8" strokeLinecap="round"/>
+                                <line x1="19" y1="8" x2="19" y2="14" stroke={activeTab==='team'?'#fff':'#3b82f6'} strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="22" y1="11" x2="16" y2="11" stroke={activeTab==='team'?'#fff':'#3b82f6'} strokeWidth="2" strokeLinecap="round"/>
                             </svg>
                             <span>Team</span>
                         </button>
@@ -4345,8 +4359,8 @@ const SettingsSidebar = ({
                             <span>Feedback</span>
                         </button>
 
-                        {/* Badge Apply tab — visible only to regular registered members (role=user), not staff/badge-holders/guests */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'verified' && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
+                        {/* Badge Apply tab — visible ONLY to registered members with role=user AND no badge at all; hidden for staff, badge-holders, guests */}
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !loggedInUserProfile?.badge && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'badge-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('badge-apply')}
@@ -4374,15 +4388,14 @@ const SettingsSidebar = ({
                                 title="TingleBot Settings"
                                 style={{ position: 'relative' }}
                             >
-                                {/* Robot SVG icon */}
-                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="7" y="10" width="10" height="9" rx="2"/>
-                                    <path d="M9 10V8a3 3 0 0 1 6 0v2"/>
-                                    <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/>
-                                    <circle cx="14" cy="14" r="1" fill="currentColor" stroke="none"/>
-                                    <path d="M10 18h4"/>
-                                    <path d="M12 4v2"/>
-                                    <path d="M5 13H7M17 13H19"/>
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                                    <rect x="7" y="10" width="10" height="9" rx="2" fill={activeTab==='tinglebot'?'rgba(255,255,255,0.18)':'rgba(109,28,213,0.18)'} stroke={activeTab==='tinglebot'?'#fff':'#7c3aed'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M9 10V8a3 3 0 0 1 6 0v2" stroke={activeTab==='tinglebot'?'#fff':'#7c3aed'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <circle cx="10" cy="14" r="1.1" fill={activeTab==='tinglebot'?'#fff':'#a78bfa'}/>
+                                    <circle cx="14" cy="14" r="1.1" fill={activeTab==='tinglebot'?'#fff':'#a78bfa'}/>
+                                    <path d="M10 18h4" stroke={activeTab==='tinglebot'?'#fff':'#7c3aed'} strokeWidth="1.6" strokeLinecap="round"/>
+                                    <path d="M12 4v2" stroke={activeTab==='tinglebot'?'#fff':'#7c3aed'} strokeWidth="1.7" strokeLinecap="round"/>
+                                    <path d="M5 13H7M17 13H19" stroke={activeTab==='tinglebot'?'#fff':'#7c3aed'} strokeWidth="1.7" strokeLinecap="round"/>
                                 </svg>
                                 <span>TingleBot</span>
                                 <span style={{position:'absolute',top:'5px',right:'5px',width:'7px',height:'7px',background:'#6d28d9',borderRadius:'50%',display:'block',border:'1.5px solid white'}}></span>

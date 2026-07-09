@@ -261,6 +261,9 @@
   box-shadow: 0 3px 10px rgba(124,58,237,0.28);
 }
 .bvp-btn--primary:hover:not(:disabled) { box-shadow: 0 5px 16px rgba(124,58,237,0.4); }
+.bvp-btn--primary svg path,
+.bvp-btn--primary svg circle,
+.bvp-btn--primary svg rect { stroke: #fff !important; }
 .bvp-btn--secondary {
   background: var(--bg-secondary, #f8fafc);
   color: var(--text-secondary);
