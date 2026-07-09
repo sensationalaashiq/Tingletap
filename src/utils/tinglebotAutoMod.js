@@ -740,14 +740,15 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
         if (action === 'warn') action = 'delete_warn';
     }
 
-    // ── Post notice — staff clients only ────────────────────────────────────
-    // The Netlify function (post-automod-notice) requires the caller to be
-    // owner/admin/moderator (verified server-side via Firestore role check).
-    // Non-staff clients skip this call entirely to avoid noisy 403 errors.
-    // A per-violator+action dedup lock in the function prevents multiple staff
-    // clients each posting the same notice within the 60-second TTL window.
+    // ── Post notice — ALL authenticated clients ──────────────────────────
+    // Any room participant calls the server-side Netlify function so AutoMod
+    // notices are always visible even when no staff member is online.
+    // Notice text is generated entirely server-side (caller cannot control it).
+    // A per-caller + per-room rate limit plus a room+violator+action dedup lock
+    // inside the function prevent abuse. Actual enforcement (mute/kick/delete)
+    // remains staff-only in the block below.
     const noticeCooldownType = shouldKick ? 'kick' : muteDuration > 0 ? 'mute' : 'warn';
-    if (isStaff && canPostNotice(uid, noticeCooldownType)) {
+    if (canPostNotice(uid, noticeCooldownType)) {
         let noticeText, noticeTinglebotType;
         if (shouldKick) {
             noticeText = getRandom(NOTICE_VARIANTS.kicked(displayName));

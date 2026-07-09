@@ -762,16 +762,8 @@ app.post('/api/post-automod-notice', async (req, res) => {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  // 2 — Staff role check
-  const STAFF_ROLES = new Set(['owner', 'admin', 'moderator']);
-  try {
-    const callerSnap = await adminDb.collection('users').doc(callerUid).get();
-    if (!callerSnap.exists) return res.status(403).json({ error: 'Access denied — user not found' });
-    if (!STAFF_ROLES.has(callerSnap.data()?.role)) return res.status(403).json({ error: 'Access denied — staff only' });
-  } catch (e) {
-    console.error('[post-automod-notice] Role check error:', e.message);
-    return res.status(500).json({ error: 'Role verification failed' });
-  }
+  // 2 — Any authenticated user may trigger notices (guest docs may not exist — that's fine)
+  // Actual enforcement (mute/kick/delete) is client-side staff-only; notices are server-generated.
 
   // 3 — Input validation (signal only — no text/tinglebotType from client)
   const ALLOWED_ACTIONS = new Set(['warn','delete_warn','mute_5','mute_30','mute_3h','mute_24h','kick']);
