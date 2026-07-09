@@ -1,41 +1,33 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  TingleBot Advanced Multilingual Moderation Engine (AMAME) v3.0         ║
- * ║  On-device · Zero external API · Intelligent · Multilingual             ║
+ * ║  TingleBot Moderation Engine v5.0 — Rule-Based, Room-Aware, No Blacklist  ║
  * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║  Languages: English · Hindi · Bengali · Tamil · Telugu · Kannada        ║
- * ║             Marathi · Punjabi · Bhojpuri · Haryanavi + mixed-lang       ║
- * ║                                                                          ║
- * ║  Evasion defeat: leet-speak · symbol substitution · spacing tricks      ║
- * ║    repeated-char flooding · zero-width chars · phonetic variants        ║
- * ║    homoglyph (Cyrillic/Greek/Unicode) · hashtag content · emoji abuse   ║
- * ║    abbreviations (mc/bc/bsdk) · Devanagari + transliterated text        ║
- * ║                                                                          ║
- * ║  New in v3.0:                                                            ║
- * ║    • Homoglyph normalization (Cyrillic а→a, Greek ο→o, etc.)            ║
- * ║    • Personal info / doxxing detection (phone, UPI, email, bank)        ║
- * ║    • Emoji abuse signals (🖕 🔞 ☠️ in context)                          ║
- * ║    • CAPS / shouting detection                                           ║
- * ║    • Multi-signal confidence scoring (weak signals accumulate)           ║
- * ║    • Contextual whitelist (false-positive reduction)                     ║
- * ║    • Abbreviation context guard (bc/mc/af need surrounding context)      ║
- * ║    • Persistent cross-session violation tracking via Firestore           ║
- * ║    • Dedicated modLogs Firestore collection                              ║
- * ║    • Varied, natural notice messages                                     ║
- * ║    • Per-type enforcement cooldowns                                      ║
- * ║    • Massively expanded multilingual dictionaries                        ║
- * ║                                                                          ║
- * ║  Architecture:                                                           ║
- * ║   • Detection runs on ALL clients (no Firestore needed)                  ║
- * ║   • Enforcement (delete/mute/kick) runs ONLY on staff clients            ║
- * ║     (owner / admin / moderator) — matches Firestore rules               ║
- * ║   • Firestore transaction claim prevents duplicate enforcement           ║
- * ║   • processedMsgIds dedup prevents re-scanning same message             ║
+ * ║  Policy (see project moderation spec):                                  ║
+ * ║   • NO global keyword blacklist. Profanity / sexual slang / Hindi,      ║
+ * ║     English, Hinglish, regional slang is NEVER punished on its own.     ║
+ * ║   • Adult Room: consenting-adult conversation, flirting, dirty talk,    ║
+ * ║     roleplay, and adult-chat ads are allowed.                           ║
+ * ║   • General rooms: friendly banter, teasing, casual profanity, slang,   ║
+ * ║     jokes and memes are allowed.                                        ║
+ * ║   • Harassment is only flagged when ALL of: a specific user is          ║
+ * ║     repeatedly targeted, abuse continues after the target objects,      ║
+ * ║     multiple abusive messages hit the same person, targeting is done    ║
+ * ║     via @mention/reply, and/or threats/intimidation/stalking exist.     ║
+ * ║   • Spam is only flagged for repetition, flooding, mass advertising,    ║
+ * ║     bot-like posting, or rapid copy-paste — never for isolated content. ║
+ * ║   • A fixed set of "immediate action" categories are ALWAYS moderated   ║
+ * ║     regardless of room: minors/grooming, non-consensual sexual content, ║
+ * ║     threats of violence, doxxing/personal info leaks, hate speech       ║
+ * ║     (religious/caste/racist), terrorism promotion, scams/phishing/      ║
+ * ║     malware links, and other illegal-activity promotion. These are      ║
+ * ║     detected with narrow behavioural patterns, not a slang dictionary.  ║
+ * ║   • Automatic enforcement never exceeds Kick — bans stay a manual,      ║
+ * ║     staff-only Admin Panel action.                                      ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
 
 import {
-    collection, doc, addDoc, deleteDoc, setDoc, getDoc,
+    collection, doc, addDoc, deleteDoc, setDoc,
     updateDoc, serverTimestamp, arrayUnion, runTransaction, increment,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -44,29 +36,38 @@ import { db } from '../firebase/config';
    §A  IN-MEMORY SESSION STATE
 ════════════════════════════════════════════════════════════════════════════ */
 
-const userMsgTimestamps     = new Map(); // uid → number[]
-const userRecentTexts       = new Map(); // uid → {text, ts, normText}[]
-const userSessionViolations = new Map(); // uid → {total, spam, abuse, …, scoreAccum}
+const userMsgTimestamps     = new Map(); // uid → number[]                       (flood)
+const userRecentTexts       = new Map(); // uid → {text, ts}[]                   (repeat/copy-paste)
+const userAdCounts          = new Map(); // uid → {count, windowStart}           (mass-advertise)
+const userSessionViolations = new Map(); // uid → {total, byType:{}}
 const processedMsgIds       = new Set(); // message IDs seen this session
-const lastNoticeTime        = new Map(); // uid → {[type]: timestamp} — per-type cooldown
-const lastActionTime        = new Map(); // uid → timestamp — global action cooldown
+const lastNoticeTime        = new Map(); // uid → {[type]: ts}
+const lastActionTime        = new Map(); // uid → ts
+// Harassment tracking: `${roomId}::${targetKey}` → {
+//   hits: [{ senderUid, ts, threat:boolean }],
+//   objected: boolean,   // target has asked the sender(s) to stop
+// }
+const targetingState        = new Map();
 
 /* ════════════════════════════════════════════════════════════════════════════
    §B  CONFIGURATION
 ════════════════════════════════════════════════════════════════════════════ */
 
-// NOTE (v4.0 policy): Warning, Mute, and Kick are the ONLY automatic actions
-// this engine ever takes. There is intentionally no auto-ban threshold/action
-// anywhere in this file — KICK_AT is the maximum automatic escalation step.
-// Manual bans remain a staff-only action performed elsewhere (e.g. Admin Panel).
+// Warning → Mute → Kick are the ONLY automatic actions. No auto-ban.
 export const CFG = {
-    // Flood / repeat
+    // Flood / repeat (spam)
     FLOOD_COUNT          : 5,
     FLOOD_WINDOW_MS      : 9000,
     REPEAT_COUNT         : 3,
     REPEAT_SIMILARITY    : 0.80,
     REPEAT_WINDOW_MS     : 90000,
-    // Escalation thresholds (cumulative violation count)
+    // Mass-advertise
+    AD_WINDOW_MS         : 5 * 60 * 1000,
+    AD_COUNT             : 3,
+    // Harassment
+    HARASSMENT_WINDOW_MS : 15 * 60 * 1000,
+    HARASSMENT_MIN_HITS  : 3,   // same target must be hit at least this many times
+    // Escalation thresholds (cumulative violation count, per user per session)
     DELETE_WARN_AT       : 1,
     MUTE_5_AT            : 2,
     MUTE_30_AT           : 3,
@@ -76,687 +77,131 @@ export const CFG = {
     // TTLs
     NOTICE_TTL_MS        : 1 * 60 * 1000,
     CLAIM_TTL_MS         : 30 * 60 * 1000,
-    // Fuzzy matching — max edit distance per length band
-    FUZZY_SHORT          : 1,   // 4-7 chars  → ≤1 substitution
-    FUZZY_MEDIUM         : 2,   // 8-12 chars → ≤2 substitutions
-    FUZZY_LONG           : 3,   // >12 chars  → ≤3 substitutions
-    // CAPS / shouting
-    CAPS_MIN_LENGTH      : 8,   // minimum message char count to apply caps check
-    CAPS_THRESHOLD       : 0.72,// fraction of alpha chars that must be uppercase
-    CAPS_MIN_ALPHA       : 6,   // minimum alphabetic chars in message for caps check
-    // Multi-signal scoring
-    MULTI_SIGNAL_THRESHOLD : 2.5, // score sum that triggers a multi-signal violation
-    // Per-type notice cooldown (don't spam identical notices)
     NOTICE_COOLDOWN_MS   : 60 * 1000,
-    // Action cooldown per user (won't take two actions on same user within window)
     ACTION_COOLDOWN_MS   : 8 * 1000,
-    // Persist violation record to Firestore when total reaches this
     PERSIST_AT           : 1,
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §C  NORMALIZATION ENGINE
-   Produces multiple text variants to defeat all known evasion tactics.
-   Order: homoglyphs → zero-width → spacing tricks → leet → repeat-collapse
+   §C  ROOM CLASSIFICATION
+   Every moderation decision starts by knowing what kind of room this is.
 ════════════════════════════════════════════════════════════════════════════ */
 
-// §C1 — Zero-width / invisible chars
-const ZERO_WIDTH = /[\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF\u00AD\u2028\u2029\u180E\u034F\u2800]/g;
+export const ROOM_TYPES = {
+    ADULT: 'adult',
+    INDIAN: 'indian',
+    INTERNATIONAL: 'international',
+    GAMING: 'gaming',
+    MUSIC: 'music',
+    GENERAL: 'general',
+};
 
-// §C2 — Punctuation / word-break chars used to split words
-const WORD_BREAK_CHARS = /[.\-_*~^`'"´\u2019\u2018\u201C\u201D\u00B7\u2022\u2024]/g;
+export const getRoomType = (roomName = '') => {
+    const n = roomName.toLowerCase();
+    if (n.includes('adult') || n.includes('18+') || n.includes('mature')) return ROOM_TYPES.ADULT;
+    if (n.includes('indian') || n.includes('india') || n.includes('hindi') || n.includes('desi') ||
+        n.includes('bollywood') || n.includes('mumbai') || n.includes('delhi') || n.includes('punjabi') ||
+        n.includes('bhojpuri') || n.includes('haryanvi')) return ROOM_TYPES.INDIAN;
+    if (n.includes('international') || n.includes('global') || n.includes('world')) return ROOM_TYPES.INTERNATIONAL;
+    if (n.includes('game') || n.includes('gaming') || n.includes('esports')) return ROOM_TYPES.GAMING;
+    if (n.includes('music') || n.includes('song') || n.includes('rj ') || n.includes('radio')) return ROOM_TYPES.MUSIC;
+    return ROOM_TYPES.GENERAL;
+};
 
-// §C3 — Homoglyph map: Cyrillic, Greek, and look-alike Unicode → Latin
+/* ════════════════════════════════════════════════════════════════════════════
+   §D  TEXT NORMALIZATION (only used to defeat evasion of the IMMEDIATE-ACTION
+   patterns below — not used to run a slang/profanity dictionary anymore).
+════════════════════════════════════════════════════════════════════════════ */
+
+const ZERO_WIDTH = /[\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF\u00AD\u2028\u2029\u180E\u034F]/g;
+
 const HOMOGLYPH_MAP = {
-    // Cyrillic look-alikes
-    '\u0430':'a','\u0435':'e','\u043e':'o','\u0440':'p','\u0441':'c',
-    '\u0445':'x','\u0443':'y','\u0411':'b','\u0412':'b','\u041C':'m',
-    '\u041D':'h','\u041E':'o','\u0420':'r','\u0421':'c','\u0422':'t',
-    '\u0423':'y','\u0425':'x','\u0410':'a','\u0415':'e','\u0406':'i',
-    '\u0456':'i','\u0458':'j','\u04CF':'l','\u0470':'p',
-    // Greek look-alikes
-    '\u03B1':'a','\u03B2':'b','\u03B5':'e','\u03BF':'o','\u03C1':'p',
-    '\u03C4':'t','\u03C5':'u','\u03BD':'v','\u03B7':'n','\u03B9':'i',
-    '\u03BA':'k','\u03BD':'v','\u03BC':'m','\u03BE':'x','\u03C9':'w',
-    '\u0391':'a','\u0392':'b','\u0395':'e','\u039F':'o','\u03A1':'p',
-    '\u03A4':'t','\u03A5':'y','\u039D':'n','\u0399':'i',
-    // Latin extended / accented (common substitutions)
-    '\u00E0':'a','\u00E1':'a','\u00E2':'a','\u00E3':'a','\u00E4':'a','\u00E5':'a',
-    '\u00E8':'e','\u00E9':'e','\u00EA':'e','\u00EB':'e',
-    '\u00EC':'i','\u00ED':'i','\u00EE':'i','\u00EF':'i',
-    '\u00F2':'o','\u00F3':'o','\u00F4':'o','\u00F5':'o','\u00F6':'o',
-    '\u00F9':'u','\u00FA':'u','\u00FB':'u','\u00FC':'u',
-    '\u00FF':'y','\u00FD':'y',
-    '\u00C0':'a','\u00C1':'a','\u00C2':'a','\u00C3':'a','\u00C4':'a','\u00C5':'a',
-    '\u00C8':'e','\u00C9':'e','\u00CA':'e','\u00CB':'e',
-    '\u00CC':'i','\u00CD':'i','\u00CE':'i','\u00CF':'i',
-    '\u00D2':'o','\u00D3':'o','\u00D4':'o','\u00D5':'o','\u00D6':'o',
-    '\u00D9':'u','\u00DA':'u','\u00DB':'u','\u00DC':'u',
-    '\u00D1':'n','\u00F1':'n',
-    // Math/script variants
-    '\uFF41':'a','\uFF42':'b','\uFF43':'c','\uFF44':'d','\uFF45':'e',
-    '\uFF46':'f','\uFF47':'g','\uFF48':'h','\uFF49':'i','\uFF4A':'j',
-    '\uFF4B':'k','\uFF4C':'l','\uFF4D':'m','\uFF4E':'n','\uFF4F':'o',
-    '\uFF50':'p','\uFF51':'q','\uFF52':'r','\uFF53':'s','\uFF54':'t',
-    '\uFF55':'u','\uFF56':'v','\uFF57':'w','\uFF58':'x','\uFF59':'y','\uFF5A':'z',
+    '\u0430':'a','\u0435':'e','\u043e':'o','\u0440':'p','\u0441':'c','\u0445':'x','\u0443':'y',
+    '\u03B1':'a','\u03B5':'e','\u03BF':'o','\u03C1':'p','\u03C4':'t','\u03C5':'u',
 };
+const applyHomoglyphs = (s) => s.split('').map(c => HOMOGLYPH_MAP[c] || c).join('');
 
-const applyHomoglyphs = (s) =>
-    s.split('').map(c => HOMOGLYPH_MAP[c] || c).join('');
+const LEET = { '0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','@':'a','$':'s','!':'i' };
+const applyLeet = (s) => s.split('').map(c => LEET[c] || c).join('');
 
-// §C4 — Leet / symbol substitution table
-const LEET = {
-    '0':'o','1':'i','2':'z','3':'e','4':'a','5':'s','6':'g','7':'t',
-    '8':'b','9':'g','@':'a','$':'s','!':'i','+':'t','#':'h','|':'i',
-    '(':'c',')':'d','<':'c','>':'d','€':'e','£':'l','¢':'c','°':'o',
-    '\\':'l','/':'l',
-};
+const collapseRepeats = (s) => s.replace(/(.)\1{2,}/g, '$1$1');
 
-const applyLeet = (s) => {
-    let r = s.replace(/ph/g,'f').replace(/vv/g,'w').replace(/qu/gi,'kw');
-    return r.split('').map(c => LEET[c] || c).join('');
-};
-
-const collapseRepeats = (s) =>
-    s.replace(/(.)\1{2,}/g, '$1$1');
-
-const removeSpacingTrick = (s) =>
-    s.replace(/\b([a-z])([\s\-_.]+[a-z]){2,}\b/g, m => m.replace(/[\s\-_.]+/g,''));
-
-// Strip hashtags but keep content for scanning (e.g. #fuckyou → fuckyou)
-const stripHashtags = (s) => s.replace(/#([a-zA-Z0-9_\u0900-\u09FF]+)/g, ' $1 ');
-
-/**
- * Produce all text variants used for matching.
- */
-const buildVariants = (text) => {
-    const raw = text;
-
-    // Stage 1: homoglyphs + zero-width + hashtag content
-    const stage1 = applyHomoglyphs(text)
-        .replace(ZERO_WIDTH, '')
-        .replace(/\s*\n\s*/g, ' ');
-
-    const withHashContent = stripHashtags(stage1);
-    const lower = withHashContent.toLowerCase().replace(WORD_BREAK_CHARS, ' ');
-
-    // Stage 2: spacing trick collapse
-    const spacedCollapsed = removeSpacingTrick(lower);
-
-    // Stage 3: leet + repeat collapse + strip non-alnum (preserve Indian scripts)
-    const norm = collapseRepeats(applyLeet(spacedCollapsed))
-        .replace(/[^a-z0-9\s\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0B80-\u0BFF\u0A00-\u0A7F]/g,' ')
+const normalize = (text) => {
+    const stage1 = applyHomoglyphs(text).replace(ZERO_WIDTH, '');
+    const lower = stage1.toLowerCase();
+    const norm = collapseRepeats(applyLeet(lower))
+        .replace(/[^a-z0-9\s\u0900-\u097F\u0980-\u09FF]/g, ' ')
         .replace(/\s+/g, ' ').trim();
-
-    const normNS  = norm.replace(/\s/g, '');
-    const lowerNS = lower.replace(/\s/g, '');
-
-    const tokens     = lower.split(/\s+/).filter(t => t.length >= 2);
-    const normTokens = norm.split(/\s+/).filter(t => t.length >= 2);
-
-    return { raw, lower, spacedCollapsed, norm, normNS, lowerNS, tokens, normTokens };
+    return { raw: text, lower, norm };
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §D  MULTILINGUAL WORD DICTIONARIES
-   Format: [word, type, severity]
-   type     : 'abuse' | 'explicit' | 'hate' | 'threat' | 'spam' | 'info'
-   severity : 'low' | 'medium' | 'high' | 'severe'
+   §E  IMMEDIATE-ACTION DETECTION
+   These categories are ALWAYS moderated, in every room, regardless of
+   context, consent, or room policy. They are narrow behavioural patterns —
+   not a dictionary of slang/profanity — designed to catch genuine safety
+   issues while leaving ordinary adult conversation, banter, and slang alone.
 ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── §D1  ENGLISH ──────────────────────────────────────────────────────────── */
-const WORDS_EN = [
-    // Profanity — mild
-    ['wtf','abuse','low'],           ['omfg','abuse','low'],
-    ['stfu','abuse','low'],          ['gtfo','abuse','low'],
-    ['crap','abuse','low'],          ['damn','abuse','low'],
-    ['damnit','abuse','low'],        ['bullshit','abuse','medium'],
-    ['bs','abuse','low'],            ['horseshit','abuse','low'],
-    ['bollocks','abuse','low'],      ['dork','abuse','low'],
-    ['jerk','abuse','low'],          ['dumbass','abuse','medium'],
-    ['dipshit','abuse','medium'],
-    // Profanity — medium
-    ['fuck','abuse','medium'],       ['fucker','abuse','medium'],
-    ['fucking','abuse','medium'],    ['fucked','abuse','medium'],
-    ['fck','abuse','medium'],        ['fuk','abuse','medium'],
-    ['fvck','abuse','medium'],       ['f*ck','abuse','medium'],
-    ['fu*k','abuse','medium'],       ['fawk','abuse','medium'],
-    ['effing','abuse','medium'],     ['fooking','abuse','medium'],
-    ['phuck','abuse','medium'],      ['phucker','abuse','medium'],
-    ['shit','abuse','low'],          ['shitt','abuse','low'],
-    ['sh*t','abuse','low'],          ['shite','abuse','low'],
-    ['bitch','abuse','medium'],      ['bitches','abuse','medium'],
-    ['b*tch','abuse','medium'],      ['biatch','abuse','medium'],
-    ['beeyatch','abuse','medium'],   ['bastard','abuse','medium'],
-    ['asshole','abuse','medium'],    ['a**hole','abuse','medium'],
-    ['ass','abuse','low'],           ['arse','abuse','low'],
-    ['jackass','abuse','medium'],    ['jackass','abuse','medium'],
-    ['douchebag','abuse','medium'],  ['scumbag','abuse','medium'],
-    ['prick','abuse','medium'],      ['wanker','abuse','medium'],
-    ['twat','abuse','medium'],       ['tosser','abuse','low'],
-    ['git','abuse','low'],           ['numpty','abuse','low'],
-    ['moron','abuse','low'],         ['idiot','abuse','low'],
-    ['imbecile','abuse','low'],      ['retard','abuse','high'],
-    ['retarded','abuse','high'],     ['mf','abuse','medium'],
-    ['motherfucker','abuse','high'], ['motherf*cker','abuse','high'],
-    ['muthafucker','abuse','high'],  ['mfkr','abuse','medium'],
-    ['dick','abuse','medium'],       ['d*ck','abuse','medium'],
-    ['cock','abuse','medium'],       ['c*ck','abuse','medium'],
-    ['pussy','abuse','medium'],      ['p*ssy','abuse','medium'],
-    // Slurs
-    ['nigger','hate','severe'],      ['nigga','hate','high'],
-    ['n*gger','hate','severe'],      ['n1gger','hate','severe'],
-    ['faggot','hate','severe'],      ['fag','hate','high'],
-    ['f*ggot','hate','severe'],      ['spic','hate','high'],
-    ['chink','hate','high'],         ['kike','hate','severe'],
-    ['tranny','hate','high'],        ['dyke','hate','high'],
-    ['coon','hate','severe'],        ['gook','hate','high'],
-    ['wetback','hate','high'],       ['beaner','hate','high'],
-    ['honky','hate','high'],         ['cracker','hate','medium'],
-    ['paki','hate','high'],          ['towelhead','hate','severe'],
-    ['raghead','hate','severe'],     ['sandnigger','hate','severe'],
-    ['jigaboo','hate','severe'],     ['zipperhead','hate','severe'],
-    ['halfbreed','hate','high'],
-    // Explicit English
-    ['whore','explicit','high'],     ['slut','explicit','high'],
-    ['hoe','explicit','medium'],     ['thot','explicit','medium'],
-    ['nude','explicit','medium'],    ['nudes','explicit','medium'],
-    ['naked','explicit','medium'],   ['porn','explicit','high'],
-    ['porno','explicit','high'],     ['xxx','explicit','high'],
-    ['blowjob','explicit','high'],   ['handjob','explicit','high'],
-    ['cumshot','explicit','high'],   ['creampie','explicit','high'],
-    ['boobs','explicit','medium'],   ['tits','explicit','medium'],
-    ['titties','explicit','medium'], ['boobies','explicit','medium'],
-    ['penis','explicit','medium'],   ['vagina','explicit','medium'],
-    ['clitoris','explicit','medium'],['testicles','explicit','medium'],
-    ['anal','explicit','high'],      ['incest','explicit','severe'],
-    ['bdsm','explicit','high'],      ['fetish','explicit','medium'],
-    ['orgasm','explicit','high'],    ['masturbate','explicit','high'],
-    ['masturbation','explicit','high'],['horny','explicit','medium'],
-    ['sexting','explicit','high'],   ['sext','explicit','high'],
-    ['rape','threat','severe'],      ['molest','threat','severe'],
-    ['pedophile','threat','severe'], ['pedo','threat','severe'],
-    ['grooming','threat','severe'],  ['lolita','threat','severe'],
-    // Adult platforms
-    ['onlyfans','explicit','medium'],['pornhub','explicit','high'],
-    ['xvideos','explicit','high'],   ['xnxx','explicit','high'],
-    ['xhamster','explicit','high'],  ['redtube','explicit','high'],
-    ['youporn','explicit','high'],   ['brazzers','explicit','high'],
-    ['spankbang','explicit','high'], ['eporner','explicit','high'],
-    // Threats
-    ['kys','threat','severe'],       ['kill yourself','threat','severe'],
-    ['end yourself','threat','severe'],['rope yourself','threat','severe'],
+// §E1 — Minors / grooming / non-consensual sexual content
+const MINOR_GROOMING_RX = [
+    /\b(under[\s-]?age|minor)\s*(sex|nude|naked|porn|pic|photo|video)\b/i,
+    /\b(child|kid|teen|schoolgirl|schoolboy)\s*(porn|sex|nude|naked)\b/i,
+    /\b1[0-6]\s*year[\s-]?old\s*(sex|nude|naked|girl|boy)\b/i,
+    /\b(loli(con)?|shota(con)?|jailbait|preteen\s*(sex|nude|naked|pic)|kiddie\s*porn|cp\b)\b/i,
+    /\b(send\s*me\s*your\s*(school|class)|what\s*grade\s*are\s*you\s*in|are\s*you\s*(a\s*)?(minor|underage))\b/i,
+    /\b(don'?t\s*tell\s*your\s*parents|keep\s*this\s*(a\s*)?secret\s*from\s*your\s*(mom|dad|parents))\b/i,
+    /\b(meet\s*me\s*after\s*school|come\s*alone\s*don'?t\s*tell\s*anyone)\b/i,
 ];
 
-/* ── §D2  HINDI — TRANSLITERATED ───────────────────────────────────────────── */
-const WORDS_HI_ROMAN = [
-    // Core abuse
-    ['madarchod','abuse','high'],    ['madarchode','abuse','high'],
-    ['madarchodi','abuse','high'],   ['madarchot','abuse','high'],
-    ['maderchod','abuse','high'],    ['madrchod','abuse','high'],
-    ['madarjaat','abuse','high'],    ['madrjat','abuse','high'],
-    ['mdrchd','abuse','high'],
-    ['behenchod','abuse','high'],    ['bhenchod','abuse','high'],
-    ['behnchod','abuse','high'],     ['bhen chod','abuse','high'],
-    ['bhai chod','abuse','high'],    ['bhainchod','abuse','high'],
-    ['bnchd','abuse','high'],
-    ['bhosdike','abuse','high'],     ['bhosadike','abuse','high'],
-    ['bhosdiwala','abuse','high'],   ['bhosdiwale','abuse','high'],
-    ['bhosdiwali','abuse','high'],   ['bhosdike','abuse','high'],
-    ['bhosad','abuse','high'],       ['bhosdi','abuse','high'],
-    ['bsdk','abuse','high'],         ['bsdc','abuse','high'],
-    ['chutiya','abuse','high'],      ['chutiye','abuse','high'],
-    ['chutia','abuse','high'],       ['chutiyo','abuse','high'],
-    ['chootiya','abuse','high'],     ['chutiyap','abuse','high'],
-    ['chootiyapa','abuse','high'],   ['chutiyagiri','abuse','high'],
-    ['chodna','explicit','high'],    ['chod','explicit','high'],
-    ['chudai','explicit','high'],    ['chudwa','explicit','high'],
-    ['chudwana','explicit','high'],  ['chudwao','explicit','high'],
-    ['randi','explicit','high'],     ['randee','explicit','high'],
-    ['rande','explicit','high'],     ['raand','explicit','high'],
-    ['raandi','explicit','high'],    ['r4ndi','explicit','high'],
-    ['randi ki aulad','explicit','high'],
-    ['gaandu','abuse','high'],       ['gandu','abuse','high'],
-    ['gaand','abuse','high'],        ['g4ndu','abuse','high'],
-    ['gaand mara','explicit','high'],['gaand maar','explicit','high'],
-    ['lund','explicit','high'],      ['loda','explicit','high'],
-    ['lavda','explicit','high'],     ['lauda','explicit','high'],
-    ['laude','explicit','high'],     ['lode','explicit','high'],
-    ['loda','explicit','high'],      ['l**d','explicit','high'],
-    ['chut','explicit','high'],      ['choot','explicit','high'],
-    ['bur','explicit','high'],       ['boor','explicit','high'],
-    ['nangi','explicit','high'],     ['nanga','explicit','high'],
-    ['harami','abuse','medium'],     ['haraami','abuse','medium'],
-    ['haramzada','abuse','high'],    ['haramzade','abuse','high'],
-    ['haramzadi','abuse','high'],    ['haramkhor','abuse','medium'],
-    ['kamina','abuse','medium'],     ['kameena','abuse','medium'],
-    ['kamine','abuse','medium'],     ['kaminey','abuse','medium'],
-    ['kutte','abuse','medium'],      ['kuttiya','abuse','medium'],
-    ['kutiya','abuse','medium'],     ['kutia','abuse','medium'],
-    ['suar','abuse','medium'],       ['suarni','abuse','medium'],
-    ['gadha','abuse','low'],         ['gadhe','abuse','low'],
-    ['ullu','abuse','low'],          ['ullo','abuse','low'],
-    ['ullu ka pattha','abuse','medium'],
-    ['bhadwa','abuse','high'],       ['bhadwaa','abuse','high'],
-    ['bhadwe','abuse','high'],       ['bhadway','abuse','high'],
-    ['dalal','abuse','medium'],      ['dalali','abuse','medium'],
-    ['saala','abuse','low'],         ['saale','abuse','low'],
-    ['saali','abuse','low'],         ['sala','abuse','low'],
-    ['sale','abuse','low'],          ['sali','abuse','low'],
-    ['jhatu','abuse','medium'],      ['jhaatu','abuse','medium'],
-    ['jhaat','abuse','medium'],
-    ['teri maa','abuse','high'],     ['teri maa ki','abuse','high'],
-    ['teri maa ko','abuse','high'],  ['teri maa ka','abuse','high'],
-    ['maa ki aankh','abuse','high'], ['maa chod','abuse','high'],
-    ['maa ki','abuse','high'],
-    ['teri behen','abuse','high'],   ['teri behan','abuse','high'],
-    ['sex karo','explicit','high'],  ['mujhse sex','explicit','high'],
-    ['sex karoge','explicit','high'],['sex karte','explicit','high'],
-    ['nangi photo','explicit','high'],['nangi video','explicit','high'],
-    ['nangi pics','explicit','high'],['nangi dikha','explicit','high'],
-    ['raat ko mil','explicit','high'],['ghar pe aa','explicit','high'],
-    ['patli gali se nikal','abuse','low'],
-    ['bakri ki aulad','abuse','medium'],
-    ['suar ki aulad','abuse','medium'],
-    ['kutte ki aulad','abuse','high'],
-    ['randwa','explicit','high'],    ['randua','explicit','high'],
-    ['chakka','abuse','medium'],     ['hijda','abuse','high'],
-    ['hijra','abuse','high'],        ['maal','abuse','low'],
-    ['chikna','abuse','low'],        ['luchcha','abuse','medium'],
-    ['lafanga','abuse','medium'],    ['awara','abuse','low'],
-    ['nikamma','abuse','low'],       ['nalayak','abuse','low'],
-    ['bevkoof','abuse','low'],       ['bewakoof','abuse','low'],
-    ['pagal','abuse','low'],         ['pagli','abuse','low'],
-    ['dhakkan','abuse','low'],       ['anpad','abuse','low'],
-    ['bewda','abuse','low'],         ['sharaabi','abuse','low'],
-    ['jhootha','abuse','low'],       ['jhoota','abuse','low'],
-    ['chor','abuse','medium'],       ['thuggee','abuse','medium'],
-    ['thug','abuse','medium'],       ['dakait','abuse','medium'],
-    ['gunda','abuse','medium'],      ['goonda','abuse','medium'],
-    ['danga','abuse','medium'],      ['fasaad','abuse','medium'],
+const NON_CONSENSUAL_RX = [
+    /\b(rape\s*(her|him|them|fantasy|roleplay)|non[\s-]?consensual|force\s*(sex|fuck|her|him|them)\s*to)\b/i,
+    /\b(drugged?|spike\s*(her|his)\s*drink)\s*(and\s*)?(sex|rape|fuck)\b/i,
+    /\b(i\s*will|gonna|going\s*to)\s*(rape|molest|force\s*myself\s*on)\s*(you|her|him|them)\b/i,
 ];
 
-/* ── §D3  HINDI — DEVANAGARI ────────────────────────────────────────────────── */
-const WORDS_HI_DEVA = [
-    ['मादरचोद','abuse','high'],    ['बहनचोद','abuse','high'],
-    ['भेनचोद','abuse','high'],     ['चुतिया','abuse','high'],
-    ['भोसड़ीके','abuse','high'],   ['रंडी','explicit','high'],
-    ['गांड','explicit','high'],    ['लोड़ा','explicit','high'],
-    ['लंड','explicit','high'],     ['चूत','explicit','high'],
-    ['हरामी','abuse','medium'],    ['कमीना','abuse','medium'],
-    ['कुत्ता','abuse','medium'],   ['कुत्ती','abuse','medium'],
-    ['सूअर','abuse','medium'],     ['गधा','abuse','low'],
-    ['उल्लू','abuse','low'],       ['भड़वा','abuse','high'],
-    ['साला','abuse','low'],        ['झाटू','abuse','medium'],
-    ['रण्डी','explicit','high'],   ['मादरजात','abuse','high'],
-    ['हरामज़ादा','abuse','high'],  ['बकवास','abuse','low'],
-    ['गंदा','abuse','low'],        ['नंगी','explicit','high'],
-    ['नंगा','explicit','high'],    ['चुदाई','explicit','high'],
-    ['चोदना','explicit','high'],   ['लौड़ा','explicit','high'],
-    ['हिजड़ा','abuse','high'],     ['चक्का','abuse','medium'],
-    ['बेशर्म','abuse','low'],      ['निकम्मा','abuse','low'],
-    ['बेवकूफ','abuse','low'],      ['पागल','abuse','low'],
-    ['चोर','abuse','medium'],      ['गुंडा','abuse','medium'],
-    ['दलाल','abuse','medium'],     ['लुच्चा','abuse','medium'],
-    ['लफंगा','abuse','medium'],    ['आवारा','abuse','low'],
-    ['रंडीबाज़','explicit','high'],['वेश्या','explicit','high'],
-    ['कसम','abuse','low'],
-];
-
-/* ── §D4  BENGALI ────────────────────────────────────────────────────────────── */
-const WORDS_BN = [
-    // Transliterated
-    ['choda','explicit','high'],    ['chodi','explicit','high'],
-    ['chudchi','explicit','high'],  ['boga','explicit','high'],
-    ['maagi','explicit','high'],    ['maagir','explicit','high'],
-    ['khankir','abuse','high'],     ['khanki','abuse','high'],
-    ['shuar','abuse','medium'],     ['shala','abuse','medium'],
-    ['harami','abuse','medium'],    ['khankimar','abuse','high'],
-    ['randi','explicit','high'],    ['gaand','explicit','high'],
-    ['loda','explicit','high'],     ['voda','explicit','high'],
-    ['futki','explicit','high'],    ['banchod','abuse','high'],
-    ['benchod','abuse','high'],     ['magi','explicit','high'],
-    ['kuttar baccha','abuse','high'],['pagla','abuse','low'],
-    ['haramjada','abuse','high'],   ['bokachoda','abuse','high'],
-    ['gadha','abuse','low'],        ['chagol','abuse','low'],
-    ['shala maagi','explicit','high'],
-    // Native script
-    ['চোদা','explicit','high'],    ['মাগি','explicit','high'],
-    ['খানকি','abuse','high'],      ['শুয়োর','abuse','medium'],
-    ['শালা','abuse','medium'],     ['রান্ডি','explicit','high'],
-    ['গাধা','abuse','low'],        ['বাঞ্চোদ','abuse','high'],
-    ['হারামি','abuse','medium'],   ['বোকা','abuse','low'],
-];
-
-/* ── §D5  TAMIL ──────────────────────────────────────────────────────────────── */
-const WORDS_TA = [
-    // Transliterated
-    ['poda','abuse','medium'],      ['punda','explicit','high'],
-    ['pundai','explicit','high'],   ['poolu','explicit','high'],
-    ['soothu','explicit','high'],   ['sootha','explicit','high'],
-    ['naaye','abuse','medium'],     ['naai','abuse','medium'],
-    ['otha','explicit','high'],     ['ootha','explicit','high'],
-    ['sunni','explicit','high'],    ['thevdiya','explicit','high'],
-    ['thevudiya','explicit','high'],['koothi','explicit','high'],
-    ['oombu','explicit','high'],    ['baadu','abuse','medium'],
-    ['loosu','abuse','low'],        ['paavi','abuse','medium'],
-    ['kena','abuse','low'],         ['myir','abuse','medium'],
-    ['koodhi','explicit','high'],   ['onnuku','abuse','low'],
-    ['thayoli','abuse','high'],     ['naye','abuse','medium'],
-    ['thevidiya','explicit','high'],['mundai katti','abuse','high'],
-    ['venna thevidiya','explicit','high'],
-    ['mokkai','abuse','low'],       ['puluthi','abuse','low'],
-    ['etthu poda','abuse','medium'],['kai adicha','explicit','high'],
-    // Native script
-    ['போடா','abuse','medium'],     ['பூல்','explicit','high'],
-    ['சூத்து','explicit','high'],  ['நாயே','abuse','medium'],
-    ['தேவடியா','explicit','high'],  ['ஊம்பு','explicit','high'],
-    ['குத்தி','explicit','high'],  ['தாயோலி','abuse','high'],
-];
-
-/* ── §D6  TELUGU ─────────────────────────────────────────────────────────────── */
-const WORDS_TE = [
-    ['dengu','explicit','high'],    ['denguta','explicit','high'],
-    ['dengadu','explicit','high'],  ['puku','explicit','high'],
-    ['modda','explicit','high'],    ['lanja','explicit','high'],
-    ['bokka','explicit','high'],    ['gudda','abuse','medium'],
-    ['naraya','abuse','medium'],    ['pichi','abuse','low'],
-    ['bevarsi','abuse','medium'],   ['amma dengu','explicit','high'],
-    ['akka dengu','explicit','high'],['kukka','abuse','medium'],
-    ['poramboku','abuse','low'],    ['okadu','abuse','low'],
-    ['dengina','explicit','high'],  ['lanjakodaka','explicit','high'],
-    ['lanjadi','explicit','high'],  ['gadida','abuse','low'],
-    ['puka','explicit','high'],     ['nayana','abuse','low'],
-    ['modda petta','explicit','high'],
-    // Script
-    ['దెంగు','explicit','high'],   ['పూకు','explicit','high'],
-    ['మొడ్డ','explicit','high'],   ['లంజ','explicit','high'],
-    ['బెవర్సీ','abuse','medium'],
-];
-
-/* ── §D7  KANNADA ────────────────────────────────────────────────────────────── */
-const WORDS_KN = [
-    ['sule','explicit','high'],     ['sulege','explicit','high'],
-    ['tunne','explicit','high'],    ['tika','explicit','high'],
-    ['haalad','abuse','medium'],    ['boli','explicit','high'],
-    ['boli maga','explicit','high'],['nin amma','abuse','high'],
-    ['madakalu','abuse','medium'],  ['katte','abuse','medium'],
-    ['haramkhor','abuse','medium'], ['sulemagane','explicit','high'],
-    ['sule magne','explicit','high'],['thumbi','abuse','low'],
-    ['bekku','abuse','low'],        ['nayi','abuse','medium'],
-    ['huccha','abuse','low'],       ['gottilla','abuse','low'],
-    ['huda','explicit','high'],     ['huduga','abuse','low'],
-    // Script
-    ['ಸೂಳೆ','explicit','high'],    ['ತುನ್ನೆ','explicit','high'],
-    ['ಬೋಳಿ','explicit','high'],    ['ನಾಯಿ','abuse','medium'],
-    ['ಕತ್ತೆ','abuse','medium'],
-];
-
-/* ── §D8  MARATHI ────────────────────────────────────────────────────────────── */
-const WORDS_MR = [
-    ['zavadya','explicit','high'],  ['zavle','explicit','high'],
-    ['rand','explicit','high'],     ['randa','explicit','high'],
-    ['harami','abuse','medium'],    ['ghanta','abuse','medium'],
-    ['madaka','abuse','medium'],    ['aai zavli','explicit','high'],
-    ['aai ghe','explicit','high'],  ['aaichi gand','explicit','high'],
-    ['aai chi gand','explicit','high'],['aai chi','explicit','high'],
-    ['bhosdya','abuse','high'],     ['bhosdich','abuse','high'],
-    ['chakna','abuse','medium'],    ['zavnarya','explicit','high'],
-    ['randwa','explicit','high'],   ['randi','explicit','high'],
-    ['navra','abuse','low'],        ['baya','abuse','low'],
-    ['mhais','abuse','low'],        ['khottya','abuse','medium'],
-    ['paja','abuse','medium'],      ['baila','abuse','low'],
-    // Script
-    ['झवाड्या','explicit','high'], ['रांड','explicit','high'],
-    ['आयची गांड','explicit','high'],['भोसड्या','abuse','high'],
-    ['हरामी','abuse','medium'],
-];
-
-/* ── §D9  PUNJABI ─────────────────────────────────────────────────────────────── */
-const WORDS_PA = [
-    ['lund','explicit','high'],     ['phuddi','explicit','high'],
-    ['gandu','abuse','high'],       ['gaand','explicit','high'],
-    ['bhen di','abuse','high'],     ['bhen de','abuse','high'],
-    ['maaki','abuse','high'],       ['maaki nuu','abuse','high'],
-    ['teri maa di','abuse','high'], ['teri bhain','abuse','high'],
-    ['chodu','explicit','high'],    ['bhain chod','abuse','high'],
-    ['kamine','abuse','medium'],    ['haraami','abuse','medium'],
-    ['kutte','abuse','medium'],     ['sooar','abuse','medium'],
-    ['gadhe','abuse','low'],        ['ulluan','abuse','low'],
-    ['randi','explicit','high'],    ['phudi','explicit','high'],
-    ['lauda','explicit','high'],    ['munda','abuse','low'],
-    ['bebe teri','abuse','high'],   ['bhain de lode','abuse','high'],
-    ['teri maa de','abuse','high'], ['teri phudddi','explicit','high'],
-    ['lun','explicit','high'],      ['phuddimaar','explicit','high'],
-    // Script (Gurmukhi)
-    ['ਲੁੰਡ','explicit','high'],    ['ਭੈਣ ਦੇ','abuse','high'],
-    ['ਰੰਡੀ','explicit','high'],    ['ਗੰਡੂ','abuse','high'],
-    ['ਫੁੱਦੀ','explicit','high'],
-];
-
-/* ── §D10  BHOJPURI ──────────────────────────────────────────────────────────── */
-const WORDS_BH = [
-    ['randie','explicit','high'],   ['randin','explicit','high'],
-    ['lauda','explicit','high'],    ['laude','explicit','high'],
-    ['laudi','explicit','high'],    ['chodha','explicit','high'],
-    ['bhaini','abuse','medium'],    ['bhaujai','abuse','medium'],
-    ['bhosad','abuse','high'],      ['haramia','abuse','medium'],
-    ['khariya','abuse','low'],      ['dehati randi','explicit','high'],
-    ['gaandbaj','explicit','high'], ['chudabaj','explicit','high'],
-    ['boshad','abuse','high'],      ['chodab','explicit','high'],
-    ['chodi','explicit','high'],    ['maiya ke','abuse','high'],
-    ['tohar maiya','abuse','high'], ['tohar baap','abuse','high'],
-];
-
-/* ── §D11  HARYANAVI ─────────────────────────────────────────────────────────── */
-const WORDS_HA = [
-    ['thara baap','abuse','high'],  ['thara baap ka','abuse','high'],
-    ['gaand maar','explicit','high'],['gaand mara','explicit','high'],
-    ['chodu','explicit','high'],    ['lodi','abuse','medium'],
-    ['randi','explicit','high'],    ['teri maa ki','abuse','high'],
-    ['bhen ke','abuse','high'],     ['bhen ke lode','abuse','high'],
-    ['haramjaada','abuse','high'],  ['suarni','abuse','medium'],
-    ['tharra','abuse','low'],       ['ghochu','abuse','medium'],
-    ['tharki','abuse','medium'],    ['chikara','abuse','low'],
-    ['teri maa ka','abuse','high'], ['teri behan ka','abuse','high'],
-    ['phus','abuse','low'],         ['nikkar phaad','abuse','medium'],
-    ['thar thar','abuse','low'],    ['mhara','abuse','low'],
-];
-
-/* ── §D12  CONTEXT-REQUIRED ABBREVIATIONS ───────────────────────────────────── */
-// These short abbreviations only flag when combined with other abuse signals
-// They are NOT put in WORD_MAP directly — checked in multi-signal path
-export const CONTEXT_ABBREVS = new Set([
-    'bc','mc','mf','af','lc','fc','sc',
-]);
-
-/* ── §D13  CONTEXTUAL WHITELIST (false-positive reduction) ──────────────────── */
-// Exact normalized phrases / tokens that are SAFE and should NOT trigger
-const WHITELIST_PHRASES = new Set([
-    // Common "die" false positives
-    'die hard','die hard fan','die cast','dye','dice','diet','diehard',
-    // "cock" false positives
-    'cockroach','cocktail','weathercock','cockatoo','cockerel','cock robin','hancock',
-    // "ass" false positives
-    'class','grass','bass','pass','mass','brass','glass','cassette',
-    'assistant','assassin','assistance','assignment','assess','asset',
-    // "sex" false positives
-    'sex education','sex ed','sextet','sextuple','gender','intersex rights',
-    // "nude" false positives
-    'nude art','nude painting','nude sculpture','renaissance nude',
-    // "pussy" false positives
-    'pussy cat','pussycat','pussy willow','puss in boots',
-    // "bitch" as female dog
-    'female dog','b*tch slap means',
-    // Hindi safe words
-    'saala bhai','saali behan','pagal deewana','kya baat',
-    // Tamil/Telugu innocuous
-    'poda poya','naye naye',
-    // Common "rape" in agricultural/gaming context
-    'rapeseed','rape blossom','rape oil',
-]);
-
-/* ── §D14  Build lookup structures ──────────────────────────────────────────── */
-
-const WORD_MAP = new Map();
-const FUZZY_WORDS = { short: [], medium: [], long: [] };
-
-const _allWordEntries = [
-    ...WORDS_EN, ...WORDS_HI_ROMAN, ...WORDS_HI_DEVA,
-    ...WORDS_BN, ...WORDS_TA, ...WORDS_TE, ...WORDS_KN,
-    ...WORDS_MR, ...WORDS_PA, ...WORDS_BH, ...WORDS_HA,
-];
-
-for (const [w, type, severity] of _allWordEntries) {
-    const key = w.toLowerCase();
-    if (!WORD_MAP.has(key)) WORD_MAP.set(key, { type, severity });
-    if (/^[a-z\s]+$/.test(key) && key.length >= 4) {
-        const bucket = key.length <= 7 ? 'short' : key.length <= 12 ? 'medium' : 'long';
-        FUZZY_WORDS[bucket].push({ word: key, type, severity });
-    }
-}
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §E  REGEX PATTERN BANKS
-════════════════════════════════════════════════════════════════════════════ */
-
-/* §E1 — Harassment, threats & self-harm */
-const HARASSMENT_RX = [
-    /\bkill\s*(your|ur|u)\s*self\b/i,
-    /\bkys\b/i,
+// §E2 — Threats of violence / intimidation / self-harm incitement
+const VIOLENCE_THREAT_RX = [
+    /\bkill\s*(your|ur|u)\s*self\b/i, /\bkys\b/i,
     /\bgo\s*(die|hang|kill\s*yourself|rope\s*yourself|end\s*yourself)\b/i,
     /\b(end|take)\s*your\s*(own\s*)?(life|existence)\b/i,
     /\bi\s*(will|gonna|am\s*going\s*to|wil|wll)\s*(kill|hurt|rape|beat|stab|destroy|find|track)\s*(you|u|ur|ye)\b/i,
     /\b(i\s*know\s*where\s*you\s*live|i\s*will\s*find\s*you|i('ll|ll)\s*come\s*find\s*you)\b/i,
     /\byou\s*(should|deserve)\s*(to\s*)?(die|suffer|get\s*hurt|burn|rot)\b/i,
-    /\b(send\s*me\s*your\s*address|where\s*do\s*you\s*live|tell\s*me\s*your\s*location|i\s*will\s*come\s*to\s*your\s*house)\b/i,
-    /\b(dox\s*you|doxing|dox\s*(your|this)|leak\s*your\s*(info|address|number|details))\b/i,
-    /\b(swat\s*(you|u|this\s*server))\b/i,
-    /\b(hack\s*(you|ur|your)\s*(account|pc|phone|ip))\b/i,
     /\bhope\s*you\s*(die|suffer|get\s*(cancer|aids|sick|hurt|raped))\b/i,
-    // Hindi threats
     /\bjaan\s*se\s*maar(unga|dunga|te\s*hain)\b/i,
     /\bkaat\s*(dunga|denge|dugi)\b/i,
-    /\bjaan\s*(le\s*lunga|le\s*lega|lelo)\b/i,
-    /\btujhe\s*(maar|dhundh|kaat|uda|nanga)\b/i,
-    /\b(maar\s*dunga|kaat\s*ke\s*rakh|uda\s*dunga|tod\s*dunga)\b/i,
+    /\btujhe\s*(maar|dhundh|kaat|uda)\s*(dunga|denge)\b/i,
     /\bghar\s*aa\s*(jaunga|jaoonga)\b/i,
-    /\bip\s*(track|trace|leak|nikal)\b/i,
-    /\btujhe\s*(ghar|school|college)\s*(se\s*uthaunga|pe\s*aaunga)\b/i,
-    // Tamil threats
-    /\buthachi\s*poda\b/i,
-    /\bthala\s*vetturen\b/i,
-    /\bummachi\s*poda\b/i,
-    // Bengali threats
-    /\btoke\s*dhekai\s*debe\b/i,
-    /\bkhun\s*kore\s*debe\b/i,
-    // Generic violence patterns
-    /\b(will|gonna|going\s*to)\s*(beat|smash|pound|destroy|crush|annihilate)\s*(you|ur|your\s*face|you\s*up)\b/i,
+    /\b(will|gonna|going\s*to)\s*(beat|smash|pound|destroy|crush)\s*(you|ur|your\s*face|you\s*up)\b/i,
 ];
 
-/* §E2 — Explicit sexual content */
-const EXPLICIT_RX = [
-    /\bsend\s*(me\s*)?(nud(e|es)|naked\s*(pic|photo|video|img|selfie))\b/i,
-    /\b(nude|naked)\s*(pic|photo|video|image|clip|selfie|snap)\b/i,
-    /\b(sex\s*(video|chat|cam|live|pic|photo|karenge|karte|tape))\b/i,
-    /\b(video\s*call\s*pe\s*nanga|vc\s*pe\s*nanga|vc\s*pe\s*nangi)\b/i,
-    /\b(see|watch|show)\s*me\s*(naked|nude|without\s*clothes|undress)\b/i,
-    /\b(masturbat(e|ion|ing|ed)|self\s*pleasure|jerk\s*off|jack\s*off|finger\s*yourself)\b/i,
-    /\b(erotic|xxx|18\+)\s*(chat|video|photo|content|story|rp|roleplay)\b/i,
-    /\bwant\s*to\s*(have\s*)?sex\s*with\s*(you|u)\b/i,
-    /\b(let'?s\s*have|wanna\s*have)\s*sex\b/i,
-    /\bhow\s*(big|long|thick)\s*is\s*your\s*(dick|cock|penis|rod|shaft)\b/i,
-    /\bshow\s*me\s*your\s*(dick|cock|penis|boobs|tits|body|ass|butt)\b/i,
-    /\b(cybersex|phone\s*sex|cam\s*sex|cam\s*girl|cam\s*boy)\b/i,
-    /\b(hentai|doujin|loli|shota)\b/i,
-    // Hindi explicit patterns
-    /\bnangi\s*(photo|pics|video|clip|dikha)\b/i,
-    /\b(chudai|chodna|chud)\s*(video|photo|pic|karte|kar)\b/i,
-    /\bmujhse\s*(sex|chudai|pyaar)\b/i,
-    /\bsex\s*(karo|karte|karoge|karna|chahiye)\b/i,
-    /\b(lund|lauda)\s*(dikhao|dikha|photo|pic|measure)\b/i,
-    /\braat\s*ko\s*mil\s*(ke\s*)?(sex|maza)\b/i,
-    /\bkya\s*tum\s*(sex|chudai)\s*karogi\b/i,
-    // Bengali explicit
-    /\bchoda\s*(video|pic|photo|kar)\b/i,
-    // Tamil explicit
-    /\b(pundai|koothi|soothu)\s*(photo|video|pic|kaatu)\b/i,
-    // Telugu explicit
-    /\b(puku|dengu)\s*(photo|video|pic|chepu)\b/i,
-    // Kannada explicit
-    /\b(sule|boli)\s*(photo|video|pic)\b/i,
+// §E3 — Doxxing / personal-information leaks
+const PERSONAL_INFO_RX = [
+    /\b(\+91[\s\-]?)?[6-9]\d{4}[\s\-]?\d{5}\b/,               // Indian mobile
+    /\b(\+91[\s\-]?)?[6-9]\d{9}\b/,
+    /\b\+\d{1,3}[\s\-]?\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{4}\b/, // international phone
+    /\b[\w.\-]+@(okaxis|okicici|oksbi|okhdfcbank|paytm|upi|ybl|ibl|axl)\b/i, // UPI ID
+    /\baccount\s*(number|no\.?|#)\s*:?\s*\d{9,18}\b/i,          // bank account
+    /\b[A-Z]{4}0[A-Z0-9]{6}\b/,                                 // IFSC
+    /\b[A-Z]{5}\d{4}[A-Z]\b/,                                   // PAN
+    /\b\d{4}\s?\d{4}\s?\d{4}\b/,                                // Aadhaar
+    /\b(flat|house|plot|door)\s*(no\.?|number|#)?\s*\d+[,\s]+[a-z\s]+\s*(street|road|nagar|colony|sector|block)\b/i,
+    /\b(dox\s*(you|this|them)|doxing|leak\s*(your|their)\s*(info|address|number|details))\b/i,
+    /\b(send\s*me\s*your\s*address|where\s*do\s*you\s*live|tell\s*me\s*your\s*location)\b/i,
+    /\b(swat\s*(you|u|this\s*server)|hack\s*(you|ur|your)\s*(account|pc|phone|ip))\b/i,
 ];
 
-/* §E3 — Scam, fraud, phishing */
-const SCAM_RX = [
-    // Crypto
-    /\b(bitcoin|btc|eth|usdt|crypto|bnb|sol|dogecoin|doge|xrp|ada|shiba)\s*(send|transfer|earn|invest|profit|doubl|giv|mine|stake)\b/i,
-    /\b(invest|put)\s*(money|cash|funds?|savings?)\s*(in|into)\s*(crypto|bitcoin|scheme|platform|this)\b/i,
-    /\b(nft|web3|defi|dao)\s*(opportunity|profit|earn|invest|project)\b/i,
-    // Money requests
-    /\b(send|transfer|give|lend)\s*(me\s*)?(money|cash|funds?|rs\.?|rupees?|\$|dollars?|usd|inr)\b/i,
-    /\bpaise\s*(bhejo|do|transfer\s*karo|chahiye|dedo)\b/i,
-    /\bpaisa\s*(bhejo|do|transfer|send)\b/i,
-    /\b(loan|borrow|lending)\s*(me|karo|chahiye|do)\b/i,
-    /\b(need|urgent|urgently)\s*(money|cash|help\s*financially|financial\s*help)\b/i,
-    // Phishing
-    /\bverify\s*your\s*(account|card|identity|number|email|kyc|aadhaar|pan)\b/i,
-    /\benter\s*(your\s*)?(otp|pin|password|credit\s*card|cvv|account|aadhaar|pan)\b/i,
-    /\bshare\s*(your\s*)?(otp|pin|password|bank\s*detail)\b/i,
-    /\b(login|log\s*in)\s*(using|with|through|via)\s*(this|the)\s*(link|url)\b/i,
-    /\b(kyc|aadhaar|pan)\s*(update|verify|complete|submit|required)\b/i,
-    // Prize / lottery
-    /\b(you\s*(won|win|are\s*the\s*winner|have\s*won|are\s*selected))\b/i,
-    /\b(lottery|jackpot|sweepstake|raffle|lucky\s*draw|lucky\s*winner)\b/i,
-    /\bclaim\s*your\s*(prize|reward|gift|money|cash|voucher|coupon)\b/i,
-    /\bfree\s*(recharge|gift|iphone|money|cash|data|prize|reward|laptop|samsung|ps5|xbox)\b/i,
-    /\b(cash\s*prize|cash\s*reward|instant\s*cash)\s*(of|worth|upto|up\s*to)\b/i,
-    // Social engineering
-    /\b(click|tap|open)\s*(here|this\s*link|below|now|the\s*link)\b/i,
-    /\b(paytm|gpay|phonepe|google\s*pay|upi|bhim|amazon\s*pay)\s*(me|kar|karo|bhejo|pe)\b/i,
-    /\b(account\s*(number|no\.?|num)|bank\s*detail|upi\s*id|ifsc\s*code)\b/i,
-    /\b(whatsapp|telegram|signal|instagram)\s*(me|karo|par\s*aao|pe\s*message)\b/i,
-    /\b(earn|make)\s*(\d[\d,.]*)\s*(rs|rupees|dollars?|per\s*(day|hour|week|month))\b/i,
-    /\bwork\s*from\s*home\s*(offer|job|opportunity|earn|income)\b/i,
-    /\bpart\s*time\s*(job|work|earn|income|opportunity)\b/i,
-    // Investment scams
-    /\b(guaranteed|100\s*%\s*)(profit|returns?|income|growth)\b/i,
-    /\bdouble\s*your\s*(money|investment|returns?|income)\b/i,
-    /\binvest\s*(only\s*)?\d[\d,.]*\s*(rs|rupees|\$|dollars?|k|lakh)\b/i,
-    /\b(mlm|multi\s*level\s*marketing|network\s*marketing|direct\s*selling)\b/i,
-    /\bjoin\s*(our|my|this)\s*(team|group|network|channel|business)\b/i,
-    /\breferral\s*(code|link|id|bonus|scheme)\b/i,
-    // Adult scam
-    /\b(cam\s*site|webcam\s*model|onlyfans\s*link|join\s*my\s*onlyfans)\b/i,
-];
-
-/* §E4 — Hate speech */
-const HATE_RX = [
+// §E4 — Hate speech: religious / caste / racial targeting, terrorism promotion
+const HATE_TERROR_RX = [
     /\ball\s*(muslims?|hindus?|christians?|jews?|sikhs?|dalits?|buddhists?)\s*(are|should|must|deserve|need\s*to)\b/i,
     /\bkill\s*(all\s*)?(muslims?|hindus?|christians?|jews?|dalits?|kafirs?|sikhs?)\b/i,
     /\bgo\s*back\s*to\s*(pakistan|bangladesh|africa|china|nepal|your\s*country|your\s*land)\b/i,
-    /\b(muslims?|hindus?|dalits?|christians?|jews?|sikhs?)\s*(are\s*)?(terrorist|jihadi|dirty|filthy|worthless|animals?|dogs?|scum|rats?)\b/i,
-    /\breservation\s*(beggars?|thieves?|quota\s*cheat|scam|loafers?)\b/i,
+    /\b(muslims?|hindus?|dalits?|christians?|jews?|sikhs?)\s*(are\s*)?(terrorist|jihadi|filthy|worthless|animals?|dogs?|scum|rats?)\b/i,
     /\b(banish|expel|deport)\s*(all\s*)?(muslims?|hindus?|dalits?|migrants?|immigrants?)\b/i,
     /\b(ethnic\s*cleansing|genocide\s*of|religious\s*cleansing)\b/i,
-    /\bjihad\s*(against|on|ke\s*liye)\b/i,
-    /\b(low\s*caste|chamaar|bhangi|chamar|untouchable)\s*(are|stay|go|log|people)\b/i,
-    /\b(upper\s*caste\s*scum|brahmin\s*(dog|pig|snake))\b/i,
-    // Hindi hate
-    /\b(musalman|musalmaan|mullah)\s*(haraami|terrorist|desh\s*chhod|bhagao)\b/i,
-    /\bpakistani\s*(nikal|bhaag|mar|chor)\b/i,
-    /\bchamar\s*(nikal|bhaag|teri\s*maa|log)\b/i,
+    /\b(low\s*caste|chamaar|bhangi|chamar|untouchable)\s*(are|stay\s*away|go\s*away)\b/i,
     /\bsab\s*(musalman|hindu|dalit)\s*(maar\s*do|khatam\s*karo|bhagao)\b/i,
-    /\bhindu\s*(rashtra|radical)\s*(zindabad|forever)\b/i,
-    /\b(rohingya|bangladeshi)\s*(nikal|bhago|wapas)\b/i,
-    // Casteist
-    /\b(sc|st)\s*(quota|beggars?|loafers?|chamaar)\b/i,
-    /\bcaste\s*(discrimination|slur|abuse|attack)\b/i,
-    // Gender hate
-    /\b(all\s*)?(women|girls|females)\s*(should|deserve|must)\s*(stay|cook|shut|obey|be\s*home)\b/i,
-    /\b(feminism|feminists?)\s*(is\s*)?(cancer|trash|garbage|hate)\b/i,
-    /\btransgender\s*(freak|sick|disgusting|abomination|groomer)\b/i,
-    // Terrorist / extremist promotion (always strictly enforced)
     /\b(join|support|glory\s*to|praise)\s*(isis|isil|al[\s-]?qaeda|taliban|boko\s*haram|lashkar|jaish)\b/i,
     /\b(become|be)\s*a\s*(suicide\s*bomber|jihadi\s*fighter|martyr\s*for\s*(allah|jihad))\b/i,
     /\b(plan|planning|carry\s*out)\s*a\s*(terror(ist)?\s*attack|bomb(ing)?|mass\s*shooting)\b/i,
@@ -764,52 +209,35 @@ const HATE_RX = [
     /\b(death\s*to|destroy)\s*(america|india|the\s*west|infidels?|kafirs?)\b/i,
 ];
 
-/* §E5 — Personal info / doxxing (NEW in v3.0) */
-const PERSONAL_INFO_RX = [
-    // Indian mobile numbers (10 digits starting 6-9, with or without +91)
-    /\b(\+91[\s\-]?)?[6-9]\d{4}[\s\-]?\d{5}\b/,
-    /\b(\+91[\s\-]?)?[6-9]\d{9}\b/,
-    // International formats
-    /\b\+\d{1,3}[\s\-]?\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{4}\b/,
-    // UPI IDs
-    /\b[\w.\-]+@(okaxis|okicici|oksbi|okhdfcbank|paytm|upi|ybl|ibl|axl|waicici|apl|barodampay|centralbank|dbs|freecharge|hdfcbank|icici|idfcbank|indus|kotak|mahb|rbl|sbi|ubi|unionbank|utib|vijb)\b/i,
-    // Email addresses shared in chat (potential phishing/scam)
-    /\b[a-zA-Z0-9._%+\-]{3,}@[a-zA-Z0-9.\-]+\.(com|in|net|org|co\.in|io|me|info)\b/,
-    // Bank account numbers (typically 9-18 digits)
-    /\baccount\s*(number|no\.?|#)\s*:?\s*\d{9,18}\b/i,
-    // IFSC codes
-    /\b[A-Z]{4}0[A-Z0-9]{6}\b/,
-    // PAN card
-    /\b[A-Z]{5}\d{4}[A-Z]\b/,
-    // Aadhaar (12 digits, optional spaces every 4)
-    /\b\d{4}\s?\d{4}\s?\d{4}\b/,
-    // CVV / OTP solicitation (already in SCAM_RX but here for info-leak angle)
-    /\bshare\s*(your\s*)?(otp|cvv|pin|password|card\s*number)\b/i,
-    // Home address
-    /\b(flat|house|plot|door)\s*(no\.?|number|#)?\s*\d+[,\s]+[a-z\s]+\s*(street|road|nagar|colony|sector|block)\b/i,
+// §E5 — Scam / phishing / malware / illegal-activity promotion
+const SCAM_PHISHING_RX = [
+    /\bverify\s*your\s*(account|card|identity|number|email|kyc|aadhaar|pan)\b/i,
+    /\benter\s*(your\s*)?(otp|pin|password|credit\s*card|cvv|aadhaar|pan)\b/i,
+    /\bshare\s*(your\s*)?(otp|pin|password|bank\s*detail|cvv)\b/i,
+    /\b(kyc|aadhaar|pan)\s*(update|verify|complete|submit|required)\b/i,
+    /\b(you\s*(won|win|are\s*the\s*winner|have\s*won|are\s*selected))\b/i,
+    /\b(lottery|jackpot|sweepstake|lucky\s*draw|lucky\s*winner)\b/i,
+    /\bclaim\s*your\s*(prize|reward|gift|money|cash|voucher|coupon)\b/i,
+    /\bfree\s*(recharge|gift|iphone|money|cash|data|prize|reward|ps5|xbox)\b/i,
+    /\b(guaranteed|100\s*%\s*)(profit|returns?|income|growth)\b/i,
+    /\bdouble\s*your\s*(money|investment|returns?|income)\b/i,
+    /\b(bitcoin|btc|crypto|usdt)\s*(send|transfer|earn|invest|double|mine)\b/i,
+    /\b(buy|sell)\s*(drugs|weapons|guns|firearms|explosives|fake\s*(id|passport|currency))\b/i,
+    /\b(pirated|cracked)\s*(software|movie|game)\s*(download|link)\b/i,
 ];
 
-/* §E6 — Malicious links & social-engineering invites */
 const SAFE_DOMAINS_SET = new Set([
     'youtube.com','youtu.be','music.youtube.com','google.com','google.co.in',
     'instagram.com','facebook.com','twitter.com','x.com','tiktok.com',
-    'reddit.com','wikipedia.org','tenor.com','giphy.com','imgbb.com',
-    'imgur.com','i.ytimg.com','open.spotify.com','soundcloud.com',
-    'amazon.com','amazon.in','flipkart.com','myntra.com','snapdeal.com',
-    'zomato.com','swiggy.com','meesho.com','paytm.com','phonepe.com',
-    'whatsapp.com','wa.me','linkedin.com','github.com','stackoverflow.com',
-    'replit.com','vercel.app','netlify.app','firebase.google.com',
-    'medium.com','substack.com','quora.com','news.google.com',
-    'ndtv.com','timesofindia.com','hindustantimes.com','thehindu.com',
+    'reddit.com','wikipedia.org','tenor.com','giphy.com','imgbb.com','imgur.com',
+    'open.spotify.com','soundcloud.com','amazon.com','amazon.in','flipkart.com',
+    'whatsapp.com','wa.me','linkedin.com','github.com','replit.com',
 ]);
 
 const SUSPICIOUS_LINK_RX = [
-    /https?:\/\/(\d{1,3}\.){3}\d{1,3}/,                               // raw IP
-    /https?:\/\/[^\s/]+\.(xyz|tk|ml|ga|cf|pw|top|icu|vip|buzz|gq|ws|gg|cc|loan|work|click|win|bid|date|review|stream|download)\b/i,
-    /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|short\.link|gg\.gg|is\.gd|v\.gd|t\.ly|qr\.ae|lnk\.bio|solo\.to)\//i,
-    /\b(t\.me|telegram\.me|telegram\.dog)\/[^\s]+/i,
-    /\bdiscord\.gg\/[^\s]+/i,
-    /\b(linktr\.ee\/|linktree\.com\/)[^\s]+/i,
+    /https?:\/\/(\d{1,3}\.){3}\d{1,3}/,
+    /https?:\/\/[^\s/]+\.(xyz|tk|ml|ga|cf|pw|top|icu|vip|buzz|gq|loan|work|click|win|bid)\b/i,
+    /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|short\.link|is\.gd|lnk\.bio)\//i,
 ];
 
 const isSafeDomain = (url) => {
@@ -819,549 +247,140 @@ const isSafeDomain = (url) => {
     } catch { return false; }
 };
 
-/* §E7 — Emoji abuse signals (NEW in v3.0) */
-const ABUSE_EMOJIS = new Set([
-    '🖕','🖕🏻','🖕🏼','🖕🏽','🖕🏾','🖕🏿',        // middle finger
-    '🔞',                                              // adult content signal (in soliciting context)
-    '☠️','💀','🗡️','⚔️','🔫','🪓','🧨',             // threat context
-    '🍆','🍑','💦','🌮','🌭','🍌',                    // explicit sexual context
-    '👁️👄👁️',                                        // harassment/mocking
-]);
-
-const EXPLICIT_EMOJI_COMBOS = [
-    ['🍆','💦'],['🍑','💦'],['🍌','💦'],['🍆','🍑'],
-    ['😈','💦'],['🥵','💦'],['😍','🍆'],
-];
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §E8  ROOM-AWARE PROTECTION TABLES
-   These drive the context-sensitive leniency / strict-override logic in §M.
-════════════════════════════════════════════════════════════════════════════ */
-
 /**
- * §E8a — FAMILY ABUSE ROOTS
- * These words insult / sexualise another person's family members (mother/sister).
- * They must be enforced in EVERY room — including the Adult Room — because they
- * are personal attacks, not consensual adult vocabulary.
- *
- * Keys are the normalised, lower-case form that hit.matched will contain after
- * the normalisation pipeline (leet, homoglyph, space-collapse, etc.).
+ * checkImmediateAction(text) — runs every message through the always-enforced
+ * safety categories. Returns a hit object or null. This is the ONLY part of
+ * the engine that fires regardless of room type or context, per policy.
  */
-const FAMILY_ABUSE_ROOTS = new Set([
-    // Mother-related (Hindi / transliterated)
-    'madarchod','madarchode','madarchodi','madarchot',
-    'maderchod','madrchod','madarjaat','madrjat','mdrchd',
-    'maa chod','teri maa ki','teri maa ko','teri maa ka','maa ki aankh',
-    'teri maa','maa ki',
-    // Sister-related (Hindi)
-    'behenchod','bhenchod','behnchod','bhen chod','bhainchod','bnchd',
-    'teri behen','teri behan','bhai chod',
-    // Vaginal-family (bhosdike = of a vagina → directed at someone's mother)
-    'bhosdike','bhosadike','bhosdiwala','bhosdiwale','bhosdiwali','bhosad','bhosdi',
-    'bsdk','bsdc',
-    // Marathi mother/sister abuse
-    'aai zavli','aai ghe','aaichi gand','aai chi gand','aai chi','bhosdya','bhosdich',
-    // Punjabi family abuse
-    'bhen di','bhen de','maaki','maaki nuu','teri maa di','teri bhain',
-    'bhain chod','bebe teri','bhain de lode','teri maa de',
-    // Bhojpuri mother abuse
-    'maiya ke','tohar maiya',
-    // Haryanavi
-    'teri maa ki','teri maa ka','teri behan ka',
-    // English family
-    'motherfucker','motherf*cker','muthafucker','mfkr','mf',
-]);
+const checkImmediateAction = (text) => {
+    const { norm } = normalize(text);
+    const test = (rx) => rx.test(text) || rx.test(norm);
 
-/**
- * §E8b — MINOR-RELATED WORDS
- * Always enforced in every room, including the Adult Room.
- * Any reference to minors in a sexual or suggestive context is severe.
- */
-const MINOR_RELATED_WORDS = new Set([
-    'loli','lolita','lolicon','shota','shotacon',
-    'jailbait','preteen','kiddie','childporn','cp',
-    'underage','minor','pedo','pedophile','pedophilia',
-    'grooming','groomer',
-]);
-
-/**
- * §E8c — ADULT ROOM PROTECTED REGEX PATTERNS
- * Patterns that must always be enforced, even in the Adult Room.
- * Covers: incest, minors in sexual context, non-consensual / coercive scenarios,
- *         religious abuse, and explicit family-member targeting.
- */
-const ADULT_PROTECTED_RX = [
-    // Incest
-    /\b(incest|bhai\s*behen\s*(sex|chudai|fuck)|maa\s*bete?\s*(sex|chudai|fuck)|father\s*daughter\s*sex|mother\s*son\s*(sex|fuck)|step\s*(mom|dad|sis|bro)\s*(sex|fuck|nude|naked|porn))\b/i,
-    // Minors in sexual context
-    /\b(under[\s-]?age|child\s*(porn|sex|nude|naked|pic|photo|video)|teen\s*porn|1[0-6]\s*year[\s-]?old\s*(sex|nude|naked|girl|boy))\b/i,
-    /\b(loli(con)?|shota(con)?|jailbait|preteen\s*(sex|nude|naked|pic)|kiddie\s*porn)\b/i,
-    // Non-consensual / coercion
-    /\b(rape\s*(her|him|fantasy|roleplay|fetish)|non[\s-]?consensual|force\s*(sex|fuck|her|him|them)|drugged?\s*(sex|rape|fuck))\b/i,
-    // Religious abuse
-    /\b(allah\s*(ke|ki|ka)\s*(gaand|chut|lund|maa)|bhagwan\s*(ke|ki)\s*(gaand|chut)|jesus\s*(fuck|sex|nude)|prophet\s*(sex|nude|fuck|rape))\b/i,
-    /\b(temple|mosque|church|mandir|masjid)\s*(mein|me|main|pe|par)\s*(sex|fuck|chudai|rape)\b/i,
-];
-
-/**
- * §E8d — INDIAN ROOM CASUAL-SLANG WHITELIST
- * These words are used as everyday filler in Indian chat — they are NOT
- * targeting anyone and should be de-escalated on first / second / third use.
- * Any word in this set gets the "first-pass grace" treatment in the Indian room.
- *
- * Expanded in v3.1 to cover a wider range of common conversational Indian slang
- * that routinely appears in casual, non-aggressive chat contexts.
- */
-const INDIAN_CASUAL_SLANG = new Set([
-    // Very common casual filler — rarely targeting
-    'saala','saale','saali','sala','sale','sali',
-    'gadha','gadhe','ullu','ullo',
-    'pagal','pagli','paglu',
-    'bevkoof','bewakoof','bewda','bewde',
-    'harami','haraami','haramkhor',
-    'kamina','kameena','kamine','kaminey',
-    'nikamma','nalayak','anpad',
-    'chikna','maal','awara','lafanga','luchcha',
-    'jhootha','jhoota','chor','chori',
-    'dhakkan','tharra',
-    // Additional casual expressions commonly used in Indian rooms
-    'bakwas','bakwaas',            // nonsense
-    'faltu','faaltu',              // useless/pointless
-    'besharam','besharm',          // shameless
-    'shatir','shararat',           // mischievous/cunning
-    'ghamand','ghamandi',          // arrogance
-    'ghatiya','ghatiyo',           // cheap/low-quality
-    'nautanki',                    // drama / drama queen
-    // NOTE: chhakka/chakka intentionally omitted — derogatory anti-trans slur;
-    //       must remain subject to normal moderation even in Indian Room.
-    'takla',                       // bald (teasing)
-    'mota','motka','motki',        // chubby (casual teasing)
-    'susta','sustha',              // lazy (casual)
-    'laalchi','lalchi',            // greedy
-    'machhar','makkhi',            // pest/nuisance (casual)
-    'hadd','had',                  // "you've crossed the line" (expression)
-    'yaar','yrr',                  // friend/buddy (safe; listed to prevent fuzzy misfires)
-    'oye','oi',                    // casual address (safe)
-    'arrey','arre','are',          // exclamation (safe)
-    'naalaayak','nayalak',         // alternate spellings
-    'chup','chup kar',             // "shut up" as casual expression
-    // Devanagari equivalents
-    'साला','साले','गधा','उल्लू','पागल','बेवकूफ',
-    'हरामी','कमीना','निकम्मा','नालायक','आवारा',
-    'बकवास','फालतू','बेशर्म','घटिया','नौटंकी',
-]);
-
-/**
- * §E8f — GLOBAL CASUAL / CONSENSUAL-ADULT TOLERANCE LIST (v4.0)
- * These words are common daily-use slang or consensual-adult vocabulary that
- * must NEVER trigger a Warning/Mute/Kick by themselves, in ANY room — not just
- * the Indian Room or Adult Room. They only become actionable when combined
- * with genuine targeting/harassment context (see hasTargetingContext) or when
- * they appear as part of an always-protected pattern (family abuse, minors,
- * coercion, non-consent — see isAlwaysProtectedContent).
- *
- * This directly implements the "context-aware, not keyword-only" moderation
- * policy: mentioning these words casually, jokingly, or in consensual adult
- * conversation is SAFE / CASUAL / FRIENDLY BANTER / FLIRTING / CONSENSUAL
- * ADULT CHAT — only directed, targeted use of them is TARGETED ABUSE.
- */
-const CASUAL_TOLERANT_WORDS = new Set([
-    // Casual daily-use Hindi/English insults & filler
-    'chutiya','chutiye','chutia','chutiyo','chootiya','chuitya','chutiyap','chootiyapa','chutiyagiri',
-    'chtiya','chtiye',                  // short-form spelling variants
-    'chut','choot',
-    'lund','land','loda','lavda','lauda','laude','lode','lun','lawda',
-    'gaand','gand','gaandu','gandu',
-    'kameena','kamina','kamine','kaminey',
-    'kutta','kutte','kuttiya','kutiya','kutia','naaye','naai','naye','nayi',
-    'saala','saale','saali','sala','sale','sali',
-    'harami','haraami',
-    'pagal','pagli','paglu','pgl',      // pgl = pagal abbreviation
-    'bewakoof','bevkoof','bewkoof',
-    'gadha','gadhe',                    // donkey → fool (casual teasing)
-    'ullu','ullo',                      // owl → fool (casual)
-    'baklol','bkl',                     // bakwas ka log → fool (casual slang)
-    'lodu',                             // casual Hindi filler insult
-    'lafanga',                          // rogue/rascal (casual)
-    'nautanki',                         // drama queen / over-actor (casual)
-    'idiot','stupid','loser','noob','dumb',
-    'joker','clown',                    // casual English insults
-    'nibba','nibbi',                    // gen-Z casual slang
-    // bsdk/bsdc: casual exclamation widely used in Indian chat like OMG/WTF.
-    // ADULT_AMBIGUOUS_FAMILY_ABBREVS gates these in isAlwaysProtectedContent so they
-    // are still strictly enforced when paired with explicit family-targeting phrases.
-    'bsdk','bsdc',
-    // Family-abuse root words — added so applyGlobalContextTolerance can gate them on @mention only.
-    // Single-word entries from FAMILY_ABUSE_ROOTS (multi-word entries handled by the phrase scan).
-    'madarchod','madarchode','madarchodi','madarchot',
-    'maderchod','madrchod','madarjaat','madrjat','mdrchd',
-    'behenchod','bhenchod','behnchod','bhainchod','bnchd',
-    'bhosdike','bhosadike','bhosdiwala','bhosdiwale','bhosdiwali','bhosad','bhosdi',
-    'bhosdya','bhosdich','maaki',
-    'motherfucker','motherf*cker','muthafucker','mfkr',
-    // Consensual-adult vocabulary (allowed unless minors/coercion/threat/non-consent involved)
-    'sex','kiss','boobs','tits','titties','boobies','penis','vagina','cock','dick','pussy',
-    // Hindi sex/adult words — allowed in casual/adult chat (adult room already permits; this
-    // ensures general chat leniency for non-targeted, consensual adult conversation)
-    'chod','chodo','choda','chodi','chude','chudai','chuda','chudi','chudakkad','chodna',
-    'chuchi','choochiyan','chuchiya',   // breasts (casual/adult)
-    'chup','chupkar','chupkaro',        // "shut up" — very common casual expression
-    'gandmada','gandmade',              // casual variant of gaand
-    'kuta',                             // variant spelling of kutta
-    'randi','rande',                    // only truly harmful when targeted (handled by targeting check)
-    'suar','suwar','suwarr',            // pig — casual desi abuse among friends
-    // Devanagari equivalents
-    'चुतिया','चूत','गांड','गंड','लंड','कुत्ता','साला','हरामी','पागल','बेवकूफ','कमीना',
-]);
-
-/**
- * §E8e — TARGETING CONTEXT INDICATORS
- * A message is considered "targeted" when it contains patterns that clearly
- * direct abuse at a specific person — NOT merely because a generic pronoun
- * like "you", "u", "tu", or "tum" is present.
- *
- * Design principle: casual Indian conversations constantly include "tu/tum/you"
- * as normal speech. Treating every pronoun as a targeting indicator causes
- * massive false positives in the Indian Room — e.g. "yaar tu pagal hai" would
- * skip leniency and get moderated even though it is clearly casual.
- *
- * Targeting is only flagged when there is an unambiguous direct-abuse
- * structure: an @mention, a possessive-family phrase, a "you are [X]" insult
- * sentence, a direct Hindi command at a person, or a self-harm direction.
- */
-const TARGETING_INDICATORS_RX = [
-    // @mention — the clearest possible direct-addressing indicator
-    /@[a-z0-9_]{2,}/i,
-    // Possessive family-member targeting: "teri maa", "your mom", "tera baap", etc.
-    // These combine with FAMILY_ABUSE_ROOTS hits and are always enforced separately,
-    // but this guard also blocks Indian Room leniency for the message as a whole.
-    /\b(teri|tera|tere|tumhari|tumhare|your)\s+(maa|ma|behen|behan|baap|bhai|sister|mother|father|mom|dad)\b/i,
-    // "you are / u r [a] [word]" — a clear personal-insult sentence structure
-    /\b(you|u)\s+(are|r|were)\s+(a\s+)?\S+/i,
-    // Hindi direct-command abuse aimed at a person: "tujhe X kar / de / dunga"
-    /\btujhe\s+\S+\s+(kar|de|deta|deti|dunga|denge|karunga|karenge)\b/i,
-    // Self-harm direction at a specific person
-    /\b(go\s+)?(kill|hang|rope)\s*(yourself|urself)\b/i,
-    // Narrow Hindi direct-insult construction: "tu/tum/aap [word] hai/ho/hain"
-    // Catches "tu pagal hai", "tum harami ho" (directed personal insults) without
-    // triggering on all occurrences of these pronouns in casual speech.
-    /\b(tu|tum|aap)\s+\S+\s+(hai|ho|hain|hoge|hogi)\b/i,
-];
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §F  FUZZY MATCHING ENGINE
-════════════════════════════════════════════════════════════════════════════ */
-
-const editDistance = (a, b) => {
-    if (a === b) return 0;
-    if (Math.abs(a.length - b.length) > CFG.FUZZY_LONG) return Infinity;
-    const m = a.length, n = b.length;
-    const dp = new Uint8Array((m + 1) * (n + 1));
-    for (let i = 0; i <= m; i++) dp[i * (n + 1)] = i;
-    for (let j = 0; j <= n; j++) dp[j] = j;
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            dp[i * (n + 1) + j] = a[i-1] === b[j-1]
-                ? dp[(i-1) * (n + 1) + (j-1)]
-                : 1 + Math.min(
-                    dp[(i-1) * (n + 1) + j],
-                    dp[i * (n + 1) + (j-1)],
-                    dp[(i-1) * (n + 1) + (j-1)]
-                );
-        }
+    if (MINOR_GROOMING_RX.some(test)) {
+        return { type: 'minor_grooming', severity: 'severe', label: 'Minor safety / grooming' };
     }
-    return dp[m * (n + 1) + n];
-};
-
-const fuzzyMatchToken = (token) => {
-    if (token.length < 4) return null;
-    const band = token.length <= 7 ? 'short' : token.length <= 12 ? 'medium' : 'long';
-    const maxDist = band === 'short' ? CFG.FUZZY_SHORT : band === 'medium' ? CFG.FUZZY_MEDIUM : CFG.FUZZY_LONG;
-    for (const { word, type, severity } of FUZZY_WORDS[band]) {
-        if (Math.abs(word.length - token.length) > maxDist) continue;
-        const dist = editDistance(token, word);
-        if (dist > 0 && dist <= maxDist) return { type, severity, matched: word, fuzzy: true, dist };
+    if (NON_CONSENSUAL_RX.some(test)) {
+        return { type: 'non_consensual', severity: 'severe', label: 'Non-consensual sexual content' };
     }
-    return null;
-};
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §G  DETECTION FUNCTIONS
-════════════════════════════════════════════════════════════════════════════ */
-
-/** Check if any whitelist phrase cancels out the detection for this text */
-const isWhitelisted = (text) => {
-    const lower = text.toLowerCase();
-    for (const phrase of WHITELIST_PHRASES) {
-        if (lower.includes(phrase)) return true;
+    if (VIOLENCE_THREAT_RX.some(test)) {
+        return { type: 'threat', severity: 'severe', label: 'Threat of violence' };
     }
-    return false;
-};
-
-/** Check all text variants against the word map */
-const checkWordLists = (variants) => {
-    const { lower, norm, normNS, lowerNS, tokens, normTokens, spacedCollapsed } = variants;
-
-    const scanString = (s) => {
-        const toks = s.split(/\s+/).filter(Boolean);
-        for (const t of toks) {
-            if (WORD_MAP.has(t)) return { ...WORD_MAP.get(t), matched: t };
-        }
-        for (let i = 0; i < toks.length - 1; i++) {
-            const bi = toks[i] + ' ' + toks[i+1];
-            if (WORD_MAP.has(bi)) return { ...WORD_MAP.get(bi), matched: bi };
-        }
-        for (let i = 0; i < toks.length - 2; i++) {
-            const tri = toks[i] + ' ' + toks[i+1] + ' ' + toks[i+2];
-            if (WORD_MAP.has(tri)) return { ...WORD_MAP.get(tri), matched: tri };
-        }
-        return null;
-    };
-
-    for (const s of [lower, norm, spacedCollapsed, normNS, lowerNS]) {
-        const hit = scanString(s);
-        if (hit) return hit;
+    if (PERSONAL_INFO_RX.some(test)) {
+        return { type: 'doxxing', severity: 'high', label: 'Personal information / doxxing' };
     }
-    for (const t of [...tokens, ...normTokens]) {
-        if (WORD_MAP.has(t)) return { ...WORD_MAP.get(t), matched: t };
+    if (HATE_TERROR_RX.some(test)) {
+        return { type: 'hate', severity: 'high', label: 'Hate speech / terrorism promotion' };
     }
-    return null;
-};
-
-/** Fuzzy match on normalized tokens */
-const checkFuzzy = (variants) => {
-    for (const token of variants.normTokens) {
-        const hit = fuzzyMatchToken(token);
-        if (hit) return hit;
+    if (SCAM_PHISHING_RX.some(test)) {
+        return { type: 'scam', severity: 'high', label: 'Scam / phishing / illegal activity' };
     }
-    return null;
-};
-
-/** Check all regex banks */
-const checkPatterns = (text, norm) => {
-    for (const rx of HARASSMENT_RX) {
-        if (rx.test(text) || rx.test(norm)) return { type:'harassment', severity:'severe', label:'Threats / harassment' };
-    }
-    for (const rx of EXPLICIT_RX) {
-        if (rx.test(text) || rx.test(norm)) return { type:'explicit', severity:'high', label:'Explicit sexual content' };
-    }
-    for (const rx of HATE_RX) {
-        if (rx.test(text) || rx.test(norm)) return { type:'hate', severity:'high', label:'Hate speech' };
-    }
-    for (const rx of SCAM_RX) {
-        if (rx.test(text) || rx.test(norm)) return { type:'scam', severity:'high', label:'Scam / fraud attempt' };
-    }
-    // Links
     const urls = text.match(/https?:\/\/[^\s]+/gi) || [];
     for (const url of urls) {
         if (!isSafeDomain(url) && SUSPICIOUS_LINK_RX.some(p => p.test(url))) {
-            return { type:'link', severity:'medium', label:'Suspicious link' };
-        }
-    }
-    if (!urls.length) {
-        for (const p of SUSPICIOUS_LINK_RX) {
-            if (p.test(text)) return { type:'link', severity:'medium', label:'Suspicious link' };
+            return { type: 'scam', severity: 'medium', label: 'Suspicious / malicious link' };
         }
     }
     return null;
 };
-
-/** Personal info detection (NEW) */
-const checkPersonalInfo = (text) => {
-    for (const rx of PERSONAL_INFO_RX) {
-        if (rx.test(text)) return { type:'info', severity:'medium', label:'Personal / sensitive information shared' };
-    }
-    return null;
-};
-
-/** CAPS / shouting detection (NEW) */
-const checkCapsAbuse = (text) => {
-    const stripped = text.replace(/[^a-zA-Z]/g, '');
-    if (stripped.length < CFG.CAPS_MIN_ALPHA) return null;
-    const originalLen = text.replace(/\s/g,'').length;
-    if (originalLen < CFG.CAPS_MIN_LENGTH) return null;
-    const uppers = (stripped.match(/[A-Z]/g) || []).length;
-    if (uppers / stripped.length >= CFG.CAPS_THRESHOLD) {
-        return { type:'spam', severity:'low', label:'Excessive caps / shouting', score: 1.0 };
-    }
-    return null;
-};
-
-/**
- * Emoji abuse detection — DISABLED.
- * All emojis are freely usable by users. Emoji spam (flood/repeat) is still
- * handled separately by the spam/flood detector. Individual emoji use is never restricted.
- */
-// eslint-disable-next-line no-unused-vars
-const checkEmojiAbuse = (_text) => null;
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §G2  ROOM-AWARE HELPER FUNCTIONS
+   §F  HARASSMENT DETECTION (targeted, repeated abuse — never a single word)
 ════════════════════════════════════════════════════════════════════════════ */
 
-/**
- * hasTargetingContext(text)
- * Returns true when the message appears to be directed at a specific person
- * rather than used as a standalone exclamation or general expression.
- * Used to decide whether leniency applies in the Indian Room.
- */
-const hasTargetingContext = (text) =>
-    TARGETING_INDICATORS_RX.some(rx => rx.test(text));
+// A lightweight *signal* (not a punishable-on-its-own list) that a message is
+// hostile in tone. Used only as one ingredient of harassment scoring — a hit
+// here never causes any action by itself.
+const HOSTILITY_SIGNAL_RX = [
+    /\b(shut\s*up|get\s*lost|f+u+c+k+\s*(off|you)|screw\s*you|piss\s*off)\b/i,
+    /\byou\s*(are|r)\s+(a\s+)?(loser|idiot|pathetic|worthless|trash|garbage|disgusting)\b/i,
+    /\b(chutiya|chodu|harami|kutta|kutte|kamina|randi|gandu|bhosdi\w*|madarchod\w*|behenchod\w*)\b.{0,15}\b(tu|tum|you|u)\b/i,
+    /\b(tu|tum)\s+\S+\s+(hai|ho)\b.*\b(chutiya|kutta|harami|kamina|gandu|pagal)\b/i,
+];
 
-/**
- * hasMentionTag(text)
- * Returns true ONLY when the message contains a direct @username mention.
- * Used specifically for family-abuse enforcement — per policy, family-abuse
- * words are only actioned when a user is explicitly @tagged, not for
- * possessive phrases or pronoun-insult constructions.
- */
-const hasMentionTag = (text) => /@[a-z0-9_]{2,}/i.test(text);
+// Phrases that indicate the target is objecting / asking the sender to stop.
+const OBJECTION_RX = [
+    /\b(stop|please\s*stop|leave\s*me\s*alone|back\s*off|don'?t\s*talk\s*to\s*me|stop\s*(messaging|texting|pinging)\s*me)\b/i,
+    /\b(ruk\s*ja|bas\s*karo|chhod\s*do|mujhe\s*akela\s*chhodo|baat\s*mat\s*karo)\b/i,
+    /\bstop\s*(harassing|bothering|following)\s*me\b/i,
+];
 
-/**
- * isAdultRoomProtected(text, hit)
- * Returns true when a detection hit must be enforced even inside the Adult Room.
- * The Adult Room is lenient about consensual adult vocabulary, but remains
- * strictly enforced for family abuse, minors, incest, non-consensual content,
- * religious abuse, hate speech, threats, scams, and personal info.
- *
- * @param {string} text - original message text
- * @param {object} hit  - detection result {type, severity, matched?, …}
- */
-/**
- * Ambiguous short family-abuse abbreviations that frequently appear as casual
- * exclamations in adult conversation ("this mf is hilarious", "that mfkr won").
- * In the adult room we only enforce these when the text contains an explicit
- * possessive family-targeting phrase ("your mom", "teri maa", etc.).
- * All other FAMILY_ABUSE_ROOTS words remain strictly enforced everywhere.
- */
-const ADULT_AMBIGUOUS_FAMILY_ABBREVS = new Set(['mf','mfkr','bsdk','bsdc']);
-
-/** Matches explicit possessive family targeting even without the abuse word */
-const FAMILY_TARGETING_RX = /\b(your|teri|tera|tere|tumhari|tumhare)\s+(mom|maa|ma|mother|sister|behen|behan|baap|dad|father|bhai)\b/i;
-
-const isAlwaysProtectedContent = (text, hit) => {
-    // 1. Type-level: these categories are always enforced everywhere
-    if (['hate','harassment','threat','scam','info','link'].includes(hit.type)) return true;
-
-    // 2. Severity-level: 'severe' words (incest, pedo, grooming, etc.) are never exempt
-    if (hit.severity === 'severe') return true;
-
-    // 3. Family abuse / minor word match
-    if (hit.matched) {
-        const matchedLower = hit.matched.toLowerCase();
-
-        // Special case: short ambiguous abbreviations like 'mf' / 'mfkr' are often used as
-        // casual exclamations ("this mf song is fire") rather than genuine family-targeting.
-        // In the adult room, skip the FAMILY_ABUSE_ROOTS enforcement ONLY for these
-        // abbreviations AND only when no explicit possessive family-targeting phrase is in
-        // the text. Crucially we do NOT return here — all remaining checks (ADULT_PROTECTED_RX,
-        // multi-word family abuse, MINOR_RELATED_WORDS) continue to run so that a message
-        // containing "mf" first but also a protected pattern later is still caught.
-        const skipFamilyRootCheck = ADULT_AMBIGUOUS_FAMILY_ABBREVS.has(matchedLower)
-            && !FAMILY_TARGETING_RX.test(text);
-
-        if (!skipFamilyRootCheck && FAMILY_ABUSE_ROOTS.has(matchedLower)) {
-            // Family abuse words are only enforced when the sender @mentions a specific user.
-            // Per policy: "Tags wale abusing hi Moderate hone chahiye" — only @tagged abuse is actioned.
-            // Possessive phrases / pronoun constructs alone do not trigger enforcement here.
-            if (hasMentionTag(text)) return true;
-            return false;
-        }
-        if (MINOR_RELATED_WORDS.has(matchedLower)) return true;
-    }
-
-    // 4. Pattern-level: incest / minor / non-consensual / religious abuse patterns
-    // This always runs — even when the first matched token was an ambiguous abbreviation —
-    // ensuring that "mf [incest phrase]" or "mfkr [minor reference]" is still enforced.
-    if (ADULT_PROTECTED_RX.some(rx => rx.test(text))) return true;
-
-    // 5. Multi-word family abuse — only enforce when the message contains an @mention.
-    // Without a direct @tag, multi-word family abuse phrases are treated as general
-    // expressions and are not always-protected (same policy as single-word family roots).
-    if (hasMentionTag(text)) {
-        const lower = text.toLowerCase();
-        for (const root of FAMILY_ABUSE_ROOTS) {
-            if (root.includes(' ') && lower.includes(root)) return true;
-        }
-    }
-
-    return false;
+/** Extracts the @mention target(s) from a message, if any. */
+const extractMentions = (text) => {
+    const matches = text.match(/@([a-z0-9_]{2,})/gi) || [];
+    return matches.map(m => m.slice(1).toLowerCase());
 };
 
 /**
- * isIndianRoomLenient(hit, text, priorTotal)
- * Returns true when the Indian Room leniency rule allows skipping enforcement.
+ * recordAndCheckHarassment(roomId, senderUid, senderDisplayName, text)
  *
- * Leniency applies ONLY when ALL of the following hold:
- *  - the violation type is 'abuse' (not explicit / hate / threat / scam)
- *  - the matched word is in the casual-slang set OR severity is 'low'
- *  - there is no clear targeting context (no "@mention / teri maa / you are…")
- *  - the user has not already accumulated several violations this session
+ * Target identity note: the app currently only supports @mention targeting
+ * (by display name) — there is no reply/UID-based targeting in the chat UI.
+ * To keep objection-tracking and repeated-targeting counts consistent, the
+ * canonical target key is ALWAYS the lower-cased display name: it's the only
+ * identity available both when someone is @mentioned and when that same
+ * person later speaks (and we need to recognize them as "the target replying").
  *
- * Grace pass counts (v3.1 — relaxed to reduce false positives):
- *   • Low severity OR known casual slang → 3 grace passes (was 2)
- *   • Medium severity (non-casual, non-targeted) → 2 grace passes (was 1)
- *
- * High / severe abuse, explicit, hate, threats, scams are never lenient.
- * Spam detection is never lenient.
+ * Updates per-target tracking and returns a harassment hit only when the
+ * conditions from policy are satisfied (see scoring below).
  */
-/**
- * applyGlobalContextTolerance(text, hit)
- * v4.0 — GLOBAL context-aware tolerance, applied in every room (not just the
- * Indian Room / Adult Room). This is the core of the "not keyword-only"
- * moderation policy:
- *   - Casual daily slang and consensual-adult vocabulary (CASUAL_TOLERANT_WORDS)
- *     NEVER trigger a violation on their own.
- *   - They only become actionable ("TARGETED ABUSE") when the message also has
- *     a clear targeting/harassment structure aimed at a specific person
- *     (hasTargetingContext), OR the hit falls into an always-protected
- *     category (extreme family abuse, minors, coercion, non-consent, hate,
- *     threats, scams, doxxing — isAlwaysProtectedContent), which are never
- *     tolerated regardless of room or phrasing.
- * Returns the original hit if it should still be enforced, or null if the
- * message should be treated as SAFE / CASUAL / FRIENDLY BANTER / FLIRTING /
- * CONSENSUAL ADULT CHAT and skipped.
- */
-const applyGlobalContextTolerance = (text, hit) => {
-    if (hit.type !== 'abuse' && hit.type !== 'explicit') return hit;
-    if (isAlwaysProtectedContent(text, hit)) return hit;
+const recordAndCheckHarassment = (roomId, senderUid, senderDisplayName, text) => {
+    const now = Date.now();
+    const targets = extractMentions(text); // lower-cased display names mentioned in this message
+    const senderKey = (senderDisplayName || '').toLowerCase();
 
-    const matchedLower = (hit.matched || '').toLowerCase();
-    if (CASUAL_TOLERANT_WORDS.has(matchedLower)) {
-        // Family-abuse root words: per policy, only enforced when the user directly @tags someone.
-        // Possessive phrases or pronoun constructs alone do not trigger enforcement for these.
-        if (FAMILY_ABUSE_ROOTS.has(matchedLower)) {
-            if (hasMentionTag(text)) return hit; // @mention present — enforce
-            return null; // no @mention — treat as general expression, no action
+    // If THIS message is itself an objection from a previously-targeted user
+    // (identified by their own display name matching a tracked target key),
+    // mark that thread as "objected" so future hits against them escalate.
+    if (senderKey) {
+        const stateKey = `${roomId}::${senderKey}`;
+        const state = targetingState.get(stateKey);
+        if (state && OBJECTION_RX.some(rx => rx.test(text))) {
+            state.objected = true;
+            targetingState.set(stateKey, state);
         }
-        if (hasTargetingContext(text)) return hit; // targeted abuse — still enforced
-        return null; // casual / friendly banter / consensual adult chat — no action
     }
 
-    return hit;
-};
+    if (!targets.length) return null; // no identifiable target → cannot be "targeted" harassment
 
-const isIndianRoomLenient = (hit, text, priorTotal) => {
-    if (hit.type !== 'abuse') return false;
-    if (hasTargetingContext(text)) return false;
+    const isHostile = HOSTILITY_SIGNAL_RX.some(rx => rx.test(text));
+    const isThreat = VIOLENCE_THREAT_RX.some(rx => rx.test(text));
+    if (!isHostile && !isThreat) return null; // friendly @mentions are never harassment
 
-    const matchedLower = (hit.matched || '').toLowerCase();
-    const isCasualSlang = INDIAN_CASUAL_SLANG.has(matchedLower);
+    let harassmentHit = null;
+    for (const targetKey of targets) {
+        if (targetKey === senderKey) continue; // can't harass yourself
+        const key = `${roomId}::${targetKey}`;
+        const state = targetingState.get(key) || { hits: [], objected: false };
+        state.hits = state.hits.filter(h => now - h.ts < CFG.HARASSMENT_WINDOW_MS);
+        state.hits.push({ senderUid, ts: now, threat: isThreat });
+        targetingState.set(key, state);
 
-    // High / severe abuse is never lenient regardless of slang status
-    if (hit.severity === 'high' || hit.severity === 'severe') return false;
+        const hitsFromThisSender = state.hits.filter(h => h.senderUid === senderUid);
+        const repeatedTargeting = hitsFromThisSender.length >= CFG.HARASSMENT_MIN_HITS;
+        const multipleAbusiveMessages = state.hits.length >= CFG.HARASSMENT_MIN_HITS;
+        const continuedAfterObjection = state.objected && hitsFromThisSender.length >= 2;
+        const stalkingOrThreat = isThreat && hitsFromThisSender.length >= 2;
 
-    // Low severity or known casual slang: grace for first 3 session violations
-    if ((hit.severity === 'low' || isCasualSlang) && priorTotal < 3) return true;
+        if ((repeatedTargeting && multipleAbusiveMessages) || continuedAfterObjection || stalkingOrThreat) {
+            harassmentHit = {
+                type: 'harassment',
+                severity: 'high',
+                label: continuedAfterObjection
+                    ? 'Harassment — continued after target objected'
+                    : stalkingOrThreat
+                        ? 'Harassment — repeated threats/intimidation'
+                        : 'Harassment — repeated targeting of one user',
+            };
+        }
+    }
 
-    // Medium severity without targeting: grace for first 2 occurrences
-    if (hit.severity === 'medium' && !isCasualSlang && priorTotal < 2) return true;
-
-    return false;
+    return harassmentHit;
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §H  SPAM / FLOOD / REPEAT DETECTOR
+   §G  SPAM / FLOOD / MASS-ADVERTISE DETECTION
+   Rule-based on behaviour (rate, repetition, promotion volume) — never on
+   the presence of any particular word.
 ════════════════════════════════════════════════════════════════════════════ */
 
 const strSimilarity = (a, b) => {
@@ -1383,159 +402,76 @@ const strSimilarity = (a, b) => {
     return (longer.length - dp[shorter.length]) / longer.length;
 };
 
-const SPAM_KEYWORDS = [
-    'click here','click now','click link','free money','earn daily',
-    'make money fast','guaranteed profit','double your money',
-    'investment opportunity','get rich quick','passive income',
-    'whatsapp me','telegram me','contact me on','dm me for',
-    'cheap followers','buy followers','buy likes','cheap services',
-    'join now for free','limited offer','register now',
-    'work from home job','earn per day','referral code',
-    'earn from home','ghar baithe paise','online job',
-    'part time earning','sirf invest karo','sirf ek baar',
-    'paisa double','paise kamao','free ka','aaj hi join',
-    'abhi join karo','whatsapp number','telegram link',
-    'offer expires','today only','100 percent profit',
-];
+// Structural signal of an advertisement (links, contact handles, "DM me",
+// phone/whatsapp solicitation) — used only to COUNT repeated promotion, not
+// to punish a single ad-like message by itself (single ads may be normal
+// conversation, e.g. sharing a song link).
+const AD_SIGNAL_RX = /\b(dm\s*me|whatsapp\s*me|telegram\s*me|contact\s*me\s*on|join\s*my\s*(channel|group)|buy\s*now|limited\s*offer|check\s*out\s*my|follow\s*me\s*on)\b/i;
 
 const detectSpam = (uid, text, now) => {
-    // Flood: N messages in window
+    // Flood: N messages in a short window
     const ts = (userMsgTimestamps.get(uid) || []).filter(t => now - t < CFG.FLOOD_WINDOW_MS);
     ts.push(now);
     userMsgTimestamps.set(uid, ts);
     if (ts.length >= CFG.FLOOD_COUNT) {
-        return { detected:true, type:'spam', severity:'medium', label:'Message flooding' };
+        return { detected: true, type: 'spam', severity: 'medium', label: 'Message flooding' };
     }
 
-    // Repeat / copy-paste detection
+    // Repeat / rapid copy-paste
     const recent = (userRecentTexts.get(uid) || []).filter(e => now - e.ts < CFG.REPEAT_WINDOW_MS);
     const matches = recent.filter(e => strSimilarity(e.text, text) >= CFG.REPEAT_SIMILARITY).length;
     recent.push({ text, ts: now });
     if (recent.length > 40) recent.shift();
     userRecentTexts.set(uid, recent);
     if (matches >= CFG.REPEAT_COUNT) {
-        return { detected:true, type:'spam', severity:'medium', label:'Repeated messages' };
+        return { detected: true, type: 'spam', severity: 'medium', label: 'Repeated / copy-pasted messages' };
     }
 
-    // Spam keywords
-    const lower = text.toLowerCase();
-    for (const kw of SPAM_KEYWORDS) {
-        if (lower.includes(kw)) return { detected:true, type:'spam', severity:'low', label:'Spam content' };
-    }
-
-    return { detected: false };
-};
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §I  MULTI-SIGNAL CONFIDENCE SCORING (NEW in v3.0)
-   Weak signals (caps, emoji, abbreviation-in-context, spam keywords) can
-   accumulate into a violation even when no single signal crosses the threshold.
-════════════════════════════════════════════════════════════════════════════ */
-
-const SIGNAL_WEIGHTS = {
-    wordlist  : 3.0,  // dictionary hit
-    pattern   : 3.5,  // regex hit
-    fuzzy     : 2.0,  // fuzzy match
-    emoji     : 1.5,  // emoji abuse
-    caps      : 1.0,  // caps shouting
-    spam_kw   : 1.0,  // spam keyword
-    abbrev    : 1.5,  // context abbreviation (bc/mc/mf present + another signal)
-    personalInfo: 2.5,// phone/UPI/email
-};
-
-/* ════════════════════════════════════════════════════════════════════════════
-   §J  MAIN CONTENT DETECTOR
-════════════════════════════════════════════════════════════════════════════ */
-
-const SEVERITY_RANK = { low:1, medium:2, high:3, severe:4 };
-
-// Exported so other moderation entry points (e.g. the pre-send abuse check in
-// abuseDetection.js) share this same context-aware classification engine
-// instead of maintaining a second, divergent, keyword-only dictionary.
-export const detectModerationContent = (text) => detectContent(text);
-
-const detectContent = (text) => {
-    // Guard: check whitelist first (saves false positives)
-    if (isWhitelisted(text)) return { detected: false };
-
-    const variants = buildVariants(text);
-
-    // 1. Regex patterns — fast, high confidence
-    const patternHit = checkPatterns(text, variants.norm);
-    if (patternHit) return { detected: true, ...patternHit, signalScore: SIGNAL_WEIGHTS.pattern };
-
-    // 2. Personal info detection
-    const infoHit = checkPersonalInfo(text);
-    if (infoHit) return { detected: true, ...infoHit, signalScore: SIGNAL_WEIGHTS.personalInfo };
-
-    // 3. Word list match
-    const rawWordHit = checkWordLists(variants);
-    const wordHit = rawWordHit ? applyGlobalContextTolerance(text, rawWordHit) : null;
-    if (wordHit) {
-        const label =
-            wordHit.type === 'abuse'    ? 'Abusive language' :
-            wordHit.type === 'explicit' ? 'Explicit content' :
-            wordHit.type === 'hate'     ? 'Hate speech' :
-            wordHit.type === 'threat'   ? 'Threatening content' : 'Rule violation';
-        return { detected: true, ...wordHit, label, signalScore: SIGNAL_WEIGHTS.wordlist };
-    }
-
-    // 4. Fuzzy match — misspelling evasion
-    const rawFuzzyHit = checkFuzzy(variants);
-    const fuzzyHit = rawFuzzyHit ? applyGlobalContextTolerance(text, rawFuzzyHit) : null;
-    if (fuzzyHit) {
-        const label =
-            fuzzyHit.type === 'abuse'    ? 'Abusive language (variant)' :
-            fuzzyHit.type === 'explicit' ? 'Explicit content (variant)' :
-            fuzzyHit.type === 'hate'     ? 'Hate speech (variant)' : 'Rule violation';
-        const sev = ['low','medium','high','severe'];
-        const idx = Math.max(0, sev.indexOf(fuzzyHit.severity) - 1);
-        return { detected: true, ...fuzzyHit, severity: sev[idx], label, signalScore: SIGNAL_WEIGHTS.fuzzy };
-    }
-
-    // 5. Multi-signal aggregation
-    let totalScore = 0;
-    let dominantHit = null;
-
-    const emojiHit = checkEmojiAbuse(text);
-    if (emojiHit) {
-        totalScore += emojiHit.score || SIGNAL_WEIGHTS.emoji;
-        dominantHit = emojiHit;
-    }
-
-    const capsHit = checkCapsAbuse(text);
-    if (capsHit) {
-        totalScore += SIGNAL_WEIGHTS.caps;
-        if (!dominantHit) dominantHit = capsHit;
-    }
-
-    // Check context abbreviations: fire only if another signal is present
-    const lower = text.toLowerCase();
-    for (const abbrev of CONTEXT_ABBREVS) {
-        if (lower.split(/\s+/).includes(abbrev) && totalScore > 0) {
-            totalScore += SIGNAL_WEIGHTS.abbrev;
-            if (!dominantHit) dominantHit = { type:'abuse', severity:'medium', label:'Abusive language' };
-            break;
+    // Mass advertising: repeated ad-signal messages within a window
+    if (AD_SIGNAL_RX.test(text)) {
+        const ad = userAdCounts.get(uid) || { count: 0, windowStart: now };
+        if (now - ad.windowStart > CFG.AD_WINDOW_MS) { ad.count = 0; ad.windowStart = now; }
+        ad.count += 1;
+        userAdCounts.set(uid, ad);
+        if (ad.count >= CFG.AD_COUNT) {
+            return { detected: true, type: 'spam', severity: 'medium', label: 'Mass advertising' };
         }
     }
 
-    if (totalScore >= CFG.MULTI_SIGNAL_THRESHOLD && dominantHit) {
-        return { detected: true, ...dominantHit, signalScore: totalScore };
-    }
-
     return { detected: false };
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §K  SESSION HELPERS
+   §H  MAIN CONTENT DETECTOR — used by both this engine (post-send) and the
+   pre-send wrapper in abuseDetection.js so both entry points agree.
+   Room policy is intentionally NOT applied here — that happens in
+   processAutoMod / detectAbuse, which know the room type. This function only
+   answers "is this content in an always-enforced safety category?".
+════════════════════════════════════════════════════════════════════════════ */
+
+export const detectModerationContent = (text) => {
+    if (!text || typeof text !== 'string') return { detected: false };
+    const hit = checkImmediateAction(text);
+    if (hit) return { detected: true, ...hit };
+    return { detected: false };
+};
+
+/**
+ * isAdultRoomSafe / isRoomSafe — kept for backward compatibility with
+ * abuseDetection.js. Under v5.0, ALL detectModerationContent hits are
+ * immediate-action categories, so nothing is ever "safe" to allow through
+ * regardless of room — the room-based leniency now only applies to slang/
+ * profanity, which is no longer detected as a violation at all.
+ */
+export const isAdultRoomSafe = () => false;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   §I  SESSION HELPERS
 ════════════════════════════════════════════════════════════════════════════ */
 
 const getSessionViolations = (uid) => {
     if (!userSessionViolations.has(uid)) {
-        userSessionViolations.set(uid, {
-            total:0, spam:0, abuse:0, explicit:0, hate:0,
-            harassment:0, scam:0, link:0, info:0, scoreAccum:0,
-        });
+        userSessionViolations.set(uid, { total: 0, byType: {} });
     }
     return userSessionViolations.get(uid);
 };
@@ -1547,7 +483,6 @@ const fmtDuration = (ms) => {
     return `${m} minute${m!==1?'s':''}`;
 };
 
-// Per-type notice cooldown: prevent the same notice type from firing twice within window
 const canPostNotice = (uid, noticeType) => {
     const map = lastNoticeTime.get(uid) || {};
     const last = map[noticeType] || 0;
@@ -1557,7 +492,6 @@ const canPostNotice = (uid, noticeType) => {
     return true;
 };
 
-// Global action cooldown: don't take two enforcement actions on same user too fast
 const canTakeAction = (uid) => {
     const last = lastActionTime.get(uid) || 0;
     if (Date.now() - last < CFG.ACTION_COOLDOWN_MS) return false;
@@ -1566,7 +500,7 @@ const canTakeAction = (uid) => {
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §L  FIRESTORE ENFORCEMENT  (staff-only: owner / admin / moderator)
+   §J  FIRESTORE ENFORCEMENT (staff-only: owner / admin / moderator)
 ════════════════════════════════════════════════════════════════════════════ */
 
 const claimEnforcement = async (roomId, messageId, action, violationType, uid) => {
@@ -1607,7 +541,7 @@ const muteUser = async (uid, durationMs, reason) => {
 const kickUser = async (roomId, uid, displayName, reason) => {
     try {
         await setDoc(doc(db, 'rooms', roomId, 'kickedUsers', uid), {
-            uid, displayName, reason, kickedBy:'TingleBot AutoMod', kickedAt: serverTimestamp(),
+            uid, displayName, reason, kickedBy: 'TingleBot AutoMod', kickedAt: serverTimestamp(),
         });
         await updateDoc(doc(db, 'users', uid), {
             kickedFrom: { roomId, reason, time: Date.now(), kickedBy: 'TingleBot AutoMod' },
@@ -1615,59 +549,30 @@ const kickUser = async (roomId, uid, displayName, reason) => {
     } catch (_) {}
 };
 
-/** Log to dedicated modLogs collection + user doc (v3.0) */
 const logViolation = async (uid, roomId, msgId, text, detection, action, extra = {}) => {
-    const { displayName = 'Unknown User', photoURL = '', roomName = '', matchedWord = '' } = extra;
+    const { displayName = 'Unknown User', photoURL = '', roomName = '', roomType = '', matchedWord = '' } = extra;
     const entry = {
-        // ── identity fields (both naming conventions for backward compat) ──
-        uid,          userId: uid,
-        roomId,       roomName,
-        messageId: msgId,
-
-        // ── content (both naming conventions) ──
-        text: (text||'').slice(0, 200),
-        message: (text||'').slice(0, 200),   // Admin Panel reads v.message
-
-        // ── violation detail ──
-        violationType: detection.type,
-        type: detection.type,                 // Admin Panel reads v.type
-        severity: detection.severity,
-        label: detection.label,
-
-        // ── action taken (both naming conventions) ──
-        action,
-        actionTaken: action,                  // Admin Panel reads v.actionTaken
-
-        // ── user info ──
-        username: displayName,
-        displayName,
-        photoURL,
-
-        // ── exact trigger ──
-        matchedWord: matchedWord || detection.matched || '',
-
-        timestamp: new Date().toISOString(),
-        ts: Date.now(),
+        uid, userId: uid, roomId, roomName, roomType, messageId: msgId,
+        text: (text||'').slice(0, 200), message: (text||'').slice(0, 200),
+        violationType: detection.type, type: detection.type,
+        severity: detection.severity, label: detection.label,
+        action, actionTaken: action,
+        username: displayName, displayName, photoURL,
+        matchedWord: matchedWord || '',
+        timestamp: new Date().toISOString(), ts: Date.now(),
     };
-    try {
-        await addDoc(collection(db, 'modLogs'), entry);
-    } catch (_) {}
+    try { await addDoc(collection(db, 'modLogs'), entry); } catch (_) {}
     try {
         await updateDoc(doc(db, 'users', uid), {
             autoModHistory: arrayUnion({
-                roomId, messageId: msgId,
-                text: entry.text,
-                violationType: detection.type,
-                severity: detection.severity,
-                label: detection.label,
-                action,
-                timestamp: entry.timestamp,
+                roomId, messageId: msgId, text: entry.text,
+                violationType: detection.type, severity: detection.severity,
+                label: detection.label, action, timestamp: entry.timestamp,
             }),
         });
     } catch (_) {}
 };
 
-/** Persist cross-session violation count to Firestore */
 const persistViolationCount = async (uid, violationType) => {
     try {
         await updateDoc(doc(db, 'users', uid), {
@@ -1678,7 +583,6 @@ const persistViolationCount = async (uid, violationType) => {
     } catch (_) {}
 };
 
-/** Post TingleBot notice with varied messages (v3.0) */
 const NOTICE_VARIANTS = {
     warn: [
         (name, label) => `Hey ${name}, let's keep the chat welcoming for everyone. ${label} is not allowed here. This is your first warning.`,
@@ -1707,10 +611,10 @@ const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 export const postNotice = async (roomId, text, tinglebotType) => {
     try {
         const ref = await addDoc(collection(db, 'rooms', roomId, 'messages'), {
-            text, uid:'tinglebot_system_official_2024', displayName:'TingleBot',
-            isBot:true, systemBot:true, tinglebotType,
+            text, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+            isBot: true, systemBot: true, tinglebotType,
             createdAt: serverTimestamp(),
-            noReply:true, noReaction:true, noReport:true, noUnread:true,
+            noReply: true, noReaction: true, noReport: true, noUnread: true,
         });
         if (ref?.id) setTimeout(
             () => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(()=>{}),
@@ -1720,133 +624,96 @@ export const postNotice = async (roomId, text, tinglebotType) => {
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   §M  PUBLIC API
+   §K  PUBLIC API
 ════════════════════════════════════════════════════════════════════════════ */
 
 /**
  * processAutoMod(msg, roomId, currentUid, isStaff, roomName)
  *
- * Call for every incoming message in the snapshot listener (after initial load).
- * processedMsgIds guarantees each message is evaluated exactly once per session.
- *
- * @param {object}  msg         Firestore message object (.id, .text required)
- * @param {string}  roomId      Room being moderated
- * @param {string}  currentUid  UID of the viewing client
- * @param {boolean} isStaff     owner/admin/moderator → may write to Firestore
- * @param {string}  roomName    Room display name — used to detect Adult Room exemptions
+ * Call for every incoming message in the snapshot listener (after initial
+ * load). Detection pipeline, in order:
+ *   1. Immediate-action safety categories (always enforced, every room)
+ *   2. Harassment (targeted, repeated abuse — room-agnostic)
+ *   3. Spam / flood / mass-advertise (behavioural, room-agnostic)
+ * Ordinary profanity/slang/banter/flirting/roleplay never reaches an action.
  */
 export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = false, roomName = '') => {
     if (!msg?.id || !roomId) return;
     if (processedMsgIds.has(msg.id)) return;
     processedMsgIds.add(msg.id);
 
-    // Exempt bots and staff senders
     const senderRole = (msg.role || '').toLowerCase();
-    if (['owner','admin','moderator'].includes(senderRole)) return;
+    if (['owner', 'admin', 'moderator'].includes(senderRole)) return;
     if (msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024') return;
     if (!msg.uid || !msg.text?.trim()) return;
 
     const { uid, text, displayName = 'User' } = msg;
     const now = Date.now();
+    const roomType = getRoomType(roomName);
 
-    // ── Detect room context ───────────────────────────────────────────────────
-    const _roomNameLower = (roomName || '').toLowerCase();
-    const isAdultRoom  = _roomNameLower.includes('adult') || _roomNameLower.includes('18+');
-    const isIndianRoom = _roomNameLower.includes('indian') || _roomNameLower.includes('india')
-                      || _roomNameLower.includes('hindi')  || _roomNameLower.includes('desi')
-                      || _roomNameLower.includes('bollywood') || _roomNameLower.includes('mumbai')
-                      || _roomNameLower.includes('delhi');
+    // 1. Immediate-action categories — always enforced, no room exemption.
+    let hit = checkImmediateAction(text);
 
-    // ── Run detection pipeline (all clients) ─────────────────────────────────
-    const contentHit = detectContent(text);
-    const spamHit    = detectSpam(uid, text, now);
-
-    // Content violations take priority; fall back to spam
-    let hit = contentHit.detected ? contentHit : (spamHit.detected ? spamHit : null);
-    if (!hit) return;
-
-    // ── Adult Room exemption ──────────────────────────────────────────────────
-    // The Adult Room allows consensual adult conversations. However it remains
-    // strictly enforced for: family abuse, incest, minors, non-consensual content,
-    // religious abuse, hate speech, threats, scams, doxxing, and spam.
-    if (isAdultRoom) {
-        // Only allow 'abuse' or 'explicit' through the gate, and only when the
-        // specific content is NOT in the protected categories.
-        if ((hit.type === 'abuse' || hit.type === 'explicit') && !isAlwaysProtectedContent(text, hit)) {
-            return; // consensual adult content — skip enforcement
-        }
-        // All other types (hate, harassment, threat, scam, info, link, spam)
-        // and all protected content fall through to normal enforcement below.
+    // 2. Harassment — targeted + repeated + (objection/threat), room-agnostic.
+    if (!hit) {
+        hit = recordAndCheckHarassment(roomId, uid, displayName, text);
     }
 
-    // ── Update session violation counters (all clients track locally) ─────────
+    // 3. Spam — behavioural, room-agnostic.
+    if (!hit) {
+        const spamHit = detectSpam(uid, text, now);
+        if (spamHit.detected) hit = spamHit;
+    }
+
+    if (!hit) return; // ordinary conversation, banter, slang, flirting — no action
+
+    // ── Update session violation counters ──────────────────────────────────
     const sv = getSessionViolations(uid);
     const priorTotal = sv.total;
     sv.total += 1;
-    sv[hit.type] = (sv[hit.type] || 0) + 1;
-    sv.scoreAccum = (sv.scoreAccum || 0) + (hit.signalScore || 1);
+    sv.byType[hit.type] = (sv.byType[hit.type] || 0) + 1;
 
-    // ── Indian Room leniency ──────────────────────────────────────────────────
-    // Reduce strictness for casual slang that is not targeting another user.
-    // Low-severity abuse gets 2 grace passes; medium gets 1 first-occurrence pass.
-    // High/severe abuse, explicit, hate, threats, scams → always enforced.
-    // Spam detection → always enforced.
-    if (isIndianRoom && hit.type !== 'spam' && isIndianRoomLenient(hit, text, priorTotal)) {
-        return; // casual, non-targeted, early-session — skip enforcement
-    }
+    if (!isStaff) return; // non-staff clients: detection only, no writes
 
-    // Non-staff: detection only — no Firestore writes
-    if (!isStaff) return;
-
-    // Per-user action cooldown — prevents hammering same user with rapid actions
     if (!canTakeAction(uid)) return;
 
-    // Determine escalation action
+    // ── Determine escalation action ─────────────────────────────────────────
     let action = 'warn', shouldDelete = false, muteDuration = 0, shouldKick = false;
 
-    if      (priorTotal >= CFG.KICK_AT)    { action='kick';     shouldDelete=true; shouldKick=true; }
-    else if (priorTotal >= CFG.MUTE_24H_AT){ action='mute_24h'; shouldDelete=true; muteDuration=24*60*60*1000; }
-    else if (priorTotal >= CFG.MUTE_3H_AT) { action='mute_3h';  shouldDelete=true; muteDuration=3*60*60*1000; }
-    else if (priorTotal >= CFG.MUTE_30_AT) { action='mute_30';  shouldDelete=true; muteDuration=30*60*1000; }
-    else if (priorTotal >= CFG.MUTE_5_AT)  { action='mute_5';   shouldDelete=true; muteDuration=5*60*1000; }
-    else if (priorTotal >= CFG.DELETE_WARN_AT){ action='delete_warn'; shouldDelete=true; }
-    else    { action='warn'; }
+    if      (priorTotal >= CFG.KICK_AT)     { action = 'kick';     shouldDelete = true; shouldKick = true; }
+    else if (priorTotal >= CFG.MUTE_24H_AT) { action = 'mute_24h'; shouldDelete = true; muteDuration = 24*60*60*1000; }
+    else if (priorTotal >= CFG.MUTE_3H_AT)  { action = 'mute_3h';  shouldDelete = true; muteDuration = 3*60*60*1000; }
+    else if (priorTotal >= CFG.MUTE_30_AT)  { action = 'mute_30';  shouldDelete = true; muteDuration = 30*60*1000; }
+    else if (priorTotal >= CFG.MUTE_5_AT)   { action = 'mute_5';   shouldDelete = true; muteDuration = 5*60*1000; }
+    else if (priorTotal >= CFG.DELETE_WARN_AT) { action = 'delete_warn'; shouldDelete = true; }
 
-    // Severity overrides
-    if ((hit.severity==='high'||hit.severity==='severe') && !shouldDelete) {
-        shouldDelete=true; action='delete_warn';
+    // Severity overrides — severe/high safety categories delete immediately.
+    if ((hit.severity === 'high' || hit.severity === 'severe') && !shouldDelete) {
+        shouldDelete = true; action = 'delete_warn';
     }
-    if (hit.severity==='severe' && muteDuration===0 && !shouldKick) {
-        muteDuration=5*60*1000; action='mute_5';
+    if (hit.severity === 'severe' && muteDuration === 0 && !shouldKick) {
+        muteDuration = 60 * 60 * 1000; action = 'mute_3h';
     }
-
-    // Special case: scam / personal info → always delete regardless of severity
-    if ((hit.type==='scam'||hit.type==='info') && !shouldDelete) {
-        shouldDelete=true;
-        if (action==='warn') action='delete_warn';
+    // Scam / doxxing always delete regardless of prior count.
+    if ((hit.type === 'scam' || hit.type === 'doxxing') && !shouldDelete) {
+        shouldDelete = true;
+        if (action === 'warn') action = 'delete_warn';
     }
 
-    // Atomic claim — only one staff client proceeds per message
     const claimed = await claimEnforcement(roomId, msg.id, action, hit.type, uid);
     if (!claimed) return;
 
-    // Execute enforcement
     if (shouldDelete) await removeMessage(roomId, msg.id);
     if (muteDuration > 0) await muteUser(uid, muteDuration, `TingleBot: ${hit.label} (violation #${priorTotal+1})`);
     if (shouldKick)       await kickUser(roomId, uid, displayName, `AutoMod: ${priorTotal+1} violations`);
 
-    // Persist cross-session violation record (pass user info so Admin Panel shows real name/DP)
     await logViolation(uid, roomId, msg.id, text, hit, action, {
-        displayName,
-        photoURL: msg.photoURL || '',
-        roomName,
-        matchedWord: hit.matched || '',
+        displayName, photoURL: msg.photoURL || '', roomName, roomType, matchedWord: hit.matched || '',
     });
     if (sv.total >= CFG.PERSIST_AT) {
-        persistViolationCount(uid, hit.type).catch(()=>{});
+        persistViolationCount(uid, hit.type).catch(() => {});
     }
 
-    // Build and post notice (with per-type cooldown)
     const noticeCooldownType = shouldKick ? 'kick' : muteDuration > 0 ? 'mute' : 'warn';
     if (!canPostNotice(uid, noticeCooldownType)) return;
 
@@ -1869,22 +736,17 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
 };
 
 /**
- * isAdultRoomSafe(text, hit)
- * Returns true when a detection hit should be ALLOWED in the Adult Room
- * (i.e. it is NOT always-protected content).
- * Exported so the pre-send abuseDetection.js can apply the same adult-room
- * exemption as the post-send processAutoMod scanner, keeping both paths in sync.
- */
-export const isAdultRoomSafe = (text, hit) => !isAlwaysProtectedContent(text, hit);
-
-/**
  * resetAutoModState — call when user leaves or changes room.
  */
 export const resetAutoModState = () => {
     userMsgTimestamps.clear();
     userRecentTexts.clear();
+    userAdCounts.clear();
     userSessionViolations.clear();
     processedMsgIds.clear();
     lastNoticeTime.clear();
     lastActionTime.clear();
+    // targetingState intentionally persists across room switches within the
+    // same session so cross-room stalking is still tracked; it self-expires
+    // via the HARASSMENT_WINDOW_MS filter on each check.
 };

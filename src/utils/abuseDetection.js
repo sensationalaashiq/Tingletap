@@ -1,16 +1,16 @@
 import { db } from '../firebase/config';
 import { doc, getDoc, updateDoc, deleteDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { updateTrustScore } from './trustSystem';
-import { detectModerationContent, isAdultRoomSafe } from './tinglebotAutoMod';
+import { detectModerationContent } from './tinglebotAutoMod';
 
-// v4.0 — This module is a thin pre-send wrapper around the shared TingleBot
-// AutoMod context-aware classification engine (tinglebotAutoMod.js). It no
-// longer maintains its own separate keyword-only dictionaries: those caused
-// casual daily slang (e.g. "idiot", "stupid", "kutta") to be flagged as
-// high-severity abuse with no context awareness, and diverged from the main
-// engine's policy. Detection now always goes through detectModerationContent()
-// so both entry points (pre-send here, and post-send in tinglebotAutoMod.js)
-// agree on what counts as SAFE/CASUAL vs. TARGETED ABUSE.
+// v5.0 — This module is a thin pre-send wrapper around the shared TingleBot
+// rule-based moderation engine (tinglebotAutoMod.js). It no longer maintains
+// its own dictionaries. detectModerationContent() only ever flags the fixed
+// set of "immediate action" safety categories (minors/grooming, non-consensual
+// content, threats, doxxing, hate/terrorism, scams/phishing) — ordinary
+// profanity, slang, flirting, and adult conversation are never flagged here,
+// in any room, by design. Both entry points (pre-send here, post-send in
+// tinglebotAutoMod.js) share this single source of truth.
 
 const offenseHistory = new Map();
 
@@ -30,13 +30,15 @@ const OFFENSE_CONFIG = {
   OFFENSE_COOLDOWN_MS: 7 * 24 * 60 * 60 * 1000,
 };
 
-// detectAbuse(messageText, role, opts)
+// detectAbuse(messageText, role)
 // Owners are never automatically moderated — if the sender's role is 'owner'
 // this always returns not-abusive, regardless of message content.
-// opts.isAdultRoom — when true, consensual adult vocabulary (abuse/explicit types
-// that are NOT always-protected) is allowed, matching the post-send processAutoMod
-// adult-room exemption so both moderation paths stay in sync.
-export const detectAbuse = (messageText, role, opts = {}) => {
+// Note: an `opts` object with isAdultRoom may still be passed by callers for
+// backward compatibility, but it is intentionally ignored — detectModerationContent()
+// only ever flags always-enforced safety categories, so there is nothing left
+// to exempt for the Adult Room here. Ordinary adult conversation, profanity,
+// and slang were never routed through this detector as violations.
+export const detectAbuse = (messageText, role) => {
   if (!messageText || typeof messageText !== 'string') {
     return { isAbusive: false };
   }
@@ -46,13 +48,6 @@ export const detectAbuse = (messageText, role, opts = {}) => {
 
   const hit = detectModerationContent(messageText);
   if (!hit.detected) {
-    return { isAbusive: false };
-  }
-
-  // Adult Room exemption: skip enforcement for consensual adult vocabulary.
-  // Family abuse, minors, non-consensual content, hate, threats, scams etc.
-  // are still enforced (isAdultRoomSafe returns false for those).
-  if (opts.isAdultRoom && (hit.type === 'abuse' || hit.type === 'explicit') && isAdultRoomSafe(messageText, hit)) {
     return { isAbusive: false };
   }
 

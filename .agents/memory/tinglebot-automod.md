@@ -1,7 +1,21 @@
 ---
 name: TingleBot AutoMod Architecture
-description: Key design decisions for the TingleBot intelligent auto-moderation system (v3.0-v4.0)
+description: Key design decisions for the TingleBot intelligent auto-moderation system (v3.0-v5.0)
 ---
+
+## v5.0 — No global keyword/slang blacklist; rule-based safety categories only
+
+The v3.0-v4.0 architecture (dictionaries of profanity per language + a "context tolerance" layer bolted on top) was fully replaced. There is now no profanity/slang dictionary at all: `detectModerationContent()` only ever matches a fixed set of "immediate action" safety categories (minor safety/grooming, non-consensual content, threats of violence, doxxing/personal info, hate/terrorism, scams/phishing/malicious links) via narrow behavioural regex, never a slang word list.
+
+**Why:** Product requirement — ordinary profanity, sexual slang, and regional-language slang must never be moderated on their own, in any room (including Adult Room), only genuine safety issues and targeted/repeated harassment.
+
+**How to apply:** Any request to "add a bad word" or "block a slang term" should be redirected to the harassment/spam behavioural signals, not a new dictionary entry — adding words back to a blacklist regresses this policy. Room type is classified via `getRoomType(roomName)` but the safety categories are intentionally room-agnostic (enforced everywhere).
+
+## Harassment target-identity gotcha
+
+Harassment tracking must use ONE canonical identity for "who is the target" across mention-detection and objection-detection. The app only supports @mention-by-displayName targeting (no reply/UID targeting exists in the chat UI) — so the canonical target key must be the lower-cased display name, not the sender's UID, or objection tracking (`targetKey === senderUid`) silently never matches and "continued after objection" never fires.
+
+**Why:** Caught by architect code review after initial rewrite passed a UID-based reply target that could never equal the display-name-based mention key.
 
 ## v4.0 — Two separate automod entry points, both must agree
 
