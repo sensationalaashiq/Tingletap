@@ -619,19 +619,52 @@ const NOTICE_VARIANTS = {
 
 const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-export const postNotice = async (roomId, text, tinglebotType) => {
+/**
+ * postNotice — write a TingleBot system message that is visible to everyone
+ * in the room for NOTICE_TTL_MS (60 s), then auto-deleted by the owner client.
+ *
+ * Routing:
+ *  • Calls the server-side Netlify function `post-automod-notice` so that the
+ *    write uses Firebase Admin SDK and bypasses the Firestore security rules
+ *    that only allow isBot/systemBot flags for isTingleBot() or isStaff().
+ *    This fixes the < 1 second optimistic-flash / server-rollback that non-staff
+ *    clients experienced when trying to write system-flagged messages directly.
+ *  • A per-violator deduplication lock inside the function prevents multiple
+ *    clients from each posting the same notice within the TTL window.
+ *
+ * @param {string}  roomId         Firestore room document ID
+ * @param {string}  text           Human-readable notice text
+ * @param {string}  tinglebotType  One of 'automod' | 'kicked' | 'muted' | …
+ * @param {string}  [violatorUid]  UID of the user who triggered the violation
+ */
+export const postNotice = async (roomId, text, tinglebotType, violatorUid = '') => {
     try {
-        const ref = await addDoc(collection(db, 'rooms', roomId, 'messages'), {
-            text, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-            isBot: true, systemBot: true, tinglebotType,
-            createdAt: serverTimestamp(),
-            noReply: true, noReaction: true, noReport: true, noUnread: true,
+        const { getAuth } = await import('firebase/auth');
+        const currentUser = getAuth().currentUser;
+        if (!currentUser) return; // caller must be authenticated
+
+        const idToken = await currentUser.getIdToken();
+
+        // In development Vite proxies /.netlify/functions/* → local server.js
+        // In production the Netlify CDN routes it to the function.
+        const fnUrl = '/.netlify/functions/post-automod-notice';
+
+        const res = await fetch(fnUrl, {
+            method:  'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ roomId, text, tinglebotType, violatorUid }),
         });
-        if (ref?.id) setTimeout(
-            () => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(()=>{}),
-            CFG.NOTICE_TTL_MS
-        );
-    } catch (_) {}
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.warn('[TingleBot] postNotice server error:', res.status, err?.error || '');
+        }
+    } catch (e) {
+        console.warn('[TingleBot] postNotice fetch error:', e?.message || e);
+    }
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -685,18 +718,15 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     sv.total += 1;
     sv.byType[hit.type] = (sv.byType[hit.type] || 0) + 1;
 
-    if (!isStaff) return; // non-staff clients: detection only, no writes
-
-    if (!canTakeAction(uid)) return;
-
-    // ── Determine escalation action ─────────────────────────────────────────
+    // ── Determine escalation action (deterministic from violation count + severity)
+    // Calculated here so ALL clients (staff and non-staff) can build the same notice.
     let action = 'warn', shouldDelete = false, muteDuration = 0, shouldKick = false;
 
-    if      (priorTotal >= CFG.KICK_AT)     { action = 'kick';     shouldDelete = true; shouldKick = true; }
-    else if (priorTotal >= CFG.MUTE_24H_AT) { action = 'mute_24h'; shouldDelete = true; muteDuration = 24*60*60*1000; }
-    else if (priorTotal >= CFG.MUTE_3H_AT)  { action = 'mute_3h';  shouldDelete = true; muteDuration = 3*60*60*1000; }
-    else if (priorTotal >= CFG.MUTE_30_AT)  { action = 'mute_30';  shouldDelete = true; muteDuration = 30*60*1000; }
-    else if (priorTotal >= CFG.MUTE_5_AT)   { action = 'mute_5';   shouldDelete = true; muteDuration = 5*60*1000; }
+    if      (priorTotal >= CFG.KICK_AT)        { action = 'kick';        shouldDelete = true; shouldKick = true; }
+    else if (priorTotal >= CFG.MUTE_24H_AT)    { action = 'mute_24h';    shouldDelete = true; muteDuration = 24*60*60*1000; }
+    else if (priorTotal >= CFG.MUTE_3H_AT)     { action = 'mute_3h';     shouldDelete = true; muteDuration = 3*60*60*1000; }
+    else if (priorTotal >= CFG.MUTE_30_AT)     { action = 'mute_30';     shouldDelete = true; muteDuration = 30*60*1000; }
+    else if (priorTotal >= CFG.MUTE_5_AT)      { action = 'mute_5';      shouldDelete = true; muteDuration = 5*60*1000; }
     else if (priorTotal >= CFG.DELETE_WARN_AT) { action = 'delete_warn'; shouldDelete = true; }
 
     // Severity overrides — severe/high safety categories delete immediately.
@@ -712,6 +742,35 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
         if (action === 'warn') action = 'delete_warn';
     }
 
+    // ── Post notice — ALL clients (staff and non-staff) via server-side function ──
+    // The Netlify function (post-automod-notice) writes with Firebase Admin SDK,
+    // bypassing the Firestore rules that only allow isBot/systemBot for staff.
+    // A per-violator dedup lock in the function prevents multiple clients posting
+    // the same notice within the 60-second TTL window.
+    const noticeCooldownType = shouldKick ? 'kick' : muteDuration > 0 ? 'mute' : 'warn';
+    if (canPostNotice(uid, noticeCooldownType)) {
+        let noticeText, noticeTinglebotType;
+        if (shouldKick) {
+            noticeText = getRandom(NOTICE_VARIANTS.kicked(displayName));
+            noticeTinglebotType = 'kicked';
+        } else if (muteDuration > 0) {
+            noticeText = getRandom(NOTICE_VARIANTS.muted(displayName, fmtDuration(muteDuration), hit.label));
+            noticeTinglebotType = 'muted';
+        } else if (shouldDelete) {
+            noticeText = getRandom(NOTICE_VARIANTS.delete_warn.map(fn => fn(displayName, hit.label)));
+            noticeTinglebotType = 'automod';
+        } else {
+            noticeText = getRandom(NOTICE_VARIANTS.warn.map(fn => fn(displayName, hit.label)));
+            noticeTinglebotType = 'automod';
+        }
+        postNotice(roomId, noticeText, noticeTinglebotType, uid).catch(() => {});
+    }
+
+    // ── Enforcement — staff clients only ────────────────────────────────────
+    if (!isStaff) return;
+
+    if (!canTakeAction(uid)) return;
+
     const claimed = await claimEnforcement(roomId, msg.id, action, hit.type, uid);
     if (!claimed) return;
 
@@ -725,26 +784,6 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     if (sv.total >= CFG.PERSIST_AT) {
         persistViolationCount(uid, hit.type).catch(() => {});
     }
-
-    const noticeCooldownType = shouldKick ? 'kick' : muteDuration > 0 ? 'mute' : 'warn';
-    if (!canPostNotice(uid, noticeCooldownType)) return;
-
-    let noticeText, tinglebotType;
-    if (shouldKick) {
-        noticeText = getRandom(NOTICE_VARIANTS.kicked(displayName));
-        tinglebotType = 'kicked';
-    } else if (muteDuration > 0) {
-        noticeText = getRandom(NOTICE_VARIANTS.muted(displayName, fmtDuration(muteDuration), hit.label));
-        tinglebotType = 'muted';
-    } else if (shouldDelete) {
-        noticeText = getRandom(NOTICE_VARIANTS.delete_warn.map(fn => fn(displayName, hit.label)));
-        tinglebotType = 'automod';
-    } else {
-        noticeText = getRandom(NOTICE_VARIANTS.warn.map(fn => fn(displayName, hit.label)));
-        tinglebotType = 'automod';
-    }
-
-    await postNotice(roomId, noticeText, tinglebotType);
 };
 
 /**

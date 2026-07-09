@@ -12,7 +12,7 @@ import {
 import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
 import { checkSpam } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
-import { processAutoMod, resetAutoModState, postNotice } from '../utils/tinglebotAutoMod';
+import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
@@ -3985,13 +3985,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
                 if (spamResult.isSpam) {
                     setNewMessage(''); // Always clear input even on spam block
-                    const spamNoticeVariants = [
-                        `${displayName} was slowed down by anti-spam — sending too fast.`,
-                        `${displayName}'s message was blocked — spam protection activated.`,
-                        `${displayName} hit the speed limit — please slow down.`,
-                    ];
-                    const spamText = spamNoticeVariants[Math.floor(Math.random() * spamNoticeVariants.length)];
-                    postNotice(roomId, spamText, 'automod').catch(() => {});
+                    // Note: TingleBot warning notice is posted by processAutoMod
+                    // (running on all snapshot listeners) via the server-side
+                    // post-automod-notice Netlify function. No direct client write here
+                    // to avoid the < 1 s optimistic-flash / Firestore rollback.
                     return;
                 }
 
@@ -4001,17 +3998,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                     // Send the message first so we have the doc ref, then delete it
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
                     setNewMessage('');
-                    const modResult = await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
-                    if (modResult?.userMessage) {
-                        const violationLabel = abuseResult.category || 'inappropriate content';
-                        const abuseNoticeVariants = [
-                            `${displayName}'s message was removed — ${violationLabel} detected.`,
-                            `A message from ${displayName} was deleted for: ${violationLabel}. Please follow community guidelines.`,
-                            `${displayName}, your message was removed (${violationLabel}). This is a warning.`,
-                        ];
-                        const abuseText = abuseNoticeVariants[Math.floor(Math.random() * abuseNoticeVariants.length)];
-                        postNotice(roomId, abuseText, 'automod').catch(() => {});
-                    }
+                    await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
+                    // Notice is posted by processAutoMod via server-side Netlify function —
+                    // no direct postNotice() call here to avoid client auth rule violations.
                     setTimeout(() => scrollToBottom(true), 100);
                     return;
                 }

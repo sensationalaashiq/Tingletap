@@ -152,6 +152,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: () => '/api/reviewBadgeApplication',
       },
+      '/.netlify/functions/post-automod-notice': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: () => '/api/post-automod-notice',
+      },
     },
   },
 })

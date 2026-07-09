@@ -741,6 +741,65 @@ app.post('/api/contact', async (req, res) => {
   return res.json({ ok: true, message: 'Message sent successfully. We will respond within 2–4 hours.' });
 });
 
+// ── POST /api/post-automod-notice ────────────────────────────────────────────
+// Dev-only proxy for the Netlify function `post-automod-notice`.
+// In production Netlify routes /.netlify/functions/post-automod-notice directly.
+app.post('/api/post-automod-notice', async (req, res) => {
+  if (!adminDb) return res.status(503).json({ error: 'Firebase Admin not available in dev' });
+
+  const idToken = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
+  if (!idToken) return res.status(401).json({ error: 'Unauthorized — no token' });
+
+  let callerUid;
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    callerUid = decoded.uid;
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  const { roomId, text, tinglebotType, violatorUid } = req.body || {};
+  const ALLOWED_TYPES = ['automod','kicked','muted','unmuted','banned','unbanned','promoted','demoted','rule','announcement','system'];
+  if (!roomId || !text || !tinglebotType) return res.status(400).json({ error: 'Missing required fields' });
+  if (!ALLOWED_TYPES.includes(tinglebotType)) return res.status(400).json({ error: 'Invalid tinglebotType' });
+  if (typeof text !== 'string' || text.length < 2 || text.length > 600) return res.status(400).json({ error: 'Invalid text length' });
+
+  const TTL_MS = 60 * 1000;
+  const lockKey = violatorUid ? `notice_${violatorUid}` : `notice_caller_${callerUid}`;
+  const lockRef = adminDb.collection('rooms').doc(roomId).collection('automod').doc(lockKey);
+
+  let alreadyPosted = false;
+  try {
+    await adminDb.runTransaction(async (t) => {
+      const snap = await t.get(lockRef);
+      if (snap.exists()) {
+        const { expiresAt } = snap.data();
+        if (typeof expiresAt === 'number' && expiresAt > Date.now()) { alreadyPosted = true; return; }
+      }
+      t.set(lockRef, { expiresAt: Date.now() + TTL_MS, postedAt: admin.firestore.FieldValue.serverTimestamp(), callerUid, violatorUid: violatorUid || callerUid, tinglebotType });
+    });
+  } catch (e) {
+    console.error('[post-automod-notice] Lock error:', e.message);
+    return res.status(500).json({ error: 'Dedup lock failed' });
+  }
+
+  if (alreadyPosted) return res.json({ ok: true, skipped: true, reason: 'duplicate' });
+
+  try {
+    const msgRef = await adminDb.collection('rooms').doc(roomId).collection('messages').add({
+      text, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+      isBot: true, systemBot: true, tinglebotType,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      noReply: true, noReaction: true, noReport: true, noUnread: true,
+    });
+    console.log(`[post-automod-notice] ✓ Notice posted: ${msgRef.id} (room:${roomId} type:${tinglebotType})`);
+    return res.json({ ok: true, id: msgRef.id });
+  } catch (e) {
+    console.error('[post-automod-notice] Firestore write error:', e.message);
+    return res.status(500).json({ error: 'Firestore write failed' });
+  }
+});
+
 // ── GET /api/health ────────────────────────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({ ok: true, service: 'TingleTap Email Center API', port: PORT }));
 
