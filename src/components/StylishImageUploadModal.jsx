@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import './StylishImageUploadModal.css';
 
+/* ── Locked tab card ──────────────────────────────────────────────────────── */
+const LockedTabCard = ({ message }) => (
+    <div style={{
+        padding: '24px 16px', textAlign: 'center',
+        background: 'linear-gradient(135deg,rgba(239,68,68,.06),rgba(220,38,38,.04))',
+        border: '1px solid rgba(239,68,68,.2)', borderRadius: '12px',
+        color: '#dc2626', margin: '4px 0',
+    }}>
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" style={{ marginBottom: 8, opacity: .75 }}>
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+        </svg>
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Premium Feature</div>
+        <div style={{ fontSize: 11, opacity: .85, lineHeight: 1.45 }}>{message}</div>
+    </div>
+);
+
 const StylishImageUploadModal = React.memo(({
     isOpen,
     onClose,
@@ -11,25 +27,24 @@ const StylishImageUploadModal = React.memo(({
     selectedImage,
     imagePreview,
     imageUrl,
-    setImageUrl
+    setImageUrl,
+    // Badge tier: 'guest'|'member'|'tier1'|'tier2'|'tier3'|'staff'
+    badgeTier = 'member',
 }) => {
     const [imageTab, setImageTab] = useState('upload');
     const [imageCaption, setImageCaption] = useState('');
 
     if (!isOpen) return null;
 
+    // Image URL tab: only tier3 and staff
+    const canUseUrl = badgeTier === 'tier3' || badgeTier === 'staff';
+
     const handleFileUpload = () => {
-        if (selectedImage && onImageUpload) {
-            onImageUpload(selectedImage, imageCaption);
-            resetModal();
-        }
+        if (selectedImage && onImageUpload) { onImageUpload(selectedImage, imageCaption); resetModal(); }
     };
 
     const handleUrlUpload = () => {
-        if (imageUrl.trim() && onImageUrlUpload) {
-            onImageUrlUpload(imageUrl.trim(), imageCaption);
-            resetModal();
-        }
+        if (imageUrl.trim() && onImageUrlUpload) { onImageUrlUpload(imageUrl.trim(), imageCaption); resetModal(); }
     };
 
     const resetModal = () => {
@@ -41,7 +56,12 @@ const StylishImageUploadModal = React.memo(({
         onClose();
     };
 
-    const canSend = imageTab === 'upload' ? !!selectedImage : !!imageUrl.trim();
+    const canSend = imageTab === 'upload' ? !!selectedImage : (canUseUrl && !!imageUrl.trim());
+
+    /* ── Tab styles ─────────────────────────────────────────────────── */
+    const activeTabStyle  = { background:'rgba(139,92,246,.12)', color:'#5b21b6', border:'1.5px solid #8b5cf6' };
+    const normalTabStyle  = { background:'#fafafa', color:'#9ca3af', border:'1.5px solid rgba(139,92,246,.2)' };
+    const lockedTabStyle  = { background:'#fafafa', color:'#c4b5fd', border:'1.5px solid rgba(139,92,246,.2)', opacity:.65, position:'relative' };
 
     return (
         <div className="sim-overlay" onClick={e => { if (e.target === e.currentTarget) resetModal(); }}>
@@ -69,19 +89,27 @@ const StylishImageUploadModal = React.memo(({
                 {/* Tabs */}
                 <div className="sim-tabs">
                     <button className={`sim-tab${imageTab === 'upload' ? ' active' : ''}`}
-                        onClick={() => { setImageTab('upload'); if (setImageUrl) setImageUrl(''); }}>
+                        onClick={() => { setImageTab('upload'); if (setImageUrl) setImageUrl(''); }}
+                        style={imageTab === 'upload' ? activeTabStyle : normalTabStyle}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Upload File
                     </button>
+
                     <button className={`sim-tab${imageTab === 'url' ? ' active' : ''}`}
-                        onClick={() => { setImageTab('url'); if (fileInputRef?.current) fileInputRef.current.value = ''; }}>
+                        onClick={() => { setImageTab('url'); if (fileInputRef?.current) fileInputRef.current.value = ''; }}
+                        style={imageTab === 'url' ? activeTabStyle : (canUseUrl ? normalTabStyle : lockedTabStyle)}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M7.5 10a2.5 2.5 0 003.536 3.536l2.5-2.5a2.5 2.5 0 00-3.536-3.536l-1.25 1.25" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
                             <path d="M12.5 10a2.5 2.5 0 00-3.536-3.536l-2.5 2.5a2.5 2.5 0 003.536 3.536l1.25-1.25" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
                         </svg>
                         URL Link
+                        {!canUseUrl && (
+                            <span style={{ position:'absolute', top:-4, right:-4, width:13, height:13, background:'#ef4444', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'1.5px solid #fff' }}>
+                                <svg viewBox="0 0 24 24" width="7" height="7" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            </span>
+                        )}
                     </button>
                 </div>
 
@@ -112,16 +140,21 @@ const StylishImageUploadModal = React.memo(({
                             </div>
                         )
                     ) : (
-                        <div className="sim-url-section">
-                            <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
-                                placeholder="https://example.com/image.jpg" className="sim-url-input"/>
-                            <p className="sim-url-hint">Paste a direct link to an image</p>
-                            {imageUrl && (
-                                <img src={imageUrl} alt="URL Preview" className="sim-url-preview"
-                                    onError={e => e.target.style.display='none'}
-                                    onLoad={e => e.target.style.display='block'}/>
-                            )}
-                        </div>
+                        /* URL tab content */
+                        !canUseUrl ? (
+                            <LockedTabCard message="Upgrade to Diamond King, Sapphire Goddess or RJ badge to share images by URL." />
+                        ) : (
+                            <div className="sim-url-section">
+                                <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+                                    placeholder="https://example.com/image.jpg" className="sim-url-input"/>
+                                <p className="sim-url-hint">Paste a direct link to an image</p>
+                                {imageUrl && (
+                                    <img src={imageUrl} alt="URL Preview" className="sim-url-preview"
+                                        onError={e => e.target.style.display='none'}
+                                        onLoad={e => e.target.style.display='block'}/>
+                                )}
+                            </div>
+                        )
                     )}
 
                     <textarea value={imageCaption} onChange={e => setImageCaption(e.target.value)}
@@ -140,9 +173,7 @@ const StylishImageUploadModal = React.memo(({
                             opacity: canSend ? 1 : 0.45,
                             cursor: canSend ? 'pointer' : 'not-allowed',
                             background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)',
-                            border: 'none',
-                            color: '#fff',
-                            WebkitTextFillColor: '#fff',
+                            border: 'none', color: '#fff', WebkitTextFillColor: '#fff',
                             boxShadow: '0 4px 16px rgba(139,92,246,.42)',
                         }}>
                         <svg viewBox="0 0 20 20" width="15" height="15" fill="none">

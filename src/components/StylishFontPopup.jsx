@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './StylishFontPopup.css';
+import { getBadgeTier } from '../utils/badgeTier';
 
 const StylishFontPopup = React.memo(({ 
   isOpen, 
@@ -37,12 +38,11 @@ const StylishFontPopup = React.memo(({
     }
   }, [isOpen]);
 
-  // Helper functions for user permissions
+  // Helper functions for user permissions — tier-aware
   const getColorPalette = useCallback(() => {
-    const isStaff = ['owner', 'admin', 'moderator'].includes(userRole);
-    const hasBadge = userBadge && userBadge !== null;
+    const tier = getBadgeTier(userBadge, userRole, isGuest);
 
-    const premiumColors = [
+    const allColors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
       '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#F4D03F', '#A9DFBF',
       '#E8DAEF', '#D5DBDB', '#FADBD8', '#D1F2EB', '#FCF3CF', '#EBDEF0', '#D6EAF8', '#DBEAFE',
@@ -53,35 +53,17 @@ const StylishFontPopup = React.memo(({
       '#FFD700', '#32CD32', '#FF6347', '#4169E1', '#FF69B4', '#00FA9A', '#FF4500', '#9370DB',
       '#228B22', '#FF0000', '#0000FF', '#FFA500', '#800080', '#008080', '#FFC0CB', '#A52A2A',
       '#808000', '#000080', '#800000', '#008000', '#C0C0C0', '#808080', '#000000', '#FFFFFF'
-    ];
+    ]; // 80 total
 
-    const standardColors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-      '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#F4D03F', '#A9DFBF',
-      '#E8DAEF', '#D5DBDB', '#FADBD8', '#D1F2EB', '#FCF3CF', '#EBDEF0', '#D6EAF8', '#DBEAFE',
-      '#FEF3E2', '#E8F5E8', '#FFE4E1', '#F0F8FF', '#FFF8DC', '#F5F5DC', '#E6E6FA', '#FFE4B5',
-      '#FF69B4', '#8A2BE2', '#DC143C', '#00FF7F', '#FF4500', '#1E90FF', '#228B22', '#9370DB'
-    ];
-
-    const basicColors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-      '#BB8FCE', '#85C1E9'
-    ];
-
-    const guestColors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-      '#BB8FCE', '#85C1E9'
-    ];
-
-    if (isStaff) return premiumColors;
-    if (hasBadge) return standardColors;
-    if (isGuest) return guestColors;
-    return basicColors;
+    if (tier === 'guest')   return allColors.slice(0, 10);  // 10 colors
+    if (tier === 'member')  return allColors.slice(0, 16);  // 16 colors (20%)
+    if (tier === 'tier1')   return allColors.slice(0, 24);  // 24 colors (30%)
+    if (tier === 'tier2')   return allColors.slice(0, 48);  // 48 colors (60%)
+    return allColors;                                        // 80 colors (100%)
   }, [userRole, userBadge, isGuest]);
 
   const getFontFamilies = useCallback(() => {
-    const isStaff = ['owner', 'admin', 'moderator'].includes(userRole);
-    const hasBadge = userBadge && userBadge !== null;
+    const tier = getBadgeTier(userBadge, userRole, isGuest);
 
     const basicFonts = [
       { name: 'Default Font', value: 'inherit' },
@@ -122,23 +104,24 @@ const StylishFontPopup = React.memo(({
       { name: 'Poiret One', value: "'Poiret One', cursive" },
       // ── Retro / Pixel ──
       { name: 'Pixel Retro ✦', value: "'Press Start 2P', cursive" },
-    ];
+    ]; // 24 total (5 basic + 19 premium)
 
-    if (isGuest) return basicFonts.slice(0, 3);
-    if (!hasBadge && !isStaff) return basicFonts;
-    return premiumFonts;
+    if (tier === 'guest')   return basicFonts.slice(0, 3);   // 3 fonts
+    if (tier === 'member')  return basicFonts;                // 5 basic fonts
+    if (tier === 'tier1')   return premiumFonts.slice(0, 8);  // 8 fonts (30%)
+    if (tier === 'tier2')   return premiumFonts.slice(0, 15); // 15 fonts (60%)
+    return premiumFonts;                                      // 24 fonts (100%)
   }, [userRole, userBadge, isGuest]);
 
+  // Styles (bold/italic/underline/strikethrough) — tier1+ only
   const canAccessStyles = useCallback(() => {
-    const isStaff = ['owner', 'admin', 'moderator'].includes(userRole);
-    const hasBadge = userBadge && userBadge !== null;
-    return isStaff || hasBadge;
-  }, [userRole, userBadge]);
+    const tier = getBadgeTier(userBadge, userRole, isGuest);
+    return !['guest', 'member'].includes(tier);
+  }, [userRole, userBadge, isGuest]);
 
+  // Font selector — member+ (everyone except guest)
   const canAccessFonts = useCallback(() => {
-    const isStaff = ['owner', 'admin', 'moderator'].includes(userRole);
-    const hasBadge = userBadge && userBadge !== null;
-    return isStaff || hasBadge;
+    return getBadgeTier(userBadge, userRole, isGuest) !== 'guest';
   }, [isGuest, userRole, userBadge]);
 
   // Event handlers with immediate state updates

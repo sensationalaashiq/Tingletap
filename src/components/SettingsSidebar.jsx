@@ -18,6 +18,7 @@ import RJApplicationTab from './rj/RJApplicationTab';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import { getBadgeTier, hasMinTier } from '../utils/badgeTier';
 
 // Resolves a uid's CURRENT username live so friend/blocked/team lists
 // reflect a rename (self or admin) instantly, even though the list itself
@@ -2600,9 +2601,8 @@ const SettingsSidebar = ({
 
                                     <div className="modern-button-grid">
                                         {(() => {
-                                            const userRole = loggedInUserProfile?.role?.toLowerCase();
-                                            const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                            const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                                            // Custom Status — tier1+ (Crown Prince, Ruby Queen, and above)
+                                            const hasAccess = hasMinTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest, 'tier1');
 
                                             return hasAccess ? (
                                                 <button
@@ -2622,7 +2622,7 @@ const SettingsSidebar = ({
                                                         <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
                                                     </svg>
                                                     <div style={{fontSize:'12px',fontWeight:700,margin:'0 0 4px'}}>Premium Feature</div>
-                                                    <div style={{fontSize:'11px',opacity:.8}}>For badge holders and staff only.</div>
+                                                    <div style={{fontSize:'11px',opacity:.8}}>Upgrade Badge to Get this feature</div>
                                                 </div>
                                             );
                                         })()}
@@ -2666,46 +2666,36 @@ const SettingsSidebar = ({
                                 COVER MEDIA
                             </h4>
 
-                            {/* Access Check for Cover Features */}
-                            {(() => {
-                                const userRole = loggedInUserProfile?.role?.toLowerCase();
-                                const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
-
-                                if (!hasAccess) {
-                                    return (
-                                        <div style={{
-                                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                                            borderRadius: '8px',
-                                            padding: '16px',
-                                            textAlign: 'center',
-                                            color: '#dc2626'
-                                        }}>
-                                            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ marginBottom: '8px' }}>
-                                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
-                                            </svg>
-                                            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Premium Feature</h4>
-                                            <p style={{ margin: '0 0 8px 0', fontSize: '14px', lineHeight: '1.4' }}>
-                                                Cover media features are restricted to Badge Holders, Admins, Owners, and Moderators only.
-                                            </p>
-                                            <p style={{ margin: '0', fontSize: '12px', opacity: '0.8' }}>
-                                                Contact an admin to get access to these features.
-                                            </p>
-                                        </div>
-                                    );
-                                }
-
-                                return null;
-                            })()}
+                            {/* Access Check for Cover Features — tier1+ required */}
+                            {!hasMinTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest, 'tier1') && (
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    borderRadius: '8px',
+                                    padding: '16px',
+                                    textAlign: 'center',
+                                    color: '#dc2626'
+                                }}>
+                                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ marginBottom: '8px' }}>
+                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                                    </svg>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Premium Feature</h4>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '13px', lineHeight: '1.4' }}>
+                                        Upgrade Badge to Get this feature
+                                    </p>
+                                    <p style={{ margin: '0', fontSize: '11px', opacity: '0.75' }}>
+                                        Available from Crown Prince / Ruby Queen and above.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Access-Controlled Cover Media Options */}
                             {(() => {
-                                const userRole = loggedInUserProfile?.role?.toLowerCase();
-                                const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                                // Cover Photo (Image Cover) — tier1+
+                                // YouTube Cover + Spotify Cover — tier2+
+                                if (!hasMinTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest, 'tier1')) return null;
 
-                                if (!hasAccess) return null;
+                                const canYouTubeSpotify = hasMinTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest, 'tier2');
 
                                 return (
                                     <>
@@ -2776,6 +2766,9 @@ const SettingsSidebar = ({
                                             </button>
                                         </div>
 
+                                        {/* YouTube + Spotify Cover — tier2+ only */}
+                                        {canYouTubeSpotify ? (
+                                        <>
                                         {/* YouTube Cover Video Section */}
                                         <div className="youtube-cover-section">
                                             <div className="youtube-cover-label">
@@ -2978,6 +2971,17 @@ const SettingsSidebar = ({
                                                 Paste any Spotify track URL to set as your profile cover
                                             </div>
                                         </div>
+                                        </>
+                                        ) : (
+                                        <div style={{background:'linear-gradient(135deg,rgba(239,68,68,.06),rgba(220,38,38,.04))',border:'1px solid rgba(239,68,68,.22)',borderRadius:'10px',padding:'14px',textAlign:'center',color:'#dc2626',marginTop:'8px'}}>
+                                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style={{marginBottom:'6px',opacity:.7}}>
+                                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                                            </svg>
+                                            <div style={{fontSize:'12px',fontWeight:700,margin:'0 0 4px'}}>YouTube &amp; Spotify Covers</div>
+                                            <div style={{fontSize:'11px',opacity:.85}}>Upgrade Badge to Get this feature</div>
+                                            <div style={{fontSize:'10px',opacity:.65,marginTop:3}}>Available from Platinum Lord / Emerald Empress and above.</div>
+                                        </div>
+                                        )}
                                     </>
                                 );
                             })()}
@@ -2986,9 +2990,7 @@ const SettingsSidebar = ({
 
                             {/* Stylish Remove Cover Media Button */}
                             {(() => {
-                                const userRole = loggedInUserProfile?.role?.toLowerCase();
-                                const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                                const hasAccess = hasMinTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest, 'tier1');
                                 const hasAnyMedia = loggedInUserProfile?.coverPhotoURL || loggedInUserProfile?.coverVideoURL || loggedInUserProfile?.spotifyTrackURL;
 
                                 if (!hasAccess || !hasAnyMedia) return null;

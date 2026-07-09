@@ -41,6 +41,7 @@ import MinimizedConversations from '../components/MinimizedConversations';
 import WarningAnnouncementPopup from '../components/WarningAnnouncementPopup';
 import GenderBadge from '../components/GenderBadge';
 import { checkAndGrantAchievements, ACHIEVEMENT_TITLES, getLatestAchievement } from '../utils/achievementSystem';
+import { getBadgeTier } from '../utils/badgeTier';
 import { isTodayBirthday, BIRTHDAY_BADGE_SVG_LG } from '../utils/birthdayUtils';
 import AchievementsSection from '../components/AchievementsSection';
 import PremiumRelationshipCard, { FULL_RELATIONSHIP_CONFIG } from '../components/PremiumRelationshipCard';
@@ -682,25 +683,49 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         <div className="msg-ts-row">
                             {!isBot && (
                                 <div className="message-actions">
-                                    {/* Reaction trigger — always before other action icons */}
-                                    {showReactBtn && currentUser && !currentUser.isAnonymous && (
-                                        <button
-                                            ref={reactBtnRef}
-                                            className={`message-action-btn rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
-                                            onClick={(e) => { e.stopPropagation(); openPicker(); }}
-                                            onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
-                                            onMouseLeave={handleRowLeave}
-                                            title="Add Reaction"
-                                        >
-                                            <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
-                                                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7"/>
-                                                <path d="M7 11.5s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                                                <circle cx="7.5" cy="8.5" r="1" fill="currentColor"/>
-                                                <circle cx="12.5" cy="8.5" r="1" fill="currentColor"/>
-                                                <path d="M12 5.5l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                                            </svg>
-                                        </button>
-                                    )}
+                                                    {/* Reaction trigger — tier-gated */}
+                                    {showReactBtn && currentUser && !currentUser.isAnonymous && (() => {
+                                        const _rxnBadge  = loggedInUserProfile?.badge;
+                                        const _rxnRole   = loggedInUserProfile?.role;
+                                        const _rxnGuest  = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
+                                        const _rxnTier   = getBadgeTier(_rxnBadge, _rxnRole, _rxnGuest);
+                                        // hidden for guest & member
+                                        if (_rxnTier === 'guest' || _rxnTier === 'member') return null;
+                                        // locked (show lock icon) for tier1
+                                        if (_rxnTier === 'tier1') {
+                                            return (
+                                                <button
+                                                    className="message-action-btn rxn-trigger-btn"
+                                                    style={{ opacity: 0.55, cursor: 'not-allowed', position: 'relative' }}
+                                                    onClick={(e) => { e.stopPropagation(); toast.info('Upgrade to Platinum Lord or higher to react!', { position: 'top-center', autoClose: 3000, icon: TI.lock }); }}
+                                                    title="Upgrade Badge to React"
+                                                >
+                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                                                    </svg>
+                                                </button>
+                                            );
+                                        }
+                                        // tier2+ — fully functional
+                                        return (
+                                            <button
+                                                ref={reactBtnRef}
+                                                className={`message-action-btn rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
+                                                onClick={(e) => { e.stopPropagation(); openPicker(); }}
+                                                onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
+                                                onMouseLeave={handleRowLeave}
+                                                title="Add Reaction"
+                                            >
+                                                <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+                                                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7"/>
+                                                    <path d="M7 11.5s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                                    <circle cx="7.5" cy="8.5" r="1" fill="currentColor"/>
+                                                    <circle cx="12.5" cy="8.5" r="1" fill="currentColor"/>
+                                                    <path d="M12 5.5l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                                                </svg>
+                                            </button>
+                                        );
+                                    })()}
                                     {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                     {!isMyMessage && (
                                         <>
@@ -7443,6 +7468,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     imagePreview={imagePreview}
                     imageUrl={imageUrl}
                     setImageUrl={setImageUrl}
+                    badgeTier={getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest')}
                 />
 
                 {/* Audio Upload Modal */}
@@ -7466,6 +7492,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     handleAudioSelect={handleAudioSelect}
                     startRecording={startRecording}
                     stopRecording={stopRecording}
+                    badgeTier={getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest')}
                 />
 
                 {/* ViewProfileModal removed — using inline Ultra Modern modal below */}
@@ -8468,14 +8495,21 @@ const HomePage = ({ user, roomIdOverride }) => {
             {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
             {isAttachmentDropdownOpen && (() => {
                 const _isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
-                const _isPrivileged = !_isGuest && ((loggedInUserProfile?.badge && loggedInUserProfile?.badge !== '') || ['owner','admin','moderator'].includes(loggedInUserProfile?.role));
-                const _isRegistered = !_isGuest && !_isPrivileged;
-                const lockToast = () => { toast.info('Register or get a badge to unlock this feature!', { position: 'top-center', autoClose: 3000, icon: TI.lock }); setIsAttachmentDropdownOpen(false); };
+                const _tier = getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, _isGuest);
+                const lockToast = (msg) => {
+                    toast.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000, icon: TI.lock });
+                    setIsAttachmentDropdownOpen(false);
+                };
                 const LockBadge = () => (
                     <span style={{position:'absolute',bottom:'-3px',right:'-3px',width:'17px',height:'17px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid white',zIndex:2}}>
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                     </span>
                 );
+                // Access flags
+                const canPhoto   = _tier !== 'guest' && _tier !== 'member';  // tier1+
+                const canYouTube = _tier === 'tier2' || _tier === 'tier3' || _tier === 'staff'; // tier2+
+                const canGif     = _tier !== 'guest' && _tier !== 'member';  // tier1+
+                const canStyle   = _tier !== 'guest';                        // member+
                 return (
                 <div className="hp-attach-popup" style={{
                     position: 'fixed', bottom: '52px', left: '8px', right: '8px',
@@ -8490,7 +8524,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     padding: '12px 16px', backdropFilter: 'blur(24px)',
                     alignItems: 'stretch',
                 }}>
-                    {/* ── 1. Audio — always available ── */}
+                    {/* ── 1. Audio — always available (guest can record; file upload gated inside modal) ── */}
                     <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
                         <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#f093fb,#f5576c)'}}>
                             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -8498,9 +8532,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <span className="hp-attach-label">Audio</span>
                     </button>
 
-                    {/* ── 2. Photo — locked for guest & registered ── */}
-                    {(_isGuest || _isRegistered) ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
+                    {/* ── 2. Photo — tier1+ (locked for guest & member) ── */}
+                    {!canPhoto ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock photo sharing!')}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#667eea,#764ba2)',opacity:0.55,position:'relative'}}>
                                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="white" strokeWidth="1.6"/><circle cx="8.5" cy="8.5" r="1.8" fill="white"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                 <LockBadge />
@@ -8516,9 +8550,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </button>
                     )}
 
-                    {/* ── 3. YouTube — locked for guest & registered ── */}
-                    {(_isGuest || _isRegistered) ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
+                    {/* ── 3. YouTube — tier2+ (locked for guest, member, tier1) ── */}
+                    {!canYouTube ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Upgrade to Platinum Lord or higher to share YouTube videos!')}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)',opacity:0.55,position:'relative'}}>
                                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
                                     <rect x="2" y="4" width="20" height="16" rx="3" stroke="white" strokeWidth="1.6" fill="none"/>
@@ -8540,9 +8574,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </button>
                     )}
 
-                    {/* ── 4. Style/Font — locked for guest only ── */}
-                    {_isGuest ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
+                    {/* ── 4. Style/Font — member+ (guest locked; inside modal access is tier-based) ── */}
+                    {!canStyle ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Register to use text styles!')}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)',opacity:0.55,position:'relative'}}>
                                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                 <LockBadge />
@@ -8558,9 +8592,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </button>
                     )}
 
-                    {/* ── 5. GIF — locked for guest & registered ── */}
-                    {(_isGuest || _isRegistered) ? (
-                        <button className="hp-attach-btn" onClick={lockToast}>
+                    {/* ── 5. GIF — tier1+ (locked for guest & member) ── */}
+                    {!canGif ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock GIF sharing!')}>
                             <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)',opacity:0.55,position:'relative'}}>
                                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
                                 <LockBadge />
