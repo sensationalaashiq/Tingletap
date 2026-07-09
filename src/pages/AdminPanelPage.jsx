@@ -3893,9 +3893,12 @@ const AdminPanelPage = () => {
                       const matchedUser = users.find(u => u.uid === vUserId);
                       const userEmail = matchedUser?.email || v.email || null;
 
-                      const resolvedUsername = (vUsername && vUsername !== 'Unknown User' && vUsername !== 'Unknown')
-                        ? vUsername
-                        : (matchedUser?.displayName || (vUserId ? `UID:${vUserId.slice(0,10)}` : 'Unknown User'));
+                      // Prefer the LIVE current username from the users collection over the
+                      // stale copy stored on the violation log at write time, so a rename
+                      // (self or admin) is reflected immediately in this list.
+                      const resolvedUsername = matchedUser?.displayName
+                        || (vUsername && vUsername !== 'Unknown User' && vUsername !== 'Unknown' ? vUsername : null)
+                        || (vUserId ? `UID:${vUserId.slice(0,10)}` : 'Unknown User');
                       const avatarUrl = vPhotoURL || matchedUser?.photoURL || getDefaultAvatarUrl(vUserId, matchedUser?.gender || 'male');
                       return (
                         <div key={v.id} style={{

@@ -17,6 +17,12 @@ import BadgeApplicationTab from './badge/BadgeApplicationTab';
 import RJApplicationTab from './rj/RJApplicationTab';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
+import { useLiveDisplayName } from '../utils/liveUsernames';
+
+// Resolves a uid's CURRENT username live so friend/blocked/team lists
+// reflect a rename (self or admin) instantly, even though the list itself
+// was fetched once.
+const LiveUserName = ({ uid, fallback }) => useLiveDisplayName(uid, fallback) || fallback || 'Unknown';
 
 /* ── Inline colour palette for Style tab & colour pickers ── */
 const COLOUR_DOTS = [
@@ -1744,7 +1750,7 @@ const SettingsSidebar = ({
                                                 className="blocked-user-avatar"
                                             />
                                             <div className="blocked-user-details">
-                                                <span className="blocked-user-name">{user.displayName}</span>
+                                                <span className="blocked-user-name"><LiveUserName uid={user.uid || user.id} fallback={user.displayName} /></span>
                                                 <small className="blocked-user-role">{user.role || 'user'}</small>
                                             </div>
                                         </div>
@@ -1834,7 +1840,7 @@ const SettingsSidebar = ({
                                                     onClick={() => { if (window.setProfileUser) { window.setProfileUser(friend); onClose(); } }}
                                                 />
                                                 <div className="sf-friend-info" style={{ flex: 1 }}>
-                                                    <div className="sf-friend-name" data-user-id={friend.id} data-user-uid={friend.id}>{friend.displayName}</div>
+                                                    <div className="sf-friend-name" data-user-id={friend.id} data-user-uid={friend.id}><LiveUserName uid={friend.id} fallback={friend.displayName} /></div>
                                                     <div className="sf-friend-role">{friend.role || 'Member'}</div>
                                                 </div>
                                                 <div className="sf-friend-btns">
@@ -2465,7 +2471,7 @@ const SettingsSidebar = ({
                                                             onClick={() => { if (window.setProfileUser) { window.setProfileUser(member); onClose(); } }}
                                                         />
                                                         <div className="sf-friend-info">
-                                                            <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}>{member.displayName || 'Unknown'}</div>
+                                                            <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}><LiveUserName uid={member.id} fallback={member.displayName || 'Unknown'} /></div>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}`, fontSize: '9px', fontWeight: 700, color: cfg.color, marginTop: '2px' }}>
                                                                 {cfg.icon}{cfg.label}
                                                             </div>

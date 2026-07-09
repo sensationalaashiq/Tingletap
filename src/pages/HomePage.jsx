@@ -54,6 +54,7 @@ import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvata
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import { toast, ToastContainer } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
+import { useLiveDisplayName } from '../utils/liveUsernames';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -356,7 +357,10 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const viewerRole = loggedInUserProfile?.role || 'user';
     
     // Get the actual display name - prioritize message.displayName for guests
-    const actualDisplayName = message.displayName || displayName || 'Guest';
+    // as a fallback, but resolve the LIVE current name for this uid so a
+    // username change (self or admin) reflects instantly on old messages too.
+    const staleDisplayName = message.displayName || displayName || 'Guest';
+    const actualDisplayName = useLiveDisplayName(uid, staleDisplayName);
     
     const canDelete = viewerRole === 'owner' || viewerRole === 'admin' || viewerRole === 'moderator' || isMyMessage;
     // Owner can never be kicked, by anyone (including other owners) — enforced regardless of viewer role.

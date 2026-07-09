@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { useLiveDisplayName } from '../utils/liveUsernames';
 import './MinimizedConversations.css';
+
+// Resolves the other user's CURRENT username live, so a username change
+// reflects instantly in the minimized-conversations tray too.
+const LiveConvName = ({ uid, fallback, render }) => render(useLiveDisplayName(uid, fallback) || fallback || 'User');
 
 const MinimizedConversations = ({
   minimizedConversations = [],
@@ -157,7 +162,7 @@ const MinimizedConversations = ({
                   <div className="mc-avatar-wrap">
                     <img
                       src={avatarSrc}
-                      alt={conv.otherUserName}
+                      alt={conv.otherUserName || 'User'}
                       className="mc-avatar"
                       onError={(e) => {
                         const fb = getDefaultAvatarUrl(conv.otherUserId, conv.otherUser?.gender || 'male');
@@ -170,7 +175,7 @@ const MinimizedConversations = ({
                   {/* Text block */}
                   <div className="mc-card-body">
                     <div className="mc-card-top">
-                      <span className="mc-name">{truncate(conv.otherUserName || 'User', 18)}</span>
+                      <span className="mc-name"><LiveConvName uid={conv.otherUserId} fallback={conv.otherUserName} render={(n) => truncate(n, 18)} /></span>
                       {unread > 0 && (
                         <span className="mc-unread-badge">{unread > 99 ? '99+' : unread}</span>
                       )}

@@ -8,7 +8,16 @@ import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import PremiumImageMessage from './PremiumImageMessage';
 import { auth } from '../firebase/config';
+import { useLiveDisplayName } from '../utils/liveUsernames';
 import './LuxuryPrivateMessageWindow.css';
+
+// Resolves a uid's CURRENT username live, falling back to a stored/stale
+// copy (e.g. msg.senderName) until the live value loads or if the uid
+// has no profile (deleted/guest without a doc).
+const LivePMSenderName = ({ uid, fallback }) => {
+  const name = useLiveDisplayName(uid, fallback);
+  return name || fallback || 'User';
+};
 
 /* ─── TingleBot DM Notification Strip Icons ─── */
 const BotIconFeedbackReceived = () => (
@@ -601,7 +610,10 @@ const LuxuryPrivateMessageWindow = ({
                 </div>
                 <div className="ultra-pm-user-info">
                   <h4 className="ultra-pm-username">
-                    {window.userProfilesCache?.get(privateMessageTarget?.uid)?.displayName || privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
+                    <LivePMSenderName
+                      uid={privateMessageTarget?.uid}
+                      fallback={window.userProfilesCache?.get(privateMessageTarget?.uid)?.displayName || privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
+                    />
                   </h4>
                   <span className={`ultra-pm-status-text ${getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`}>
                     {getUserStatus(privateMessageTarget?.uid).status}
@@ -712,7 +724,7 @@ const LuxuryPrivateMessageWindow = ({
                         </div>
                         <div className="ultra-pm-msg-content">
                           <div className="ultra-pm-msg-header">
-                            <span className="ultra-pm-sender">{msg.senderName}</span>
+                            <span className="ultra-pm-sender"><LivePMSenderName uid={msg.senderId} fallback={msg.senderName} /></span>
                             <span className="ultra-pm-timestamp">
                               {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
