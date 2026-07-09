@@ -158,10 +158,19 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px 10px 40px 10px;
+    padding: 10px 10px 0 10px;   /* bottom-padding removed — sticky btn handles it */
     min-width: 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(139,92,246,.25) transparent;
+}
+
+/* Sticky Save Style button — sticks to bottom of the scrolling body */
+.st3-save-style-btn {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20;
+    margin-top: 10px !important;
+    box-shadow: 0 -4px 16px rgba(124,58,237,0.18), 0 4px 18px rgba(124,58,237,0.45) !important;
 }
 .settings-body::-webkit-scrollbar { width: 4px; }
 .settings-body::-webkit-scrollbar-track { background: transparent; }
@@ -1497,7 +1506,9 @@
     margin-bottom: 8px;
     border: 1.5px solid rgba(167,139,250,.22);
     box-shadow: 0 2px 8px rgba(109,40,217,.06);
-    overflow: hidden;
+    /* allow preview text with large fonts/gradients to breathe */
+    overflow: visible;
+    min-height: 48px;
 }
 .st3-preview-box {
     display: flex;
@@ -1505,7 +1516,8 @@
     gap: 6px;
     flex: 1;
     min-width: 0;
-    overflow: hidden;
+    /* must NOT be overflow:hidden — clips gradient/outlined text */
+    overflow: visible;
 }
 .st3-live-dot {
     width: 7px; height: 7px;
@@ -1563,7 +1575,7 @@
     border-radius: 12px;
     padding: 10px;
     box-shadow: 0 2px 8px rgba(109,40,217,.05);
-    overflow: hidden;
+    overflow: visible;   /* was: hidden — caused gradient/outline text to clip */
     max-width: 100%;
 }
 .st3-row {
@@ -1573,7 +1585,7 @@
     min-height: 30px;
     flex-wrap: wrap;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;   /* was: hidden — let styled text/chips breathe */
 }
 .st3-label {
     font-size: 10px;
@@ -1724,23 +1736,26 @@
     height: 2px;
     background: linear-gradient(90deg, #8b5cf6, #6366f1, #06b6d4);
 }
-/* Preview span — layout properties use !important to stay visible,
-   but font/color/bg are plain so React inline styles can override them */
+/* Preview span — layout !important keeps it visible;
+   all style properties left plain so React inline styles win every time */
 .username-preview-text,
 #username-preview {
     display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    padding: 8px 16px !important;
+    padding: 6px 14px !important;
     border-radius: 10px !important;
-    min-width: 120px !important;
+    min-width: 80px !important;
     text-align: center !important;
-    transition: all .25s ease;
-    /* Fallback appearance (overridden by React inline styles) */
+    transition: all .2s ease;
+    border: 1.5px solid rgba(167,139,250,.22);
+    /* No !important on these so React inline styles always win */
     font-size: 16px;
     font-weight: 600;
     color: #1e1b4b;
-    border: 1.5px solid rgba(167,139,250,.22);
+    /* allow gradient overflow to be visible */
+    overflow: visible;
+    white-space: nowrap;
 }
 .username-preview-container * { visibility: visible !important; opacity: 1 !important; }
 .username-preview-container small {

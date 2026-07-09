@@ -1553,6 +1553,10 @@ html body.theme-sunset .message-body p {
   display: flex;
   align-items: center;
   gap: 2px;
+  /* allow styled usernames (gradient, outline, letter-spacing) to render fully */
+  overflow: visible;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .message-displayname:not([style*="font-size"]) {

@@ -2138,29 +2138,36 @@ const SettingsSidebar = ({
                                 <span className="st3-label">Font</span>
                                 <div className="st3-sel-wrap">
                                     <select className="st3-sel" value={settings.usernameFontFamily} onChange={e => handleSettingChange('usernameFontFamily', e.target.value)}>
+                                        {/* ── Elegant / Serif ── */}
                                         <option value="inherit">Default</option>
-                                        <option value="Georgia">Georgia</option>
-                                        <option value="Great Vibes">Great Vibes</option>
-                                        <option value="Dancing Script">Dancing Script</option>
-                                        <option value="Allura">Allura</option>
-                                        <option value="Pacifico">Pacifico</option>
-                                        <option value="Satisfy">Satisfy</option>
-                                        <option value="Lobster">Lobster</option>
-                                        <option value="Caveat">Caveat</option>
-                                        <option value="Indie Flower">Indie Flower</option>
-                                        <option value="Permanent Marker">Permanent Marker</option>
-                                        <option value="Nunito">Nunito</option>
-                                        <option value="Raleway">Raleway</option>
-                                        <option value="Merriweather">Merriweather</option>
-                                        <option value="Courgette">Courgette</option>
-                                        <option value="Sacramento">Sacramento</option>
-                                        <option value="Ubuntu">Ubuntu</option>
-                                        <option value="Roboto">Roboto</option>
-                                        <option value="Open Sans">Open Sans</option>
-                                        <option value="Lato">Lato</option>
-                                        <option value="Montserrat">Montserrat</option>
-                                        <option value="Source Sans 3">Source Sans 3</option>
-                                        <option value="Forte, 'Pinyon Script', cursive">Forte</option>
+                                        <option value="Cinzel, serif">Cinzel ✦</option>
+                                        <option value="'Playfair Display', serif">Playfair Display</option>
+                                        <option value="'Cormorant Garamond', serif">Cormorant ✦</option>
+                                        <option value="'Abril Fatface', cursive">Abril Fatface</option>
+                                        {/* ── Cursive / Script ── */}
+                                        <option value="'Great Vibes', cursive">Great Vibes</option>
+                                        <option value="'Dancing Script', cursive">Dancing Script</option>
+                                        <option value="'Kaushan Script', cursive">Kaushan Script</option>
+                                        <option value="Sacramento, cursive">Sacramento</option>
+                                        <option value="'Pinyon Script', cursive">Forte (Pinyon)</option>
+                                        {/* ── Fun / Display ── */}
+                                        <option value="Pacifico, cursive">Pacifico</option>
+                                        <option value="Lobster, cursive">Lobster</option>
+                                        <option value="Righteous, cursive">Righteous</option>
+                                        <option value="'Bebas Neue', cursive">Bebas Neue</option>
+                                        <option value="'Amatic SC', cursive">Amatic SC</option>
+                                        {/* ── Handwritten ── */}
+                                        <option value="Caveat, cursive">Caveat</option>
+                                        <option value="'Indie Flower', cursive">Indie Flower</option>
+                                        <option value="'Permanent Marker', cursive">Marker</option>
+                                        {/* ── Modern / Tech ── */}
+                                        <option value="Orbitron, sans-serif">Orbitron ✦</option>
+                                        <option value="'Russo One', sans-serif">Russo One</option>
+                                        <option value="Comfortaa, cursive">Comfortaa</option>
+                                        <option value="Fredoka, sans-serif">Fredoka</option>
+                                        <option value="'Poiret One', cursive">Poiret One</option>
+                                        {/* ── Retro / Pixel ── */}
+                                        <option value="'Press Start 2P', cursive">Pixel Retro ✦</option>
                                     </select>
                                     <svg className="st3-chev" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
                                 </div>
