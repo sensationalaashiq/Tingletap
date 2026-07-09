@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useTranslation } from '../hooks/useTranslation';
 import TranslatedMessage from './TranslatedMessage';
 import { translateText as _ttPM, getTranslationSettings as _tsPM, getLanguageName as _glnPM } from '../utils/translationService';
@@ -9,6 +8,7 @@ import CustomAudioPlayer from './CustomAudioPlayer';
 import PremiumImageMessage from './PremiumImageMessage';
 import { auth } from '../firebase/config';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import LiveAvatarImg from './LiveAvatar';
 import './LuxuryPrivateMessageWindow.css';
 
 // Resolves a uid's CURRENT username live, falling back to a stored/stale
@@ -597,12 +597,10 @@ const LuxuryPrivateMessageWindow = ({
             >
               <div className="ultra-pm-user-section">
                 <div className="ultra-pm-avatar-wrapper">
-                  <img
-                    src={(() => {
-                      if (!privateMessageTarget?.uid) return `${getDefaultAvatarUrl('default', 'male')}`;
-                      const cachedUser = window.userProfilesCache?.get(privateMessageTarget.uid);
-                      return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `${getDefaultAvatarUrl(privateMessageTarget.uid, privateMessageTarget?.gender)}`;
-                    })()}
+                  <LiveAvatarImg
+                    uid={privateMessageTarget?.uid}
+                    gender={privateMessageTarget?.gender}
+                    fallbackPhotoURL={privateMessageTarget?.photoURL}
                     alt="avatar"
                     className="ultra-pm-avatar"
                   />
@@ -612,7 +610,7 @@ const LuxuryPrivateMessageWindow = ({
                   <h4 className="ultra-pm-username">
                     <LivePMSenderName
                       uid={privateMessageTarget?.uid}
-                      fallback={window.userProfilesCache?.get(privateMessageTarget?.uid)?.displayName || privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
+                      fallback={privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
                     />
                   </h4>
                   <span className={`ultra-pm-status-text ${getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`}>
@@ -706,18 +704,10 @@ const LuxuryPrivateMessageWindow = ({
                         }}
                       >
                         <div className="ultra-pm-msg-avatar">
-                          <img
-                            src={(() => {
-                              const cachedUser = window.userProfilesCache?.get(msg.senderId);
-                              if (cachedUser) {
-                                return getPrivateMessageAvatarUrl(cachedUser);
-                              }
-                              if (msg.senderId === auth.currentUser?.uid) {
-                                return loggedInUserProfile?.photoURL || `${getDefaultAvatarUrl(msg.senderId, loggedInUserProfile?.gender)}`;
-                              } else {
-                                return privateMessageTarget?.photoURL || `${getDefaultAvatarUrl(msg.senderId, privateMessageTarget?.gender)}`;
-                              }
-                            })()}
+                          <LiveAvatarImg
+                            uid={msg.senderId}
+                            gender={msg.senderId === auth.currentUser?.uid ? loggedInUserProfile?.gender : privateMessageTarget?.gender}
+                            fallbackPhotoURL={msg.senderId === auth.currentUser?.uid ? loggedInUserProfile?.photoURL : privateMessageTarget?.photoURL}
                             alt="avatar"
                             className="ultra-msg-avatar-img"
                           />

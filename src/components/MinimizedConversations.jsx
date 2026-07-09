@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import LiveAvatarImg from './LiveAvatar';
 import './MinimizedConversations.css';
 
 // Resolves the other user's CURRENT username live, so a username change
@@ -16,7 +16,6 @@ const MinimizedConversations = ({
   onlineUserIds = [],
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [userAvatars, setUserAvatars] = useState({});
   const panelRef = useRef(null);
 
   // Make remove function globally available
@@ -45,35 +44,6 @@ const MinimizedConversations = ({
     if (minimizedConversations.length === 0) setIsOpen(false);
   }, [minimizedConversations.length]);
 
-  // Load and update avatars
-  useEffect(() => {
-    const avatars = {};
-    minimizedConversations.forEach(conv => {
-      const cached = window.userProfilesCache?.get(conv.otherUserId);
-      const photoURL = cached?.photoURL || conv.otherUser?.photoURL || '';
-      if (photoURL) {
-        avatars[conv.otherUserId] = photoURL;
-      } else {
-        const gender = cached?.gender || conv.otherUser?.gender || 'male';
-        avatars[conv.otherUserId] = getDefaultAvatarUrl(conv.otherUserId, gender);
-      }
-    });
-    setUserAvatars(avatars);
-
-    const handleProfileUpdate = (e) => {
-      const { userId, userData } = e.detail || {};
-      if (!userId) return;
-      if (minimizedConversations.some(c => c.otherUserId === userId)) {
-        setUserAvatars(prev => ({
-          ...prev,
-          [userId]: userData.photoURL || getDefaultAvatarUrl(userId, userData.gender || 'male'),
-        }));
-      }
-    };
-    window.addEventListener('userProfileUpdated', handleProfileUpdate);
-    return () => window.removeEventListener('userProfileUpdated', handleProfileUpdate);
-  }, [minimizedConversations]);
-
   if (minimizedConversations.length === 0) return null;
 
   const totalUnread = Object.values(unreadCounts).reduce((s, c) => s + (c || 0), 0);
@@ -89,10 +59,6 @@ const MinimizedConversations = ({
 
   const getUnreadCount = (conv) =>
     unreadCounts[conv.conversationId] || unreadCounts[conv.otherUserId] || 0;
-
-  const getAvatarSrc = (conv) =>
-    userAvatars[conv.otherUserId] ||
-    getDefaultAvatarUrl(conv.otherUserId, conv.otherUser?.gender || 'male');
 
   const getRoleBorderClass = (conv) => {
     const role = conv.otherUser?.role;
@@ -137,7 +103,6 @@ const MinimizedConversations = ({
             {sorted.map((conv) => {
               const unread = getUnreadCount(conv);
               const isOnline = getIsOnline(conv.otherUserId);
-              const avatarSrc = getAvatarSrc(conv);
               const preview = truncate(conv.lastMessage || '', 38);
               const hasDraft = !!conv.draftMessage;
 
