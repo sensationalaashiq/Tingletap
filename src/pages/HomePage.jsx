@@ -3089,7 +3089,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                     newMessages.forEach(m => {
                         // Skip system/TingleBot messages — including join/leave which now use real uids
                         if (!m.isBot && !m.systemBot && !m.tinglebotType && m.uid !== 'tinglebot_system_official_2024') {
-                            processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName).catch(() => {});
+                            // Only moderate senders who are actually present in this room right
+                            // now (room-scoped RTDB presence) — avoids alerting about someone
+                            // who already left before the notice went out. Presence loads
+                            // asynchronously, so stay permissive until it's actually populated
+                            // (empty Set on room switch just means "not loaded yet", not
+                            // "nobody is here") to avoid dropping legitimate moderation.
+                            const senderStillInRoom = !window.onlineUsers || window.onlineUsers.size === 0 || window.onlineUsers.has(m.uid);
+                            if (senderStillInRoom) {
+                                processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName).catch(() => {});
+                            }
                         }
                     });
                 }
@@ -4507,7 +4516,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
 
             await addDoc(collection(db, 'reports'), report);
-            pt.report(`🚩 ${reportData.reportType || 'Content'} reported successfully.`);
+            pt.report(`${reportData.reportType || 'Content'} reported successfully.`);
             
         } catch (error) {
             toast.error("Failed to submit report. Please try again.");
@@ -4896,7 +4905,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Commit all operations
             await batch.commit();
             
-            pt.friend(`🎉 You are now friends with ${request.senderName}!`);
+            pt.friend(`You are now friends with ${request.senderName}!`);
             
             // Update logged in user profile to reflect new friend
             if (loggedInUserProfile) {

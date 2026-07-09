@@ -53,7 +53,7 @@ const VerifyEmailPage = () => {
   useEffect(() => {
     if (state === 'success' && !toastShownRef.current) {
       toastShownRef.current = true;
-      setTimeout(() => pt.emailVerified('Email verified successfully! 🎉 Redirecting you now…'), 400);
+      setTimeout(() => pt.emailVerified('Email verified successfully! Redirecting you now…'), 400);
     }
   }, [state]);
 

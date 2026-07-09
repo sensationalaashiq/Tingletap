@@ -1265,7 +1265,7 @@ const AdminPanelPage = () => {
         createdBy: currentUserProfile?.displayName || 'Admin',
         createdByUid: user?.uid
       });
-      pt.success(`✅ Room "${createRoomData.name}" created successfully!`);
+      pt.success(`Room "${createRoomData.name}" created successfully!`);
       setCreateRoomData({ name: '', description: '', type: 'public', maxUsers: 50, password: '', order: '' });
       setShowCreateRoom(false);
     } catch (error) {

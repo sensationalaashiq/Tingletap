@@ -451,11 +451,11 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setProfilePicPreview(finalPhotoURL);
       }
       
-      toast.success('✅ Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {
-      toast.error("❌ Update failed: " + error.message);
+      toast.error("Update failed: " + error.message);
       setLoading(false);
     }
   };

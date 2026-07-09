@@ -108,7 +108,7 @@ const LoginPage = () => {
         sessionStorage.removeItem('tt_page_toast');
         const d = JSON.parse(raw);
         if (d.type === 'logout') {
-          setTimeout(() => pt.logout('You have been logged out. See you soon! 👋'), 200);
+          setTimeout(() => pt.logout('You have been logged out. See you soon!'), 200);
         } else if (d.type === 'email_verified') {
           setTimeout(() => pt.emailVerified('Email verified! Your account is now fully active. Log in to continue.'), 200);
         }

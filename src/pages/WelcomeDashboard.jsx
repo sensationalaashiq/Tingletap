@@ -427,7 +427,7 @@ const WelcomeDashboard = () => {
         sessionStorage.removeItem('tt_page_toast');
         const d = JSON.parse(raw);
         if (d.type === 'login') {
-          setTimeout(() => pt.login('Welcome back to TingleTap! Great to see you again. 🚀'), 300);
+          setTimeout(() => pt.login('Welcome back to TingleTap! Great to see you again.'), 300);
         } else if (d.type === 'login_guest') {
           setTimeout(() => pt.rocket('Exploring as a guest — register to unlock all features!'), 300);
         }
@@ -581,8 +581,7 @@ const WelcomeDashboard = () => {
         localStorage.removeItem('guestGender');
       }
       try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
-      pt.logout('Logged out successfully!');
-      navigate('/');
+      navigate('/login');
     } catch { pt.error('Failed to logout'); }
   };
 

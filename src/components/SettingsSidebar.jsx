@@ -671,9 +671,9 @@ const SettingsSidebar = ({
             await new Promise(resolve => setTimeout(resolve, 100));
 
             await signOut(auth);
+            try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
             onClose();
             navigate('/login');
-            toast.success('Logged out successfully!');
         } catch (error) {
             console.error('Error logging out:', error);
             toast.error('Failed to logout. Please try again.');

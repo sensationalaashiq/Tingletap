@@ -616,7 +616,12 @@ const Sidebar = ({
                   <div className="sb-apd-divider" />
                   <button className="sb-apd-btn sb-apd-danger" onClick={async (e) => {
                     e.stopPropagation();
-                    try { await signOut(auth); toast.success('Logged out!', { icon: TI.logout }); onClose(); window.location.href = '/login'; }
+                    try {
+                      await signOut(auth);
+                      try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
+                      onClose();
+                      window.location.href = '/login';
+                    }
                     catch { toast.error('Logout failed!', { icon: TI.error }); }
                     setDropdownUser(null);
                   }}>

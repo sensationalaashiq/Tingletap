@@ -1259,21 +1259,72 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   margin: 0 !important;
 }
 
-/* Toast close button */
+/* Toast close button — always visible, always clickable, decent contrast on
+   any background (colourful premium gradients included). Sits inside its own
+   translucent circle so it never blends into the toast behind it. */
 .Toastify__close-button {
-  opacity: 0.8 !important;
+  opacity: 0.9 !important;
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 3 !important;
+  pointer-events: auto !important;
+}
+.Toastify__close-button:hover { opacity: 1 !important; background: rgba(0, 0, 0, 0.3) !important; }
+.Toastify__close-button > svg { fill: #fff !important; width: 10px !important; height: 10px !important; }
+
+/* Non-premium toasts (no inline gradient) get a subtler close button so the
+   circle doesn't look out of place on the plain theme background. */
+.Toastify__toast:not([style*="background"]) .Toastify__close-button {
+  background: rgba(128, 128, 128, 0.18) !important;
   color: inherit !important;
 }
-.Toastify__close-button:hover { opacity: 1 !important; }
+.Toastify__toast:not([style*="background"]) .Toastify__close-button > svg { fill: currentColor !important; }
 
 /* Toast progress bar */
 .Toastify__progress-bar { background: var(--accent-color) !important; }
 
-/* Toast container */
-.Toastify__toast-container { font-family: 'Lato', sans-serif !important; }
+/* Toast container — compact and never allowed to sprawl across the screen.
+   react-toastify defaults to 100vw-wide toasts under 480px viewports; we cap
+   that with side margins so it always reads as a small floating card. */
+.Toastify__toast-container {
+  font-family: 'Lato', sans-serif !important;
+  width: auto !important;
+  max-width: 380px !important;
+}
+.Toastify__toast {
+  max-width: 100% !important;
+  margin-bottom: 10px !important;
+}
+@media only screen and (max-width: 480px) {
+  .Toastify__toast-container {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .Toastify__toast-container--top-left,
+  .Toastify__toast-container--top-center,
+  .Toastify__toast-container--top-right {
+    top: 12px !important;
+  }
+  .Toastify__toast {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+}
 
 /* --- Input Ke Paas Wale (+) Button Aur Uska Menu --- */
 .actions-menu-container {

@@ -51,6 +51,14 @@ const RL_ROOM_MAX      = 50;             // per room per window
 
 /* ── Notice TTL (must match client-side NOTICE_TTL_MS) ───────────────────── */
 const NOTICE_TTL_MS = 60 * 1000;
+// Blanket per-violator cooldown across ALL action types. Multiple room
+// participants detect the same violation concurrently and each calls this
+// function, and a fast-typing violator can trigger several different
+// violation types within a couple of seconds — without this, each of those
+// generates its own notice, which reads as spam. This short window collapses
+// any burst of notices about the same violator into a single one, regardless
+// of action, while still allowing genuine escalation notices a few seconds later.
+const NOTICE_BURST_MS = 7 * 1000;
 
 /* ── Firebase init ────────────────────────────────────────────────────────── */
 let fbReady = false;
@@ -255,10 +263,12 @@ export const handler = async (event) => {
   const callerRlKey = `_rl_c_${callerUid}`;
   const roomRlKey   = '_rl_room';
   const dedupKey    = `_lk_${violatorUid}_${action}`;
+  const burstKey    = `_lkb_${violatorUid}`;
 
   const callerRlRef = db.collection('rooms').doc(roomId).collection('automod').doc(callerRlKey);
   const roomRlRef   = db.collection('rooms').doc(roomId).collection('automod').doc(roomRlKey);
   const dedupRef    = db.collection('rooms').doc(roomId).collection('automod').doc(dedupKey);
+  const burstRef    = db.collection('rooms').doc(roomId).collection('automod').doc(burstKey);
 
   let blocked = false;
   let blockReason = '';
@@ -267,18 +277,30 @@ export const handler = async (event) => {
 
   try {
     await db.runTransaction(async (t) => {
-      const [callerRlSnap, roomRlSnap, dedupSnap] = await Promise.all([
+      const [callerRlSnap, roomRlSnap, dedupSnap, burstSnap] = await Promise.all([
         t.get(callerRlRef),
         t.get(roomRlRef),
         t.get(dedupRef),
+        t.get(burstRef),
       ]);
 
-      // Dedup check
+      // Dedup check (same violator + same action within NOTICE_TTL_MS)
       if (dedupSnap.exists) {
         const { expiresAt } = dedupSnap.data();
         if (typeof expiresAt === 'number' && expiresAt > now) {
           alreadyPosted = true;
           return; // don't throw — outer code handles it
+        }
+      }
+
+      // Burst check (ANY notice about this violator within NOTICE_BURST_MS,
+      // regardless of action) — collapses rapid multi-violation bursts into
+      // a single notice instead of firing one per violation.
+      if (burstSnap.exists) {
+        const { expiresAt } = burstSnap.data();
+        if (typeof expiresAt === 'number' && expiresAt > now) {
+          alreadyPosted = true;
+          return;
         }
       }
 
@@ -298,7 +320,7 @@ export const handler = async (event) => {
         return;
       }
 
-      // Claim: update rate counters + set dedup lock
+      // Claim: update rate counters + set dedup + burst locks
       t.set(callerRlRef, { count: crl.count + 1, windowStart: crl.windowStart });
       t.set(roomRlRef,   { count: rrl.count + 1, windowStart: rrl.windowStart });
       t.set(dedupRef, {
@@ -308,6 +330,13 @@ export const handler = async (event) => {
         violatorUid,
         action,
         violationType,
+      });
+      t.set(burstRef, {
+        expiresAt: now + NOTICE_BURST_MS,
+        postedAt:  admin.firestore.FieldValue.serverTimestamp(),
+        callerUid,
+        violatorUid,
+        action,
       });
     });
   } catch (e) {
