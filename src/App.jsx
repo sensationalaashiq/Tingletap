@@ -41,7 +41,8 @@ import AuthRoute from './components/AuthRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import VPNBlockModal from './components/VPNBlockModal';
 
-// Removed toast notifications
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { checkUserVPN } from './utils/vpnDetection';
 import { getStoredGuestGender } from './utils/roleUtils';
 import { initGA, trackPageView } from './utils/analytics';
@@ -1083,7 +1084,20 @@ function App() {
       </Routes>
 
 
-      {/* Removed ToastContainer - using StylishConfirmationDialogue for moderation actions */}
+      {/* Global Premium Toast Container — persists across all routes */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        pauseOnHover
+        draggable={false}
+        toastClassName="premium-toast-root"
+        style={{ zIndex: 99999, top: '16px', right: '16px' }}
+        limit={4}
+      />
 
       {/* Global Ban Modal - Forceful and Unbypassable */}
       {showBanModal && (

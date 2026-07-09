@@ -6,8 +6,7 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, orderBy, 
 import useRoomsListener from '../hooks/useRoomsListener';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
 import { ref, onValue } from 'firebase/database';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { pt } from '../utils/premiumToast';
 import StatusModal from '../components/StatusModal';
 import AdultRoomModal from '../components/AdultRoomModal';
 import { getRoomSlug } from '../utils/roomSlug';

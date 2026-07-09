@@ -6,7 +6,7 @@ import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sig
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import BanKickModal from '../components/BanKickModal';
 import IPBanModal from '../components/IPBanModal';
@@ -99,6 +99,22 @@ const LoginPage = () => {
   const [ipCheckPerformed, setIPCheckPerformed] = useState(false);
 
   const navigate = useNavigate();
+
+  // Cross-page toast: show messages set by previous page before navigation
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('tt_page_toast');
+      if (raw) {
+        sessionStorage.removeItem('tt_page_toast');
+        const d = JSON.parse(raw);
+        if (d.type === 'logout') {
+          setTimeout(() => pt.logout('You have been logged out. See you soon! 👋'), 200);
+        } else if (d.type === 'email_verified') {
+          setTimeout(() => pt.success('Email verified! You can now log in. ✅'), 200);
+        }
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const checkBansOnLoad = async () => {
@@ -397,6 +413,7 @@ const LoginPage = () => {
           }
         }
 
+        try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'login' })); } catch {}
         navigate('/welcome');
       }
     } catch (err) {
@@ -532,6 +549,7 @@ const LoginPage = () => {
         // Session tracking failure is non-fatal
       }
 
+      try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'login_guest' })); } catch {}
       navigate('/welcome');
     } catch (err) {
       // On failure, clean up the pre-set gender key so it doesn't leak into a future session

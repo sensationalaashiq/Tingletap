@@ -419,6 +419,22 @@ const WelcomeDashboard = () => {
   const [userRole, setUserRole]       = useState(() => localStorage.getItem('isGuest') === 'true' ? 'guest' : 'registered');
   const [userBadge, setUserBadge]     = useState(null);
 
+  // Cross-page toast: show welcome message after login
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('tt_page_toast');
+      if (raw) {
+        sessionStorage.removeItem('tt_page_toast');
+        const d = JSON.parse(raw);
+        if (d.type === 'login') {
+          setTimeout(() => pt.success('Welcome to TingleTap! So good to have you back. 🎉'), 300);
+        } else if (d.type === 'login_guest') {
+          setTimeout(() => pt.info('Exploring as a guest — register to unlock all features! 🚀'), 300);
+        }
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const fn = () => setIsScrolled(window.scrollY > 8);
     window.addEventListener('scroll', fn);
@@ -564,6 +580,7 @@ const WelcomeDashboard = () => {
         localStorage.removeItem('isGuest');
         localStorage.removeItem('guestGender');
       }
+      try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
       pt.logout('Logged out successfully!');
       navigate('/');
     } catch { pt.error('Failed to logout'); }

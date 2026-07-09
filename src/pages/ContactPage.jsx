@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { pt } from '../utils/premiumToast';
 import PremiumCopyright from '../components/PremiumCopyright';
@@ -486,15 +485,6 @@ const ContactPage = () => {
         </nav>
       </footer>
       <PremiumCopyright />
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        style={{ zIndex: 99999 }}
-      />
     </div>
   );
 };

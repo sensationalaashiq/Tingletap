@@ -5334,30 +5334,7 @@ const AdminPanelPage = () => {
         currentUserProfile={currentUserProfile}
       />
 
-      <ToastContainer
-        containerId="admin-panel"
-        position="bottom-right"
-        autoClose={4000}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="light"
-        toastStyle={{
-          background: 'rgba(255,255,255,0.98)',
-          backdropFilter: 'blur(24px)',
-          border: '1.5px solid rgba(167,139,250,0.2)',
-          borderRadius: '16px',
-          color: '#1e1b4b',
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '13px',
-          fontWeight: 600,
-          boxShadow: '0 16px 48px rgba(109,40,217,0.13), 0 4px 12px rgba(0,0,0,0.08)',
-          padding: '10px 14px',
-          minHeight: 'unset',
-        }}
-        style={{ zIndex: 99999 }}
-      />
+      {/* ToastContainer removed — using global premium container from App.jsx */}
     </>
   );
 };
