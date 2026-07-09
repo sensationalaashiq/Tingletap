@@ -200,6 +200,11 @@ const AdminPanelPage = () => {
   const [resolveTarget, setResolveTarget] = useState(null);
   const [resolving, setResolving] = useState(false);
 
+  // Inline confirmation IDs (replaces window.confirm — works in all contexts)
+  const [confirmUnbanIPId, setConfirmUnbanIPId]         = useState(null); // ipBan.id pending unban
+  const [confirmDeleteIPId, setConfirmDeleteIPId]       = useState(null); // ipBan.id pending delete
+  const [confirmDeleteViolId, setConfirmDeleteViolId]   = useState(null); // violation.id pending delete
+
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
     setIpGeoCache(prev => ({ ...prev, [ip]: null }));
@@ -2953,62 +2958,104 @@ const AdminPanelPage = () => {
                           </span>
                           <span className="luxury-ip-by">by {ipBan.bannedBy}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                          {/* Premium Unban Button */}
-                          <button
-                            onClick={async () => {
-                              try {
-                                await IPBanSystem.unbanIP(ipBan.ip);
-                                pt.success(`IP ${ipBan.ip} unbanned successfully.`);
-                              } catch (e) {
-                                pt.error(`Failed to unban: ${e.message}`);
-                              }
-                            }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 6,
-                              padding: '7px 14px', fontSize: 12, fontWeight: 800,
-                              background: 'linear-gradient(135deg, #10b981, #059669)',
-                              color: '#fff', border: 'none', borderRadius: 9,
-                              cursor: 'pointer', letterSpacing: '0.02em',
-                              boxShadow: '0 2px 10px rgba(16,185,129,0.35)',
-                              transition: 'all 0.18s ease',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform='none'}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
-                              <path fill="white" d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-5 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-9H8V6a4 4 0 0 1 8 0v2z"/>
-                            </svg>
-                            Unban IP
-                          </button>
-                          {/* Premium Delete Button */}
-                          <button
-                            onClick={async () => {
-                              if (!window.confirm(`Permanently delete ban record for ${ipBan.ip}?`)) return;
-                              try {
-                                await deleteDoc(doc(db, 'bannedIPs', ipBan.id));
-                                pt.success(`Ban record for ${ipBan.ip} deleted.`);
-                              } catch (e) {
-                                pt.error(`Failed to delete: ${e.message}`);
-                              }
-                            }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 6,
-                              padding: '7px 14px', fontSize: 12, fontWeight: 800,
-                              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                              color: '#fff', border: 'none', borderRadius: 9,
-                              cursor: 'pointer', letterSpacing: '0.02em',
-                              boxShadow: '0 2px 10px rgba(239,68,68,0.35)',
-                              transition: 'all 0.18s ease',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform='none'}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
-                              <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
-                            </svg>
-                            Delete Record
-                          </button>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+
+                          {/* ── Unban IP ── */}
+                          {confirmUnbanIPId === ipBan.id ? (
+                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:10, padding:'5px 10px', fontSize:12 }}>
+                              <span style={{ color:'#15803d', fontWeight:700 }}>Unban this IP?</span>
+                              <button
+                                onClick={async () => {
+                                  setConfirmUnbanIPId(null);
+                                  try {
+                                    // unbanIP queries ALL active records for this IP and deactivates them
+                                    const result = await IPBanSystem.unbanIP(ipBan.ip);
+                                    if (result) {
+                                      pt.success(`IP ${ipBan.ip} unbanned successfully.`);
+                                    } else {
+                                      // IP was not found as active — force-deactivate this specific doc as fallback
+                                      await updateDoc(doc(db, 'bannedIPs', ipBan.id), {
+                                        isActive: false,
+                                        unbannedAt: new Date().toISOString(),
+                                      });
+                                      pt.success(`IP ${ipBan.ip} unbanned.`);
+                                    }
+                                  } catch (e) {
+                                    pt.error(`Failed to unban: ${e.message}`);
+                                  }
+                                }}
+                                style={{ padding:'3px 10px', fontSize:12, fontWeight:800, background:'#16a34a', color:'#fff', border:'none', borderRadius:7, cursor:'pointer' }}
+                              >Yes</button>
+                              <button
+                                onClick={() => setConfirmUnbanIPId(null)}
+                                style={{ padding:'3px 10px', fontSize:12, fontWeight:700, background:'transparent', color:'#6b7280', border:'1px solid #d1d5db', borderRadius:7, cursor:'pointer' }}
+                              >No</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmUnbanIPId(ipBan.id)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                color: '#fff', border: 'none', borderRadius: 9,
+                                cursor: 'pointer', letterSpacing: '0.02em',
+                                boxShadow: '0 2px 10px rgba(16,185,129,0.35)',
+                                transition: 'all 0.18s ease',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
+                              onMouseLeave={e => e.currentTarget.style.transform='none'}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                <path fill="white" d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-5 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-9H8V6a4 4 0 0 1 8 0v2z"/>
+                              </svg>
+                              Unban IP
+                            </button>
+                          )}
+
+                          {/* ── Delete Record ── */}
+                          {confirmDeleteIPId === ipBan.id ? (
+                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'5px 10px', fontSize:12 }}>
+                              <span style={{ color:'#b91c1c', fontWeight:700 }}>Delete permanently?</span>
+                              <button
+                                onClick={async () => {
+                                  setConfirmDeleteIPId(null);
+                                  try {
+                                    await deleteDoc(doc(db, 'bannedIPs', ipBan.id));
+                                    pt.success(`Ban record for ${ipBan.ip} deleted.`);
+                                  } catch (e) {
+                                    pt.error(`Failed to delete: ${e.message}`);
+                                  }
+                                }}
+                                style={{ padding:'3px 10px', fontSize:12, fontWeight:800, background:'#dc2626', color:'#fff', border:'none', borderRadius:7, cursor:'pointer' }}
+                              >Delete</button>
+                              <button
+                                onClick={() => setConfirmDeleteIPId(null)}
+                                style={{ padding:'3px 10px', fontSize:12, fontWeight:700, background:'transparent', color:'#6b7280', border:'1px solid #d1d5db', borderRadius:7, cursor:'pointer' }}
+                              >Cancel</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteIPId(ipBan.id)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '7px 14px', fontSize: 12, fontWeight: 800,
+                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                color: '#fff', border: 'none', borderRadius: 9,
+                                cursor: 'pointer', letterSpacing: '0.02em',
+                                boxShadow: '0 2px 10px rgba(239,68,68,0.35)',
+                                transition: 'all 0.18s ease',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.transform='translateY(-1px)'}
+                              onMouseLeave={e => e.currentTarget.style.transform='none'}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14,flexShrink:0}}>
+                                <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+                              </svg>
+                              Delete Record
+                            </button>
+                          )}
+
                         </div>
                       </div>
                     ))}
@@ -4001,35 +4048,49 @@ const AdminPanelPage = () => {
                                   Mark Resolved
                                 </button>
                               )}
-                              {/* Premium Delete button — always visible */}
-                              <button
-                                onClick={async () => {
-                                  if (!window.confirm('Permanently delete this violation record?')) return;
-                                  try {
-                                    await deleteDoc(doc(db, 'modLogs', v.id));
-                                    pt.success('Violation record deleted.');
-                                  } catch (e) {
-                                    pt.error('Delete failed: ' + e.message);
-                                  }
-                                }}
-                                style={{
-                                  display:'flex', alignItems:'center', gap:6,
-                                  fontSize:12, padding:'7px 14px', borderRadius:9,
-                                  background:'linear-gradient(135deg,#ef4444,#dc2626)',
-                                  color:'#fff', border:'none', fontWeight:800, cursor:'pointer',
-                                  boxShadow:'0 2px 10px rgba(239,68,68,0.32)',
-                                  marginLeft:'auto', letterSpacing:'0.02em',
-                                  transition:'all 0.18s ease',
-                                }}
-                                onMouseEnter={e=>e.currentTarget.style.transform='translateY(-1px)'}
-                                onMouseLeave={e=>e.currentTarget.style.transform='none'}
-                                title="Delete this violation record"
-                              >
-                                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}>
-                                  <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
-                                </svg>
-                                Delete Record
-                              </button>
+                              {/* Delete Record — inline confirm (no window.confirm) */}
+                              {confirmDeleteViolId === v.id ? (
+                                <div style={{ display:'flex', alignItems:'center', gap:6, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'5px 10px', fontSize:12, marginLeft:'auto' }}>
+                                  <span style={{ color:'#b91c1c', fontWeight:700 }}>Delete permanently?</span>
+                                  <button
+                                    onClick={async () => {
+                                      setConfirmDeleteViolId(null);
+                                      try {
+                                        await deleteDoc(doc(db, 'modLogs', v.id));
+                                        pt.success('Violation record deleted.');
+                                      } catch (e) {
+                                        pt.error('Delete failed: ' + e.message);
+                                      }
+                                    }}
+                                    style={{ padding:'3px 10px', fontSize:12, fontWeight:800, background:'#dc2626', color:'#fff', border:'none', borderRadius:7, cursor:'pointer' }}
+                                  >Delete</button>
+                                  <button
+                                    onClick={() => setConfirmDeleteViolId(null)}
+                                    style={{ padding:'3px 10px', fontSize:12, fontWeight:700, background:'transparent', color:'#6b7280', border:'1px solid #d1d5db', borderRadius:7, cursor:'pointer' }}
+                                  >Cancel</button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDeleteViolId(v.id)}
+                                  style={{
+                                    display:'flex', alignItems:'center', gap:6,
+                                    fontSize:12, padding:'7px 14px', borderRadius:9,
+                                    background:'linear-gradient(135deg,#ef4444,#dc2626)',
+                                    color:'#fff', border:'none', fontWeight:800, cursor:'pointer',
+                                    boxShadow:'0 2px 10px rgba(239,68,68,0.32)',
+                                    marginLeft:'auto', letterSpacing:'0.02em',
+                                    transition:'all 0.18s ease',
+                                  }}
+                                  onMouseEnter={e=>e.currentTarget.style.transform='translateY(-1px)'}
+                                  onMouseLeave={e=>e.currentTarget.style.transform='none'}
+                                  title="Delete this violation record"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13,flexShrink:0}}>
+                                    <path fill="white" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+                                  </svg>
+                                  Delete Record
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
