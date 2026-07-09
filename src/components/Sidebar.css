@@ -691,15 +691,31 @@
 }
 
 /* Emerald Empress / Sapphire Goddess have more internal SVG whitespace than
-   the other badges, so scale them up here too to keep sizes consistent. */
+   the other badges, so they need to render visually bigger to read the same
+   size as the others. A transform:scale() only paints larger without
+   growing the actual layout box, so the parent's overflow:hidden (needed for
+   username ellipsis truncation) was clipping the icon on every side. Instead,
+   size the box itself — both the wrapping span and the svg — so the bigger
+   render is fully accounted for in layout and never gets cropped. */
+.sb-list-username .inline-badge.badge-emerald_empress,
+.sb-profile-name .inline-badge.badge-emerald_empress,
+.sb-apd-name .inline-badge.badge-emerald_empress,
+.sb-list-username .inline-badge.badge-sapphire_goddess,
+.sb-profile-name .inline-badge.badge-sapphire_goddess,
+.sb-apd-name .inline-badge.badge-sapphire_goddess {
+  width: 31px;
+  height: 31px;
+  justify-content: center;
+}
 .sb-list-username .inline-badge.badge-emerald_empress svg,
 .sb-profile-name .inline-badge.badge-emerald_empress svg,
 .sb-apd-name .inline-badge.badge-emerald_empress svg,
 .sb-list-username .inline-badge.badge-sapphire_goddess svg,
 .sb-profile-name .inline-badge.badge-sapphire_goddess svg,
 .sb-apd-name .inline-badge.badge-sapphire_goddess svg {
-  transform: scale(1.55);
-  transform-origin: center;
+  width: 31px !important;
+  height: 31px !important;
+  vertical-align: -9px;
 }
 
 /* Latest achievement chip — small icon next to DP/username */
