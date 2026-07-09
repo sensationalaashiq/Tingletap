@@ -214,13 +214,25 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     const msgDecorations = [];
     if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
     if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
-    const pStyle = {
-        fontSize: savedMsgStyle?.fontSize || '10px',
-        color: savedMsgStyle?.fontColor || '#2d2d2d',
-        fontFamily: savedMsgStyle?.fontFamily || 'inherit',
-        fontWeight: savedMsgStyle?.isBold ? 'bold' : 'normal',
-        fontStyle: savedMsgStyle?.isItalic ? 'italic' : 'normal',
+    // Only apply inline styles when the user has actually saved preferences.
+    // Without this guard, hardcoded fallback values (color, fontWeight, fontSize)
+    // override CSS theme variables for both the sender AND all viewers — making
+    // the text invisible on dark themes and causing the "I see bold, others see
+    // normal" asymmetry (applyFontStylesToMessages was patching the DOM only for
+    // the sender's own view). When savedMsgStyle is null, let CSS fully control
+    // color/weight/size so every theme renders consistently for everyone.
+    const pStyle = savedMsgStyle ? {
+        fontSize: savedMsgStyle.fontSize || '11px',
+        color: savedMsgStyle.fontColor || 'inherit',
+        fontFamily: savedMsgStyle.fontFamily || 'inherit',
+        fontWeight: savedMsgStyle.isBold ? 'bold' : 'normal',
+        fontStyle: savedMsgStyle.isItalic ? 'italic' : 'normal',
         textDecoration: msgDecorations.length > 0 ? msgDecorations.join(' ') : 'none',
+        margin: '3px 0',
+        lineHeight: '1.4',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word'
+    } : {
         margin: '3px 0',
         lineHeight: '1.4',
         wordWrap: 'break-word',
@@ -2132,19 +2144,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                         window.userProfilesCache.set(uid, userData);
                         window._profileCacheTTL.set(uid, now);
 
-                        // Keep userMessageStyles populated for font rendering
+                        // Keep userMessageStyles populated for font rendering.
+                        // Only set when the user has actual custom preferences so
+                        // CSS theme variables control text colour/size for default users.
                         if (!window.userMessageStyles) window.userMessageStyles = {};
                         const fp = userData.messageFontPreferences || userData.fontPreferences;
                         if (fp) {
                             window.userMessageStyles[uid] = {
-                                fontSize:        fp.fontSize        || '10px',
-                                fontColor:       fp.fontColor       || '#2d2d2d',
+                                fontSize:        fp.fontSize        || '11px',
+                                fontColor:       fp.fontColor       || 'inherit',
                                 fontFamily:      fp.fontFamily      || 'inherit',
                                 isBold:          Boolean(fp.isBold),
                                 isItalic:        Boolean(fp.isItalic),
                                 isUnderline:     Boolean(fp.isUnderline),
                                 isStrikethrough: Boolean(fp.isStrikethrough)
                             };
+                        } else {
+                            // No saved prefs — remove any stale entry so CSS takes over
+                            delete window.userMessageStyles[uid];
                         }
 
                         // Dispatch update event for avatar / display-name refresh
@@ -2437,6 +2454,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                 };
             }
             
+            // Semantic check: are the resolved prefs truly custom (non-default)?
+            // Covers legacy 14px defaults created before the 11px normalisation,
+            // and the neutral default colours stored by old code (#333333, #2d2d2d).
+            const isActuallyDefault = (p) =>
+                (!p.fontSize      || p.fontSize === '11px' || p.fontSize === '14px') &&
+                (!p.fontColor     || p.fontColor === '#333333' || p.fontColor === '#2d2d2d' || p.fontColor === 'inherit') &&
+                (!p.fontFamily    || p.fontFamily === 'inherit') &&
+                !p.isBold && !p.isItalic && !p.isUnderline && !p.isStrikethrough;
+
+            const hasCustomPrefs = fontPreferencesToApply && !isActuallyDefault(fontPreferencesToApply);
+            
             // Apply the preferences to state and in-memory global only
             if (fontPreferencesToApply) {
                 setFontSize(fontPreferencesToApply.fontSize);
@@ -2450,12 +2478,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // Update global in-memory object only — never localStorage
                 window.chatFontPreferences = fontPreferencesToApply;
                 
-                // Apply styles to existing messages
-                setTimeout(() => {
-                    if (window.applyFontStylesToMessages) {
-                        window.applyFontStylesToMessages(fontPreferencesToApply);
-                    }
-                }, 100);
+                // Apply DOM styles only when the user actually has saved custom
+                // preferences.  When using defaults, CSS handles colour/weight/size
+                // correctly for every theme — DOM manipulation would override theme
+                // variables and cause the sender's messages to look different from
+                // what others see (e.g. dark hardcoded colour on a dark-theme bg).
+                if (hasCustomPrefs) {
+                    setTimeout(() => {
+                        if (window.applyFontStylesToMessages) {
+                            window.applyFontStylesToMessages(fontPreferencesToApply);
+                        }
+                    }, 100);
+                }
             }
         };
         
@@ -3323,28 +3357,47 @@ const HomePage = ({ user, roomIdOverride }) => {
         const currentPrefs = window.chatFontPreferences;
         if (!currentPrefs) return; // Firestore prefs not yet loaded — skip
 
+        // Determine whether these are real custom prefs or just defaults.
+        // Covers legacy 14px defaults and neutral colour values created by old code.
+        const isDefaultPrefs =
+            (!currentPrefs.fontSize      || currentPrefs.fontSize === '11px' || currentPrefs.fontSize === '14px') &&
+            (!currentPrefs.fontColor     || currentPrefs.fontColor === '#333333' || currentPrefs.fontColor === '#2d2d2d' || currentPrefs.fontColor === 'inherit') &&
+            (!currentPrefs.fontFamily    || currentPrefs.fontFamily === 'inherit') &&
+            !currentPrefs.isBold &&
+            !currentPrefs.isItalic &&
+            !currentPrefs.isUnderline &&
+            !currentPrefs.isStrikethrough;
+
         // Sync the logged-in user's prefs into window.userMessageStyles so React
         // renders their own messages with the same styles every viewer sees.
+        // When using defaults, remove the entry so CSS themes control colour/size —
+        // this ensures the sender sees exactly what other viewers see.
         const myUid = auth.currentUser?.uid ||
             (localStorage.getItem('isGuest') === 'true'
                 ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
                 : null);
         if (myUid) {
             if (!window.userMessageStyles) window.userMessageStyles = {};
-            window.userMessageStyles[myUid] = {
-                fontSize:        currentPrefs.fontSize,
-                fontColor:       currentPrefs.fontColor,
-                fontFamily:      currentPrefs.fontFamily,
-                isBold:          currentPrefs.isBold,
-                isItalic:        currentPrefs.isItalic,
-                isUnderline:     currentPrefs.isUnderline,
-                isStrikethrough: currentPrefs.isStrikethrough
-            };
+            if (isDefaultPrefs) {
+                // No custom prefs — remove so CSS (not inline style) takes over
+                delete window.userMessageStyles[myUid];
+            } else {
+                window.userMessageStyles[myUid] = {
+                    fontSize:        currentPrefs.fontSize,
+                    fontColor:       currentPrefs.fontColor,
+                    fontFamily:      currentPrefs.fontFamily,
+                    isBold:          currentPrefs.isBold,
+                    isItalic:        currentPrefs.isItalic,
+                    isUnderline:     currentPrefs.isUnderline,
+                    isStrikethrough: currentPrefs.isStrikethrough
+                };
+            }
         }
-        if (window.applyFontStylesToMessages) {
+        // Only do DOM manipulation when user has real custom prefs
+        if (!isDefaultPrefs && window.applyFontStylesToMessages) {
             window.applyFontStylesToMessages(currentPrefs);
         }
-        if (window.forceApplyAllUsersStyles) {
+        if (!isDefaultPrefs && window.forceApplyAllUsersStyles) {
             window.forceApplyAllUsersStyles();
         }
     }, [fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);

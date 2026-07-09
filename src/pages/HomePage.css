@@ -888,38 +888,39 @@
 
 /* Theme-specific message text colors with proper enforcement */
 
-/* Message text for non-badge users (guests and regular users) - 11px normal weight, no italic, no decoration */
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]),
-body.theme-light .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="font-size"]) {
+/* ── Message text: light / default theme ── */
+/* Non-badge / guest / regular users — 12px, normal weight */
+body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="color"]):not([style*="font-size"]),
+body.theme-light .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="color"]):not([style*="font-size"]) {
   color: #1a1a1a !important;
   font-weight: normal !important;
   font-style: normal !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   text-decoration: none !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
 
-/* Normal size for badge holders and staff */
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="true"] .message-body p,
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="owner"] .message-body p,
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="admin"] .message-body p,
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="moderator"] .message-body p,
-body.theme-light .message-row-wrapper[data-sender-badge="true"] .message-body p,
-body.theme-light .message-row-wrapper[data-sender-role="owner"] .message-body p,
-body.theme-light .message-row-wrapper[data-sender-role="admin"] .message-body p,
-body.theme-light .message-row-wrapper[data-sender-role="moderator"] .message-body p {
+/* Badge holders and staff — slightly bolder in light theme */
+body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="true"] .message-body p:not([style*="color"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="owner"] .message-body p:not([style*="color"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="admin"] .message-body p:not([style*="color"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="moderator"] .message-body p:not([style*="color"]),
+body.theme-light .message-row-wrapper[data-sender-badge="true"] .message-body p:not([style*="color"]),
+body.theme-light .message-row-wrapper[data-sender-role="owner"] .message-body p:not([style*="color"]),
+body.theme-light .message-row-wrapper[data-sender-role="admin"] .message-body p:not([style*="color"]),
+body.theme-light .message-row-wrapper[data-sender-role="moderator"] .message-body p:not([style*="color"]) {
   color: #1a1a1a !important;
   font-weight: 600 !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
 
-/* Bold Dark theme message text */
-body.dark-mode .message-body p,
-body.theme-dark .message-body p {
+/* ── Dark mode message text — normal weight, light color ── */
+body.dark-mode .message-body p:not([style*="color"]),
+body.theme-dark .message-body p:not([style*="color"]) {
   color: #f1f5f9 !important;
-  font-weight: 600 !important;
+  font-weight: normal !important;
   opacity: 1 !important;
   text-shadow: none !important;
 }
@@ -954,7 +955,7 @@ iframe[src*="youtu.be"] {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Username - default for all users 12px bold */
+/* Username - badge holders and staff: 12px bold */
 .message-displayname[data-badge="true"],
 .message-displayname[data-role="owner"],
 .message-displayname[data-role="admin"],
@@ -968,14 +969,14 @@ iframe[src*="youtu.be"] {
   -webkit-filter: none;
 }
 
-/* Username for non-badge users (guests and regular users) - 12px, bold */
+/* Username for non-badge users (guests and regular users) — 11px bold (1px smaller than staff) */
 .message-displayname[data-badge="false"]:not([style*="font-size"]),
 .message-username:not([style*="font-size"]),
 .username:not([style*="font-size"]),
 .user-name:not([style*="font-size"]) {
   color: #1a1a1a;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 11px;
   opacity: 1;
   text-shadow: none;
   filter: none;
@@ -1047,140 +1048,100 @@ iframe[src*="youtu.be"] {
   overflow: hidden !important;
 }
 
-/* Nord theme message text */
-body.theme-nord .message-body p {
-  color: #d8dee9 !important;
-}
+/* Active dark-theme-variant message text is handled by Themes.css
+   via: html.dark-theme-variant .message-body p:not([style*="color"]) { color: var(--text-primary) !important; }
+   No per-old-theme overrides needed — old themes removed. */
 
-/* Tokyo Night theme message text */
-body.theme-tokyo .message-body p {
-  color: #c0caf5 !important;
-}
+/* ── Username theme colors (active themes only) ── */
 
-/* Monokai theme message text */
-body.theme-monokai .message-body p {
-  color: #f8f8f2 !important;
-}
-
-/* Dracula theme message text */
-body.theme-dracula .message-body p {
-  color: #f8f8f2 !important;
-}
-
-/* Ocean theme message text */
-body.theme-ocean .message-body p {
-  color: #c5d4dd !important;
-}
-
-/* Sunset theme message text */
-body.theme-sunset .message-body p {
-  color: #fdf6e3 !important;
-}
-
-/* Cyberpunk theme message text - Green on dark background */
-body.theme-cyberpunk .message-body p,
-body.theme-cyberpunk .message-content-container p,
-body.theme-cyberpunk .message-row p {
-  color: #00ff9f !important;
-}
-
-/* Theme-specific username colors with enforcement */
-
-/* Default username style - 12px bold for all users without custom styling */
-/* NOTE: No !important on color/background so injected custom styles (which use !important) can override */
+/* Light / default: dark text, 11px for non-staff, 12px for staff/badge */
 body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([data-has-custom-style="true"]),
 body.theme-light .message-displayname:not([data-has-custom-style="true"]) {
   color: #000000;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 11px;
   text-shadow: none;
   filter: none;
   backdrop-filter: none;
 }
 
-/* Default username style dark theme - 12px bold */
+/* Staff/badge override to keep 12px in light theme */
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]),
+body.theme-light .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
+body.theme-light .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
+body.theme-light .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
+body.theme-light .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
+  font-size: 12px;
+}
+
+/* Dark mode — light username, 11px for non-staff */
 body.dark-mode .message-displayname:not([data-has-custom-style="true"]),
 body.theme-dark .message-displayname:not([data-has-custom-style="true"]) {
   color: #e0e0e0;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 11px;
   text-shadow: none;
   filter: none;
   backdrop-filter: none;
 }
 
-/* Nord theme usernames - Light color for dark background */
-body.theme-nord .message-displayname {
-  color: #d8dee9 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
+/* Dark mode staff/badge keep 12px */
+body.dark-mode .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
+body.dark-mode .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
+body.dark-mode .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
+body.dark-mode .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]),
+body.theme-dark .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
+body.theme-dark .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
+body.theme-dark .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
+body.theme-dark .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
+  font-size: 12px;
 }
 
-/* Tokyo Night theme usernames - Light color for dark background */
-body.theme-tokyo .message-displayname {
-  color: #c0caf5 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
+/* Dark theme variants (rose-pink, burgundy-wine, aurora, royal-purple, sunset-orange)
+   — username color comes from Themes.css via var(--username-color).
+   Font size: 11px for regular, 12px for staff/badge.
+   No !important on font-size so custom styled usernames can still override. */
+html.dark-theme-variant .message-displayname:not([data-has-custom-style="true"]) {
+  font-size: 11px;
+  font-weight: bold;
+}
+html.dark-theme-variant .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
+html.dark-theme-variant .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
+html.dark-theme-variant .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
+html.dark-theme-variant .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
+  font-size: 12px;
 }
 
-/* Monokai theme usernames - Light color for dark background */
-body.theme-monokai .message-displayname {
-  color: #f8f8f2 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
+/* ── Message text: dark theme variants use CSS variable from Themes.css ── */
+/* Themes.css already sets:
+     html.dark-theme-variant .message-body p:not([style*="color"]) { color: var(--text-primary) !important; }
+   The rules below handle light + pure dark mode for users with NO inline styles. */
+
+/* Light/default — dark readable text, 12px, normal weight */
+body:not(.dark-mode):not([class*="theme-"]) .message-body p:not([style*="color"]):not([style*="font-size"]),
+body.theme-light .message-body p:not([style*="color"]):not([style*="font-size"]) {
+  color: #1a1a1a !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
 }
 
-/* Dracula theme usernames - Light color for dark background */
-body.theme-dracula .message-displayname {
-  color: #f8f8f2 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
+/* Dark mode — light text, 12px, normal weight */
+body.dark-mode .message-body p:not([style*="color"]):not([style*="font-size"]),
+body.theme-dark .message-body p:not([style*="color"]):not([style*="font-size"]) {
+  color: #f1f5f9 !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
 }
 
-/* Ocean theme usernames - Light color for dark background */
-body.theme-ocean .message-displayname {
-  color: #c5d4dd !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
+/* Custom font colors set by user preferences are always respected — no override */
+.message-body p[style*="color"] {
+  /* custom color preserved — do NOT add color: ... here */
 }
 
-/* Sunset theme usernames - Dark color for light background */
-body.theme-sunset .message-displayname {
-  color: #000000 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-}
-
-/* Cyberpunk theme usernames - Bright cyan for dark background */
-body.theme-cyberpunk .message-displayname {
-  color: #00ffff !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-}
-
-/* Global theme enforcement for all message elements */
-body[class*="theme-"] .message-body p,
-body[class*="theme-"] .message-content-container p,
-body[class*="theme-"] .message-row p {
-  color: var(--text-primary) !important;
-}
-
-/* Override for themes with specific text colors */
-body.theme-cyberpunk .message-body p,
-body.theme-cyberpunk .message-content-container p,
-body.theme-cyberpunk .message-row p,
-body.theme-cyberpunk .message-body,
-body.theme-cyberpunk .message-content-container,
-body.theme-cyberpunk .message-row {
-  color: #00ff9f !important;
-}
-
-/* Ensure inline font styles are preserved but theme colors take precedence when no inline styles */
-.message-body p:not([style*="color"]) {
-  color: inherit !important;
-}
-
-/* Message content styling - ensure theme colors are applied */
+/* Message layout */
 .message-row .message-body p {
   margin: 4px 0;
   line-height: 1.4;
@@ -1188,7 +1149,7 @@ body.theme-cyberpunk .message-row {
   overflow-wrap: break-word;
 }
 
-/* Fix emoji whitish effect - remove filters and ensure natural colors */
+/* Strip filters/shadows that cause whitish overlay on emoji and text */
 .message-body p,
 .message-body span,
 .message-content-container p,
@@ -1199,59 +1160,15 @@ body.theme-cyberpunk .message-row {
   opacity: 1 !important;
 }
 
-/* High specificity enforcement for theme text colors */
-html body.theme-cyberpunk .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-cyberpunk .message-body p {
-  color: #00ff9f !important;
-}
-
-html body.theme-dark .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-dark .message-body p {
-  color: #e5e7eb !important;
-}
-
-html body.theme-nord .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-nord .message-body p {
-  color: #d8dee9 !important;
-}
-
-html body.theme-tokyo .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-tokyo .message-body p {
-  color: #c0caf5 !important;
-}
-
-html body.theme-monokai .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-monokai .message-body p {
-  color: #f8f8f2 !important;
-}
-
-html body.theme-dracula .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-dracula .message-body p {
-  color: #f8f8f2 !important;
-}
-
-html body.theme-ocean .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-ocean .message-body p {
-  color: #c5d4dd !important;
-}
-
-html body.theme-sunset .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p,
-html body.theme-sunset .message-body p {
-  color: #fdf6e3 !important;
+/* High-specificity: dark mode pure text color (no custom override) */
+html body.dark-mode .chat-feed .message-row-wrapper .message-row .message-content-container .message-body p:not([style*="color"]),
+html body.theme-dark .message-body p:not([style*="color"]) {
+  color: #f1f5f9 !important;
+  font-weight: normal !important;
 }
 
 .dark-mode .message-row-wrapper:hover {
   background: rgba(139, 92, 246, 0.15) !important;
-}
-
-/* Force custom font colors to display - highest specificity */
-.message-body p[style*="color"] {
-  color: var(--custom-color) !important;
-}
-
-/* Ensure inline styles are respected for font colors */
-.message-row .message-body p[style] {
-  color: var(--custom-color, inherit) !important;
 }
 
 /* Message Row Styles - Continuous Chat Feed */
@@ -1561,7 +1478,7 @@ html body.theme-sunset .message-body p {
 
 .message-displayname:not([style*="font-size"]) {
   font-weight: bold;
-  font-size: 12px;
+  font-size: 11px;
   color: #333333;
   letter-spacing: 0px;
   cursor: pointer;
@@ -1572,7 +1489,7 @@ html body.theme-sunset .message-body p {
 
 /* Dark mode default */
 .dark-mode .message-displayname {
-  color: #ffffff;
+  color: #e0e0e0;
 }
 
 /* Default username styles - no role-based colors */
@@ -1616,7 +1533,9 @@ html body.theme-sunset .message-body p {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-  font-size: 13px;
+  font-size: 12px;
+  color: #1a1a1a;
+  font-weight: normal;
   /* Remove any color restrictions to allow inline styles */
   filter: none !important;
   -webkit-filter: none !important;
@@ -2432,38 +2351,38 @@ html body.theme-sunset .message-body p {
   font-weight: 600 !important;
 }
 
-/* Whisper message text colors based on roles */
+/* Whisper message text colors based on roles — guarded so custom user colors override */
 .whisper-message .message-body p {
   font-style: italic !important;
   font-size: 12px !important;
 }
 
-.whisper-message[data-sender-role="owner"] .message-body p {
+.whisper-message[data-sender-role="owner"] .message-body p:not([style*="color"]) {
   color: #CC9900 !important;
 }
 
-.whisper-message[data-sender-role="admin"] .message-body p {
+.whisper-message[data-sender-role="admin"] .message-body p:not([style*="color"]) {
   color: #6A1B9A !important;
 }
 
-.whisper-message[data-sender-role="moderator"] .message-body p {
+.whisper-message[data-sender-role="moderator"] .message-body p:not([style*="color"]) {
   color: #2E7D32 !important;
 }
 
-.whisper-message[data-sender-role="badge_holder"] .message-body p,
-.whisper-message[data-sender-badge="true"] .message-body p {
+.whisper-message[data-sender-role="badge_holder"] .message-body p:not([style*="color"]),
+.whisper-message[data-sender-badge="true"] .message-body p:not([style*="color"]) {
   color: #00695C !important;
 }
 
-.whisper-message[data-sender-role="user"][data-sender-gender="male"] .message-body p {
+.whisper-message[data-sender-role="user"][data-sender-gender="male"] .message-body p:not([style*="color"]) {
   color: #3b82f6 !important;
 }
 
-.whisper-message[data-sender-role="user"][data-sender-gender="female"] .message-body p {
+.whisper-message[data-sender-role="user"][data-sender-gender="female"] .message-body p:not([style*="color"]) {
   color: #ec4899 !important;
 }
 
-.whisper-message[data-sender-role="user"]:not([data-sender-gender]) .message-body p {
+.whisper-message[data-sender-role="user"]:not([data-sender-gender]) .message-body p:not([style*="color"]) {
   color: #3b82f6 !important;
 }
 
