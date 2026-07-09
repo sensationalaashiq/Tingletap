@@ -742,57 +742,119 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // ── POST /api/post-automod-notice ────────────────────────────────────────────
-// Dev-only proxy for the Netlify function `post-automod-notice`.
+// Dev-only proxy for the Netlify function `post-automod-notice` (v2 — hardened).
 // In production Netlify routes /.netlify/functions/post-automod-notice directly.
+// Mirrors the same security model as the Netlify function:
+//   1. Token verification  2. Staff role check  3. Signal-only input
+//   4. Server-side text generation  5. Dedup lock (room+violator+action)
 app.post('/api/post-automod-notice', async (req, res) => {
   if (!adminDb) return res.status(503).json({ error: 'Firebase Admin not available in dev' });
 
+  // 1 — Token verification
   const idToken = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
   if (!idToken) return res.status(401).json({ error: 'Unauthorized — no token' });
 
   let callerUid;
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await admin.auth().verifyIdToken(idToken, /* checkRevoked= */ true);
     callerUid = decoded.uid;
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  const { roomId, text, tinglebotType, violatorUid } = req.body || {};
-  const ALLOWED_TYPES = ['automod','kicked','muted','unmuted','banned','unbanned','promoted','demoted','rule','announcement','system'];
-  if (!roomId || !text || !tinglebotType) return res.status(400).json({ error: 'Missing required fields' });
-  if (!ALLOWED_TYPES.includes(tinglebotType)) return res.status(400).json({ error: 'Invalid tinglebotType' });
-  if (typeof text !== 'string' || text.length < 2 || text.length > 600) return res.status(400).json({ error: 'Invalid text length' });
-
-  const TTL_MS = 60 * 1000;
-  const lockKey = violatorUid ? `notice_${violatorUid}` : `notice_caller_${callerUid}`;
-  const lockRef = adminDb.collection('rooms').doc(roomId).collection('automod').doc(lockKey);
-
-  let alreadyPosted = false;
+  // 2 — Staff role check
+  const STAFF_ROLES = new Set(['owner', 'admin', 'moderator']);
   try {
-    await adminDb.runTransaction(async (t) => {
-      const snap = await t.get(lockRef);
-      if (snap.exists()) {
-        const { expiresAt } = snap.data();
-        if (typeof expiresAt === 'number' && expiresAt > Date.now()) { alreadyPosted = true; return; }
-      }
-      t.set(lockRef, { expiresAt: Date.now() + TTL_MS, postedAt: admin.firestore.FieldValue.serverTimestamp(), callerUid, violatorUid: violatorUid || callerUid, tinglebotType });
-    });
+    const callerSnap = await adminDb.collection('users').doc(callerUid).get();
+    if (!callerSnap.exists) return res.status(403).json({ error: 'Access denied — user not found' });
+    if (!STAFF_ROLES.has(callerSnap.data()?.role)) return res.status(403).json({ error: 'Access denied — staff only' });
   } catch (e) {
-    console.error('[post-automod-notice] Lock error:', e.message);
-    return res.status(500).json({ error: 'Dedup lock failed' });
+    console.error('[post-automod-notice] Role check error:', e.message);
+    return res.status(500).json({ error: 'Role verification failed' });
   }
 
-  if (alreadyPosted) return res.json({ ok: true, skipped: true, reason: 'duplicate' });
+  // 3 — Input validation (signal only — no text/tinglebotType from client)
+  const ALLOWED_ACTIONS = new Set(['warn','delete_warn','mute_5','mute_30','mute_3h','mute_24h','kick']);
+  const ALLOWED_VTYPES  = new Set(['threat','doxxing','hate','scam','minor_grooming','non_consensual','spam','harassment','link','family_abuse']);
+  const { roomId, violatorUid, violatorDisplayName, violationType, action } = req.body || {};
+  if (!roomId || !violatorUid || !violatorDisplayName || !violationType || !action)
+    return res.status(400).json({ error: 'Missing required fields' });
+  if (typeof roomId !== 'string' || roomId.length > 100) return res.status(400).json({ error: 'Invalid roomId' });
+  if (typeof violatorUid !== 'string' || violatorUid.length > 128) return res.status(400).json({ error: 'Invalid violatorUid' });
+  if (!ALLOWED_ACTIONS.has(action)) return res.status(400).json({ error: `Invalid action: ${action}` });
+  if (!ALLOWED_VTYPES.has(violationType)) return res.status(400).json({ error: `Invalid violationType: ${violationType}` });
 
+  // 4 — Server-side notice text generation (no client text trusted)
+  const sanitiseName = (raw) => String(raw || 'User').replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N}\s._\-]/gu, '').trim().slice(0, 50) || 'User';
+  const pickVariant  = (arr, seed) => { let h = 0; for (const c of seed) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0; return arr[h % arr.length]; };
+  const VLABELS = { threat:'Threat of violence', doxxing:'Personal information / doxxing', hate:'Hate speech / terrorism promotion', scam:'Scam / phishing / illegal activity', minor_grooming:'Minor safety / grooming', non_consensual:'Non-consensual sexual content', spam:'Message flooding / spam', harassment:'Repeated harassment', link:'Unauthorized link sharing', family_abuse:'Abusive language' };
+  const MDURLABELS = { mute_5:'5 minutes', mute_30:'30 minutes', mute_3h:'3 hours', mute_24h:'24 hours' };
+  const ACTION_TO_TYPE = { warn:'automod', delete_warn:'automod', mute_5:'muted', mute_30:'muted', mute_3h:'muted', mute_24h:'muted', kick:'kicked' };
+  const safeName  = sanitiseName(violatorDisplayName);
+  const label     = VLABELS[violationType] || 'Community guideline violation';
+  const seed      = safeName + action;
+  let noticeText;
+  if (action === 'kick') {
+    noticeText = pickVariant([`${safeName} was automatically removed after repeated violations.`, `${safeName} has been removed from the chat due to continued violations.`, `${safeName} was kicked by AutoMod after exceeding the violation limit.`], seed);
+  } else if (action.startsWith('mute_')) {
+    const dur = MDURLABELS[action] || 'some time';
+    noticeText = pickVariant([`${safeName} has been muted for ${dur} — ${label}.`, `${safeName} was temporarily silenced (${dur}) due to: ${label}.`, `Chat muted for ${safeName} (${dur}). Reason: ${label}.`], seed);
+  } else if (action === 'delete_warn') {
+    noticeText = pickVariant([`A message from ${safeName} was removed — ${label}. Another violation may result in a mute.`, `${safeName}'s message was deleted for: ${label}. Please review the chat rules.`, `Message removed (${label}). ${safeName}, this is a final warning before muting.`], seed);
+  } else {
+    noticeText = pickVariant([`Hey ${safeName}, let's keep the chat welcoming for everyone. ${label} is not allowed here. This is your first warning.`, `${safeName}, please mind the community guidelines. ${label} detected — first warning.`, `Heads up, ${safeName}! ${label} isn't acceptable here. Please keep it respectful.`], seed);
+  }
+  const tinglebotType = ACTION_TO_TYPE[action] || 'automod';
+
+  // 5 — Rate limits + dedup (single transaction, mirrors production function)
+  const RL_WINDOW_MS  = 5 * 60 * 1000;
+  const RL_CALLER_MAX = 20;
+  const RL_ROOM_MAX   = 50;
+  const TTL_MS        = 60 * 1000;
+  const now2          = Date.now();
+  const callerRlRef   = adminDb.collection('rooms').doc(roomId).collection('automod').doc(`_rl_c_${callerUid}`);
+  const roomRlRef     = adminDb.collection('rooms').doc(roomId).collection('automod').doc('_rl_room');
+  const dedupRef      = adminDb.collection('rooms').doc(roomId).collection('automod').doc(`_lk_${violatorUid}_${action}`);
+  let alreadyPosted = false;
+  let rateLimited = false;
+  let rateLimitReason = '';
+  try {
+    await adminDb.runTransaction(async (t) => {
+      const [callerRlSnap, roomRlSnap, dedupSnap] = await Promise.all([t.get(callerRlRef), t.get(roomRlRef), t.get(dedupRef)]);
+      // Dedup
+      if (dedupSnap.exists()) {
+        const { expiresAt } = dedupSnap.data();
+        if (typeof expiresAt === 'number' && expiresAt > now2) { alreadyPosted = true; return; }
+      }
+      // Per-caller rate limit
+      const crl = callerRlSnap.exists() ? callerRlSnap.data() : { count: 0, windowStart: now2 };
+      if (now2 - crl.windowStart > RL_WINDOW_MS) { crl.count = 0; crl.windowStart = now2; }
+      if (crl.count >= RL_CALLER_MAX) { rateLimited = true; rateLimitReason = 'caller_rate_limit'; return; }
+      // Per-room rate limit
+      const rrl = roomRlSnap.exists() ? roomRlSnap.data() : { count: 0, windowStart: now2 };
+      if (now2 - rrl.windowStart > RL_WINDOW_MS) { rrl.count = 0; rrl.windowStart = now2; }
+      if (rrl.count >= RL_ROOM_MAX) { rateLimited = true; rateLimitReason = 'room_rate_limit'; return; }
+      // Claim
+      t.set(callerRlRef, { count: crl.count + 1, windowStart: crl.windowStart });
+      t.set(roomRlRef,   { count: rrl.count + 1, windowStart: rrl.windowStart });
+      t.set(dedupRef, { expiresAt: now2 + TTL_MS, postedAt: admin.firestore.FieldValue.serverTimestamp(), callerUid, violatorUid, action, violationType });
+    });
+  } catch (e) {
+    console.error('[post-automod-notice] Transaction error:', e.message);
+    return res.status(500).json({ error: 'Rate-limit/dedup transaction failed' });
+  }
+  if (alreadyPosted) return res.json({ ok: true, skipped: true, reason: 'duplicate' });
+  if (rateLimited) return res.status(429).json({ error: `Rate limit exceeded (${rateLimitReason})` });
+
+  // 6 — Write TingleBot message
   try {
     const msgRef = await adminDb.collection('rooms').doc(roomId).collection('messages').add({
-      text, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
+      text: noticeText, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
       isBot: true, systemBot: true, tinglebotType,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       noReply: true, noReaction: true, noReport: true, noUnread: true,
     });
-    console.log(`[post-automod-notice] ✓ Notice posted: ${msgRef.id} (room:${roomId} type:${tinglebotType})`);
+    console.log(`[post-automod-notice] ✓ Notice posted: ${msgRef.id} (room:${roomId} action:${action})`);
     return res.json({ ok: true, id: msgRef.id });
   } catch (e) {
     console.error('[post-automod-notice] Firestore write error:', e.message);
