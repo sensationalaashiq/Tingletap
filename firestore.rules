@@ -1153,6 +1153,22 @@ service cloud.firestore {
     }
 
     // ================================================================
+    // RJ VERIFICATION APPLICATIONS
+    // Same pattern as BADGE APPLICATIONS above — users write/read their
+    // own doc; owner and admin read/write all (for review dashboard).
+    // ================================================================
+
+    match /rjApplications/{uid} {
+      allow create, update: if isAuthenticated()
+                            && request.auth.uid == uid
+                            && !isGuest();
+
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+
+      allow read, write: if isOwner() || isAdmin();
+    }
+
+    // ================================================================
     // RJ FOLLOW SYSTEM
     // Subcollections: users/{rjUid}/followers/{followerUid}
     //                 users/{uid}/following/{rjUid}

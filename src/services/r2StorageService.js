@@ -140,3 +140,88 @@ export async function reviewApplication(applicantUid, action, reviewNotes = '') 
   if (!res.ok) throw new Error(json.error || `Review action failed (${res.status})`);
   return json;
 }
+
+// ─── RJ Verification — same proxy pattern, separate endpoints/collection ─────
+
+/**
+ * Upload an RJ verification audio recording via the Netlify proxy function.
+ * @param {Blob} blob
+ * @param {'intro'|'song'|'welcome'} section
+ * @param {(progress: number) => void} [onProgress]
+ * @returns {Promise<string>} R2 object key
+ */
+export async function uploadRJMedia(blob, section, onProgress) {
+  const token = await getIdToken();
+  const rawType     = blob.type || 'audio/webm';
+  const contentType = rawType.split(';')[0].trim().toLowerCase();
+
+  if (onProgress) onProgress(5);
+  const base64Data = await blobToBase64(blob);
+  if (onProgress) onProgress(15);
+
+  const res = await fetch(`${BASE}/uploadRJMedia`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ section, contentType, data: base64Data }),
+  });
+
+  if (onProgress) onProgress(90);
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed (${res.status})`);
+  }
+
+  const { key } = await res.json();
+  if (onProgress) onProgress(100);
+  return key;
+}
+
+/**
+ * Submit the RJ verification application after all three recordings are uploaded.
+ */
+export async function submitRJApplication(data) {
+  const token = await getIdToken();
+  const res = await fetch(`${BASE}/submitRJApplication`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Submit failed (${res.status})`);
+  return json;
+}
+
+/**
+ * Fetch RJ verification audio as a Blob via a server-side proxy. Owner/admin only.
+ * @param {string} key  R2 object key
+ * @returns {Promise<Blob>}
+ */
+export async function getRJMedia(key) {
+  const token = await getIdToken();
+  const res = await fetch(`${BASE}/getRJMedia`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ key }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to fetch media (${res.status})`);
+  }
+  return res.blob();
+}
+
+/**
+ * Admin: approve, reject, or request resubmission of an RJ application.
+ */
+export async function reviewRJApplication(applicantUid, action, reviewNotes = '') {
+  const token = await getIdToken();
+  const res = await fetch(`${BASE}/reviewRJApplication`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ applicantUid, action, reviewNotes }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Review action failed (${res.status})`);
+  return json;
+}
