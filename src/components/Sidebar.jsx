@@ -129,6 +129,8 @@ const Sidebar = ({
   const [activeTab, setActiveTab]             = useState('users');
   const [genderFilter, setGenderFilter]       = useState('all');
   const [searchQuery, setSearchQuery]         = useState('');
+  // Optimistic status update — eliminates the dark-flash between save and Firestore snapshot
+  const [pendingStatusData, setPendingStatusData] = useState(null); // { uid, status, statusStyles }
   const [rooms, setRooms]                     = useState([]);
   const [dropdownUser, setDropdownUser]       = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -194,6 +196,27 @@ const Sidebar = ({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  /* -- Listen for optimistic status update from StatusModal -- */
+  useEffect(() => {
+    const handler = (e) => {
+      const { uid, status, statusStyles } = e.detail || {};
+      if (uid) setPendingStatusData({ uid, status, statusStyles });
+    };
+    window.addEventListener('statusUpdated', handler);
+    return () => window.removeEventListener('statusUpdated', handler);
+  }, []);
+
+  // Once the real Firestore profile lands with the matching status text, clear the optimistic data
+  useEffect(() => {
+    if (
+      pendingStatusData &&
+      pendingStatusData.uid === user?.uid &&
+      loggedInUserProfile?.status === pendingStatusData.status
+    ) {
+      setPendingStatusData(null);
+    }
+  }, [loggedInUserProfile?.status, loggedInUserProfile?.statusStyles, user?.uid]);
 
   /* -- expose setProfileUser globally — routes through handleViewProfile when available -- */
   useEffect(() => {
@@ -528,15 +551,19 @@ const Sidebar = ({
                     })}
                   </span>
                 </div>
-                {loggedInUserProfile.status && (
+                {(pendingStatusData?.uid === user?.uid ? pendingStatusData.status : loggedInUserProfile.status) && (
                   <div className="sb-profile-status">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.82}}>
                       <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" fill="#6d28d9"/>
                       <circle cx="5" cy="5" r="1.2" fill="#6d28d9" opacity="0.6"/>
                       <circle cx="19" cy="18" r="1" fill="#6d28d9" opacity="0.5"/>
                     </svg>
-                    <span style={buildStatusStyle(loggedInUserProfile.statusStyles)}>
-                      {loggedInUserProfile.status}
+                    <span style={buildStatusStyle(
+                      pendingStatusData?.uid === user?.uid
+                        ? pendingStatusData.statusStyles
+                        : loggedInUserProfile.statusStyles
+                    )}>
+                      {pendingStatusData?.uid === user?.uid ? pendingStatusData.status : loggedInUserProfile.status}
                     </span>
                   </div>
                 )}

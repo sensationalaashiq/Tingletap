@@ -17,6 +17,18 @@ import BadgeApplicationTab from './badge/BadgeApplicationTab';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 
+/* ── Inline colour palette for Style tab & colour pickers ── */
+const COLOUR_DOTS = [
+  '#000000','#374151','#6b7280','#9ca3af','#d1d5db','#ffffff',
+  '#4c1d95','#6d28d9','#7c3aed','#8b5cf6','#a78bfa','#c4b5fd',
+  '#1e3a8a','#1d4ed8','#3b82f6','#60a5fa','#06b6d4','#22d3ee',
+  '#14532d','#16a34a','#22c55e','#4ade80','#eab308','#facc15',
+  '#7c2d12','#c2410c','#f97316','#fb923c','#ef4444','#fca5a5',
+  '#881337','#be123c','#e11d48','#fb7185','#ec4899','#f472b6',
+  '#701a75','#a21caf','#d946ef','#e879f9','#ff0080','#ff6b6b',
+  '#00e5ff','#4d96ff','#845ef7','#ff9a3c','#ffd93d','#6bcb77',
+];
+
 const OtherGenderIconSVG = () => (
     <svg width="14" height="14" id="Layer_1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" data-name="Layer 1">
         <defs>
@@ -52,6 +64,9 @@ const SettingsSidebar = ({
     const teamUnsubRef = useRef(null);
 
     // TingleBot settings state
+    // Style-tab inline colour picker open state
+    const [st3PickerOpen, setSt3PickerOpen] = useState(null); // null | 'solid' | 'gradFrom' | 'gradTo' | 'outline'
+
     const [botEnabled, setBotEnabled] = useState(true);
     const [botRules, setBotRules] = useState([
         'Be respectful to everyone. No hate speech, slurs, or personal attacks.',
@@ -2209,26 +2224,75 @@ const SettingsSidebar = ({
                             {/* Color mode */}
                             <div className="st3-row">
                                 <span className="st3-label">Color</span>
-                                <button className={`st3-mode-btn ${!settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', false); setTimeout(applyUsernameStyles,50); }}>Solid</button>
-                                <button className={`st3-mode-btn ${settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', true); setTimeout(applyUsernameStyles,50); }}>Gradient</button>
+                                <button className={`st3-mode-btn ${!settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', false); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}>Solid</button>
+                                <button className={`st3-mode-btn ${settings.usernameGradientEnabled ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameGradientEnabled', true); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}>Gradient</button>
                             </div>
 
                             {!settings.usernameGradientEnabled ? (
-                                <div className="st3-row">
-                                    <span className="st3-label">Pick</span>
-                                    <input type="color" className="st3-color-input" value={settings.usernameFontColor} onChange={e => { handleSettingChange('usernameFontColor', e.target.value); setTimeout(applyUsernameStyles,50); }} />
-                                    <span className="st3-hex">{settings.usernameFontColor}</span>
-                                </div>
-                            ) : (
                                 <>
                                     <div className="st3-row">
+                                        <span className="st3-label">Pick</span>
+                                        <button
+                                            className={`st3-swatch${st3PickerOpen==='solid'?' open':''}`}
+                                            style={{background: settings.usernameFontColor}}
+                                            onClick={() => setSt3PickerOpen(st3PickerOpen==='solid' ? null : 'solid')}
+                                            title="Choose colour"
+                                        />
+                                        <span className="st3-hex">{settings.usernameFontColor}</span>
+                                        {st3PickerOpen==='solid' && <button className="st3-picker-x" onClick={()=>setSt3PickerOpen(null)}>✕</button>}
+                                    </div>
+                                    {st3PickerOpen==='solid' && (
+                                        <div className="st3-colour-grid">
+                                            {COLOUR_DOTS.map(c => (
+                                                <button key={c} className={`st3-colour-dot${settings.usernameFontColor===c?' sel':''}`}
+                                                    style={{background:c}} title={c}
+                                                    onClick={()=>{ handleSettingChange('usernameFontColor',c); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="st3-row" style={{gap:'6px'}}>
                                         <span className="st3-label">From</span>
-                                        <input type="color" className="st3-color-input" value={settings.usernameGradientStart} onChange={e => { handleSettingChange('usernameGradientStart', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        <button
+                                            className={`st3-swatch${st3PickerOpen==='gradFrom'?' open':''}`}
+                                            style={{background: settings.usernameGradientStart}}
+                                            onClick={() => setSt3PickerOpen(st3PickerOpen==='gradFrom' ? null : 'gradFrom')}
+                                            title="From colour"
+                                        />
                                         <span className="st3-hex">{settings.usernameGradientStart}</span>
                                         <span className="st3-label" style={{marginLeft:'4px'}}>To</span>
-                                        <input type="color" className="st3-color-input" value={settings.usernameGradientEnd} onChange={e => { handleSettingChange('usernameGradientEnd', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        <button
+                                            className={`st3-swatch${st3PickerOpen==='gradTo'?' open':''}`}
+                                            style={{background: settings.usernameGradientEnd}}
+                                            onClick={() => setSt3PickerOpen(st3PickerOpen==='gradTo' ? null : 'gradTo')}
+                                            title="To colour"
+                                        />
                                         <span className="st3-hex">{settings.usernameGradientEnd}</span>
+                                        {st3PickerOpen && <button className="st3-picker-x" onClick={()=>setSt3PickerOpen(null)}>✕</button>}
                                     </div>
+                                    {st3PickerOpen==='gradFrom' && (
+                                        <div className="st3-colour-grid">
+                                            {COLOUR_DOTS.map(c => (
+                                                <button key={c} className={`st3-colour-dot${settings.usernameGradientStart===c?' sel':''}`}
+                                                    style={{background:c}} title={c}
+                                                    onClick={()=>{ handleSettingChange('usernameGradientStart',c); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                    {st3PickerOpen==='gradTo' && (
+                                        <div className="st3-colour-grid">
+                                            {COLOUR_DOTS.map(c => (
+                                                <button key={c} className={`st3-colour-dot${settings.usernameGradientEnd===c?' sel':''}`}
+                                                    style={{background:c}} title={c}
+                                                    onClick={()=>{ handleSettingChange('usernameGradientEnd',c); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                     <div className="st3-row">
                                         <span className="st3-label">Dir</span>
                                         <div className="st3-chips">
@@ -2263,7 +2327,25 @@ const SettingsSidebar = ({
                                 </label>
                                 {settings.usernameOutlineEnabled && (
                                     <>
-                                        <input type="color" className="st3-color-input" value={settings.usernameOutlineColor} onChange={e => { handleSettingChange('usernameOutlineColor', e.target.value); setTimeout(applyUsernameStyles,50); }} />
+                                        {/* Relative wrapper anchors the absolute dot grid */}
+                                        <div style={{position:'relative',flexShrink:0}}>
+                                            <button
+                                                className={`st3-swatch${st3PickerOpen==='outline'?' open':''}`}
+                                                style={{background: settings.usernameOutlineColor}}
+                                                onClick={() => setSt3PickerOpen(st3PickerOpen==='outline' ? null : 'outline')}
+                                                title="Outline colour"
+                                            />
+                                            {st3PickerOpen==='outline' && (
+                                                <div className="st3-colour-grid" style={{position:'absolute',top:'calc(100% + 4px)',left:0,zIndex:99,background:'rgba(255,255,255,.98)',border:'1.5px solid rgba(139,92,246,.2)',borderRadius:'12px',padding:'8px',boxShadow:'0 8px 32px rgba(109,40,217,.18)',width:'220px'}}>
+                                                    {COLOUR_DOTS.map(c => (
+                                                        <button key={c} className={`st3-colour-dot${settings.usernameOutlineColor===c?' sel':''}`}
+                                                            style={{background:c}} title={c}
+                                                            onClick={()=>{ handleSettingChange('usernameOutlineColor',c); setTimeout(applyUsernameStyles,50); setSt3PickerOpen(null); }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="st3-sel-wrap" style={{flex:'none',width:'76px'}}>
                                             <select className="st3-sel" value={settings.usernameOutlineSize} onChange={e => { handleSettingChange('usernameOutlineSize', e.target.value); setTimeout(applyUsernameStyles,50); }}>
                                                 <option value="0.5px">Thin</option>

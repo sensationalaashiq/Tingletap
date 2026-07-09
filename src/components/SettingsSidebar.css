@@ -1717,6 +1717,47 @@
     white-space: nowrap;
 }
 
+/* ── Inline colour picker (swatch + dot grid) ── */
+.st3-swatch {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,.9);
+    outline: 2px solid rgba(139,92,246,.3);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all .18s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.st3-swatch:hover { transform: scale(1.12); outline-color: #8b5cf6; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.st3-swatch.open { outline: 2.5px solid #7c3aed; box-shadow: 0 0 0 4px rgba(124,58,237,.18), 0 4px 14px rgba(0,0,0,.2); transform: scale(1.08); }
+.st3-picker-x {
+    background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2);
+    border-radius: 5px; color: #dc2626; font-size: 9px; font-weight: 700;
+    padding: 2px 5px; cursor: pointer; flex-shrink: 0; line-height: 1;
+}
+.st3-colour-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+    padding: 10px;
+    background: rgba(255,255,255,.97);
+    border: 1.5px solid rgba(139,92,246,.18);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(109,40,217,.14);
+    margin-top: 2px;
+}
+.st3-colour-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all .15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    flex-shrink: 0;
+}
+.st3-colour-dot:hover { transform: scale(1.22); border-color: rgba(255,255,255,.8); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+.st3-colour-dot.sel { border: 2.5px solid #7c3aed !important; outline: 2px solid rgba(124,58,237,.35); transform: scale(1.15); box-shadow: 0 0 0 3px rgba(124,58,237,.22); }
+
 /* ── USERNAME PREVIEW ── */
 .username-preview-container {
     background: rgba(255,255,255,.8);

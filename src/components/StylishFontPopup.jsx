@@ -93,27 +93,35 @@ const StylishFontPopup = React.memo(({
 
     const premiumFonts = [
       ...basicFonts,
+      // ── Elegant / Serif ──
+      { name: 'Cinzel ✦', value: 'Cinzel, serif' },
+      { name: 'Playfair Display', value: "'Playfair Display', serif" },
+      { name: 'Cormorant ✦', value: "'Cormorant Garamond', serif" },
+      { name: 'Abril Fatface', value: "'Abril Fatface', cursive" },
+      // ── Cursive / Script ──
       { name: 'Great Vibes', value: 'Great Vibes, cursive' },
       { name: 'Dancing Script', value: 'Dancing Script, cursive' },
-      { name: 'Pacifico', value: 'Pacifico, cursive' },
-      { name: 'Satisfy', value: 'Satisfy, cursive' },
-      { name: 'Courgette', value: 'Courgette, cursive' },
-      { name: 'Lobster', value: 'Lobster, cursive' },
       { name: 'Kaushan Script', value: 'Kaushan Script, cursive' },
-      { name: 'Amatic SC', value: 'Amatic SC, cursive' },
-      { name: 'Caveat', value: 'Caveat, cursive' },
-      { name: 'Indie Flower', value: 'Indie Flower, cursive' },
-      { name: 'Permanent Marker', value: 'Permanent Marker, cursive' },
       { name: 'Sacramento', value: 'Sacramento, cursive' },
-      { name: 'Shadows Into Light', value: 'Shadows Into Light, cursive' },
-      { name: 'Roboto', value: 'Roboto, sans-serif' },
-      { name: 'Open Sans', value: 'Open Sans, sans-serif' },
-      { name: 'Lato', value: 'Lato, sans-serif' },
-      { name: 'Montserrat', value: 'Montserrat, sans-serif' },
-      { name: 'Source Sans Pro', value: "'Source Sans 3', sans-serif" },
-      { name: 'Raleway', value: 'Raleway, sans-serif' },
-      { name: 'Ubuntu', value: 'Ubuntu, sans-serif' },
-      { name: 'Forte', value: "'Forte', 'Pinyon Script', cursive" }
+      { name: 'Forte (Pinyon)', value: "'Pinyon Script', cursive" },
+      // ── Fun / Display ──
+      { name: 'Pacifico', value: 'Pacifico, cursive' },
+      { name: 'Lobster', value: 'Lobster, cursive' },
+      { name: 'Righteous', value: 'Righteous, cursive' },
+      { name: 'Bebas Neue', value: "'Bebas Neue', cursive" },
+      { name: 'Amatic SC', value: "'Amatic SC', cursive" },
+      // ── Handwritten ──
+      { name: 'Caveat', value: 'Caveat, cursive' },
+      { name: 'Indie Flower', value: "'Indie Flower', cursive" },
+      { name: 'Permanent Marker', value: "'Permanent Marker', cursive" },
+      // ── Modern / Tech ──
+      { name: 'Orbitron ✦', value: 'Orbitron, sans-serif' },
+      { name: 'Russo One', value: "'Russo One', sans-serif" },
+      { name: 'Comfortaa', value: 'Comfortaa, cursive' },
+      { name: 'Fredoka', value: 'Fredoka, sans-serif' },
+      { name: 'Poiret One', value: "'Poiret One', cursive" },
+      // ── Retro / Pixel ──
+      { name: 'Pixel Retro ✦', value: "'Press Start 2P', cursive" },
     ];
 
     if (isGuest) return basicFonts.slice(0, 3);

@@ -5,7 +5,19 @@ import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import './StatusModal.css';
 
+const SM_COLOUR_DOTS = [
+  '#000000','#374151','#6b7280','#9ca3af','#d1d5db','#ffffff',
+  '#4c1d95','#6d28d9','#7c3aed','#8b5cf6','#a78bfa','#c4b5fd',
+  '#1e3a8a','#1d4ed8','#3b82f6','#60a5fa','#06b6d4','#22d3ee',
+  '#14532d','#16a34a','#22c55e','#4ade80','#eab308','#facc15',
+  '#7c2d12','#c2410c','#f97316','#fb923c','#ef4444','#fca5a5',
+  '#881337','#be123c','#e11d48','#fb7185','#ec4899','#f472b6',
+  '#701a75','#a21caf','#d946ef','#e879f9','#ff0080','#ff6b6b',
+  '#00e5ff','#4d96ff','#845ef7','#ff9a3c','#ffd93d','#6bcb77',
+];
+
 const StatusModal = React.memo(({ onClose }) => {
+  const [smPickerOpen, setSmPickerOpen]     = useState(null); // null | 'solid' | 'gradFrom' | 'gradTo'
   const [newStatus, setNewStatus]           = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
   const [fontFamily, setFontFamily]         = useState('inherit');
@@ -200,6 +212,10 @@ const StatusModal = React.memo(({ onClose }) => {
     };
     try {
       await setDoc(doc(db, 'users', user.uid), statusData, { merge: true });
+      // Dispatch immediately so Sidebar updates without waiting for Firestore snapshot
+      window.dispatchEvent(new CustomEvent('statusUpdated', {
+        detail: { status: statusToSet, statusStyles: statusData.statusStyles, uid: user.uid }
+      }));
       onClose();
       pt.success('Status updated!', { position: 'bottom-center', autoClose: 2000 });
     } catch { pt.error('Failed to update status.'); }
@@ -376,28 +392,46 @@ const StatusModal = React.memo(({ onClose }) => {
             Colour
           </div>
           <div className="sm-color-row">
-            <button className={`sm-color-mode${!gradientEnabled ? ' active' : ''}`} onClick={() => setGradientEnabled(false)}>
+            <button className={`sm-color-mode${!gradientEnabled ? ' active' : ''}`} onClick={() => { setGradientEnabled(false); setSmPickerOpen(null); }}>
               <svg viewBox="0 0 24 24" width="11" height="11"><circle cx="12" cy="12" r="10" fill={!gradientEnabled ? '#7c3aed' : '#c4b5fd'}/></svg>
               Solid
             </button>
-            <button className={`sm-color-mode${gradientEnabled ? ' active' : ''}`} onClick={() => setGradientEnabled(true)}>
+            <button className={`sm-color-mode${gradientEnabled ? ' active' : ''}`} onClick={() => { setGradientEnabled(true); setSmPickerOpen(null); }}>
               <svg viewBox="0 0 24 24" width="11" height="11"><defs><linearGradient id="cgr2" x1="0%" x2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><circle cx="12" cy="12" r="10" fill="url(#cgr2)"/></svg>
               Gradient
             </button>
             {!gradientEnabled ? (
               <div className="sm-color-pick">
                 <label>Pick</label>
-                <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="sm-color-input"/>
+                <button
+                  className={`sm-dot-swatch${smPickerOpen==='solid'?' sm-dot-open':''}`}
+                  style={{background: textColor}}
+                  onClick={() => setSmPickerOpen(smPickerOpen==='solid' ? null : 'solid')}
+                  title={textColor}
+                />
+                <span className="sm-hex-badge">{textColor}</span>
               </div>
             ) : (
               <>
                 <div className="sm-color-pick">
                   <label>From</label>
-                  <input type="color" value={gradientStart} onChange={e => setGradientStart(e.target.value)} className="sm-color-input"/>
+                  <button
+                    className={`sm-dot-swatch${smPickerOpen==='gradFrom'?' sm-dot-open':''}`}
+                    style={{background: gradientStart}}
+                    onClick={() => setSmPickerOpen(smPickerOpen==='gradFrom' ? null : 'gradFrom')}
+                    title={gradientStart}
+                  />
+                  <span className="sm-hex-badge">{gradientStart}</span>
                 </div>
                 <div className="sm-color-pick">
                   <label>To</label>
-                  <input type="color" value={gradientEnd} onChange={e => setGradientEnd(e.target.value)} className="sm-color-input"/>
+                  <button
+                    className={`sm-dot-swatch${smPickerOpen==='gradTo'?' sm-dot-open':''}`}
+                    style={{background: gradientEnd}}
+                    onClick={() => setSmPickerOpen(smPickerOpen==='gradTo' ? null : 'gradTo')}
+                    title={gradientEnd}
+                  />
+                  <span className="sm-hex-badge">{gradientEnd}</span>
                 </div>
                 <select value={gradientDirection} onChange={e => setGradientDirection(e.target.value)} className="sm-select sm-select-dir">
                   <option value="to right">Horizontal</option>
@@ -408,6 +442,24 @@ const StatusModal = React.memo(({ onClose }) => {
               </>
             )}
           </div>
+          {/* Inline colour dot grid */}
+          {smPickerOpen && (
+            <div className="sm-dot-grid">
+              {SM_COLOUR_DOTS.map(c => {
+                const isSel = smPickerOpen==='solid' ? textColor===c : smPickerOpen==='gradFrom' ? gradientStart===c : gradientEnd===c;
+                return (
+                  <button key={c} className={`sm-dot${isSel?' sm-dot-sel':''}`} style={{background:c}} title={c}
+                    onClick={() => {
+                      if (smPickerOpen==='solid') setTextColor(c);
+                      else if (smPickerOpen==='gradFrom') setGradientStart(c);
+                      else setGradientEnd(c);
+                      setSmPickerOpen(null);
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
 
           {/* ── Live Preview ── */}
           <div className="sm-preview">
