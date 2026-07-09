@@ -44,11 +44,19 @@ const CheckIcon = ({ size = 14, color = '#10b981' }) => (
 
 // ─── Welcome message script (Hindi + English) ───────────────────────────────
 const WELCOME_SCRIPT_HINDI =
-  'नमस्ते दोस्तों! मैं आपका RJ हूं और TingleTap पर आपका दिल से स्वागत करता हूं। ' +
-  'यहां हम साथ मिलकर मस्ती करेंगे, गाने सुनेंगे और अच्छी बातें शेयर करेंगे। चलिए शुरू करते हैं!';
+  'नमस्ते दोस्तों!\n\n' +
+  'आप सुन रहे हैं TingleTap Radio.\n\n' +
+  'मैं हूँ आपका RJ.\n\n' +
+  'आप सभी का दिल से स्वागत है.\n\n' +
+  'उम्मीद है आपका दिन शानदार चल रहा होगा.\n\n' +
+  'चलिए, मुस्कुराइए, बातें कीजिए और इस खूबसूरत सफ़र का आनंद लीजिए.';
 const WELCOME_SCRIPT_ENGLISH =
-  'Hello everyone! I\'m your RJ, and I warmly welcome you to TingleTap. ' +
-  'Let\'s have fun together, enjoy some music, and share great conversations. Let\'s get started!';
+  'Hello everyone!\n\n' +
+  'You\'re listening to TingleTap Radio.\n\n' +
+  'I\'m your RJ.\n\n' +
+  'A warm welcome to everyone.\n\n' +
+  'I hope you\'re having a wonderful day.\n\n' +
+  'Let\'s enjoy great conversations together.';
 
 function DeclarationContent() {
   return (
@@ -253,7 +261,7 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
           </div>
           <div className="bv-hero-title">Become a Verified RJ</div>
           <div className="bv-hero-sub">
-            Share your voice, entertain our listeners, and host live rooms as an official TingleTap RJ.
+            Share your voice, entertain listeners and become an official RJ of TingleTap Radio.
           </div>
         </div>
 
@@ -266,9 +274,9 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
             What You'll Record
           </div>
           <ul className="bv-info-list">
-            <li><CheckIcon />Funny Introduction — introduce yourself with personality</li>
-            <li><CheckIcon />Sing a Song — a short song of your choice</li>
-            <li><CheckIcon />Welcome Message — read the provided Hindi/English script</li>
+            <li><CheckIcon />Funny Introduction — introduce yourself naturally and let us hear your personality</li>
+            <li><CheckIcon />Sing a Song — sing any song you enjoy so we can hear your voice quality</li>
+            <li><CheckIcon />Welcome Message — read one of the welcome scripts below in your natural voice</li>
           </ul>
         </div>
 
@@ -344,7 +352,7 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
           }>
             <RJAudioRecorder
               title="Funny Introduction"
-              script="Introduce yourself in a fun, energetic way — tell us your name and why you'd be a great RJ!"
+              script="Introduce yourself naturally and let us hear your personality. Tell us something interesting or fun in your own style."
               minDuration={5}
               maxDuration={60}
               onRecorded={(blob) => { setIntroBlob(blob); goNext(); }}
@@ -363,7 +371,7 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
           }>
             <RJAudioRecorder
               title="Sing a Song"
-              script="Sing a short verse of any song you like — show off your voice!"
+              script="Sing any song you enjoy. We simply want to hear your voice quality, confidence and expression."
               minDuration={10}
               maxDuration={90}
               onRecorded={(blob) => { setSongBlob(blob); goNext(); }}
@@ -382,7 +390,7 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
           }>
             <RJAudioRecorder
               title="Welcome Message"
-              script={`${WELCOME_SCRIPT_HINDI}\n\n${WELCOME_SCRIPT_ENGLISH}`}
+              script={`Read one of the welcome scripts below in your natural voice.\n\nHindi:\n${WELCOME_SCRIPT_HINDI}\n\nEnglish:\n${WELCOME_SCRIPT_ENGLISH}`}
               minDuration={5}
               maxDuration={60}
               onRecorded={(blob) => { setWelcomeBlob(blob); goNext(); }}
@@ -422,9 +430,9 @@ export default function RJApplicationTab({ loggedInUserProfile }) {
                 Review Process
               </div>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Our team reviews every RJ application within 48 hours. Once approved, you'll receive
-                the official RJ badge instantly, visible everywhere your profile appears. If rejected,
-                you can review the feedback and re-apply anytime.
+                Your recordings will be reviewed by our team.<br />
+                Once approved, you'll receive the official RJ Badge.<br />
+                The badge will automatically appear throughout TingleTap.
               </p>
             </div>
 

@@ -19,6 +19,7 @@ import { pt } from '../../utils/premiumToast';
 import { db } from '../../firebase/config';
 import { doc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Badges } from '../../data/Badges';
+import { getDefaultAvatarUrl } from '../../utils/roleUtils';
 import './BadgeVerificationPanel.css';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,26 @@ function StatusBadge({ status }) {
     <span style={{ background: cfg.bg, color: cfg.color, padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>
       {cfg.label}
     </span>
+  );
+}
+
+function Avatar({ uid, gender, size = 36 }) {
+  const [broken, setBroken] = useState(false);
+  const src = uid ? getDefaultAvatarUrl(uid, gender) : '';
+  if (!src || broken) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <UserIcon />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt="avatar"
+      onError={() => setBroken(true)}
+      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid rgba(124,58,237,0.2)' }}
+    />
   );
 }
 
@@ -207,6 +228,7 @@ function AudioBlock({ label, mediaKey, onLoad }) {
 
 // ── Application Detail Panel ──────────────────────────────────────────────────
 function ApplicationDetail({ app, onClose, onAction }) {
+  const [showProfileCard, setShowProfileCard] = useState(false);
   const fmt = (v) => (v && String(v).trim()) ? v : '—';
 
   const submittedDate = app.submittedAt?.toDate
@@ -217,7 +239,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
     <div className="bvp-detail">
       <div className="bvp-detail-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="bvp-detail-avatar"><UserIcon /></div>
+          <Avatar uid={app.uid} gender={app.gender} size={44} />
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>
               {app.displayName || app.username}
@@ -230,6 +252,29 @@ function ApplicationDetail({ app, onClose, onAction }) {
           <GenderBadge gender={app.gender} />
         </div>
         <button className="bvp-icon-btn" onClick={onClose} title="Close"><CloseIcon /></button>
+      </div>
+
+      <div style={{ padding: '0 20px', marginTop: -6 }}>
+        <button
+          className="bvp-btn bvp-btn--secondary"
+          style={{ padding: '6px 14px', fontSize: 12 }}
+          onClick={() => setShowProfileCard(v => !v)}
+        >
+          <UserIcon /> View Profile
+        </button>
+        {showProfileCard && (
+          <div className="bvp-detail-section" style={{ marginTop: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Avatar uid={app.uid} gender={app.gender} size={56} />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>{app.displayName || app.username}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>@{app.username}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{fmt(app.email)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}><code>{app.uid}</code></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bvp-detail-grid">
@@ -551,11 +596,16 @@ export default function RJVerificationPanel({ currentUserProfile }) {
                 return (
                   <tr key={app.uid} className="bvp-table-row" onClick={() => openDetail(app)}>
                     <td>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
-                        {app.displayName || app.username}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar uid={app.uid} gender={app.gender} />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
+                            {app.displayName || app.username}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>@{app.username}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{app.country}</div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>@{app.username}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{app.country}</div>
                     </td>
                     <td><GenderBadge gender={app.gender} /></td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
