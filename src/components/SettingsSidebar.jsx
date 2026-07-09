@@ -535,7 +535,6 @@ const SettingsSidebar = ({
                         // Apply username styles immediately - visible to ALL users
                         setTimeout(() => {
                             applyGlobalUsernameStyles();
-                            updatePreviewElement();
 
                             // Force update all username elements in DOM
                             const usernameElements = document.querySelectorAll('.message-displayname, .message-username, .displayname, .username, .user-name, .sidebar-username, .dropdown-username, .friend-name, .blocked-user-name, .modern-profile-name');
@@ -2045,13 +2044,61 @@ const SettingsSidebar = ({
                 return (
                     <div className="st3-wrap">
 
-                        {/* ── HEADER: preview + reset ── */}
+                        {/* ── HEADER: REAL-TIME preview + reset ──
+                             Style is computed directly from React `settings` state so every
+                             control change triggers a re-render and the preview updates
+                             instantly — no DOM manipulation needed. */}
                         <div className="st3-header">
                             <div className="st3-preview-box">
                                 <span className="st3-live-dot" />
-                                <span className="username-preview-text" id="username-preview">
-                                    {loggedInUserProfile?.displayName || 'YourUsername'}
-                                </span>
+                                {(() => {
+                                    // Compute preview style from current settings state
+                                    const fontSize = Math.min(parseInt(settings.usernameFontSize) || 12, 16) + 4;
+                                    const decorations = [
+                                        settings.usernameIsUnderline ? 'underline' : '',
+                                        settings.usernameIsStrikethrough ? 'line-through' : '',
+                                    ].filter(Boolean).join(' ') || 'none';
+
+                                    const previewStyle = {
+                                        fontFamily: settings.usernameFontFamily && settings.usernameFontFamily !== 'inherit'
+                                            ? settings.usernameFontFamily : 'inherit',
+                                        fontSize: `${fontSize}px`,
+                                        fontWeight: settings.usernameIsBold ? 'bold' : 'normal',
+                                        fontStyle: settings.usernameIsItalic ? 'italic' : 'normal',
+                                        textDecoration: decorations,
+                                        textShadow: settings.usernameTextShadow || 'none',
+                                        letterSpacing: settings.usernameLetterSpacing || '0px',
+                                        animation: settings.usernameAnimationEnabled
+                                            ? `${settings.usernameAnimationType || 'pulse'} ${settings.usernameAnimationDuration || '2s'} infinite`
+                                            : 'none',
+                                        WebkitTextStroke: settings.usernameOutlineEnabled
+                                            ? `${settings.usernameOutlineSize || '1px'} ${settings.usernameOutlineColor || '#000000'}`
+                                            : '0px transparent',
+                                    };
+
+                                    if (settings.usernameGradientEnabled) {
+                                        const gradDir = settings.usernameGradientDirection === 'radial' ? 'circle' : (settings.usernameGradientDirection || 'to right');
+                                        const gradFn = settings.usernameGradientDirection === 'radial' ? 'radial-gradient' : 'linear-gradient';
+                                        previewStyle.background = `${gradFn}(${gradDir}, ${settings.usernameGradientStart || '#667eea'}, ${settings.usernameGradientEnd || '#764ba2'})`;
+                                        previewStyle.WebkitBackgroundClip = 'text';
+                                        previewStyle.backgroundClip = 'text';
+                                        previewStyle.WebkitTextFillColor = 'transparent';
+                                        previewStyle.color = 'transparent';
+                                    } else {
+                                        const col = settings.usernameFontColor || '#1e1b4b';
+                                        previewStyle.color = col;
+                                        previewStyle.WebkitTextFillColor = col;
+                                        previewStyle.background = 'none';
+                                        previewStyle.WebkitBackgroundClip = 'unset';
+                                        previewStyle.backgroundClip = 'unset';
+                                    }
+
+                                    return (
+                                        <span className="username-preview-text" id="username-preview" style={previewStyle}>
+                                            {loggedInUserProfile?.displayName || 'YourUsername'}
+                                        </span>
+                                    );
+                                })()}
                             </div>
                             <button className="st3-reset-btn" title="Reset to Default" onClick={() => {
                                 const d = { usernameFontSize:'12px', usernameFontColor:'#333333', usernameFontFamily:'inherit', usernameIsBold:false, usernameIsItalic:false, usernameIsUnderline:false, usernameIsStrikethrough:false, usernameGradientEnabled:false, usernameGradientStart:'#667eea', usernameGradientEnd:'#764ba2', usernameGradientDirection:'to right', usernameTextShadow:'none', usernameOutlineEnabled:false, usernameOutlineColor:'#000000', usernameOutlineSize:'1px', usernameAnimationEnabled:false, usernameAnimationType:'pulse', usernameAnimationDuration:'1s', usernameLetterSpacing:'0px' };
@@ -2090,7 +2137,7 @@ const SettingsSidebar = ({
                             <div className="st3-row">
                                 <span className="st3-label">Font</span>
                                 <div className="st3-sel-wrap">
-                                    <select className="st3-sel" value={settings.usernameFontFamily} onChange={e => { handleSettingChange('usernameFontFamily', e.target.value); updatePreviewElement(); }}>
+                                    <select className="st3-sel" value={settings.usernameFontFamily} onChange={e => handleSettingChange('usernameFontFamily', e.target.value)}>
                                         <option value="inherit">Default</option>
                                         <option value="Georgia">Georgia</option>
                                         <option value="Great Vibes">Great Vibes</option>
@@ -2108,6 +2155,12 @@ const SettingsSidebar = ({
                                         <option value="Courgette">Courgette</option>
                                         <option value="Sacramento">Sacramento</option>
                                         <option value="Ubuntu">Ubuntu</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                        <option value="Lato">Lato</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Source Sans 3">Source Sans 3</option>
+                                        <option value="Forte, 'Pinyon Script', cursive">Forte</option>
                                     </select>
                                     <svg className="st3-chev" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10Z"/></svg>
                                 </div>
@@ -2120,7 +2173,7 @@ const SettingsSidebar = ({
                                 <span className="st3-label">Size</span>
                                 <div className="st3-chips">
                                     {['8','10','11','12','13','14','15','16'].map(sz => (
-                                        <button key={sz} className={`st3-chip ${settings.usernameFontSize === sz+'px' ? 'on' : ''}`} onClick={() => { handleSettingChange('usernameFontSize', sz+'px'); updatePreviewElement(); }}>{sz}</button>
+                                        <button key={sz} className={`st3-chip ${settings.usernameFontSize === sz+'px' ? 'on' : ''}`} onClick={() => handleSettingChange('usernameFontSize', sz+'px')}>{sz}</button>
                                     ))}
                                 </div>
                             </div>
@@ -3699,11 +3752,8 @@ const SettingsSidebar = ({
             // Save username preferences
             await saveUsernameFontPreferences(currentUsernamePrefs);
 
-            // Apply username styles globally
+            // Apply username styles globally (preview auto-updates via React state)
             applyGlobalUsernameStyles();
-
-            // Update preview element
-            updatePreviewElement();
 
             console.log('✅ SettingsSidebar: USERNAME ONLY styles applied - visible to ALL users');
 
@@ -3783,12 +3833,12 @@ const SettingsSidebar = ({
         });
     };
 
-    // Apply styles when component mounts and whenever settings change
+    // Apply global chat styles when component mounts and whenever settings change
+    // (preview is now React-state-driven so no updatePreviewElement call needed here)
     React.useEffect(() => {
         if (auth.currentUser && loggedInUserProfile) {
             const timeoutId = setTimeout(() => {
                 applyUsernameStyles();
-                updatePreviewElement();
             }, 100);
 
             return () => clearTimeout(timeoutId);
@@ -3822,7 +3872,6 @@ const SettingsSidebar = ({
         if (isOpen && auth.currentUser && loggedInUserProfile) {
             setTimeout(() => {
                 applyUsernameStyles();
-                updatePreviewElement();
             }, 50);
         }
     }, [isOpen]);
