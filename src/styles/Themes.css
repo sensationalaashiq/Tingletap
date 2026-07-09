@@ -737,6 +737,38 @@ html.dark-theme-variant .modern-nav-btn.warning span { color: #fbbf24 !important
 html.dark-theme-variant .modern-quick-btn { background: rgba(255,255,255,0.04) !important; border-color: var(--border-accent) !important; color: var(--username-color) !important; }
 html.dark-theme-variant .modern-quick-btn span { color: var(--username-color) !important; }
 html.dark-theme-variant .modern-quick-btn svg { stroke: var(--icon-feature) !important; fill: none !important; }
+
+/* Account Management buttons (Reset Settings / Logout / Register Now) */
+html.dark-theme-variant .modern-management-btn.warning {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--username-color) !important;
+}
+html.dark-theme-variant .modern-management-btn.warning span { color: var(--username-color) !important; }
+html.dark-theme-variant .modern-management-btn.warning svg { stroke: var(--username-color) !important; fill: none !important; }
+html.dark-theme-variant .modern-management-btn.danger {
+  background: rgba(239,68,68,0.12) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+  color: #f87171 !important;
+}
+html.dark-theme-variant .modern-management-btn.danger span { color: #f87171 !important; }
+html.dark-theme-variant .modern-management-btn.danger svg { stroke: #f87171 !important; fill: none !important; }
+
+/* Admin Controls buttons (Admin Panel / Ban-Kick-Mute / Clear Chat) */
+html.dark-theme-variant .modern-admin-btn.admin {
+  background: rgba(239,68,68,0.12) !important;
+  border-color: rgba(239,68,68,0.3) !important;
+  color: #f87171 !important;
+}
+html.dark-theme-variant .modern-admin-btn.admin span { color: #f87171 !important; }
+html.dark-theme-variant .modern-admin-btn.admin svg { stroke: #f87171 !important; fill: none !important; }
+html.dark-theme-variant .modern-admin-btn.danger {
+  background: rgba(225,29,72,0.14) !important;
+  border-color: rgba(225,29,72,0.32) !important;
+  color: #fb7185 !important;
+}
+html.dark-theme-variant .modern-admin-btn.danger span { color: #fb7185 !important; }
+html.dark-theme-variant .modern-admin-btn.danger svg { stroke: #fb7185 !important; fill: none !important; }
 html.dark-theme-variant .toggle-slider { background: var(--border-color) !important; border-color: var(--border-secondary) !important; }
 html.dark-theme-variant .toggle-switch input:checked + .toggle-slider { background: linear-gradient(135deg, #10b981, #059669) !important; }
 html.dark-theme-variant .modern-toggle-slider { background: var(--border-color) !important; border-color: var(--border-secondary) !important; }
