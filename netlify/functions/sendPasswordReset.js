@@ -53,65 +53,106 @@ function buildResetHtml(name, email, link) {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @keyframes bar-slide{0%{background-position:-300% center}100%{background-position:300% center}}
-@keyframes logo-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.03)}}
-@keyframes star-twirl{0%,100%{transform:rotate(0deg) scale(.85);opacity:.45}50%{transform:rotate(72deg) scale(1.15);opacity:1}}
-@keyframes shield-pulse{0%,100%{box-shadow:0 0 0 0 rgba(109,40,217,.15),0 8px 28px rgba(109,40,217,.12)}50%{box-shadow:0 0 0 8px rgba(109,40,217,.06),0 14px 40px rgba(109,40,217,.2)}}
-@keyframes heart-beat{0%,100%{transform:scale(1);opacity:.9}25%{transform:scale(1.25);opacity:1}50%{transform:scale(1);opacity:.9}75%{transform:scale(1.18);opacity:1}}
-.bar{animation:bar-slide 4s linear infinite}
+@keyframes logo-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
+@keyframes star-twirl{0%,100%{transform:rotate(0deg) scale(.8);opacity:.35}50%{transform:rotate(72deg) scale(1.2);opacity:1}}
+@keyframes shield-pulse{0%,100%{box-shadow:0 0 0 0 rgba(109,40,217,.18),0 10px 32px rgba(109,40,217,.14)}50%{box-shadow:0 0 0 10px rgba(109,40,217,.06),0 16px 44px rgba(109,40,217,.22)}}
+@keyframes lock-appear{0%{transform:translateY(-8px) scale(.9);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes heart-beat{0%,100%{transform:scale(1)}25%{transform:scale(1.18)}75%{transform:scale(1.1)}}
+@keyframes badge-pop{0%{transform:scale(0) rotate(-20deg);opacity:0}70%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes sparkle{0%,100%{opacity:.2;transform:scale(.7) rotate(0deg)}50%{opacity:1;transform:scale(1.1) rotate(30deg)}}
+.bar{animation:bar-slide 3.5s linear infinite}
 .logo-img{animation:logo-float 3.5s ease-in-out infinite;display:block}
 .star-a{animation:star-twirl 2.8s ease-in-out infinite}
-.star-b{animation:star-twirl 3.4s ease-in-out infinite .5s}
-.shield{animation:shield-pulse 2.4s ease-in-out infinite}
-.heart{animation:heart-beat 1.4s ease-in-out infinite;transform-origin:center;display:block}
-@media(max-width:600px){.outer{padding:16px 8px!important}.inner{padding:24px 18px 22px!important}.cta-btn{font-size:15px!important;padding:14px 24px!important}}
+.star-b{animation:star-twirl 3.6s ease-in-out infinite .7s}
+.shield-wrap{animation:shield-pulse 2.4s ease-in-out infinite}
+.lock-icon{animation:lock-appear .6s cubic-bezier(.34,1.56,.64,1) .3s both}
+.heart{animation:heart-beat 1.6s ease-in-out infinite;transform-origin:center;display:block}
+.heart-b{animation:heart-beat 1.6s ease-in-out infinite .5s;transform-origin:center;display:block}
+.badge{animation:badge-pop .55s cubic-bezier(.34,1.56,.64,1) .9s both}
+.sparkle-a{animation:sparkle 2.4s ease-in-out infinite}
+.sparkle-b{animation:sparkle 3.2s ease-in-out infinite .9s}
+@media(max-width:600px){.outer{padding:16px 8px!important}.inner{padding:28px 18px 24px!important}.cta-btn{font-size:15px!important;padding:15px 24px!important;width:100%!important;box-sizing:border-box!important}}
 </style></head>
 <body style="margin:0;padding:0;background:#ede9f9;font-family:'Inter',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(155deg,#f2effe 0%,#ede9f9 55%,#e8e2f6 100%);min-height:100vh;">
-<tr><td class="outer" align="center" style="padding:28px 12px;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;width:100%;background:#ffffff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1),0 2px 12px rgba(109,40,217,.06);overflow:hidden;">
-  <tr><td style="height:4px;padding:0;line-height:0;"><div class="bar" style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;font-size:0;"></div></td></tr>
-  <tr><td align="center" style="padding:32px 28px 20px;background:linear-gradient(180deg,#faf8ff,#fff);">
-    <table cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="padding-right:14px;vertical-align:middle;"><svg class="star-a" width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/></svg></td>
-      <td><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="display:block;width:80px;height:80px;border-radius:18px;border:0;"/></td>
-      <td style="padding-left:14px;vertical-align:middle;"><svg class="star-b" width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1.2"/></svg></td>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(155deg,#f3eeff 0%,#ede9f9 50%,#e8e4f6 100%);min-height:100vh;">
+<tr><td class="outer" align="center" style="padding:32px 12px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;border:1px solid rgba(139,92,246,.16);box-shadow:0 20px 64px rgba(109,40,217,.13),0 4px 20px rgba(109,40,217,.07);overflow:hidden;">
+  <tr><td style="height:5px;padding:0;line-height:0;font-size:0;"><div class="bar" style="height:5px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#f472b6,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;"></div></td></tr>
+  <tr><td align="center" style="padding:36px 32px 22px;background:linear-gradient(180deg,#faf8ff 0%,#f5f0ff 50%,#fff 100%);">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;"><tr>
+      <td style="padding-right:18px;vertical-align:middle;"><svg class="star-a" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
+      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(192,132,252,.12));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
+      <td style="padding-left:18px;vertical-align:middle;"><svg class="star-b" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
     </tr></table>
-    <div style="font-size:26px;font-weight:900;letter-spacing:.3px;margin:12px 0 3px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
-    <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">Password Reset</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="color:#a78bca;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;font-weight:700;">Password Reset</div>
   </td></tr>
-  <tr><td style="padding:0 28px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.2),transparent);"></div></td></tr>
-  <tr><td class="inner" style="padding:28px 32px 26px;">
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 24px;"><tr><td align="center">
-      <div class="shield" style="display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ede9fe,#f5f3ff);">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
-          <defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs>
-          <path d="M12 2L4 6v6c0 5.25 3.5 9.75 8 11 4.5-1.25 8-5.75 8-11V6L12 2z" fill="url(#sg)" opacity=".15"/>
-          <path d="M12 2L4 6v6c0 5.25 3.5 9.75 8 11 4.5-1.25 8-5.75 8-11V6L12 2z" stroke="url(#sg)" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
-          <rect x="8.5" y="11" width="7" height="6" rx="1.5" fill="url(#sg)"/>
-          <path d="M10 11V9a2 2 0 014 0v2" stroke="url(#sg)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-          <circle cx="12" cy="14" r="1" fill="white" opacity=".9"/>
-        </svg>
+  <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.22),transparent);"></div></td></tr>
+  <tr><td class="inner" style="padding:32px 36px 28px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 28px;"><tr><td align="center">
+      <div style="position:relative;display:inline-block;">
+        <div style="position:absolute;inset:-10px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.12) 0%,transparent 70%);"></div>
+        <div class="shield-wrap" style="display:inline-flex;align-items:center;justify-content:center;width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#f0ebff,#ede9fe);border:1.5px solid rgba(139,92,246,.18);position:relative;">
+          <div class="lock-icon" style="display:flex;align-items:center;justify-content:center;">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="shG2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs>
+              <path d="M12 2L4 6v6c0 5.25 3.5 9.75 8 11 4.5-1.25 8-5.75 8-11V6L12 2z" fill="url(#shG2)" opacity=".12"/>
+              <path d="M12 2L4 6v6c0 5.25 3.5 9.75 8 11 4.5-1.25 8-5.75 8-11V6L12 2z" stroke="url(#shG2)" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+              <rect x="8.5" y="11" width="7" height="6.5" rx="1.5" fill="url(#shG2)"/>
+              <path d="M10 11V9a2 2 0 014 0v2" stroke="url(#shG2)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="12" cy="14.5" r="1.1" fill="white" opacity=".9"/>
+            </svg>
+          </div>
+          <svg class="sparkle-a" width="12" height="12" viewBox="0 0 24 24" style="position:absolute;top:4px;right:6px;"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
+          <svg class="sparkle-b" width="9" height="9" viewBox="0 0 24 24" style="position:absolute;bottom:6px;left:5px;"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#a855f7"/></svg>
+        </div>
       </div>
     </td></tr></table>
-    <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#2d1b4e;text-align:center;line-height:1.3;">Password Reset Request</h1>
-    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">We received a request to reset the password for your TingleTap account.</p>
-    <p style="margin:0 0 6px;font-size:15px;color:#3d2565;font-weight:600;">Hi ${n},</p>
-    <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">Someone requested a password reset for the account associated with <strong style="color:#7c3aed;">${e}</strong>. If this was you, click the button below to create a new password.</p>
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;width:100%;"><tr><td align="center">
-      <a href="${l}" target="_blank" class="cta-btn" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 50%,#c084fc 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 36px;border-radius:14px;box-shadow:0 8px 28px rgba(109,40,217,.35);letter-spacing:.2px;">Reset My Password →</a>
+    <h1 style="margin:0 0 10px;font-size:23px;font-weight:800;color:#2d1b4e;text-align:center;letter-spacing:-.4px;line-height:1.3;">Password Reset Request</h1>
+    <p style="margin:0 0 24px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.65;">We received a request to reset the password for your TingleTap account.</p>
+    <p style="margin:0 0 7px;font-size:15px;color:#3d2565;font-weight:700;">Hi ${n},</p>
+    <p style="margin:0 0 26px;font-size:14px;color:#6b5b8a;line-height:1.7;">Someone requested a password reset for the account associated with <strong style="color:#7c3aed;background:rgba(124,58,237,.07);padding:1px 6px;border-radius:6px;">${e}</strong>. If this was you, click the button below to set a new secure password.</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 26px;width:100%;"><tr><td align="center">
+      <a href="${l}" target="_blank" class="cta-btn" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 55%,#c084fc 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:17px 40px;border-radius:16px;box-shadow:0 10px 32px rgba(109,40,217,.38),0 2px 8px rgba(109,40,217,.2);letter-spacing:.3px;width:100%;box-sizing:border-box;text-align:center;">&#128273;&nbsp; Reset My Password</a>
     </td></tr></table>
-    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(139,92,246,.15);border-radius:10px;padding:12px 16px;margin-bottom:22px;">
-      <p style="margin:0;font-size:13px;color:#5b21b6;font-weight:600;">Link expires in 1 hour</p>
-      <p style="margin:2px 0 0;font-size:12px;color:#7e6ca8;line-height:1.5;">For your security, this reset link is only valid for 60 minutes from when it was requested.</p>
+    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(139,92,246,.15);border-radius:14px;padding:16px 18px;margin-bottom:20px;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td width="38" style="vertical-align:top;padding-top:1px;"><div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#ede9fe,#f5f0ff);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(124,58,237,.1);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#9333ea" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="#9333ea" stroke-width="1.8" stroke-linecap="round"/></svg></div></td>
+        <td style="padding-left:12px;"><p style="margin:0;font-size:13px;color:#5b21b6;font-weight:700;">Link expires in 1 hour</p><p style="margin:3px 0 0;font-size:12px;color:#7e6ca8;line-height:1.55;">For your security, this reset link is only valid for 60 minutes from when it was requested.</p></td>
+      </tr></table>
     </div>
-    <div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:10px;padding:12px 16px;margin-bottom:6px;">
-      <p style="margin:0;font-size:13px;color:#b91c1c;font-weight:600;">Didn't request this?</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#9b1c1c;line-height:1.5;">If you did not request a password reset, please ignore this email. Your account remains secure and no changes have been made.</p>
+    <div style="background:linear-gradient(135deg,#faf8ff,#f5f0ff);border-radius:16px;padding:18px 20px;margin-bottom:20px;border:1px solid rgba(139,92,246,.1);">
+      <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:1.5px;">&#128274; Password Security Tips</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right:8px;vertical-align:top;padding-top:1px;"><div style="width:18px;height:18px;border-radius:50%;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></td><td style="font-size:12.5px;color:#6b5b8a;line-height:1.5;">Use at least 8 characters — longer is better</td></tr></table></td></tr>
+        <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right:8px;vertical-align:top;padding-top:1px;"><div style="width:18px;height:18px;border-radius:50%;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></td><td style="font-size:12.5px;color:#6b5b8a;line-height:1.5;">Mix uppercase, lowercase, numbers &amp; symbols</td></tr></table></td></tr>
+        <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right:8px;vertical-align:top;padding-top:1px;"><div style="width:18px;height:18px;border-radius:50%;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7c3aed" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></td><td style="font-size:12.5px;color:#6b5b8a;line-height:1.5;">Never reuse passwords across different sites</td></tr></table></td></tr>
+      </table>
     </div>
-    <p style="margin:16px 0 0;font-size:11px;color:#b09dcc;text-align:center;line-height:1.5;">If the button above doesn't work, copy and paste this link into your browser:<br><span style="color:#9333ea;word-break:break-all;">${l}</span></p>
+    <div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.13);border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td width="30" style="vertical-align:top;padding-top:1px;"><div style="width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17v.5" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/><path d="M12 2L2 20h20L12 2z" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></td>
+        <td style="padding-left:10px;"><p style="margin:0;font-size:13px;color:#b91c1c;font-weight:700;">Didn't request this?</p><p style="margin:4px 0 0;font-size:12px;color:#9b1c1c;line-height:1.6;">If you did not request a password reset, please ignore this email. Your account remains secure and no changes have been made.</p></td>
+      </tr></table>
+    </div>
   </td></tr>
-  ${PREMIUM_FOOTER}
-  <tr><td style="height:4px;padding:0;line-height:0;"><div class="bar" style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;font-size:0;"></div></td></tr>
+  <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.16),transparent);"></div></td></tr>
+  <tr><td align="center" style="padding:20px 32px 28px;">
+    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated security email from TingleTap. Please do not reply.</p>
+    <p style="margin:0 0 10px;font-size:11px;color:#c4b5fd;line-height:1.55;">If the button above doesn't work, copy and paste this URL into your browser:</p>
+    <p style="margin:0 0 18px;font-size:10px;color:#b09ed4;word-break:break-all;">${l}</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 12px;"><tr>
+      <td style="padding-right:8px;vertical-align:middle;"><svg class="heart" width="16" height="16" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg></td>
+      <td style="vertical-align:middle;"><span style="font-size:11.5px;font-weight:800;color:#7c3aed;">Developed by Adrashtra</span><span style="font-size:11.5px;color:#d8b4fe;margin:0 6px;">&middot;</span><span style="font-size:11.5px;font-weight:800;color:#db2777;">Loved by India</span></td>
+      <td style="padding-left:8px;vertical-align:middle;"><svg class="heart-b" width="16" height="16" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg></td>
+    </tr></table>
+    <div class="badge" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f5f0ff,#ede9fe);border-radius:24px;padding:7px 18px;border:1px solid rgba(139,92,246,.18);box-shadow:0 3px 12px rgba(124,58,237,.1);">
+      <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
+      <span style="font-size:11.5px;font-weight:800;color:#7c3aed;letter-spacing:.05em;">TingleTap — Secure &amp; Premium</span>
+      <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
+    </div>
+    <p style="margin:14px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 TingleTap&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+  </td></tr>
+  <tr><td style="height:5px;padding:0;line-height:0;font-size:0;"><div class="bar" style="height:5px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#f472b6,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;"></div></td></tr>
 </table></td></tr></table>
 </body></html>`;
 }

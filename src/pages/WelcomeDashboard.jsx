@@ -427,9 +427,9 @@ const WelcomeDashboard = () => {
         sessionStorage.removeItem('tt_page_toast');
         const d = JSON.parse(raw);
         if (d.type === 'login') {
-          setTimeout(() => pt.success('Welcome to TingleTap! So good to have you back. 🎉'), 300);
+          setTimeout(() => pt.login('Welcome back to TingleTap! Great to see you again. 🚀'), 300);
         } else if (d.type === 'login_guest') {
-          setTimeout(() => pt.info('Exploring as a guest — register to unlock all features! 🚀'), 300);
+          setTimeout(() => pt.rocket('Exploring as a guest — register to unlock all features!'), 300);
         }
       }
     } catch {}

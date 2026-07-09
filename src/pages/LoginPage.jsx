@@ -110,7 +110,7 @@ const LoginPage = () => {
         if (d.type === 'logout') {
           setTimeout(() => pt.logout('You have been logged out. See you soon! 👋'), 200);
         } else if (d.type === 'email_verified') {
-          setTimeout(() => pt.success('Email verified! You can now log in. ✅'), 200);
+          setTimeout(() => pt.emailVerified('Email verified! Your account is now fully active. Log in to continue.'), 200);
         }
       }
     } catch {}
