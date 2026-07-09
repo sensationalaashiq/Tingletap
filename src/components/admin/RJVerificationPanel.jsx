@@ -20,6 +20,7 @@ import { db } from '../../firebase/config';
 import { doc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Badges } from '../../data/Badges';
 import { getDefaultAvatarUrl } from '../../utils/roleUtils';
+import { useLivePhotoURL, useLiveDisplayName } from '../../utils/liveUsernames';
 import './BadgeVerificationPanel.css';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -43,6 +44,10 @@ const STATUS_BADGE = {
   resubmit_requested:{ label: 'Resubmit',    bg: '#dbeafe', color: '#1e40af' },
 };
 
+// Resolves the applicant's CURRENT username live so admin verification lists
+// reflect a rename instantly instead of the name copy on the application doc.
+const LiveAppName = ({ uid, fallback }) => useLiveDisplayName(uid, fallback) || fallback || 'Unknown';
+
 function StatusBadge({ status }) {
   const cfg = STATUS_BADGE[status] || { label: status, bg: '#f1f5f9', color: '#475569' };
   return (
@@ -54,7 +59,11 @@ function StatusBadge({ status }) {
 
 function Avatar({ uid, gender, size = 36 }) {
   const [broken, setBroken] = useState(false);
-  const src = uid ? getDefaultAvatarUrl(uid, gender) : '';
+  // RJ applications don't store their own photo — the DP shown here is the
+  // user's actual uploaded account avatar (users/{uid}.photoURL), resolved
+  // live. Only fall back to a generated avatar when nothing was uploaded.
+  const livePhotoURL = useLivePhotoURL(uid);
+  const src = (!broken && livePhotoURL) ? livePhotoURL : (uid ? getDefaultAvatarUrl(uid, gender) : '');
   if (!src || broken) {
     return (
       <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -242,7 +251,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
           <Avatar uid={app.uid} gender={app.gender} size={44} />
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>
-              {app.displayName || app.username}
+              <LiveAppName uid={app.uid} fallback={app.displayName || app.username} />
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>@{app.username}</div>
           </div>
@@ -267,7 +276,7 @@ function ApplicationDetail({ app, onClose, onAction }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Avatar uid={app.uid} gender={app.gender} size={56} />
               <div>
-                <div style={{ fontWeight: 800, fontSize: 14 }}>{app.displayName || app.username}</div>
+                <div style={{ fontWeight: 800, fontSize: 14 }}><LiveAppName uid={app.uid} fallback={app.displayName || app.username} /></div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>@{app.username}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{fmt(app.email)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}><code>{app.uid}</code></div>
@@ -600,7 +609,7 @@ export default function RJVerificationPanel({ currentUserProfile }) {
                         <Avatar uid={app.uid} gender={app.gender} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
-                            {app.displayName || app.username}
+                            <LiveAppName uid={app.uid} fallback={app.displayName || app.username} />
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>@{app.username}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{app.country}</div>

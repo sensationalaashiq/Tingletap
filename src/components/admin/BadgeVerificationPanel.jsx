@@ -17,7 +17,12 @@ import { pt } from '../../utils/premiumToast';
 import { db } from '../../firebase/config';
 import { doc, updateDoc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Badges } from '../../data/Badges';
+import { useLiveDisplayName } from '../../utils/liveUsernames';
 import './BadgeVerificationPanel.css';
+
+// Resolves the applicant's CURRENT username live so the badge verification
+// list/detail reflect a rename instantly instead of the stale doc copy.
+const LiveAppName = ({ uid, fallback }) => useLiveDisplayName(uid, fallback) || fallback || 'Unknown';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const ShieldIcon    = () => <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 2L2 7l1 5a9 9 0 0 0 9 7 9 9 0 0 0 9-7l1-5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
@@ -865,7 +870,7 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
                   <tr key={app.uid} className="bvp-table-row" onClick={() => openDetail(app)}>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
-                        {app.displayName || app.username}
+                        <LiveAppName uid={app.uid} fallback={app.displayName || app.username} />
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>@{app.username}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{app.country}</div>

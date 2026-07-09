@@ -13,6 +13,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import { useLiveDisplayName } from '../utils/liveUsernames';
+
+// Resolves a uid's CURRENT username live so the room userlist and its
+// dropdown reflect a rename (self or admin) instantly.
+const SidebarLiveName = ({ uid, fallback }) => useLiveDisplayName(uid, fallback) || fallback || 'Anonymous';
 import { isTodayBirthday, BIRTHDAY_BADGE_SVG } from '../utils/birthdayUtils';
 import { getRoomSlug } from '../utils/roomSlug';
 import { parseDurationMs } from '../utils/modExpiryService';
@@ -834,7 +839,7 @@ const Sidebar = ({
                             data-user-uid={userItem.uid}
                             data-user-id={userItem.uid}
                           >
-                            {userItem.displayName || 'Anonymous'}
+                            <SidebarLiveName uid={userItem.uid} fallback={userItem.displayName} />
                           </span>
                           {userItem.badge && badges[userItem.badge] && (
                             <span className={`inline-badge badge-${userItem.badge}`} title={badges[userItem.badge].name}
@@ -986,7 +991,7 @@ const Sidebar = ({
                                 data-role={userItem.badge ? 'badge_holder' : (userItem.role || 'user')}
                                 data-badge={userItem.badge ? 'true' : 'false'}
                                 data-gender={userItem.gender || 'male'}
-                              >{userItem.displayName}</div>
+                              ><SidebarLiveName uid={userItem.uid} fallback={userItem.displayName} /></div>
                               <div className="sb-apd-role">{roleLabel}</div>
                             </div>
                           </div>

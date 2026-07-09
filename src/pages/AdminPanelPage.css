@@ -730,10 +730,11 @@
 .luxury-security-card h3 svg { width: 18px; height: 18px; color: #7c3aed; }
 .luxury-banned-ips-list { display: flex; flex-direction: column; gap: 10px; }
 .luxury-banned-ip-item {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   padding: 11px 14px; border-radius: 12px; gap: 10px;
   background: rgba(239,68,68,0.04);
   border: 1.5px solid rgba(239,68,68,0.10);
+  max-width: 100%;
 }
 .luxury-ip-info { display: flex; flex-direction: column; gap: 2px; }
 .luxury-ip-reason { font-size: 11px; color: #6b7280; }

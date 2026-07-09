@@ -60,6 +60,30 @@ export function subscribeToLiveUser(uid, cb) {
 }
 
 /**
+ * React hook: resolves a uid's CURRENTLY uploaded photoURL in real time.
+ * Returns `null` while unknown or if the user never uploaded one — callers
+ * should fall back to a generated avatar in that case, never a random one
+ * when an upload actually exists.
+ * @param {string|undefined|null} uid
+ */
+export function useLivePhotoURL(uid) {
+  const [photoURL, setPhotoURL] = useState(null);
+
+  useEffect(() => {
+    if (!uid) {
+      setPhotoURL(null);
+      return;
+    }
+    const unsub = subscribeToLiveUser(uid, (entry) => {
+      setPhotoURL(entry.photoURL || null);
+    });
+    return unsub;
+  }, [uid]);
+
+  return photoURL;
+}
+
+/**
  * React hook: resolves a uid's CURRENT display name in real time.
  * Falls back to `fallbackName` until the live value is known, and stays on
  * the fallback if the uid has no profile doc (e.g. deleted/guest user).

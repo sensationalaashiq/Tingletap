@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { useLiveDisplayName } from '../utils/liveUsernames';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp } from 'firebase/firestore';
@@ -27,6 +28,11 @@ import '../components/RoyalTrustBadge.css';
 import './AdminPanelPage.css';
 
 // Extract just the brand name from a device model string for admin panel display
+// Resolves a uid's CURRENT username live so admin lists (reports, security
+// center, feedback, modlogs) reflect a rename (self or admin) instantly
+// instead of showing the name copy that was stored at write time.
+const LiveAdminUserName = ({ uid, fallback }) => useLiveDisplayName(uid, fallback) || fallback || 'Unknown';
+
 const extractDeviceBrand = (model) => {
   if (!model || model === 'Unknown Device') return 'Unknown';
   if (/^Apple |^iPhone|^iPad/i.test(model)) return 'Apple';
@@ -204,6 +210,7 @@ const AdminPanelPage = () => {
   const [confirmUnbanIPId, setConfirmUnbanIPId]         = useState(null); // ipBan.id pending unban
   const [confirmDeleteIPId, setConfirmDeleteIPId]       = useState(null); // ipBan.id pending delete
   const [confirmDeleteViolId, setConfirmDeleteViolId]   = useState(null); // violation.id pending delete
+  const [confirmDeleteReportId, setConfirmDeleteReportId] = useState(null); // report.id pending delete
 
   const fetchIPGeo = async (ip) => {
     if (!ip || ip === 'Unknown' || ip === 'N/A' || ipGeoCache[ip] !== undefined) return;
@@ -2958,11 +2965,11 @@ const AdminPanelPage = () => {
                           </span>
                           <span className="luxury-ip-by">by {ipBan.bannedBy}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%', flexBasis: '100%', maxWidth: '100%' }}>
 
                           {/* ── Unban IP ── */}
                           {confirmUnbanIPId === ipBan.id ? (
-                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:10, padding:'5px 10px', fontSize:12 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:10, padding:'5px 10px', fontSize:12, flexWrap:'wrap', maxWidth:'100%' }}>
                               <span style={{ color:'#15803d', fontWeight:700 }}>Unban this IP?</span>
                               <button
                                 onClick={async () => {
@@ -3015,7 +3022,7 @@ const AdminPanelPage = () => {
 
                           {/* ── Delete Record ── */}
                           {confirmDeleteIPId === ipBan.id ? (
-                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'5px 10px', fontSize:12 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'5px 10px', fontSize:12, flexWrap:'wrap', maxWidth:'100%' }}>
                               <span style={{ color:'#b91c1c', fontWeight:700 }}>Delete permanently?</span>
                               <button
                                 onClick={async () => {
@@ -3205,7 +3212,7 @@ const AdminPanelPage = () => {
                                 </svg>
                                 <div>
                                   <span className="rpt-party-label">Reported By</span>
-                                  <span className="rpt-party-name">{r.reportedBy?.name || r.reportedBy?.displayName || 'Anonymous'}</span>
+                                  <span className="rpt-party-name"><LiveAdminUserName uid={r.reportedBy?.uid} fallback={r.reportedBy?.name || r.reportedBy?.displayName || 'Anonymous'} /></span>
                                 </div>
                               </div>
                               <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18,flexShrink:0,opacity:.4}}><path fill="#6b7280" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"/></svg>
@@ -3216,7 +3223,7 @@ const AdminPanelPage = () => {
                                 <div>
                                   <span className="rpt-party-label">Reported User</span>
                                   <span className="rpt-party-name">
-                                    {r.reportedUser?.name || r.reportedUser?.displayName || '—'}
+                                    <LiveAdminUserName uid={r.reportedUser?.uid} fallback={r.reportedUser?.name || r.reportedUser?.displayName || '—'} />
                                     {r.reportedUser?.isGuest && (
                                       <span style={{marginLeft:5,background:'rgba(139,92,246,.15)',color:'#7c3aed',border:'1px solid rgba(139,92,246,.3)',borderRadius:4,fontSize:9,fontWeight:700,padding:'1px 5px',verticalAlign:'middle'}}>GUEST</span>
                                     )}
@@ -3335,6 +3342,38 @@ const AdminPanelPage = () => {
                                   </>
                                 )}
                               </>
+                            )}
+
+                            {/* Delete Report — inline confirm (no window.confirm) */}
+                            {confirmDeleteReportId === r.id ? (
+                              <div style={{ display:'flex', alignItems:'center', gap:6, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'5px 10px', fontSize:12, flexWrap:'wrap', maxWidth:'100%' }}>
+                                <span style={{ color:'#b91c1c', fontWeight:700 }}>Delete report?</span>
+                                <button
+                                  onClick={async () => {
+                                    setConfirmDeleteReportId(null);
+                                    try {
+                                      await deleteDoc(doc(db, 'reports', r.id));
+                                      pt.success('Report deleted.');
+                                    } catch (e) {
+                                      pt.error('Delete failed: ' + e.message);
+                                    }
+                                  }}
+                                  style={{ padding:'3px 10px', fontSize:12, fontWeight:800, background:'#dc2626', color:'#fff', border:'none', borderRadius:7, cursor:'pointer' }}
+                                >Delete</button>
+                                <button
+                                  onClick={() => setConfirmDeleteReportId(null)}
+                                  style={{ padding:'3px 10px', fontSize:12, fontWeight:700, background:'transparent', color:'#6b7280', border:'1px solid #d1d5db', borderRadius:7, cursor:'pointer' }}
+                                >Cancel</button>
+                              </div>
+                            ) : (
+                              <button
+                                className="rpt-btn"
+                                onClick={() => setConfirmDeleteReportId(r.id)}
+                                style={{ background:'linear-gradient(135deg,#ef4444,#dc2626)', color:'#fff', border:'none' }}
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" style={{width:14,height:14}}><path fill="#fff" d="M19,4h-3.5l-1-1h-5l-1,1H5v2h14M6,19a2,2 0 0,0 2,2h8a2,2 0 0,0 2-2V7H6v12z"/></svg>
+                                Delete
+                              </button>
                             )}
                           </div>
 
