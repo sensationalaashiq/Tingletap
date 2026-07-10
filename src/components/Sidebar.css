@@ -135,13 +135,14 @@
   cursor: pointer;
 }
 
-/* Name + role pill on same row */
+/* Name + role pill — wraps when badge pill is long (e.g. "SAPPHIRE GODDESS") */
 .sb-name-role-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   max-width: 100%;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  row-gap: 1px;
   min-width: 0;
 }
 
@@ -162,17 +163,20 @@
 }
 
 .sb-role-pill {
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 20px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   display: inline-block;
   width: fit-content;
   border: 1px solid rgba(0,0,0,0.06);
   flex-shrink: 0;
   white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sb-profile-status {
@@ -338,10 +342,10 @@
 .sb-user-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: 10px;
-  margin-bottom: 2px;
+  gap: 7px;
+  padding: 5px 6px 5px 7px;
+  border-radius: 9px;
+  margin-bottom: 1px;
   transition: background 0.15s;
   position: relative;
   border-left: 3px solid transparent;
@@ -365,8 +369,8 @@
 .sb-user-avatar-wrap:disabled { cursor: default; }
 
 .sb-list-avatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid rgba(124,58,237,0.2);
@@ -393,7 +397,7 @@
 .sb-user-name-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -414,13 +418,16 @@
 }
 
 .sb-user-role-pill {
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 8px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   flex-shrink: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sb-user-status {
@@ -438,16 +445,10 @@
   gap: 3px;
 }
 
-/* ── Mod action buttons (on user rows) ───────────────────────────────────── */
+/* ── Mod action buttons — hidden in sidebar, use the popup menu instead ─── */
 .sb-mod-actions {
-  display: flex;
-  gap: 3px;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s;
+  display: none !important;
 }
-.sb-user-item:hover .sb-mod-actions { opacity: 1; }
-.sb-mod-actions.sb-mod-visible { opacity: 1; }
 
 .sb-row-selected {
   background: rgba(124,58,237,0.09) !important;
@@ -679,32 +680,27 @@
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  margin-left: 3px;
+  margin-left: 2px;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
 }
 .sb-list-username .inline-badge svg,
 .sb-profile-name .inline-badge svg,
 .sb-apd-name .inline-badge svg {
-  width: 20px !important;
-  height: 20px !important;
-  vertical-align: -4px;
+  width: 18px !important;
+  height: 18px !important;
+  vertical-align: -3px;
 }
 
-/* Emerald Empress / Sapphire Goddess have more internal SVG whitespace than
-   the other badges, so they need to render visually bigger to read the same
-   size as the others. A transform:scale() only paints larger without
-   growing the actual layout box, so the parent's overflow:hidden (needed for
-   username ellipsis truncation) was clipping the icon on every side. Instead,
-   size the box itself — both the wrapping span and the svg — so the bigger
-   render is fully accounted for in layout and never gets cropped. */
+/* Emerald Empress / Sapphire Goddess — reduced from 31px to 24px.
+   Still sized via box (not scale) so overflow:hidden never clips them. */
 .sb-list-username .inline-badge.badge-emerald_empress,
 .sb-profile-name .inline-badge.badge-emerald_empress,
 .sb-apd-name .inline-badge.badge-emerald_empress,
 .sb-list-username .inline-badge.badge-sapphire_goddess,
 .sb-profile-name .inline-badge.badge-sapphire_goddess,
 .sb-apd-name .inline-badge.badge-sapphire_goddess {
-  width: 31px;
-  height: 31px;
+  width: 24px;
+  height: 24px;
   justify-content: center;
 }
 .sb-list-username .inline-badge.badge-emerald_empress svg,
@@ -713,9 +709,9 @@
 .sb-list-username .inline-badge.badge-sapphire_goddess svg,
 .sb-profile-name .inline-badge.badge-sapphire_goddess svg,
 .sb-apd-name .inline-badge.badge-sapphire_goddess svg {
-  width: 31px !important;
-  height: 31px !important;
-  vertical-align: -9px;
+  width: 24px !important;
+  height: 24px !important;
+  vertical-align: -6px;
 }
 
 /* Latest achievement chip — small icon next to DP/username */
