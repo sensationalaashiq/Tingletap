@@ -224,12 +224,12 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     // the sender's own view). When savedMsgStyle is null, let CSS fully control
     // color/weight/size so every theme renders consistently for everyone.
     const pStyle = savedMsgStyle ? {
-        fontSize: savedMsgStyle.fontSize || '11px',
-        color: savedMsgStyle.fontColor || 'inherit',
-        fontFamily: savedMsgStyle.fontFamily || 'inherit',
-        fontWeight: savedMsgStyle.isBold ? 'bold' : 'normal',
-        fontStyle: savedMsgStyle.isItalic ? 'italic' : 'normal',
-        textDecoration: msgDecorations.length > 0 ? msgDecorations.join(' ') : 'none',
+        ...(savedMsgStyle.fontSize   ? { fontSize: savedMsgStyle.fontSize }     : {}),
+        ...(savedMsgStyle.fontColor  ? { color:    savedMsgStyle.fontColor }     : {}),
+        ...(savedMsgStyle.fontFamily ? { fontFamily: savedMsgStyle.fontFamily } : {}),
+        fontWeight:     savedMsgStyle.isBold       ? 'bold'   : 'normal',
+        fontStyle:      savedMsgStyle.isItalic     ? 'italic' : 'normal',
+        textDecoration: msgDecorations.length > 0  ? msgDecorations.join(' ') : 'none',
         margin: '3px 0',
         lineHeight: '1.4',
         wordWrap: 'break-word',
@@ -814,24 +814,31 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             )
                         )}
 
-                        {/* Reaction bar */}
-                        {Object.keys(reactions).length > 0 && (
-                            <div className="rxn-bar">
-                                {Object.entries(reactions)
-                                    .filter(([, uids]) => Array.isArray(uids) && uids.length > 0)
-                                    .map(([emoji, uids]) => (
-                                        <button
-                                            key={emoji}
-                                            className={`rxn-chip${currentUser && uids.includes(currentUser.uid) ? ' rxn-chip--mine' : ''}`}
-                                            onClick={() => handleReact(emoji)}
-                                            title={`${uids.length} reaction${uids.length !== 1 ? 's' : ''}`}
-                                        >
-                                            <span className="rxn-chip-emoji">{emoji}</span>
-                                            <span className="rxn-chip-count">{uids.length}</span>
-                                        </button>
-                                    ))}
-                            </div>
-                        )}
+                        {/* Reaction bar — only for tier2+ (badge-holder/staff); hidden for guest & member */}
+                        {Object.keys(reactions).length > 0 && (() => {
+                            const _barBadge = loggedInUserProfile?.badge;
+                            const _barRole  = loggedInUserProfile?.role;
+                            const _barGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
+                            const _barTier  = getBadgeTier(_barBadge, _barRole, _barGuest);
+                            if (_barTier === 'guest' || _barTier === 'member') return null;
+                            return (
+                                <div className="rxn-bar">
+                                    {Object.entries(reactions)
+                                        .filter(([, uids]) => Array.isArray(uids) && uids.length > 0)
+                                        .map(([emoji, uids]) => (
+                                            <button
+                                                key={emoji}
+                                                className={`rxn-chip${currentUser && uids.includes(currentUser.uid) ? ' rxn-chip--mine' : ''}`}
+                                                onClick={() => handleReact(emoji)}
+                                                title={`${uids.length} reaction${uids.length !== 1 ? 's' : ''}`}
+                                            >
+                                                <span className="rxn-chip-emoji">{emoji}</span>
+                                                <span className="rxn-chip-count">{uids.length}</span>
+                                            </button>
+                                        ))}
+                                </div>
+                            );
+                        })()}
 
                     </div>
                     
