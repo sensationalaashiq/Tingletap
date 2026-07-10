@@ -437,6 +437,15 @@
   line-height: 1.5;
 }
 
+/* Guest role pills (Stree/Purush/Navrang) — premium gradient chip, tightened
+   size/spacing so the longer guest labels fit like every other role pill. */
+.sb-user-role-pill--guest {
+  font-size: 5.5px;
+  padding: 1.5px 4px;
+  letter-spacing: 0.02em;
+  max-width: 78px;
+}
+
 .sb-user-status {
   font-size: 10px;
   color: #7c3aed;

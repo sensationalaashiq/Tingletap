@@ -230,8 +230,13 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
   // Letter spacing
   customStyles += `letter-spacing: ${userSettings.usernameLetterSpacing} !important;\n`;
 
-  // Text shadow
-  customStyles += `text-shadow: ${userSettings.usernameTextShadow || 'none'} !important;\n`;
+  // Text shadow — if the user didn't pick a custom shadow, add an automatic
+  // dual-tone halo (light + dark) so any chosen username colour stays legible
+  // across every theme (Light, Dark, Burgundy, Aurora, etc.) instead of only
+  // the theme the user happened to be on when they picked the colour.
+  const AUTO_READABILITY_HALO = '0 0 3px rgba(255,255,255,0.55), 0 0 5px rgba(0,0,0,0.55)';
+  const chosenShadow = userSettings.usernameTextShadow;
+  customStyles += `text-shadow: ${(chosenShadow && chosenShadow !== 'none') ? chosenShadow : AUTO_READABILITY_HALO} !important;\n`;
 
   // Outline
   if (userSettings.usernameOutlineEnabled) {

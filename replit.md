@@ -1,3 +1,14 @@
+# Recent Changes (July 10, 2026) — Re-import Setup + Theme Contrast/Guest Pill Fixes (Session 11)
+
+**Re-import setup**: Project was re-imported from zip; `node_modules` was missing (vite/express not found) and a stale process was squatting on port 5000. Ran `npm install`, killed the stale process, restarted both workflows (`Start application`, `Email Center API`) — both run cleanly now. **This project's Firebase config lives only in Netlify's environment variables (not requested/stored in this Replit dev environment)**, so the app preview here renders blank until `VITE_FIREBASE_*` values are added as Replit secrets — the user declined providing them since deploys go through Netlify/GitHub, not Replit. Deploying/running from Replit itself will need those secrets added first.
+
+No UI redesign, no schema changes. Verified with `npm run build` (passes) + workflow restart.
+
+✅ **Applied**:
+1. **Custom username/message colors now legible on every theme**: `usernamePreferences.js` and `HomePage.jsx` (`ChatMessageTranslatedBody` pStyle, PMAP presets `matte-luxe`/`royal-script`/`velvet-shadow`/`minimal-mono`, and the free `textColor` branch in `buildSS`) now auto-apply a dual-tone (light+dark) text-shadow halo whenever no custom shadow was chosen. This keeps arbitrary user-picked colors (including near-black legacy presets) readable against Light, Dark, Burgundy, Aurora, and any future theme background, without touching users who already picked their own shadow.
+2. **Emoji reactions for guests/registered users**: confirmed already correctly hidden via `getBadgeTier()` in `src/utils/badgeTier.js` (`guest`/`member` tiers return `null` for the trigger) — no code change was needed here.
+3. **Guest badge pills (Stree/Purush/Navrang) — premium + smaller**: `Sidebar.jsx`'s `getRolePill()` now takes `isGuest`/`gender` and returns a gendered premium gradient chip (pink/blue/purple) instead of flat grey, wired at both the top profile card and the user list. New `.sb-user-role-pill--guest` CSS modifier (smaller font/padding) makes the longer guest labels fit like other role pills in the sidebar.
+
 # Recent Changes (July 6, 2026) — Real Room Count + Fake Stats Removal (Session 10)
 
 No UI redesign, no schema changes. Verified with `npm run build` + workflow restart + console check.
