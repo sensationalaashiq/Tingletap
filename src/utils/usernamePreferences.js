@@ -99,7 +99,7 @@ export const saveUsernameFontPreferences = async (preferences) => {
       usernameFontSize: preferences.usernameFontSize || '12px',
       usernameFontColor: preferences.usernameFontColor || '#000000',
       usernameFontFamily: preferences.usernameFontFamily || 'inherit',
-      usernameIsBold: preferences.usernameIsBold || false,
+      usernameIsBold: preferences.usernameIsBold !== undefined ? preferences.usernameIsBold : true,
       usernameIsItalic: preferences.usernameIsItalic || false,
       usernameIsUnderline: preferences.usernameIsUnderline || false,
       usernameIsStrikethrough: preferences.usernameIsStrikethrough || false,
@@ -185,19 +185,25 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     window.userUsernameStyles[userId] = userSettings;
   }
 
-  // Check if user has custom styles
+  // Check if user has TRULY custom styles — only inject CSS when something is
+  // genuinely non-default. Previously `usernameIsBold ||` was always truthy
+  // (bold=true is the DEFAULT), causing every user with any Firestore prefs doc
+  // to get CSS injected even with fully-default settings. That CSS overrode the
+  // Georgia font-family and the dark --username-color CSS variable, making
+  // names look faded/different from users who have no prefs doc at all.
+  const DEFAULT_COLORS = new Set(['#000000', '#1f2937', '#1a1a1a', '']);
   const hasCustomStyles = 
-    userSettings.usernameFontSize !== '12px' ||
-    userSettings.usernameFontColor !== '#000000' ||
-    userSettings.usernameFontFamily !== 'inherit' ||
-    userSettings.usernameIsBold ||
+    (userSettings.usernameFontSize && userSettings.usernameFontSize !== '12px' && userSettings.usernameFontSize !== '11px') ||
+    (userSettings.usernameFontColor && !DEFAULT_COLORS.has(userSettings.usernameFontColor.toLowerCase())) ||
+    (userSettings.usernameFontFamily && userSettings.usernameFontFamily !== 'inherit') ||
+    userSettings.usernameIsBold === false ||       // only custom when explicitly NOT bold
     userSettings.usernameIsItalic ||
     userSettings.usernameIsUnderline ||
     userSettings.usernameIsStrikethrough ||
-    userSettings.usernameTextShadow !== 'none' ||
+    (userSettings.usernameTextShadow && userSettings.usernameTextShadow !== 'none') ||
     userSettings.usernameGradientEnabled ||
     userSettings.usernameOutlineEnabled ||
-    userSettings.usernameLetterSpacing !== '0px' ||
+    (userSettings.usernameLetterSpacing && userSettings.usernameLetterSpacing !== '0px') ||
     userSettings.usernameAnimationEnabled;
 
   // Remove existing styles for this user
@@ -214,21 +220,30 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
   // Build comprehensive CSS for this user's username
   let customStyles = '';
 
-  // Font basics
+  // Font basics — only inject properties that are genuinely non-default so we
+  // don't override the CSS class's Georgia font-family, bold weight, or dark
+  // color for users who have effectively-default Firestore prefs.
   const fontSize = Math.min(parseInt(userSettings.usernameFontSize) || 12, 16);
   customStyles += `font-size: ${fontSize}px !important;\n`;
-  customStyles += `font-family: ${userSettings.usernameFontFamily !== 'inherit' ? userSettings.usernameFontFamily : 'inherit'} !important;\n`;
-  customStyles += `font-weight: ${userSettings.usernameIsBold ? 'bold' : 'normal'} !important;\n`;
+  // Only override font-family when explicitly set — 'inherit' means "use CSS default (Georgia)"
+  if (userSettings.usernameFontFamily && userSettings.usernameFontFamily !== 'inherit') {
+    customStyles += `font-family: ${userSettings.usernameFontFamily} !important;\n`;
+  }
+  customStyles += `font-weight: ${userSettings.usernameIsBold === false ? 'normal' : 'bold'} !important;\n`;
   customStyles += `font-style: ${userSettings.usernameIsItalic ? 'italic' : 'normal'} !important;\n`;
 
   // Text decorations
   const decorations = [];
   if (userSettings.usernameIsUnderline) decorations.push('underline');
   if (userSettings.usernameIsStrikethrough) decorations.push('line-through');
-  customStyles += `text-decoration: ${decorations.length > 0 ? decorations.join(' ') : 'none'} !important;\n`;
+  if (decorations.length > 0) {
+    customStyles += `text-decoration: ${decorations.join(' ')} !important;\n`;
+  }
 
-  // Letter spacing
-  customStyles += `letter-spacing: ${userSettings.usernameLetterSpacing} !important;\n`;
+  // Letter spacing — only inject when non-zero
+  if (userSettings.usernameLetterSpacing && userSettings.usernameLetterSpacing !== '0px') {
+    customStyles += `letter-spacing: ${userSettings.usernameLetterSpacing} !important;\n`;
+  }
 
   // Text shadow — if the user didn't pick a custom shadow, add an automatic
   // dual-tone halo (light + dark) so any chosen username colour stays legible

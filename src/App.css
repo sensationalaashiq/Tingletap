@@ -957,8 +957,8 @@ html body .theme-light .user-font-styled {
 }
 
 .message-displayname {
-  font-size: 11px;
-  font-weight: bold;
+  font-size: 13px;
+  font-weight: 700;
   font-family: 'Georgia', serif;
   color: var(--username-color);
   transition: color 0.3s ease;
