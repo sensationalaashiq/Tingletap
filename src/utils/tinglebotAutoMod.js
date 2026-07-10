@@ -55,30 +55,37 @@ const targetingState        = new Map();
 
 // Warning → Mute → Kick are the ONLY automatic actions. No auto-ban.
 export const CFG = {
-    // Flood / repeat (spam)
-    FLOOD_COUNT          : 5,
-    FLOOD_WINDOW_MS      : 9000,
-    REPEAT_COUNT         : 3,
-    REPEAT_SIMILARITY    : 0.80,
-    REPEAT_WINDOW_MS     : 90000,
+    // ── Flood / repeat (spam) ───────────────────────────────────────────────
+    // Raised so that active small-group chat (4-10 users) doesn't get flagged.
+    // 5 msgs/9s was too strict — genuine chatters easily hit it.
+    FLOOD_COUNT          : 10,          // was 5
+    FLOOD_WINDOW_MS      : 7000,        // 10 messages in 7 seconds = true flooding
+    // Repeat: only catch near-identical copy-paste, not similar short phrases.
+    // "haan bhai" vs "haan yaar" are 80% similar but NOT spam — raise threshold.
+    REPEAT_COUNT         : 6,           // was 3
+    REPEAT_SIMILARITY    : 0.94,        // was 0.80 — near-duplicate only
+    REPEAT_WINDOW_MS     : 120000,      // 2 minutes window (was 90s)
+    REPEAT_MIN_LENGTH    : 8,           // don't flag repeats on very short acks ("ok","haan","lol")
     // Mass-advertise
     AD_WINDOW_MS         : 5 * 60 * 1000,
-    AD_COUNT             : 3,
+    AD_COUNT             : 4,           // was 3
     // Harassment
     HARASSMENT_WINDOW_MS : 15 * 60 * 1000,
-    HARASSMENT_MIN_HITS  : 3,   // same target must be hit at least this many times
-    // Escalation thresholds (cumulative violation count, per user per session)
-    DELETE_WARN_AT       : 1,
-    MUTE_5_AT            : 2,
-    MUTE_30_AT           : 3,
-    MUTE_3H_AT           : 4,
-    MUTE_24H_AT          : 5,
-    KICK_AT              : 6,
-    // TTLs
+    HARASSMENT_MIN_HITS  : 4,           // was 3 — require more evidence
+    // ── Escalation thresholds (cumulative violations this session) ───────────
+    // Pushed later so users get more chances before mutes/kicks fire.
+    // Violation 1 = warn only (no delete), 2 = delete+warn, 3 = 5-min mute …
+    DELETE_WARN_AT       : 2,           // was 1
+    MUTE_5_AT            : 3,           // was 2
+    MUTE_30_AT           : 4,           // was 3
+    MUTE_3H_AT           : 5,           // was 4
+    MUTE_24H_AT          : 6,           // was 5
+    KICK_AT              : 9,           // was 6
+    // TTLs / cooldowns
     NOTICE_TTL_MS        : 1 * 60 * 1000,
     CLAIM_TTL_MS         : 30 * 60 * 1000,
-    NOTICE_COOLDOWN_MS   : 60 * 1000,
-    ACTION_COOLDOWN_MS   : 8 * 1000,
+    NOTICE_COOLDOWN_MS   : 90 * 1000,  // was 60s — less notice spam
+    ACTION_COOLDOWN_MS   : 20 * 1000,  // was 8s — wait longer between actions
     PERSIST_AT           : 1,
 };
 
@@ -161,19 +168,29 @@ const NON_CONSENSUAL_RX = [
 ];
 
 // §E2 — Threats of violence / intimidation / self-harm incitement
+// KEPT NARROW: "gonna beat you" / "I will destroy you" / "I'll find you" are
+// everyday gaming/banter phrases — they are NOT flagged. Only flag credible
+// real-world threats: self-harm commands, specific lethal threats ("kill"/"stab"),
+// location-based real-world threats, or explicit death wishes.
 const VIOLENCE_THREAT_RX = [
-    /\bkill\s*(your|ur|u)\s*self\b/i, /\bkys\b/i,
-    /\bgo\s*(die|hang|kill\s*yourself|rope\s*yourself|end\s*yourself)\b/i,
+    // Self-harm incitement (always serious)
+    /\bkill\s*(your|ur|u)\s*self\b/i,
+    /\bkys\b/i,
+    /\bgo\s*(hang\s*yourself|kill\s*yourself|rope\s*yourself|end\s*yourself)\b/i,
     /\b(end|take)\s*your\s*(own\s*)?(life|existence)\b/i,
-    /\bi\s*(will|gonna|am\s*going\s*to|wil|wll)\s*(kill|hurt|rape|beat|stab|destroy|find|track)\s*(you|u|ur|ye)\b/i,
-    /\b(i\s*know\s*where\s*you\s*live|i\s*will\s*find\s*you|i('ll|ll)\s*come\s*find\s*you)\b/i,
-    /\byou\s*(should|deserve)\s*(to\s*)?(die|suffer|get\s*hurt|burn|rot)\b/i,
-    /\bhope\s*you\s*(die|suffer|get\s*(cancer|aids|sick|hurt|raped))\b/i,
+    // Lethal threats only — "kill"/"rape"/"stab"/"murder" (not "beat"/"hurt"/"destroy" = banter)
+    /\bi\s*(will|gonna|am\s*going\s*to|wil|wll)\s*(kill|rape|stab|murder)\s*(you|u|ur|ye)\b/i,
+    // Real-world location threats
+    /\bi\s*know\s*where\s*you\s*live\b/i,
+    /\bi('ll|ll|will)\s*come\s*to\s*your\s*(house|home|place|school|college)\b/i,
+    // Wishing death / serious irreversible harm
+    /\byou\s*(should|deserve)\s*(to\s*)?(die|get\s*raped)\b/i,
+    /\bhope\s*you\s*(die|get\s*(cancer|raped|murdered))\b/i,
+    // Hindi-specific real death threats
     /\bjaan\s*se\s*maar(unga|dunga|te\s*hain)\b/i,
     /\bkaat\s*(dunga|denge|dugi)\b/i,
-    /\btujhe\s*(maar|dhundh|kaat|uda)\s*(dunga|denge)\b/i,
-    /\bghar\s*aa\s*(jaunga|jaoonga)\b/i,
-    /\b(will|gonna|going\s*to)\s*(beat|smash|pound|destroy|crush)\s*(you|ur|your\s*face|you\s*up)\b/i,
+    /\btujhe\s*(maar|kaat)\s*(dunga|denge)\b/i,
+    /\bghar\s*aake\s*(maarunga|maar\s*dunga)\b/i,
 ];
 
 // §E3 — Doxxing / personal-information leaks
@@ -210,18 +227,24 @@ const HATE_TERROR_RX = [
 ];
 
 // §E5 — Scam / phishing / malware / illegal-activity promotion
+// NOTE: patterns here must NOT catch everyday phrases ("you win bhai!" in gaming,
+// "free data" as a tip, etc.). Each pattern requires clear scam-intent signals.
 const SCAM_PHISHING_RX = [
     /\bverify\s*your\s*(account|card|identity|number|email|kyc|aadhaar|pan)\b/i,
     /\benter\s*(your\s*)?(otp|pin|password|credit\s*card|cvv|aadhaar|pan)\b/i,
     /\bshare\s*(your\s*)?(otp|pin|password|bank\s*detail|cvv)\b/i,
     /\b(kyc|aadhaar|pan)\s*(update|verify|complete|submit|required)\b/i,
-    /\b(you\s*(won|win|are\s*the\s*winner|have\s*won|are\s*selected))\b/i,
-    /\b(lottery|jackpot|sweepstake|lucky\s*draw|lucky\s*winner)\b/i,
-    /\bclaim\s*your\s*(prize|reward|gift|money|cash|voucher|coupon)\b/i,
-    /\bfree\s*(recharge|gift|iphone|money|cash|data|prize|reward|ps5|xbox)\b/i,
-    /\b(guaranteed|100\s*%\s*)(profit|returns?|income|growth)\b/i,
-    /\bdouble\s*your\s*(money|investment|returns?|income)\b/i,
-    /\b(bitcoin|btc|crypto|usdt)\s*(send|transfer|earn|invest|double|mine)\b/i,
+    // "you won a lottery" / "lucky draw winner" — requires prize/lottery context, NOT casual "you win bhai"
+    /\b(you\s*(have\s*won|are\s*the\s*winner|are\s*selected\s*as))\b/i,
+    /\b(lottery|jackpot|sweepstake)\s*(winner|result|prize|claim|link)\b/i,
+    /\b(lucky\s*draw|lucky\s*winner)\s*(declared|result|prize|claim)\b/i,
+    // "claim your prize/money" — must have action verb + reward noun together
+    /\bclaim\s*your\s*(prize|reward|money|cash|voucher|coupon)\s*(now|here|today|click|register)\b/i,
+    // "free iphone / free money" — only flag when paired with scam action words
+    /\bfree\s*(iphone|money|cash|prize|reward|ps5|xbox)\s*(click|register|sign\s*up|whatsapp|telegram|dm|link)\b/i,
+    /\b(guaranteed|100\s*%\s*guaranteed)\s*(profit|returns?|income)\s*(per\s*(day|week|month))?\b/i,
+    /\bdouble\s*your\s*(money|investment)\s*(in\s*\d+\s*(day|hour|week))?\b/i,
+    /\b(bitcoin|btc|crypto|usdt)\s*(send|transfer|invest|double)\s*(and\s*get|to\s*earn|for\s*profit)\b/i,
     /\b(buy|sell)\s*(drugs|weapons|guns|firearms|explosives|fake\s*(id|passport|currency))\b/i,
     /\b(pirated|cracked)\s*(software|movie|game)\s*(download|link)\b/i,
 ];
@@ -427,14 +450,22 @@ const detectSpam = (uid, text, now) => {
     }
 
     // Repeat / rapid copy-paste
+    // Skip repeat check for very short messages — short acks like "ok", "haan",
+    // "lol", "bhai" will naturally look similar to each other but are NOT spam.
     const recent = (userRecentTexts.get(uid) || []).filter(e => now - e.ts < CFG.REPEAT_WINDOW_MS);
-    const matches = recent.filter(e => strSimilarity(e.text, text) >= CFG.REPEAT_SIMILARITY).length;
-    recent.push({ text, ts: now });
+    const trimmed = text.trim();
+    if (trimmed.length >= CFG.REPEAT_MIN_LENGTH) {
+        const matches = recent.filter(e => strSimilarity(e.text, trimmed) >= CFG.REPEAT_SIMILARITY).length;
+        if (matches >= CFG.REPEAT_COUNT) {
+            recent.push({ text: trimmed, ts: now });
+            if (recent.length > 40) recent.shift();
+            userRecentTexts.set(uid, recent);
+            return { detected: true, type: 'spam', severity: 'medium', label: 'Repeated / copy-pasted messages' };
+        }
+    }
+    recent.push({ text: trimmed, ts: now });
     if (recent.length > 40) recent.shift();
     userRecentTexts.set(uid, recent);
-    if (matches >= CFG.REPEAT_COUNT) {
-        return { detected: true, type: 'spam', severity: 'medium', label: 'Repeated / copy-pasted messages' };
-    }
 
     // Mass advertising: repeated ad-signal messages within a window
     if (AD_SIGNAL_RX.test(text)) {

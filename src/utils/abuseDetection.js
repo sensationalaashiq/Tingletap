@@ -15,8 +15,10 @@ import { detectModerationContent } from './tinglebotAutoMod';
 const offenseHistory = new Map();
 
 const OFFENSE_CONFIG = {
-  WARNING_THRESHOLD: 1,
-  MUTE_THRESHOLD: 2,
+  // Raised thresholds — pre-send wrapper should only act on genuine repeat
+  // safety violations, not catch normal users on the first or second hit.
+  WARNING_THRESHOLD: 2,   // was 1
+  MUTE_THRESHOLD: 3,      // was 2
   MUTE_DURATIONS: [
     5 * 60 * 1000,
     15 * 60 * 1000,
@@ -26,7 +28,7 @@ const OFFENSE_CONFIG = {
   // NOTE: there is intentionally NO ban threshold/action here. Kick is the
   // maximum automatic action this module can take, matching the AutoMod
   // engine's policy of Warning → Mute → Kick only (never an automatic ban).
-  KICK_THRESHOLD: 5,
+  KICK_THRESHOLD: 7,      // was 5
   OFFENSE_COOLDOWN_MS: 7 * 24 * 60 * 60 * 1000,
 };
 
