@@ -5,6 +5,7 @@
 - [Role display labels](role-labels.md) — shared getRoleDisplayLabel() in src/utils/roleUtils.js; owner→Godfather, admin→High Council, moderator→Guardian, user→Member, badge→badge name, guest+male→Purush, guest+female→Stree, guest+trans→Navrang
 - [Guest avatar & gender consistency](guest-avatar-gender.md) — photoURL must use user.uid (not displayName) as hash seed; buildGuestProfile must regenerate uid-based URL if stored one is from randomuser.me
 - [TingleBot AutoMod architecture](tinglebot-automod.md) — staff-only enforcement, no-auto-ban policy, owner exemption defense-in-depth, abuseDetection.js delegates to shared classifier
+- [TingleBot notice direct Firestore write](tinglebot-notice-direct-write.md) — notices bypass Netlify function; direct addDoc inside claimEnforcement block; targetUid filtering + self-notice dedup fixed
 - [Firestore Rules](firestore-rules.md) — explicit rules for bannedIPs/bannedDevices (auth read), warnings_announcements (auth read/staff write), modLogs (staff), rooms/automod (staff); moderators read settings/config; catch-all allows owner/admin only
 - [Moderation expiry contract](moderation-expiry.md) — modal computes expiresAt (absolute ISO); writers use expiresAt directly; never run parseDurationMs on an ISO timestamp
 - [Kick modal expiry pattern](kick-expiry-pattern.md) — handleRoomClick must call isKickExpired() BEFORE showing BanKickModal; expired kicks auto-clean silently and allow entry. Never show modal for already-expired kicks.

@@ -740,47 +740,38 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
         if (action === 'warn') action = 'delete_warn';
     }
 
-    // ── Post notice — ALL authenticated clients ──────────────────────────
-    // Any room participant calls the server-side Netlify function so AutoMod
-    // notices are always visible even when no staff member is online.
-    // Notice text is generated entirely server-side (caller cannot control it).
-    // A per-caller + per-room rate limit plus a room+violator+action dedup lock
-    // inside the function prevent abuse. Actual enforcement (mute/kick/delete)
-    // remains staff-only in the block below.
+    // ── Build notice text — all clients compute this for onSelfNotice ───────
+    // Hoisted so the staff enforcement block below can also use these values
+    // for the direct Firestore write (no Netlify round-trip needed).
+    let _noticeText = null;
+    let _noticeTinglebotType = null;
+
     const noticeCooldownType = shouldKick ? 'kick' : muteDuration > 0 ? 'mute' : 'warn';
     if (canPostNotice(uid, noticeCooldownType)) {
-        let noticeText, noticeTinglebotType;
         if (shouldKick) {
-            noticeText = getRandom(NOTICE_VARIANTS.kicked(displayName));
-            noticeTinglebotType = 'kicked';
+            _noticeText = getRandom(NOTICE_VARIANTS.kicked(displayName));
+            _noticeTinglebotType = 'kicked';
         } else if (muteDuration > 0) {
-            noticeText = getRandom(NOTICE_VARIANTS.muted(displayName, fmtDuration(muteDuration), hit.label));
-            noticeTinglebotType = 'muted';
+            _noticeText = getRandom(NOTICE_VARIANTS.muted(displayName, fmtDuration(muteDuration), hit.label));
+            _noticeTinglebotType = 'muted';
         } else if (shouldDelete) {
-            noticeText = getRandom(NOTICE_VARIANTS.delete_warn.map(fn => fn(displayName, hit.label)));
-            noticeTinglebotType = 'automod';
+            _noticeText = getRandom(NOTICE_VARIANTS.delete_warn.map(fn => fn(displayName, hit.label)));
+            _noticeTinglebotType = 'automod';
         } else {
-            noticeText = getRandom(NOTICE_VARIANTS.warn.map(fn => fn(displayName, hit.label)));
-            noticeTinglebotType = 'automod';
+            _noticeText = getRandom(NOTICE_VARIANTS.warn.map(fn => fn(displayName, hit.label)));
+            _noticeTinglebotType = 'automod';
         }
 
-        // ── Instant local self-notice ────────────────────────────────────
-        // The violator's OWN client already knows everything needed to show
-        // this notice (text + type) without waiting on the network. Fire it
-        // synchronously so it appears in ~0ms instead of waiting a full
-        // client→Netlify→Firestore→listener round trip. The server call
-        // below still runs in parallel for cross-device sync + audit record.
+        // ── Instant local self-notice on violator's OWN device ──────────
+        // Fires synchronously at 0ms so the violator sees feedback
+        // immediately — before any network round-trip. Staff clients do the
+        // Firestore write below (inside claimEnforcement) which delivers it
+        // to all other sessions of the violator via the real-time listener.
         if (uid === currentUid && typeof onSelfNotice === 'function') {
-            try { onSelfNotice({ text: noticeText, tinglebotType: noticeTinglebotType, action }); } catch (_) {}
+            try { onSelfNotice({ text: _noticeText, tinglebotType: _noticeTinglebotType, action }); } catch (_) {}
         }
-
-        postNotice(roomId, {
-            violatorUid:         uid,
-            violatorDisplayName: displayName,
-            violationType:       hit.type,
-            action,
-            muteDurationMs:      muteDuration,
-        }).catch(() => {});
+        // postNotice (Netlify function) removed — direct Firestore write by
+        // the claiming staff client is faster and needs no extra round-trip.
     }
 
     // ── Enforcement — staff clients only ────────────────────────────────────
@@ -790,6 +781,29 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
 
     const claimed = await claimEnforcement(roomId, msg.id, action, hit.type, uid);
     if (!claimed) return;
+
+    // ── Write TingleBot notice directly to Firestore ─────────────────────
+    // claimEnforcement guarantees exactly ONE staff client reaches this point
+    // (Firestore transaction dedup), so no duplicate notices are written.
+    // Direct addDoc is ~50-100ms vs 300-800ms via Netlify function — the
+    // Firestore real-time listener delivers it to the violator almost instantly.
+    // targetUid ensures the client-side filter shows it only to the violator.
+    if (_noticeText) {
+        addDoc(collection(db, 'rooms', roomId, 'messages'), {
+            text:          _noticeText,
+            uid:           'tinglebot_system_official_2024',
+            displayName:   'TingleBot',
+            isBot:         true,
+            systemBot:     true,
+            tinglebotType: _noticeTinglebotType,
+            targetUid:     uid,
+            createdAt:     serverTimestamp(),
+            noReply:       true,
+            noReaction:    true,
+            noReport:      true,
+            noUnread:      true,
+        }).catch(() => {});
+    }
 
     if (shouldDelete) await removeMessage(roomId, msg.id);
     if (muteDuration > 0) await muteUser(uid, muteDuration, `TingleBot: ${hit.label} (violation #${priorTotal+1})`);

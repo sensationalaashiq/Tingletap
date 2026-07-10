@@ -1022,7 +1022,12 @@ const MessageList = React.memo(({
                 // Also check tinglebotType for join/leave messages written by regular users
                 // (those use the real uid but must still render as TingleBot strips).
                 const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
-                if (isTinglebotMsg) return true;
+                if (isTinglebotMsg) {
+                    // targetUid messages are private — only show to the intended recipient.
+                    // join/leave and broadcast notices have no targetUid and show to everyone.
+                    if (msg.targetUid && msg.targetUid !== loggedInUserProfile?.uid) return false;
+                    return true;
+                }
                 // Block list filters apply only to real user messages
                 if (blockedUsers.includes(msg.uid)) return false;
                 if (usersWhoBlockedMe.includes(msg.uid)) return false;
@@ -7439,7 +7444,25 @@ const HomePage = ({ user, roomIdOverride }) => {
                       </header>
 
                     <MessageList
-                        messages={messages}
+                        messages={(() => {
+                            // While a local self-notice is active (instant, 0ms feedback),
+                            // suppress the matching Firestore-persisted copy so the violator
+                            // doesn't see two identical notices. When the local notice expires
+                            // (60s timer in setLocalAutoModNotices cleanup), the Firestore
+                            // message shows naturally on the next render.
+                            const activeLocalTypes = localAutoModNotices.length > 0
+                                ? new Set(localAutoModNotices.map(n => n.tinglebotType).filter(Boolean))
+                                : null;
+                            const base = activeLocalTypes?.size > 0
+                                ? messages.filter(m =>
+                                    !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
+                                  )
+                                : messages;
+                            if (!localAutoModNotices.length) return base;
+                            return [...base, ...localAutoModNotices].sort(
+                                (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
+                            );
+                        })()}
                         blockedUsers={blockedUsers}
                         usersWhoBlockedMe={usersWhoBlockedMe}
                         loggedInUserProfile={loggedInUserProfile}
