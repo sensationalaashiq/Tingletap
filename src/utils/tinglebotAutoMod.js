@@ -679,7 +679,7 @@ export const postNotice = async (roomId, { violatorUid, violatorDisplayName, vio
  *   3. Spam / flood / mass-advertise (behavioural, room-agnostic)
  * Ordinary profanity/slang/banter/flirting/roleplay never reaches an action.
  */
-export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = false, roomName = '') => {
+export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = false, roomName = '', onSelfNotice = null) => {
     if (!msg?.id || !roomId) return;
     if (processedMsgIds.has(msg.id)) return;
     processedMsgIds.add(msg.id);
@@ -763,6 +763,17 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
             noticeText = getRandom(NOTICE_VARIANTS.warn.map(fn => fn(displayName, hit.label)));
             noticeTinglebotType = 'automod';
         }
+
+        // ── Instant local self-notice ────────────────────────────────────
+        // The violator's OWN client already knows everything needed to show
+        // this notice (text + type) without waiting on the network. Fire it
+        // synchronously so it appears in ~0ms instead of waiting a full
+        // client→Netlify→Firestore→listener round trip. The server call
+        // below still runs in parallel for cross-device sync + audit record.
+        if (uid === currentUid && typeof onSelfNotice === 'function') {
+            try { onSelfNotice({ text: noticeText, tinglebotType: noticeTinglebotType, action }); } catch (_) {}
+        }
+
         postNotice(roomId, {
             violatorUid:         uid,
             violatorDisplayName: displayName,

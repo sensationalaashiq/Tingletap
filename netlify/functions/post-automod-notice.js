@@ -355,6 +355,9 @@ export const handler = async (event) => {
         isBot:        true,
         systemBot:    true,
         tinglebotType,
+        // Only the violator should ever see this notice — the client filters
+        // any automod/muted/kicked notice whose targetUid isn't its own uid.
+        targetUid:    violatorUid,
         createdAt:    admin.firestore.FieldValue.serverTimestamp(),
         noReply:      true,
         noReaction:   true,

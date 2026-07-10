@@ -1078,6 +1078,14 @@ const HomePage = ({ user, roomIdOverride }) => {
     const roomId = roomIdOverride || roomIdParam;
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
+    // Instant, self-only AutoMod notices — rendered locally the moment a
+    // violation is detected on THIS client's own message, without waiting
+    // for the Netlify function round trip. Kept separate from `messages`
+    // (Firestore-backed) so a snapshot replace never wipes it out early.
+    const [localAutoModNotices, setLocalAutoModNotices] = useState([]);
+    // Guards against showing the same violation twice once the server-persisted
+    // notice arrives shortly after the instant local one.
+    const selfNoticeGuardRef = useRef({});
     const [newMessage, setNewMessage] = useState('');
     const [textareaRows, setTextareaRows] = useState(1);
     const [roomName, setRoomName] = useState('');
@@ -3068,13 +3076,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                     .map(d => messageCacheRef.current.get(d.id))
                     .filter(Boolean);
 
+                const myUid = auth.currentUser?.uid ||
+                    (localStorage.getItem('isGuest') === 'true'
+                        ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
+                        : null);
+
                 // Play notification sounds for newly arriving messages (skip initial batch load)
                 if (prevMsgCount > 0 && newMessages.length > prevMsgCount) {
                     const latest = newMessages[newMessages.length - 1];
-                    const myUid = auth.currentUser?.uid ||
-                        (localStorage.getItem('isGuest') === 'true'
-                            ? (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').uid; } catch { return null; } })()
-                            : null);
                     if (latest && latest.uid !== myUid) {
                         // Never play notification sounds for TingleBot system messages
                         const _latestIsBot = latest.isBot || latest.systemBot ||
@@ -3109,7 +3118,30 @@ const HomePage = ({ user, roomIdOverride }) => {
                             // "nobody is here") to avoid dropping legitimate moderation.
                             const senderStillInRoom = !window.onlineUsers || window.onlineUsers.size === 0 || window.onlineUsers.has(m.uid);
                             if (senderStillInRoom) {
-                                processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName).catch(() => {});
+                                processAutoMod(m, roomId, myUid, _autoModIsStaff, roomName, (m.uid === myUid) ? (notice) => {
+                                    // Instant local render — 0 network wait. Guard prevents the
+                                    // server-persisted copy (arriving ~1 round trip later) from
+                                    // being shown a second time for the same violation.
+                                    const guardKey = notice.tinglebotType;
+                                    selfNoticeGuardRef.current[guardKey] = Date.now();
+                                    const noticeId = `local_automod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                                    setLocalAutoModNotices(prev => [...prev, {
+                                        id: noticeId,
+                                        uid: 'tinglebot_system_official_2024',
+                                        displayName: 'TingleBot',
+                                        isBot: true,
+                                        systemBot: true,
+                                        tinglebotType: notice.tinglebotType,
+                                        text: notice.text,
+                                        targetUid: myUid,
+                                        _localEphemeral: true,
+                                        createdAt: { toMillis: () => Date.now() },
+                                        noReply: true, noReaction: true, noReport: true, noUnread: true,
+                                    }]);
+                                    setTimeout(() => {
+                                        setLocalAutoModNotices(prev => prev.filter(n => n.id !== noticeId));
+                                    }, 60 * 1000);
+                                } : null).catch(() => {});
                             }
                         }
                     });

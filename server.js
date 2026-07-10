@@ -859,6 +859,9 @@ app.post('/api/post-automod-notice', async (req, res) => {
     const msgRef = await adminDb.collection('rooms').doc(roomId).collection('messages').add({
       text: noticeText, uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
       isBot: true, systemBot: true, tinglebotType,
+      // Only the violator should ever see this notice — the client filters
+      // any automod/muted/kicked notice whose targetUid isn't its own uid.
+      targetUid: violatorUid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       noReply: true, noReaction: true, noReport: true, noUnread: true,
     });
