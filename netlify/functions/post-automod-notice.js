@@ -3,17 +3,20 @@
  * ────────────────────────────────────────────────────────
  * Writes a TingleBot AutoMod notice to Firestore using Firebase Admin SDK.
  *
- * Security model (v2):
+ * Security model (v3 — latency-optimized):
  *  1. Firebase ID token verified via Admin SDK (not JWT-only decode).
- *  2. Caller role checked in Firestore — must be owner / admin / moderator.
- *  3. Client sends violation signal only (violationType + action + uids).
+ *     checkRevoked is intentionally OFF (extra Google round-trip; not worth
+ *     the latency for a non-destructive notice endpoint).
+ *  2. Client sends violation signal only (violationType + action + uids).
  *     Notice text is generated entirely server-side — no client-supplied text
- *     is ever written to Firestore.
- *  4. violatorUid existence validated against Firestore users collection.
- *  5. Per-caller rate limit  : 20 notices per 5-minute window.
- *  6. Per-room  rate limit   : 50 notices per 5-minute window.
- *  7. Dedup lock key scoped to room + violator + action (was violator-only).
- *  8. violatorDisplayName sanitised server-side (HTML stripped, 50-char cap).
+ *     is ever written to Firestore. Allowed actions/violation types are a
+ *     fixed enum (input validated, no Firestore existence lookups needed).
+ *  3. Per-caller rate limit  : 20 notices per 5-minute window.
+ *  4. Per-room  rate limit   : 50 notices per 5-minute window.
+ *  5. Dedup lock key scoped to room + violator + action, PLUS a coarser
+ *     per-violator "burst" lock (~7s) that collapses any multi-violation
+ *     burst into exactly one visible notice.
+ *  6. violatorDisplayName sanitised server-side (HTML stripped, 50-char cap).
  *
  * POST body: { roomId, violatorUid, violatorDisplayName, violationType, action, muteDurationMs? }
  * Header:    Authorization: Bearer <Firebase ID token>
@@ -192,38 +195,30 @@ export const handler = async (event) => {
 
   const db = admin.firestore();
 
+  // checkRevoked is intentionally OFF here: it costs an extra network round-trip
+  // to Google on every single call, which is the dominant source of notice
+  // latency for a feature that must feel instant. This endpoint only ever
+  // posts a rate-limited, server-generated, non-destructive chat notice (no
+  // enforcement action), so the revocation-check's marginal security value
+  // does not justify the latency cost. verifyIdToken() alone still rejects
+  // forged/expired/malformed tokens.
   let callerUid;
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken, /* checkRevoked= */ true);
+    const decoded = await admin.auth().verifyIdToken(idToken);
     callerUid = decoded.uid;
   } catch (e) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Invalid or expired token' }) };
   }
 
-  /* 2 ── Caller must be a registered (non-anonymous) user ──────────────── */
-  // Any authenticated user may trigger an AutoMod notice so that violations
-  // are surfaced even in rooms without staff online. Actual enforcement actions
-  // (mute / kick / ban) remain staff-only and are executed client-side only
-  // when isStaff === true. Notice text is generated entirely server-side so
-  // callers cannot fabricate content; rate limits and dedup cap abuse.
-  // Anonymous / guest-only sessions have no uid doc — reject them.
-  try {
-    const callerSnap = await db.collection('users').doc(callerUid).get();
-    if (!callerSnap.exists) {
-      // Guest users have no Firestore doc — allow them through with the same
-      // hardening (rate limits, dedup, server-side text) so AutoMod works
-      // in rooms where only guests are present.
-      console.info(`[post-automod-notice] Caller ${callerUid} has no users doc (guest) — proceeding`);
-    }
-    // Owners are never subject to automod from their own instance — but we
-    // do not block them here; the processAutoMod client-side guard already
-    // exempts staff-role senders from being detected as violators.
-  } catch (e) {
-    console.error('[post-automod-notice] Caller lookup error:', e.message);
-    // Non-fatal — proceed; token verification already confirmed a valid uid
-  }
+  // NOTE: previously this step did an extra Firestore lookup to check whether
+  // the caller has a users/{uid} doc (registered vs guest). That result was
+  // never used to gate anything — guests and users both proceed either way —
+  // so the lookup was pure latency with no security or behavioral effect.
+  // Removed. Owners are exempted from being flagged as violators entirely on
+  // the client side (processAutoMod never calls this endpoint for them), so
+  // no caller-role check is needed here either.
 
-  /* 3 ── Input validation ───────────────────────────────────────────────── */
+  /* 2 ── Input validation ───────────────────────────────────────────────── */
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid JSON' }) };
@@ -247,19 +242,13 @@ export const handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `Invalid violationType: ${violationType}` }) };
   }
 
-  /* 4 ── Violator existence check ──────────────────────────────────────── */
-  try {
-    const violatorSnap = await db.collection('users').doc(violatorUid).get();
-    if (!violatorSnap.exists) {
-      // Could be a guest (no Firestore doc) — allow through but keep sanitised name only
-      console.warn(`[post-automod-notice] violatorUid ${violatorUid} has no users doc (guest?)`);
-    }
-  } catch (e) {
-    console.error('[post-automod-notice] Violator lookup error:', e.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'Violator verification failed' }) };
-  }
+  // NOTE: previously did a Firestore lookup here to check whether violatorUid
+  // has a users/{uid} doc. Guests legitimately have none, so a missing doc
+  // was never actually rejected — the lookup only ever logged a warning, so
+  // it was pure latency with no gating effect. Removed. violatorUid/name are
+  // still fully validated (type/length) above and sanitised before use below.
 
-  /* 5 ── Rate limits + dedup (single Firestore transaction) ────────────── */
+  /* 3 ── Rate limits + dedup (single Firestore transaction) ────────────── */
   const callerRlKey = `_rl_c_${callerUid}`;
   const roomRlKey   = '_rl_room';
   const dedupKey    = `_lk_${violatorUid}_${action}`;
@@ -351,7 +340,7 @@ export const handler = async (event) => {
     return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: `Rate limit exceeded (${blockReason})` }) };
   }
 
-  /* 6 ── Generate notice text + write TingleBot message ─────────────────── */
+  /* 4 ── Generate notice text + write TingleBot message ─────────────────── */
   const safeName    = sanitiseName(violatorDisplayName);
   const noticeText  = buildNoticeText(action, safeName, violationType);
   const tinglebotType = ACTION_TO_TYPE[action] || 'automod';

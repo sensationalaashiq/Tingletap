@@ -38,3 +38,4 @@
 - [TingleBot notice spam/timing](tinglebot-notice-tuning.md) — every room viewer (not just staff) calls the notice Netlify function; add presence gating + a short cross-action burst dedup key to curb duplicate/stale alerts, but stay permissive until presence data has actually loaded.
 - [Cross-theme text contrast fix](cross-theme-text-contrast.md) — custom username/message colors need an auto dual-tone text-shadow halo (no shadow set) to stay legible across Light/Dark/Burgundy/Aurora themes.
 - [Firebase config hosted on Netlify only](netlify-hosted-firebase-config.md) — this repo's Firebase keys live in Netlify env vars/GitHub, not Replit; user declines adding them here, so Replit dev preview renders blank (expected, not a bug).
+- [AutoMod notice latency fixes](automod-notice-latency.md) — checkRevoked removal, dropped non-gating Firestore lookups, and an `.exists()` vs `.exists` Admin SDK bug that was silently 500'ing every dev-mode notice transaction.

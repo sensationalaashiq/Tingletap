@@ -754,9 +754,12 @@ app.post('/api/post-automod-notice', async (req, res) => {
   const idToken = (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
   if (!idToken) return res.status(401).json({ error: 'Unauthorized — no token' });
 
+  // checkRevoked intentionally OFF — see matching note in the Netlify function;
+  // it adds a network round-trip to Google on every call with no benefit for
+  // this low-risk, non-destructive notice endpoint, and dev should mirror prod.
   let callerUid;
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken, /* checkRevoked= */ true);
+    const decoded = await admin.auth().verifyIdToken(idToken);
     callerUid = decoded.uid;
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -803,33 +806,46 @@ app.post('/api/post-automod-notice', async (req, res) => {
   const RL_CALLER_MAX = 20;
   const RL_ROOM_MAX   = 50;
   const TTL_MS        = 60 * 1000;
+  const BURST_MS       = 7 * 1000; // mirrors NOTICE_BURST_MS in the Netlify function
   const now2          = Date.now();
   const callerRlRef   = adminDb.collection('rooms').doc(roomId).collection('automod').doc(`_rl_c_${callerUid}`);
   const roomRlRef     = adminDb.collection('rooms').doc(roomId).collection('automod').doc('_rl_room');
   const dedupRef      = adminDb.collection('rooms').doc(roomId).collection('automod').doc(`_lk_${violatorUid}_${action}`);
+  const burstRef       = adminDb.collection('rooms').doc(roomId).collection('automod').doc(`_lkb_${violatorUid}`);
   let alreadyPosted = false;
   let rateLimited = false;
   let rateLimitReason = '';
   try {
     await adminDb.runTransaction(async (t) => {
-      const [callerRlSnap, roomRlSnap, dedupSnap] = await Promise.all([t.get(callerRlRef), t.get(roomRlRef), t.get(dedupRef)]);
-      // Dedup
-      if (dedupSnap.exists()) {
+      const [callerRlSnap, roomRlSnap, dedupSnap, burstSnap] = await Promise.all([t.get(callerRlRef), t.get(roomRlRef), t.get(dedupRef), t.get(burstRef)]);
+      // Dedup (same violator + same action within TTL_MS)
+      // NOTE: `.exists` is a boolean getter on Admin SDK DocumentSnapshot,
+      // not a method — calling it as `.exists()` throws "not a function"
+      // and was silently forcing every transaction here into the catch
+      // block (500 response), breaking AutoMod notices in dev entirely.
+      if (dedupSnap.exists) {
         const { expiresAt } = dedupSnap.data();
         if (typeof expiresAt === 'number' && expiresAt > now2) { alreadyPosted = true; return; }
       }
+      // Burst (ANY notice about this violator within BURST_MS) — collapses a
+      // fast multi-violation burst into a single visible notice.
+      if (burstSnap.exists) {
+        const { expiresAt } = burstSnap.data();
+        if (typeof expiresAt === 'number' && expiresAt > now2) { alreadyPosted = true; return; }
+      }
       // Per-caller rate limit
-      const crl = callerRlSnap.exists() ? callerRlSnap.data() : { count: 0, windowStart: now2 };
+      const crl = callerRlSnap.exists ? callerRlSnap.data() : { count: 0, windowStart: now2 };
       if (now2 - crl.windowStart > RL_WINDOW_MS) { crl.count = 0; crl.windowStart = now2; }
       if (crl.count >= RL_CALLER_MAX) { rateLimited = true; rateLimitReason = 'caller_rate_limit'; return; }
       // Per-room rate limit
-      const rrl = roomRlSnap.exists() ? roomRlSnap.data() : { count: 0, windowStart: now2 };
+      const rrl = roomRlSnap.exists ? roomRlSnap.data() : { count: 0, windowStart: now2 };
       if (now2 - rrl.windowStart > RL_WINDOW_MS) { rrl.count = 0; rrl.windowStart = now2; }
       if (rrl.count >= RL_ROOM_MAX) { rateLimited = true; rateLimitReason = 'room_rate_limit'; return; }
       // Claim
       t.set(callerRlRef, { count: crl.count + 1, windowStart: crl.windowStart });
       t.set(roomRlRef,   { count: rrl.count + 1, windowStart: rrl.windowStart });
       t.set(dedupRef, { expiresAt: now2 + TTL_MS, postedAt: admin.firestore.FieldValue.serverTimestamp(), callerUid, violatorUid, action, violationType });
+      t.set(burstRef, { expiresAt: now2 + BURST_MS, postedAt: admin.firestore.FieldValue.serverTimestamp(), callerUid, violatorUid, action });
     });
   } catch (e) {
     console.error('[post-automod-notice] Transaction error:', e.message);
