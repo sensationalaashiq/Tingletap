@@ -53,7 +53,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import 'react-toastify/dist/ReactToastify.css';
@@ -697,7 +697,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                                 <button
                                                     className="message-action-btn rxn-trigger-btn"
                                                     style={{ opacity: 0.55, cursor: 'not-allowed', position: 'relative' }}
-                                                    onClick={(e) => { e.stopPropagation(); toast.info('Upgrade to Platinum Lord or higher to react!', { position: 'top-center', autoClose: 3000, icon: TI.lock }); }}
+                                                    onClick={(e) => { e.stopPropagation(); pt.info('Upgrade to Platinum Lord or higher to react!', { position: 'top-center', autoClose: 3000 }); }}
                                                     title="Upgrade Badge to React"
                                                 >
                                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
@@ -3022,18 +3022,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                     if ((roomData.name === 'The Olympians(Staff Room)' || roomData.isStaffOnly) && loggedInUserProfile) {
                         const userRole = loggedInUserProfile.role || 'guest';
                         if (!['owner', 'admin', 'moderator'].includes(userRole)) {
-                            toast.error("Access denied. This room is for staff only.", { icon: TI.block });
+                            pt.error("Access denied. This room is for staff only.");
                             navigate('/rooms', { replace: true });
                             return;
                         }
                     }
                 } else {
-                    toast.error("Room not found.", { icon: TI.error });
+                    pt.error("Room not found.");
                     navigate('/rooms', { replace: true });
                 }
             }).catch(error => {
                 console.error('Room loading error:', error);
-                toast.error("Error loading room. Please try again.", { icon: TI.error });
+                pt.error("Error loading room. Please try again.");
                 navigate('/rooms', { replace: true });
             });
             const q = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt'), limitToLast(60));
@@ -3803,17 +3803,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Close popup
             setShowFontPopup(false);
             
-            toast.success("Message text style saved! (Usernames unchanged)", {
-                icon: TI.success,
-                style: {
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-                }
-            });
+            pt.success("Message text style saved! (Usernames unchanged)");
         } catch (error) {
-            toast.error("Failed to save message font preferences");
+            pt.error("Failed to save message font preferences");
         }
     };
 
@@ -3895,7 +3887,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 console.log('🔵 Guest sending message:', { uid, displayName, username: guestUser.username });
             } catch (error) {
                 console.error('Guest data parse error:', error);
-                toast.error("Guest session error. Please refresh and try again.");
+                pt.error("Guest session error. Please refresh and try again.");
                 return;
             }
         } else if (auth.currentUser) {
@@ -3914,7 +3906,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             gender = loggedInUserProfile?.gender || 'male';
             role = loggedInUserProfile?.role || 'user';
         } else {
-            toast.error("Please log in or continue as guest to send messages");
+            pt.error("Please log in or continue as guest to send messages");
             return;
         }
 
@@ -3939,7 +3931,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 };
             } catch (error) {
                 console.error('Guest profile creation error:', error);
-                toast.error("Unable to send message. Please refresh.");
+                pt.error("Unable to send message. Please refresh.");
                 return;
             }
         }
@@ -3959,25 +3951,25 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
                 console.error('Firestore profile error:', error);
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned) {
-            toast.error("You are banned and cannot send messages.");
+            pt.error("You are banned and cannot send messages.");
             return;
         }
 
         if (userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You are muted and cannot send messages.");
+            pt.error("You are muted and cannot send messages.");
             return;
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
             // isKickExpired now checks kickUntil first (absolute), then falls back to relative duration
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
+                pt.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             /* Kick expired — clear it silently */
@@ -4088,11 +4080,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             // ────────────────────────────────────────────────────────────────
         } catch (error) {
             if (error.code === 'permission-denied') {
-                toast.error("Permission denied. Please check your account status.");
+                pt.error("Permission denied. Please check your account status.");
             } else if (error.code === 'unavailable') {
-                toast.error("Service temporarily unavailable. Please try again.");
+                pt.error("Service temporarily unavailable. Please try again.");
             } else {
-                toast.error(`Failed to send message: ${error.message}`);
+                pt.error(`Failed to send message: ${error.message}`);
             }
         }
     };
@@ -4117,24 +4109,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned) {
-            toast.error("You are banned and cannot send messages.");
+            pt.error("You are banned and cannot send messages.");
             return;
         }
 
         if (userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You are muted and cannot send messages.");
+            pt.error("You are muted and cannot send messages.");
             return;
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
+                pt.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
@@ -4143,7 +4135,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         const a = videoUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
         const videoId = a ? a[1] : null;
         if (!videoId) {
-            toast.error("Invalid YouTube URL!", { icon: TI.error });
+            pt.error("Invalid YouTube URL!");
             return;
         }
 
@@ -4209,24 +4201,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned) {
-            toast.error("You are banned and cannot send messages.");
+            pt.error("You are banned and cannot send messages.");
             return;
         }
 
         if (userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You are muted and cannot send messages.");
+            pt.error("You are muted and cannot send messages.");
             return;
         }
 
         if (userProfile.kickedFrom?.roomId === roomId) {
             if (!isKickExpired(userProfile.kickedFrom)) {
-                toast.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
+                pt.error(`You are temporarily kicked from ${roomName || 'this room'}.`);
                 return;
             }
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
@@ -4234,7 +4226,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const a = youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
         const videoId = a ? a[1] : null;
-        if (!videoId) return toast.error("Invalid YouTube URL!", { icon: TI.error });
+        if (!videoId) return pt.error("Invalid YouTube URL!");
 
         try {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), {
@@ -4380,7 +4372,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             }).catch(() => {});
         } catch (err) {
-            toast.error('Unkick failed. Please try again.');
+            pt.error('Unkick failed. Please try again.');
         }
     };
 
@@ -4409,7 +4401,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 }).catch(() => {});
             } catch (error) {
-                toast.error("Could not mute user. Check permissions.");
+                pt.error("Could not mute user. Check permissions.");
             }
         };
         setMuteUserConfirm({
@@ -4445,7 +4437,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 }).catch(() => {});
             } catch (error) {
-                toast.error("Could not ban user. Check permissions.");
+                pt.error("Could not ban user. Check permissions.");
             }
         };
         setBanUserConfirm({
@@ -4460,7 +4452,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const handleReportUser = (message) => {
         if (!message || !message.uid) {
-            toast.error("Cannot report this message. Please try again.");
+            pt.error("Cannot report this message. Please try again.");
             return;
         }
         setMessageToReport(message);
@@ -4470,7 +4462,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const submitReport = async (reportData) => {
         if (!auth.currentUser || !messageToReport) {
-            toast.error("Missing required information. Please try again.");
+            pt.error("Missing required information. Please try again.");
             return;
         }
         
@@ -4519,7 +4511,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             pt.report(`${reportData.reportType || 'Content'} reported successfully.`);
             
         } catch (error) {
-            toast.error("Failed to submit report. Please try again.");
+            pt.error("Failed to submit report. Please try again.");
         } finally {
             setReportPopupOpen(false);
             setMessageToReport(null);
@@ -4529,7 +4521,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const handleWhisperUser = async (message) => {
         if (blockedUsers.includes(message.uid) || usersWhoBlockedMe.includes(message.uid)) {
-            toast.error("You cannot whisper to a blocked user");
+            pt.error("You cannot whisper to a blocked user");
             return;
         }
         // Check if target has whisper messages disabled
@@ -4642,16 +4634,16 @@ const HomePage = ({ user, roomIdOverride }) => {
     // handleAddFriend — quick local checks, then show premium confirmation modal
     const handleAddFriend = React.useCallback((user) => {
         if (!auth.currentUser) {
-            toast.error("You must be logged in to send friend requests");
+            pt.error("You must be logged in to send friend requests");
             return;
         }
         if (!user?.uid) return;
         if (user.uid === auth.currentUser.uid) {
-            toast.info("You cannot send a friend request to yourself");
+            pt.info("You cannot send a friend request to yourself");
             return;
         }
         if (blockedUsers.includes(user.uid) || usersWhoBlockedMe.includes(user.uid)) {
-            toast.error("You cannot send a friend request to a blocked user");
+            pt.error("You cannot send a friend request to a blocked user");
             return;
         }
         if (loggedInUserProfile?.friends?.includes(user.uid)) {
@@ -4695,11 +4687,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             ]);
 
             if (snap1.docs.find(d => d.data().status === 'pending')) {
-                toast.info("Friend request already sent to this user");
+                pt.info("Friend request already sent to this user");
                 return;
             }
             if (snap2.docs.find(d => d.data().status === 'pending')) {
-                toast.info("This user has already sent you a friend request");
+                pt.info("This user has already sent you a friend request");
                 return;
             }
 
@@ -4752,7 +4744,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             );
 
         } catch (err) {
-            toast.error("Failed to send friend request. Please try again.");
+            pt.error("Failed to send friend request. Please try again.");
         }
     }, [addFriendConfirmTarget, auth.currentUser, loggedInUserProfile]);
 
@@ -4932,7 +4924,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 errorMessage = `Failed to accept friend request: ${error.message}`;
             }
             
-            toast.error(errorMessage);
+            pt.error(errorMessage);
             // Re-add to UI if error occurred
             setFriendRequests(prev => [...prev, request]);
         }
@@ -4954,7 +4946,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             pt.info(`Friend request from ${request.senderName} declined`);
         } catch (error) {
-            toast.error(`Failed to reject friend request: ${error.message}`);
+            pt.error(`Failed to reject friend request: ${error.message}`);
             // Re-add to UI if error occurred
             setFriendRequests(prev => [...prev, request]);
         }
@@ -5185,13 +5177,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -5341,12 +5333,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("Audio size must be less than 10MB!", { icon: TI.error });
+            pt.error("Audio size must be less than 10MB!");
             return;
         }
 
         if (!file.type.startsWith('audio/')) {
-            toast.error("Please select a valid audio file!", { icon: TI.error });
+            pt.error("Please select a valid audio file!");
             return;
         }
 
@@ -5430,7 +5422,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 privateAudioInputRef.current.value = '';
             }
         } catch (error) {
-            toast.error("Failed to send audio. Please try again.");
+            pt.error("Failed to send audio. Please try again.");
         }
     };
 
@@ -5458,7 +5450,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             recorder.start();
             setPrivateIsRecording(true);
         } catch (error) {
-            toast.error("Could not start recording. Please check microphone permissions.", { icon: TI.mic });
+            pt.error("Could not start recording. Please check microphone permissions.");
         }
     };
 
@@ -5602,7 +5594,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             const handlePrivateAudioMiniSend = async (audioBlob) => {
                 if (!audioBlob || !auth.currentUser || !privateMessageTarget) {
-                    toast.error("Missing required data for audio upload");
+                    pt.error("Missing required data for audio upload");
                     return;
                 }
 
@@ -5734,7 +5726,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         const senderIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest';
         const targetIsGuest = privateMessageTarget?.isGuest === true || privateMessageTarget?.role?.toLowerCase() === 'guest';
         if (senderIsGuest && !targetIsGuest) {
-            toast.error("Guests can only send messages to other Guests.");
+            pt.error("Guests can only send messages to other Guests.");
             return;
         }
 
@@ -5791,11 +5783,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             
         } catch (error) {
-            toast.error("Failed to send message. Please try again.", {
-                autoClose: 5000,
-                closeButton: true,
-                closeOnClick: true
-            });
+            pt.error("Failed to send message. Please try again.");
         }
     };
 
@@ -5908,21 +5896,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                 await batch.commit();
                 setConversations([]);
                 setUnreadCounts({});
-                toast.success(
-                    <span style={{display:'flex',alignItems:'center',gap:'8px',fontWeight:600}}>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        All conversations cleared!
-                    </span>,
-                    { style:{background:'linear-gradient(135deg,#1e1b4b,#312e81)',color:'#fff',border:'1px solid rgba(139,92,246,0.4)',borderRadius:'12px'}, autoClose:3000, icon:false }
-                );
+                pt.success("All conversations cleared!");
             } catch (error) {
-                toast.error("Failed to clear conversations.", { icon: TI.error });
+                pt.error("Failed to clear conversations.");
             }
         };
         const handleCancel = () => toast.dismiss(toastId);
         toast.warn(
             <ConfirmationToast message="Are you sure you want to clear all private conversations?" onConfirm={performClear} onCancel={handleCancel} />,
-            { toastId, closeOnClick: false, closeButton: true, style: { background: 'linear-gradient(135deg,#fffbf0,#fff8e8)', border: '1px solid rgba(245,158,11,0.22)', color: '#1c1917', borderRadius: '14px' } }
+            { toastId, closeOnClick: false, closeButton: true, style: { background: 'linear-gradient(135deg,#b45309,#d97706)', color: '#fff', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' } }
         );
     };
 
@@ -5945,15 +5927,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             await batch.commit();
             setConversations(prev => prev.filter(c => c.otherUserId !== conversation.otherUserId));
             setUnreadCounts(prev => { const u = { ...prev }; delete u[conversation.otherUserId]; return u; });
-            toast.success(
-                <span style={{display:'flex',alignItems:'center',gap:'8px',fontWeight:600}}>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                    Chat with <b style={{color:'#fbbf24'}}>{conversation.otherUserName}</b> deleted
-                </span>,
-                { style:{background:'linear-gradient(135deg,#1a0a2e,#2d1b69)',color:'#fff',border:'1px solid rgba(239,68,68,0.4)',borderRadius:'12px'}, autoClose:2800, icon:false }
-            );
+            pt.delete(`Chat with ${conversation.otherUserName} deleted`);
         } catch {
-            toast.error("Failed to delete conversation.", { icon: TI.error });
+            pt.error("Failed to delete conversation.");
         }
     };
 
@@ -6282,7 +6258,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const currentBlockedUsers = userDoc.data()?.blockedUsers || [];
 
             if (currentBlockedUsers.includes(user.uid)) {
-                toast.info(`${user.displayName} is already blocked`);
+                pt.info(`${user.displayName} is already blocked`);
                 return;
             }
 
@@ -6362,7 +6338,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             );
         } catch (error) {
-            toast.error("Failed to block user");
+            pt.error("Failed to block user");
         }
     };
 
@@ -6399,7 +6375,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             pt.success("User unblocked successfully");
         } catch (error) {
-            toast.error("Failed to unblock user");
+            pt.error("Failed to unblock user");
         }
     };
 
@@ -6512,13 +6488,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -6613,13 +6589,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -6677,12 +6653,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("Image size must be less than 10MB!", { icon: TI.error });
+            pt.error("Image size must be less than 10MB!");
             return;
         }
 
         if (!file.type.startsWith('image/')) {
-            toast.error("Please select a valid image file!", { icon: TI.error });
+            pt.error("Please select a valid image file!");
             return;
         }
 
@@ -6699,12 +6675,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error("Audio size must be less than 10MB!", { icon: TI.error });
+            pt.error("Audio size must be less than 10MB!");
             return;
         }
 
         if (!file.type.startsWith('audio/')) {
-            toast.error("Please select a valid audio file!", { icon: TI.error });
+            pt.error("Please select a valid audio file!");
             return;
         }
 
@@ -6736,7 +6712,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
 
             recorder.onerror = (e) => {
-                toast.error("Recording error occurred.", { icon: TI.error });
+                pt.error("Recording error occurred.");
                 stream.getTracks().forEach(track => track.stop());
                 setIsRecording(false);
             };
@@ -6745,17 +6721,14 @@ const HomePage = ({ user, roomIdOverride }) => {
             recorder.start(100); // Collect data every 100ms
             setIsRecording(true);
             
-            toast.info("Recording started...", {
-                autoClose: 2000,
-                icon: TI.mic
-            });
+            pt.mic("Recording started...", { autoClose: 2000 });
         } catch (error) {
             if (error.name === 'NotAllowedError') {
-                toast.error("Microphone access denied. Please allow microphone permissions and try again.", { icon: TI.mic });
+                pt.error("Microphone access denied. Please allow microphone permissions.");
             } else if (error.name === 'NotFoundError') {
-                toast.error("No microphone found. Please connect a microphone and try again.", { icon: TI.mic });
+                pt.error("No microphone found. Please connect a microphone.");
             } else {
-                toast.error("Could not start recording. Please check your microphone and try again.", { icon: TI.mic });
+                pt.error("Could not start recording. Please check your microphone.");
             }
         }
     };
@@ -6764,18 +6737,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
             setIsRecording(false);
-            
-            toast.success("Recording stopped!", {
-                autoClose: 2000,
-                icon: TI.mic
-            });
+            pt.mic("Recording stopped!", { autoClose: 2000 });
         }
     };
 
     const handleAudioUpload = async (audioData = null) => {
         const audioToUpload = audioData || selectedAudio || recordedBlob;
         if (!audioToUpload || !auth.currentUser) {
-            toast.error("No audio file selected to upload");
+            pt.error("No audio file selected to upload");
             return;
         }
 
@@ -6801,13 +6770,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -6996,12 +6965,12 @@ const HomePage = ({ user, roomIdOverride }) => {
     const handleGifSelect = async (gif) => {
         
         if (!auth.currentUser) {
-            toast.error("Please log in to send GIFs");
+            pt.error("Please log in to send GIFs");
             return;
         }
 
         if (!gif || !gif.images || !gif.images.original) {
-            toast.error("Invalid GIF selected. Please try another one.");
+            pt.error("Invalid GIF selected. Please try another one.");
             return;
         }
 
@@ -7023,13 +6992,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -7103,13 +7072,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             } catch (error) {
 
-                toast.error("Error accessing user profile. Please try again.");
+                pt.error("Error accessing user profile. Please try again.");
                 return;
             }
         }
 
         if (userProfile.isBanned || userProfile.mutedInfo?.isMuted === true) {
-            toast.error("You cannot send messages.");
+            pt.error("You cannot send messages.");
             return;
         }
 
@@ -7182,17 +7151,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
             
-            toast.success("Sticker sent successfully!", {
-                icon: TI.success,
-                style: {
-                    background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 184, 148, 0.3)'
-                }
-            });
+            pt.success("Sticker sent!");
         } catch (error) {
-            toast.error("Failed to send sticker. Please try again.");
+            pt.error("Failed to send sticker. Please try again.");
         }
     };
 
@@ -8506,7 +8467,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const _isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
                 const _tier = getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, _isGuest);
                 const lockToast = (msg) => {
-                    toast.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000, icon: TI.lock });
+                    pt.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000 });
                     setIsAttachmentDropdownOpen(false);
                 };
                 const LockBadge = () => (
@@ -8895,29 +8856,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 onCancel={() => setAddFriendConfirmTarget(null)}
             />
 
-            {/* Toast Notifications */}
-            <ToastContainer
-                position="bottom-right"
-                autoClose={4000}
-                hideProgressBar
-                newestOnTop
-                closeOnClick
-                pauseOnHover
-                theme="light"
-                toastStyle={{
-                    background: 'rgba(255,255,255,0.98)',
-                    backdropFilter: 'blur(24px)',
-                    border: '1.5px solid rgba(167,139,250,0.2)',
-                    borderRadius: '16px',
-                    color: '#1e1b4b',
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: '13px',
-                    boxShadow: '0 16px 48px rgba(109,40,217,0.13), 0 4px 12px rgba(0,0,0,0.08)',
-                    padding: '10px 14px',
-                    minHeight: 'unset',
-                }}
-                style={{ zIndex: 99999 }}
-            />
         </>
     );
 };

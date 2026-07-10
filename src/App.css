@@ -1293,24 +1293,35 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 /* Toast progress bar */
 .Toastify__progress-bar { background: var(--accent-color) !important; }
 
-/* Toast container — compact and never allowed to sprawl across the screen.
-   react-toastify defaults to 100vw-wide toasts under 480px viewports; we cap
-   that with side margins so it always reads as a small floating card. */
+/* Toast container — compact floating card, never a full-screen banner.
+   react-toastify v10 ships --toastify-toast-width:320px and forces 100vw
+   on ≤480px viewports. We override BOTH the container AND the CSS variable
+   so toasts always render as small pills regardless of screen size. */
+:root {
+  --toastify-toast-width: 320px;
+  --toastify-toast-min-height: unset;
+}
 .Toastify__toast-container {
   font-family: 'Lato', sans-serif !important;
-  width: auto !important;
-  max-width: 380px !important;
+  width: 320px !important;
+  max-width: 320px !important;
+  padding: 0 !important;
 }
 .Toastify__toast {
+  min-height: unset !important;
   max-width: 100% !important;
   margin-bottom: 10px !important;
+  width: 100% !important;
 }
 @media only screen and (max-width: 480px) {
+  :root {
+    --toastify-toast-width: min(320px, calc(100vw - 32px));
+  }
   .Toastify__toast-container {
-    width: calc(100vw - 24px) !important;
-    max-width: calc(100vw - 24px) !important;
-    left: 12px !important;
+    width: min(320px, calc(100vw - 32px)) !important;
+    max-width: min(320px, calc(100vw - 32px)) !important;
     right: 12px !important;
+    left: auto !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -1318,6 +1329,11 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   .Toastify__toast-container--top-center,
   .Toastify__toast-container--top-right {
     top: 12px !important;
+  }
+  .Toastify__toast-container--bottom-left,
+  .Toastify__toast-container--bottom-center,
+  .Toastify__toast-container--bottom-right {
+    bottom: 12px !important;
   }
   .Toastify__toast {
     width: 100% !important;
