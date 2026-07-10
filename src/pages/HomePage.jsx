@@ -476,7 +476,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         style={{ 
                             cursor: isBot ? 'default' : (isMyMessage ? 'default' : 'pointer'),
                             opacity: '0',
-                            transition: 'opacity 0.1s ease-in-out'
+                            transition: 'opacity 0.05s ease-out'
                         }}
                     />
                     {/* GenderBadge removed — gender shown via border colour only */}
@@ -501,11 +501,10 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             const isLimited = isViewerGuest || isTargetGuest;
                             // Send Message visibility:
                             //   Guest → Guest:  show
-                            //   Guest → Staff:  show (guests can reach staff)
-                            //   Guest → Other:  hide
-                            //   Non-guest → *:  show
+                            //   Guest → Anyone else: HIDE — guests cannot initiate PMs with non-guests
+                            //   Non-guest → *:  show (target settings checked at send time)
                             const canShowSendMessage = isViewerGuest
-                                ? (isTargetGuest || isTargetStaff)
+                                ? isTargetGuest
                                 : true;
 
                             const getRoleLabel = () => getRoleDisplayLabel({
@@ -3432,9 +3431,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         const isFirstLoad = messages.length > 0 && !hasInitialScrolled;
         if (isFirstLoad) {
-            setTimeout(() => scrollToBottom(true), 100);
-            // Extra fallback in case content/images aren't painted yet
-            setTimeout(() => scrollToBottom(true), 400);
+            // Single scroll — avoid the 400ms double-scroll which causes a visible jump
+            setTimeout(() => scrollToBottom(true), 80);
             setHasUserScrolled(false);
         } else if (messages.length > 0) {
             // When a new message arrives, only auto-scroll if the user is

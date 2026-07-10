@@ -1117,10 +1117,13 @@ const Sidebar = ({
                               Register Now
                             </button>
                           ) : null}
-                          <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); else toast.info(`Opening PM with ${userItem.displayName}`); setDropdownUser(null); }}>
-                            <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#3b82f6" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
-                            Send Message
-                          </button>
+                          {/* Guests cannot PM non-guests — hide button to avoid a confusing error toast */}
+                          {(!isGuest || tIsGuest) && (
+                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); else toast.info(`Opening PM with ${userItem.displayName}`); setDropdownUser(null); }}>
+                              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#3b82f6" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+                              Send Message
+                            </button>
+                          )}
 
                           {!limited && (
                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem); else toast.info(`Whispering to ${userItem.displayName}`); setDropdownUser(null); }}>
