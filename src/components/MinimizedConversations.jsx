@@ -125,14 +125,12 @@ const MinimizedConversations = ({
                 >
                   {/* Avatar + online dot */}
                   <div className="mc-avatar-wrap">
-                    <img
-                      src={avatarSrc}
+                    <LiveAvatarImg
+                      uid={conv.otherUserId}
+                      gender={conv.otherUser?.gender || 'male'}
+                      fallbackPhotoURL={conv.otherUser?.photoURL || conv.otherUserPhoto}
                       alt={conv.otherUserName || 'User'}
                       className="mc-avatar"
-                      onError={(e) => {
-                        const fb = getDefaultAvatarUrl(conv.otherUserId, conv.otherUser?.gender || 'male');
-                        if (e.target.src !== fb) e.target.src = fb;
-                      }}
                     />
                     <span className={`mc-online-dot ${isOnline ? 'mc-online' : 'mc-offline'}`} />
                   </div>
