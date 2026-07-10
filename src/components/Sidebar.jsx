@@ -108,15 +108,26 @@ const buildStatusStyle = (statusStyles) => {
   return s;
 };
 
-const getRolePill = (role) => {
-  const map = {
-    owner:     { bg: '#fef3c7', color: '#92400e', label: 'Godfather' },
-    admin:     { bg: '#ede9fe', color: '#5b21b6', label: 'High Council' },
-    moderator: { bg: '#dcfce7', color: '#15803d', label: 'Guardian' },
-    user:      { bg: '#f1f5f9', color: '#475569', label: 'Member' },
-    guest:     { bg: '#f9fafb', color: '#6b7280', label: 'Guest' },
+const getRolePill = (role, badge = null) => {
+  const badgeMap = {
+    gold_knight:      { bg: 'linear-gradient(135deg,#f59e0b,#b45309)',   color: '#fff', shadow: '0 1px 5px rgba(245,158,11,0.5)' },
+    platinum_lord:    { bg: 'linear-gradient(135deg,#94a3b8,#475569)',   color: '#fff', shadow: '0 1px 5px rgba(100,116,139,0.45)' },
+    diamond_king:     { bg: 'linear-gradient(135deg,#22d3ee,#0369a1)',   color: '#fff', shadow: '0 1px 5px rgba(6,182,212,0.5)' },
+    ruby_queen:       { bg: 'linear-gradient(135deg,#f87171,#b91c1c)',   color: '#fff', shadow: '0 1px 5px rgba(239,68,68,0.5)' },
+    emerald_empress:  { bg: 'linear-gradient(135deg,#34d399,#047857)',   color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
+    sapphire_goddess: { bg: 'linear-gradient(135deg,#818cf8,#3730a3)',   color: '#fff', shadow: '0 1px 5px rgba(99,102,241,0.5)' },
+    rj:               { bg: 'linear-gradient(135deg,#a78bfa,#db2777)',   color: '#fff', shadow: '0 1px 7px rgba(167,139,250,0.65)' },
   };
-  return map[role?.toLowerCase()] || map.user;
+  if (badge && badgeMap[badge]) return badgeMap[badge];
+
+  const roleMap = {
+    owner:     { bg: 'linear-gradient(135deg,#fbbf24,#92400e)', color: '#fff', shadow: '0 1px 5px rgba(251,191,36,0.45)' },
+    admin:     { bg: 'linear-gradient(135deg,#a78bfa,#5b21b6)', color: '#fff', shadow: '0 1px 5px rgba(167,139,250,0.4)' },
+    moderator: { bg: 'linear-gradient(135deg,#34d399,#065f46)', color: '#fff', shadow: '0 1px 5px rgba(52,211,153,0.4)' },
+    user:      { bg: '#e5e7eb', color: '#374151', shadow: 'none' },
+    guest:     { bg: '#f3f4f6', color: '#6b7280', shadow: 'none' },
+  };
+  return roleMap[role?.toLowerCase()] || roleMap.user;
 };
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -488,7 +499,7 @@ const Sidebar = ({
 
         {/* ── TOP PROFILE CARD ─────────────────────────────────────── */}
         {user && loggedInUserProfile && (() => {
-          const pill = getRolePill(loggedInUserProfile.role);
+          const pill = getRolePill(loggedInUserProfile.role, loggedInUserProfile.badge);
           return (
             <div className={`sb-profile-card ${getBorderClass(loggedInUserProfile)}`}>
 
@@ -547,7 +558,7 @@ const Sidebar = ({
                         dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG }} />
                     )}
                   </div>
-                  <span className="sb-role-pill" style={{ background: pill.bg, color: pill.color }}>
+                  <span className="sb-role-pill" style={{ background: pill.bg, color: pill.color, boxShadow: pill.shadow }}>
                     {getRoleDisplayLabel({
                       role: loggedInUserProfile.role,
                       gender: loggedInUserProfile.gender || getStoredGuestGender(),
@@ -784,7 +795,7 @@ const Sidebar = ({
                 const tIsGuest  = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
                 const tIsStaff  = ['owner','admin','moderator'].includes(userItem.role?.toLowerCase());
                 const limited   = isGuest || tIsGuest;
-                const pill      = getRolePill(userItem.role);
+                const pill      = getRolePill(userItem.role, userItem.badge);
                 const showMod   = !isSelf && canModerate(userItem);
                 const showMute  = showMod && canDoMute(userItem);
                 const showKick  = showMod && canDoKick(userItem);
@@ -865,7 +876,7 @@ const Sidebar = ({
                             );
                           })()}
                         </span>
-                        <span className="sb-user-role-pill" style={{ background: pill.bg, color: pill.color }}>
+                        <span className="sb-user-role-pill" style={{ background: pill.bg, color: pill.color, boxShadow: pill.shadow }}>
                           {getRoleDisplayLabel({ role: userItem.role, gender: userItem.gender, isGuest: tIsGuest, badge: userItem.badge })}
                         </span>
                       </div>
