@@ -2604,6 +2604,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Also write to room-scoped node immediately so user appears in sidebar/count right away
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
         set(roomPresenceRef, minimalStatus).catch(() => {});
+        // Write lightweight entry to roomCounts so RoomListPage/Sidebar can show per-room counts
+        set(ref(rtdb, `roomCounts/${roomId}/${currentUid}`), true).catch(() => {});
 
         // ── INSTANT SELF-INJECT ──────────────────────────────────────────────
         // RTDB writes are async — the onValue listener fires with the previous
@@ -2672,6 +2674,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (roomId) {
             const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
             set(roomPresenceRef, statusData).catch(() => {});
+            // Lightweight roomCounts entry so RoomListPage/Sidebar can count per-room online users
+            set(ref(rtdb, `roomCounts/${roomId}/${currentUid}`), true).catch(() => {});
         }
         // No cleanup — offline transition is handled by the stable effect below
     }, [roomId, user?.uid, loggedInUserProfile]);
@@ -2699,6 +2703,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (roomPresenceRef) {
             onDisconnect(roomPresenceRef).remove();
         }
+        // roomCounts onDisconnect — cleared when browser closes without a clean logout
+        const roomCountRef = roomId ? ref(rtdb, `roomCounts/${roomId}/${currentUid}`) : null;
+        if (roomCountRef) {
+            onDisconnect(roomCountRef).remove();
+        }
 
         // FIX-PERF-2: Heartbeat extended from 120 s → 300 s (5 min).
         // 120 s meant 30 writes/hour per user; 300 s = 12 writes/hour — a 60 % reduction.
@@ -2718,6 +2727,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             set(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
             // Remove this user from the room-scoped presence node on clean exit
             if (roomPresenceRef) remove(roomPresenceRef).catch(() => {});
+            // Remove from roomCounts on clean exit
+            if (roomCountRef) remove(roomCountRef).catch(() => {});
         };
     }, [roomId, user?.uid]);
 

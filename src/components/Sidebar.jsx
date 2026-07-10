@@ -5,7 +5,8 @@ import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc, Timestamp, limit } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db, auth, rtdb } from '../firebase/config';
+import { ref, onValue, set, remove } from 'firebase/database';
 import useRoomsListener from '../hooks/useRoomsListener';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -162,6 +163,7 @@ const Sidebar = ({
   // Optimistic status update — eliminates the dark-flash between save and Firestore snapshot
   const [pendingStatusData, setPendingStatusData] = useState(null); // { uid, status, statusStyles }
   const [rooms, setRooms]                     = useState([]);
+  const [roomCounts, setRoomCounts]           = useState({});
   const [dropdownUser, setDropdownUser]       = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [profileUser, setProfileUser]         = useState(null);
@@ -280,10 +282,41 @@ const Sidebar = ({
     };
   }, []);
 
-  /* -- periodic username styling -- */
+  /* -- roomCounts RTDB listener — real-time per-room online user count -- */
   useEffect(() => {
-    const t = setTimeout(() => { if (window.applyGlobalUsernameStyles) window.applyGlobalUsernameStyles(); }, 300);
-    return () => clearTimeout(t);
+    const unsub = onValue(ref(rtdb, 'roomCounts'), (snap) => {
+      const data = snap.val() || {};
+      const counts = {};
+      Object.entries(data).forEach(([rid, members]) => {
+        if (members && typeof members === 'object') counts[rid] = Object.keys(members).length;
+      });
+      setRoomCounts(counts);
+    });
+    return () => unsub();
+  }, []);
+
+  /* -- periodic username styling + load styles for all visible sidebar users -- */
+  useEffect(() => {
+    if (window.applyGlobalUsernameStyles) window.applyGlobalUsernameStyles();
+    // Load username & message styles for all users visible in the sidebar
+    const uids = liveUsers.map(u => u?.uid).filter(Boolean);
+    if (uids.length > 0) {
+      // Only load UIDs not already in cache to avoid redundant Firestore reads
+      const cachedUids = new Set(Object.keys(window.allUsersUsernameStyles || {}));
+      const cachedMsgUids = new Set(Object.keys(window.allUsersMessageStyles || {}));
+      const newUids = uids.filter(uid => !cachedUids.has(uid));
+      const newMsgUids = uids.filter(uid => !cachedMsgUids.has(uid));
+      if (newUids.length > 0) {
+        import('../utils/usernamePreferences').then(({ initializeUsernameStyles }) => {
+          initializeUsernameStyles(newUids);
+        }).catch(() => {});
+      }
+      if (newMsgUids.length > 0) {
+        import('../utils/messageTextPreferences').then(({ initializeGlobalMessageStyles }) => {
+          initializeGlobalMessageStyles(newMsgUids);
+        }).catch(() => {});
+      }
+    }
   }, [liveUsers]);
 
   // Styles are applied via the liveUsers effect and the userSpecificUsernameStylesChanged event — no polling needed
@@ -643,6 +676,20 @@ const Sidebar = ({
                   <button className="sb-apd-btn sb-apd-danger" onClick={async (e) => {
                     e.stopPropagation();
                     try {
+                      // Set offline immediately in RTDB before signOut so presence clears at once
+                      const uid = auth.currentUser?.uid;
+                      if (uid) {
+                        try {
+                          await set(ref(rtdb, `status/${uid}`), { state: 'offline', last_changed: Date.now() });
+                          // Also remove from roomCounts and room_presence for the current room
+                          const currentRid = window._currentStatusData?.currentRoomId;
+                          const rid = currentRid || window.location.pathname.match(/\/room\/([^/]+)/)?.[1];
+                          if (rid) {
+                            remove(ref(rtdb, `roomCounts/${rid}/${uid}`)).catch(() => {});
+                            remove(ref(rtdb, `room_presence/${rid}/${uid}`)).catch(() => {});
+                          }
+                        } catch {}
+                      }
                       await signOut(auth);
                       try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
                       onClose();
@@ -767,6 +814,26 @@ const Sidebar = ({
                     <div className="sb-room-icon">{getRoomIcon(room.name)}</div>
                     <div className="sb-room-name">{room.name}</div>
                     <div style={{display:'flex',alignItems:'center',gap:'3px',marginLeft:'auto',flexShrink:0}}>
+                      {/* Live user count pill */}
+                      {(() => {
+                        const cnt = roomCounts[room.id] || 0;
+                        return (
+                          <div title={`${cnt} online`} style={{
+                            display:'flex', alignItems:'center', gap:2,
+                            background: cnt > 0
+                              ? 'linear-gradient(135deg,#10b981,#059669)'
+                              : 'linear-gradient(135deg,#6b7280,#4b5563)',
+                            borderRadius:10, padding:'2px 5px',
+                            boxShadow: cnt > 0 ? '0 0 6px rgba(16,185,129,0.5)' : 'none',
+                            flexShrink:0, minWidth:24, justifyContent:'center'
+                          }}>
+                            <svg viewBox="0 0 24 24" width="9" height="9" fill="white">
+                              <circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/>
+                            </svg>
+                            <span style={{fontSize:'9px',fontWeight:800,color:'#fff',lineHeight:1}}>{cnt}</span>
+                          </div>
+                        );
+                      })()}
                       {isAdultRoom && (
                         <div title="Adults Only (18+)" style={{
                           display:'flex', alignItems:'center', justifyContent:'center',

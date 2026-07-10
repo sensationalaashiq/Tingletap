@@ -409,6 +409,9 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     [data-user-uid="${userId}"].message-username,
     [data-user-uid="${userId}"].sb-list-username,
     [data-user-uid="${userId}"].sb-profile-name,
+    .sb-list-username[data-user-uid="${userId}"] .sb-username-text,
+    .sb-username-text[data-user-uid="${userId}"],
+    .sb-username-text[data-user-id="${userId}"],
 
     /* Username elements by user ID */
     .username[data-user-id="${userId}"],

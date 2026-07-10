@@ -3,7 +3,8 @@ import { TI } from '../utils/toastIcons';
 import { SUPPORTED_LANGUAGES } from '../utils/translationService';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import LiveAvatarImg from './LiveAvatar';
-import { auth, db } from '../firebase/config';
+import { auth, db, rtdb } from '../firebase/config';
+import { ref as rtdbRef, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -668,8 +669,19 @@ const SettingsSidebar = ({
                 window.cleanupHomePageListeners();
             }
 
-            // Small delay to ensure cleanup completes
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Set RTDB status to offline immediately so admin panel / sidebar
+            // reflect the logout right away (no waiting for onDisconnect timeout)
+            const uid = auth.currentUser?.uid;
+            if (uid) {
+                try {
+                    await rtdbSet(rtdbRef(rtdb, `status/${uid}`), { state: 'offline', last_changed: Date.now() });
+                    const rid = window._currentStatusData?.currentRoomId;
+                    if (rid) {
+                        rtdbRemove(rtdbRef(rtdb, `roomCounts/${rid}/${uid}`)).catch(() => {});
+                        rtdbRemove(rtdbRef(rtdb, `room_presence/${rid}/${uid}`)).catch(() => {});
+                    }
+                } catch {}
+            }
 
             await signOut(auth);
             try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'logout' })); } catch {}
