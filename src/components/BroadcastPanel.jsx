@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import LiveAvatarImg from './LiveAvatar';
 import { db, rtdb, auth } from '../firebase/config';
 import { translateText as _ttBP, getTranslationSettings as _tsBP, getLanguageName as _glnBP } from '../utils/translationService';
 import {
@@ -2699,11 +2700,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               <div className="bp-speaker-list">
                 {Object.entries(speakerMap).map(([uid, sp]) => (
                   <div key={uid} className="bp-speaker-item">
-                    <img
+                    <LiveAvatarImg
+                      uid={uid}
+                      gender={sp.gender}
+                      fallbackPhotoURL={sp.photoURL}
                       className="bp-speaker-avatar"
-                      src={sp.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${uid}`}
                       alt={sp.name}
-                      onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${uid}`; }}
                     />
                     <span className="bp-speaker-name">{sp.name}</span>
                     <button className="bp-remove-speaker-btn" onClick={() => handleRemoveSpeaker(uid)}>Remove</button>
@@ -2942,13 +2944,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         {speakers.length > 0 && (
           <div className="bp-connected-speakers" style={{ marginTop: 12 }}>
             {speakers.slice(0, 5).map(sp => (
-              <img
+              <LiveAvatarImg
                 key={sp.uid}
+                uid={sp.uid}
+                gender={sp.gender}
+                fallbackPhotoURL={sp.photoURL}
                 className="bp-speaker-bubble"
-                src={sp.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${sp.uid}`}
                 alt={sp.name}
                 title={sp.name}
-                onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${sp.uid}`; }}
               />
             ))}
             {speakers.length > 5 && <span className="bp-speaker-count">+{speakers.length - 5} more</span>}
@@ -3145,11 +3148,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             <div className="bp-requests-list">
               {pending.map(req => (
                 <div key={req.uid} className="bp-req-item">
-                  <img
+                  <LiveAvatarImg
+                    uid={req.uid}
+                    gender={req.gender}
+                    fallbackPhotoURL={req.photoURL}
                     className="bp-req-avatar"
-                    src={req.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`}
                     alt={req.name}
-                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`; }}
                   />
                   <div className="bp-req-info">
                     <div className="bp-req-name">{req.name}</div>

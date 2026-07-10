@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import LiveAvatarImg from './LiveAvatar';
 import { db, auth } from '../firebase/config';
 import {
   doc, setDoc, deleteDoc, onSnapshot, collection,
@@ -95,11 +96,12 @@ const FollowerListModal = ({ rjUid, rjName, type, onClose }) => {
             <div className="rjf-user-list">
               {users.map(u => (
                 <div key={u.id} className="rjf-user-item">
-                  <img
+                  <LiveAvatarImg
+                    uid={u.id}
+                    gender={u.gender}
+                    fallbackPhotoURL={u.photoURL}
                     className="rjf-user-avatar"
-                    src={u.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${u.id}`}
                     alt={u.username || u.displayName || u.id}
-                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${u.id}`; }}
                   />
                   <div className="rjf-user-info">
                     <span className="rjf-user-name">{u.username || u.displayName || 'User'}</span>

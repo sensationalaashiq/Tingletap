@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import LiveAvatarImg from './LiveAvatar';
 import './PremiumRelationshipCard.css';
 
 // ─── Premium SVG icons ────────────────────────────────────────────────────────
@@ -169,16 +170,10 @@ const PremiumRelationshipCard = ({
               >
                 <div className="prc-mutual-avatars" aria-hidden="true">
                   <div className="prc-mutual-avatar">
-                    {profileUser.photoURL
-                      ? <img src={profileUser.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
-                      : (profileUser.displayName?.[0] || '?').toUpperCase()
-                    }
+                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} alt="" />
                   </div>
                   <div className="prc-mutual-avatar">
-                    {mutualData.photoURL
-                      ? <img src={mutualData.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
-                      : (mutualData.displayName?.[0] || '?').toUpperCase()
-                    }
+                    <LiveAvatarImg uid={mutualData.uid} gender={mutualData.gender} fallbackPhotoURL={mutualData.photoURL} alt="" />
                   </div>
                 </div>
                 <div className="prc-mutual-text-wrap">
@@ -412,16 +407,10 @@ const PremiumRelationshipCard = ({
                 {/* Overlapping avatars */}
                 <div className="prc-mutual-avatars" aria-hidden="true">
                   <div className="prc-mutual-avatar">
-                    {profileUser.photoURL
-                      ? <img src={profileUser.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
-                      : (profileUser.displayName?.[0] || '?').toUpperCase()
-                    }
+                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} alt="" />
                   </div>
                   <div className="prc-mutual-avatar">
-                    {mutualData.photoURL
-                      ? <img src={mutualData.photoURL} alt="" onError={e => { e.currentTarget.style.display='none'; }} />
-                      : (mutualData.displayName?.[0] || '?').toUpperCase()
-                    }
+                    <LiveAvatarImg uid={mutualData.uid} gender={mutualData.gender} fallbackPhotoURL={mutualData.photoURL} alt="" />
                   </div>
                 </div>
 

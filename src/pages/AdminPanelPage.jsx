@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp } from 'firebase/firestore';
@@ -2076,7 +2077,7 @@ const AdminPanelPage = () => {
                   <div className="luxury-activity-list">
                     {users.slice(0, 5).map(user => (
                       <div key={user.uid} className="luxury-activity-item">
-                        <img src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`} alt="" />
+                        <LiveAvatarImg uid={user.uid} gender={user.gender} fallbackPhotoURL={user.photoURL} alt="" style={{width:36,height:36,borderRadius:'50%',objectFit:'cover'}} />
                         <div>
                           <span className="luxury-activity-name">{user.displayName}</span>
                           <span className="luxury-activity-action">
@@ -2193,8 +2194,10 @@ const AdminPanelPage = () => {
                           <div key={user.uid} className="luxury-table-row">
                             <div className="luxury-td user-profile-cell">
                               <div className="luxury-user-avatar-wrapper">
-                                <img 
-                                  src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`}
+                                <LiveAvatarImg
+                                  uid={user.uid}
+                                  gender={user.gender}
+                                  fallbackPhotoURL={user.photoURL}
                                   alt={user.displayName}
                                   className="luxury-user-avatar"
                                 />
@@ -3614,8 +3617,10 @@ const AdminPanelPage = () => {
 
                             {/* Avatar with rank ring */}
                             <div style={{ position:'relative', flexShrink:0 }}>
-                              <img
-                                src={u.photoURL || getDefaultAvatarUrl(u.uid, u.gender)}
+                              <LiveAvatarImg
+                                uid={u.uid}
+                                gender={u.gender}
+                                fallbackPhotoURL={u.photoURL}
                                 alt={u.displayName}
                                 style={{
                                   width: 52, height: 52, borderRadius:'50%', objectFit:'cover',
@@ -3623,7 +3628,6 @@ const AdminPanelPage = () => {
                                   boxShadow: `0 0 0 2px ${rank.color}33, 0 3px 12px ${rank.color}44`,
                                   display:'block',
                                 }}
-                                onError={e => { e.target.src = getDefaultAvatarUrl(u.uid, u.gender); }}
                               />
                               {/* Online dot */}
                               <div style={{
@@ -3975,18 +3979,12 @@ const AdminPanelPage = () => {
                             <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
                               {/* Real DP — falls back to deterministic avatar */}
                               <div style={{ width:44, height:44, borderRadius:'50%', border:`2px solid ${vc.badge}66`, flexShrink:0, overflow:'hidden', background:`linear-gradient(135deg,${vc.badge}22,${vc.badge}44)`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                <img
-                                  src={avatarUrl}
+                                <LiveAvatarImg
+                                  uid={vUserId}
+                                  gender={matchedUser?.gender}
+                                  fallbackPhotoURL={vPhotoURL || matchedUser?.photoURL}
                                   alt={resolvedUsername}
                                   style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%' }}
-                                  onError={e => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentNode.setAttribute('data-fallback', resolvedUsername[0]?.toUpperCase() || '?');
-                                    e.target.parentNode.style.fontSize = '17px';
-                                    e.target.parentNode.style.fontWeight = '900';
-                                    e.target.parentNode.style.color = vc.badge;
-                                    e.target.parentNode.textContent = resolvedUsername[0]?.toUpperCase() || '?';
-                                  }}
                                 />
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
@@ -4278,7 +4276,7 @@ const AdminPanelPage = () => {
                     }}>
                       {/* Card Header */}
                       <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'14px 16px 12px', borderBottom:'1px solid rgba(148,163,184,0.1)' }}>
-                        <img src={avatarUrl} alt="" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:`2px solid ${accentColor}40`, flexShrink:0 }} onError={e=>{ e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid||'user'}`; }} />
+                        <LiveAvatarImg uid={item.uid} gender={_currentUser?.gender || item.gender} fallbackPhotoURL={_currentUser?.photoURL || item.photoURL} alt="" style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', border:`2px solid ${accentColor}40`, flexShrink:0 }} />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
                             <span style={{ fontWeight:800, fontSize:13.5, color:'#1e293b' }}>{_currentDisplayName}</span>

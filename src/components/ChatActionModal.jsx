@@ -1,5 +1,6 @@
 import React from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import LiveAvatarImg from './LiveAvatar';
 import './ChatActionModal.css';
 
 const ChatActionModal = React.memo(({
@@ -107,11 +108,12 @@ const ChatActionModal = React.memo(({
         <div className="cam-body">
           {type === 'kick' && user && (
             <div className="cam-user-strip">
-              <img
-                src={user.photoURL || getDefaultAvatarUrl(user.uid, user.gender)}
+              <LiveAvatarImg
+                uid={user.uid}
+                gender={user.gender}
+                fallbackPhotoURL={user.photoURL}
                 alt=""
                 className="cam-user-avatar"
-                onError={(e) => { e.target.src = getDefaultAvatarUrl(user.uid, user.gender); }}
               />
               <div className="cam-user-meta">
                 <span className="cam-user-name">{user.displayName || 'Unknown'}</span>

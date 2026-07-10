@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import LiveAvatarImg from './LiveAvatar';
 import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
@@ -444,9 +445,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
           {/* User card */}
           <div className="bkm3-user-card bkm3-user-card--ban">
             <div className="bkm3-avatar bkm3-avatar--ban">
-              {(user?.photoURL && !banAvatarFailed)
-                ? <img src={user.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} onError={() => setBanAvatarFailed(true)} />
-                : getInitials(displayName)}
+              <LiveAvatarImg uid={user?.uid} gender={user?.gender} fallbackPhotoURL={user?.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} />
             </div>
             <div className="bkm3-user-info">
               <div className="bkm3-username">{displayName}</div>
@@ -549,9 +548,7 @@ const BanKickModal = React.memo(({ isVisible, onClose, banInfo: passedBanInfo, k
           {/* User card */}
           <div className="bkm3-user-card bkm3-user-card--kick">
             <div className="bkm3-avatar bkm3-avatar--kick">
-              {(user?.photoURL && !kickAvatarFailed)
-                ? <img src={user.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} onError={() => setKickAvatarFailed(true)} />
-                : getInitials(displayName)}
+              <LiveAvatarImg uid={user?.uid} gender={user?.gender} fallbackPhotoURL={user?.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} />
             </div>
             <div className="bkm3-user-info">
               <div className="bkm3-username">{displayName}</div>

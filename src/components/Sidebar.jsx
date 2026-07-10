@@ -15,6 +15,7 @@ import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import LiveAvatarImg from './LiveAvatar';
 
 // Resolves a uid's CURRENT username live so the room userlist and its
 // dropdown reflect a rename (self or admin) instantly.
@@ -565,9 +566,11 @@ const Sidebar = ({
                 onClick={(e) => openDropdownAt(user.uid, e)}
                 title="Open profile menu"
               >
-                <img
+                <LiveAvatarImg
+                  uid={user.uid}
+                  gender={loggedInUserProfile.gender}
+                  fallbackPhotoURL={loggedInUserProfile.photoURL}
                   className="sb-big-avatar"
-                  src={getAvatarUrl(user.uid, loggedInUserProfile.gender, loggedInUserProfile.photoURL)}
                   alt="avatar"
                 />
                 <span className="sb-online-ring" />
@@ -638,7 +641,7 @@ const Sidebar = ({
                 <div className="sb-apd" ref={dropdownRef}
                   style={{ top: dropdownPosition.top, left: dropdownPosition.left }}>
                   <div className="sb-apd-header">
-                    <img src={getAvatarUrl(user.uid, loggedInUserProfile.gender, loggedInUserProfile.photoURL)} alt="" className="sb-apd-avatar" />
+                    <LiveAvatarImg uid={user.uid} gender={loggedInUserProfile.gender} fallbackPhotoURL={loggedInUserProfile.photoURL} className="sb-apd-avatar" alt="" />
                     <div>
                       <div className="sb-apd-name"
                         data-user-uid={user.uid} data-user-id={user.uid}
@@ -901,9 +904,11 @@ const Sidebar = ({
                         }
                       }}
                     >
-                      <img
+                      <LiveAvatarImg
+                        uid={userItem.uid}
+                        gender={userItem.gender}
+                        fallbackPhotoURL={userItem.photoURL}
                         className="sb-list-avatar"
-                        src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)}
                         alt="avatar"
                         data-user-uid={userItem.uid}
                       />
@@ -1080,7 +1085,7 @@ const Sidebar = ({
                           style={{ top: dropdownPosition.top, left: dropdownPosition.left }}>
                           <div className="sb-apd-header">
                             <div className="sb-apd-avatar-wrap">
-                              <img src={getAvatarUrl(userItem.uid, userItem.gender, userItem.photoURL)} alt="" className="sb-apd-avatar"/>
+                              <LiveAvatarImg uid={userItem.uid} gender={userItem.gender} fallbackPhotoURL={userItem.photoURL} className="sb-apd-avatar" alt="" />
                               <span className={`sb-apd-dot ${isOnline ? 'online' : ''}`}/>
                             </div>
                             <div>

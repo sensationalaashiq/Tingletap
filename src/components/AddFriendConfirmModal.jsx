@@ -1,5 +1,6 @@
 import React from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import LiveAvatarImg from './LiveAvatar';
 import './AddFriendConfirmModal.css';
 
 const AddFriendConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) => {
@@ -35,11 +36,12 @@ const AddFriendConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) =
 
                 <div className="afcm-user-preview">
                     <div className="afcm-avatar-wrap">
-                        <img
-                            src={targetUser.photoURL || getDefaultAvatarUrl(targetUser.uid, targetUser.gender)}
+                        <LiveAvatarImg
+                            uid={targetUser.uid}
+                            gender={targetUser.gender}
+                            fallbackPhotoURL={targetUser.photoURL}
                             alt="avatar"
                             className="afcm-avatar"
-                            onError={e => { e.target.src = getDefaultAvatarUrl(targetUser.uid, targetUser.gender || 'male'); }}
                         />
                     </div>
                     <div className="afcm-user-info">

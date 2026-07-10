@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import LiveAvatarImg from './LiveAvatar';
 import './StylishReportModal.css';
 
 const REPORT_REASONS = [
@@ -172,11 +173,12 @@ const StylishReportModal = React.memo(({
                 {/* User preview */}
                 <div className="srm-user-preview">
                     <div className="srm-avatar-wrap">
-                        <img
-                            src={messageToReport?.photoURL || getDefaultAvatarUrl(messageToReport?.uid || messageToReport?.id, messageToReport?.gender)}
+                        <LiveAvatarImg
+                            uid={messageToReport?.uid || messageToReport?.id}
+                            gender={messageToReport?.gender}
+                            fallbackPhotoURL={messageToReport?.photoURL}
                             alt="avatar"
                             className="srm-avatar"
-                            onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${messageToReport?.uid || 'u'}`; }}
                         />
                     </div>
                     <div className="srm-user-info">

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
+import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp, orderBy, where } from 'firebase/firestore';
@@ -590,11 +591,12 @@ const BanKickMutePanel = () => {
                     <div key={u.uid} className="luxury-table-row mkm-row">
                       <div className="luxury-td user-profile-cell">
                         <div className="luxury-user-avatar-wrapper">
-                          <img
-                            src={u.photoURL || getDefaultAvatarUrl(u.uid, u.gender)}
+                          <LiveAvatarImg
+                            uid={u.uid}
+                            gender={u.gender}
+                            fallbackPhotoURL={u.photoURL}
                             alt={u.displayName}
                             className="luxury-user-avatar"
-                            onError={(e) => { e.target.onerror = null; e.target.src = getDefaultAvatarUrl(u.uid, u.gender); }}
                           />
                           <div className={`luxury-user-status-indicator ${isOnline ? 'online' : 'offline'}`}></div>
                         </div>

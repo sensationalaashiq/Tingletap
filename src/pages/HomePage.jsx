@@ -55,7 +55,7 @@ import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvata
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
-import { useLiveDisplayName } from '../utils/liveUsernames';
+import { useLiveDisplayName, useLivePhotoURL } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
@@ -366,11 +366,16 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const isDropdownOpen = openDropdownId === id;
 
     const avatarGender = isBot ? 'male' : (gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male'));
-    const hasCustomAvatar = !!message.photoURL;
-    const getDefaultAvatar = (uid, gen) => {
-        return getDefaultAvatarUrl(uid, gen);
-    };
-    const avatarUrl = message.photoURL || getDefaultAvatar(uid, avatarGender);
+    const getDefaultAvatar = (uid, gen) => getDefaultAvatarUrl(uid, gen);
+    // Live photo — shared refcounted Firestore listener; null while loading
+    const _livePhoto = useLivePhotoURL(isBot ? null : uid);
+    const _isRealUpload = (url) => !!url && !url.includes('randomuser.me');
+    const avatarUrl = _isRealUpload(_livePhoto)
+        ? _livePhoto
+        : _isRealUpload(message.photoURL)
+            ? message.photoURL
+            : getDefaultAvatar(uid, avatarGender);
+    const hasCustomAvatar = _isRealUpload(_livePhoto) || _isRealUpload(message.photoURL);
     const isMyMessage = currentUser && currentUser.uid === uid;
     const viewerRole = loggedInUserProfile?.role || 'user';
     
@@ -7635,15 +7640,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                 className="friend-request-item"
                                             >
                                                 <div className="friend-request-avatar">
-                                                    <img 
-                                                        src={request.senderPhoto || getDefaultAvatarUrl(request.senderId, request.senderGender || 'male')} 
+                                                    <LiveAvatarImg
+                                                        uid={request.senderId}
+                                                        gender={request.senderGender || 'male'}
+                                                        fallbackPhotoURL={request.senderPhoto}
                                                         alt="avatar"
-                                                        onError={(e) => {
-                                                            const fallback = getDefaultAvatarUrl(request.senderId, request.senderGender || 'male');
-                                                            if (e.currentTarget.src !== fallback) {
-                                                                e.currentTarget.src = fallback;
-                                                            }
-                                                        }}
                                                     />
                                                 </div>
                                                 <div className="friend-request-details">
@@ -8034,7 +8035,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}
                                     style={{ cursor: 'zoom-in' }}
                                     onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender) }); }}>
-                                    <img className="vpm-avatar" src={profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender)} alt="Profile"/>
+                                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} className="vpm-avatar" alt="Profile" />
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
                                     <span style={{position:'absolute',bottom:2,right:2,width:20,height:20,borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(6px)',zIndex:3,pointerEvents:'none',boxShadow:'0 2px 8px rgba(245,158,11,0.7),0 1px 3px rgba(0,0,0,0.3)',border:'1.5px solid rgba(255,255,255,0.7)'}}>
                                         <svg viewBox="0 0 24 24" width="11" height="11" fill="none"><path d="M3 8V3h5v2H5v3H3zm13-5h5v5h-2V5h-3V3zM3 16h2v3h3v2H3v-5zm16 3h-3v2h5v-5h-2v3z" fill="white"/></svg>
@@ -8304,7 +8305,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                 {profileFriends.map(fr => (
                                                     <div key={fr.uid} className="vpm-friend-row">
                                                         <div className={`vpm-friend-av ${getGenderBorderClass(fr)}`} style={{ cursor: 'pointer' }} onClick={() => setProfileUser(fr)}>
-                                                            <img src={fr.photoURL || getDefaultAvatarUrl(fr.uid, fr.gender)} alt="friend" />
+                                                            <LiveAvatarImg uid={fr.uid} gender={fr.gender} fallbackPhotoURL={fr.photoURL} alt="friend" />
                                                             <span className={`vpm-friend-dot ${onlineUsers.has(fr.uid) ? 'online' : ''}`} />
                                                         </div>
                                                         <div className="vpm-friend-info">

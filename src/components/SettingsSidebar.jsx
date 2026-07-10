@@ -2525,8 +2525,10 @@ const SettingsSidebar = ({
                         <div className="modern-account-card" data-user-id={auth.currentUser?.uid}>
                             <div className="modern-profile-section">
                                 <div className="modern-avatar-container">
-                                    <img 
-                                        src={loggedInUserProfile?.photoURL || `${getDefaultAvatarUrl(auth.currentUser?.uid, loggedInUserProfile?.gender)}`}
+                                    <LiveAvatarImg
+                                        uid={auth.currentUser?.uid}
+                                        gender={loggedInUserProfile?.gender}
+                                        fallbackPhotoURL={loggedInUserProfile?.photoURL}
                                         alt="avatar"
                                         className="modern-account-avatar"
                                     />
