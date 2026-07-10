@@ -405,19 +405,28 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
         return 'male-border';
     };
 
+    // Map Firestore role values to CSS-compatible hyphenated values expected by
+    // DarkMode.css / Themes.css selectors. Firestore stores 'user' for regular
+    // members but the CSS uses 'general'; badge holders are 'badge-holder' (hyphen).
+    const cssRole = badge ? 'badge-holder'
+        : (role === 'user' || !role) ? 'general'
+        : role;
+
     return (<>
         <div className={`message-row-wrapper ${isWhisper ? 'whisper-message' : ''}`}
              data-message-id={id}
              data-user-id={uid}
              data-message-uid={uid}
-             data-sender-role={badge ? 'badge_holder' : (role || 'user')}
+             data-sender-role={cssRole}
              data-sender-badge={badge ? 'true' : 'false'}
              data-sender-gender={avatarGender}
              data-sender-is-bot={isBot ? 'true' : 'false'}
              onMouseEnter={handleRowEnter}
              onMouseLeave={handleRowLeave}
 >
-            <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}>
+            <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}
+                 data-role={cssRole}
+                 data-gender={gender || 'male'}>
                 <div className={`avatar-wrapper ${getBorderClass()}`} style={{ position: 'relative' }}>
                     <img 
                         ref={avatarRef}
@@ -586,7 +595,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 data-user-id={uid}
                                 data-user-uid={uid}
                                 data-profile-uid={uid}
-                                data-role={badge ? 'badge_holder' : (role || 'user')}
+                                data-role={cssRole}
                                 data-badge={badge ? 'true' : 'false'}
                                 data-is-bot={isBot ? 'true' : 'false'}
                                 data-gender={gender || 'male'}

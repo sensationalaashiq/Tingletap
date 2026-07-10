@@ -152,10 +152,12 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
     .message-row-wrapper[data-user-id="${userId}"] .message-content p:not(.message-displayname):not(.username):not(.user-name):not(.message-username) {
         font-size: ${userSettings.fontSize} !important;
         color: ${userSettings.fontColor} !important;
+        -webkit-text-fill-color: ${userSettings.fontColor} !important;
         font-family: ${userSettings.fontFamily === 'inherit' ? 'inherit' : userSettings.fontFamily} !important;
         font-weight: ${userSettings.isBold ? 'bold' : 'normal'} !important;
         font-style: ${userSettings.isItalic ? 'italic' : 'normal'} !important;
         text-decoration: ${decorations.length > 0 ? decorations.join(' ') : 'none'} !important;
+        text-shadow: 0 0 3px rgba(255,255,255,0.45), 0 0 5px rgba(0,0,0,0.45) !important;
     }
 
     /* PROTECTION: Ensure usernames are NEVER affected by message styling */

@@ -40,3 +40,4 @@
 - [Cross-theme text contrast fix](cross-theme-text-contrast.md) — custom username/message colors need an auto dual-tone text-shadow halo (no shadow set) to stay legible across Light/Dark/Burgundy/Aurora themes.
 - [Firebase config hosted on Netlify only](netlify-hosted-firebase-config.md) — this repo's Firebase keys live in Netlify env vars/GitHub, not Replit; user declines adding them here, so Replit dev preview renders blank (expected, not a bug).
 - [AutoMod notice latency fixes](automod-notice-latency.md) — checkRevoked removal, dropped non-gating Firestore lookups, and an `.exists()` vs `.exists` Admin SDK bug that was silently 500'ing every dev-mode notice transaction.
+- [Theme role-based username colors](theme-role-username-colors.md) — data-role must be on .message-row div (not displayname span); Firestore user→general, badge_holder→badge-holder mapping.

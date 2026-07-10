@@ -1027,9 +1027,55 @@ html body .theme-light .user-font-styled {
   color: var(--text-primary);
 }
 
-/* Username colors */
+/* Username colors — base (light/default theme, white background) */
 .message-displayname {
   color: var(--username-color) !important;
+}
+
+/* ─── Light-theme role-based username colors ───────────────────────────────
+   These apply on the default white/light background.  Dark themes already
+   have their own role overrides in DarkMode.css / Themes.css (dark-theme-variant).
+   :not([style*="color"]) is intentionally omitted here — custom-set usernames
+   are protected because they use -webkit-text-fill-color in their injected
+   <style> tag, which browsers render above the CSS `color` property.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Owner — amber/gold (male) · rose (female) */
+.message-row[data-role="owner"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #b45309 !important; }
+.message-row[data-role="owner"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #be185d !important; }
+
+/* Admin — deep red (male) · deep rose (female) */
+.message-row[data-role="admin"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #b91c1c !important; }
+.message-row[data-role="admin"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #9d174d !important; }
+
+/* Moderator — forest green (male) · teal (female) */
+.message-row[data-role="moderator"][data-gender="male"] .message-displayname:not([style*="color"]) { color: #15803d !important; }
+.message-row[data-role="moderator"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #0f766e !important; }
+
+/* Badge holder — royal blue (male/trans) · violet (female) */
+.message-row[data-role="badge-holder"][data-gender="male"]   .message-displayname:not([style*="color"]) { color: #1d4ed8 !important; }
+.message-row[data-role="badge-holder"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #7e22ce !important; }
+.message-row[data-role="badge-holder"][data-gender="trans"]  .message-displayname:not([style*="color"]) { color: #6d28d9 !important; }
+
+/* General registered users — dark neutral (same for all genders, readable on white) */
+.message-row[data-role="general"] .message-displayname:not([style*="color"]) { color: #1f2937 !important; }
+
+/* Guest / Purush (male blue) */
+.message-row[data-role="guest"][data-gender="male"]   .message-displayname:not([style*="color"]),
+.message-row[data-role="purush"]                      .message-displayname:not([style*="color"]) { color: #1e40af !important; }
+
+/* Guest / Stree (female rose) */
+.message-row[data-role="guest"][data-gender="female"] .message-displayname:not([style*="color"]),
+.message-row[data-role="stree"]                       .message-displayname:not([style*="color"]) { color: #9d174d !important; }
+
+/* Guest / Navrang (trans violet) */
+.message-row[data-role="guest"][data-gender="trans"]  .message-displayname:not([style*="color"]),
+.message-row[data-role="navrang"]                     .message-displayname:not([style*="color"]) { color: #6d28d9 !important; }
+
+/* ─── Default message body text follows theme variable ───────────────────── */
+.message-body p:not([style*="color"]):not(.user-font-styled),
+.message-content-container p:not([style*="color"]):not(.user-font-styled) {
+  color: var(--text-primary);
 }
 
 /* Ensure all text elements use theme colors */
