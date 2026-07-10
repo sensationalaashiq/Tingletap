@@ -1501,7 +1501,8 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   height: 14px;
   flex-shrink: 0;
   margin-left: 2px;
-  filter: brightness(1.0) saturate(1.5);
+  /* Boost saturation + contrast so badge colours pop on white and lavender strips */
+  filter: brightness(1.05) saturate(2.2) contrast(1.1) drop-shadow(0 0 1.5px rgba(0,0,0,0.18));
 }
 
 .inline-badge svg {

@@ -3345,8 +3345,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 behavior: force || !hasInitialScrolled ? 'auto' : 'smooth'
             });
             
-            // Fallback for older browsers
-            element.scrollTop = scrollHeight;
+            // NOTE: do NOT set scrollTop after smooth scrollTo — it cancels the animation and causes jumps.
             setIsAtBottom(true);
             setShowScrollToBottomBtn(false);
             
@@ -8255,6 +8254,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 {activeProfileTab === 'info' && (
                                     <div className="vpm-info-wrap">
                                         <div className="vpm-info-grid">
+                                            {/* Gender */}
                                             <div className="vpm-info-card">
                                                 <div className="vpm-ic-icon" style={{background:'#ede9fe'}}>
                                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="#7c3aed"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
@@ -8262,6 +8262,33 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                 <div className="vpm-ic-label">Gender</div>
                                                 <div className="vpm-ic-value">{profileUser.gender || 'Not Set'}</div>
                                             </div>
+                                            {/* Real age — from dateOfBirth or age field, shown for all roles including guests */}
+                                            {(() => {
+                                                let userAge = null;
+                                                if (profileUser.dateOfBirth) {
+                                                    const dob = new Date(profileUser.dateOfBirth);
+                                                    if (!isNaN(dob.getTime())) {
+                                                        const now = new Date();
+                                                        let y = now.getFullYear() - dob.getFullYear();
+                                                        const mo = now.getMonth() - dob.getMonth();
+                                                        if (mo < 0 || (mo === 0 && now.getDate() < dob.getDate())) y--;
+                                                        if (y >= 1 && y < 120) userAge = y;
+                                                    }
+                                                }
+                                                if (userAge === null && typeof profileUser.age === 'number' && profileUser.age >= 1 && profileUser.age < 120) {
+                                                    userAge = profileUser.age;
+                                                }
+                                                if (userAge === null) return null;
+                                                return (
+                                                    <div className="vpm-info-card">
+                                                        <div className="vpm-ic-icon" style={{background:'#fce7f3'}}>
+                                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="#be185d"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                                                        </div>
+                                                        <div className="vpm-ic-label">Age</div>
+                                                        <div className="vpm-ic-value">{userAge} yrs</div>
+                                                    </div>
+                                                );
+                                            })()}
                                             <div className="vpm-info-card">
                                                 <div className="vpm-ic-icon" style={{background:'#dbeafe'}}>
                                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="#2563eb"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
@@ -8504,94 +8531,65 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 )}
                             </div>
 
-                            {/* ── Inline photo enlarge overlay — light lavender premium ── */}
+                            {/* ── Inline photo enlarge overlay — premium full-bleed ── */}
                             {vpmEnlarged && (
                                 <div
                                     onClick={() => setVpmEnlarged(null)}
                                     style={{
                                         position:'absolute', inset:0, zIndex:50,
-                                        background:'rgba(237,233,254,0.94)',
-                                        backdropFilter:'blur(14px)',
+                                        background:'rgba(15,10,40,0.88)',
+                                        backdropFilter:'blur(20px)',
                                         display:'flex', flexDirection:'column',
                                         alignItems:'center', justifyContent:'center',
                                         borderRadius:'20px',
                                         animation:'vpmFadeIn 0.18s ease-out',
                                     }}>
 
-                                    {/* Premium lavender card */}
+                                    {/* Floating close button — always on top of overlay */}
+                                    <button
+                                        onClick={() => setVpmEnlarged(null)}
+                                        style={{
+                                            position:'absolute', top:12, right:12,
+                                            width:36, height:36, borderRadius:'50%',
+                                            background:'linear-gradient(135deg,#7c3aed,#6d28d9)',
+                                            border:'2px solid rgba(255,255,255,0.25)',
+                                            display:'flex', alignItems:'center', justifyContent:'center',
+                                            cursor:'pointer', color:'#fff',
+                                            boxShadow:'0 4px 16px rgba(0,0,0,0.55), 0 1px 4px rgba(109,40,217,0.5)',
+                                            transition:'all 0.15s ease',
+                                            zIndex:55, padding:0, flexShrink:0,
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background='linear-gradient(135deg,#dc2626,#b91c1c)'; e.currentTarget.style.transform='scale(1.1)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background='linear-gradient(135deg,#7c3aed,#6d28d9)'; e.currentTarget.style.transform='scale(1)'; }}>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12Z"/>
+                                        </svg>
+                                    </button>
+
+                                    {/* Image card — zero waste, image fills everything */}
                                     <div
                                         onClick={e => e.stopPropagation()}
                                         style={{
-                                            background:'linear-gradient(145deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%)',
-                                            border:'1.5px solid rgba(167,139,250,0.5)',
-                                            borderRadius:'18px',
-                                            padding:'12px 12px 10px',
-                                            boxShadow:'0 8px 28px rgba(109,40,217,0.22), 0 2px 8px rgba(109,40,217,0.10), inset 0 1px 0 rgba(255,255,255,0.9)',
-                                            display:'flex', flexDirection:'column',
-                                            alignItems:'center', gap:'8px',
-                                            width:'min(94vw, 640px)',
-                                            maxHeight:'calc(100vh - 40px)',
-                                            position:'relative',
+                                            borderRadius:'14px',
+                                            padding:'3px',
+                                            background:'linear-gradient(135deg,rgba(167,139,250,0.6),rgba(109,40,217,0.4))',
+                                            boxShadow:'0 12px 48px rgba(0,0,0,0.6), 0 2px 12px rgba(109,40,217,0.4)',
+                                            display:'inline-flex',
+                                            width:'min(96vw, 760px)',
+                                            maxHeight:'calc(100vh - 64px)',
+                                            animation:'vpmSlideUp 0.2s cubic-bezier(0.34,1.56,0.64,1)',
                                         }}>
-
-                                        {/* Close button */}
-                                        <button
-                                            onClick={() => setVpmEnlarged(null)}
-                                            style={{
-                                                position:'absolute', top:10, right:10,
-                                                width:32, height:32, borderRadius:'50%',
-                                                background:'linear-gradient(135deg,#7c3aed,#6d28d9)',
-                                                border:'1.5px solid rgba(196,181,253,0.6)',
-                                                display:'flex', alignItems:'center', justifyContent:'center',
-                                                cursor:'pointer', color:'#fff',
-                                                boxShadow:'0 3px 10px rgba(109,40,217,0.4)',
-                                                transition:'all 0.15s ease',
-                                                zIndex:52, padding:0,
-                                            }}
-                                            onMouseEnter={e => { e.currentTarget.style.background='linear-gradient(135deg,#dc2626,#b91c1c)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.background='linear-gradient(135deg,#7c3aed,#6d28d9)'; }}>
-                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                                                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12Z"/>
-                                            </svg>
-                                        </button>
-
-                                        {/* Label */}
-                                        <div style={{
-                                            display:'flex', alignItems:'center', gap:5,
-                                            fontSize:'9px', fontWeight:700,
-                                            color:'#5b21b6', letterSpacing:'0.05em',
-                                            textTransform:'uppercase', paddingRight:38,
-                                        }}>
-                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed">
-                                                {vpmEnlarged.type === 'avatar'
-                                                    ? <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                                                    : <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                                }
-                                            </svg>
-                                            {vpmEnlarged.type === 'avatar' ? 'Profile Photo' : 'Cover Photo'}
-                                        </div>
-
-                                        {/* Image — full size, no circular crop */}
                                         <img
                                             src={vpmEnlarged.url}
                                             alt="Enlarged"
                                             style={{
                                                 width:'100%',
-                                                maxHeight:'82vh',
-                                                borderRadius: vpmEnlarged.type === 'avatar' ? '16px' : '11px',
+                                                maxHeight:'calc(100vh - 70px)',
+                                                borderRadius:'11px',
                                                 objectFit:'contain',
-                                                boxShadow: vpmEnlarged.type === 'avatar'
-                                                    ? '0 0 0 3px rgba(167,139,250,0.6), 0 12px 32px rgba(109,40,217,0.35)'
-                                                    : '0 6px 20px rgba(109,40,217,0.2)',
-                                                animation:'vpmSlideUp 0.2s cubic-bezier(0.34,1.56,0.64,1)',
                                                 display:'block',
                                             }}
                                         />
-
-                                        {/* Tap to close hint */}
-                                        <div style={{fontSize:'8px', color:'rgba(109,40,217,0.45)', fontWeight:500, letterSpacing:'0.03em'}}>
-                                            Tap outside to close
-                                        </div>
                                     </div>
                                 </div>
                             )}
