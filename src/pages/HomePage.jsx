@@ -4073,6 +4073,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
@@ -4596,6 +4609,18 @@ const HomePage = ({ user, roomIdOverride }) => {
     const handleWhisperUser = async (message) => {
         if (blockedUsers.includes(message.uid) || usersWhoBlockedMe.includes(message.uid)) {
             pt.error("You cannot whisper to a blocked user");
+            return;
+        }
+        // Block whisper if target is not currently in the room
+        if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(message.uid)) {
+            pt.whisperOff(
+                <div>
+                    <div style={{ fontWeight: 800, fontSize: '13px' }}>Can't Whisper Offline User</div>
+                    <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                        <span style={{ fontWeight: 700 }}>{message.displayName}</span> is not in the room right now
+                    </div>
+                </div>
+            );
             return;
         }
         // Check if target has whisper messages disabled
@@ -5232,6 +5257,20 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const handleSendWhisper = async () => {
         if (whisperMessage.trim() === '' || !whisperTarget || !auth.currentUser) return;
+        // Target may have left the room after whisper was initiated
+        if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+            pt.whisperOff(
+                <div>
+                    <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                    <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                        <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                    </div>
+                </div>
+            );
+            setWhisperTarget(null);
+            setWhisperPopupOpen(false);
+            return;
+        }
 
         const { uid, displayName, email } = auth.currentUser;
         let userProfile = loggedInUserProfile;
@@ -6619,6 +6658,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
@@ -6699,6 +6751,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
@@ -6984,6 +7049,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
@@ -7106,6 +7184,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
@@ -7214,6 +7305,19 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
+                // Guard: target may have left the room after whisper was initiated
+                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                    pt.whisperOff(
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
+                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
+                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                            </div>
+                        </div>
+                    );
+                    setWhisperTarget(null);
+                    return;
+                }
                 messageData.isWhisper = true;
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;

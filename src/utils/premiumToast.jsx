@@ -240,6 +240,14 @@ const Icon = {
       <path d="M18 13c2 0 3 2 3 3l-3-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
+  whisperOff: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      {/* Chat bubble */}
+      <path d="M20 3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(255,255,255,0.18)" stroke="white" strokeWidth="1.7" strokeLinejoin="round"/>
+      {/* Slash line across the bubble */}
+      <line x1="6" y1="18" x2="18" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
 };
 
 /* ─── Base style factory ─── */
@@ -286,6 +294,7 @@ const Styles = {
   login:         makeStyle('linear-gradient(135deg,#7c3aed 0%,#6366f1 50%,#3b82f6 100%)', 'rgba(99,102,241,0.5)'),
   emailVerified: makeStyle('linear-gradient(135deg,#059669 0%,#10b981 60%,#34d399 100%)', 'rgba(16,185,129,0.5)'),
   rocket:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#c084fc 100%)',         'rgba(124,58,237,0.45)'),
+  whisperOff:    makeStyle('linear-gradient(135deg,#374151 0%,#1e293b 100%)',         'rgba(30,41,59,0.60)'),
 };
 
 const OPT = {
@@ -326,4 +335,5 @@ export const pt = {
   login:         (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.login,         style: Styles.login,         autoClose: 5000, ...opts }),
   emailVerified: (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.emailVerified, style: Styles.emailVerified, autoClose: 5000, ...opts }),
   rocket:        (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.rocket,        style: Styles.rocket,        ...opts }),
+  whisperOff:    (msg, opts={}) => toast.error  (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
 };
