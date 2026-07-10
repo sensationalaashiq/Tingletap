@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TI } from '../utils/toastIcons';
 import { SUPPORTED_LANGUAGES } from '../utils/translationService';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import LiveAvatarImg from './LiveAvatar';
 import { auth, db } from '../firebase/config';
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -1745,8 +1746,10 @@ const SettingsSidebar = ({
                                 {blockedUserProfiles.map(user => (
                                     <div key={user.id} className="blocked-user-item" data-user-id={user.id}>
                                         <div className="blocked-user-info">
-                                            <img 
-                                                src={user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`}
+                                            <LiveAvatarImg
+                                                uid={user.uid || user.id}
+                                                gender={user.gender}
+                                                fallbackPhotoURL={user.photoURL}
                                                 alt="avatar"
                                                 className="blocked-user-avatar"
                                             />
@@ -1833,8 +1836,10 @@ const SettingsSidebar = ({
                                     friendsProfiles.map(friend => (
                                         <div key={friend.id} className="sf-friend-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <img
-                                                    src={friend.photoURL || `${getDefaultAvatarUrl(friend.id, friend.gender)}`}
+                                                <LiveAvatarImg
+                                                    uid={friend.id}
+                                                    gender={friend.gender}
+                                                    fallbackPhotoURL={friend.photoURL}
                                                     alt="avatar"
                                                     className="sf-friend-avatar"
                                                     style={{ cursor: 'pointer' }}
@@ -1930,8 +1935,10 @@ const SettingsSidebar = ({
                                 {friendRequests && friendRequests.length > 0 ? (
                                     friendRequests.map(req => (
                                         <div key={req.id} className="sf-friend-item sf-request-item">
-                                            <img
-                                                src={req.senderPhotoURL || `${getDefaultAvatarUrl(req.senderId, req.senderGender)}`}
+                                            <LiveAvatarImg
+                                                uid={req.senderId}
+                                                gender={req.senderGender}
+                                                fallbackPhotoURL={req.senderPhotoURL}
                                                 alt="avatar"
                                                 className="sf-friend-avatar"
                                                 style={{ cursor: 'pointer' }}
@@ -2464,8 +2471,10 @@ const SettingsSidebar = ({
                                             <div className="sf-friends-list">
                                                 {members.map(member => (
                                                     <div key={member.id} className="sf-friend-item">
-                                                        <img
-                                                            src={member.photoURL || getDefaultAvatarUrl(member.id, member.gender)}
+                                                        <LiveAvatarImg
+                                                            uid={member.id}
+                                                            gender={member.gender}
+                                                            fallbackPhotoURL={member.photoURL}
                                                             alt="avatar"
                                                             className="sf-friend-avatar"
                                                             style={{ cursor: 'pointer', border: `2px solid ${cfg.color}` }}

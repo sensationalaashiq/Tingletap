@@ -56,6 +56,7 @@ import DeviceFingerprint from '../utils/deviceFingerprint';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName } from '../utils/liveUsernames';
+import LiveAvatarImg from '../components/LiveAvatar';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -7678,11 +7679,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                 data-conversation-user={conversation.otherUserId}
                                             >
                                                 <div className={`pm-conversation-avatar ${getGenderBorderClass({ gender: conversation.otherUserGender || 'male' })}`}>
-                                                    <img 
-                                                        src={(() => {
+                                                    <LiveAvatarImg
+                                                        uid={conversation.otherUserId}
+                                                        gender={conversation.otherUserGender || 'male'}
+                                                        fallbackPhotoURL={(() => {
                                                             const cachedUser = window.userProfilesCache?.get(conversation.otherUserId);
-                                                            return cachedUser ? getPrivateMessageAvatarUrl(cachedUser) : `${getDefaultAvatarUrl(conversation.otherUserId, conversation.otherUserGender || 'male')}`;
-                                                        })()} 
+                                                            return cachedUser?.photoURL || conversation.otherUserPhoto || null;
+                                                        })()}
                                                         alt="avatar"
                                                         className="conversation-avatar"
                                                         data-user-id={conversation.otherUserId}
