@@ -53,6 +53,10 @@ export const handler = async (event) => {
         endpoint,
         credentials: { accessKeyId: r2AccessKey, secretAccessKey: r2SecretKey },
         forcePathStyle: true,
+        // See r2Client.js buildS3Client() — R2 doesn't support the SDK's default
+        // flexible-checksum behavior, which otherwise surfaces as "UnknownError".
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
       });
 
       const testKey = `_diag_test_${Date.now()}.txt`;
@@ -79,9 +83,6 @@ export const handler = async (event) => {
 
       bucketTests[`public_bucket (${r2PublicBucket || 'NOT SET'})`]  = await testBucket('public',  r2PublicBucket);
       bucketTests[`private_bucket (${r2PrivateBucket || 'NOT SET'})`] = await testBucket('private', r2PrivateBucket);
-      if (r2LegacyBucket) {
-        bucketTests[`legacy_bucket (${r2LegacyBucket})`] = await testBucket('legacy', r2LegacyBucket);
-      }
 
       results.r2_buckets = bucketTests;
     } catch (e) {

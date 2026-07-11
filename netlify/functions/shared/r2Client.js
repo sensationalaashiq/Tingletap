@@ -43,6 +43,13 @@ function buildS3Client() {
     endpoint,
     credentials: { accessKeyId, secretAccessKey: secretKey },
     forcePathStyle: true,
+    // Newer @aws-sdk/client-s3 versions send flexible-checksum headers by default.
+    // Cloudflare R2 doesn't speak that dialect the same way S3 does, so the SDK
+    // fails to parse R2's response and throws a generic "UnknownError" on every
+    // PutObject/GetObject call. Forcing checksums to "WHEN_REQUIRED" restores
+    // normal S3-compatible behavior against R2.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
 }
 
