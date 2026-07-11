@@ -289,8 +289,14 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
         customStyles += `text-shadow: 0 0 3px rgba(255,255,255,0.55), 0 0 6px rgba(0,0,0,0.55) !important;\n`;
       }
     } else {
-      // Default: CSS theme variable (--username-color) takes over — no shadow
-      customStyles += `text-shadow: none !important;\n`;
+      // Default color: CSS theme variable (--username-color) controls it.
+      // Still honour any explicitly chosen text-shadow — only omit it when
+      // the user has not set one.
+      if (chosenShadow && chosenShadow !== 'none') {
+        customStyles += `text-shadow: ${chosenShadow} !important;\n`;
+      } else {
+        customStyles += `text-shadow: none !important;\n`;
+      }
     }
   }
 
