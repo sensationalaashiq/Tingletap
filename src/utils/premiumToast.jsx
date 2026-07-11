@@ -335,5 +335,5 @@ export const pt = {
   login:         (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.login,         style: Styles.login,         autoClose: 5000, ...opts }),
   emailVerified: (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.emailVerified, style: Styles.emailVerified, autoClose: 5000, ...opts }),
   rocket:        (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.rocket,        style: Styles.rocket,        ...opts }),
-  whisperOff:    (msg, opts={}) => toast.info   (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
+  whisperOff:    (msg, opts={}) => toast.success (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
 };
