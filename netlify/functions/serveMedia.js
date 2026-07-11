@@ -4,7 +4,7 @@
 //
 // TWO-BUCKET ROUTING:
 //   Legacy prefixes (profiles/, covers/, chat-images/, chat-audio/, homepage-audio/)
-//     → OLD single bucket (R2_BUCKET_NAME) — backward compat for existing Firestore URLs
+//     → PRIVATE bucket (R2_PRIVATE_BUCKET) — backward compat for existing Firestore URLs
 //
 //   New private-chat prefixes (private-chat/images/, private-chat/audio/)
 //     → PRIVATE bucket (R2_PRIVATE_BUCKET_NAME)
@@ -20,7 +20,7 @@ import {
   getPublicBucketName,
 } from './shared/r2Client.js';
 
-// Legacy prefixes — old single bucket (R2_BUCKET_NAME / R2_PRIVATE_BUCKET fallback)
+// Legacy prefixes — served from the private bucket (R2_PRIVATE_BUCKET)
 const LEGACY_PREFIXES = [
   'profiles/',
   'covers/',

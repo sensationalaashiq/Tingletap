@@ -33,7 +33,6 @@ export const handler = async (event) => {
   const r2AccessKey     = process.env.R2_ACCESS_KEY_ID  || null;
   const r2SecretKey     = process.env.R2_SECRET_ACCESS_KEY || null;
   const r2PublicUrl     = process.env.R2_PUBLIC_BUCKET_URL || null;
-  const r2LegacyBucket  = process.env.R2_BUCKET_NAME    || null;
 
   results.r2_env = {
     R2_ACCOUNT_ID:        r2AccountId     ? 'SET ✅'                          : 'MISSING ❌',
@@ -42,7 +41,6 @@ export const handler = async (event) => {
     R2_PUBLIC_BUCKET:     r2PublicBucket  ? `SET ✅ → "${r2PublicBucket}"`    : 'MISSING ❌  (set R2_PUBLIC_BUCKET in Netlify)',
     R2_PRIVATE_BUCKET:    r2PrivateBucket ? `SET ✅ → "${r2PrivateBucket}"`   : 'MISSING ❌  (set R2_PRIVATE_BUCKET in Netlify)',
     R2_PUBLIC_BUCKET_URL: r2PublicUrl     ? `SET ✅ → "${r2PublicUrl}"`       : 'MISSING ❌  (profile/cover/chat images will proxy through serveMedia instead)',
-    R2_BUCKET_NAME:       r2LegacyBucket  ? `SET ✅ → "${r2LegacyBucket}"`   : 'MISSING ⚠️  (needed for old stored URLs backward compat)',
   };
 
   // ── 2. R2 connectivity test (PutObject + DeleteObject — HeadBucket is unreliable on R2) ──

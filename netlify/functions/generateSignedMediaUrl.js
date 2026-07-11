@@ -3,8 +3,8 @@
 // viewing badge verification media stored in Cloudflare R2.
 //
 // BUCKET ROUTING (backward-compat):
-//   key starts with "badge/"          → NEW private bucket (R2_Private_Bucket)
-//   key starts with "verifications/"  → OLD legacy bucket  (R2_BUCKET_NAME)
+//   key starts with "badge/"          → private bucket (R2_PRIVATE_BUCKET)
+//   key starts with "verifications/"  → same private bucket (legacy key prefix)
 
 import { createPresignedGetUrl } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';

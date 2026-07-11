@@ -10,8 +10,9 @@
 //   R2_Private_Bucket    — name of the private bucket
 //   R2_PUBLIC_BUCKET_URL — permanent public base URL, e.g. "https://pub-xxx.r2.dev"
 //
-// Backward-compat env var (old single bucket still needed for serveMedia legacy):
-//   R2_BUCKET_NAME       — original single bucket name
+// Note: the old single-bucket env var R2_BUCKET_NAME has been retired —
+// it held the same value as R2_PRIVATE_BUCKET, so legacy reads/writes now
+// just use the private bucket directly.
 
 import {
   S3Client,
@@ -59,8 +60,7 @@ export function getPublicBucketName() {
   const name =
     process.env.R2_PUBLIC_BUCKET      ||   // preferred (all-caps)
     process.env.R2_Public_Bucket      ||   // camelCase variant some users set
-    process.env.R2_PUBLIC_BUCKET_NAME ||   // alternate suffix
-    process.env.R2_BUCKET_NAME;            // ultimate fallback: old single bucket
+    process.env.R2_PUBLIC_BUCKET_NAME;     // alternate suffix
   if (!name) throw new Error(
     'No public R2 bucket configured. Set R2_PUBLIC_BUCKET in Netlify env vars.'
   );
@@ -72,8 +72,7 @@ export function getPrivateBucketName() {
   const name =
     process.env.R2_PRIVATE_BUCKET      ||  // preferred (all-caps)
     process.env.R2_Private_Bucket      ||  // camelCase variant
-    process.env.R2_PRIVATE_BUCKET_NAME ||  // alternate suffix
-    process.env.R2_BUCKET_NAME;            // ultimate fallback: old single bucket
+    process.env.R2_PRIVATE_BUCKET_NAME;    // alternate suffix
   if (!name) throw new Error(
     'No private R2 bucket configured. Set R2_PRIVATE_BUCKET in Netlify env vars.'
   );
@@ -81,16 +80,9 @@ export function getPrivateBucketName() {
 }
 
 /** Legacy single bucket — used by serveMedia/getBadgeMedia/getRJMedia for old stored keys.
- *  Falls back to private bucket if R2_BUCKET_NAME is not set. */
+ *  This is the same physical bucket as the private bucket, so it's just an alias. */
 export function getBucketName() {
-  const name =
-    process.env.R2_BUCKET_NAME    ||       // old single bucket (preferred for legacy reads)
-    process.env.R2_PRIVATE_BUCKET ||       // fallback: treat private bucket as legacy too
-    process.env.R2_Private_Bucket;
-  if (!name) throw new Error(
-    'No legacy R2 bucket configured. Set R2_BUCKET_NAME in Netlify env vars.'
-  );
-  return name;
+  return getPrivateBucketName();
 }
 
 // ── Public URL helper ──────────────────────────────────────────────────────────
@@ -259,9 +251,6 @@ function _bucketForKey(key) {
   ) {
     // verifications/ and rj-verifications/ were in the OLD single bucket.
     // Fall back to legacy bucket for those so old admin views still work.
-    if (key.startsWith('verifications/') || key.startsWith('rj-verifications/')) {
-      return _tryGetBucketName(process.env.R2_BUCKET_NAME) || getPrivateBucketName();
-    }
     return getPrivateBucketName();
   }
   // New PUBLIC prefixes
@@ -273,9 +262,5 @@ function _bucketForKey(key) {
     return getPublicBucketName();
   }
   // Legacy single-bucket prefixes (profiles/, covers/, chat-images/, etc.)
-  return _tryGetBucketName(process.env.R2_BUCKET_NAME) || getBucketName();
-}
-
-function _tryGetBucketName(name) {
-  return name || null;
+  return getBucketName();
 }

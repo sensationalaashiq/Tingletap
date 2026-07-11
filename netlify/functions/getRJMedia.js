@@ -3,8 +3,8 @@
 // to the browser as binary with inline Content-Disposition.
 //
 // BUCKET ROUTING (backward-compat):
-//   key starts with "rj/"               → NEW private bucket (R2_Private_Bucket)
-//   key starts with "rj-verifications/" → OLD legacy bucket  (R2_BUCKET_NAME)
+//   key starts with "rj/"               → private bucket (R2_PRIVATE_BUCKET)
+//   key starts with "rj-verifications/" → same private bucket (legacy key prefix)
 
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import {
