@@ -1,14 +1,17 @@
 // netlify/functions/getBadgeMedia.js
-// Owner/Admin only: fetches badge verification media from R2 server-side
-// and streams it back to the browser as binary with inline Content-Disposition.
+// Owner/Admin only: fetches badge verification media from R2 and streams it
+// back to the browser as binary with inline Content-Disposition.
 //
-// WHY: Presigned GET URLs from R2 require bucket-level CORS configuration for
-// browser fetch() requests. Rather than depend on CORS being configured,
-// this proxy function fetches from R2 on the server (no CORS needed) and
-// returns the raw bytes to the same-origin browser request.
+// BUCKET ROUTING (backward-compat):
+//   key starts with "badge/"          → NEW private bucket (tingletap-verification)
+//   key starts with "verifications/"  → OLD legacy bucket  (R2_BUCKET_NAME)
 
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { createR2Client, getBucketName } from './shared/r2Client.js';
+import {
+  createR2Client,
+  getPrivateBucketName,
+  getBucketName,
+} from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
 
 const CORS = {
@@ -37,25 +40,38 @@ export const handler = async (event) => {
   catch { return errResp('Invalid JSON', 400); }
 
   const { key } = body;
-  if (!key || typeof key !== 'string' || !key.startsWith('verifications/'))
+
+  // Accept both new "badge/" prefix and legacy "verifications/" prefix
+  const isNewKey    = key && typeof key === 'string' && key.startsWith('badge/');
+  const isLegacyKey = key && typeof key === 'string' && key.startsWith('verifications/');
+
+  if (!isNewKey && !isLegacyKey) {
     return errResp('Invalid or missing key', 400);
+  }
 
   // Restrict to owner / admin
   const user = await verifyToken(token, ['owner', 'admin']);
   if (!user.ok) return errResp(user.err, 403);
 
+  // Choose bucket based on key prefix
+  let bucketName;
   try {
-    const client = createR2Client();
-    const bucket = getBucketName();
-    const r2Resp = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    bucketName = isNewKey ? getPrivateBucketName() : getBucketName();
+  } catch (e) {
+    console.error('[getBadgeMedia] Bucket config error:', e.message);
+    return errResp('Storage not configured. Contact admin.', 503);
+  }
 
-    // Collect the stream into a buffer
+  try {
+    const r2Resp = await createR2Client().send(
+      new GetObjectCommand({ Bucket: bucketName, Key: key })
+    );
+
     const chunks = [];
     for await (const chunk of r2Resp.Body) {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
     const buffer = Buffer.concat(chunks);
-
     const contentType = r2Resp.ContentType || 'application/octet-stream';
 
     return {
@@ -70,7 +86,7 @@ export const handler = async (event) => {
       isBase64Encoded: true,
     };
   } catch (e) {
-    console.error('[getBadgeMedia] R2 error:', e.message);
-    return errResp('Storage service unavailable. Ensure R2 credentials are configured.', 503);
+    console.error('[getBadgeMedia] R2 error:', e.message, 'key:', key);
+    return errResp('Storage service unavailable.', 503);
   }
 };

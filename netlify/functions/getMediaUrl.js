@@ -1,10 +1,18 @@
 // netlify/functions/getMediaUrl.js
-// Generate a short-lived presigned GET URL for any R2 media key.
-// Access control enforced per media class:
-//   - verifications/, rj-verifications/ → owner or admin only (sensitive legal/ID docs)
-//   - profiles/{uid}/…, covers/{uid}/…, chat-images/, chat-audio/, homepage-audio/
-//       → any authenticated non-guest user
-//     (these are user-facing media shown to all room members, not private docs)
+// Generate a short-lived presigned GET URL for private R2 media.
+// Used as a fallback refresh when a stored URL is stale/broken.
+//
+// BUCKET ROUTING:
+//   badge/, verifications/             → private bucket (or legacy for old keys)
+//   rj/, rj-verifications/             → private bucket (or legacy)
+//   private-chat/images/, private-chat/audio/ → private bucket
+//   profiles/, covers/, chat-images/, chat-audio/, homepage-audio/ → legacy bucket
+//   profile/, cover/, homepage/        → NOT needed (these are permanent public URLs)
+//
+// Access control:
+//   verifications/, rj-verifications/, badge/, rj/  → owner/admin only
+//   private-chat/*                                  → authenticated non-guest users
+//   profiles/, covers/, chat-images/, etc.          → any authenticated non-guest user
 
 import { createPresignedGetUrl } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
@@ -20,35 +28,38 @@ function resp(data, status = 200) {
   return { statusCode: status, headers: CORS, body: JSON.stringify(data) };
 }
 
-/**
- * Return whether the caller is allowed to sign this key.
- * @param {string} key        R2 object key (already validated: no '..' or leading '/')
- * @param {string} callerRole role field from Firestore ('owner'|'admin'|'moderator'|'user'|'guest')
- */
 function checkAccess(key, callerRole) {
   const isStaff = callerRole === 'owner' || callerRole === 'admin';
 
-  // ── Sensitive verification docs — owner/admin only ────────────────────────
-  if (key.startsWith('verifications/') || key.startsWith('rj-verifications/')) {
+  // Verification media (new and legacy prefixes) — owner/admin only
+  if (
+    key.startsWith('verifications/')    ||
+    key.startsWith('rj-verifications/') ||
+    key.startsWith('badge/')            ||
+    key.startsWith('rj/')
+  ) {
     if (!isStaff) return { allowed: false, reason: 'Owner or admin required for verification media' };
     return { allowed: true };
   }
 
-  // ── User-facing media (profiles, covers, chat images/audio) ───────────────
-  // These are displayed to every member in a chat room, so any registered user
-  // (non-guest) is allowed to fetch a fresh signed URL.
-  const publicPrefixes = [
-    'profiles/',
-    'covers/',
-    'chat-images/',
-    'chat-audio/',
-    'homepage-audio/',
-  ];
-  if (publicPrefixes.some(p => key.startsWith(p))) {
+  // Private chat media — any authenticated non-guest user
+  if (key.startsWith('private-chat/')) {
     return { allowed: true };
   }
 
-  // Unknown prefix — deny
+  // Legacy user-facing media — any authenticated non-guest user
+  const legacyPrefixes = [
+    'profiles/', 'covers/', 'chat-images/', 'chat-audio/', 'homepage-audio/',
+  ];
+  if (legacyPrefixes.some(p => key.startsWith(p))) {
+    return { allowed: true };
+  }
+
+  // Public bucket prefixes don't need a signed URL (they have permanent public URLs)
+  if (key.startsWith('profile/') || key.startsWith('cover/') || key.startsWith('homepage/')) {
+    return { allowed: false, reason: 'Public media does not require a signed URL — use the permanent R2 public URL directly.' };
+  }
+
   return { allowed: false, reason: 'Key prefix not recognised' };
 }
 
@@ -60,32 +71,31 @@ export const handler = async (event) => {
   if (!token) return resp({ error: 'Authorization required' }, 401);
 
   let body;
-  try { body = JSON.parse(event.body || '{}'); } catch { return resp({ error: 'Invalid JSON' }, 400); }
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return resp({ error: 'Invalid JSON' }, 400); }
 
   const { key, expiresIn = 3600 } = body;
 
-  // ── Validate key format ───────────────────────────────────────────────────
   if (!key || typeof key !== 'string' || key.length > 512)
     return resp({ error: 'Invalid or missing key' }, 400);
   if (key.includes('..') || key.startsWith('/'))
     return resp({ error: 'Invalid key format' }, 400);
 
-  // ── Verify auth — guests cannot refresh ──────────────────────────────────
+  // Verify auth
   const user = await verifyToken(token);
   if (!user.ok) return resp({ error: user.err }, 401);
   if (user.role === 'guest') return resp({ error: 'Registered accounts only' }, 403);
 
-  // ── Per-class access check ────────────────────────────────────────────────
   const { allowed, reason } = checkAccess(key, user.role);
   if (!allowed) return resp({ error: reason || 'Access denied' }, 403);
 
-  // ── Clamp expiry: 60 s min, 3600 s (1 h) max for regular users; 24 h for staff ──
-  const isStaff = user.role === 'owner' || user.role === 'admin';
-  const maxExpiry = isStaff ? 86400 : 3600;
+  const isStaff      = user.role === 'owner' || user.role === 'admin';
+  const maxExpiry    = isStaff ? 86400 : 3600;
   const clampedExpiry = Math.min(maxExpiry, Math.max(60, Number(expiresIn) || 3600));
 
   let signedUrl;
   try {
+    // createPresignedGetUrl auto-routes to the correct bucket based on key prefix
     signedUrl = await createPresignedGetUrl(key, clampedExpiry);
   } catch (e) {
     console.error('[getMediaUrl] R2 error:', e.message);

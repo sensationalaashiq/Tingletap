@@ -1,3 +1,52 @@
+# Recent Changes (July 11, 2026) — Dual-Bucket R2 Refactor (Session 14)
+
+**Two separate Cloudflare R2 buckets** — public media loads via permanent CDN URL (never expires), private media stays in an isolated private bucket served only through auth-gated Netlify proxy functions.
+
+Verified with `npm run build` (passes). Deploy via GitHub → Netlify pipeline.
+
+## New Netlify Environment Variables Required
+
+Add these in Netlify → Site settings → Environment variables:
+
+| Variable | Value | Purpose |
+|---|---|---|
+| `R2_PUBLIC_BUCKET_NAME` | `tingletap-media` | Public bucket name |
+| `R2_PRIVATE_BUCKET_NAME` | `tingletap-verification` | Private bucket name |
+| `R2_PUBLIC_BUCKET_URL` | e.g. `https://pub-xxxx.r2.dev` | Public base URL for tingletap-media (get from Cloudflare R2 dashboard → bucket → Public Access URL) |
+| `R2_BUCKET_NAME` | *(keep as-is)* | Legacy single bucket — still needed for backward-compat reads of old stored URLs |
+
+Existing credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are shared across both buckets — no change needed.
+
+## Cloudflare Dashboard Steps Required
+
+1. **Create bucket `tingletap-media`** — set "Public Access" to **Enabled**. Copy the "Public Bucket URL" and set it as `R2_PUBLIC_BUCKET_URL`.
+2. **Create bucket `tingletap-verification`** — keep Access **Private** (default).
+3. Your existing API token must have Object Read & Write permission on both new buckets.
+
+## What Changed
+
+✅ **Applied**:
+1. **`netlify/functions/shared/r2Client.js`** — full dual-bucket rewrite: `getPublicBucketName()` / `getPrivateBucketName()`, `getPublicMediaUrl(key)`, `putPublicObject()` / `putPrivateObject()`, auto-routing `createPresignedGetUrl()` and `deleteObjects()` by key prefix. Legacy `createR2Client()` / `getBucketName()` kept for backward compat.
+2. **`netlify/functions/uploadMedia.js`** — routes by `uploadType`: `profile`, `cover`, `chat-image`, `homepage-audio` → PUBLIC bucket → returns permanent public URL; `private-chat-image`, `private-chat-audio` → PRIVATE bucket → returns serveMedia proxy URL. Key prefixes changed: `profile/`, `cover/`, `homepage/images/`, `homepage/audio/`.
+3. **`netlify/functions/serveMedia.js`** — serves legacy prefixes (`profiles/`, `covers/`, `chat-images/`, etc.) from OLD bucket and new `private-chat/` prefixes from PRIVATE bucket. Public media no longer goes through this proxy.
+4. **`netlify/functions/uploadBadgeMedia.js`** — uploads to PRIVATE bucket under `badge/` prefix (was `verifications/`).
+5. **`netlify/functions/uploadRJMedia.js`** — uploads to PRIVATE bucket under `rj/` prefix (was `rj-verifications/`).
+6. **`netlify/functions/getBadgeMedia.js`** — backward-compat routing: `badge/` → private bucket, `verifications/` → legacy bucket.
+7. **`netlify/functions/getRJMedia.js`** — backward-compat routing: `rj/` → private bucket, `rj-verifications/` → legacy bucket.
+8. **`netlify/functions/generateSignedMediaUrl.js`** — accepts both `badge/` and `verifications/` prefixes.
+9. **`netlify/functions/getUploadUrl.js`** — presigned PUT targets PRIVATE bucket, `badge/` prefix.
+10. **`netlify/functions/getMediaUrl.js`** — prefix-based bucket routing; public bucket prefixes return early (they need no signed URL).
+11. **`src/services/r2StorageService.js`** — added `isPublicR2Url()` helper; updated `extractR2Key()` for new URL formats.
+12. **`src/components/PremiumImageMessage.jsx`** / **`CustomAudioPlayer.jsx`** — skip signed-URL refresh logic for public R2 URLs (they never expire).
+
+## Backward Compatibility
+
+- All existing `/.netlify/functions/serveMedia?key=profiles/...` URLs in Firestore continue working (served from legacy bucket).
+- All existing badge/RJ applications with `verifications/` or `rj-verifications/` keys still load in the admin panel.
+- Zero Firestore schema changes required.
+
+---
+
 # Recent Changes (July 11, 2026) — R2 Private Bucket + Signed URLs + DP Crop Modal + Logo Fix (Session 13)
 
 **Re-import setup**: stale process on port 5000 killed, both workflows restarted cleanly. Firebase config still lives only in Netlify — Replit preview renders blank (expected). All changes ship via GitHub → Netlify pipeline.

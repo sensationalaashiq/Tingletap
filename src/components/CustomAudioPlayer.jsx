@@ -282,27 +282,20 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
             // and fetch a fresh 1-hour signed URL from the getMediaUrl function.
             if (audioRetried.current || isYouTubeMusic) return;
             audioRetried.current = true;
-            const key = mediaKey || (() => {
-              try {
-                const { extractR2Key } = require('../services/r2StorageService');
-                return extractR2Key(resolvedUrl);
-              } catch {
-                if (!resolvedUrl || !resolvedUrl.includes('r2.cloudflarestorage.com')) return null;
-                try {
-                  const u = new URL(resolvedUrl);
-                  const parts = u.pathname.split('/').filter(Boolean);
-                  return parts.length >= 2 ? parts.slice(1).join('/') : null;
-                } catch { return null; }
-              }
-            })();
-            if (!key) return;
+            // Public R2 URLs (tingletap-media bucket) never expire — skip refresh
             import('../services/r2StorageService')
-              .then(({ getMediaUrl }) => getMediaUrl(key))
-              .then(freshUrl => {
-                audioRetried.current = false;
-                setResolvedUrl(freshUrl);
-                const audio = audioRef.current;
-                if (audio) { audio.src = freshUrl; audio.load(); }
+              .then(({ isPublicR2Url, extractR2Key, getMediaUrl }) => {
+                if (isPublicR2Url(resolvedUrl)) return;
+                const key = mediaKey || extractR2Key(resolvedUrl);
+                if (!key) return;
+                getMediaUrl(key)
+                  .then(freshUrl => {
+                    audioRetried.current = false;
+                    setResolvedUrl(freshUrl);
+                    const audio = audioRef.current;
+                    if (audio) { audio.src = freshUrl; audio.load(); }
+                  })
+                  .catch(() => {});
               })
               .catch(() => {});
           }}

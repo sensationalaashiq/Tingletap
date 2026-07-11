@@ -1,6 +1,10 @@
 // netlify/functions/generateSignedMediaUrl.js
-// Owner/Admin only: generates a short-lived (5-min) presigned GET URL for viewing
-// badge verification media stored in Cloudflare R2.
+// Owner/Admin only: generates a short-lived (5-min) presigned GET URL for
+// viewing badge verification media stored in Cloudflare R2.
+//
+// BUCKET ROUTING (backward-compat):
+//   key starts with "badge/"          → NEW private bucket (tingletap-verification)
+//   key starts with "verifications/"  → OLD legacy bucket  (R2_BUCKET_NAME)
 
 import { createPresignedGetUrl } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
@@ -24,11 +28,16 @@ export const handler = async (event) => {
   if (!token) return resp({ error: 'Authorization required' }, 401);
 
   let body;
-  try { body = JSON.parse(event.body || '{}'); } catch { return resp({ error: 'Invalid JSON' }, 400); }
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return resp({ error: 'Invalid JSON' }, 400); }
 
   const { key } = body;
-  if (!key || typeof key !== 'string' || !key.startsWith('verifications/'))
+
+  // Accept new "badge/" prefix and legacy "verifications/" prefix
+  if (!key || typeof key !== 'string' ||
+      (!key.startsWith('badge/') && !key.startsWith('verifications/'))) {
     return resp({ error: 'Invalid or missing key' }, 400);
+  }
 
   // Only owner/admin can generate signed URLs
   const user = await verifyToken(token, ['owner', 'admin']);
@@ -36,6 +45,7 @@ export const handler = async (event) => {
 
   let signedUrl;
   try {
+    // createPresignedGetUrl auto-routes to the correct bucket based on key prefix
     signedUrl = await createPresignedGetUrl(key, 300); // 5-minute expiry
   } catch (e) {
     console.error('[generateSignedMediaUrl] R2 error:', e.message);

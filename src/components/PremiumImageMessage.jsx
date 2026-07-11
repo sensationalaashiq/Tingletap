@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { extractR2Key } from '../services/r2StorageService';
+import { extractR2Key, isPublicR2Url } from '../services/r2StorageService';
 import './PremiumImageMessage.css';
 
 /* ── Fullscreen Image Modal ── */
@@ -93,6 +93,11 @@ const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = fal
       return;
     }
     imgRetried.current = true;
+    // Public R2 URLs (tingletap-media bucket) never expire — no refresh needed
+    if (isPublicR2Url(resolvedUrl)) {
+      if (e.target) e.target.alt = 'Image unavailable';
+      return;
+    }
     const key = mediaKey || extractR2Key(e.target.src || resolvedUrl);
     if (!key) { e.target.alt = 'Image unavailable'; return; }
     import('../services/r2StorageService')

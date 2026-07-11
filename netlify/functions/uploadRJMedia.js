@@ -1,12 +1,13 @@
 // netlify/functions/uploadRJMedia.js
 // Receives an RJ verification audio recording (base64-encoded) and uploads it
-// directly to Cloudflare R2 using the server-side S3 SDK.
-// Mirrors uploadBadgeMedia.js — see that file for the CORS rationale.
+// to the PRIVATE Cloudflare R2 bucket (tingletap-verification).
 //
-// File sizes at our MediaRecorder bitrate: audio 48kbps × 90s ≈ 540KB → trivial
+// Key prefix: rj/{uid}/{section}-{uuid}.{ext}
+// (Old prefix "rj-verifications/" was on the legacy single bucket — still readable
+//  via getRJMedia backward-compat path.)
 
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { createR2Client, getBucketName } from './shared/r2Client.js';
+import { createR2Client, getPrivateBucketName } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
 import { randomUUID } from 'crypto';
 
@@ -19,9 +20,8 @@ const CORS = {
 
 const ALLOWED_MIME = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'];
 
-// RJ recordings can run longer than the badge declaration (song, welcome script),
-// so the byte ceiling is a bit more generous while staying well under Netlify's
-// 6MB body limit (~4.5MB raw after base64 overhead).
+// RJ recordings can run longer (song, welcome script) so the ceiling is higher
+// while staying under Netlify's 6 MB body limit (~4.5 MB raw after base64 overhead).
 const MAX_BYTES = 3 * 1024 * 1024;
 
 const ALLOWED_SECTIONS = ['intro', 'song', 'welcome'];
@@ -42,10 +42,10 @@ export const handler = async (event) => {
   catch { return resp({ error: 'Invalid JSON' }, 400); }
 
   const { section, data: base64Data } = body;
-  const rawCT     = body.contentType || '';
+  const rawCT      = body.contentType || '';
   const contentType = rawCT.split(';')[0].trim().toLowerCase();
 
-  // ── Validate inputs ───────────────────────────────────────────────────────
+  // ── Validate inputs ──────────────────────────────────────────────────────────
   if (!section || !ALLOWED_SECTIONS.includes(section))
     return resp({ error: 'section must be "intro", "song", or "welcome"' }, 400);
   if (!contentType || !ALLOWED_MIME.includes(contentType))
@@ -53,37 +53,32 @@ export const handler = async (event) => {
   if (!base64Data || typeof base64Data !== 'string')
     return resp({ error: 'Missing or invalid file data' }, 400);
 
-  // ── Verify Firebase token ─────────────────────────────────────────────────
+  // ── Verify Firebase token ────────────────────────────────────────────────────
   const user = await verifyToken(token);
   if (!user.ok)              return resp({ error: user.err }, 401);
   if (user.role === 'guest') return resp({ error: 'Registered accounts only' }, 403);
 
-  // ── Decode & size-check ───────────────────────────────────────────────────
+  // ── Decode & size-check ──────────────────────────────────────────────────────
   let buffer;
-  try {
-    buffer = Buffer.from(base64Data, 'base64');
-  } catch {
-    return resp({ error: 'Invalid base64 data' }, 400);
-  }
+  try { buffer = Buffer.from(base64Data, 'base64'); }
+  catch { return resp({ error: 'Invalid base64 data' }, 400); }
 
   if (buffer.length > MAX_BYTES) {
     const mb = (MAX_BYTES / 1024 / 1024).toFixed(1);
     return resp({ error: `File too large for proxy upload (max ${mb} MB). Reduce recording length.` }, 413);
   }
 
-  // ── Build R2 object key ───────────────────────────────────────────────────
+  // ── Build R2 object key (NEW private bucket prefix) ──────────────────────────
   const ext = contentType.includes('mp4') ? 'mp4'
             : contentType.includes('ogg') ? 'ogg'
             : contentType.includes('wav') ? 'wav'
             : 'webm';
-  const key = `rj-verifications/${user.uid}/${section}-${randomUUID()}.${ext}`;
+  const key = `rj/${user.uid}/${section}-${randomUUID()}.${ext}`;
 
-  // ── Upload to R2 via server-side S3 SDK (no CORS needed) ─────────────────
+  // ── Upload to PRIVATE R2 bucket ──────────────────────────────────────────────
   try {
-    const client = createR2Client();
-    const bucket = getBucketName();
-    await client.send(new PutObjectCommand({
-      Bucket:      bucket,
+    await createR2Client().send(new PutObjectCommand({
+      Bucket:      getPrivateBucketName(),
       Key:         key,
       Body:        buffer,
       ContentType: contentType,
@@ -93,5 +88,6 @@ export const handler = async (event) => {
     return resp({ error: 'Storage upload failed. Please try again.' }, 503);
   }
 
+  // Return only the key — never a URL.
   return resp({ key, contentType });
 };
