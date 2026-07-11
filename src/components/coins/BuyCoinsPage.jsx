@@ -8,7 +8,7 @@ import {
   subscribeCoinConfig, subscribeWallet, createPaymentOrder,
   markOrderSubmitted, formatCoins
 } from '../../utils/coinSystem';
-import { toast } from 'react-toastify';
+import { pt } from '../../utils/premiumToast';
 import './BuyCoinsPage.css';
 
 /* ── SVG Icons ── */
@@ -172,7 +172,7 @@ export default function BuyCoinsPage() {
       setOrderInfo(order);
     } catch (e) {
       console.error(e);
-      toast.error('Could not create order. Please try again.');
+      pt.error('Could not create order. Please try again.');
     }
   }, [firebaseUser, selectedPkg, config]);
 
@@ -191,7 +191,7 @@ export default function BuyCoinsPage() {
       setSubmitted(true);
       setStep('done');
     } catch (e) {
-      toast.error('Could not mark payment. Please try again.');
+      pt.error('Could not mark payment. Please try again.');
     } finally {
       setSubmitting(false);
     }

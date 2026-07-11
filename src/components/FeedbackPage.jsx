@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { auth, db } from '../firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { toast } from 'react-toastify';
-import { TI } from '../utils/toastIcons';
+import { pt } from '../utils/premiumToast';
 import './FeedbackPage.css';
 
 const IconFeedback = () => (
@@ -67,7 +66,7 @@ const FeedbackPage = ({ loggedInUserProfile }) => {
 
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) {
-      toast.error('Please write your feedback before submitting.', { icon: TI?.error });
+      pt.error('Please write your feedback before submitting.');
       return;
     }
     setFeedbackSubmitting(true);
@@ -82,10 +81,10 @@ const FeedbackPage = ({ loggedInUserProfile }) => {
         replies: [],
       });
       setFeedbackText('');
-      toast.success('Your feedback has been submitted! We appreciate your input.', { icon: TI?.success });
+      pt.success('Your feedback has been submitted! We appreciate your input.');
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback. Please try again.', { icon: TI?.error });
+      pt.error('Failed to submit feedback. Please try again.');
     } finally {
       setFeedbackSubmitting(false);
     }
@@ -93,7 +92,7 @@ const FeedbackPage = ({ loggedInUserProfile }) => {
 
   const handleSubmitComplaint = async () => {
     if (!complaintText.trim()) {
-      toast.error('Please describe your complaint before submitting.', { icon: TI?.error });
+      pt.error('Please describe your complaint before submitting.');
       return;
     }
     setComplaintSubmitting(true);
@@ -108,10 +107,10 @@ const FeedbackPage = ({ loggedInUserProfile }) => {
         replies: [],
       });
       setComplaintText('');
-      toast.success('Your complaint has been submitted. Our team will review it shortly.', { icon: TI?.success });
+      pt.success('Your complaint has been submitted. Our team will review it shortly.');
     } catch (error) {
       console.error('Error submitting complaint:', error);
-      toast.error('Failed to submit complaint. Please try again.', { icon: TI?.error });
+      pt.error('Failed to submit complaint. Please try again.');
     } finally {
       setComplaintSubmitting(false);
     }

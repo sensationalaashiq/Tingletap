@@ -240,12 +240,58 @@ const Icon = {
       <path d="M18 13c2 0 3 2 3 3l-3-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
-  whisperOff: mkIcon(
+  whisperOff: (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 34, height: 34, minWidth: 34,
+      background: 'rgba(255,255,255,0.28)',
+      borderRadius: '50%', flexShrink: 0,
+      boxShadow: '0 3px 12px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.15)',
+      border: '1.5px solid rgba(255,255,255,0.55)',
+    }}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+        {/* Chat bubble */}
+        <path d="M20 3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(255,255,255,0.30)" stroke="#fff" strokeWidth="2" strokeLinejoin="round"/>
+        {/* Slash line across the bubble */}
+        <line x1="5.5" y1="18.5" x2="18.5" y2="5.5" stroke="#fecaca" strokeWidth="2.6" strokeLinecap="round"/>
+      </svg>
+    </span>
+  ),
+  mute: mkIcon(
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-      {/* Chat bubble */}
-      <path d="M20 3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(255,255,255,0.18)" stroke="white" strokeWidth="1.7" strokeLinejoin="round"/>
-      {/* Slash line across the bubble */}
-      <line x1="6" y1="18" x2="18" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <rect x="9" y="2" width="6" height="11" rx="3" fill="white"/>
+      <path d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="4" y1="20" x2="20" y2="4" stroke="white" strokeWidth="2.4" strokeLinecap="round"/>
+    </svg>
+  ),
+  kick: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.8" strokeLinejoin="round"/>
+    </svg>
+  ),
+  ban: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" fill="rgba(255,255,255,0.15)"/>
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+    </svg>
+  ),
+  camera: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8"/>
+    </svg>
+  ),
+  volume: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.8" strokeLinejoin="round"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  ),
+  station: mkIcon(
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+      <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.15)" stroke="white" strokeWidth="1.5"/>
+      <line x1="12" y1="8" x2="12" y2="12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
+      <circle cx="12" cy="16" r="1.1" fill="white"/>
     </svg>
   ),
 };
@@ -264,6 +310,17 @@ const makeStyle = (gradient, shadow) => ({
   background: gradient,
   boxShadow: `0 12px 36px ${shadow}, 0 4px 12px rgba(0,0,0,0.18)`,
   lineHeight: '1.45',
+});
+
+/* ─── Extra-visible variant — bolder border, brighter text, deeper glow ─── */
+const makeVividStyle = (gradient, shadow) => ({
+  ...makeStyle(gradient, shadow),
+  fontSize: '14.5px',
+  fontWeight: 700,
+  color: '#ffffff',
+  textShadow: '0 1px 3px rgba(0,0,0,0.35)',
+  border: '1.5px solid rgba(255,255,255,0.45)',
+  boxShadow: `0 14px 40px ${shadow}, 0 4px 14px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.08)`,
 });
 
 const Styles = {
@@ -294,7 +351,13 @@ const Styles = {
   login:         makeStyle('linear-gradient(135deg,#7c3aed 0%,#6366f1 50%,#3b82f6 100%)', 'rgba(99,102,241,0.5)'),
   emailVerified: makeStyle('linear-gradient(135deg,#059669 0%,#10b981 60%,#34d399 100%)', 'rgba(16,185,129,0.5)'),
   rocket:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#c084fc 100%)',         'rgba(124,58,237,0.45)'),
-  whisperOff:    makeStyle('linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%)',         'rgba(91,33,182,0.55)'),
+  whisperOff:    makeVividStyle('linear-gradient(135deg,#6d28d9 0%,#9333ea 55%,#c026d3 100%)', 'rgba(147,51,234,0.6)'),
+  mute:          makeStyle('linear-gradient(135deg,#78350f 0%,#b45309 100%)',         'rgba(120,53,15,0.5)'),
+  kick:          makeStyle('linear-gradient(135deg,#b45309 0%,#f59e0b 100%)',         'rgba(180,83,9,0.45)'),
+  ban:           makeStyle('linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%)',         'rgba(127,29,29,0.5)'),
+  camera:        makeStyle('linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%)',         'rgba(29,78,216,0.45)'),
+  volume:        makeStyle('linear-gradient(135deg,#059669 0%,#10b981 100%)',         'rgba(5,150,105,0.45)'),
+  station:       makeStyle('linear-gradient(135deg,#1a0a2e 0%,#2d1b69 100%)',         'rgba(45,27,105,0.5)'),
 };
 
 const OPT = {
@@ -335,5 +398,11 @@ export const pt = {
   login:         (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.login,         style: Styles.login,         autoClose: 5000, ...opts }),
   emailVerified: (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.emailVerified, style: Styles.emailVerified, autoClose: 5000, ...opts }),
   rocket:        (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.rocket,        style: Styles.rocket,        ...opts }),
-  whisperOff:    (msg, opts={}) => toast.success (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
+  whisperOff:    (msg, opts={}) => toast.warn   (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    autoClose: 4500, ...opts }),
+  mute:          (msg, opts={}) => toast.warn   (msg, { ...OPT, icon: () => Icon.mute,          style: Styles.mute,          ...opts }),
+  kick:          (msg, opts={}) => toast.error  (msg, { ...OPT, icon: () => Icon.kick,          style: Styles.kick,          ...opts }),
+  ban:           (msg, opts={}) => toast.error  (msg, { ...OPT, icon: () => Icon.ban,           style: Styles.ban,           ...opts }),
+  camera:        (msg, opts={}) => toast.info   (msg, { ...OPT, icon: () => Icon.camera,        style: Styles.camera,        ...opts }),
+  volume:        (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.volume,        style: Styles.volume,        ...opts }),
+  station:       (msg, opts={}) => toast.error  (msg, { ...OPT, icon: () => Icon.station,       style: Styles.station,       ...opts }),
 };

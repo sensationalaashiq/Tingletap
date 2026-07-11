@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import './RadioPlayer.css';
 
 /* ── Country badge SVG (replaces emoji flags) ─────────────────── */
@@ -441,13 +441,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
           setIsLoading(false);
           setIsPlaying(false);
           setCurrentStation(null);
-          toast.error(
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Station unavailable. Try another!
-            </span>,
-            { style: { background: 'linear-gradient(135deg,#1a0a2e,#2d1b69)', color: '#fff', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '12px' }, icon: false, autoClose: 3000 }
-          );
+          pt.station('Station unavailable. Try another!', { autoClose: 3000 });
         }}
         onEnded={() => setIsPlaying(false)}
         preload="none"

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 
 const ChangeUsernameModal = React.memo(({ isOpen, onClose, onSuccess }) => {
   const [username, setUsername] = useState(auth.currentUser?.displayName || '');
@@ -12,19 +12,19 @@ const ChangeUsernameModal = React.memo(({ isOpen, onClose, onSuccess }) => {
 
   const handleSave = async () => {
     const val = username.trim();
-    if (!val) { toast.error('Username cannot be empty'); return; }
-    if (val.length < 2) { toast.error('Minimum 2 characters'); return; }
-    if (val.length > 30) { toast.error('Maximum 30 characters'); return; }
+    if (!val) { pt.error('Username cannot be empty'); return; }
+    if (val.length < 2) { pt.error('Minimum 2 characters'); return; }
+    if (val.length > 30) { pt.error('Maximum 30 characters'); return; }
     setSaving(true);
     try {
       const user = auth.currentUser;
       await updateProfile(user, { displayName: val });
       await setDoc(doc(db, 'users', user.uid), { displayName: val, updatedAt: new Date().toISOString() }, { merge: true });
-      toast.success('Username updated!');
+      pt.username('Username updated!');
       onSuccess && onSuccess();
       onClose();
     } catch (e) {
-      toast.error('Failed: ' + e.message);
+      pt.error('Failed: ' + e.message);
     } finally {
       setSaving(false);
     }

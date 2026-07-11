@@ -7,7 +7,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 
 const COUNTRIES = [
@@ -130,7 +130,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Profile picture must be less than 5MB');
+        pt.error('Profile picture must be less than 5MB');
         e.target.value = '';
         return;
       }
@@ -307,7 +307,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
   const handleCropComplete = async () => {
     if (!imgRef.current) {
-      toast.error('Please select an image first');
+      pt.error('Please select an image first');
       return;
     }
 
@@ -353,10 +353,10 @@ const EditProfile = ({ onClose, onSuccess }) => {
           setProfilePicPreview(previewUrl);
         }, 50);
         
-        toast.success('Image cropped successfully! Save your profile to apply.');
+        pt.image('Image cropped successfully! Save your profile to apply.');
       }
     } catch (error) {
-      toast.error('Failed to crop image');
+      pt.error('Failed to crop image');
       console.error('Crop error:', error);
     }
   };
@@ -449,11 +449,11 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setProfilePicPreview(finalPhotoURL);
       }
       
-      toast.success('Profile updated successfully!');
+      pt.profile('Profile updated successfully!');
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {
-      toast.error("Update failed: " + error.message);
+      pt.error("Update failed: " + error.message);
       setLoading(false);
     }
   };

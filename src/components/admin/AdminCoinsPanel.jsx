@@ -11,7 +11,7 @@ import {
 } from '../../utils/coinSystem';
 import { db } from '../../firebase/config';
 import { collection, onSnapshot, orderBy, query, limit } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { pt } from '../../utils/premiumToast';
 import './AdminCoinsPanel.css';
 
 /* ── Inline SVG Icons ── */
@@ -134,8 +134,8 @@ function CoinPackagesSection({ config, onSave }) {
     setSaving(true);
     try {
       await onSave({ packages });
-      toast.success('Coin packages saved!', { containerId: 'admin-panel' });
-    } catch { toast.error('Save failed', { containerId: 'admin-panel' }); }
+      pt.success('Coin packages saved!', { containerId: 'admin-panel' });
+    } catch { pt.error('Save failed', { containerId: 'admin-panel' }); }
     finally { setSaving(false); }
   };
 
@@ -252,8 +252,8 @@ function UPISection({ config, onSave }) {
     setSaving(true);
     try {
       await onSave({ upiId, upiEnabled: enabled });
-      toast.success('UPI settings saved!', { containerId: 'admin-panel' });
-    } catch { toast.error('Save failed', { containerId: 'admin-panel' }); }
+      pt.success('UPI settings saved!', { containerId: 'admin-panel' });
+    } catch { pt.error('Save failed', { containerId: 'admin-panel' }); }
     finally { setSaving(false); }
   };
 
@@ -344,8 +344,8 @@ function CommissionSection({ config, onSave }) {
     setSaving(true);
     try {
       await onSave({ commissionPct: Number(commissionPct) });
-      toast.success('Commission saved!', { containerId: 'admin-panel' });
-    } catch { toast.error('Save failed', { containerId: 'admin-panel' }); }
+      pt.success('Commission saved!', { containerId: 'admin-panel' });
+    } catch { pt.error('Save failed', { containerId: 'admin-panel' }); }
     finally { setSaving(false); }
   };
 
@@ -413,9 +413,9 @@ function PaymentOrdersSection() {
     setProcessing(prev => ({ ...prev, [order.id]: true }));
     try {
       await verifyPaymentOrder(order.id, order);
-      toast.success(`Verified! ${(order.coins || 0).toLocaleString()} coins credited to ${order.displayName}`, { containerId: 'admin-panel' });
+      pt.coin(`Verified! ${(order.coins || 0).toLocaleString()} coins credited to ${order.displayName}`, { containerId: 'admin-panel' });
     } catch (e) {
-      toast.error('Verification failed: ' + e.message, { containerId: 'admin-panel' });
+      pt.error('Verification failed: ' + e.message, { containerId: 'admin-panel' });
     } finally {
       setProcessing(prev => ({ ...prev, [order.id]: false }));
     }
@@ -426,8 +426,8 @@ function PaymentOrdersSection() {
     setProcessing(prev => ({ ...prev, [order.id]: true }));
     try {
       await rejectPaymentOrder(order.id);
-      toast.success('Order rejected', { containerId: 'admin-panel' });
-    } catch { toast.error('Failed', { containerId: 'admin-panel' }); }
+      pt.success('Order rejected', { containerId: 'admin-panel' });
+    } catch { pt.error('Failed', { containerId: 'admin-panel' }); }
     finally { setProcessing(prev => ({ ...prev, [order.id]: false })); }
   };
 
@@ -544,10 +544,10 @@ function RJEarningsSection({ config }) {
         upiId: createForm.upiId,
         notes: createForm.notes,
       });
-      toast.success('Payment record created!', { containerId: 'admin-panel' });
+      pt.success('Payment record created!', { containerId: 'admin-panel' });
       setCreateModal(null);
     } catch (e) {
-      toast.error('Failed: ' + e.message, { containerId: 'admin-panel' });
+      pt.error('Failed: ' + e.message, { containerId: 'admin-panel' });
     }
   };
 
@@ -556,8 +556,8 @@ function RJEarningsSection({ config }) {
     setPaymentProcessing(prev => ({ ...prev, [paymentId]: true }));
     try {
       await updateRJPaymentStatus(paymentId, status);
-      toast.success(`Payment marked as ${status}`, { containerId: 'admin-panel' });
-    } catch { toast.error('Update failed', { containerId: 'admin-panel' }); }
+      pt.success(`Payment marked as ${status}`, { containerId: 'admin-panel' });
+    } catch { pt.error('Update failed', { containerId: 'admin-panel' }); }
     finally { setPaymentProcessing(prev => ({ ...prev, [paymentId]: false })); }
   };
 

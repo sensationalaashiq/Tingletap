@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import SEO from '../seo/SEO';
 import { PAGES } from '../seo/seoConfig';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { pt } from '../utils/premiumToast';
 
 const LockSVG = () => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
@@ -60,7 +60,7 @@ const ForgotPasswordPage = () => {
       }
       // Success — email sent
       setStep(2);
-      toast.success('Password reset link sent! Check your inbox.');
+      pt.success('Password reset link sent! Check your inbox.');
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
     } finally {

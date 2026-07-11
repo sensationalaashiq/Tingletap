@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TI } from '../utils/toastIcons';
+import { pt } from '../utils/premiumToast';
 import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteDoc, serverTimestamp, getDoc, getDocs, addDoc, Timestamp, limit } from 'firebase/firestore';
@@ -412,7 +413,7 @@ const Sidebar = ({
           await sendTingleBotMessage(`${adminModalUser.displayName} has been kicked from ${kickedRoomNames} — ${actionData.reason || 'No reason provided'}`, 'kicked');
         } else {
           const targetRoomId = actionData.currentRoomId || roomId;
-          if (!targetRoomId) { toast.error('Not in a room — cannot kick.', { icon: TI.error }); return; }
+          if (!targetRoomId) { pt.kick('Not in a room — cannot kick.'); return; }
           const currentRoomName = rooms.find(r => r.id === targetRoomId)?.name || targetRoomId;
           await setDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid), {
             ...kickData, roomId: targetRoomId, roomName: currentRoomName
@@ -431,7 +432,7 @@ const Sidebar = ({
           await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked from all rooms and can rejoin.`, 'system');
         } else {
           const targetRoomId = actionData.currentRoomId || roomId;
-          if (!targetRoomId) { toast.error('Not in a room — cannot unkick.', { icon: TI.error }); return; }
+          if (!targetRoomId) { pt.kick('Not in a room — cannot unkick.'); return; }
           await deleteDoc(doc(db, 'rooms', targetRoomId, 'kickedUsers', adminModalUser.uid));
           const unkickRoomName = rooms.find(r => r.id === targetRoomId)?.name || targetRoomId;
           await sendTingleBotMessage(`${adminModalUser.displayName} has been unkicked and can rejoin ${unkickRoomName}.`, 'system');
@@ -446,7 +447,7 @@ const Sidebar = ({
       }
     } catch (err) {
       console.error(err);
-      toast.error(`Action failed.`, { icon: TI.error });
+      pt.error(`Action failed.`);
       throw err; /* Re-throw so modal shows error state */
     }
   };
@@ -698,7 +699,7 @@ const Sidebar = ({
                       onClose();
                       window.location.href = '/login';
                     }
-                    catch { toast.error('Logout failed!', { icon: TI.error }); }
+                    catch { pt.error('Logout failed!'); }
                     setDropdownUser(null);
                   }}>
                     <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ef4444" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/></svg>
@@ -796,8 +797,8 @@ const Sidebar = ({
                   <div key={room.id}
                     className={`sb-room-card ${roomId === room.id ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
                     onClick={async () => {
-                      if (!user?.uid && !localStorage.getItem('guestUser')) { toast.error('Please login.', { icon: TI.lock }); return; }
-                      if (locked) { toast.error('Staff only.', { icon: TI.lock }); return; }
+                      if (!user?.uid && !localStorage.getItem('guestUser')) { pt.error('Please login.'); return; }
+                      if (locked) { pt.error('Staff only.'); return; }
                       if (isAdultRoom) {
                         const ageKey = `ageVerified_${room.id}`;
                         const stored = localStorage.getItem(ageKey);
@@ -809,7 +810,7 @@ const Sidebar = ({
                       }
                       try {
                         const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
-                        if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+                        if (kickSnap.exists()) { pt.kick(`You've been kicked from ${room.name}.`); navigate('/'); onClose(); return; }
                       } catch {}
                       navigate(`/room/${room.id}`); onClose();
                     }}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { TI } from '../utils/toastIcons';
+import { pt } from '../utils/premiumToast';
 import { SUPPORTED_LANGUAGES } from '../utils/translationService';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import LiveAvatarImg from './LiveAvatar';
@@ -498,11 +498,11 @@ const SettingsSidebar = ({
             }
 
             if (key === 'micVolume') {
-                toast.success(`Microphone volume set to ${value}%`, { icon: TI.mic });
+                pt.volume(`Microphone volume set to ${value}%`);
             }
 
             if (key === 'speakerVolume') {
-                toast.success(`Speaker volume set to ${value}%`, { icon: TI.soundOn });
+                pt.volume(`Speaker volume set to ${value}%`);
             }
 
             // For non-guest users, save to Firebase asynchronously (don't block UI)
@@ -583,7 +583,7 @@ const SettingsSidebar = ({
 
         } catch (error) {
             console.error('Error updating setting:', error);
-            toast.error('Failed to update setting', { icon: TI.error });
+            pt.error('Failed to update setting');
         }
     };
 
@@ -656,7 +656,7 @@ const SettingsSidebar = ({
                 window.setFontPreference('isStrikethrough', false);
             }
 
-            toast.success('All settings have been reset to defaults!');
+            pt.success('All settings have been reset to defaults!');
         }
     };
 
@@ -690,7 +690,7 @@ const SettingsSidebar = ({
             navigate('/login');
         } catch (error) {
             console.error('Error logging out:', error);
-            toast.error('Failed to logout. Please try again.');
+            pt.error('Failed to logout. Please try again.');
         }
     };
 
@@ -734,10 +734,10 @@ const SettingsSidebar = ({
             setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
             setConfirmDeleteFriend(null);
 
-            toast.success(`${friend.displayName} removed from friends`, { icon: TI.remove });
+            pt.friend(`${friend.displayName} removed from friends`);
         } catch (error) {
             console.error('Error removing friend:', error);
-            toast.error('Failed to remove friend. Please try again.');
+            pt.error('Failed to remove friend. Please try again.');
         }
     };
 
@@ -813,7 +813,7 @@ const SettingsSidebar = ({
                 );
             } catch (error) {
                 console.error('Error blocking friend:', error);
-                toast.error('Failed to block user. Please try again.');
+                pt.error('Failed to block user. Please try again.');
             }
         }
     };
@@ -1044,7 +1044,7 @@ const SettingsSidebar = ({
                                                     key={t.value}
                                                     onClick={() => unlocked
                                                         ? handleSettingChange('selectedTheme', t.value)
-                                                        : toast.info(lockMsg, { position:'top-center', autoClose:3500 })
+                                                        : pt.info(lockMsg, { position:'top-center', autoClose:3500 })
                                                     }
                                                     title={unlocked ? `Switch to ${t.label} theme` : lockMsg}
                                                     style={{
@@ -1963,13 +1963,13 @@ const SettingsSidebar = ({
                                             </div>
                                             <div className="sf-friend-btns">
                                                 <button className="sf-btn sf-btn-accept" title="Accept"
-                                                    onClick={() => { if (window.handleAcceptFriendRequestFromSettings) window.handleAcceptFriendRequestFromSettings(req); else toast.success(`Accepted ${req.senderName}'s request!`); }}>
+                                                    onClick={() => { if (window.handleAcceptFriendRequestFromSettings) window.handleAcceptFriendRequestFromSettings(req); else pt.friend(`Accepted ${req.senderName}'s request!`); }}>
                                                     <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
                                                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                                                     </svg>
                                                 </button>
                                                 <button className="sf-btn sf-btn-decline" title="Decline"
-                                                    onClick={() => { if (window.handleDeclineFriendRequestFromSettings) window.handleDeclineFriendRequestFromSettings(req); else toast.info(`Declined ${req.senderName}'s request`); }}>
+                                                    onClick={() => { if (window.handleDeclineFriendRequestFromSettings) window.handleDeclineFriendRequestFromSettings(req); else pt.info(`Declined ${req.senderName}'s request`); }}>
                                                     <svg viewBox="0 0 24 24" width="12" height="12" fill="white">
                                                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                                                     </svg>
@@ -2659,9 +2659,9 @@ const SettingsSidebar = ({
                                                     if (confirmClear) {
                                                         try {
                                                             await updateDoc(doc(db, 'users', auth.currentUser.uid), { status: '', updatedAt: new Date().toISOString() });
-                                                            toast.success('Status cleared!');
+                                                            pt.success('Status cleared!');
                                                         } catch (error) {
-                                                            toast.error('Failed to clear status.');
+                                                            pt.error('Failed to clear status.');
                                                         }
                                                     }
                                                 }}
@@ -2735,11 +2735,11 @@ const SettingsSidebar = ({
                                                         const file = e.target.files[0];
                                                         if (file) {
                                                             if (file.size > 10 * 1024 * 1024) {
-                                                                toast.error('Cover photo must be less than 10MB');
+                                                                pt.error('Cover photo must be less than 10MB');
                                                                 return;
                                                             }
                                                             try {
-                                                                toast.info('Uploading cover photo...', { icon: TI.camera });
+                                                                pt.camera('Uploading cover photo...');
                                                                 const compressed = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
                                                                 const { key: coverKey, url: coverUrl } = await uploadMediaFile(compressed, 'cover');
                                                                 await updateDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -2752,11 +2752,11 @@ const SettingsSidebar = ({
                                                                     spotifyTrackData: null,
                                                                     updatedAt: new Date().toISOString()
                                                                 });
-                                                                toast.success('Cover photo uploaded successfully!', { icon: TI.success });
+                                                                pt.camera('Cover photo uploaded successfully!');
                                                                 setTimeout(() => { window.location.reload(); }, 1000);
                                                             } catch (error) {
                                                                 console.error('Cover photo upload error:', error);
-                                                                toast.error('Upload failed. Please try again.', { icon: TI.error });
+                                                                pt.error('Upload failed. Please try again.');
                                                             }
                                                         }
                                                     };
@@ -2813,7 +2813,7 @@ const SettingsSidebar = ({
                                                         const youtubeUrl = input.value.trim();
 
                                                         if (!youtubeUrl) {
-                                                            toast.error('Please enter a YouTube URL');
+                                                            pt.error('Please enter a YouTube URL');
                                                             return;
                                                         }
 
@@ -2822,7 +2822,7 @@ const SettingsSidebar = ({
                                                         const match = youtubeUrl.match(youtubeRegex);
 
                                                         if (!match) {
-                                                            toast.error('Invalid YouTube URL. Please enter a valid YouTube video URL.', { icon: TI.error });
+                                                            pt.error('Invalid YouTube URL. Please enter a valid YouTube video URL.');
                                                             return;
                                                         }
 
@@ -2833,7 +2833,7 @@ const SettingsSidebar = ({
                                                             const testUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
                                                             const response = await fetch(testUrl);
                                                             if (!response.ok) {
-                                                                toast.error('This YouTube video is not available or may be private/restricted.', { icon: TI.error });
+                                                                pt.error('This YouTube video is not available or may be private/restricted.');
                                                                 return;
                                                             }
                                                         } catch (error) {
@@ -2845,7 +2845,7 @@ const SettingsSidebar = ({
                                                         const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&rel=0&modestbranding=1&showinfo=0&fs=1&cc_load_policy=0&iv_load_policy=3&origin=${window.location.origin}`;
 
                                                         try {
-                                                            toast.info('Setting YouTube cover video...', { icon: TI.upload });
+                                                            pt.youtube('Setting YouTube cover video...');
 
                                                             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                                                                 coverVideoURL: embedUrl,
@@ -2858,7 +2858,7 @@ const SettingsSidebar = ({
 
                                                             input.value = '';
 
-                                                            toast.success('YouTube cover video set successfully!', { icon: TI.success });
+                                                            pt.youtube('YouTube cover video set successfully!');
 
                                                             // Force immediate refresh
                                                             setTimeout(() => {
@@ -2867,7 +2867,7 @@ const SettingsSidebar = ({
 
                                                         } catch (error) {
                                                             console.error('Error setting cover video:', error);
-                                                            toast.error('Failed to set cover video. Please try again.', { icon: TI.error });
+                                                            pt.error('Failed to set cover video. Please try again.');
                                                         }
                                                     }}
                                                 >
@@ -2912,7 +2912,7 @@ const SettingsSidebar = ({
                                                         const spotifyUrl = input.value.trim();
 
                                                         if (!spotifyUrl) {
-                                                            toast.error('Please enter a Spotify URL');
+                                                            pt.error('Please enter a Spotify URL');
                                                             return;
                                                         }
 
@@ -2921,7 +2921,7 @@ const SettingsSidebar = ({
                                                         const match = spotifyUrl.match(spotifyRegex);
 
                                                         if (!match) {
-                                                            toast.error('Invalid Spotify URL. Please enter a valid Spotify track URL.', { icon: TI.error });
+                                                            pt.error('Invalid Spotify URL. Please enter a valid Spotify track URL.');
                                                             return;
                                                         }
 
@@ -2930,7 +2930,7 @@ const SettingsSidebar = ({
                                                         const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&view=coverart&show-cover=0`;
 
                                                         try {
-                                                            toast.info('Setting Spotify cover song...', { icon: TI.spotify });
+                                                            pt.audio('Setting Spotify cover song...');
 
                                                             // Prepare Spotify track data
                                                             const spotifyTrackData = {
@@ -2951,7 +2951,7 @@ const SettingsSidebar = ({
 
                                                             input.value = '';
 
-                                                            toast.success('Spotify cover song set successfully!', { icon: TI.success });
+                                                            pt.audio('Spotify cover song set successfully!');
 
                                                             // Force immediate refresh
                                                             setTimeout(() => {
@@ -2960,7 +2960,7 @@ const SettingsSidebar = ({
 
                                                         } catch (error) {
                                                             console.error('Error setting Spotify cover song:', error);
-                                                            toast.error('Failed to set Spotify cover song. Please try again.', { icon: TI.error });
+                                                            pt.error('Failed to set Spotify cover song. Please try again.');
                                                         }
                                                     }}
                                                 >
@@ -3107,7 +3107,7 @@ const SettingsSidebar = ({
 
                                                 if (userConfirmed) {
                                                     try {
-                                                        toast.info('Removing cover media...', { icon: TI.remove });
+                                                        pt.delete('Removing cover media...');
 
                                                         // Delete all cover media data from Firebase
                                                         await updateDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -3126,7 +3126,7 @@ const SettingsSidebar = ({
                                                         localStorage.removeItem('coverVideoType');
                                                         localStorage.removeItem('spotifyTrackData');
 
-                                                        toast.success('Cover media removed successfully!', { icon: TI.remove });
+                                                        pt.success('Cover media removed successfully!');
 
                                                         // Close settings modal
                                                         onClose();
@@ -3138,7 +3138,7 @@ const SettingsSidebar = ({
 
                                                     } catch (error) {
                                                         console.error('Error removing cover media:', error);
-                                                        toast.error('Failed to remove cover media. Please try again.', { icon: TI.error });
+                                                        pt.error('Failed to remove cover media. Please try again.');
                                                     }
                                                 }
                                             }}
@@ -3171,7 +3171,7 @@ const SettingsSidebar = ({
                                             setShowEditProfileModal(true);
                                         } catch (error) {
                                             console.error('Modal error:', error);
-                                            toast.error('Failed to open Edit Profile modal');
+                                            pt.error('Failed to open Edit Profile modal');
                                         }
                                     }}
                                     title="Edit Profile"
@@ -3212,10 +3212,10 @@ const SettingsSidebar = ({
                                         try {
                                             navigate('/rooms');
                                             onClose();
-                                            toast.success('Going to Rooms!', { icon: TI.home });
+                                            pt.success('Going to Rooms!');
                                         } catch (error) {
                                             console.error('Navigation error:', error);
-                                            toast.error('Failed to navigate to Rooms');
+                                            pt.error('Failed to navigate to Rooms');
                                         }
                                     }}
                                     title="Rooms"
@@ -3233,10 +3233,10 @@ const SettingsSidebar = ({
                                         try {
                                             navigate('/welcome');
                                             onClose();
-                                            toast.success('Going to Dashboard!', { icon: TI.home });
+                                            pt.success('Going to Dashboard!');
                                         } catch (error) {
                                             console.error('Navigation error:', error);
-                                            toast.error('Failed to navigate to Dashboard');
+                                            pt.error('Failed to navigate to Dashboard');
                                         }
                                     }}
                                     title="Dashboard"
@@ -3255,26 +3255,26 @@ const SettingsSidebar = ({
                                             if (window.handleViewProfile && typeof window.handleViewProfile === 'function') {
                                                 window.handleViewProfile(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('Profile modal opened!', { icon: TI.success });
+                                                pt.profile('Profile modal opened!');
                                                 return;
                                             }
                                             if (window.setProfileUser && typeof window.setProfileUser === 'function') {
                                                 window.setProfileUser(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('Profile modal opened!', { icon: TI.success });
+                                                pt.profile('Profile modal opened!');
                                                 return;
                                             }
                                             if (onOpenProfile && typeof onOpenProfile === 'function') {
                                                 onOpenProfile(loggedInUserProfile);
                                                 onClose();
-                                                toast.success('Profile modal opened!', { icon: TI.success });
+                                                pt.profile('Profile modal opened!');
                                                 return;
                                             }
                                             console.warn('Profile modal function not found');
-                                            toast.info(`${loggedInUserProfile?.displayName || 'User'} — ${loggedInUserProfile?.role || 'user'} from ${loggedInUserProfile?.country || 'Unknown'}`, { icon: TI.info });
+                                            pt.info(`${loggedInUserProfile?.displayName || 'User'} — ${loggedInUserProfile?.role || 'user'} from ${loggedInUserProfile?.country || 'Unknown'}`);
                                         } catch (error) {
                                             console.error('Error opening profile:', error);
-                                            toast.error('Failed to open profile modal');
+                                            pt.error('Failed to open profile modal');
                                         }
                                     }}
                                     title="View Profile"
@@ -3353,7 +3353,7 @@ const SettingsSidebar = ({
                                         className="modern-nav-btn rectangular feature"
                                         onClick={() => {
                                             setShowWarningModal(true);
-                                            toast.info('Opening Warning/Announcement Creator', { icon: TI.announce });
+                                            pt.info('Opening Warning/Announcement Creator');
                                         }}
                                         title="Create Warning or Announcement"
                                     >
@@ -3368,7 +3368,7 @@ const SettingsSidebar = ({
                                         className="modern-nav-btn admin"
                                         onClick={() => {
                                             setShowWarningManager(true);
-                                            toast.info('Opening Alert Manager', { icon: TI.announce });
+                                            pt.info('Opening Alert Manager');
                                         }}
                                         title="Manage Warnings and Announcements"
                                     >
@@ -3436,7 +3436,7 @@ const SettingsSidebar = ({
                                         onClick={() => {
                                             const confirmed = window.confirm('⚠️ Are you sure you want to clear the entire chat? This action cannot be undone!');
                                             if (confirmed) {
-                                                toast.success('Chat clearing initiated...', { icon: TI.clear });
+                                                pt.success('Chat clearing initiated...');
                                                 onClose();
                                             }
                                         }}
@@ -3547,7 +3547,7 @@ const SettingsSidebar = ({
                                 <button
                                     onClick={() => {
                                         ['tinglebotNotifications','userJoinNotifications','userLeaveNotifications'].forEach(k => handleSettingChange(k, true));
-                                        toast.success('TingleBot notifications reset to defaults!');
+                                        pt.success('TingleBot notifications reset to defaults!');
                                     }}
                                     style={{
                                         width: '100%',
@@ -3748,9 +3748,9 @@ const SettingsSidebar = ({
                                             updatedAt: new Date().toISOString(),
                                             updatedBy: auth.currentUser?.uid || 'unknown',
                                         }, { merge: true });
-                                        toast.success('TingleBot rules saved!');
+                                        pt.success('TingleBot rules saved!');
                                     } catch (err) {
-                                        toast.error('Failed to save rules: ' + err.message);
+                                        pt.error('Failed to save rules: ' + err.message);
                                     }
                                     setBotSaving(false);
                                 }}
@@ -3782,16 +3782,16 @@ const SettingsSidebar = ({
                                 onClick={async () => {
                                     if (!announcementText.trim()) return;
                                     if (typeof window.handleTingleBotAnnouncement !== 'function') {
-                                        toast.error('Join a chat room first to send announcements.');
+                                        pt.error('Join a chat room first to send announcements.');
                                         return;
                                     }
                                     setBotSending(true);
                                     try {
                                         await window.handleTingleBotAnnouncement(announcementText.trim());
-                                        toast.success('Announcement sent to current room!');
+                                        pt.success('Announcement sent to current room!');
                                         setAnnouncementText('');
                                     } catch (err) {
-                                        toast.error('Failed: ' + err.message);
+                                        pt.error('Failed: ' + err.message);
                                     }
                                     setBotSending(false);
                                 }}
@@ -3805,16 +3805,16 @@ const SettingsSidebar = ({
                                 onClick={async () => {
                                     if (!announcementText.trim()) return;
                                     if (typeof window.handleTingleBotAnnouncementAllRooms !== 'function') {
-                                        toast.error('Could not reach all rooms. Please try again.');
+                                        pt.error('Could not reach all rooms. Please try again.');
                                         return;
                                     }
                                     setBotSending(true);
                                     try {
                                         await window.handleTingleBotAnnouncementAllRooms(announcementText.trim());
-                                        toast.success('Announcement sent to all rooms!');
+                                        pt.success('Announcement sent to all rooms!');
                                         setAnnouncementText('');
                                     } catch (err) {
-                                        toast.error('Failed: ' + err.message);
+                                        pt.error('Failed: ' + err.message);
                                     }
                                     setBotSending(false);
                                 }}
@@ -4472,7 +4472,7 @@ const SettingsSidebar = ({
                     onClose={() => setShowEditProfileModal(false)}
                     onSuccess={() => {
                         setShowEditProfileModal(false);
-                        toast.success('Profile updated successfully!', { icon: TI.success });
+                        pt.profile('Profile updated successfully!');
                         setTimeout(() => {
                             window.location.reload();
                         }, 1000);
