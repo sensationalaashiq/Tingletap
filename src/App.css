@@ -123,8 +123,8 @@ html, body {
     --svg-fill: #6b7280;
     --svg-stroke: #6b7280;
 
-    /* Username and Badge variables */
-    --username-color: #1f2937;
+    /* Username and Badge variables — default black in light theme */
+    --username-color: #000000;
     --badge-bg: #f3f4f6;
     --badge-text: #374151;
 
@@ -132,7 +132,20 @@ html, body {
     --theme-transition: none;
 }
 
-/* Instant theme switching - remove all transition delays */
+/* Instant theme switching — suppress ALL transitions while classes are swapped.
+   The .theme-switching class is added by JS just before classList changes and
+   removed two rAF frames later so the browser has painted the new variables. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after,
+body.theme-switching *,
+body.theme-switching *::before,
+body.theme-switching *::after {
+    transition: none !important;
+    animation-duration: 0s !important;
+}
+
+/* Legacy whitelist — kept for safety */
 .homepage-container,
 .chat-container,
 .chat-header,
@@ -957,11 +970,11 @@ html body .theme-light .user-font-styled {
 }
 
 .message-displayname {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  font-family: 'Georgia', serif;
   color: var(--username-color);
-  transition: color 0.3s ease;
+  /* no font-family override — inherit chat feed font */
+  /* no transition — instant on theme switch */
 }
 
 @keyframes shimmer {

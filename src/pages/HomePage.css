@@ -826,11 +826,11 @@
 }
 
 /* Alternate messaging colors - White and Light lavender */
-/* contain:layout style isolates each row so a new message never forces
-   a full-page reflow. content-visibility:auto skips painting off-screen
-   rows entirely — huge win on low-RAM / slow devices. */
+/* content-visibility:auto skips painting off-screen rows — big win on
+   low-RAM / slow devices.  We deliberately do NOT add contain:layout style
+   here because it creates new stacking contexts that break tag pills,
+   z-index overlays, and dropdown positioning inside message rows. */
 .message-row-wrapper {
-  contain: layout style;
   content-visibility: auto;
   contain-intrinsic-block-size: 58px; /* rough row height estimate for scrollbar accuracy */
 }
@@ -10822,8 +10822,26 @@ body .homepage-container .attachment-dropdown {
 }
 
 .tag-other-mention {
-  color: #7c3aed;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(196, 181, 253, 0.22);
+  border: 1px solid rgba(139, 92, 246, 0.30);
+  color: #5b21b6;
   font-weight: 600;
+  font-size: 0.88em;
+  padding: 1px 7px 2px;
+  border-radius: 999px;
+  line-height: 1.5;
+  vertical-align: middle;
+  cursor: default;
+  letter-spacing: 0.01em;
+}
+/* Dark / themed variants */
+.dark-mode .tag-other-mention,
+.dark-theme-variant .tag-other-mention {
+  background: rgba(139, 92, 246, 0.20);
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #c4b5fd;
 }
 
 /* ═══════════════════════════════════════════

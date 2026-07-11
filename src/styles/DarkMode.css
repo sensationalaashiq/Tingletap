@@ -94,7 +94,7 @@ html.dark-mode {
   --radio-button-text:#ffffff;
 
   /* ── Badges / Usernames ── */
-  --username-color:  #c4b5fd;
+  --username-color:  #e2e8f0;
   --badge-bg:        rgba(99,102,241,0.15);
   --badge-text:      #c4b5fd;
 
@@ -214,23 +214,9 @@ html.dark-mode .ultra-pm-sender { color: #c4b5fd !important; }
 html.dark-mode .pm-time { color: #5f6880 !important; }
 
 /* ══ 8. USERNAME & BADGE COLOR-CODING ══════════════════════════════ */
-html.dark-mode .message-displayname:not([style*="color"]) { color: #c4b5fd !important; }
-html.dark-mode .message-row[data-role="owner"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #FFB74D !important; }
-html.dark-mode .message-row[data-role="owner"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #FF8A65 !important; }
-html.dark-mode .message-row[data-role="admin"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #EF5350 !important; }
-html.dark-mode .message-row[data-role="admin"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #F06292 !important; }
-html.dark-mode .message-row[data-role="moderator"][data-gender="male"] .message-displayname:not([style*="color"]) { color: #66BB6A !important; }
-html.dark-mode .message-row[data-role="moderator"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #4DB6AC !important; }
-html.dark-mode .message-row[data-role="badge-holder"][data-gender="male"]   .message-displayname:not([style*="color"]) { color: #4FC3F7 !important; }
-html.dark-mode .message-row[data-role="badge-holder"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #CE93D8 !important; }
-html.dark-mode .message-row[data-role="general"][data-gender="male"]   .message-displayname:not([style*="color"]) { color: #64B5F6 !important; }
-html.dark-mode .message-row[data-role="general"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #F48FB1 !important; }
-html.dark-mode .message-row[data-role="guest"][data-gender="male"]     .message-displayname:not([style*="color"]),
-html.dark-mode .message-row[data-role="purush"][data-gender="male"]    .message-displayname:not([style*="color"]) { color: #60a5fa !important; }
-html.dark-mode .message-row[data-role="guest"][data-gender="female"]   .message-displayname:not([style*="color"]),
-html.dark-mode .message-row[data-role="stree"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #f472b6 !important; }
-html.dark-mode .message-row[data-role="guest"][data-gender="trans"]    .message-displayname:not([style*="color"]),
-html.dark-mode .message-row[data-role="navrang"][data-gender="trans"]  .message-displayname:not([style*="color"]) { color: #a78bfa !important; }
+/* All roles → same near-white theme color in dark mode. No per-role overrides.
+   User-set custom colors win via inline style / -webkit-text-fill-color.      */
+html.dark-mode .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
 html.dark-mode .inline-badge svg { color: var(--icon-color) !important; stroke: var(--icon-color) !important; }
 
 /* ══ 9. CHAT INPUT / FORM ═══════════════════════════════════════════ */

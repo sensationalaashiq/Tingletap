@@ -1988,6 +1988,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                 'theme-royal-purple', 'theme-sunset-orange'
             ];
 
+            // Suppress all CSS transitions while theme classes are swapped so
+            // switching is instant instead of animating element-by-element.
+            document.documentElement.classList.add('theme-switching');
+            document.body.classList.add('theme-switching');
+
             // Remove all theme classes
             allThemeClasses.forEach(cls => {
                 document.body.classList.remove(cls);
@@ -2010,6 +2015,16 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Also update localStorage
             localStorage.setItem('selectedTheme', userTheme);
+
+            // Re-enable transitions after paint — two rAF frames ensures the
+            // browser has applied the new CSS variable values before transitions
+            // are turned back on, so no animated flicker occurs.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    document.documentElement.classList.remove('theme-switching');
+                    document.body.classList.remove('theme-switching');
+                });
+            });
         }
     }, [loggedInUserProfile?.selectedTheme]);
 

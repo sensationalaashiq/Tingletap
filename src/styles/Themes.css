@@ -511,24 +511,9 @@ html.dark-theme-variant .pm-message-content p { color: var(--text-secondary) !im
 html.dark-theme-variant .pm-sender-name,
 html.dark-theme-variant .ultra-pm-sender { color: var(--username-color) !important; }
 
-/* ── Username & badge colors ── */
+/* ── Username colors: all roles → theme variable (no per-role overrides) ── */
+/* Custom user-set colors win via inline style / -webkit-text-fill-color.     */
 html.dark-theme-variant .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
-html.dark-theme-variant .message-row[data-role="owner"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #FFB74D !important; }
-html.dark-theme-variant .message-row[data-role="owner"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #FF8A65 !important; }
-html.dark-theme-variant .message-row[data-role="admin"][data-gender="male"]     .message-displayname:not([style*="color"]) { color: #EF5350 !important; }
-html.dark-theme-variant .message-row[data-role="admin"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: #F06292 !important; }
-html.dark-theme-variant .message-row[data-role="moderator"][data-gender="male"] .message-displayname:not([style*="color"]) { color: #66BB6A !important; }
-html.dark-theme-variant .message-row[data-role="moderator"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #4DB6AC !important; }
-html.dark-theme-variant .message-row[data-role="badge-holder"][data-gender="male"]   .message-displayname:not([style*="color"]) { color: #4FC3F7 !important; }
-html.dark-theme-variant .message-row[data-role="badge-holder"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #CE93D8 !important; }
-html.dark-theme-variant .message-row[data-role="general"][data-gender="male"]   .message-displayname:not([style*="color"]) { color: #64B5F6 !important; }
-html.dark-theme-variant .message-row[data-role="general"][data-gender="female"] .message-displayname:not([style*="color"]) { color: #F48FB1 !important; }
-html.dark-theme-variant .message-row[data-role="guest"][data-gender="male"]     .message-displayname:not([style*="color"]),
-html.dark-theme-variant .message-row[data-role="purush"][data-gender="male"]    .message-displayname:not([style*="color"]) { color: var(--icon-nav) !important; }
-html.dark-theme-variant .message-row[data-role="guest"][data-gender="female"]   .message-displayname:not([style*="color"]),
-html.dark-theme-variant .message-row[data-role="stree"][data-gender="female"]   .message-displayname:not([style*="color"]) { color: var(--accent-hover) !important; }
-html.dark-theme-variant .message-row[data-role="guest"][data-gender="trans"]    .message-displayname:not([style*="color"]),
-html.dark-theme-variant .message-row[data-role="navrang"][data-gender="trans"]  .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
 html.dark-theme-variant .inline-badge svg { color: var(--icon-color) !important; stroke: var(--icon-color) !important; }
 
 /* ── Chat Input / Form ── */

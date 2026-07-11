@@ -294,7 +294,7 @@ const Styles = {
   login:         makeStyle('linear-gradient(135deg,#7c3aed 0%,#6366f1 50%,#3b82f6 100%)', 'rgba(99,102,241,0.5)'),
   emailVerified: makeStyle('linear-gradient(135deg,#059669 0%,#10b981 60%,#34d399 100%)', 'rgba(16,185,129,0.5)'),
   rocket:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#c084fc 100%)',         'rgba(124,58,237,0.45)'),
-  whisperOff:    makeStyle('linear-gradient(135deg,#374151 0%,#1e293b 100%)',         'rgba(30,41,59,0.60)'),
+  whisperOff:    makeStyle('linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%)',         'rgba(91,33,182,0.55)'),
 };
 
 const OPT = {
@@ -335,5 +335,5 @@ export const pt = {
   login:         (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.login,         style: Styles.login,         autoClose: 5000, ...opts }),
   emailVerified: (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.emailVerified, style: Styles.emailVerified, autoClose: 5000, ...opts }),
   rocket:        (msg, opts={}) => toast.success(msg, { ...OPT, icon: () => Icon.rocket,        style: Styles.rocket,        ...opts }),
-  whisperOff:    (msg, opts={}) => toast.error  (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
+  whisperOff:    (msg, opts={}) => toast.info   (msg, { ...OPT, icon: () => Icon.whisperOff,   style: Styles.whisperOff,    ...opts }),
 };
