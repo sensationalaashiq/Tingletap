@@ -252,8 +252,8 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
             return `<span class="tag-self-mention">@${name}</span>`;
         }
-        // Everyone else sees a subtle secondary chip
-        return `<span class="tag-other-mention">@${name}</span>`;
+        // Everyone else (other viewers) — plain text, no chip
+        return `@${name}`;
     });
     const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
         ALLOWED_TAGS: ['span', 'br', 'b', 'i', 'em', 'strong', 'u'],
