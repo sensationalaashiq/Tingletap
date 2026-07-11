@@ -2,9 +2,9 @@ const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Full diagnostic — tests every step individually and returns exact errors.
 // Usage:
 //   GET  /.netlify/functions/check-config
-//       → env vars + Brevo ping + verified senders list + Firebase Admin
+//       → env vars + R2 buckets + Brevo ping + Firebase Admin
 //   GET  /.netlify/functions/check-config?testEmail=you@gmail.com
-//       → above + template load test + real Brevo send attempt (see exact error)
+//       → above + real Brevo send attempt
 //   GET  /.netlify/functions/check-config?testEmail=you@gmail.com&firestoreTest=1
 //       → above + Firestore write test
 
@@ -25,6 +25,88 @@ export const handler = async (event) => {
 
   // ── 1. Env vars ──────────────────────────────────────────────────────────────
   const brevoKey = process.env.BREVO_API_KEY;
+
+  // R2 env var detection (all variants)
+  const r2PublicBucket  = process.env.R2_PUBLIC_BUCKET  || process.env.R2_Public_Bucket  || process.env.R2_PUBLIC_BUCKET_NAME  || null;
+  const r2PrivateBucket = process.env.R2_PRIVATE_BUCKET || process.env.R2_Private_Bucket || process.env.R2_PRIVATE_BUCKET_NAME || null;
+  const r2AccountId     = process.env.R2_ACCOUNT_ID     || null;
+  const r2AccessKey     = process.env.R2_ACCESS_KEY_ID  || null;
+  const r2SecretKey     = process.env.R2_SECRET_ACCESS_KEY || null;
+  const r2PublicUrl     = process.env.R2_PUBLIC_BUCKET_URL || null;
+  const r2LegacyBucket  = process.env.R2_BUCKET_NAME    || null;
+
+  results.r2_env = {
+    R2_ACCOUNT_ID:        r2AccountId     ? 'SET ✅'                          : 'MISSING ❌',
+    R2_ACCESS_KEY_ID:     r2AccessKey     ? 'SET ✅'                          : 'MISSING ❌',
+    R2_SECRET_ACCESS_KEY: r2SecretKey     ? 'SET ✅'                          : 'MISSING ❌',
+    R2_PUBLIC_BUCKET:     r2PublicBucket  ? `SET ✅ → "${r2PublicBucket}"`    : 'MISSING ❌  (set R2_PUBLIC_BUCKET in Netlify)',
+    R2_PRIVATE_BUCKET:    r2PrivateBucket ? `SET ✅ → "${r2PrivateBucket}"`   : 'MISSING ❌  (set R2_PRIVATE_BUCKET in Netlify)',
+    R2_PUBLIC_BUCKET_URL: r2PublicUrl     ? `SET ✅ → "${r2PublicUrl}"`       : 'MISSING ❌  (profile/cover/chat images will proxy through serveMedia instead)',
+    R2_BUCKET_NAME:       r2LegacyBucket  ? `SET ✅ → "${r2LegacyBucket}"`   : 'MISSING ⚠️  (needed for old stored URLs backward compat)',
+  };
+
+  // ── 2. R2 connectivity test ───────────────────────────────────────────────────
+  if (r2AccountId && r2AccessKey && r2SecretKey) {
+    try {
+      const { S3Client, HeadBucketCommand } = await import('@aws-sdk/client-s3');
+      const endpoint = process.env.R2_ENDPOINT || `https://${r2AccountId}.r2.cloudflarestorage.com`;
+      const s3 = new S3Client({
+        region: 'auto',
+        endpoint,
+        credentials: { accessKeyId: r2AccessKey, secretAccessKey: r2SecretKey },
+        forcePathStyle: true,
+      });
+
+      const bucketTests = {};
+
+      // Test public bucket
+      if (r2PublicBucket) {
+        try {
+          await s3.send(new HeadBucketCommand({ Bucket: r2PublicBucket }));
+          bucketTests[`public_bucket (${r2PublicBucket})`] = 'ACCESSIBLE ✅';
+        } catch (e) {
+          bucketTests[`public_bucket (${r2PublicBucket})`] = `ERROR ❌: ${e.message}`;
+          errors.push(`R2 public bucket "${r2PublicBucket}" not accessible: ${e.message}`);
+        }
+      } else {
+        bucketTests.public_bucket = 'SKIPPED — R2_PUBLIC_BUCKET not set ❌';
+        errors.push('R2_PUBLIC_BUCKET env var missing — profile/cover/image uploads will fail');
+      }
+
+      // Test private bucket
+      if (r2PrivateBucket) {
+        try {
+          await s3.send(new HeadBucketCommand({ Bucket: r2PrivateBucket }));
+          bucketTests[`private_bucket (${r2PrivateBucket})`] = 'ACCESSIBLE ✅';
+        } catch (e) {
+          bucketTests[`private_bucket (${r2PrivateBucket})`] = `ERROR ❌: ${e.message}`;
+          errors.push(`R2 private bucket "${r2PrivateBucket}" not accessible: ${e.message}`);
+        }
+      } else {
+        bucketTests.private_bucket = 'SKIPPED — R2_PRIVATE_BUCKET not set ❌';
+        errors.push('R2_PRIVATE_BUCKET env var missing — private-chat/badge uploads will fail');
+      }
+
+      // Test legacy bucket
+      if (r2LegacyBucket) {
+        try {
+          await s3.send(new HeadBucketCommand({ Bucket: r2LegacyBucket }));
+          bucketTests[`legacy_bucket (${r2LegacyBucket})`] = 'ACCESSIBLE ✅';
+        } catch (e) {
+          bucketTests[`legacy_bucket (${r2LegacyBucket})`] = `ERROR ❌: ${e.message}`;
+        }
+      }
+
+      results.r2_buckets = bucketTests;
+    } catch (e) {
+      results.r2_buckets = `S3 client init failed: ${e.message}`;
+      errors.push(`R2 S3 client init: ${e.message}`);
+    }
+  } else {
+    results.r2_buckets = 'SKIPPED — R2 credentials incomplete ❌';
+    errors.push('R2 credentials missing (R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY)');
+  }
+
   results.env = {
     BREVO_API_KEY:          brevoKey                             ? 'SET'                                            : 'MISSING ❌',
     FIREBASE_PROJECT_ID:    process.env.FIREBASE_PROJECT_ID     ? 'SET'                                            : 'MISSING ❌',
