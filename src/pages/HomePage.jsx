@@ -227,13 +227,25 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     // (light + dark) so the text stays readable on every theme's background
     // (Light, Dark, Burgundy, Aurora, etc.) regardless of which theme the
     // sender was using when they picked the colour.
-    const pStyle = savedMsgStyle ? {
-        ...(savedMsgStyle.fontSize   ? { fontSize: savedMsgStyle.fontSize }     : {}),
-        ...(savedMsgStyle.fontColor  ? { color:    savedMsgStyle.fontColor } : {}),
-        ...(savedMsgStyle.fontFamily ? { fontFamily: savedMsgStyle.fontFamily } : {}),
-        fontWeight:     savedMsgStyle.isBold       ? 'bold'   : 'normal',
-        fontStyle:      savedMsgStyle.isItalic     ? 'italic' : 'normal',
-        textDecoration: msgDecorations.length > 0  ? msgDecorations.join(' ') : 'none',
+    // Only apply inline styles when the user has genuinely non-default prefs.
+    // Default-equivalent values (11px, #333333, inherit, not bold/italic) should
+    // let CSS theme variables control rendering so every viewer sees the same thing.
+    const hasCustomMsgStyle = savedMsgStyle && (
+        (savedMsgStyle.fontSize && savedMsgStyle.fontSize !== '11px' && savedMsgStyle.fontSize !== '14px') ||
+        (savedMsgStyle.fontColor && savedMsgStyle.fontColor !== '#333333' && savedMsgStyle.fontColor !== '#2d2d2d' && savedMsgStyle.fontColor !== 'inherit' && savedMsgStyle.fontColor !== '') ||
+        (savedMsgStyle.fontFamily && savedMsgStyle.fontFamily !== 'inherit') ||
+        savedMsgStyle.isBold ||
+        savedMsgStyle.isItalic ||
+        savedMsgStyle.isUnderline ||
+        savedMsgStyle.isStrikethrough
+    );
+    const pStyle = hasCustomMsgStyle ? {
+        ...(savedMsgStyle.fontSize && savedMsgStyle.fontSize !== '11px' ? { fontSize: savedMsgStyle.fontSize } : {}),
+        ...(savedMsgStyle.fontColor && savedMsgStyle.fontColor !== 'inherit' && savedMsgStyle.fontColor !== '' ? { color: savedMsgStyle.fontColor } : {}),
+        ...(savedMsgStyle.fontFamily && savedMsgStyle.fontFamily !== 'inherit' ? { fontFamily: savedMsgStyle.fontFamily } : {}),
+        ...(savedMsgStyle.isBold    ? { fontWeight: 'bold'   } : {}),
+        ...(savedMsgStyle.isItalic  ? { fontStyle:  'italic' } : {}),
+        ...(msgDecorations.length > 0 ? { textDecoration: msgDecorations.join(' ') } : {}),
         margin: '3px 0',
         lineHeight: '1.4',
         wordWrap: 'break-word',
@@ -248,12 +260,12 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     const mentionedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
         // Sender sees plain text — their own font/colour style applies, no chip
         if (isMyMessage) return `@${name}`;
-        // Tagged person (receiver) sees lavender chip with white text
+        // Tagged person (receiver) sees solid lavender chip with white text
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
             return `<span class="tag-self-mention">@${name}</span>`;
         }
-        // Everyone else (other viewers) — plain text, no chip
-        return `@${name}`;
+        // All other viewers also see a lavender chip (lighter shade)
+        return `<span class="tag-other-mention">@${name}</span>`;
     });
     const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
         ALLOWED_TAGS: ['span', 'br', 'b', 'i', 'em', 'strong', 'u'],
@@ -2267,11 +2279,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                         window._profileCacheTTL.set(uid, now);
 
                         // Keep userMessageStyles populated for font rendering.
-                        // Only set when the user has actual custom preferences so
-                        // CSS theme variables control text colour/size for default users.
+                        // Only set when the user has ACTUAL custom (non-default) preferences
+                        // so CSS theme variables control text colour/size for default users.
                         if (!window.userMessageStyles) window.userMessageStyles = {};
                         const fp = userData.messageFontPreferences || userData.fontPreferences;
-                        if (fp) {
+                        const _isMsgDefault = (p) =>
+                            (!p.fontSize      || p.fontSize === '11px' || p.fontSize === '14px') &&
+                            (!p.fontColor     || p.fontColor === '#333333' || p.fontColor === '#2d2d2d' || p.fontColor === 'inherit' || p.fontColor === '') &&
+                            (!p.fontFamily    || p.fontFamily === 'inherit') &&
+                            !p.isBold && !p.isItalic && !p.isUnderline && !p.isStrikethrough;
+                        if (fp && !_isMsgDefault(fp)) {
                             window.userMessageStyles[uid] = {
                                 fontSize:        fp.fontSize        || '11px',
                                 fontColor:       fp.fontColor       || 'inherit',
@@ -2282,7 +2299,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 isStrikethrough: Boolean(fp.isStrikethrough)
                             };
                         } else {
-                            // No saved prefs — remove any stale entry so CSS takes over
+                            // Default or no saved prefs — remove any stale entry so CSS takes over
                             delete window.userMessageStyles[uid];
                         }
 

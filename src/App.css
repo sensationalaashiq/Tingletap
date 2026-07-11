@@ -1028,6 +1028,13 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   transition: color 0.15s ease;
 }
 
+/* Toastify: let toast content inherit the toast container's color (e.g. #fff on dark toasts)
+   instead of being overridden by the global element selector above */
+.Toastify__toast-body,
+.Toastify__toast-body * {
+  color: inherit;
+}
+
 /* Dark theme message text enforcement */
 body.theme-dark .message-body p:not([style]):not(.user-font-styled),
 body.theme-dark .message-content-container p:not([style]):not(.user-font-styled) {

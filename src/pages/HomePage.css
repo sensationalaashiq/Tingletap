@@ -2248,82 +2248,15 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   position: relative;
 }
 
-/* Whisper username colors based on roles */
-.whisper-message .message-displayname[data-role="owner"] {
-  color: #FFD700 !important;
+/* Whisper message username & body — no role-based colours; custom user styles apply via JS injection */
+.whisper-message .message-displayname {
   font-style: italic !important;
   font-weight: 600 !important;
 }
 
-.whisper-message .message-displayname[data-role="admin"] {
-  color: #FF0080 !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-.whisper-message .message-displayname[data-role="moderator"] {
-  color: #00FF80 !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-.whisper-message .message-displayname[data-badge="true"] {
-  color: #00D4FF !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-.whisper-message .message-displayname[data-role="user"][data-gender="male"] {
-  color: #3b82f6 !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-.whisper-message .message-displayname[data-role="user"][data-gender="female"] {
-  color: #ec4899 !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-.whisper-message .message-displayname[data-role="user"]:not([data-gender]) {
-  color: #3b82f6 !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-}
-
-/* Whisper message text colors based on roles — guarded so custom user colors override */
 .whisper-message .message-body p {
   font-style: italic !important;
   font-size: 12px !important;
-}
-
-.whisper-message[data-sender-role="owner"] .message-body p:not([style*="color"]) {
-  color: #CC9900 !important;
-}
-
-.whisper-message[data-sender-role="admin"] .message-body p:not([style*="color"]) {
-  color: #6A1B9A !important;
-}
-
-.whisper-message[data-sender-role="moderator"] .message-body p:not([style*="color"]) {
-  color: #2E7D32 !important;
-}
-
-.whisper-message[data-sender-role="badge_holder"] .message-body p:not([style*="color"]),
-.whisper-message[data-sender-badge="true"] .message-body p:not([style*="color"]) {
-  color: #00695C !important;
-}
-
-.whisper-message[data-sender-role="user"][data-sender-gender="male"] .message-body p:not([style*="color"]) {
-  color: #3b82f6 !important;
-}
-
-.whisper-message[data-sender-role="user"][data-sender-gender="female"] .message-body p:not([style*="color"]) {
-  color: #ec4899 !important;
-}
-
-.whisper-message[data-sender-role="user"]:not([data-sender-gender]) .message-body p:not([style*="color"]) {
-  color: #3b82f6 !important;
 }
 
 .dark-mode .whisper-message .message-body p {
@@ -10129,24 +10062,8 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
 .homepage-container::after { height: 0 !important; }
 .homepage-container .chat-feed { bottom: 60px !important; }
 
-/* ── Usernames: default 12px bold, custom styles override via JS injection ── */
-.homepage-container .message-displayname[data-role="owner"] {
-  font-weight: bold;
-  font-size: 12px;
-}
-.homepage-container .message-displayname[data-role="admin"] {
-  font-weight: bold;
-  font-size: 12px;
-}
-.homepage-container .message-displayname[data-role="moderator"] {
-  font-weight: bold;
-  font-size: 12px;
-}
-.homepage-container .message-displayname[data-badge="true"] {
-  font-weight: bold;
-  font-size: 12px;
-}
-.homepage-container .message-displayname[data-badge="false"] {
+/* ── Usernames: default 12px bold for all — no role/badge variants ── */
+.homepage-container .message-displayname {
   font-weight: bold;
   font-size: 12px;
 }
@@ -10724,28 +10641,26 @@ body .homepage-container .attachment-dropdown {
   flex-shrink: 0;
 }
 
-/* ===== USERNAME DEFAULT STYLING: GUEST & REGISTERED ===== */
-/* These are DEFAULT styles — JS-injected !important custom styles will override */
-.message-row-wrapper[data-sender-role="guest"] .message-displayname,
-.message-row-wrapper[data-sender-role="user"] .message-displayname {
+/* ===== USERNAME DEFAULT STYLING ===== */
+/* Single uniform rule — no role/badge variants; JS-injected styles override via !important */
+.message-row-wrapper .message-displayname {
   color: #1a1a1a;
   font-weight: bold;
   font-size: 12px;
 }
 
-/* Dark mode override for guest/user usernames */
-.dark-mode .message-row-wrapper[data-sender-role="guest"] .message-displayname,
-.dark-mode .message-row-wrapper[data-sender-role="user"] .message-displayname {
+/* Dark mode */
+.dark-mode .message-row-wrapper .message-displayname {
   color: #e2e2e2;
 }
 
 /* ===== TAG MENTION STYLES ===== */
 /* Tag chip shown to the RECEIVER (the tagged person) —
-   solid lavender, white text, no gradient, theme-aware */
+   light lavender, white text, no gradient, theme-aware */
 .tag-self-mention {
   display: inline-flex;
   align-items: center;
-  background: var(--tag-chip-bg, rgba(139, 92, 246, 0.72));
+  background: rgba(167, 139, 250, 0.85);
   color: #ffffff !important;
   font-weight: 700;
   font-size: 0.88em;
@@ -10757,18 +10672,17 @@ body .homepage-container .attachment-dropdown {
   cursor: default;
   /* no gradient, no box-shadow */
 }
-/* Darker/richer lavender in dark mode for better contrast */
+/* Slightly richer lavender in dark mode */
 .dark-mode .tag-self-mention,
 .theme-dark .tag-self-mention {
-  background: var(--tag-chip-bg-dark, rgba(124, 58, 237, 0.85));
+  background: rgba(139, 92, 246, 0.90);
 }
 
 .tag-other-mention {
   display: inline-flex;
   align-items: center;
-  background: rgba(196, 181, 253, 0.22);
-  border: 1px solid rgba(139, 92, 246, 0.30);
-  color: #5b21b6;
+  background: rgba(167, 139, 250, 0.70);
+  color: #ffffff !important;
   font-weight: 600;
   font-size: 0.88em;
   padding: 1px 7px 2px;
