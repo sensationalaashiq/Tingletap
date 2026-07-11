@@ -1,6 +1,6 @@
 // netlify/functions/uploadRJMedia.js
 // Receives an RJ verification audio recording (base64-encoded) and uploads it
-// to the PRIVATE Cloudflare R2 bucket (tingletap-verification).
+// to the PRIVATE Cloudflare R2 bucket (R2_Private_Bucket).
 //
 // Key prefix: rj/{uid}/{section}-{uuid}.{ext}
 // (Old prefix "rj-verifications/" was on the legacy single bucket — still readable

@@ -9,7 +9,7 @@
 //   New private-chat prefixes (private-chat/images/, private-chat/audio/)
 //     → PRIVATE bucket (R2_PRIVATE_BUCKET_NAME)
 //
-// Public bucket (tingletap-media) media is served via permanent R2 public URLs —
+// Public bucket (R2_Public_Bucket) media is served via permanent R2 public URLs —
 // it does NOT go through this proxy at all.
 
 import { GetObjectCommand } from '@aws-sdk/client-s3';

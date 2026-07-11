@@ -2,8 +2,8 @@
 // Generic media upload proxy — Browser → Netlify → Cloudflare R2.
 //
 // TWO-BUCKET ROUTING:
-//   PUBLIC  bucket (tingletap-media):        profile, cover, chat-image, homepage-audio
-//   PRIVATE bucket (tingletap-verification): private-chat-image, private-chat-audio
+//   PUBLIC  bucket (R2_Public_Bucket):  profile, cover, chat-image, homepage-audio
+//   PRIVATE bucket (R2_Private_Bucket): private-chat-image, private-chat-audio
 //
 // PUBLIC  media  → returns permanent public URL (${R2_PUBLIC_BUCKET_URL}/key)
 // PRIVATE media  → returns Netlify proxy URL   (/.netlify/functions/serveMedia?key=...)

@@ -1,17 +1,17 @@
 // netlify/functions/shared/r2Client.js
 // Dual-bucket Cloudflare R2 client (S3-compatible).
 //
-// Bucket 1 — PUBLIC  (tingletap-media):        profiles, covers, homepage images/audio
-// Bucket 2 — PRIVATE (tingletap-verification): badge/RJ verifications, private-chat media
+// Bucket 1 — PUBLIC  (R2_Public_Bucket):  profiles, covers, homepage images/audio
+// Bucket 2 — PRIVATE (R2_Private_Bucket): badge/RJ verifications, private-chat media
 //
 // Env vars required:
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY  — shared credentials
-//   R2_PUBLIC_BUCKET_NAME    — e.g. "tingletap-media"
-//   R2_PRIVATE_BUCKET_NAME   — e.g. "tingletap-verification"
-//   R2_PUBLIC_BUCKET_URL     — permanent public base URL, e.g. "https://pub-xxx.r2.dev"
+//   R2_Public_Bucket     — name of the public bucket
+//   R2_Private_Bucket    — name of the private bucket
+//   R2_PUBLIC_BUCKET_URL — permanent public base URL, e.g. "https://pub-xxx.r2.dev"
 //
 // Backward-compat env var (old single bucket still needed for serveMedia legacy):
-//   R2_BUCKET_NAME           — original single bucket name
+//   R2_BUCKET_NAME       — original single bucket name
 
 import {
   S3Client,
@@ -54,18 +54,14 @@ function getClient() {
 
 // ── Bucket name helpers ────────────────────────────────────────────────────────
 
-/** New PUBLIC bucket (tingletap-media)
- *  Reads R2_Public_Bucket (primary) with R2_PUBLIC_BUCKET_NAME as fallback.
- */
+/** Public bucket — reads R2_Public_Bucket with R2_PUBLIC_BUCKET_NAME as fallback. */
 export function getPublicBucketName() {
   const name = process.env.R2_Public_Bucket || process.env.R2_PUBLIC_BUCKET_NAME;
   if (!name) throw new Error('R2_Public_Bucket env var not set.');
   return name;
 }
 
-/** New PRIVATE bucket (tingletap-verification)
- *  Reads R2_Private_Bucket (primary) with R2_PRIVATE_BUCKET_NAME as fallback.
- */
+/** Private bucket — reads R2_Private_Bucket with R2_PRIVATE_BUCKET_NAME as fallback. */
 export function getPrivateBucketName() {
   const name = process.env.R2_Private_Bucket || process.env.R2_PRIVATE_BUCKET_NAME;
   if (!name) throw new Error('R2_Private_Bucket env var not set.');
@@ -88,7 +84,7 @@ export function getBucketName() {
  */
 export function getPublicMediaUrl(key) {
   const base = (process.env.R2_PUBLIC_BUCKET_URL || '').replace(/\/$/, '');
-  if (!base) throw new Error('R2_PUBLIC_BUCKET_URL env var not set. Set it to the public URL of your tingletap-media bucket.');
+  if (!base) throw new Error('R2_PUBLIC_BUCKET_URL env var not set. Set it to the public URL of your public R2 bucket.');
   return `${base}/${key}`;
 }
 

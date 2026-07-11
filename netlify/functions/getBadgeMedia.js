@@ -3,7 +3,7 @@
 // back to the browser as binary with inline Content-Disposition.
 //
 // BUCKET ROUTING (backward-compat):
-//   key starts with "badge/"          → NEW private bucket (tingletap-verification)
+//   key starts with "badge/"          → NEW private bucket (R2_Private_Bucket)
 //   key starts with "verifications/"  → OLD legacy bucket  (R2_BUCKET_NAME)
 
 import { GetObjectCommand } from '@aws-sdk/client-s3';

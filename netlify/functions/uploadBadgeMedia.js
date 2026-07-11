@@ -1,6 +1,6 @@
 // netlify/functions/uploadBadgeMedia.js
 // Receives a badge verification media file (base64-encoded) and uploads it
-// to the PRIVATE Cloudflare R2 bucket (tingletap-verification).
+// to the PRIVATE Cloudflare R2 bucket (R2_Private_Bucket).
 //
 // Key prefix: badge/{uid}/{mediaType}-{uuid}.{ext}
 // (Old prefix "verifications/" was on the legacy single bucket — still readable

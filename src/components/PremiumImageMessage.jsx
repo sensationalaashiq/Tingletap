@@ -93,7 +93,7 @@ const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = fal
       return;
     }
     imgRetried.current = true;
-    // Public R2 URLs (tingletap-media bucket) never expire — no refresh needed
+    // Public R2 URLs (public bucket) never expire — no refresh needed
     if (isPublicR2Url(resolvedUrl)) {
       if (e.target) e.target.alt = 'Image unavailable';
       return;

@@ -282,7 +282,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
             // and fetch a fresh 1-hour signed URL from the getMediaUrl function.
             if (audioRetried.current || isYouTubeMusic) return;
             audioRetried.current = true;
-            // Public R2 URLs (tingletap-media bucket) never expire — skip refresh
+            // Public R2 URLs (public bucket) never expire — skip refresh
             import('../services/r2StorageService')
               .then(({ isPublicR2Url, extractR2Key, getMediaUrl }) => {
                 if (isPublicR2Url(resolvedUrl)) return;

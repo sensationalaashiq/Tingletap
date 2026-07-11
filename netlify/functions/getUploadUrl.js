@@ -1,6 +1,6 @@
 // netlify/functions/getUploadUrl.js
 // Returns a presigned PUT URL for uploading badge verification media directly
-// to the PRIVATE Cloudflare R2 bucket (tingletap-verification).
+// to the PRIVATE Cloudflare R2 bucket (R2_Private_Bucket).
 // Key prefix: badge/{uid}/{mediaType}-{uuid}.{ext}
 
 import { createPresignedPutUrl } from './shared/r2Client.js';

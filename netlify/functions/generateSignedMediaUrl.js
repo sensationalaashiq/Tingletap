@@ -3,7 +3,7 @@
 // viewing badge verification media stored in Cloudflare R2.
 //
 // BUCKET ROUTING (backward-compat):
-//   key starts with "badge/"          → NEW private bucket (tingletap-verification)
+//   key starts with "badge/"          → NEW private bucket (R2_Private_Bucket)
 //   key starts with "verifications/"  → OLD legacy bucket  (R2_BUCKET_NAME)
 
 import { createPresignedGetUrl } from './shared/r2Client.js';
