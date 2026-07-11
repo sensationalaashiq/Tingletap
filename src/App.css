@@ -1020,7 +1020,7 @@ html body .theme-light .user-font-styled {
 
 .message-body p {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: normal;
   font-family: 'Lato', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
   line-height: 1.5;
@@ -1107,6 +1107,10 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   width: 100%;
   max-width: 300px;
   margin: 4px 0;
+  /* padding-bottom trick: 56.25% = 9/16 — guarantees iframe fills container
+     with zero leftover space regardless of browser aspect-ratio support.   */
+  padding-bottom: 56.25%;
+  height: 0;
   overflow: hidden;
   border-radius: 12px;
   border: 2.5px solid #a78bfa;
@@ -1114,16 +1118,19 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
     0 0 0 1px rgba(167,139,250,0.3),
     0 6px 24px rgba(109,40,217,0.28),
     0 2px 8px rgba(109,40,217,0.18);
-  background: transparent;
+  background: #000;
 }
 
 .youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   display: block;
-  border: none;
-  vertical-align: bottom;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Message Form */

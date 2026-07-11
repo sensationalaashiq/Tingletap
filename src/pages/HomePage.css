@@ -2289,27 +2289,32 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 }
 
 .youtube-embed {
-  margin: 4px 0;
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
   border: 2.5px solid #a78bfa;
   border-radius: 12px;
-  overflow: hidden;
   box-shadow:
     0 0 0 1px rgba(167,139,250,0.3),
     0 6px 24px rgba(109,40,217,0.28),
     0 2px 8px rgba(109,40,217,0.18);
-  background: transparent;
+  background: #000;
   max-width: 300px;
   width: 100%;
+  margin: 4px 0;
 }
 
 .youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 16 / 9 !important;
-  border-radius: 0 !important;
+  height: 100% !important;
   display: block !important;
   border: none !important;
-  vertical-align: bottom;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Whisper Messages with Role-based Colors */

@@ -657,7 +657,7 @@ const WelcomeDashboard = () => {
 
           // Check female FIRST to avoid wrong fallback
           if (gender === 'female') return {
-            label: 'Stree',
+            label: 'Female',
             cls: 'wd-role--guest-female',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
@@ -675,7 +675,7 @@ const WelcomeDashboard = () => {
             )
           };
           if (gender === 'transgender' || gender === 'other') return {
-            label: 'Navrang',
+            label: 'Transgender',
             cls: 'wd-role--guest-transgender',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
@@ -696,7 +696,7 @@ const WelcomeDashboard = () => {
             )
           };
           if (gender === 'male') return {
-            label: 'Purush',
+            label: 'Male',
             cls: 'wd-role--guest-male',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
@@ -708,7 +708,7 @@ const WelcomeDashboard = () => {
             )
           };
           return {
-            label: 'Purush',
+            label: 'Male',
             cls: 'wd-role--guest-male',
             icon: (
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" aria-hidden="true" style={{display:'block',flexShrink:0}}>
