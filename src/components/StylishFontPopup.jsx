@@ -13,8 +13,8 @@ const StylishFontPopup = React.memo(({
 }) => {
   // State management with proper initialization
   const [fontSettings, setFontSettings] = useState({
-    fontSize: '8px',
-    fontColor: '#333333',
+    fontSize: '11px',
+    fontColor: '#111111',
     fontFamily: 'inherit',
     isBold: false,
     isItalic: false,
@@ -26,8 +26,8 @@ const StylishFontPopup = React.memo(({
   useEffect(() => {
     if (isOpen && currentPreferences) {
       const initialSettings = {
-        fontSize: currentPreferences.fontSize || '8px',
-        fontColor: currentPreferences.fontColor || '#333333',
+        fontSize: currentPreferences.fontSize || '11px',
+        fontColor: currentPreferences.fontColor || '#111111',
         fontFamily: currentPreferences.fontFamily || 'inherit',
         isBold: currentPreferences.isBold || false,
         isItalic: currentPreferences.isItalic || false,

@@ -1039,16 +1039,21 @@ iframe[src*="youtu.be"] {
 
 /* ── Username theme colors (color-only — font size/weight already set universally above) ── */
 
-/* Light / default theme */
+/* Light / default theme — black, no role tinting */
 body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([style*="color"]),
 body.theme-light .message-displayname:not([style*="color"]) {
-  color: #000000;
+  color: #111111 !important;
 }
 
-/* Dark mode */
+/* All custom themes (non-dark) */
+body[class*="theme-"]:not(.dark-mode):not(.theme-dark) .message-displayname:not([style*="color"]) {
+  color: #111111 !important;
+}
+
+/* Dark mode — near-white */
 body.dark-mode .message-displayname:not([style*="color"]),
 body.theme-dark .message-displayname:not([style*="color"]) {
-  color: #e0e0e0;
+  color: #e8e8e8 !important;
 }
 
 /* Dark theme variants — color from CSS variable set in Themes.css */
@@ -1402,11 +1407,11 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 
 .message-displayname:not([style*="font-size"]) {
   font-weight: bold;
-  font-size: 11px;
-  color: #333333;
+  font-size: 12px;
+  color: #111111;
   letter-spacing: 0px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.15s ease;
   font-family: inherit;
   line-height: 1.1;
 }
