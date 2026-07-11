@@ -689,7 +689,7 @@
 }
 .sb-apd-mod-label svg { fill: #7c3aed; }
 
-/* ── inline-badge in sidebar — override the 14px !important from HomePage.css */
+/* ── inline-badge in sidebar — match chat-message badge size exactly (14px) */
 .sb-list-username .inline-badge,
 .sb-profile-name .inline-badge,
 .sb-apd-name .inline-badge {
@@ -697,27 +697,31 @@
   align-items: center;
   flex-shrink: 0;
   margin-left: 2px;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+  width: 14px;
+  height: 14px;
+  overflow: visible; /* never clip the SVG artwork */
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
 }
 .sb-list-username .inline-badge svg,
 .sb-profile-name .inline-badge svg,
 .sb-apd-name .inline-badge svg {
-  width: 18px !important;
-  height: 18px !important;
-  vertical-align: -3px;
+  width: 14px !important;
+  height: 14px !important;
+  vertical-align: -2px;
+  flex-shrink: 0;
 }
 
-/* Emerald Empress / Sapphire Goddess — reduced from 31px to 24px.
-   Still sized via box (not scale) so overflow:hidden never clips them. */
+/* Emerald Empress / Sapphire Goddess have more internal whitespace in their
+   SVG artwork — size them at 16px (direct width/height, never scale()) so
+   they appear visually the same size as the 14px badges next to them. */
 .sb-list-username .inline-badge.badge-emerald_empress,
 .sb-profile-name .inline-badge.badge-emerald_empress,
 .sb-apd-name .inline-badge.badge-emerald_empress,
 .sb-list-username .inline-badge.badge-sapphire_goddess,
 .sb-profile-name .inline-badge.badge-sapphire_goddess,
 .sb-apd-name .inline-badge.badge-sapphire_goddess {
-  width: 24px;
-  height: 24px;
-  justify-content: center;
+  width: 16px;
+  height: 16px;
 }
 .sb-list-username .inline-badge.badge-emerald_empress svg,
 .sb-profile-name .inline-badge.badge-emerald_empress svg,
@@ -725,9 +729,9 @@
 .sb-list-username .inline-badge.badge-sapphire_goddess svg,
 .sb-profile-name .inline-badge.badge-sapphire_goddess svg,
 .sb-apd-name .inline-badge.badge-sapphire_goddess svg {
-  width: 24px !important;
-  height: 24px !important;
-  vertical-align: -6px;
+  width: 16px !important;
+  height: 16px !important;
+  vertical-align: -3px;
 }
 
 /* Latest achievement chip — small icon next to DP/username */

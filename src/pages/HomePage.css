@@ -1425,6 +1425,7 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   height: 14px;
   flex-shrink: 0;
   margin-left: 2px;
+  overflow: visible; /* never clip SVG artwork */
   /* Boost saturation + contrast so badge colours pop on white and lavender strips */
   filter: brightness(1.05) saturate(2.2) contrast(1.1) drop-shadow(0 0 1.5px rgba(0,0,0,0.18));
 }
@@ -1432,16 +1433,20 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 .inline-badge svg {
   width: 14px !important;
   height: 14px !important;
+  flex-shrink: 0;
 }
 
-/* Emerald Empress / Sapphire Goddess artwork has more internal whitespace
-   than Godfather/High Council/Ruby Queen, so it visually renders smaller at
-   the same box size — scale it up so all badges look the same size wherever
-   used (chat messages, sidebar, profile view). */
+/* Emerald Empress / Sapphire Goddess artwork has more internal whitespace —
+   size their SVG directly at 16px (never scale()) so they match visually. */
+.inline-badge.badge-emerald_empress,
+.inline-badge.badge-sapphire_goddess {
+  width: 16px;
+  height: 16px;
+}
 .inline-badge.badge-emerald_empress svg,
 .inline-badge.badge-sapphire_goddess svg {
-  transform: scale(1.55);
-  transform-origin: center;
+  width: 16px !important;
+  height: 16px !important;
 }
 
 .message-body {
