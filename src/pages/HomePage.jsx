@@ -246,9 +246,13 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     };
     const viewerName = auth.currentUser?.displayName;
     const mentionedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
+        // Sender sees plain text — their own font/colour style applies, no chip
+        if (isMyMessage) return `@${name}`;
+        // Tagged person (receiver) sees lavender chip with white text
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
             return `<span class="tag-self-mention">@${name}</span>`;
         }
+        // Everyone else sees a subtle secondary chip
         return `<span class="tag-other-mention">@${name}</span>`;
     });
     const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
@@ -4725,17 +4729,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                 if (targetDoc.exists()) {
                     const targetSettings = targetDoc.data()?.settings || {};
                     if (targetSettings.allowWhisperMessages === false) {
-                        toast(
-                            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                                <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(99,102,241,.35)'}}>
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>
+                        pt.whisperOff(
+                            <div>
+                                <div style={{fontWeight:800,fontSize:'13px'}}>Whispers Disabled</div>
+                                <div style={{fontSize:'11px',marginTop:'3px',opacity:0.85}}>
+                                    <span style={{fontWeight:700}}>{message.displayName}</span> has turned off whisper messages
                                 </div>
-                                <div>
-                                    <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Whispers Disabled</div>
-                                    <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#7c3aed'}}>{message.displayName}</span> has turned off whisper messages</div>
-                                </div>
-                            </div>,
-                            { style:{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',border:'1.5px solid rgba(99,102,241,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(99,102,241,.15)',padding:'10px 14px'},icon:false,autoClose:4000 }
+                            </div>
                         );
                         return;
                     }

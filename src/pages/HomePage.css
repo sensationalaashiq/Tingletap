@@ -10740,20 +10740,27 @@ body .homepage-container .attachment-dropdown {
 }
 
 /* ===== TAG MENTION STYLES ===== */
+/* Tag chip shown to the RECEIVER (the tagged person) —
+   solid lavender, white text, no gradient, theme-aware */
 .tag-self-mention {
   display: inline-flex;
   align-items: center;
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-  color: #fff !important;
+  background: var(--tag-chip-bg, rgba(139, 92, 246, 0.72));
+  color: #ffffff !important;
   font-weight: 700;
   font-size: 0.88em;
   padding: 1px 7px 2px;
   border-radius: 999px;
-  box-shadow: 0 1px 6px rgba(124,58,237,0.35);
   letter-spacing: 0.01em;
   line-height: 1.5;
   vertical-align: middle;
   cursor: default;
+  /* no gradient, no box-shadow */
+}
+/* Darker/richer lavender in dark mode for better contrast */
+.dark-mode .tag-self-mention,
+.theme-dark .tag-self-mention {
+  background: var(--tag-chip-bg-dark, rgba(124, 58, 237, 0.85));
 }
 
 .tag-other-mention {
