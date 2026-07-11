@@ -1020,14 +1020,11 @@ html body .theme-light .user-font-styled {
 
 .message-body p {
   margin: 0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: normal;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Lato', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
   line-height: 1.5;
   color: var(--text-primary) !important;
-  transition: color 0.3s ease;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3), 0 0 12px rgba(139, 92, 246, 0.2);
-  filter: brightness(1.1) contrast(1.05);
 }
 
 /* Apply theme colors only to non-user-styled message text */

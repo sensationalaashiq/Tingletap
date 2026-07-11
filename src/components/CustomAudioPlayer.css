@@ -730,3 +730,90 @@ html.dark-mode .chat-feed .compact-audio-player,
 
 /* Placeholder fix */
 .input-container input::placeholder { color: #000 !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   NUCLEAR TEXT FIX — covers every theme, every context.
+   Must stay at EOF so these selectors always win when
+   specificity ties are broken by cascade order.
+═══════════════════════════════════════════════════════════ */
+
+/* ── YouTube RED player: force white on EVERY text element ──────────────
+   The container has color:#fff !important but some contexts (message-body
+   rules in App.css) can override via higher-specificity selectors.
+   Listing each element explicitly guarantees visibility.                  */
+.youtube-music-player .player-song-title,
+.youtube-music-player .player-song-title *,
+.chat-feed .youtube-music-player .player-song-title,
+.message-body .youtube-music-player .player-song-title,
+.message-row-wrapper .youtube-music-player .player-song-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.45) !important;
+}
+.youtube-music-player .time-info,
+.youtube-music-player .time-info span,
+.youtube-music-player .time-info *,
+.chat-feed .youtube-music-player .time-info,
+.message-body .youtube-music-player .time-info,
+.message-row-wrapper .youtube-music-player .time-info,
+.message-row-wrapper .youtube-music-player .time-info span {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.35) !important;
+}
+
+/* ── DARK MODE: compact (lavender) player title + timer ─────────────────
+   Covers every nesting context — chat feed, message-body, direct.        */
+html.dark-mode .compact-audio-player .player-song-title,
+html.dark-mode .compact-audio-player .time-info,
+html.dark-mode .compact-audio-player .time-info span,
+html.dark-mode .message-row-wrapper .compact-audio-player .player-song-title,
+html.dark-mode .message-body .compact-audio-player .player-song-title,
+html.dark-mode .chat-feed .compact-audio-player .player-song-title,
+html.dark-mode .message-row-wrapper .compact-audio-player .time-info,
+html.dark-mode .message-body .compact-audio-player .time-info,
+html.dark-mode .chat-feed .compact-audio-player .time-info,
+html.dark-mode .message-row-wrapper .compact-audio-player .time-info span,
+html.dark-mode .message-body .compact-audio-player .time-info span,
+html.dark-mode .chat-feed .compact-audio-player .time-info span,
+.dark-mode .compact-audio-player .player-song-title,
+.dark-mode .compact-audio-player .time-info,
+.dark-mode .compact-audio-player .time-info span,
+.dark-mode .message-row-wrapper .compact-audio-player .player-song-title,
+.dark-mode .message-body .compact-audio-player .player-song-title,
+.dark-mode .chat-feed .compact-audio-player .player-song-title,
+.dark-mode .message-row-wrapper .compact-audio-player .time-info,
+.dark-mode .message-body .compact-audio-player .time-info,
+.dark-mode .chat-feed .compact-audio-player .time-info,
+.dark-mode .message-row-wrapper .compact-audio-player .time-info span,
+.dark-mode .message-body .compact-audio-player .time-info span,
+.dark-mode .chat-feed .compact-audio-player .time-info span {
+  color: #ddd6fe !important;
+}
+
+/* ── ALL COLOUR THEMES (dark-theme-variant): compact player ─────────────
+   Rose-pink, Burgundy-wine, Aurora, Royal-purple, Sunset-orange.
+   Use --username-color which is always readable on the theme bg.          */
+html.dark-theme-variant .compact-audio-player .player-song-title,
+html.dark-theme-variant .compact-audio-player .time-info,
+html.dark-theme-variant .compact-audio-player .time-info span,
+html.dark-theme-variant .message-row-wrapper .compact-audio-player .player-song-title,
+html.dark-theme-variant .message-body .compact-audio-player .player-song-title,
+html.dark-theme-variant .chat-feed .compact-audio-player .player-song-title,
+html.dark-theme-variant .message-row-wrapper .compact-audio-player .time-info,
+html.dark-theme-variant .message-body .compact-audio-player .time-info,
+html.dark-theme-variant .chat-feed .compact-audio-player .time-info,
+html.dark-theme-variant .message-row-wrapper .compact-audio-player .time-info span,
+html.dark-theme-variant .message-body .compact-audio-player .time-info span,
+html.dark-theme-variant .chat-feed .compact-audio-player .time-info span {
+  color: var(--username-color) !important;
+}
+
+/* ── ALL COLOUR THEMES: YouTube red player (keep white) ─────────────────
+   The red bg stays the same in colour themes; text stays white.           */
+html.dark-theme-variant .youtube-music-player .player-song-title,
+html.dark-theme-variant .youtube-music-player .time-info,
+html.dark-theme-variant .youtube-music-player .time-info span,
+html.dark-theme-variant .message-row-wrapper .youtube-music-player .player-song-title,
+html.dark-theme-variant .message-row-wrapper .youtube-music-player .time-info,
+html.dark-theme-variant .message-row-wrapper .youtube-music-player .time-info span {
+  color: #ffffff !important;
+}
