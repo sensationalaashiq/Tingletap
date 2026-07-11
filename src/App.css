@@ -614,7 +614,7 @@ img.lp-logo {
 .theme-dark .message-body p:not([data-user-styled]):not(.user-font-styled):not([style*="color"]),
 .theme-dark .message-content-container p:not([data-user-styled]):not(.user-font-styled):not([style*="color"]) {
     color: var(--text-primary) !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    /* text-shadow removed — caused visible glow/shadow on Vyom's messages */
 }
 
 /* MAXIMUM PRIORITY: USER'S CUSTOM FONT STYLES OVERRIDE EVERYTHING */
@@ -1039,8 +1039,7 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 body.theme-dark .message-body p:not([style]):not(.user-font-styled),
 body.theme-dark .message-content-container p:not([style]):not(.user-font-styled) {
     color: #e2e8f0 !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-    font-weight: normal !important;
+    /* text-shadow and font-weight:normal removed — caused glow and overrode bold styled messages */
 }
 
 .youtube-embed {

@@ -175,8 +175,8 @@ const StylishFontPopup = React.memo(({
     });
   }, []);
 
-  const handleReset = useCallback(() => {
-    console.log('🔄 Resetting font settings');
+  const handleReset = useCallback(async () => {
+    console.log('🔄 Resetting font settings to default');
     const defaultSettings = {
       fontSize: '11px',
       fontColor: '#333333',
@@ -187,7 +187,33 @@ const StylishFontPopup = React.memo(({
       isStrikethrough: false
     };
     setFontSettings(defaultSettings);
-  }, []);
+
+    // Apply CSS injection immediately for instant local feedback
+    const currentUser = window.auth?.currentUser;
+    if (currentUser) {
+      if (window._applyMsgFontStyle) {
+        window._applyMsgFontStyle(currentUser.uid, { messageFontPreferences: defaultSettings });
+      }
+      window.chatFontPreferences = defaultSettings;
+
+      // Save defaults to Firestore so onSnapshot fires on all viewers' sides
+      try {
+        const { db } = await import('../firebase/config');
+        const { doc, updateDoc } = await import('firebase/firestore');
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          messageFontPreferences: defaultSettings,
+          fontPreferences: defaultSettings,
+          'settings.messageFontPreferences': defaultSettings,
+          'settings.fontPreferences': defaultSettings,
+          messageStyleLastUpdated: Date.now()
+        });
+        console.log('✅ Font reset saved to Firestore — all viewers will update via onSnapshot');
+      } catch (e) {
+        console.error('❌ Font reset Firestore save failed:', e);
+      }
+    }
+    onClose();
+  }, [onClose]);
 
   const handleApply = useCallback(async () => {
     console.log('💬 StylishFontPopup: Applying GLOBAL MESSAGE TEXT styles');
@@ -226,6 +252,11 @@ const StylishFontPopup = React.memo(({
       if (!currentUserDisplayName || !currentUserId) {
         console.log('❌ No user info available for message styling');
         return;
+      }
+
+      // Apply CSS injection immediately for the sender's own view
+      if (window._applyMsgFontStyle) {
+        window._applyMsgFontStyle(currentUserId, { messageFontPreferences: fontSettings });
       }
 
       // Apply styles immediately with higher specificity

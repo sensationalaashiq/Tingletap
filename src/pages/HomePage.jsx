@@ -209,48 +209,13 @@ const ImageMessage = ({ imageUrl, imageFileName, mediaKey }) => (
 
 
 /* ── ChatMessageTranslatedBody: isolates useTranslation to avoid Rules-of-Hooks violation ── */
-const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody({ text, uid, msgStyle, isMyMessage }) {
+// Message text styles are applied via CSS injection (window._applyMsgFontStyle → <style id="msg-font-{uid}">)
+// so they update in real-time for ALL viewers when a user saves/resets in the font popup,
+// without needing a React re-render. No inline pStyle here to avoid specificity conflicts.
+const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody({ text, uid, isMyMessage }) {
     const translation = useTranslation(text);
 
-    const savedMsgStyle = msgStyle;
-    const msgDecorations = [];
-    if (savedMsgStyle?.isUnderline) msgDecorations.push('underline');
-    if (savedMsgStyle?.isStrikethrough) msgDecorations.push('line-through');
-    // Only apply inline styles when the user has actually saved preferences.
-    // Without this guard, hardcoded fallback values (color, fontWeight, fontSize)
-    // override CSS theme variables for both the sender AND all viewers — making
-    // the text invisible on dark themes and causing the "I see bold, others see
-    // normal" asymmetry (applyFontStylesToMessages was patching the DOM only for
-    // the sender's own view). When savedMsgStyle is null, let CSS fully control
-    // color/weight/size so every theme renders consistently for everyone.
-    // When a custom font colour is chosen, add an automatic dual-tone halo
-    // (light + dark) so the text stays readable on every theme's background
-    // (Light, Dark, Burgundy, Aurora, etc.) regardless of which theme the
-    // sender was using when they picked the colour.
-    // Only apply inline styles when the user has genuinely non-default prefs.
-    // Default-equivalent values (11px, #333333, inherit, not bold/italic) should
-    // let CSS theme variables control rendering so every viewer sees the same thing.
-    const hasCustomMsgStyle = savedMsgStyle && (
-        (savedMsgStyle.fontSize && savedMsgStyle.fontSize !== '11px' && savedMsgStyle.fontSize !== '14px') ||
-        (savedMsgStyle.fontColor && savedMsgStyle.fontColor !== '#333333' && savedMsgStyle.fontColor !== '#2d2d2d' && savedMsgStyle.fontColor !== 'inherit' && savedMsgStyle.fontColor !== '') ||
-        (savedMsgStyle.fontFamily && savedMsgStyle.fontFamily !== 'inherit') ||
-        savedMsgStyle.isBold ||
-        savedMsgStyle.isItalic ||
-        savedMsgStyle.isUnderline ||
-        savedMsgStyle.isStrikethrough
-    );
-    const pStyle = hasCustomMsgStyle ? {
-        ...(savedMsgStyle.fontSize && savedMsgStyle.fontSize !== '11px' ? { fontSize: savedMsgStyle.fontSize } : {}),
-        ...(savedMsgStyle.fontColor && savedMsgStyle.fontColor !== 'inherit' && savedMsgStyle.fontColor !== '' ? { color: savedMsgStyle.fontColor } : {}),
-        ...(savedMsgStyle.fontFamily && savedMsgStyle.fontFamily !== 'inherit' ? { fontFamily: savedMsgStyle.fontFamily } : {}),
-        ...(savedMsgStyle.isBold    ? { fontWeight: 'bold'   } : {}),
-        ...(savedMsgStyle.isItalic  ? { fontStyle:  'italic' } : {}),
-        ...(msgDecorations.length > 0 ? { textDecoration: msgDecorations.join(' ') } : {}),
-        margin: '3px 0',
-        lineHeight: '1.4',
-        wordWrap: 'break-word',
-        overflowWrap: 'break-word'
-    } : {
+    const pStyle = {
         margin: '3px 0',
         lineHeight: '1.4',
         wordWrap: 'break-word',
@@ -806,7 +771,6 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             <ChatMessageTranslatedBody
                                 text={text}
                                 uid={uid}
-                                msgStyle={(typeof window !== 'undefined' && window.userMessageStyles && uid) ? window.userMessageStyles[uid] : null}
                                 isMyMessage={isMyMessage}
                             />
                         )}
@@ -2261,67 +2225,105 @@ const HomePage = ({ user, roomIdOverride }) => {
             // global users collection listener.  window.fetchUserProfile(uid) is
             // exposed so message renderers, avatars, and other consumers can pull
             // only the profiles they actually display.
-            const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
             if (!window.userProfilesCache) window.userProfilesCache = new Map();
             if (!window._profileCacheTTL) window._profileCacheTTL = new Map();
+            if (!window._profileListeners) window._profileListeners = new Map();
 
+            // ── CSS-injection approach for message font styles ──────────────────────
+            // Updates a <style id="msg-font-{uid}"> tag in <head> so ALL viewers
+            // see font changes in real-time without any React re-render.
+            // Called from the onSnapshot handler below, and from StylishFontPopup
+            // immediately after a save/reset so the sender sees it instantly too.
+            const _isMsgDefault = (p) =>
+                (!p.fontSize      || p.fontSize === '11px' || p.fontSize === '14px') &&
+                (!p.fontColor     || p.fontColor === '#333333' || p.fontColor === '#2d2d2d' || p.fontColor === 'inherit' || p.fontColor === '') &&
+                (!p.fontFamily    || p.fontFamily === 'inherit') &&
+                !p.isBold && !p.isItalic && !p.isUnderline && !p.isStrikethrough;
+
+            window._applyMsgFontStyle = (uid, userData) => {
+                if (!uid) return;
+                const fp = userData?.messageFontPreferences || userData?.fontPreferences;
+                const styleId = `msg-font-${uid}`;
+                let styleEl = document.getElementById(styleId);
+
+                if (!fp || _isMsgDefault(fp)) {
+                    // Default — clear injected CSS so theme variables control colour
+                    if (styleEl) styleEl.textContent = '';
+                    if (window.userMessageStyles) delete window.userMessageStyles[uid];
+                    return;
+                }
+
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = styleId;
+                    document.head.appendChild(styleEl);
+                }
+
+                const decs = [];
+                if (fp.isUnderline) decs.push('underline');
+                if (fp.isStrikethrough) decs.push('line-through');
+
+                styleEl.textContent = `[data-message-uid="${uid}"] .message-body p {
+                    ${fp.fontColor && fp.fontColor !== 'inherit' && fp.fontColor !== '#333333' && fp.fontColor !== '#2d2d2d' ? `color: ${fp.fontColor} !important;` : ''}
+                    ${fp.fontSize && fp.fontSize !== '11px' && fp.fontSize !== '14px' ? `font-size: ${fp.fontSize} !important;` : ''}
+                    ${fp.fontFamily && fp.fontFamily !== 'inherit' ? `font-family: ${fp.fontFamily} !important;` : ''}
+                    ${fp.isBold ? 'font-weight: bold !important;' : ''}
+                    ${fp.isItalic ? 'font-style: italic !important;' : ''}
+                    ${decs.length > 0 ? `text-decoration: ${decs.join(' ')} !important;` : ''}
+                }`;
+
+                // Keep window.userMessageStyles in sync for any other consumers
+                if (!window.userMessageStyles) window.userMessageStyles = {};
+                window.userMessageStyles[uid] = {
+                    fontSize:        fp.fontSize        || '11px',
+                    fontColor:       fp.fontColor       || 'inherit',
+                    fontFamily:      fp.fontFamily      || 'inherit',
+                    isBold:          Boolean(fp.isBold),
+                    isItalic:        Boolean(fp.isItalic),
+                    isUnderline:     Boolean(fp.isUnderline),
+                    isStrikethrough: Boolean(fp.isStrikethrough)
+                };
+            };
+
+            // ── Per-uid real-time profile listener ─────────────────────────────────
+            // Replaces the one-time getDoc+5-min-cache approach. Each uid gets one
+            // onSnapshot that fires immediately and on every Firestore change, so
+            // font pref resets propagate to all viewers without a page refresh.
             window.fetchUserProfile = async (uid) => {
                 if (!uid) return null;
-                const now = Date.now();
-                const cached  = window.userProfilesCache.get(uid);
-                const cachedAt = window._profileCacheTTL.get(uid) || 0;
-                if (cached && (now - cachedAt) < PROFILE_CACHE_TTL_MS) return cached;
-                try {
-                    const snap = await getDoc(doc(db, 'users', uid));
-                    if (snap.exists()) {
-                        const userData = snap.data();
-                        window.userProfilesCache.set(uid, userData);
-                        window._profileCacheTTL.set(uid, now);
 
-                        // Keep userMessageStyles populated for font rendering.
-                        // Only set when the user has ACTUAL custom (non-default) preferences
-                        // so CSS theme variables control text colour/size for default users.
-                        if (!window.userMessageStyles) window.userMessageStyles = {};
-                        const fp = userData.messageFontPreferences || userData.fontPreferences;
-                        const _isMsgDefault = (p) =>
-                            (!p.fontSize      || p.fontSize === '11px' || p.fontSize === '14px') &&
-                            (!p.fontColor     || p.fontColor === '#333333' || p.fontColor === '#2d2d2d' || p.fontColor === 'inherit' || p.fontColor === '') &&
-                            (!p.fontFamily    || p.fontFamily === 'inherit') &&
-                            !p.isBold && !p.isItalic && !p.isUnderline && !p.isStrikethrough;
-                        if (fp && !_isMsgDefault(fp)) {
-                            window.userMessageStyles[uid] = {
-                                fontSize:        fp.fontSize        || '11px',
-                                fontColor:       fp.fontColor       || 'inherit',
-                                fontFamily:      fp.fontFamily      || 'inherit',
-                                isBold:          Boolean(fp.isBold),
-                                isItalic:        Boolean(fp.isItalic),
-                                isUnderline:     Boolean(fp.isUnderline),
-                                isStrikethrough: Boolean(fp.isStrikethrough)
-                            };
-                        } else {
-                            // Default or no saved prefs — remove any stale entry so CSS takes over
-                            delete window.userMessageStyles[uid];
-                        }
+                // Return from cache if listener is already active (data is fresh)
+                if (window._profileListeners.has(uid)) {
+                    return window.userProfilesCache.get(uid) || null;
+                }
 
-                        // Dispatch update event for avatar / display-name refresh
-                        const newAvatarUrl = userData.photoURL
-                            ? (userData.photoURL && !userData.photoURL.includes('randomuser.me') ? userData.photoURL : getDefaultAvatarUrl(uid, userData.gender))
-                            : getDefaultAvatarUrl(uid, userData.gender);
-                        window.dispatchEvent(new CustomEvent('userProfileUpdated', {
-                            detail: { userId: uid, userData, newAvatarUrl }
-                        }));
+                // Set up real-time listener for this uid
+                const unsub = onSnapshot(doc(db, 'users', uid), (docSnap) => {
+                    if (!docSnap.exists()) return;
+                    const userData = docSnap.data();
+                    window.userProfilesCache.set(uid, userData);
+                    window._profileCacheTTL.set(uid, Date.now());
 
-                        // Update DOM avatars that are already rendered
-                        document.querySelectorAll(`[data-message-uid="${uid}"] .message-avatar`).forEach(avatar => {
-                            if (avatar.src !== newAvatarUrl) avatar.src = newAvatarUrl;
-                        });
-                        document.querySelectorAll(`[data-user-uid="${uid}"] .dropdown-avatar, [data-profile-uid="${uid}"] .dropdown-avatar`).forEach(avatar => {
-                            if (avatar.src !== newAvatarUrl) avatar.src = newAvatarUrl;
-                        });
+                    // Apply message font styles via CSS injection (real-time, no React re-render)
+                    window._applyMsgFontStyle(uid, userData);
 
-                        return userData;
-                    }
-                } catch { /* silently swallow fetch errors */ }
+                    // Avatar / display-name refresh
+                    const newAvatarUrl = userData.photoURL && !userData.photoURL.includes('randomuser.me')
+                        ? userData.photoURL
+                        : getDefaultAvatarUrl(uid, userData.gender);
+                    window.dispatchEvent(new CustomEvent('userProfileUpdated', {
+                        detail: { userId: uid, userData, newAvatarUrl }
+                    }));
+                    document.querySelectorAll(`[data-message-uid="${uid}"] .message-avatar`).forEach(av => {
+                        if (av.src !== newAvatarUrl) av.src = newAvatarUrl;
+                    });
+                    document.querySelectorAll(`[data-user-uid="${uid}"] .dropdown-avatar, [data-profile-uid="${uid}"] .dropdown-avatar`).forEach(av => {
+                        if (av.src !== newAvatarUrl) av.src = newAvatarUrl;
+                    });
+                });
+                window._profileListeners.set(uid, unsub);
+
+                // First call returns null; snapshot fires immediately and populates cache
                 return null;
             };
 
@@ -2334,6 +2336,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             // No Firestore listeners are opened by this effect for profile data.
             return () => {
                 window.removeEventListener('_appUserProfileChanged', profileEventHandler);
+                // Clean up all per-uid real-time profile listeners
+                if (window._profileListeners) {
+                    window._profileListeners.forEach(unsub => unsub());
+                    window._profileListeners.clear();
+                }
             };
         }
     }, [user, roomId, navigate]);
