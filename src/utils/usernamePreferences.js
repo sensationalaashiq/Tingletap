@@ -282,11 +282,10 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
       !DEFAULT_COLORS.has(userSettings.usernameFontColor.toLowerCase());
     if (isCustomFlatColor) {
       customStyles += `color: ${userSettings.usernameFontColor} !important;\n`;
-      // Dual-tone halo keeps any custom colour legible on every theme background
       if (chosenShadow && chosenShadow !== 'none') {
         customStyles += `text-shadow: ${chosenShadow} !important;\n`;
       } else {
-        customStyles += `text-shadow: 0 0 3px rgba(255,255,255,0.55), 0 0 6px rgba(0,0,0,0.55) !important;\n`;
+        customStyles += `text-shadow: none !important;\n`;
       }
     } else {
       // Default color: CSS theme variable (--username-color) controls it.

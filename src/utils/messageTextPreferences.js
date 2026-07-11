@@ -125,15 +125,10 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
   if (userSettings.isUnderline) decorations.push('underline');
   if (userSettings.isStrikethrough) decorations.push('line-through');
 
-  // Default dark colors → let CSS theme variable (--text-primary) control them so they
-  // adapt to every theme automatically. Custom non-dark colors are injected as-is with
-  // a dual-tone halo to keep them legible on any theme background.
   const DEFAULT_MSG_COLORS = new Set(['#333333', '#1f2937', '#000000', '#1a1a1a', '#111111', '#222222', '']);
   const isDefaultMsgColor = !userSettings.fontColor || DEFAULT_MSG_COLORS.has((userSettings.fontColor || '').toLowerCase());
   const resolvedMsgColor = isDefaultMsgColor ? 'var(--text-primary, #e8eaf0)' : userSettings.fontColor;
-  const msgShadow = isDefaultMsgColor
-    ? 'none'
-    : '0 0 3px rgba(255,255,255,0.45), 0 0 5px rgba(0,0,0,0.45)';
+  const msgShadow = 'none';
 
   // Create comprehensive global style rules for this user's messages - visible to ALL users
   const messageStyleRules = `
