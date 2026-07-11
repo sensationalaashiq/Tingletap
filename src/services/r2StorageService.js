@@ -14,7 +14,14 @@ import { auth } from '../firebase/config';
  */
 export function extractR2Key(url) {
   try {
-    if (!url || !url.includes('r2.cloudflarestorage.com')) return null;
+    if (!url) return null;
+    // New format: /.netlify/functions/serveMedia?key=profiles/xxx.webp
+    if (url.includes('serveMedia')) {
+      const u = new URL(url, 'https://placeholder.invalid');
+      return u.searchParams.get('key') || null;
+    }
+    // Legacy format: https://{account}.r2.cloudflarestorage.com/{bucket}/{key}?...
+    if (!url.includes('r2.cloudflarestorage.com')) return null;
     const u = new URL(url);
     // pathname = /{bucket}/{key...}
     const parts = u.pathname.split('/').filter(Boolean);

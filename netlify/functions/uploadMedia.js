@@ -5,7 +5,7 @@
 // Replaces all previous ImgBB / Catbox / tmpfiles / file.io upload paths.
 
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { createR2Client, getBucketName, createPresignedGetUrl } from './shared/r2Client.js';
+import { createR2Client, getBucketName } from './shared/r2Client.js';
 import { verifyToken, decodeJwt } from './shared/firestoreAdmin.js';
 import { randomUUID } from 'crypto';
 
@@ -70,10 +70,6 @@ const UPLOAD_CONFIG = {
   },
 };
 
-// Signed URL expiry: 7 days (604800s) — R2/S3 maximum.
-// The URL is stored in Firestore (photoURL, etc.) and stays valid for 7 days.
-// Clients should refresh via /.netlify/functions/getMediaUrl when the URL expires.
-const SIGNED_URL_EXPIRY = 604800; // 7 days
 
 function resp(data, status = 200) {
   return { statusCode: status, headers: CORS, body: JSON.stringify(data) };
@@ -168,14 +164,9 @@ export const handler = async (event) => {
     return resp({ error: 'Storage upload failed. Please try again.' }, 503);
   }
 
-  // Generate a private signed GET URL — bucket is not public.
-  // 7-day expiry (R2/S3 maximum). Clients refresh via getMediaUrl when it expires.
-  let url;
-  try {
-    url = await createPresignedGetUrl(key, SIGNED_URL_EXPIRY);
-  } catch (e) {
-    console.error('[uploadMedia] Failed to sign URL:', e.message);
-    return resp({ error: 'Upload succeeded but URL signing failed. Please retry.' }, 503);
-  }
+  // Return a permanent public proxy URL instead of a short-lived presigned URL.
+  // /.netlify/functions/serveMedia generates a fresh presigned URL server-side
+  // on each request, so the stored URL never expires and works for all users.
+  const url = `/.netlify/functions/serveMedia?key=${encodeURIComponent(key)}`;
   return resp({ key, url });
 };
