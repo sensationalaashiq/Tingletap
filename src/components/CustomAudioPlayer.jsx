@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './CustomAudioPlayer.css';
 
-const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, youtubeVideoId }) => {
+const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, youtubeVideoId, mediaKey }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -9,10 +9,19 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
   const [isLoading, setIsLoading] = useState(false);
   const [audioData, setAudioData] = useState(new Array(14).fill(0));
   const [fetchedYtTitle, setFetchedYtTitle] = useState('');
+  // resolvedUrl tracks the current (possibly refreshed) audio source.
+  const [resolvedUrl, setResolvedUrl] = useState(audioUrl);
+  const audioRetried = useRef(false);
   const audioRef = useRef(null);
   const youtubePlayerRef = useRef(null);
   const progressRef = useRef(null);
   const animationRef = useRef(null);
+
+  // Sync resolvedUrl when parent passes a new audioUrl (e.g. different message).
+  useEffect(() => {
+    setResolvedUrl(audioUrl);
+    audioRetried.current = false;
+  }, [audioUrl]);
 
   const animateVisualization = () => {
     if (isPlaying) {
@@ -264,9 +273,39 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
           onLoad={() => { setIsLoading(false); setDuration(180); }}
         />
       ) : (
-        <audio ref={audioRef} src={audioUrl} preload="metadata"
+        <audio ref={audioRef} src={resolvedUrl} preload="metadata"
           style={{display:'none'}}
-          onError={() => { setIsLoading(false); setIsPlaying(false); }}
+          onError={() => {
+            setIsLoading(false);
+            setIsPlaying(false);
+            // Signed-URL expiry recovery: extract key from the expired URL's path
+            // and fetch a fresh 1-hour signed URL from the getMediaUrl function.
+            if (audioRetried.current || isYouTubeMusic) return;
+            audioRetried.current = true;
+            const key = mediaKey || (() => {
+              try {
+                const { extractR2Key } = require('../services/r2StorageService');
+                return extractR2Key(resolvedUrl);
+              } catch {
+                if (!resolvedUrl || !resolvedUrl.includes('r2.cloudflarestorage.com')) return null;
+                try {
+                  const u = new URL(resolvedUrl);
+                  const parts = u.pathname.split('/').filter(Boolean);
+                  return parts.length >= 2 ? parts.slice(1).join('/') : null;
+                } catch { return null; }
+              }
+            })();
+            if (!key) return;
+            import('../services/r2StorageService')
+              .then(({ getMediaUrl }) => getMediaUrl(key))
+              .then(freshUrl => {
+                audioRetried.current = false;
+                setResolvedUrl(freshUrl);
+                const audio = audioRef.current;
+                if (audio) { audio.src = freshUrl; audio.load(); }
+              })
+              .catch(() => {});
+          }}
         />
       )}
     </div>

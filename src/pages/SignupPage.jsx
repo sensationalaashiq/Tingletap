@@ -245,11 +245,13 @@ const SignupPage = () => {
         });
       });
       let profilePicURL = '';
+      let profilePicKey = null;
       if (formData.profilePic) {
         try {
           const compressed = await compressImageToWebP(formData.profilePic, { maxDim: 1080, quality: 0.8 });
-          const { url } = await uploadMediaFile(compressed, 'profile');
+          const { key, url } = await uploadMediaFile(compressed, 'profile');
           profilePicURL = url;
+          profilePicKey = key || null;
         } catch (imgError) { console.warn('Failed to upload profile picture, using default'); }
       }
       const defaultAvatar = formData.gender === 'female'
@@ -261,6 +263,8 @@ const SignupPage = () => {
         gender: formData.gender || 'Not specified', country: formData.country || 'Unknown',
         status: formData.status || "I'm new here!", bio: formData.bio || '',
         profession: formData.profession || '', photoURL: profilePicURL || defaultAvatar,
+        // R2 key stored so expired 7-day signed URLs can be refreshed client-side
+        ...(profilePicKey ? { photoKey: profilePicKey } : {}),
         dateOfBirth: formData.dateOfBirth
       };
       await new Promise(resolve => setTimeout(resolve, 2000));

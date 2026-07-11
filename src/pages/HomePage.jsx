@@ -203,8 +203,8 @@ const RecordIconSVG = () => <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/20
 const UploadIconSVG = () => <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="28px" height="28px"><defs><linearGradient id="uploadGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3498db" /><stop offset="100%" stopColor="#2980b9" /></linearGradient></defs><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="url(#uploadGradient)" /></svg>;
 const CloseIconSVG = () => <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"><defs><linearGradient id="closeGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#e74c3c" /><stop offset="100%" stopColor="#c0392b" /></linearGradient></defs><path d="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12 19,6.41Z" fill="url(#closeGradient)" /></svg>;
 
-const ImageMessage = ({ imageUrl, imageFileName }) => (
-    <PremiumImageMessage imageUrl={imageUrl} imageFileName={imageFileName} />
+const ImageMessage = ({ imageUrl, imageFileName, mediaKey }) => (
+    <PremiumImageMessage imageUrl={imageUrl} imageFileName={imageFileName} mediaKey={mediaKey} />
 );
 
 
@@ -798,12 +798,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             <ImageMessage 
                                 imageUrl={message.imageUrl}
                                 imageFileName={message.imageFileName}
+                                mediaKey={message.imageKey}
                             />
                         )}
                         {message.audioUrl && (
                             <CustomAudioPlayer 
                                 audioUrl={message.audioUrl}
                                 audioFileName={message.audioFileName}
+                                mediaKey={message.audioKey}
                             />
                         )}
                         {youtubeVideoId && (
@@ -5400,11 +5402,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
             const compressedFile = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
-            const { url: imageUrl } = await uploadMediaFile(compressedFile, 'private-chat-image', { roomId: conversationId });
+            const { key: pmImgKey1, url: imageUrl } = await uploadMediaFile(compressedFile, 'private-chat-image', { roomId: conversationId });
 
             await addDoc(collection(db, 'privateMessages'), {
                 text: '',
                 imageUrl: imageUrl,
+                imageKey: pmImgKey1 || null,
                 imageFileName: file.name,
                 senderId: auth.currentUser.uid,
                 senderName: auth.currentUser.displayName || 'Anonymous',
@@ -5433,11 +5436,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         try {
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
             const compressedPm = await compressImageToWebP(privateSelectedImage, { maxDim: 1080, quality: 0.8 });
-            const { url: imageUrl } = await uploadMediaFile(compressedPm, 'private-chat-image', { roomId: conversationId });
+            const { key: pmImgKey2, url: imageUrl } = await uploadMediaFile(compressedPm, 'private-chat-image', { roomId: conversationId });
             
             await addDoc(collection(db, 'privateMessages'), {
                 text: privateMessage || '',
                 imageUrl: imageUrl,
+                imageKey: pmImgKey2 || null,
                 imageFileName: privateSelectedImage.name,
                 senderId: auth.currentUser.uid,
                 senderName: auth.currentUser.displayName || 'Anonymous',
@@ -5480,11 +5484,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         try {
 
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            const { url: audioUrl } = await uploadMediaFile(file, 'private-chat-audio', { roomId: conversationId });
+            const { key: pmAudioKey1, url: audioUrl } = await uploadMediaFile(file, 'private-chat-audio', { roomId: conversationId });
 
             await addDoc(collection(db, 'privateMessages'), {
                 text: '',
                 audioUrl: audioUrl,
+                audioKey: pmAudioKey1 || null,
                 audioFileName: file.name,
                 senderId: auth.currentUser.uid,
                 senderName: auth.currentUser.displayName || 'Anonymous',
@@ -5553,11 +5558,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             
 
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            const { url: audioUrl } = await uploadMediaFile(audioToUpload, 'private-chat-audio', { roomId: conversationId });
+            const { key: pmAudioKey2, url: audioUrl } = await uploadMediaFile(audioToUpload, 'private-chat-audio', { roomId: conversationId });
 
             await addDoc(collection(db, 'privateMessages'), {
                 text: privateMessage || '',
                 audioUrl: audioUrl,
+                audioKey: pmAudioKey2 || null,
                 audioFileName: filename,
                 senderId: auth.currentUser.uid,
                 senderName: auth.currentUser.displayName || 'Anonymous',
@@ -5646,11 +5652,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
                     const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-                    const { url: audioUrl } = await uploadMediaFile(audioBlob, 'private-chat-audio', { roomId: conversationId });
+                    const { key: pmAudioKey3, url: audioUrl } = await uploadMediaFile(audioBlob, 'private-chat-audio', { roomId: conversationId });
 
                     await addDoc(collection(db, 'privateMessages'), {
                         text: '',
                         audioUrl: audioUrl,
+                        audioKey: pmAudioKey3 || null,
                         audioFileName: filename,
                         senderId: auth.currentUser.uid,
                         senderName: auth.currentUser.displayName || 'Anonymous',
@@ -6458,11 +6465,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
             const compressedImg = await compressImageToWebP(imageFile, { maxDim: 1080, quality: 0.8 });
-            const { url: imageUrl } = await uploadMediaFile(compressedImg, 'chat-image', { roomId });
+            const { key: imageKey, url: imageUrl } = await uploadMediaFile(compressedImg, 'chat-image', { roomId });
             
             const messageData = {
                 text: caption || '',
                 imageUrl: imageUrl,
+                imageKey: imageKey || null,
                 imageFileName: imageFile.name,
                 fontSize: fontSize,
                 fontColor: fontColor,
@@ -6756,11 +6764,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             const filename = (audioData && audioData.name) || (selectedAudio && selectedAudio.name) || `voice-note-${Date.now()}.wav`;
             
 
-            const { url: audioUrl } = await uploadMediaFile(audioToUpload, 'homepage-audio', {});
+            const { key: audioKey, url: audioUrl } = await uploadMediaFile(audioToUpload, 'homepage-audio', {});
 
             const messageData = {
                 text: newMessage || '',
                 audioUrl: audioUrl,
+                audioKey: audioKey || null,
                 audioFileName: filename,
                 fontSize: fontSize,
                 fontColor: fontColor,

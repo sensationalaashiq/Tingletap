@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { extractR2Key } from '../services/r2StorageService';
 import './PremiumImageMessage.css';
 
 /* ── Fullscreen Image Modal ── */
@@ -66,11 +67,39 @@ const ImageModal = ({ imageUrl, imageFileName, onClose }) => {
 };
 
 /* ─────────────────────────── MAIN COMPONENT ─────────────────────────── */
-const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = false }) => {
+const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = false, mediaKey }) => {
   const [state, setState] = useState('hidden');
   const [showModal, setShowModal] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
+  const [resolvedUrl, setResolvedUrl] = useState(imageUrl);
+  const imgRetried = useRef(false);
   const rootRef = useRef(null);
+
+  // Keep resolvedUrl in sync if the parent passes a fresh imageUrl (e.g. after refresh)
+  useEffect(() => {
+    setResolvedUrl(imageUrl);
+    imgRetried.current = false;
+  }, [imageUrl]);
+
+  /**
+   * Signed-URL expiry recovery.
+   * When an R2 signed URL expires (7-day max), the <img> 403s and onError fires.
+   * We extract the key from the URL path (still present after expiry) and call
+   * the getMediaUrl Netlify function to get a fresh 1-hour signed URL.
+   */
+  const handleImgError = useCallback((e) => {
+    if (imgRetried.current) {
+      e.target.alt = 'Image unavailable';
+      return;
+    }
+    imgRetried.current = true;
+    const key = mediaKey || extractR2Key(e.target.src || resolvedUrl);
+    if (!key) { e.target.alt = 'Image unavailable'; return; }
+    import('../services/r2StorageService')
+      .then(({ getMediaUrl }) => getMediaUrl(key))
+      .then(freshUrl => { imgRetried.current = false; setResolvedUrl(freshUrl); })
+      .catch(() => { if (e.target) e.target.alt = 'Image unavailable'; });
+  }, [mediaKey, resolvedUrl]);
 
   const handleReveal = useCallback((e) => {
     e?.stopPropagation();
@@ -203,11 +232,11 @@ const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = fal
       >
         <div className="pim-viewer__wrap">
           <img
-            src={imageUrl}
+            src={resolvedUrl}
             alt={imageFileName || 'Shared image'}
             className="pim-viewer__img"
             draggable={false}
-            onError={(e) => { e.target.alt = 'Image unavailable'; }}
+            onError={handleImgError}
           />
           <button className="pim-viewer__zoom" onClick={() => setShowModal(true)} title="Full size">
             <svg width="10" height="10" viewBox="0 0 20 20" fill="none">
@@ -230,7 +259,7 @@ const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = fal
 
       {showModal && (
         <ImageModal
-          imageUrl={imageUrl}
+          imageUrl={resolvedUrl}
           imageFileName={imageFileName}
           onClose={() => setShowModal(false)}
         />

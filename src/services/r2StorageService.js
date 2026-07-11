@@ -4,6 +4,25 @@
 
 import { auth } from '../firebase/config';
 
+/**
+ * Extract the R2 object key from a presigned GET URL.
+ * R2 signed URL format: https://{account}.r2.cloudflarestorage.com/{bucket}/{key}?...
+ * The key is still present in the URL path even after the signature has expired,
+ * allowing callers to obtain a fresh signed URL without storing the key separately.
+ * @param {string} url  — any URL string
+ * @returns {string|null} the R2 key, or null if the URL is not a recognised R2 signed URL
+ */
+export function extractR2Key(url) {
+  try {
+    if (!url || !url.includes('r2.cloudflarestorage.com')) return null;
+    const u = new URL(url);
+    // pathname = /{bucket}/{key...}
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length < 2) return null;
+    return parts.slice(1).join('/'); // drop the bucket segment
+  } catch { return null; }
+}
+
 // ─── Image compression ────────────────────────────────────────────────────────
 
 /**
@@ -198,6 +217,26 @@ export async function getBadgeMedia(key) {
     throw new Error(err.error || `Failed to fetch media (${res.status})`);
   }
   return res.blob();
+}
+
+/**
+ * Get a signed GET URL for any R2 media key (profiles, covers, chat images, audio).
+ * Any authenticated (non-guest) user may call this.
+ * Used to refresh expired signed URLs stored in Firestore.
+ * @param {string} key        R2 object key
+ * @param {number} [expiresIn] Seconds until expiry (60–86400). Default: 3600 (1 hour).
+ * @returns {Promise<string>} fresh signed URL
+ */
+export async function getMediaUrl(key, expiresIn = 3600) {
+  const token = await getIdToken();
+  const res = await fetch(`${BASE}/getMediaUrl`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ key, expiresIn }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Failed to get media URL (${res.status})`);
+  return json.signedUrl;
 }
 
 /**

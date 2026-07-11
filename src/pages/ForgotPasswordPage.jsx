@@ -368,7 +368,7 @@ const ForgotPasswordPage = () => {
         {/* Logo */}
         <div className="fp-logo-wrap">
           <img
-            src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png"
+            src="/tingletap-logo.jpg"
             alt="TingleTap Logo"
             className="fp-logo-img"
           />

@@ -381,9 +381,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
     setUploading(true);
     try {
       const compressed = await compressImageToWebP(profilePic, { maxDim: 1080, quality: 0.8 });
-      const { url } = await uploadMediaFile(compressed, 'profile');
+      const { key, url } = await uploadMediaFile(compressed, 'profile');
       setUploading(false);
-      return url;
+      return { key, url };
     } catch (error) {
       setUploading(false);
       throw error;
@@ -396,8 +396,11 @@ const EditProfile = ({ onClose, onSuccess }) => {
     const user = auth.currentUser;
     try {
       let photoURL = profilePicPreview;
+      let photoKey = null;
       if (profilePic) {
-        photoURL = await uploadProfilePic();
+        const uploaded = await uploadProfilePic();
+        photoURL = uploaded.url;
+        photoKey = uploaded.key;
         setProfilePicPreview(photoURL);
       }
       const userDocRef = doc(db, 'users', user.uid);
@@ -406,6 +409,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
       const finalPhotoURL = profilePic
         ? photoURL
         : (currentUserData.photoURL || profilePicPreview || getDefaultAvatarUrl(user.uid, formData.gender || 'male'));
+      const finalPhotoKey = profilePic ? photoKey : (currentUserData.photoKey || null);
 
       const getCurrentFontPreferences = () => {
         if (window.chatFontPreferences) {
@@ -427,6 +431,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
         email: user.email,
         uid: user.uid,
         photoURL: finalPhotoURL,
+        // R2 object key — stored so clients can refresh expired signed URLs
+        ...(finalPhotoKey ? { photoKey: finalPhotoKey } : {}),
         updatedAt: new Date().toISOString(),
         settings: currentUserData.settings || {},
         fontPreferences: getCurrentFontPreferences()

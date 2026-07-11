@@ -1,3 +1,19 @@
+# Recent Changes (July 11, 2026) — R2 Private Bucket + Signed URLs + DP Crop Modal + Logo Fix (Session 13)
+
+**Re-import setup**: stale process on port 5000 killed, both workflows restarted cleanly. Firebase config still lives only in Netlify — Replit preview renders blank (expected). All changes ship via GitHub → Netlify pipeline.
+
+Verified with `npm run build` (passes) + workflow restart.
+
+✅ **Applied**:
+1. **R2 bucket fully private — signed URLs everywhere**: `netlify/functions/uploadMedia.js` no longer returns a public `R2_PUBLIC_URL`-based link. After every upload (profiles, covers, chat images, audio) it now calls `createPresignedGetUrl(key, 604800)` to generate a 7-day signed GET URL (R2/S3 maximum), then returns `{ key, url }`. No bucket public access required.
+2. **New `netlify/functions/getMediaUrl.js`**: any authenticated (non-guest) user can POST `{ key, expiresIn }` to get a fresh signed URL for any allowed prefix (`profiles/`, `covers/`, `chat-images/`, `chat-audio/`, `homepage-audio/`, `verifications/`, `rj-verifications/`). Reuses the same `r2Client.js` credentials as badge/RJ verification. Expiry clamped 60 – 86400 s. Key validated against path traversal and allowed-prefix whitelist.
+3. **`src/services/r2StorageService.js`**: added exported `getMediaUrl(key, expiresIn?)` client function that calls the new Netlify function. Clients use this to refresh expired signed URLs.
+4. **`photoKey` stored in Firestore**: `EditProfile.jsx`'s `handleSubmit` now stores the R2 object key (`photoKey`) alongside `photoURL` so that expired 7-day URLs can be refreshed client-side using the key.
+5. **Welcome Dashboard DP crop modal fixed**: `EditProfilePanel` in `WelcomeDashboard.jsx` was a lightweight inline form with no crop modal. Replaced with `<EditProfile onClose={onDone} onSuccess={onDone} />` so the dashboard's Edit Profile panel now has the full drag · zoom · rotate · flip · brightness · contrast modal — same as the sidebar's Edit Profile modal.
+6. **ForgotPasswordPage logo fixed**: replaced Cloudinary external URL (`res.cloudinary.com/…/tingletap-logo_irf2a8.png`) with the local `/tingletap-logo.jpg` from the public folder. All pages now use only the local logo (no external CDN logo links anywhere in the app).
+
+⚠️ **No manual steps needed** — all changes are client-side JS and Netlify function code. The new `getMediaUrl` function deploys automatically with the rest of the Netlify functions.
+
 # Recent Changes (July 11, 2026) — Re-import Setup + YouTube Player/Font/Presence Fixes (Session 12)
 
 **Re-import setup**: same pattern as last time — stale process was squatting on port 5000, killed it and restarted both workflows. Firebase secrets were added, then removed again by the user during the session, so this Replit preview currently renders blank (expected — Firebase config lives only in Netlify's env vars; see Session 11 note below). All fixes in this session are code/rules changes meant to ship via the existing GitHub → Netlify pipeline, not to make the Replit preview itself functional.

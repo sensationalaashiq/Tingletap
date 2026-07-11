@@ -16,6 +16,8 @@ import { pt } from '../utils/premiumToast';
 import BanKickModal from '../components/BanKickModal';
 import '../components/BanKickModal.css';
 import './WelcomeDashboard.css';
+import EditProfile from '../components/EditProfile';
+import '../components/EditProfile.css';
 
 /* ═══════════════════════════════════════════════════════
    PREMIUM ANIMATED SVG ICON LIBRARY
@@ -1277,165 +1279,10 @@ const SubPanelWrapper = ({ children, onBack, onClose }) => (
 /* ═══════════════════════════════════════════════════════
    EDIT PROFILE PANEL
 ═══════════════════════════════════════════════════════ */
+// EditProfilePanel now delegates to the full EditProfile component which includes
+// the crop / rotate / zoom / flip / brightness / contrast DP modal.
 const EditProfilePanel = ({ user, onDone }) => {
-  const [form, setForm] = useState({ displayName: '', gender: '', country: '', bio: '', status: '', age: '', relationship: '' });
-  const [photo, setPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState('');
-  const [saving, setSaving] = useState(false);
-  const fileRef = useRef(null);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      const d = snap.exists() ? snap.data() : {};
-      setForm({ displayName: d.displayName || user.displayName || '', gender: d.gender || '', country: d.country || '', bio: d.bio || '', status: d.status || '', age: d.age || '', relationship: d.relationship || '' });
-      setPhotoPreview(d.photoURL || user.photoURL || '');
-    })();
-  }, [user]);
-
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { pt.error('Max 5MB allowed per image'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => setPhotoPreview(ev.target.result);
-    reader.readAsDataURL(f);
-    setPhoto(f);
-  };
-
-  const handleSave = async () => {
-    if (!form.displayName.trim()) { pt.error('Display name required'); return; }
-    setSaving(true);
-    try {
-      let photoURL = photoPreview;
-      if (photo && !user?.isAnonymous && localStorage.getItem('isGuest') !== 'true') {
-        try {
-          const { compressImageToWebP, uploadMediaFile } = await import('../services/r2StorageService');
-          const compressed = await compressImageToWebP(photo, { maxDim: 1080, quality: 0.8 });
-          const { url } = await uploadMediaFile(compressed, 'profile');
-          photoURL = url;
-        } catch (imgError) { console.warn('Profile photo upload failed, keeping existing:', imgError.message); }
-      }
-      await updateProfile(user, { displayName: form.displayName, photoURL });
-
-      const isGuestUser = user?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
-
-      if (isGuestUser) {
-        try {
-          const existing = JSON.parse(localStorage.getItem('guestUser') || '{}');
-          const updated = { ...existing, ...form, photoURL, role: 'guest', isGuest: true };
-          localStorage.setItem('guestUser', JSON.stringify(updated));
-          if (form.gender) localStorage.setItem('guestGender', form.gender);
-        } catch { }
-      } else {
-        const allowedFormFields = { displayName: form.displayName, gender: form.gender, country: form.country, bio: form.bio, status: form.status, age: form.age, relationship: form.relationship };
-        await setDoc(doc(db, 'users', user.uid), { ...allowedFormFields, photoURL, updatedAt: new Date().toISOString() }, { merge: true });
-      }
-
-      pt.profile('Profile updated successfully!');
-      onDone();
-    } catch (e) { pt.error(e.message); }
-    finally { setSaving(false); }
-  };
-
-  const initials = form.displayName.slice(0, 2).toUpperCase() || 'U';
-
-  return (
-    <div className="wd-form-panel">
-      <div className="wd-form-title">
-        <EditIcon color="#6366f1" animated />
-        Edit Profile
-      </div>
-
-      {/* Avatar */}
-      <div className="wd-avatar-row">
-        <div className="wd-avatar-circle" onClick={() => fileRef.current?.click()}>
-          {photoPreview
-            ? <img src={photoPreview} alt="avatar" className="wd-avatar-img" />
-            : <span className="wd-avatar-init">{initials}</span>
-          }
-          <div className="wd-avatar-overlay"><CameraIcon color="#fff" /></div>
-        </div>
-        <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} hidden />
-        <div className="wd-avatar-hint">
-          <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="camG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs><path d="M12 15.5C13.66 15.5 15 14.16 15 12.5C15 10.84 13.66 9.5 12 9.5C10.34 9.5 9 10.84 9 12.5C9 14.16 10.34 15.5 12 15.5ZM9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9Z" fill="url(#camG)"/></svg>
-          Tap to change photo
-          <svg width="12" height="12" viewBox="0 0 24 24"><defs><linearGradient id="strG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" fill="url(#strG)"/></svg>
-        </div>
-      </div>
-
-      <div className="wd-fields">
-        <div className="wd-field-group">
-          <label className="wd-label">
-            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="userG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a855f7"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" fill="url(#userG)"/></svg>
-            Display Name *
-          </label>
-          <input className="wd-input" value={form.displayName} onChange={e => setForm(p => ({ ...p, displayName: e.target.value }))} placeholder="Your name" />
-        </div>
-        <div className="wd-field-row">
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="genG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6"/><stop offset="100%" stopColor="#ec4899"/></linearGradient></defs><path d="M9,9H7V7H9V9M17,7H15V9H17V7M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z" fill="url(#genG)"/></svg>
-              Gender
-            </label>
-            <select className="wd-input" value={form.gender} onChange={e => setForm(p => ({ ...p, gender: e.target.value }))}>
-              <option value="">Select</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="ageG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs><path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z" fill="url(#ageG)"/></svg>
-              Age
-            </label>
-            <input className="wd-input" type="number" value={form.age} onChange={e => setForm(p => ({ ...p, age: e.target.value }))} placeholder="Age" />
-          </div>
-        </div>
-        <div className="wd-field-group">
-          <label className="wd-label">
-            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="cntG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0ea5e9"/></linearGradient></defs><path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="url(#cntG)"/></svg>
-            Country
-          </label>
-          <input className="wd-input" value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} placeholder="India" />
-        </div>
-        <div className="wd-field-group">
-          <label className="wd-label">
-            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="stG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs><path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z" fill="url(#stG)"/></svg>
-            Status
-          </label>
-          <input className="wd-input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} placeholder="e.g. Feeling good ✨" maxLength={80} />
-        </div>
-        <div className="wd-field-group">
-          <label className="wd-label">
-            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="bioG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#4f46e5"/></linearGradient></defs><path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z" fill="url(#bioG)"/></svg>
-            Bio
-          </label>
-          <textarea className="wd-input wd-textarea" rows={3} value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Tell people about yourself..." maxLength={200} />
-        </div>
-        <div className="wd-field-group">
-          <label className="wd-label">
-            <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="relG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#e11d48"/></linearGradient></defs><path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z" fill="url(#relG)"/></svg>
-            Relationship
-          </label>
-          <select className="wd-input" value={form.relationship} onChange={e => setForm(p => ({ ...p, relationship: e.target.value }))}>
-            <option value="">Select</option>
-            <option value="single">Single</option>
-            <option value="taken">Taken</option>
-            <option value="married">Married</option>
-            <option value="complicated">It's complicated</option>
-          </select>
-        </div>
-      </div>
-
-      <button className="wd-save-btn" onClick={handleSave} disabled={saving}>
-        {saving ? <span className="wd-spin" /> : <SaveIcon color="#fff" animated />}
-        <span>{saving ? 'Saving…' : 'Save Changes'}</span>
-      </button>
-    </div>
-  );
+  return <EditProfile onClose={onDone} onSuccess={onDone} />;
 };
 
 /* ═══════════════════════════════════════════════════════

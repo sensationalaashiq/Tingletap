@@ -2741,9 +2741,11 @@ const SettingsSidebar = ({
                                                             try {
                                                                 toast.info('Uploading cover photo...', { icon: TI.camera });
                                                                 const compressed = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
-                                                                const { url: coverUrl } = await uploadMediaFile(compressed, 'cover');
+                                                                const { key: coverKey, url: coverUrl } = await uploadMediaFile(compressed, 'cover');
                                                                 await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                                                                     coverPhotoURL: coverUrl,
+                                                                    // R2 key stored so expired 7-day signed URLs can be refreshed
+                                                                    ...(coverKey ? { coverPhotoKey: coverKey } : {}),
                                                                     coverVideoURL: null,
                                                                     coverVideoType: null,
                                                                     spotifyTrackURL: null,
