@@ -835,7 +835,7 @@
   contain-intrinsic-block-size: 58px; /* rough row height estimate for scrollbar accuracy */
 }
 
-.message-row-wrapper:nth-child(odd) {
+.message-row-wrapper.row-odd {
   background: #ffffff !important;
   color: #1a1a1a !important;
   margin: 0 !important;
@@ -847,7 +847,7 @@
   border-bottom: 1px solid rgba(67, 56, 202, 0.1) !important;
 }
 
-.message-row-wrapper:nth-child(even) {
+.message-row-wrapper.row-even {
   background: hsl(270, 85%, 96%) !important;
   color: #1a1a1a !important;
   margin: 0 !important;
@@ -860,16 +860,16 @@
 }
 
 /* Hover effects - subtle on white and lavender */
-.message-row-wrapper:nth-child(odd):hover {
+.message-row-wrapper.row-odd:hover {
   background: #f8f9ff !important;
 }
 
-.message-row-wrapper:nth-child(even):hover {
+.message-row-wrapper.row-even:hover {
   background: hsl(270, 80%, 94%) !important;
 }
 
 /* Dark mode bold and vibrant alternating colors - continuous feed */
-.dark-mode .message-row-wrapper:nth-child(odd) {
+.dark-mode .message-row-wrapper.row-odd {
   background: #2a2d3a !important;
   margin: 0 !important;
   border-radius: 0 !important;
@@ -878,7 +878,7 @@
   border-bottom: 1px solid rgba(59, 130, 246, 0.2) !important;
 }
 
-.dark-mode .message-row-wrapper:nth-child(even) {
+.dark-mode .message-row-wrapper.row-even {
   background: #323544 !important;
   margin: 0 !important;
   border-radius: 0 !important;
@@ -888,11 +888,11 @@
 }
 
 /* Dark mode hover effects - keep original colors */
-.dark-mode .message-row-wrapper:nth-child(odd):hover {
+.dark-mode .message-row-wrapper.row-odd:hover {
   background-color: #1f2937 !important; /* Keep dark gray */
 }
 
-.dark-mode .message-row-wrapper:nth-child(even):hover {
+.dark-mode .message-row-wrapper.row-even:hover {
   background-color: #2d1b69 !important; /* Keep dark lavender */
 }
 
@@ -9334,15 +9334,13 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Even rows → white */
-.homepage-container .message-row.row-even,
-.homepage-container .message-row-wrapper:nth-child(even) .message-row {
+.homepage-container .message-row.row-even {
   background: #ffffff !important;
   border-bottom: 1px solid rgba(196, 181, 253, 0.18) !important;
 }
 
 /* Odd rows → soft lavender */
-.homepage-container .message-row.row-odd,
-.homepage-container .message-row-wrapper:nth-child(odd) .message-row {
+.homepage-container .message-row.row-odd {
   background: #f5f1ff !important;
   border-bottom: 1px solid rgba(196, 181, 253, 0.18) !important;
 }
@@ -10204,22 +10202,22 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
   border-radius: 8px !important;
   margin: 0 2px 1px !important;
 }
-.homepage-container .message-row-wrapper:nth-child(odd),
-body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(odd) {
+.homepage-container .message-row-wrapper.row-odd,
+body:not(.dark-mode) .homepage-container .message-row-wrapper.row-odd {
   background: #ffffff !important;
   border-bottom: 1px solid rgba(109, 40, 217, 0.13) !important;
 }
-.homepage-container .message-row-wrapper:nth-child(even),
-body:not(.dark-mode) .homepage-container .message-row-wrapper:nth-child(even) {
+.homepage-container .message-row-wrapper.row-even,
+body:not(.dark-mode) .homepage-container .message-row-wrapper.row-even {
   background: hsl(270, 96%, 95%) !important;
   border-bottom: 1px solid rgba(109, 40, 217, 0.15) !important;
 }
 .homepage-container .message-row-wrapper:hover {
   background: rgba(109, 40, 217, 0.07) !important;
 }
-.dark-mode .homepage-container .message-row-wrapper:nth-child(odd)  { background: #1d1438 !important; }
-.dark-mode .homepage-container .message-row-wrapper:nth-child(even) { background: #22193f !important; }
-.dark-mode .homepage-container .message-row-wrapper:hover           { background: rgba(139, 92, 246, 0.16) !important; }
+.dark-mode .homepage-container .message-row-wrapper.row-odd  { background: #1d1438 !important; }
+.dark-mode .homepage-container .message-row-wrapper.row-even { background: #22193f !important; }
+.dark-mode .homepage-container .message-row-wrapper:hover    { background: rgba(139, 92, 246, 0.16) !important; }
 
 /* ── Avatars: thicker vivid rings (3.5px) ────────────────────────── */
 .homepage-container .avatar-wrapper.owner-border img.message-avatar {

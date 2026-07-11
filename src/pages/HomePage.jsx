@@ -418,7 +418,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
         : role;
 
     return (<>
-        <div className={`message-row-wrapper ${isWhisper ? 'whisper-message' : ''}`}
+        <div className={`message-row-wrapper ${isEven ? 'row-even' : 'row-odd'}${isWhisper ? ' whisper-message' : ''}`}
              data-message-id={id}
              data-user-id={uid}
              data-message-uid={uid}
@@ -3387,17 +3387,24 @@ const HomePage = ({ user, roomIdOverride }) => {
         // 2. Haven't done initial scroll yet (room entry)
         // 3. User is at bottom and hasn't manually scrolled
         if (force || !hasInitialScrolled || (isNearBottom && !hasUserScrolled)) {
-            // Mark as programmatic so handleScroll ignores this movement
-            isProgrammaticScrollRef.current = true;
-            if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
-            programmaticScrollTimerRef.current = setTimeout(() => {
-                isProgrammaticScrollRef.current = false;
-            }, 150);
+            // Guard: if we're already at the very bottom (within 5 px), skip the
+            // scrollTo call entirely.  This prevents a second smooth-scroll
+            // animation firing when Firestore confirms a pending write (the
+            // optimistic snapshot already scrolled us there).
+            const alreadyAtBottom = scrollHeight - scrollTop - clientHeight < 5;
+            if (!alreadyAtBottom) {
+                // Mark as programmatic so handleScroll ignores this movement
+                isProgrammaticScrollRef.current = true;
+                if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+                programmaticScrollTimerRef.current = setTimeout(() => {
+                    isProgrammaticScrollRef.current = false;
+                }, 150);
 
-            element.scrollTo({
-                top: scrollHeight,
-                behavior: force || !hasInitialScrolled ? 'auto' : 'smooth'
-            });
+                element.scrollTo({
+                    top: scrollHeight,
+                    behavior: force || !hasInitialScrolled ? 'auto' : 'smooth'
+                });
+            }
             
             // NOTE: do NOT set scrollTop after smooth scrollTo — it cancels the animation and causes jumps.
             setIsAtBottom(true);

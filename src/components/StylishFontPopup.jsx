@@ -178,7 +178,7 @@ const StylishFontPopup = React.memo(({
   const handleReset = useCallback(() => {
     console.log('🔄 Resetting font settings');
     const defaultSettings = {
-      fontSize: '14px',
+      fontSize: '11px',
       fontColor: '#333333',
       fontFamily: 'inherit',
       isBold: false,
