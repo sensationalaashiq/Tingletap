@@ -54,30 +54,42 @@ function getClient() {
 
 // ── Bucket name helpers ────────────────────────────────────────────────────────
 
-/** Public bucket — tries all common naming variants set in Netlify. */
+/** Public bucket — tries every known variant, falls back to the old single bucket. */
 export function getPublicBucketName() {
   const name =
-    process.env.R2_PUBLIC_BUCKET      ||   // all-caps (Netlify standard)
-    process.env.R2_Public_Bucket      ||   // camelCase variant
-    process.env.R2_PUBLIC_BUCKET_NAME;     // legacy fallback
-  if (!name) throw new Error('Public R2 bucket env var not set (R2_PUBLIC_BUCKET).');
+    process.env.R2_PUBLIC_BUCKET      ||   // preferred (all-caps)
+    process.env.R2_Public_Bucket      ||   // camelCase variant some users set
+    process.env.R2_PUBLIC_BUCKET_NAME ||   // alternate suffix
+    process.env.R2_BUCKET_NAME;            // ultimate fallback: old single bucket
+  if (!name) throw new Error(
+    'No public R2 bucket configured. Set R2_PUBLIC_BUCKET in Netlify env vars.'
+  );
   return name;
 }
 
-/** Private bucket — tries all common naming variants set in Netlify. */
+/** Private bucket — tries every known variant, falls back to the old single bucket. */
 export function getPrivateBucketName() {
   const name =
-    process.env.R2_PRIVATE_BUCKET      ||  // all-caps (Netlify standard)
+    process.env.R2_PRIVATE_BUCKET      ||  // preferred (all-caps)
     process.env.R2_Private_Bucket      ||  // camelCase variant
-    process.env.R2_PRIVATE_BUCKET_NAME;    // legacy fallback
-  if (!name) throw new Error('Private R2 bucket env var not set (R2_PRIVATE_BUCKET).');
+    process.env.R2_PRIVATE_BUCKET_NAME ||  // alternate suffix
+    process.env.R2_BUCKET_NAME;            // ultimate fallback: old single bucket
+  if (!name) throw new Error(
+    'No private R2 bucket configured. Set R2_PRIVATE_BUCKET in Netlify env vars.'
+  );
   return name;
 }
 
-/** Legacy single bucket — used only by serveMedia for backward-compat reads. */
+/** Legacy single bucket — used by serveMedia/getBadgeMedia/getRJMedia for old stored keys.
+ *  Falls back to private bucket if R2_BUCKET_NAME is not set. */
 export function getBucketName() {
-  const name = process.env.R2_BUCKET_NAME;
-  if (!name) throw new Error('R2_BUCKET_NAME env var not set.');
+  const name =
+    process.env.R2_BUCKET_NAME    ||       // old single bucket (preferred for legacy reads)
+    process.env.R2_PRIVATE_BUCKET ||       // fallback: treat private bucket as legacy too
+    process.env.R2_Private_Bucket;
+  if (!name) throw new Error(
+    'No legacy R2 bucket configured. Set R2_BUCKET_NAME in Netlify env vars.'
+  );
   return name;
 }
 
