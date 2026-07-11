@@ -806,7 +806,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             <ChatMessageTranslatedBody
                                 text={text}
                                 uid={uid}
-                                msgStyle={(isMyMessage && typeof window !== 'undefined' && window.userMessageStyles && uid) ? window.userMessageStyles[uid] : null}
+                                msgStyle={(typeof window !== 'undefined' && window.userMessageStyles && uid) ? window.userMessageStyles[uid] : null}
                                 isMyMessage={isMyMessage}
                             />
                         )}
