@@ -15,6 +15,25 @@ import { isEffectivelyOnline } from '../utils/presenceStatus';
 import './AdminPanelPage.css';
 import './BanKickMutePanel.css';
 
+const extractDeviceBrand = (model) => {
+  if (!model || model === 'Unknown Device') return null;
+  if (/^Apple |^iPhone|^iPad/i.test(model)) return 'Apple';
+  if (/^Samsung|^SM-/i.test(model)) return 'Samsung';
+  if (/^Xiaomi|^Redmi|^POCO/i.test(model)) return 'Xiaomi';
+  if (/^OPPO|^CPH\d/i.test(model)) return 'OPPO';
+  if (/^vivo /i.test(model)) return 'vivo';
+  if (/^OnePlus/i.test(model)) return 'OnePlus';
+  if (/^Realme/i.test(model)) return 'Realme';
+  if (/^Motorola|^moto /i.test(model)) return 'Motorola';
+  if (/^Nokia/i.test(model)) return 'Nokia';
+  if (/^Nothing/i.test(model)) return 'Nothing';
+  if (/^Infinix/i.test(model)) return 'Infinix';
+  if (/^Tecno/i.test(model)) return 'Tecno';
+  if (/^Huawei/i.test(model)) return 'Huawei';
+  if (/^Honor/i.test(model)) return 'Honor';
+  return model.split(/\s+/)[0] || null;
+};
+
 const parseDurationMs = (dur) => {
   if (!dur || dur === 'permanent') return null;
   const s = dur.toString().toLowerCase().trim();
@@ -61,6 +80,8 @@ const BanKickMutePanel = () => {
   const [violationsFilter, setViolationsFilter] = useState('all');
   const [violationsShowResolved, setViolationsShowResolved] = useState(false);
   const [reportActionLoading, setReportActionLoading] = useState({});
+  const [confirmDeleteReportId, setConfirmDeleteReportId] = useState(null);
+  const [confirmDeleteViolId, setConfirmDeleteViolId] = useState(null);
 
   // Access control: Owner + Admin only
   useEffect(() => {
@@ -660,6 +681,17 @@ const BanKickMutePanel = () => {
                                   <span style={{color:'#6b7280'}}>{country}</span>
                                 </div>
                               )}
+                              {(() => {
+                                const devModel = u.lastDeviceInfo?.deviceModel || u.deviceInfo?.deviceModel || u.lastDeviceModel || '';
+                                const brand = extractDeviceBrand(devModel);
+                                if (!brand) return null;
+                                return (
+                                  <div style={{display:'flex',alignItems:'center',gap:4}}>
+                                    <svg viewBox="0 0 24 24" fill="none" style={{width:11,height:11,flexShrink:0}}><path fill="#9ca3af" d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/></svg>
+                                    <span style={{color:'#6b7280',fontWeight:600}}>{brand}</span>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })()}
@@ -848,6 +880,24 @@ const BanKickMutePanel = () => {
                           <span style={{fontSize:12,color:'#374151'}}>{r.appealMessage}</span>
                         </div>
                       )}
+                      {/* Delete Report — inline confirm */}
+                      <div style={{display:'flex',justifyContent:'flex-end',marginTop:10}}>
+                        {confirmDeleteReportId === r.id ? (
+                          <div style={{display:'flex',alignItems:'center',gap:6,background:'#fef2f2',border:'1.5px solid #fca5a5',borderRadius:10,padding:'5px 10px',fontSize:12}}>
+                            <span style={{color:'#b91c1c',fontWeight:700}}>Delete report?</span>
+                            <button onClick={async()=>{setConfirmDeleteReportId(null);try{await deleteDoc(doc(db,'reports',r.id));pt.success('Report deleted.');}catch(e){pt.error('Delete failed: '+e.message);}}}
+                              style={{padding:'3px 10px',fontSize:12,fontWeight:800,background:'#dc2626',color:'#fff',border:'none',borderRadius:7,cursor:'pointer'}}>Delete</button>
+                            <button onClick={()=>setConfirmDeleteReportId(null)}
+                              style={{padding:'3px 10px',fontSize:12,fontWeight:700,background:'transparent',color:'#6b7280',border:'1px solid #d1d5db',borderRadius:7,cursor:'pointer'}}>Cancel</button>
+                          </div>
+                        ) : (
+                          <button onClick={()=>setConfirmDeleteReportId(r.id)}
+                            style={{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:8,background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',border:'none',fontSize:12,fontWeight:800,cursor:'pointer',boxShadow:'0 2px 8px rgba(239,68,68,0.28)'}}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#fff" d="M19,4h-3.5l-1-1h-5l-1,1H5v2h14M6,19a2,2 0 0,0 2,2h8a2,2 0 0,0 2-2V7H6v12z"/></svg>
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -926,6 +976,26 @@ const BanKickMutePanel = () => {
                         {v.userName && <span>User: <strong style={{color:'#374151'}}>{v.userName}</strong></span>}
                         {v.roomId && <span>Room: <strong>{v.roomId}</strong></span>}
                         {v.message && <span style={{color:'#9ca3af',fontStyle:'italic'}}>"{v.message.slice?.(0,60)}{v.message?.length>60?'…':''}"</span>}
+                      </div>
+                      {/* Delete Violation — inline confirm */}
+                      <div style={{display:'flex',justifyContent:'flex-end',marginTop:8}}>
+                        {confirmDeleteViolId === v.id ? (
+                          <div style={{display:'flex',alignItems:'center',gap:6,background:'#fef2f2',border:'1.5px solid #fca5a5',borderRadius:10,padding:'5px 10px',fontSize:12}}>
+                            <span style={{color:'#b91c1c',fontWeight:700}}>Delete permanently?</span>
+                            <button onClick={async()=>{setConfirmDeleteViolId(null);try{await deleteDoc(doc(db,'modLogs',v.id));pt.success('Violation record deleted.');}catch(e){pt.error('Delete failed: '+e.message);}}}
+                              style={{padding:'3px 10px',fontSize:12,fontWeight:800,background:'#dc2626',color:'#fff',border:'none',borderRadius:7,cursor:'pointer'}}>Delete</button>
+                            <button onClick={()=>setConfirmDeleteViolId(null)}
+                              style={{padding:'3px 10px',fontSize:12,fontWeight:700,background:'transparent',color:'#6b7280',border:'1px solid #d1d5db',borderRadius:7,cursor:'pointer'}}>Cancel</button>
+                          </div>
+                        ) : (
+                          <button onClick={()=>setConfirmDeleteViolId(v.id)}
+                            style={{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',borderRadius:8,background:'linear-gradient(135deg,#ef4444,#dc2626)',color:'#fff',border:'none',fontSize:12,fontWeight:800,cursor:'pointer',boxShadow:'0 2px 8px rgba(239,68,68,0.28)',transition:'all 0.15s'}}
+                            onMouseEnter={e=>e.currentTarget.style.transform='translateY(-1px)'}
+                            onMouseLeave={e=>e.currentTarget.style.transform='none'}>
+                            <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#fff" d="M19,4h-3.5l-1-1h-5l-1,1H5v2h14M6,19a2,2 0 0,0 2,2h8a2,2 0 0,0 2-2V7H6v12z"/></svg>
+                            Delete Record
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

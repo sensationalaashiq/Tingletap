@@ -3693,6 +3693,34 @@ const HomePage = ({ user, roomIdOverride }) => {
         return () => { cancelled = true; };
     }, [onlineUserIds]); // userOnlineStatuses is now a ref — only re-run when the user list changes
 
+    // ── Real-time moderation state sync (TingleBot automod + staff actions) ──
+    // This SEPARATE effect keeps isBanned / mutedInfo / kickedFrom live in liveUsers
+    // so Sidebar buttons update instantly without waiting for a user join/leave event.
+    useEffect(() => {
+        const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
+        if (registeredUids.length === 0) return;
+        const batches = [];
+        for (let i = 0; i < registeredUids.length; i += 10) batches.push(registeredUids.slice(i, i + 10));
+        const unsubs = batches.map(batch => {
+            const q = query(collection(db, 'users'), where('uid', 'in', batch));
+            return onSnapshot(q, snap => {
+                const updates = {};
+                snap.forEach(d => { updates[d.id] = { ...d.data(), uid: d.id }; });
+                setLiveUsers(prev => prev.map(u => {
+                    const fs = updates[u.uid];
+                    if (!fs) return u;
+                    return {
+                        ...u,
+                        isBanned: fs.isBanned || false,
+                        mutedInfo: fs.mutedInfo || { isMuted: false },
+                        kickedFrom: fs.kickedFrom || null,
+                    };
+                }));
+            });
+        });
+        return () => unsubs.forEach(unsub => unsub());
+    }, [onlineUserIds]);
+
     useEffect(() => {
         if (!roomId) {
             setOnlineUserIds([]);

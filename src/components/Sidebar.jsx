@@ -1017,18 +1017,18 @@ const Sidebar = ({
                         )}
                         {showKick && (
                           <button
-                            className={`sb-mod-btn ${kickedUserIds.has(userItem.uid) ? 'unkick' : 'kick'}`}
-                            title={kickedUserIds.has(userItem.uid) ? 'Unkick User' : 'Kick from Room'}
+                            className={`sb-mod-btn ${!!(userItem.kickedFrom?.roomId) ? 'unkick' : 'kick'}`}
+                            title={!!(userItem.kickedFrom?.roomId) ? 'Unkick User' : 'Kick from Room'}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (kickedUserIds.has(userItem.uid)) {
+                              if (!!(userItem.kickedFrom?.roomId)) {
                                 openUnkickModal(userItem);
                               } else {
                                 openKickModal(userItem);
                               }
                             }}
                           >
-                            {kickedUserIds.has(userItem.uid) ? (
+                            {!!(userItem.kickedFrom?.roomId) ? (
                               /* Unkick — return/re-enter icon (cyan) */
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
                                 <path fill="#06b6d4" d="M16 13v-3l-5 5 5 5v-3h6v-4h-6zm-4 8H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2v2h-2V5H5v14h7v-2h2v2c0 1.1-.9 2-2 2z"/>
@@ -1170,16 +1170,16 @@ const Sidebar = ({
                                 </button>
                               )}
                               {showKick && (
-                                <button className={`sb-apd-btn ${kickedUserIds.has(userItem.uid) ? 'sb-apd-cyan' : 'sb-apd-orange'}`} onClick={(e) => {
+                                <button className={`sb-apd-btn ${!!(userItem.kickedFrom?.roomId) ? 'sb-apd-cyan' : 'sb-apd-orange'}`} onClick={(e) => {
                                   e.stopPropagation();
-                                  if (kickedUserIds.has(userItem.uid)) {
+                                  if (!!(userItem.kickedFrom?.roomId)) {
                                     openUnkickModal(userItem);
                                   } else {
                                     openKickModal(userItem);
                                   }
                                   setDropdownUser(null);
                                 }}>
-                                  {kickedUserIds.has(userItem.uid) ? (
+                                  {!!(userItem.kickedFrom?.roomId) ? (
                                     <svg viewBox="0 0 24 24" width="15" height="15">
                                       <path fill="#06b6d4" d="M16 13v-3l-5 5 5 5v-3h6v-4h-6zm-4 8H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2v2h-2V5H5v14h7v-2h2v2c0 1.1-.9 2-2 2z"/>
                                     </svg>
@@ -1188,7 +1188,7 @@ const Sidebar = ({
                                       <path fill="#f97316" d="M16 17v-3H9v-4h7V7l5 5-5 5zM14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
                                     </svg>
                                   )}
-                                  {kickedUserIds.has(userItem.uid) ? 'Unkick User' : 'Kick from Room'}
+                                  {!!(userItem.kickedFrom?.roomId) ? 'Unkick User' : 'Kick from Room'}
                                 </button>
                               )}
                               {showBan && (
