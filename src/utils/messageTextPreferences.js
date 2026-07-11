@@ -125,6 +125,16 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
   if (userSettings.isUnderline) decorations.push('underline');
   if (userSettings.isStrikethrough) decorations.push('line-through');
 
+  // Default dark colors → let CSS theme variable (--text-primary) control them so they
+  // adapt to every theme automatically. Custom non-dark colors are injected as-is with
+  // a dual-tone halo to keep them legible on any theme background.
+  const DEFAULT_MSG_COLORS = new Set(['#333333', '#1f2937', '#000000', '#1a1a1a', '#111111', '#222222', '']);
+  const isDefaultMsgColor = !userSettings.fontColor || DEFAULT_MSG_COLORS.has((userSettings.fontColor || '').toLowerCase());
+  const resolvedMsgColor = isDefaultMsgColor ? 'var(--text-primary, #e8eaf0)' : userSettings.fontColor;
+  const msgShadow = isDefaultMsgColor
+    ? 'none'
+    : '0 0 3px rgba(255,255,255,0.45), 0 0 5px rgba(0,0,0,0.45)';
+
   // Create comprehensive global style rules for this user's messages - visible to ALL users
   const messageStyleRules = `
     /* Global Message Styling for ${userName} - visible to ALL users */
@@ -151,13 +161,13 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
     .message-row-wrapper[data-user-id="${userId}"] .message-content:not(.message-displayname):not(.username):not(.user-name):not(.message-username),
     .message-row-wrapper[data-user-id="${userId}"] .message-content p:not(.message-displayname):not(.username):not(.user-name):not(.message-username) {
         font-size: ${userSettings.fontSize} !important;
-        color: ${userSettings.fontColor} !important;
-        -webkit-text-fill-color: ${userSettings.fontColor} !important;
+        color: ${resolvedMsgColor} !important;
+        -webkit-text-fill-color: ${resolvedMsgColor} !important;
         font-family: ${userSettings.fontFamily === 'inherit' ? 'inherit' : userSettings.fontFamily} !important;
         font-weight: ${userSettings.isBold ? 'bold' : 'normal'} !important;
         font-style: ${userSettings.isItalic ? 'italic' : 'normal'} !important;
         text-decoration: ${decorations.length > 0 ? decorations.join(' ') : 'none'} !important;
-        text-shadow: 0 0 3px rgba(255,255,255,0.45), 0 0 5px rgba(0,0,0,0.45) !important;
+        text-shadow: ${msgShadow} !important;
     }
 
     /* PROTECTION: Ensure usernames are NEVER affected by message styling */
@@ -190,9 +200,14 @@ export const applyMessageTextStyles = () => {
     const preferences = getMessageFontPreferences();
 
     // Build CSS for message text styling
+    // Default dark colors → use CSS theme variable so they adapt to every theme
+    const DEFAULT_MSG_COLORS = new Set(['#333333', '#1f2937', '#000000', '#1a1a1a', '#111111', '#222222', '']);
+    const isDefaultMsgColor = !preferences.fontColor || DEFAULT_MSG_COLORS.has((preferences.fontColor || '').toLowerCase());
+    const resolvedColor = isDefaultMsgColor ? 'var(--text-primary, #e8eaf0)' : preferences.fontColor;
     let messageStyles = `
       font-size: ${preferences.fontSize} !important;
-      color: ${preferences.fontColor} !important;
+      color: ${resolvedColor} !important;
+      -webkit-text-fill-color: ${resolvedColor} !important;
       font-family: ${preferences.fontFamily} !important;
       font-weight: ${preferences.isBold ? 'bold' : 'normal'} !important;
       font-style: ${preferences.isItalic ? 'italic' : 'normal'} !important;

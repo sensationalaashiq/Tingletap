@@ -245,15 +245,6 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     customStyles += `letter-spacing: ${userSettings.usernameLetterSpacing} !important;\n`;
   }
 
-  // Text shadow — only apply when the user explicitly chose one.
-  // Never inject an automatic halo; it makes usernames look faded/grey.
-  const chosenShadow = userSettings.usernameTextShadow;
-  if (chosenShadow && chosenShadow !== 'none') {
-    customStyles += `text-shadow: ${chosenShadow} !important;\n`;
-  } else {
-    customStyles += `text-shadow: none !important;\n`;
-  }
-
   // Outline
   if (userSettings.usernameOutlineEnabled) {
     customStyles += `-webkit-text-stroke: ${userSettings.usernameOutlineSize || '1px'} solid ${userSettings.usernameOutlineColor || '#000000'} !important;\n`;
@@ -261,27 +252,46 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     customStyles += `-webkit-text-stroke: none !important;\n`;
   }
 
-  // Color or gradient
-  // Flat color is intentionally NOT injected via JS — CSS variables (.message-displayname)
-  // control the default color so it adapts to every theme without stale Firestore values
-  // (e.g. role-auto-assigned gold) overriding it. Gradient IS injected because it is
-  // always an explicit user choice and cannot be expressed in a single CSS variable.
+  // Color, gradient, and text-shadow — handled together so the halo logic
+  // can depend on whether a custom flat color is being injected.
+  const chosenShadow = userSettings.usernameTextShadow;
   if (userSettings.usernameGradientEnabled) {
     const gradientType = userSettings.usernameGradientDirection === 'radial' ? 'radial-gradient' : 'linear-gradient';
     const direction = userSettings.usernameGradientDirection === 'radial' ? 'circle' : userSettings.usernameGradientDirection;
     const gradient = `${gradientType}(${direction}, ${userSettings.usernameGradientStart}, ${userSettings.usernameGradientEnd})`;
-
     customStyles += `background: ${gradient} !important;\n`;
     customStyles += `-webkit-background-clip: text !important;\n`;
     customStyles += `background-clip: text !important;\n`;
     customStyles += `-webkit-text-fill-color: transparent !important;\n`;
     customStyles += `color: transparent !important;\n`;
+    // Gradient: honour user-chosen shadow or clear it
+    if (chosenShadow && chosenShadow !== 'none') {
+      customStyles += `text-shadow: ${chosenShadow} !important;\n`;
+    } else {
+      customStyles += `text-shadow: none !important;\n`;
+    }
   } else {
-    // No flat-color injection — let CSS theme variables take over
     customStyles += `background: none !important;\n`;
     customStyles += `-webkit-background-clip: unset !important;\n`;
     customStyles += `background-clip: unset !important;\n`;
     customStyles += `-webkit-text-fill-color: unset !important;\n`;
+    // Inject flat color only when genuinely custom — default blacks/greys let
+    // the CSS theme variable (--username-color) control the color so it adapts
+    // automatically to Light, Dark, Burgundy, Aurora, Sunset, etc.
+    const isCustomFlatColor = userSettings.usernameFontColor &&
+      !DEFAULT_COLORS.has(userSettings.usernameFontColor.toLowerCase());
+    if (isCustomFlatColor) {
+      customStyles += `color: ${userSettings.usernameFontColor} !important;\n`;
+      // Dual-tone halo keeps any custom colour legible on every theme background
+      if (chosenShadow && chosenShadow !== 'none') {
+        customStyles += `text-shadow: ${chosenShadow} !important;\n`;
+      } else {
+        customStyles += `text-shadow: 0 0 3px rgba(255,255,255,0.55), 0 0 6px rgba(0,0,0,0.55) !important;\n`;
+      }
+    } else {
+      // Default: CSS theme variable (--username-color) takes over — no shadow
+      customStyles += `text-shadow: none !important;\n`;
+    }
   }
 
   // Animation
