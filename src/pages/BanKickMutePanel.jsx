@@ -11,6 +11,7 @@ import { ToastContainer } from 'react-toastify';
 import AdminBanKickModal from '../components/AdminBanKickModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { pt } from '../utils/premiumToast';
+import { isEffectivelyOnline } from '../utils/presenceStatus';
 import './AdminPanelPage.css';
 import './BanKickMutePanel.css';
 
@@ -389,8 +390,8 @@ const BanKickMutePanel = () => {
         (filterType === 'guest' && u.isGuest);
 
       const matchesStatus = filterStatus === 'all' ||
-        (filterStatus === 'online' && onlineStatuses[u.uid]?.state === 'online') ||
-        (filterStatus === 'offline' && onlineStatuses[u.uid]?.state !== 'online') ||
+        (filterStatus === 'online' && isEffectivelyOnline(onlineStatuses[u.uid])) ||
+        (filterStatus === 'offline' && !isEffectivelyOnline(onlineStatuses[u.uid])) ||
         (filterStatus === 'banned' && u.isBanned) ||
         (filterStatus === 'muted' && u.mutedInfo?.isMuted) ||
         (filterStatus === 'kicked' && !!u.kickedFrom?.roomId);
@@ -401,7 +402,7 @@ const BanKickMutePanel = () => {
 
   const stats = useMemo(() => ({
     total: users.length,
-    online: users.filter(u => onlineStatuses[u.uid]?.state === 'online').length,
+    online: users.filter(u => isEffectivelyOnline(onlineStatuses[u.uid])).length,
     banned: users.filter(u => u.isBanned).length,
     muted: users.filter(u => u.mutedInfo?.isMuted).length,
   }), [users, onlineStatuses]);
@@ -583,7 +584,7 @@ const BanKickMutePanel = () => {
 
               <div className="luxury-table-body">
                 {filteredUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE).map(u => {
-                  const isOnline = onlineStatuses[u.uid]?.state === 'online';
+                  const isOnline = isEffectivelyOnline(onlineStatuses[u.uid]);
                   const currentRoom = onlineStatuses[u.uid]?.currentRoomId;
                   const typeLabel = getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge });
 

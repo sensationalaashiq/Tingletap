@@ -2290,8 +2290,6 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 
 .youtube-embed {
   position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
   overflow: hidden;
   border: 2.5px solid #a78bfa;
   border-radius: 12px;
@@ -2300,21 +2298,23 @@ html body.theme-dark .message-body p:not([style*="color"]) {
     0 6px 24px rgba(109,40,217,0.28),
     0 2px 8px rgba(109,40,217,0.18);
   background: #000;
-  max-width: 300px;
+  max-width: 320px;
   width: 100%;
+  aspect-ratio: 16 / 9;
   margin: 4px 0;
+  padding: 0 !important;
 }
 
 .youtube-embed iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: absolute !important;
+  inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   display: block !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  aspect-ratio: unset !important;
 }
 
 /* Whisper Messages with Role-based Colors */
@@ -5938,7 +5938,8 @@ html.dark-mode .reject-btn:hover,
   /* YouTube Embed — Premium Lavender Border */
   .youtube-embed {
       width: 100%;
-      max-width: 300px;
+      max-width: 320px;
+      aspect-ratio: 16 / 9;
       margin: 4px 0;
       border-radius: 12px;
       overflow: hidden;
@@ -5947,15 +5948,17 @@ html.dark-mode .reject-btn:hover,
         0 6px 24px rgba(109,40,217,0.28),
         0 2px 8px rgba(109,40,217,0.18);
       position: relative;
-      background: transparent;
+      background: #000;
       border: 2.5px solid #a78bfa;
-      padding: 0;
+      padding: 0 !important;
   }
 
   .youtube-embed iframe {
+      position: absolute !important;
+      inset: 0 !important;
       width: 100% !important;
-      height: auto !important;
-      aspect-ratio: 16 / 9 !important;
+      height: 100% !important;
+      aspect-ratio: unset !important;
       border: none !important;
       border-radius: 0 !important;
       display: block !important;
@@ -6062,8 +6065,9 @@ html.dark-mode .reject-btn:hover,
 
 /* Base YouTube Embed Styling — Premium Vibrant Lavender */
 .youtube-embed {
-    max-width: 300px;
+    max-width: 320px;
     width: 100%;
+    aspect-ratio: 16 / 9;
     border: 2.5px solid #a78bfa;
     border-radius: 12px;
     overflow: hidden;
@@ -6072,14 +6076,17 @@ html.dark-mode .reject-btn:hover,
       0 0 0 1px rgba(167,139,250,0.3),
       0 6px 24px rgba(109,40,217,0.28),
       0 2px 8px rgba(109,40,217,0.18);
-    background: transparent;
+    background: #000;
     position: relative;
+    padding: 0 !important;
 }
 
 .youtube-embed iframe {
+    position: absolute !important;
+    inset: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 16 / 9 !important;
+    height: 100% !important;
+    aspect-ratio: unset !important;
     border-radius: 0 !important;
     border: none !important;
     display: block !important;
@@ -10225,10 +10232,10 @@ body .homepage-container .send-btn svg path[fill="#020288"] {
   font-size: 12px;
 }
 
-/* ── Message text: default 10px, custom styles applied via inline style ── */
+/* ── Message text: default 11px, custom styles applied via inline style ── */
 .homepage-container .message-body p {
   color: #2d2d2d;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
   font-weight: normal;
 }

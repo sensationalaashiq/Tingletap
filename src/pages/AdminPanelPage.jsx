@@ -26,6 +26,7 @@ import BadgeVerificationPanel from '../components/admin/BadgeVerificationPanel';
 import '../components/admin/BadgeVerificationPanel.css';
 import RJVerificationPanel from '../components/admin/RJVerificationPanel';
 import '../components/RoyalTrustBadge.css';
+import { isEffectivelyOnline } from '../utils/presenceStatus';
 import './AdminPanelPage.css';
 
 // Extract just the brand name from a device model string for admin panel display
@@ -335,7 +336,7 @@ const AdminPanelPage = () => {
   useEffect(() => {
     const knownUids = new Set(users.map(u => u.id));
     const onlineCount = Object.entries(onlineStatuses).filter(
-      ([uid, s]) => s?.state === 'online' && knownUids.has(uid)
+      ([uid, s]) => isEffectivelyOnline(s) && knownUids.has(uid)
     ).length;
     setStats(prev => ({ ...prev, onlineUsers: onlineCount }));
   }, [onlineStatuses, users]);
@@ -1623,8 +1624,8 @@ const AdminPanelPage = () => {
       const matchesRole = filterRole === 'all' || user.role === filterRole;
       
       const matchesStatus = filterStatus === 'all' || 
-        (filterStatus === 'online' && onlineStatuses[user.uid]?.state === 'online') ||
-        (filterStatus === 'offline' && onlineStatuses[user.uid]?.state !== 'online') ||
+        (filterStatus === 'online' && isEffectivelyOnline(onlineStatuses[user.uid])) ||
+        (filterStatus === 'offline' && !isEffectivelyOnline(onlineStatuses[user.uid])) ||
         (filterStatus === 'banned' && user.isBanned) ||
         (filterStatus === 'muted' && user.mutedInfo?.isMuted);
         
@@ -1635,7 +1636,7 @@ const AdminPanelPage = () => {
   // Get user's real device/location info with proper fallbacks
   const getUserDeviceInfo = (user) => {
     const status = onlineStatuses[user.uid];
-    const isOnline = status?.state === 'online';
+    const isOnline = isEffectivelyOnline(status);
     
     // Get IP - prefer current status for online users, last known for offline
     const lastIP = isOnline
@@ -2081,10 +2082,10 @@ const AdminPanelPage = () => {
                         <div>
                           <span className="luxury-activity-name">{user.displayName}</span>
                           <span className="luxury-activity-action">
-                            {onlineStatuses[user.uid]?.state === 'online' ? 'Currently online' : 'Recently active'}
+                            {isEffectivelyOnline(onlineStatuses[user.uid]) ? 'Currently online' : 'Recently active'}
                           </span>
                         </div>
-                        <div className={`luxury-activity-status ${onlineStatuses[user.uid]?.state === 'online' ? 'online' : 'offline'}`}></div>
+                        <div className={`luxury-activity-status ${isEffectivelyOnline(onlineStatuses[user.uid]) ? 'online' : 'offline'}`}></div>
                       </div>
                     ))}
                   </div>
@@ -2186,7 +2187,7 @@ const AdminPanelPage = () => {
                     
                     <div className="luxury-table-body">
                       {filteredUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE).map(user => {
-                        const isOnline = onlineStatuses[user.uid]?.state === 'online';
+                        const isOnline = isEffectivelyOnline(onlineStatuses[user.uid]);
                         const deviceInfo = getUserDeviceInfo(user);
                         const currentRoom = onlineStatuses[user.uid]?.currentRoomId;
                         
@@ -3633,7 +3634,7 @@ const AdminPanelPage = () => {
                               <div style={{
                                 position:'absolute', bottom:2, right:2,
                                 width:12, height:12, borderRadius:'50%',
-                                background: onlineStatuses[u.uid]?.state === 'online' ? '#10b981' : '#d1d5db',
+                                background: isEffectivelyOnline(onlineStatuses[u.uid]) ? '#10b981' : '#d1d5db',
                                 border:'2px solid #fff',
                               }}/>
                             </div>

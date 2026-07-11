@@ -27,8 +27,15 @@
 
     "roomCounts": {
       // Room-member counts are maintained by client-side presence writes.
-      // Read-only here — no explicit write grant so the root false catches writes.
-      ".read": "auth != null"
+      // FIX: previously had no write grant, so every client write here was
+      // silently rejected by the root ".write": false — counts never populated.
+      // Each user may write only their own entry within a room.
+      ".read": "auth != null",
+      "$roomId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
     },
 
     "broadcasts": {
