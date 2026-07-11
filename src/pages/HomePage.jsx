@@ -1029,25 +1029,61 @@ const MessageList = React.memo(({
     toggleDropdown,
     setOpenDropdownId,
 }) => {
+    // FLICKER-FIX: stable parity map — once a non-bot message is assigned
+    // isEven=true/false it NEVER changes, even when limitToLast(60) drops the
+    // oldest message from the front (which used to shift all indices and
+    // visibly re-stripe every row + cause scrollbar jumps).
+    const msgParityRef = React.useRef(new Map()); // Map<msgId, boolean>
+
+    const filteredMessages = messages.filter(msg => {
+        if (!msg.uid) return true;
+        // TingleBot messages are ALWAYS visible — check before any block list.
+        // Also check tinglebotType for join/leave messages written by regular users
+        // (those use the real uid but must still render as TingleBot strips).
+        const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
+        if (isTinglebotMsg) {
+            // targetUid messages are private — only show to the intended recipient.
+            // join/leave and broadcast notices have no targetUid and show to everyone.
+            if (msg.targetUid && msg.targetUid !== loggedInUserProfile?.uid) return false;
+            return true;
+        }
+        // Block list filters apply only to real user messages
+        if (blockedUsers.includes(msg.uid)) return false;
+        if (usersWhoBlockedMe.includes(msg.uid)) return false;
+        return true;
+    });
+
+    // Assign stable isEven values: walk the filtered list in order, skipping
+    // bot messages (they don't get stripes). New messages inherit the opposite
+    // parity of the last assigned message; existing assignments are never changed.
+    {
+        // Evict IDs no longer in the list so the map doesn't grow unboundedly.
+        const currentIds = new Set(filteredMessages.map(m => m.id));
+        for (const id of msgParityRef.current.keys()) {
+            if (!currentIds.has(id)) msgParityRef.current.delete(id);
+        }
+        let lastEven = true; // default first-ever message is "even"
+        let hasAny = false;
+        filteredMessages.forEach(msg => {
+            const isBot = msg.isBot || msg.uid === 'tinglebot_system_official_2024' ||
+                msg.systemBot || msg.type?.includes('tinglebot') || msg.tinglebotType;
+            if (isBot) return;
+            if (msgParityRef.current.has(msg.id)) {
+                // Already assigned — read the stored value to keep lastEven in sync.
+                lastEven = msgParityRef.current.get(msg.id);
+            } else {
+                // New message: alternate from the last assigned parity.
+                const assignEven = hasAny ? !lastEven : true;
+                msgParityRef.current.set(msg.id, assignEven);
+                lastEven = assignEven;
+            }
+            hasAny = true;
+        });
+    }
+
     return (
         <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
-            {messages.filter(msg => {
-                if (!msg.uid) return true;
-                // TingleBot messages are ALWAYS visible — check before any block list.
-                // Also check tinglebotType for join/leave messages written by regular users
-                // (those use the real uid but must still render as TingleBot strips).
-                const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
-                if (isTinglebotMsg) {
-                    // targetUid messages are private — only show to the intended recipient.
-                    // join/leave and broadcast notices have no targetUid and show to everyone.
-                    if (msg.targetUid && msg.targetUid !== loggedInUserProfile?.uid) return false;
-                    return true;
-                }
-                // Block list filters apply only to real user messages
-                if (blockedUsers.includes(msg.uid)) return false;
-                if (usersWhoBlockedMe.includes(msg.uid)) return false;
-                return true;
-            }).map((msg, index) => {
+            {filteredMessages.map((msg) => {
                 // TingleBot messages render as premium notification strips.
                 // Also check tinglebotType for join/leave messages (written by real users).
                 const isTingleBot = msg.isBot ||
@@ -1065,11 +1101,13 @@ const MessageList = React.memo(({
                         />
                     );
                 }
+                // Use stable parity from the map — never re-stripes on new messages.
+                const isEven = msgParityRef.current.get(msg.id) ?? true;
                 return (
                 <ChatMessage
                     key={msg.id}
                     message={msg}
-                    isEven={index % 2 === 0}
+                    isEven={isEven}
                     onDelete={onDelete}
                     onKick={onKick}
                     onUnkick={onUnkick}
@@ -8019,8 +8057,11 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                         if (y >= 1 && y < 120) userAge = y;
                                                     }
                                                 }
-                                                if (userAge === null && typeof profileUser.age === 'number' && profileUser.age >= 1 && profileUser.age < 120) {
-                                                    userAge = profileUser.age;
+                                                if (userAge === null) {
+                                                    // age may be stored as a number OR as a string (form input value)
+                                                    const rawAge = profileUser.age;
+                                                    const parsed = typeof rawAge === 'number' ? rawAge : parseInt(rawAge, 10);
+                                                    if (!isNaN(parsed) && parsed >= 1 && parsed < 120) userAge = parsed;
                                                 }
                                                 if (userAge === null) return null;
                                                 return (
