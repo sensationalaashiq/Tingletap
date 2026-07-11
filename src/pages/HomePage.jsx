@@ -16,7 +16,7 @@ import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-// Firebase Storage import removed - using IMGBB instead
+import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
 import AddFriendConfirmModal from '../components/AddFriendConfirmModal';
 import ChatActionModal from '../components/ChatActionModal';
@@ -5398,24 +5398,10 @@ const HomePage = ({ user, roomIdOverride }) => {
         try {
 
 
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('key', 'bec822839da595fbbc6ffafddca80839');
-
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Image upload failed');
-            }
-
-            const imageUrl = result.data.url;
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            
+            const compressedFile = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
+            const { url: imageUrl } = await uploadMediaFile(compressedFile, 'private-chat-image', { roomId: conversationId });
+
             await addDoc(collection(db, 'privateMessages'), {
                 text: '',
                 imageUrl: imageUrl,
@@ -5445,23 +5431,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!privateSelectedImage || !auth.currentUser || !privateMessageTarget) return;
 
         try {
-            const formData = new FormData();
-            formData.append('image', privateSelectedImage);
-            formData.append('key', 'bec822839da595fbbc6ffafddca80839');
-
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Image upload failed');
-            }
-
-            const imageUrl = result.data.url;
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
+            const compressedPm = await compressImageToWebP(privateSelectedImage, { maxDim: 1080, quality: 0.8 });
+            const { url: imageUrl } = await uploadMediaFile(compressedPm, 'private-chat-image', { roomId: conversationId });
             
             await addDoc(collection(db, 'privateMessages'), {
                 text: privateMessage || '',
@@ -5507,59 +5479,9 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         try {
 
-            let audioUrl = null;
-            let uploadSuccess = false;
-
-            try {
-                const formData = new FormData();
-                formData.append('fileToUpload', file);
-                formData.append('reqtype', 'fileupload');
-
-                const response = await fetch('https://catbox.moe/user/api.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const textResponse = await response.text();
-                    const cleanUrl = textResponse.trim();
-                    
-                    if (cleanUrl && (cleanUrl.startsWith('https://') || cleanUrl.startsWith('http://'))) {
-                        audioUrl = cleanUrl;
-                        uploadSuccess = true;
-                    }
-                }
-            } catch (catboxError) {
-            }
-
-            if (!uploadSuccess) {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', file);
-
-                    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        
-                        if (result.status === 'success' && result.data?.url) {
-                            audioUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                            uploadSuccess = true;
-                        }
-                    }
-                } catch (tmpError) {
-                }
-            }
-
-            if (!uploadSuccess || !audioUrl) {
-                throw new Error('Unable to upload audio file. Please try again in a few moments.');
-            }
-
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            
+            const { url: audioUrl } = await uploadMediaFile(file, 'private-chat-audio', { roomId: conversationId });
+
             await addDoc(collection(db, 'privateMessages'), {
                 text: '',
                 audioUrl: audioUrl,
@@ -5630,59 +5552,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             const filename = privateSelectedAudio ? privateSelectedAudio.name : `voice-note-${Date.now()}.wav`;
             
 
-            let audioUrl = null;
-            let uploadSuccess = false;
-
-            try {
-                const formData = new FormData();
-                formData.append('fileToUpload', audioToUpload);
-                formData.append('reqtype', 'fileupload');
-
-                const response = await fetch('https://catbox.moe/user/api.php', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const textResponse = await response.text();
-                    const cleanUrl = textResponse.trim();
-                    
-                    if (cleanUrl && (cleanUrl.startsWith('https://') || cleanUrl.startsWith('http://'))) {
-                        audioUrl = cleanUrl;
-                        uploadSuccess = true;
-                    }
-                }
-            } catch (catboxError) {
-            }
-
-            if (!uploadSuccess) {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', audioToUpload);
-
-                    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        
-                        if (result.status === 'success' && result.data?.url) {
-                            audioUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                            uploadSuccess = true;
-                        }
-                    }
-                } catch (tmpError) {
-                }
-            }
-
-            if (!uploadSuccess || !audioUrl) {
-                throw new Error('Unable to upload audio file. Please try again in a few moments.');
-            }
-
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            
+            const { url: audioUrl } = await uploadMediaFile(audioToUpload, 'private-chat-audio', { roomId: conversationId });
+
             await addDoc(collection(db, 'privateMessages'), {
                 text: privateMessage || '',
                 audioUrl: audioUrl,
@@ -5773,87 +5645,8 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
 
-                    let audioUrl = null;
-                    let uploadSuccess = false;
-
-                    // Method 1: catbox.moe
-                    try {
-                        const formData = new FormData();
-                        formData.append('fileToUpload', audioBlob, filename);
-                        formData.append('reqtype', 'fileupload');
-
-                        const response = await fetch('https://catbox.moe/user/api.php', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-
-                        if (response.ok) {
-                            const textResponse = await response.text();
-                            const cleanUrl = textResponse.trim();
-                            
-
-                            if (cleanUrl && (cleanUrl.startsWith('https://') || cleanUrl.startsWith('http://'))) {
-                                audioUrl = cleanUrl;
-                                uploadSuccess = true;
-                            }
-                        }
-                    } catch (catboxError) {
-                    }
-
-                    // Method 2: tmpfiles.org
-                    if (!uploadSuccess) {
-                        try {
-                            const formData = new FormData();
-                            formData.append('file', audioBlob, filename);
-
-                            const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-
-                            if (response.ok) {
-                                const result = await response.json();
-
-                                if (result.status === 'success' && result.data?.url) {
-                                    audioUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                                    uploadSuccess = true;
-                                }
-                            }
-                        } catch (tmpError) {
-                        }
-                    }
-
-                    // Method 3: file.io
-                    if (!uploadSuccess) {
-                        try {
-                            const formData = new FormData();
-                            formData.append('file', audioBlob, filename);
-
-                            const response = await fetch('https://file.io', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-
-                            if (response.ok) {
-                                const result = await response.json();
-
-                                if (result.success && result.link) {
-                                    audioUrl = result.link;
-                                    uploadSuccess = true;
-                                }
-                            }
-                        } catch (fileIoError) {
-                        }
-                    }
-
-                    if (!uploadSuccess || !audioUrl) {
-                        throw new Error('Unable to upload audio file. All upload services are currently unavailable. Please try again later.');
-                    }
-
                     const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
+                    const { url: audioUrl } = await uploadMediaFile(audioBlob, 'private-chat-audio', { roomId: conversationId });
 
                     await addDoc(collection(db, 'privateMessages'), {
                         text: '',
@@ -6664,22 +6457,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         try {
 
 
-            const formData = new FormData();
-            formData.append('image', imageFile);
-            formData.append('key', 'bec822839da595fbbc6ffafddca80839');
-
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Image upload failed');
-            }
-
-            const imageUrl = result.data.url;
+            const compressedImg = await compressImageToWebP(imageFile, { maxDim: 1080, quality: 0.8 });
+            const { url: imageUrl } = await uploadMediaFile(compressedImg, 'chat-image', { roomId });
             
             const messageData = {
                 text: caption || '',
@@ -6977,100 +6756,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const filename = (audioData && audioData.name) || (selectedAudio && selectedAudio.name) || `voice-note-${Date.now()}.wav`;
             
 
-            let audioUrl = null;
-            let uploadSuccess = false;
-
-            // Try multiple upload methods
-            const uploadMethods = [
-                // Method 1: catbox.moe
-                async () => {
-                    try {
-                        const formData = new FormData();
-                        formData.append('fileToUpload', audioToUpload, filename);
-                        formData.append('reqtype', 'fileupload');
-
-                        const response = await fetch('https://catbox.moe/user/api.php', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (response.ok) {
-                            const textResponse = await response.text();
-                            const cleanUrl = textResponse.trim();
-                            
-                            if (cleanUrl && (cleanUrl.startsWith('https://') || cleanUrl.startsWith('http://'))) {
-                                return cleanUrl;
-                            }
-                        }
-                        return null;
-                    } catch (error) {
-                        return null;
-                    }
-                },
-                
-                // Method 2: tmpfiles.org
-                async () => {
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', audioToUpload, filename);
-
-                        const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            
-                            if (result.status === 'success' && result.data?.url) {
-                                return result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                            }
-                        }
-                        return null;
-                    } catch (error) {
-                        return null;
-                    }
-                },
-
-                // Method 3: file.io (alternative)
-                async () => {
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', audioToUpload, filename);
-
-                        const response = await fetch('https://file.io', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            
-                            if (result.success && result.link) {
-                                return result.link;
-                            }
-                        }
-                        return null;
-                    } catch (error) {
-                        return null;
-                    }
-                }
-            ];
-
-            // Run all upload methods in parallel — use whichever succeeds first
-            try {
-                audioUrl = await Promise.any(uploadMethods.map(fn => fn().then(r => {
-                    if (!r) throw new Error('no url');
-                    return r;
-                })));
-                uploadSuccess = !!audioUrl;
-            } catch {
-                uploadSuccess = false;
-            }
-
-            if (!uploadSuccess || !audioUrl) {
-                throw new Error('Unable to upload audio file. All upload services are currently unavailable. Please try again later.');
-            }
+            const { url: audioUrl } = await uploadMediaFile(audioToUpload, 'homepage-audio', {});
 
             const messageData = {
                 text: newMessage || '',

@@ -4,6 +4,97 @@
 
 import { auth } from '../firebase/config';
 
+// ─── Image compression ────────────────────────────────────────────────────────
+
+/**
+ * Compress an image File/Blob to WebP in the browser using Canvas.
+ * @param {File|Blob} file
+ * @param {{ maxDim?: number, quality?: number }} [opts]
+ * @returns {Promise<Blob>} WebP blob
+ */
+export function compressImageToWebP(file, { maxDim = 1080, quality = 0.80 } = {}) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { naturalWidth: w, naturalHeight: h } = img;
+      // Proportional downscale — never upscale
+      if (w > maxDim || h > maxDim) {
+        if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else        { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('WebP compression failed')),
+        'image/webp',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Failed to load image for compression')); };
+    img.src = objectUrl;
+  });
+}
+
+// ─── Generic media upload ─────────────────────────────────────────────────────
+
+/**
+ * Upload any media file to Cloudflare R2 via the Netlify proxy.
+ *
+ * @param {Blob|File}  blob
+ * @param {'profile'|'cover'|'chat-image'|'homepage-audio'|'private-chat-image'|'private-chat-audio'} uploadType
+ * @param {{ roomId?: string }} [opts]   roomId / conversationId for chat uploads
+ * @param {(pct: number) => void} [onProgress]  0–100 callback
+ * @returns {Promise<{ key: string, url: string }>}
+ */
+export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  const token = await user.getIdToken();
+
+  // Report encode start
+  if (onProgress) onProgress(5);
+  const base64Data = await blobToBase64(blob);
+  if (onProgress) onProgress(20);
+
+  const rawType     = blob.type || 'application/octet-stream';
+  const contentType = rawType.split(';')[0].trim().toLowerCase();
+
+  // One retry on network failure
+  let res;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      res = await fetch(`${BASE}/uploadMedia`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uploadType, contentType, data: base64Data, ...opts }),
+      });
+      break; // success — exit retry loop
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — upload failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+
+  if (onProgress) onProgress(95);
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed (HTTP ${res.status})`);
+  }
+
+  const result = await res.json();
+  if (onProgress) onProgress(100);
+  return result; // { key, url }
+}
+
 const BASE = '/.netlify/functions';
 
 async function getIdToken() {

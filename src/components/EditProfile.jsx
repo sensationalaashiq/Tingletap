@@ -8,6 +8,7 @@ import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 
 const COUNTRIES = [
   { name: 'Afghanistan', flag: '🇦🇫' }, { name: 'Algeria', flag: '🇩🇿' },
@@ -379,19 +380,10 @@ const EditProfile = ({ onClose, onSuccess }) => {
     if (!profilePic) return null;
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('image', profilePic);
-      formData.append('key', 'bec822839da595fbbc6ffafddca80839');
-      const response = await fetch('https://api.imgbb.com/1/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Image upload failed');
-      }
+      const compressed = await compressImageToWebP(profilePic, { maxDim: 1080, quality: 0.8 });
+      const { url } = await uploadMediaFile(compressed, 'profile');
       setUploading(false);
-      return result.data.url;
+      return url;
     } catch (error) {
       setUploading(false);
       throw error;

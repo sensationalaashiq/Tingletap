@@ -364,15 +364,7 @@ const ClockIcon = ({ color = '#f59e0b' }) => (
 /* ═══════════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════════ */
-const uploadToImgBB = async (blob) => {
-  const fd = new FormData();
-  fd.append('image', blob);
-  fd.append('key', 'bec822839da595fbbc6ffafddca80839');
-  const r = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd });
-  const j = await r.json();
-  if (!j.success) throw new Error(j.error?.message || 'Upload failed');
-  return j.data.url;
-};
+// Profile photo upload handled via r2StorageService (see handleSave below)
 
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -1317,11 +1309,13 @@ const EditProfilePanel = ({ user, onDone }) => {
     setSaving(true);
     try {
       let photoURL = photoPreview;
-      if (photo) {
-        const fd = new FormData(); fd.append('image', photo); fd.append('key', 'bec822839da595fbbc6ffafddca80839');
-        const r = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd });
-        const j = await r.json();
-        if (j.success) photoURL = j.data.url;
+      if (photo && !user?.isAnonymous && localStorage.getItem('isGuest') !== 'true') {
+        try {
+          const { compressImageToWebP, uploadMediaFile } = await import('../services/r2StorageService');
+          const compressed = await compressImageToWebP(photo, { maxDim: 1080, quality: 0.8 });
+          const { url } = await uploadMediaFile(compressed, 'profile');
+          photoURL = url;
+        } catch (imgError) { console.warn('Profile photo upload failed, keeping existing:', imgError.message); }
       }
       await updateProfile(user, { displayName: form.displayName, photoURL });
 

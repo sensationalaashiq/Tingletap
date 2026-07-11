@@ -21,6 +21,7 @@ import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import { getBadgeTier, hasMinTier } from '../utils/badgeTier';
+import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 
 // Resolves a uid's CURRENT username live so friend/blocked/team lists
 // reflect a rename (self or admin) instantly, even though the list itself
@@ -2739,37 +2740,18 @@ const SettingsSidebar = ({
                                                             }
                                                             try {
                                                                 toast.info('Uploading cover photo...', { icon: TI.camera });
-                                                                const formData = new FormData();
-                                                                formData.append('image', file);
-                                                                formData.append('key', 'bec822839da595fbbc6ffafddca80839');
-
-                                                                const response = await fetch('https://api.imgbb.com/1/upload', {
-                                                                    method: 'POST',
-                                                                    body: formData
+                                                                const compressed = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
+                                                                const { url: coverUrl } = await uploadMediaFile(compressed, 'cover');
+                                                                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                                                    coverPhotoURL: coverUrl,
+                                                                    coverVideoURL: null,
+                                                                    coverVideoType: null,
+                                                                    spotifyTrackURL: null,
+                                                                    spotifyTrackData: null,
+                                                                    updatedAt: new Date().toISOString()
                                                                 });
-
-                                                                const result = await response.json();
-
-                                                                if (result.success) {
-                                                                    // Save cover photo URL and remove video/spotify to Firebase
-                                                                    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                                                                        coverPhotoURL: result.data.url,
-                                                                        coverVideoURL: null, // Remove video when setting photo
-                                                                        coverVideoType: null,
-                                                                        spotifyTrackURL: null, // Remove Spotify when setting photo
-                                                                        spotifyTrackData: null,
-                                                                        updatedAt: new Date().toISOString()
-                                                                    });
-
-                                                                    toast.success('Cover photo uploaded successfully!', { icon: TI.success });
-
-                                                                    // Force immediate refresh
-                                                                    setTimeout(() => {
-                                                                        window.location.reload();
-                                                                    }, 1000);
-                                                                } else {
-                                                                    toast.error('Upload failed. Please try again.', { icon: TI.error });
-                                                                }
+                                                                toast.success('Cover photo uploaded successfully!', { icon: TI.success });
+                                                                setTimeout(() => { window.location.reload(); }, 1000);
                                                             } catch (error) {
                                                                 console.error('Cover photo upload error:', error);
                                                                 toast.error('Upload failed. Please try again.', { icon: TI.error });

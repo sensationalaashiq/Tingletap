@@ -9,6 +9,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { generateOTP, sendOTPEmail, verifyOTP, clearOTP } from '../utils/emailService';
+import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 import { validateSignupEmail } from '../utils/emailValidator';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
@@ -246,12 +247,9 @@ const SignupPage = () => {
       let profilePicURL = '';
       if (formData.profilePic) {
         try {
-          const formDataImg = new FormData();
-          formDataImg.append('image', formData.profilePic);
-          formDataImg.append('key', '46c5e6c30b68dd8f5c5c3e7c6e8d8c8e');
-          const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formDataImg });
-          const result = await response.json();
-          if (result.success) profilePicURL = result.data.url;
+          const compressed = await compressImageToWebP(formData.profilePic, { maxDim: 1080, quality: 0.8 });
+          const { url } = await uploadMediaFile(compressed, 'profile');
+          profilePicURL = url;
         } catch (imgError) { console.warn('Failed to upload profile picture, using default'); }
       }
       const defaultAvatar = formData.gender === 'female'
