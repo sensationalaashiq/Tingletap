@@ -54,17 +54,21 @@ function getClient() {
 
 // ── Bucket name helpers ────────────────────────────────────────────────────────
 
-/** New PUBLIC bucket (tingletap-media) */
+/** New PUBLIC bucket (tingletap-media)
+ *  Reads R2_Public_Bucket (primary) with R2_PUBLIC_BUCKET_NAME as fallback.
+ */
 export function getPublicBucketName() {
-  const name = process.env.R2_PUBLIC_BUCKET_NAME;
-  if (!name) throw new Error('R2_PUBLIC_BUCKET_NAME env var not set.');
+  const name = process.env.R2_Public_Bucket || process.env.R2_PUBLIC_BUCKET_NAME;
+  if (!name) throw new Error('R2_Public_Bucket env var not set.');
   return name;
 }
 
-/** New PRIVATE bucket (tingletap-verification) */
+/** New PRIVATE bucket (tingletap-verification)
+ *  Reads R2_Private_Bucket (primary) with R2_PRIVATE_BUCKET_NAME as fallback.
+ */
 export function getPrivateBucketName() {
-  const name = process.env.R2_PRIVATE_BUCKET_NAME;
-  if (!name) throw new Error('R2_PRIVATE_BUCKET_NAME env var not set.');
+  const name = process.env.R2_Private_Bucket || process.env.R2_PRIVATE_BUCKET_NAME;
+  if (!name) throw new Error('R2_Private_Bucket env var not set.');
   return name;
 }
 

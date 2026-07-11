@@ -10,9 +10,9 @@ Add these in Netlify → Site settings → Environment variables:
 
 | Variable | Value | Purpose |
 |---|---|---|
-| `R2_PUBLIC_BUCKET_NAME` | `tingletap-media` | Public bucket name |
-| `R2_PRIVATE_BUCKET_NAME` | `tingletap-verification` | Private bucket name |
-| `R2_PUBLIC_BUCKET_URL` | e.g. `https://pub-xxxx.r2.dev` | Public base URL for tingletap-media (get from Cloudflare R2 dashboard → bucket → Public Access URL) |
+| `R2_Public_Bucket` | `tingletap-media` | Public bucket name ✅ already set |
+| `R2_Private_Bucket` | `tingletap-verification` | Private bucket name ✅ already set |
+| `R2_PUBLIC_BUCKET_URL` | e.g. `https://pub-xxxx.r2.dev` | **⚠️ STILL NEEDED** — permanent public URL for tingletap-media (Cloudflare R2 dashboard → bucket → Public Access URL) |
 | `R2_BUCKET_NAME` | *(keep as-is)* | Legacy single bucket — still needed for backward-compat reads of old stored URLs |
 
 Existing credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are shared across both buckets — no change needed.
