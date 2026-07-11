@@ -212,8 +212,7 @@ const StylishFontPopup = React.memo(({
         console.error('❌ Font reset Firestore save failed:', e);
       }
     }
-    onClose();
-  }, [onClose]);
+  }, []);
 
   const handleApply = useCallback(async () => {
     console.log('💬 StylishFontPopup: Applying GLOBAL MESSAGE TEXT styles');

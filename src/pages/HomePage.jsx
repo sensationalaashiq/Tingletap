@@ -7891,7 +7891,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 if (profileUser.coverPhotoURL) return (
                                     <div className="vpm-cover-section vpm-cover-image" style={{cursor:'zoom-in'}}
                                         onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'cover', url: profileUser.coverPhotoURL }); }}>
-                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={(e) => {
+                                            const key = profileUser.coverPhotoKey;
+                                            if (!key || e.target.dataset.r2Retried) { e.target.style.display = 'none'; return; }
+                                            e.target.dataset.r2Retried = '1';
+                                            import('../services/r2StorageService').then(({ getMediaUrl }) =>
+                                                getMediaUrl(key).then(freshUrl => { e.target.src = freshUrl; })
+                                            ).catch(() => { e.target.style.display = 'none'; });
+                                        }}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-image">
                                             Cover Photo
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
@@ -7951,7 +7958,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}
                                     style={{ cursor: 'zoom-in' }}
                                     onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender) }); }}>
-                                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} className="vpm-avatar" alt="Profile" />
+                                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} photoKey={profileUser.photoKey} className="vpm-avatar" alt="Profile" />
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
                                     <span style={{position:'absolute',bottom:2,right:2,width:20,height:20,borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(6px)',zIndex:3,pointerEvents:'none',boxShadow:'0 2px 8px rgba(245,158,11,0.7),0 1px 3px rgba(0,0,0,0.3)',border:'1.5px solid rgba(255,255,255,0.7)'}}>
                                         <svg viewBox="0 0 24 24" width="11" height="11" fill="none"><path d="M3 8V3h5v2H5v3H3zm13-5h5v5h-2V5h-3V3zM3 16h2v3h3v2H3v-5zm16 3h-3v2h5v-5h-2v3z" fill="white"/></svg>
