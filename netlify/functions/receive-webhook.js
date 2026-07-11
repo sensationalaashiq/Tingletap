@@ -10,10 +10,11 @@ import { rateLimitCheck, sanitizeString } from './shared/validation.js';
 import { log } from './shared/logger.js';
 
 const WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 
 const TO_INBOX_MAP = {
-  'support@tingletap.com': { ownerInbox: 'VyomAI', name: 'VyomAI — TingleTap' },
-  'admin@tingletap.com':   { ownerInbox: 'Blurry',  name: 'Blurry — TingleTap'  },
+  'support@tingletap.com': { ownerInbox: 'VyomAI', name: `VyomAI — ${APP_NAME}` },
+  'admin@tingletap.com':   { ownerInbox: 'Blurry',  name: `Blurry — ${APP_NAME}` },
 };
 
 const headers = {

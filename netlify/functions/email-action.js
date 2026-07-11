@@ -7,9 +7,10 @@ import { sendEmailWithTemplate } from './shared/emailService.js';
 import { rateLimitCheck, sanitizeString, validateEmail } from './shared/validation.js';
 import { log } from './shared/logger.js';
 
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 const OWNER_MAP = {
-  'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
-  'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — TingleTap'  },
+  'VyomAI': { email: 'support@tingletap.com', name: `VyomAI — ${APP_NAME}` },
+  'Blurry':  { email: 'admin@tingletap.com',   name: `Blurry — ${APP_NAME}` },
 };
 const DEFAULT_SENDER_EMAIL = process.env.OWNER_DEFAULT_EMAIL || 'admin@tingletap.com';
 
@@ -137,7 +138,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalDate, origin
 
   <!-- Header -->
   <tr><td style="background:${t.gradient};padding:32px 36px 26px;">
-    <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">TingleTap&trade; &middot; ${t.tag}</p>
+    <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">${APP_NAME}&trade; &middot; ${t.tag}</p>
     <p style="margin:0;color:#fff;font-size:20px;font-weight:800;">${esc(subject)}</p>
   </td></tr>
 
@@ -151,7 +152,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalDate, origin
     <div style="border-top:1px solid #f3f4f6;padding-top:18px;">
       <p style="margin:0 0 3px;color:#9ca3af;font-size:12px;">Regards,</p>
       <p style="margin:0 0 2px;color:#1e1b4b;font-size:15px;font-weight:700;">${esc(senderName)}</p>
-      <p style="margin:0 0 2px;color:${t.roleColor};font-size:12px;font-weight:600;">Owner &middot; Godfather &middot; TingleTap&trade;</p>
+      <p style="margin:0 0 2px;color:${t.roleColor};font-size:12px;font-weight:600;">Owner &middot; Godfather &middot; ${APP_NAME}&trade;</p>
       <a href="mailto:${esc(senderEmail)}" style="color:${t.accent2};font-size:12px;text-decoration:none;">${esc(senderEmail)}</a>
     </div>
 
@@ -164,7 +165,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalDate, origin
   <!-- Footer -->
   <tr><td align="center" style="background:#faf8ff;border-top:1px solid #f3f4f6;padding:14px 36px;">
     <p style="margin:0 0 6px;">${HEART}&nbsp;<span style="font-size:12px;font-weight:800;color:${t.accent};letter-spacing:.3px;">Developed by Adrashtra</span>&nbsp;<span style="font-size:12px;color:#d8b4fe;">&middot;</span>&nbsp;<span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>&nbsp;${HEART}</p>
-    <p style="margin:0;color:#9ca3af;font-size:11px;">&copy; 2026 TingleTap&trade; &middot; India's Premium Chat Community</p>
+    <p style="margin:0;color:#9ca3af;font-size:11px;">&copy; 2026 ${APP_NAME}&trade; &middot; India's Premium Chat Community</p>
   </td></tr>
 
   <!-- Bottom bar -->
@@ -193,7 +194,7 @@ export const handler = async (event) => {
 
   const sender = OWNER_MAP[v.displayName] || {
     email: DEFAULT_SENDER_EMAIL,
-    name: `${v.displayName} — TingleTap`,
+    name: `${v.displayName} — ${APP_NAME}`,
   };
 
   let body;
@@ -252,7 +253,7 @@ export const handler = async (event) => {
       replyTo:     { email: sender.email, name: sender.name },
       subject,
       htmlContent: html,
-      textContent: `${replyBody}\n\n---\n${v.displayName} · Owner · TingleTap™\n${sender.email}`,
+      textContent: `${replyBody}\n\n---\n${v.displayName} · Owner · ${APP_NAME}™\n${sender.email}`,
       tags:        ['owner-email-center', action, `theme-${themeKey}`],
     });
 

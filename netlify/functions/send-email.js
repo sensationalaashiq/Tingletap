@@ -14,9 +14,10 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 const OWNER_MAP = {
-  'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
-  'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — TingleTap'  },
+  'VyomAI': { email: 'support@tingletap.com', name: `VyomAI — ${APP_NAME}` },
+  'Blurry':  { email: 'admin@tingletap.com',   name: `Blurry — ${APP_NAME}` },
 };
 const DEFAULT_SENDER_EMAIL = process.env.OWNER_DEFAULT_EMAIL || 'admin@tingletap.com';
 
@@ -136,7 +137,7 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td>
-          <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">TingleTap&trade; &middot; ${t.tag}</p>
+          <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">${APP_NAME}&trade; &middot; ${t.tag}</p>
           <p style="margin:0;color:#fff;font-size:21px;font-weight:800;line-height:1.3;">${esc(subject)}</p>
         </td>
         <td align="right" style="padding-left:16px;white-space:nowrap;vertical-align:top;">
@@ -153,14 +154,14 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
     <!-- Category badge -->
     <p style="margin:0 0 16px;"><span style="display:inline-block;background:${t.gradient};color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 12px;border-radius:20px;">${t.tag}</span></p>
 
-    <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.7;">Dear <strong style="color:#1e1b4b;">${esc(recipientName || 'TingleTap Member')}</strong>,</p>
+    <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.7;">Dear <strong style="color:#1e1b4b;">${esc(recipientName || `${APP_NAME} Member`)}</strong>,</p>
     <div style="background:#fafafa;border-left:3px solid ${t.accent2};border-radius:0 10px 10px 0;padding:18px 22px;margin-bottom:28px;color:#374151;font-size:15px;line-height:1.85;">${escapedMsg}</div>
 
     <!-- Signature -->
     <div style="border-top:1px solid #f3f4f6;padding-top:22px;">
       <p style="margin:0 0 3px;color:#9ca3af;font-size:12px;">Regards,</p>
       <p style="margin:0 0 2px;color:#1e1b4b;font-size:15px;font-weight:700;">${esc(senderName)}</p>
-      <p style="margin:0 0 2px;color:${t.roleColor};font-size:12px;font-weight:600;letter-spacing:.02em;">Owner &middot; Godfather &middot; TingleTap&trade;</p>
+      <p style="margin:0 0 2px;color:${t.roleColor};font-size:12px;font-weight:600;letter-spacing:.02em;">Owner &middot; Godfather &middot; ${APP_NAME}&trade;</p>
       <a href="mailto:${esc(senderEmail)}" style="color:${t.accent2};font-size:12px;text-decoration:none;">${esc(senderEmail)}</a>
     </div>
   </td></tr>
@@ -168,7 +169,7 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
   <!-- Footer -->
   <tr><td align="center" style="background:#faf8ff;border-top:1px solid #f3f4f6;padding:16px 40px;">
     <p style="margin:0 0 6px;">${HEART}&nbsp;<span style="font-size:12px;font-weight:800;color:${t.accent};letter-spacing:.3px;">Developed by Adrashtra</span>&nbsp;<span style="font-size:12px;color:#d8b4fe;">&middot;</span>&nbsp;<span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>&nbsp;${HEART}</p>
-    <p style="margin:0;color:#9ca3af;font-size:11px;">&copy; 2026 TingleTap&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+    <p style="margin:0;color:#9ca3af;font-size:11px;">&copy; 2026 ${APP_NAME}&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
   </td></tr>
 
   <!-- Bottom bar -->
@@ -205,7 +206,7 @@ export const handler = async (event) => {
 
   const sender = OWNER_MAP[v.displayName] || {
     email: DEFAULT_SENDER_EMAIL,
-    name: `${v.displayName} — TingleTap`,
+    name: `${v.displayName} — ${APP_NAME}`,
   };
 
   let body;
@@ -238,12 +239,12 @@ export const handler = async (event) => {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
       body: JSON.stringify({
-        sender:      { name: `${v.displayName} — TingleTap`, email: sender.email },
-        to:          [{ email: recipientEmail, name: recipientName || 'TingleTap Member' }],
-        replyTo:     { email: sender.email, name: `${v.displayName} — TingleTap` },
+        sender:      { name: `${v.displayName} — ${APP_NAME}`, email: sender.email },
+        to:          [{ email: recipientEmail, name: recipientName || `${APP_NAME} Member` }],
+        replyTo:     { email: sender.email, name: `${v.displayName} — ${APP_NAME}` },
         subject,
         htmlContent: html,
-        textContent: `${subject}\n\nDear ${recipientName || 'TingleTap Member'},\n\n${message}\n\nRegards,\n${v.displayName}\nOwner · Godfather · TingleTap™\n${sender.email}`,
+        textContent: `${subject}\n\nDear ${recipientName || `${APP_NAME} Member`},\n\n${message}\n\nRegards,\n${v.displayName}\nOwner · Godfather · ${APP_NAME}™\n${sender.email}`,
         tags: ['owner-email-center', `sender-${v.displayName.toLowerCase()}`, `theme-${theme}`],
       }),
     });

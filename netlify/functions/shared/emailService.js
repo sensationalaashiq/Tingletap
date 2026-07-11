@@ -2,7 +2,7 @@
 // Env var: BREVO_API_KEY
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 const DEFAULT_SENDER = () => ({
-  name:  process.env.BREVO_SENDER_NAME  || 'TingleTap',
+  name:  process.env.BREVO_SENDER_NAME  || 'App',
   email: process.env.BREVO_SENDER_EMAIL || '',
 });
 
