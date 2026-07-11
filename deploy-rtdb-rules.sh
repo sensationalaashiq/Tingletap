@@ -11,7 +11,7 @@ PROJECT="${FIREBASE_PROJECT_ID:-your-project-id}"
 RULES_FILE="database.rules.json"
 
 echo "==================================="
-echo " TingleTap RTDB Rules Deployer"
+echo " App RTDB Rules Deployer"
 echo "==================================="
 
 # Try firebase CLI first

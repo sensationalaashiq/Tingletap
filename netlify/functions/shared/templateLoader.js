@@ -28,28 +28,44 @@ function getTemplatesDir() {
 const cache = new Map();
 
 /**
- * Load an HTML template file and return its content.
- * Tries multiple directory candidates and caches after first successful load.
+ * Load an HTML template file, substitute {{APP_NAME}} and any extra vars,
+ * then return the result. Raw HTML is cached; substitution runs every call
+ * so dynamic per-request variables (e.g. {{user_name}}) are always fresh.
  * @param {string} filename  e.g. 'PasswordReset.html'
- * @returns {Promise<string>} raw HTML string
+ * @param {Record<string,string>} [vars]  extra key→value replacements
+ * @returns {Promise<string>} HTML string with placeholders replaced
  */
-export async function loadTemplate(filename) {
-  if (cache.has(filename)) return cache.get(filename);
-
-  const candidates = getTemplatesDir();
-  let lastErr;
-
-  for (const dir of candidates) {
-    try {
-      const content = await readFile(join(dir, filename), 'utf8');
-      cache.set(filename, content);
-      return content;
-    } catch (err) {
-      lastErr = err;
+export async function loadTemplate(filename, vars = {}) {
+  let raw;
+  if (cache.has(filename)) {
+    raw = cache.get(filename);
+  } else {
+    const candidates = getTemplatesDir();
+    let lastErr;
+    for (const dir of candidates) {
+      try {
+        raw = await readFile(join(dir, filename), 'utf8');
+        cache.set(filename, raw);
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (raw === undefined) {
+      throw new Error(`Template "${filename}" not found. Tried: ${getTemplatesDir().join(', ')}. Last error: ${lastErr?.message}`);
     }
   }
 
-  throw new Error(`Template "${filename}" not found. Tried: ${candidates.join(', ')}. Last error: ${lastErr?.message}`);
+  // Built-in substitutions
+  const appName = process.env.BREVO_SENDER_NAME || 'App';
+  let html = raw.replace(/\{\{APP_NAME\}\}/g, appName);
+
+  // Caller-supplied substitutions (e.g. {{user_name}}, {{otp}})
+  for (const [key, val] of Object.entries(vars)) {
+    html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(val ?? ''));
+  }
+
+  return html;
 }
 
 /**

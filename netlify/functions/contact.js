@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Netlify Function: contact — fully self-contained, no shared imports.
 // POST body: { name, email, subject, message, route: 'support'|'administration' }
 import admin from 'firebase-admin';
@@ -11,8 +12,8 @@ const CORS = {
 
 // Owner inboxes — ownerInbox MUST match the username field in Firestore users collection
 const ROUTE_MAP = {
-  support:        { ownerInbox: 'VyomAI',  toEmail: 'support@tingletap.com', toName: 'VyomAI — TingleTap'  },
-  administration: { ownerInbox: 'Blurry',  toEmail: 'admin@tingletap.com',   toName: 'Blurry — TingleTap'  },
+  support:        { ownerInbox: 'VyomAI',  toEmail: 'support@tingletap.com', toName: `VyomAI — ${APP_NAME}`  },
+  administration: { ownerInbox: 'Blurry',  toEmail: 'admin@tingletap.com',   toName: `Blurry — ${APP_NAME}`  },
 };
 
 // ── Email themes (inline-style only — email-client safe, no SVG, no @keyframes) ──
@@ -115,7 +116,7 @@ async function sendViaBrevo({ to, toName, replyToEmail, replyToName, subject, ht
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap Contact Form', email: process.env.BREVO_SENDER_EMAIL || '' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to, name: toName }],
       replyTo:     { email: replyToEmail, name: replyToName },
       subject,
@@ -161,7 +162,7 @@ function buildContactHtml({ name, email, subject, message, route, date, theme })
 
   <!-- Header -->
   <tr><td style="background:${t.gradient};padding:28px 36px 24px;">
-    <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">TingleTap&trade; &middot; Contact Form &middot; ${esc(tag)}</p>
+    <p style="margin:0 0 6px;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">${APP_NAME}&trade; &middot; Contact Form &middot; ${esc(tag)}</p>
     <p style="margin:0 0 4px;color:#fff;font-size:20px;font-weight:800;">${esc(subject)}</p>
     <p style="margin:0;color:rgba(255,255,255,.75);font-size:12px;">${esc(date)}</p>
   </td></tr>
@@ -196,7 +197,7 @@ function buildContactHtml({ name, email, subject, message, route, date, theme })
   <!-- Footer -->
   <tr><td align="center" style="padding:16px 28px 10px;background:#faf8ff;">
     <p style="margin:0 0 10px;">${HEART}&nbsp;<span style="font-size:12px;font-weight:800;color:${t.accent};letter-spacing:.3px;">Developed by Adrashtra</span>&nbsp;<span style="font-size:12px;color:#d8b4fe;">&middot;</span>&nbsp;<span style="font-size:12px;font-weight:800;color:#db2777;">Loved by India</span>&nbsp;${HEART}</p>
-    <p style="margin:0 0 4px;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">TingleTap&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+    <p style="margin:0 0 4px;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">${APP_NAME}&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
   </td></tr>
 
   <!-- Bottom bar -->
@@ -259,7 +260,7 @@ export const handler = async (event) => {
   const emailId = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const date    = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
   const html    = buildContactHtml({ name, email, subject, message, route, date, theme });
-  const text    = `Contact Form · ${route === 'administration' ? 'Administration' : 'Support Team'}\n\nFrom: ${name} <${email}>\nDate: ${date}\n\n${message}\n\n---\nDeveloped by Adrashtra · Loved by India\n© 2026 TingleTap™`;
+  const text    = `Contact Form · ${route === 'administration' ? 'Administration' : 'Support Team'}\n\nFrom: ${name} <${email}>\nDate: ${date}\n\n${message}\n\n---\nDeveloped by Adrashtra · Loved by India\n© 2026 ${APP_NAME}™`;
 
   // ── Step 1: Firestore write (non-fatal) ──────────────────────────────────────
   let firestoreOk = false;

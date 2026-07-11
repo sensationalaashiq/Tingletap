@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Full diagnostic — tests every step individually and returns exact errors.
 // Usage:
 //   GET  /.netlify/functions/check-config
@@ -161,11 +162,11 @@ export const handler = async (event) => {
           method:  'POST',
           headers: { 'api-key': brevoKey, 'content-type': 'application/json' },
           body: JSON.stringify({
-            sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+            sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
             to:          [{ email: testEmail }],
-            subject:     '[TingleTap] Email Config Test',
-            htmlContent: `<h2 style="color:#7c3aed">TingleTap Email Working!</h2><p>If you see this, Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.</p>`,
-            textContent: `TingleTap Email Working! Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.`,
+            subject:     '[${APP_NAME}] Email Config Test',
+            htmlContent: `<h2 style="color:#7c3aed">${APP_NAME} Email Working!</h2><p>If you see this, Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.</p>`,
+            textContent: `${APP_NAME} Email Working! Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.`,
           }),
         });
         if (res.ok) {

@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone email test — zero shared-module dependencies.
 // Just open: https://tingletap.com/.netlify/functions/email-test?to=you@gmail.com
 export const handler = async (event) => {
@@ -11,11 +12,11 @@ export const handler = async (event) => {
   if (!to)  return { statusCode: 400, headers: h, body: JSON.stringify({ error: 'Add ?to=your@email.com in URL' }) };
 
   const payload = {
-    sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+    sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
     to:          [{ email: to }],
-    subject:     'TingleTap — Direct Email Test',
-    htmlContent: `<h2 style="color:#7c3aed">TingleTap Email Test</h2><p>Agar yeh email aayi hai toh Brevo working hai!</p><p>Sent from: ${process.env.BREVO_SENDER_EMAIL || 'configured sender'}</p>`,
-    textContent: 'TingleTap email test working! Brevo is configured correctly.',
+    subject:     '${APP_NAME} — Direct Email Test',
+    htmlContent: `<h2 style="color:#7c3aed">${APP_NAME} Email Test</h2><p>Agar yeh email aayi hai toh Brevo working hai!</p><p>Sent from: ${process.env.BREVO_SENDER_EMAIL || 'configured sender'}</p>`,
+    textContent: '${APP_NAME} email test working! Brevo is configured correctly.',
   };
 
   try {

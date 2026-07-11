@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone password reset sender — no shared imports, no file system, HTML inline.
 import admin from 'firebase-admin';
 
@@ -42,14 +43,14 @@ const PREMIUM_FOOTER = `
       </tr>
     </table>
     <p style="margin:0 0 4px;font-size:10.5px;color:#a78bca;">This is an automated security email. Please do not reply directly.</p>
-    <p style="margin:0;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">TingleTap&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+    <p style="margin:0;font-size:10.5px;color:#c4b5fd;">&copy; 2026 <strong style="color:#9333ea;">${APP_NAME}&trade;</strong> &middot; India's Premium Chat Community &middot; All rights reserved.</p>
   </td></tr>`;
 
 function buildResetHtml(name, email, link) {
   const n = String(name  || 'there').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const e = String(email || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const l = String(link  || '#');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TingleTap – Reset Your Password</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${APP_NAME} – Reset Your Password</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @keyframes bar-slide{0%{background-position:-300% center}100%{background-position:300% center}}
@@ -81,10 +82,10 @@ function buildResetHtml(name, email, link) {
   <tr><td align="center" style="padding:36px 32px 22px;background:linear-gradient(180deg,#faf8ff 0%,#f5f0ff 50%,#fff 100%);">
     <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;"><tr>
       <td style="padding-right:18px;vertical-align:middle;"><svg class="star-a" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
-      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(192,132,252,.12));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
+      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(192,132,252,.12));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
       <td style="padding-left:18px;vertical-align:middle;"><svg class="star-b" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
     </tr></table>
-    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;font-weight:700;">Password Reset</div>
   </td></tr>
   <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.22),transparent);"></div></td></tr>
@@ -108,7 +109,7 @@ function buildResetHtml(name, email, link) {
       </div>
     </td></tr></table>
     <h1 style="margin:0 0 10px;font-size:23px;font-weight:800;color:#2d1b4e;text-align:center;letter-spacing:-.4px;line-height:1.3;">Password Reset Request</h1>
-    <p style="margin:0 0 24px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.65;">We received a request to reset the password for your TingleTap account.</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.65;">We received a request to reset the password for your ${APP_NAME} account.</p>
     <p style="margin:0 0 7px;font-size:15px;color:#3d2565;font-weight:700;">Hi ${n},</p>
     <p style="margin:0 0 26px;font-size:14px;color:#6b5b8a;line-height:1.7;">Someone requested a password reset for the account associated with <strong style="color:#7c3aed;background:rgba(124,58,237,.07);padding:1px 6px;border-radius:6px;">${e}</strong>. If this was you, click the button below to set a new secure password.</p>
     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 26px;width:100%;"><tr><td align="center">
@@ -137,7 +138,7 @@ function buildResetHtml(name, email, link) {
   </td></tr>
   <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.16),transparent);"></div></td></tr>
   <tr><td align="center" style="padding:20px 32px 28px;">
-    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated security email from TingleTap. Please do not reply.</p>
+    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated security email from ${APP_NAME}. Please do not reply.</p>
     <p style="margin:0 0 10px;font-size:11px;color:#c4b5fd;line-height:1.55;">If the button above doesn't work, copy and paste this URL into your browser:</p>
     <p style="margin:0 0 18px;font-size:10px;color:#b09ed4;word-break:break-all;">${l}</p>
     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 12px;"><tr>
@@ -147,10 +148,10 @@ function buildResetHtml(name, email, link) {
     </tr></table>
     <div class="badge" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f5f0ff,#ede9fe);border-radius:24px;padding:7px 18px;border:1px solid rgba(139,92,246,.18);box-shadow:0 3px 12px rgba(124,58,237,.1);">
       <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
-      <span style="font-size:11.5px;font-weight:800;color:#7c3aed;letter-spacing:.05em;">TingleTap — Secure &amp; Premium</span>
+      <span style="font-size:11.5px;font-weight:800;color:#7c3aed;letter-spacing:.05em;">${APP_NAME} — Secure &amp; Premium</span>
       <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
     </div>
-    <p style="margin:14px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 TingleTap&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
+    <p style="margin:14px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 ${APP_NAME}&trade; &middot; India's Premium Chat Community &middot; All rights reserved.</p>
   </td></tr>
   <tr><td style="height:5px;padding:0;line-height:0;font-size:0;"><div class="bar" style="height:5px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#f472b6,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;"></div></td></tr>
 </table></td></tr></table>
@@ -164,7 +165,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -267,9 +268,9 @@ export const handler = async (event) => {
       try {
         await sendViaBrevo({
           to:      email,
-          subject: 'Reset Your TingleTap Password',
+          subject: 'Reset Your ${APP_NAME} Password',
           html:    buildResetHtml(displayName, email, resetUrl),
-          text:    `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
+          text:    `Hi ${displayName},\n\nReset your ${APP_NAME} password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n${APP_NAME} Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
         });
         console.log('[sendPasswordReset] ✓ Branded email sent via Brevo to:', email.replace(/(.{2}).+(@.+)/, '$1***$2'));
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };

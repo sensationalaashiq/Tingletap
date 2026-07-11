@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone email verification sender — no shared imports, no file system, HTML inline.
 // Falls back to Firebase Auth REST API if Admin SDK credentials are unavailable.
 import admin from 'firebase-admin';
@@ -28,7 +29,7 @@ function buildVerifyHtml(name, email, link) {
   const n = String(name  || 'there').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const e = String(email || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const l = String(link  || '#');
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TingleTap – Verify Your Email</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${APP_NAME} – Verify Your Email</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @keyframes bar-slide{0%{background-position:-300% center}100%{background-position:300% center}}
@@ -56,10 +57,10 @@ function buildVerifyHtml(name, email, link) {
   <tr><td align="center" style="padding:36px 32px 22px;background:linear-gradient(180deg,#faf8ff 0%,#f5f0ff 50%,#fff 100%);">
     <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;"><tr>
       <td style="padding-right:18px;vertical-align:middle;"><svg class="star-a" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
-      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(192,132,252,.15));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
+      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(192,132,252,.15));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
       <td style="padding-left:18px;vertical-align:middle;"><svg class="star-b" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
     </tr></table>
-    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;font-weight:700;">Email Verification</div>
   </td></tr>
   <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.22),transparent);"></div></td></tr>
@@ -82,9 +83,9 @@ function buildVerifyHtml(name, email, link) {
       </div>
     </td></tr></table>
     <h1 style="margin:0 0 10px;font-size:23px;font-weight:800;color:#2d1b4e;text-align:center;letter-spacing:-.4px;line-height:1.3;">Confirm Your Email Address</h1>
-    <p style="margin:0 0 24px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.65;">You're one click away from unlocking your full TingleTap experience.</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.65;">You're one click away from unlocking your full ${APP_NAME} experience.</p>
     <p style="margin:0 0 7px;font-size:15px;color:#3d2565;font-weight:700;">Hi ${n},</p>
-    <p style="margin:0 0 26px;font-size:14px;color:#6b5b8a;line-height:1.7;">We received a request to verify the email address <strong style="color:#7c3aed;background:rgba(124,58,237,.07);padding:1px 6px;border-radius:6px;">${e}</strong> for your TingleTap account. Click the button below to confirm your address and fully activate your account.</p>
+    <p style="margin:0 0 26px;font-size:14px;color:#6b5b8a;line-height:1.7;">We received a request to verify the email address <strong style="color:#7c3aed;background:rgba(124,58,237,.07);padding:1px 6px;border-radius:6px;">${e}</strong> for your ${APP_NAME} account. Click the button below to confirm your address and fully activate your account.</p>
     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 26px;width:100%;"><tr><td align="center">
       <a href="${l}" target="_blank" class="cta-btn" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 55%,#c084fc 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:17px 40px;border-radius:16px;box-shadow:0 10px 32px rgba(109,40,217,.38),0 2px 8px rgba(109,40,217,.2);letter-spacing:.3px;width:100%;box-sizing:border-box;text-align:center;">&#10003;&nbsp; Verify My Email Address</a>
     </td></tr></table>
@@ -112,21 +113,21 @@ function buildVerifyHtml(name, email, link) {
     <div style="background:rgba(109,40,217,.04);border:1px solid rgba(139,92,246,.15);border-radius:12px;padding:14px 18px;">
       <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
         <td width="36" style="vertical-align:top;padding-top:1px;"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ede9fe,#f5f0ff);display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#9333ea" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="#9333ea" stroke-width="1.8" stroke-linecap="round"/></svg></div></td>
-        <td style="padding-left:10px;"><p style="margin:0;font-size:13px;color:#5b21b6;font-weight:700;">Link expires in 24 hours</p><p style="margin:3px 0 0;font-size:12px;color:#7e6ca8;line-height:1.55;">If you didn't create a TingleTap account, you can safely ignore this email.</p></td>
+        <td style="padding-left:10px;"><p style="margin:0;font-size:13px;color:#5b21b6;font-weight:700;">Link expires in 24 hours</p><p style="margin:3px 0 0;font-size:12px;color:#7e6ca8;line-height:1.55;">If you didn't create a ${APP_NAME} account, you can safely ignore this email.</p></td>
       </tr></table>
     </div>
   </td></tr>
   <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.18),transparent);"></div></td></tr>
   <tr><td align="center" style="padding:20px 32px 28px;">
-    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated email from TingleTap. Please do not reply.</p>
+    <p style="margin:0 0 6px;font-size:12px;color:#a78bca;">This is an automated email from ${APP_NAME}. Please do not reply.</p>
     <p style="margin:0 0 10px;font-size:11px;color:#c4b5fd;line-height:1.55;">If the button above doesn't work, copy and paste this URL into your browser:</p>
     <p style="margin:0 0 18px;font-size:10px;color:#b09ed4;word-break:break-all;">${l}</p>
     <div class="badge" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f5f0ff,#ede9fe);border-radius:24px;padding:7px 18px;border:1px solid rgba(139,92,246,.18);box-shadow:0 3px 12px rgba(124,58,237,.1);">
       <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
-      <span style="font-size:11.5px;font-weight:800;color:#7c3aed;letter-spacing:.08em;">TingleTap — India's Premium Chat Community</span>
+      <span style="font-size:11.5px;font-weight:800;color:#7c3aed;letter-spacing:.08em;">${APP_NAME} — India's Premium Chat Community</span>
       <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc"/></svg>
     </div>
-    <p style="margin:14px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 TingleTap&trade; &middot; All rights reserved.</p>
+    <p style="margin:14px 0 0;font-size:10px;color:#d4c5f0;">&copy; 2026 ${APP_NAME}&trade; &middot; All rights reserved.</p>
   </td></tr>
   <tr><td style="height:5px;padding:0;line-height:0;font-size:0;"><div class="bar" style="height:5px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#f472b6,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;"></div></td></tr>
 </table></td></tr></table>
@@ -140,7 +141,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -216,9 +217,9 @@ export const handler = async (event) => {
       try {
         await sendViaBrevo({
           to:      email,
-          subject: 'Verify Your TingleTap Email Address',
+          subject: 'Verify Your ${APP_NAME} Email Address',
           html:    buildVerifyHtml(displayName, email, verifyUrl),
-          text:    `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
+          text:    `Hi ${displayName},\n\nPlease verify your ${APP_NAME} email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a ${APP_NAME} account, ignore this email.\n\n${APP_NAME} Team\n${process.env.BREVO_SENDER_EMAIL || ''}`,
         });
         console.log('[sendVerification] ✓ Branded email sent via Brevo');
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };

@@ -128,3 +128,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*.local/
+
+# Replit internal agent files — never commit to repo
+.agents/
+
+# Uploaded zip archives
+zipFile.zip

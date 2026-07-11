@@ -1,4 +1,5 @@
-// TingleTap Owner Email Center — API Server (port 5001)
+// ${APP_NAME} Owner Email Center — API Server (port 5001)
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Runs alongside Vite in development. Proxied by Vite at /api/*.
 import express from 'express';
 import cors    from 'cors';
@@ -27,8 +28,8 @@ try {
 
 // ── Owner → sender mapping (server-only, never exposed to frontend) ───────────
 const OWNER_MAP = {
-  'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — TingleTap' },
-  'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — TingleTap'  },
+  'VyomAI': { email: 'support@tingletap.com', name: 'VyomAI — ${APP_NAME}' },
+  'Blurry':  { email: 'admin@tingletap.com',   name: 'Blurry — ${APP_NAME}'  },
 };
 
 app.use(cors({ origin: true }));
@@ -102,7 +103,7 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td>
-          <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">TingleTap™ · Official Communication</div>
+          <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">${APP_NAME}™ · Official Communication</div>
           <div style="color:#fff;font-size:21px;font-weight:800;line-height:1.3;">${subject}</div>
         </td>
         <td align="right" style="padding-left:16px;white-space:nowrap;">
@@ -116,20 +117,20 @@ function buildEmailHtml({ subject, message, senderName, senderEmail, recipientNa
 
   <!-- Body -->
   <div style="padding:36px 40px 32px;">
-    <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.7;">Dear <strong style="color:#1e1b4b;">${recipientName || 'TingleTap Member'}</strong>,</p>
+    <p style="margin:0 0 18px;color:#374151;font-size:15px;line-height:1.7;">Dear <strong style="color:#1e1b4b;">${recipientName || '${APP_NAME} Member'}</strong>,</p>
     <div style="background:#fafafa;border-left:3px solid #a855f7;border-radius:0 10px 10px 0;padding:18px 22px;margin-bottom:28px;color:#374151;font-size:15px;line-height:1.85;">${escapedMsg}</div>
     <!-- Signature -->
     <div style="border-top:1px solid #f3f4f6;padding-top:22px;">
       <p style="margin:0 0 3px;color:#9ca3af;font-size:12px;">Regards,</p>
       <p style="margin:0 0 2px;color:#1e1b4b;font-size:15px;font-weight:700;">${senderName}</p>
-      <p style="margin:0 0 2px;color:#7c3aed;font-size:12px;font-weight:600;letter-spacing:.02em;">Owner · Godfather · TingleTap™</p>
+      <p style="margin:0 0 2px;color:#7c3aed;font-size:12px;font-weight:600;letter-spacing:.02em;">Owner · Godfather · ${APP_NAME}™</p>
       <a href="mailto:${senderEmail}" style="color:#a855f7;font-size:12px;text-decoration:none;">${senderEmail}</a>
     </div>
   </div>
 
   <!-- Footer -->
   <div style="background:#fafafa;border-top:1px solid #f3f4f6;padding:16px 40px;text-align:center;">
-    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 TingleTap™ · India's Premium Chat Community · All rights reserved.</p>
+    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 ${APP_NAME}™ · India's Premium Chat Community · All rights reserved.</p>
   </div>
 </div>
 </body>
@@ -185,12 +186,12 @@ app.post('/api/send-email', async (req, res) => {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
       body: JSON.stringify({
-        sender:    { name: `${v.displayName} — TingleTap`, email: sender.email },
-        to:        [{ email: recipientEmail, name: recipientName || 'TingleTap Member' }],
-        replyTo:   { email: sender.email, name: `${v.displayName} — TingleTap` },
+        sender:    { name: `${v.displayName} — ${APP_NAME}`, email: sender.email },
+        to:        [{ email: recipientEmail, name: recipientName || '${APP_NAME} Member' }],
+        replyTo:   { email: sender.email, name: `${v.displayName} — ${APP_NAME}` },
         subject:   subject.trim(),
         htmlContent: html,
-        textContent: `${subject.trim()}\n\nDear ${recipientName || 'TingleTap Member'},\n\n${message.trim()}\n\nRegards,\n${v.displayName}\nOwner · Godfather · TingleTap™\n${sender.email}`,
+        textContent: `${subject.trim()}\n\nDear ${recipientName || '${APP_NAME} Member'},\n\n${message.trim()}\n\nRegards,\n${v.displayName}\nOwner · Godfather · ${APP_NAME}™\n${sender.email}`,
         tags: ['owner-email-center', `sender-${v.displayName.toLowerCase()}`],
       }),
     });
@@ -267,7 +268,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalBody, sender
 <body style="margin:0;padding:0;background:#f3f0ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:620px;margin:40px auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 48px rgba(124,58,237,.1);">
   <div style="background:linear-gradient(135deg,#7c3aed,#a855f7,#6366f1);padding:32px 36px 26px;">
-    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">TingleTap™ · Official Reply</div>
+    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">${APP_NAME}™ · Official Reply</div>
     <div style="color:#fff;font-size:20px;font-weight:800;">${esc2(subject)}</div>
   </div>
   <div style="padding:32px 36px 28px;">
@@ -275,7 +276,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalBody, sender
     <div style="padding-top:8px;border-top:1px solid #f3f4f6;">
       <p style="margin:0 0 3px;color:#9ca3af;font-size:12px;">Regards,</p>
       <p style="margin:0 0 2px;color:#1e1b4b;font-size:15px;font-weight:700;">${esc2(senderName)}</p>
-      <p style="margin:0 0 2px;color:#7c3aed;font-size:12px;font-weight:600;">Owner · Godfather · TingleTap™</p>
+      <p style="margin:0 0 2px;color:#7c3aed;font-size:12px;font-weight:600;">Owner · Godfather · ${APP_NAME}™</p>
       <a href="mailto:${esc2(senderEmail)}" style="color:#a855f7;font-size:12px;">${esc2(senderEmail)}</a>
     </div>
     ${originalBody?`<div style="margin-top:22px;padding:14px 16px;background:#f9fafb;border-radius:8px;border:1px solid #f3f4f6;">
@@ -284,7 +285,7 @@ function buildReplyHtml({ subject, replyBody, originalFrom, originalBody, sender
     </div>`:''}
   </div>
   <div style="background:#fafafa;border-top:1px solid #f3f4f6;padding:14px 36px;text-align:center;">
-    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 TingleTap™ · India's Premium Chat Community</p>
+    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 ${APP_NAME}™ · India's Premium Chat Community</p>
   </div>
 </div></body></html>`;
 }
@@ -345,11 +346,11 @@ app.post('/api/email-action', async (req, res) => {
       headers: { 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
       body: JSON.stringify({
         sender:      { name: sender.name, email: sender.email },
-        to:          [{ email: toEmail, name: toName || 'TingleTap Member' }],
+        to:          [{ email: toEmail, name: toName || '${APP_NAME} Member' }],
         replyTo:     { email: sender.email, name: sender.name },
         subject,
         htmlContent: html,
-        textContent: `${replyBody.trim()}\n\n---\n${v.displayName} · Owner · TingleTap™\n${sender.email}`,
+        textContent: `${replyBody.trim()}\n\n---\n${v.displayName} · Owner · ${APP_NAME}™\n${sender.email}`,
         tags:        ['owner-email-center', action],
       }),
     });
@@ -405,7 +406,7 @@ function _rateLimit(key, max, windowMs) {
 async function _sendViaBrevo({ to, subject, html, text, sender, replyTo, tags = [] }) {
   if (!BREVO_API_KEY) throw new Error('BREVO_API_KEY not set');
   const payload = {
-    sender:      sender || { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+    sender:      sender || { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
     to:          Array.isArray(to) ? to : [{ email: to }],
     subject,
     htmlContent: html,
@@ -439,18 +440,18 @@ app.post('/api/sendOTP', async (req, res) => {
   if (!rl.ok) return res.status(429).set('Retry-After', String(rl.retryAfter)).json({ error: 'Too many requests. Please wait a few minutes.' });
 
   const n = userName || email.split('@')[0];
-  const otpHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Verify Your Email</title></head>
+  const otpHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${APP_NAME} – Verify Your Email</title></head>
 <body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
   <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
   <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
-    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
-    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Email Verification</div>
   </div>
   <div style="padding:24px 36px 28px;">
     <h2 style="color:#1e0a3c;font-size:22px;font-weight:800;text-align:center;margin:0 0 10px;">Verify Your Email Address</h2>
-    <p style="color:#5c4080;font-size:14px;text-align:center;margin:0 0 24px;line-height:1.65;">Hello <strong style="color:#6d28d9;">${String(n).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong>, welcome to <strong style="color:#9333ea;">TingleTap</strong>!<br>Enter the one-time code below to complete sign-up.</p>
+    <p style="color:#5c4080;font-size:14px;text-align:center;margin:0 0 24px;line-height:1.65;">Hello <strong style="color:#6d28d9;">${String(n).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong>, welcome to <strong style="color:#9333ea;">${APP_NAME}</strong>!<br>Enter the one-time code below to complete sign-up.</p>
     <div style="background:linear-gradient(135deg,#f8f5ff,#f0ebff);border:1.5px solid rgba(109,40,217,.22);border-radius:18px;padding:22px 20px;margin-bottom:16px;text-align:center;">
       <div style="color:#a78bca;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">Your One-Time Code</div>
       <div style="background:#fff;border:2px solid rgba(109,40,217,.28);border-radius:14px;padding:14px 12px;display:inline-block;min-width:200px;">
@@ -465,9 +466,9 @@ app.post('/api/sendOTP', async (req, res) => {
 
   try {
     await _sendViaBrevo({
-      to: email, subject: `${otp} — Your TingleTap Verification Code`,
+      to: email, subject: `${otp} — Your ${APP_NAME} Verification Code`,
       html: otpHtml,
-      text: `Hi ${n},\n\nYour TingleTap verification code is: ${otp}\n\nExpires in 10 minutes. If you did not request this, ignore this email.\n\nTingleTap Team`,
+      text: `Hi ${n},\n\nYour ${APP_NAME} verification code is: ${otp}\n\nExpires in 10 minutes. If you did not request this, ignore this email.\n\n${APP_NAME} Team`,
       tags: ['otp-verification'],
     });
     console.log(`[sendOTP] ✓ OTP sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
@@ -520,18 +521,18 @@ app.post('/api/sendPasswordReset', async (req, res) => {
   const eHtml = String(email).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nHtml = String(displayName).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  const resetHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Reset Your Password</title></head>
+  const resetHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${APP_NAME} – Reset Your Password</title></head>
 <body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
   <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
   <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
-    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
-    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Password Reset</div>
   </div>
   <div style="padding:24px 36px 28px;">
     <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#2d1b4e;text-align:center;">Password Reset Request</h1>
-    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">We received a request to reset the password for your TingleTap account.</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">We received a request to reset the password for your ${APP_NAME} account.</p>
     <p style="margin:0 0 6px;font-size:15px;color:#3d2565;font-weight:600;">Hi ${nHtml},</p>
     <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">Someone requested a password reset for the account associated with <strong style="color:#7c3aed;">${eHtml}</strong>. Click the button below to create a new password.</p>
     <div style="text-align:center;margin-bottom:22px;">
@@ -551,9 +552,9 @@ app.post('/api/sendPasswordReset', async (req, res) => {
 
   try {
     await _sendViaBrevo({
-      to: email, subject: 'Reset Your TingleTap Password',
+      to: email, subject: 'Reset Your ${APP_NAME} Password',
       html: resetHtml,
-      text: `Hi ${displayName},\n\nReset your TingleTap password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\nTingleTap Team`,
+      text: `Hi ${displayName},\n\nReset your ${APP_NAME} password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n${APP_NAME} Team`,
       tags: ['password-reset'],
     });
     console.log(`[sendPasswordReset] ✓ Reset email sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
@@ -603,26 +604,26 @@ app.post('/api/sendVerification', async (req, res) => {
   const eHtml = String(email).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nHtml = String(displayName).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  const verifyHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>TingleTap – Verify Your Email</title></head>
+  const verifyHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${APP_NAME} – Verify Your Email</title></head>
 <body style="margin:0;padding:0;background:#ede9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:540px;margin:40px auto;background:#fff;border-radius:22px;border:1px solid rgba(139,92,246,.18);box-shadow:0 16px 56px rgba(109,40,217,.1);overflow:hidden;">
   <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
   <div style="padding:32px 36px 10px;text-align:center;background:linear-gradient(180deg,#faf8ff,#fff);">
-    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
-    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <img src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="80" height="80" style="border-radius:18px;display:block;margin:0 auto 10px;"/>
+    <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:3px;">Email Verification</div>
   </div>
   <div style="padding:24px 36px 28px;">
     <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#2d1b4e;text-align:center;">Verify Your Email Address</h1>
-    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">You're just one click away from joining TingleTap.</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#7e6ca8;text-align:center;line-height:1.6;">You're just one click away from joining ${APP_NAME}.</p>
     <p style="margin:0 0 6px;font-size:15px;color:#3d2565;font-weight:600;">Hi ${nHtml},</p>
-    <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">We received a request to verify the email address <strong style="color:#7c3aed;">${eHtml}</strong> for your TingleTap account. Click the button below to confirm your address.</p>
+    <p style="margin:0 0 22px;font-size:14px;color:#6b5b8a;line-height:1.65;">We received a request to verify the email address <strong style="color:#7c3aed;">${eHtml}</strong> for your ${APP_NAME} account. Click the button below to confirm your address.</p>
     <div style="text-align:center;margin-bottom:22px;">
       <a href="${verifyUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#9333ea 50%,#c084fc 100%);color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 36px;border-radius:14px;box-shadow:0 8px 28px rgba(109,40,217,.35);">Verify My Email →</a>
     </div>
     <div style="background:rgba(109,40,217,.05);border:1px solid rgba(139,92,246,.15);border-radius:10px;padding:12px 16px;">
       <p style="margin:0;font-size:13px;color:#5b21b6;font-weight:600;">Link expires in 24 hours</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#7e6ca8;">If you didn't create a TingleTap account, you can safely ignore this email.</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#7e6ca8;">If you didn't create a ${APP_NAME} account, you can safely ignore this email.</p>
     </div>
   </div>
   <div style="height:4px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#c084fc,#9333ea,#6d28d9);"></div>
@@ -630,9 +631,9 @@ app.post('/api/sendVerification', async (req, res) => {
 
   try {
     await _sendViaBrevo({
-      to: email, subject: 'Verify Your TingleTap Email Address',
+      to: email, subject: 'Verify Your ${APP_NAME} Email Address',
       html: verifyHtml,
-      text: `Hi ${displayName},\n\nPlease verify your TingleTap email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a TingleTap account, ignore this email.\n\nTingleTap Team`,
+      text: `Hi ${displayName},\n\nPlease verify your ${APP_NAME} email:\n${verifyUrl}\n\nExpires in 24 hours. If you didn't create a ${APP_NAME} account, ignore this email.\n\n${APP_NAME} Team`,
       tags: ['email-verification'],
     });
     console.log(`[sendVerification] ✓ Verification email sent to ${email.replace(/(.{2}).+(@.+)/, '$1***$2')}`);
@@ -645,8 +646,8 @@ app.post('/api/sendVerification', async (req, res) => {
 
 // ── POST /api/contact ──────────────────────────────────────────────────────────
 const CONTACT_ROUTE_MAP = {
-  support:        { ownerInbox: 'VyomAI', toEmail: 'support@tingletap.com', toName: 'VyomAI — TingleTap' },
-  administration: { ownerInbox: 'Blurry', toEmail: 'admin@tingletap.com',   toName: 'Blurry — TingleTap'  },
+  support:        { ownerInbox: 'VyomAI', toEmail: 'support@tingletap.com', toName: 'VyomAI — ${APP_NAME}' },
+  administration: { ownerInbox: 'Blurry', toEmail: 'admin@tingletap.com',   toName: 'Blurry — ${APP_NAME}'  },
 };
 
 app.post('/api/contact', async (req, res) => {
@@ -676,7 +677,7 @@ app.post('/api/contact', async (req, res) => {
 <body style="margin:0;padding:0;background:#f3f0ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:620px;margin:40px auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 48px rgba(124,58,237,.1);">
   <div style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 55%,#6366f1 100%);padding:32px 36px 26px;">
-    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">TingleTap™ · Contact Form · ${escH(tag)}</div>
+    <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">${APP_NAME}™ · Contact Form · ${escH(tag)}</div>
     <div style="color:#fff;font-size:20px;font-weight:800;">${escH(subject)}</div>
     <div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:4px;">${escH(date)}</div>
   </div>
@@ -694,7 +695,7 @@ app.post('/api/contact', async (req, res) => {
     </div>
   </div>
   <div style="background:#fafafa;border-top:1px solid #f3f4f6;padding:14px 36px;text-align:center;">
-    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 TingleTap™ · India's Premium Chat Community</p>
+    <p style="margin:0;color:#9ca3af;font-size:11px;">© 2026 ${APP_NAME}™ · India's Premium Chat Community</p>
   </div>
 </div></body></html>`;
 
@@ -724,7 +725,7 @@ app.post('/api/contact', async (req, res) => {
   // Send Brevo notification email to owner inbox
   try {
     await _sendViaBrevo({
-      sender:  { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+      sender:  { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:      [{ email: target.toEmail, name: target.toName }],
       replyTo: { email, name },
       subject: `[Contact · ${route === 'administration' ? 'Admin' : 'Support'}] ${subject}`,
@@ -874,7 +875,7 @@ app.post('/api/post-automod-notice', async (req, res) => {
 });
 
 // ── GET /api/health ────────────────────────────────────────────────────────────
-app.get('/api/health', (_, res) => res.json({ ok: true, service: 'TingleTap Email Center API', port: PORT }));
+app.get('/api/health', (_, res) => res.json({ ok: true, service: '${APP_NAME} Email Center API', port: PORT }));
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[EmailCenter] API server running on port ${PORT}`);

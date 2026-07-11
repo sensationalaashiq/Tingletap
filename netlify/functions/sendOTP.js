@@ -1,3 +1,4 @@
+const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone OTP sender — no shared imports, no file system.
 // All HTML inlined. Direct Brevo API call.
 
@@ -10,7 +11,7 @@ const CORS = {
 function buildOTPHtml(name, otp) {
   const n = String(name || 'there').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const o = String(otp);
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TingleTap – Your Verification Code</title>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${APP_NAME} – Your Verification Code</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @keyframes bar-slide{0%{background-position:-300% center}100%{background-position:300% center}}
@@ -43,10 +44,10 @@ function buildOTPHtml(name, otp) {
   <tr><td align="center" style="padding:36px 32px 22px;background:linear-gradient(180deg,#faf8ff 0%,#f5f0ff 50%,#fff 100%);">
     <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;"><tr>
       <td style="padding-right:18px;vertical-align:middle;"><svg class="star-a" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
-      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(192,132,252,.12));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="TingleTap" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
+      <td><div style="position:relative;display:inline-block;"><div style="position:absolute;inset:-4px;border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(192,132,252,.12));filter:blur(6px);"></div><img class="logo-img" src="https://res.cloudinary.com/dbqnocfoq/image/upload/f_auto,q_auto,w_300/tingletap-logo_irf2a8.png" alt="${APP_NAME}" width="84" height="84" style="display:block;width:84px;height:84px;border-radius:20px;border:0;position:relative;box-shadow:0 8px 28px rgba(124,58,237,.25);"/></div></td>
       <td style="padding-left:18px;vertical-align:middle;"><svg class="star-b" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l2.4 7H22l-6.2 4.5 2.4 7.5L12 17l-6.2 4 2.4-7.5L2 9h7.6z" fill="#c084fc" stroke="#a855f7" stroke-width="1"/></svg></td>
     </tr></table>
-    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TingleTap</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:.2px;margin:0 0 5px;background:linear-gradient(135deg,#5b21b6,#9333ea,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${APP_NAME}</div>
     <div style="color:#a78bca;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;font-weight:700;">Email Verification Code</div>
   </td></tr>
   <tr><td style="padding:0 32px;"><div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.22),transparent);"></div></td></tr>
@@ -67,7 +68,7 @@ function buildOTPHtml(name, otp) {
       </div>
     </td></tr></table>
     <h2 style="color:#1e0a3c;font-size:22px;font-weight:800;text-align:center;margin:0 0 10px;letter-spacing:-.3px;line-height:1.3;">Your Verification Code</h2>
-    <p style="color:#5c4080;font-size:14px;text-align:center;margin:0 0 26px;line-height:1.65;">Hi <strong style="color:#6d28d9;">${n}</strong>, welcome to <strong style="color:#9333ea;">TingleTap</strong>!<br>Use the code below to complete your sign-up.</p>
+    <p style="color:#5c4080;font-size:14px;text-align:center;margin:0 0 26px;line-height:1.65;">Hi <strong style="color:#6d28d9;">${n}</strong>, welcome to <strong style="color:#9333ea;">${APP_NAME}</strong>!<br>Use the code below to complete your sign-up.</p>
     <div style="background:linear-gradient(135deg,#f8f5ff,#f0ebff);border:1.5px solid rgba(109,40,217,.2);border-radius:20px;padding:26px 22px;margin-bottom:8px;overflow:hidden;box-sizing:border-box;">
       <div style="color:#a78bca;font-size:10px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;text-align:center;margin-bottom:16px;">One-Time Code — Valid 10 Minutes</div>
       <div class="otp-wrap" style="background:#ffffff;border:2px solid rgba(109,40,217,.25);border-radius:16px;padding:18px 14px;text-align:center;box-shadow:0 8px 28px rgba(109,40,217,.12),inset 0 1px 3px rgba(109,40,217,.05);">
@@ -82,7 +83,7 @@ function buildOTPHtml(name, otp) {
         <td style="vertical-align:middle;"><div style="font-size:13px;color:#dc2626;font-weight:700;">Expires in 10 minutes</div><div style="font-size:11px;color:#f87171;margin-top:1px;">Do not share this code with anyone</div></td>
       </tr></table>
     </div>
-    <p style="color:#a78bca;font-size:12px;text-align:center;margin:16px 0 0;line-height:1.65;">Enter this code on the TingleTap sign-up page to verify your address.<br>Didn't request this? You can safely ignore this email.</p>
+    <p style="color:#a78bca;font-size:12px;text-align:center;margin:16px 0 0;line-height:1.65;">Enter this code on the ${APP_NAME} sign-up page to verify your address.<br>Didn't request this? You can safely ignore this email.</p>
     <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.2),transparent);margin:26px 0 22px;"></div>
     <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background:linear-gradient(135deg,#faf8ff,#f5f0ff);border:1px solid rgba(139,92,246,.16);border-radius:16px;overflow:hidden;">
       <tr>
@@ -90,7 +91,7 @@ function buildOTPHtml(name, otp) {
         <td style="padding:16px 18px;">
           <table cellpadding="0" cellspacing="0" border="0"><tr>
             <td style="padding-right:12px;vertical-align:top;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z" fill="rgba(109,40,217,.1)" stroke="#9333ea" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="15" y1="5" x2="19" y2="9" stroke="#c084fc" stroke-width="1.5" stroke-linecap="round"/></svg></td>
-            <td style="vertical-align:top;"><div style="font-size:10px;color:#a78bca;font-weight:600;letter-spacing:.5px;margin-bottom:3px;">SENT WITH CARE BY</div><div style="font-size:15px;font-weight:800;color:#4c1d95;">TingleTap</div><div style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:2px;">Alerts@tingletap.com</div></td>
+            <td style="vertical-align:top;"><div style="font-size:10px;color:#a78bca;font-weight:600;letter-spacing:.5px;margin-bottom:3px;">SENT WITH CARE BY</div><div style="font-size:15px;font-weight:800;color:#4c1d95;">${APP_NAME}</div><div style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:2px;">Alerts@tingletap.com</div></td>
             <td style="padding-left:14px;vertical-align:middle;"><svg class="heart" width="22" height="22" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#fda4af" stroke="#f43f5e" stroke-width="1.4"/></svg></td>
           </tr></table>
         </td>
@@ -104,7 +105,7 @@ function buildOTPHtml(name, otp) {
       <td style="vertical-align:middle;"><span style="font-size:11.5px;font-weight:800;color:#7c3aed;">Developed by Adrashtra</span><span style="font-size:11.5px;color:#d8b4fe;margin:0 6px;">&middot;</span><span style="font-size:11.5px;font-weight:800;color:#db2777;">Loved by India</span></td>
       <td style="padding-left:8px;vertical-align:middle;"><svg class="heart-b" width="16" height="16" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5A5 5 0 0 1 12 6a5 5 0 0 1 9 2.5C21 14.5 12 21 12 21z" fill="#f43f5e" stroke="#e11d48" stroke-width="1.3"/></svg></td>
     </tr></table>
-    <p style="color:#d0c6eb;font-size:10.5px;margin:0;">&copy; 2026 TingleTap&trade; &middot; All rights reserved.</p>
+    <p style="color:#d0c6eb;font-size:10.5px;margin:0;">&copy; 2026 ${APP_NAME}&trade; &middot; All rights reserved.</p>
   </td></tr>
   <tr><td style="height:5px;padding:0;line-height:0;font-size:0;"><div class="bar" style="height:5px;background:linear-gradient(90deg,#6d28d9,#9333ea,#c084fc,#e879f9,#f472b6,#e879f9,#c084fc,#9333ea,#6d28d9);background-size:300% 100%;"></div></td></tr>
 </table>
@@ -119,7 +120,7 @@ async function sendViaBrevo({ to, subject, html, text }) {
     method:  'POST',
     headers: { 'api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      sender:      { name: process.env.BREVO_SENDER_NAME || 'TingleTap', email: process.env.BREVO_SENDER_EMAIL || '' },
+      sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
       to:          [{ email: to }],
       subject,
       htmlContent: html,
@@ -171,9 +172,9 @@ export const handler = async (event) => {
   try {
     await sendViaBrevo({
       to:      email,
-      subject: `${otp} — Your TingleTap Verification Code`,
+      subject: `${otp} — Your ${APP_NAME} Verification Code`,
       html:    buildOTPHtml(displayName, otp),
-      text:    `Hi ${displayName},\n\nYour TingleTap verification code is: ${otp}\n\nExpires in 10 minutes. If you did not request this, ignore this email.\n\nDeveloped by Adrashtra · Loved by India\n© 2026 TingleTap™ · India's Premium Chat Community`,
+      text:    `Hi ${displayName},\n\nYour ${APP_NAME} verification code is: ${otp}\n\nExpires in 10 minutes. If you did not request this, ignore this email.\n\nDeveloped by Adrashtra · Loved by India\n© 2026 ${APP_NAME}™ · India's Premium Chat Community`,
     });
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (err) {
