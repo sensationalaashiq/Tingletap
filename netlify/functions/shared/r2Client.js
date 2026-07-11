@@ -54,17 +54,23 @@ function getClient() {
 
 // ── Bucket name helpers ────────────────────────────────────────────────────────
 
-/** Public bucket — reads R2_Public_Bucket with R2_PUBLIC_BUCKET_NAME as fallback. */
+/** Public bucket — tries all common naming variants set in Netlify. */
 export function getPublicBucketName() {
-  const name = process.env.R2_Public_Bucket || process.env.R2_PUBLIC_BUCKET_NAME;
-  if (!name) throw new Error('R2_Public_Bucket env var not set.');
+  const name =
+    process.env.R2_PUBLIC_BUCKET      ||   // all-caps (Netlify standard)
+    process.env.R2_Public_Bucket      ||   // camelCase variant
+    process.env.R2_PUBLIC_BUCKET_NAME;     // legacy fallback
+  if (!name) throw new Error('Public R2 bucket env var not set (R2_PUBLIC_BUCKET).');
   return name;
 }
 
-/** Private bucket — reads R2_Private_Bucket with R2_PRIVATE_BUCKET_NAME as fallback. */
+/** Private bucket — tries all common naming variants set in Netlify. */
 export function getPrivateBucketName() {
-  const name = process.env.R2_Private_Bucket || process.env.R2_PRIVATE_BUCKET_NAME;
-  if (!name) throw new Error('R2_Private_Bucket env var not set.');
+  const name =
+    process.env.R2_PRIVATE_BUCKET      ||  // all-caps (Netlify standard)
+    process.env.R2_Private_Bucket      ||  // camelCase variant
+    process.env.R2_PRIVATE_BUCKET_NAME;    // legacy fallback
+  if (!name) throw new Error('Private R2 bucket env var not set (R2_PRIVATE_BUCKET).');
   return name;
 }
 
