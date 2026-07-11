@@ -56,8 +56,17 @@ const extractDeviceBrand = (model) => {
   if (/^itel/i.test(model)) return 'itel';
   if (/^Google/i.test(model)) return 'Google';
   if (/Android Device|Desktop Device|Mobile Device|Tablet Device/i.test(model)) return model;
+  // Xiaomi/Redmi/POCO global model codes carry no brand prefix in either the
+  // User-Agent or Client Hints "model" value (unlike Samsung's "SM-", OPPO's
+  // "CPH", etc.) — they're just a raw alphanumeric code, almost always
+  // starting with digits (e.g. "23129RN4CG", "M2101K6G", "2201117TG"). Catch
+  // that shape before falling through to a raw/confusing string like a bare
+  // model code or the literal word "Model".
+  if (/^M?\d{4,}[A-Z0-9]*$/i.test(model.trim())) return 'Xiaomi';
   const first = model.split(/[\s(]/)[0];
-  return first || model;
+  // Never surface a bare "Model"/"Unknown" token as if it were a brand name.
+  if (!first || /^model$/i.test(first) || /^unknown$/i.test(first)) return 'Unknown';
+  return first;
 };
 
 const AdminPanelPage = () => {
@@ -3820,23 +3829,36 @@ const AdminPanelPage = () => {
               VIOLATIONS DASHBOARD TAB
           ═══════════════════════════════════════════════════════ */}
           {activeTab === 'violations' && (() => {
+            // NOTE: keys here MUST match the lowercase type/action strings the
+            // v5.0 TingleBot engine (tinglebotAutoMod.js) actually writes to
+            // modLogs. They previously used old uppercase v-1 names (SPAM,
+            // PROFANITY, WARN, MUTE, …) which no longer matched anything the
+            // engine emits, so every single violation silently fell through to
+            // the generic fallback below — making every case look identical
+            // ("A rule violation was detected" / "Automated action was taken")
+            // regardless of what actually happened.
             const VC = {
-              SPAM:           { bg:'#fff7ed', border:'#fed7aa', badge:'#ea580c', text:'Spam',         svgPath:'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-1 11H5v-2h14v2zm0-4H5V9h14v2z', rule:'User was sending repetitive or bulk messages.' },
-              PROFANITY:      { bg:'#fff1f2', border:'#fecdd3', badge:'#e11d48', text:'Profanity',    svgPath:'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'User used abusive or offensive language.' },
-              THREAT:         { bg:'#fef2f2', border:'#fecaca', badge:'#dc2626', text:'Threat',       svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', rule:'User made threatening statements toward another user.' },
-              PERSONAL_INFO:  { bg:'#faf5ff', border:'#e9d5ff', badge:'#7c3aed', text:'Personal Info',svgPath:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08A7.23 7.23 0 0 1 12 19z', rule:'User shared private personal information publicly.' },
-              EXCESSIVE_CAPS: { bg:'#eff6ff', border:'#bfdbfe', badge:'#2563eb', text:'Caps Abuse',  svgPath:'M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z', rule:'User sent messages in excessive capital letters.' },
-              EMOJI_SPAM:     { bg:'#fefce8', border:'#fde68a', badge:'#d97706', text:'Emoji Spam',  svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm-2 14.5c-1.38 0-2.5-1.12-2.5-2.5S8.62 11.5 10 11.5s2.5 1.12 2.5 2.5S11.38 16.5 10 16.5zm0-6C8.62 10.5 7.5 9.38 7.5 8S8.62 5.5 10 5.5 12.5 6.62 12.5 8 11.38 10.5 10 10.5zm4 6c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zm0-6c-1.38 0-2.5-1.12-2.5-2.5S12.62 5.5 14 5.5 16.5 6.62 16.5 8 15.38 10.5 14 10.5z', rule:'User flooded chat with excessive emojis.' },
-              HOMOGLYPH:      { bg:'#fdf4ff', border:'#f0abfc', badge:'#a21caf', text:'Homoglyph',   svgPath:'M5 4v3h5.5v12h3V7H19V4H5z', rule:'User used lookalike characters to bypass filters.' },
+              spam:            { bg:'#fff7ed', border:'#fed7aa', badge:'#ea580c', text:'Spam',            svgPath:'M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-1 11H5v-2h14v2zm0-4H5V9h14v2z', rule:'Behavioural spam — flooding, rapid copy-paste, or mass advertising.' },
+              harassment:      { bg:'#fff1f2', border:'#fecdd3', badge:'#e11d48', text:'Harassment',      svgPath:'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm0-4h-2V7h2z', rule:'Repeated targeted abuse toward a specific user (@mention).' },
+              threat:          { bg:'#fef2f2', border:'#fecaca', badge:'#dc2626', text:'Threat',          svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', rule:'User made a threat of violence.' },
+              doxxing:         { bg:'#faf5ff', border:'#e9d5ff', badge:'#7c3aed', text:'Doxxing',         svgPath:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08A7.23 7.23 0 0 1 12 19z', rule:'User shared personal/identifying info about someone without consent.' },
+              hate:            { bg:'#eff6ff', border:'#bfdbfe', badge:'#2563eb', text:'Hate Speech',    svgPath:'M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z', rule:'Religious/caste/racist hate speech.' },
+              scam:            { bg:'#fefce8', border:'#fde68a', badge:'#d97706', text:'Scam / Phishing', svgPath:'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm-2 14.5c-1.38 0-2.5-1.12-2.5-2.5S8.62 11.5 10 11.5s2.5 1.12 2.5 2.5S11.38 16.5 10 16.5zm0-6C8.62 10.5 7.5 9.38 7.5 8S8.62 5.5 10 5.5 12.5 6.62 12.5 8 11.38 10.5 10 10.5zm4 6c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zm0-6c-1.38 0-2.5-1.12-2.5-2.5S12.62 5.5 14 5.5 16.5 6.62 16.5 8 15.38 10.5 14 10.5z', rule:'Scam, phishing, or malware link/solicitation.' },
+              link:            { bg:'#f0f9ff', border:'#bae6fd', badge:'#0284c7', text:'Unsafe Link',     svgPath:'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z', rule:'Suspicious/unsolicited link sharing.' },
+              family_abuse:    { bg:'#fdf4ff', border:'#f0abfc', badge:'#a21caf', text:'Family Abuse',    svgPath:'M5 4v3h5.5v12h3V7H19V4H5z', rule:'Abusive language targeting someone\u2019s family.' },
+              minor_grooming:  { bg:'#fef2f2', border:'#fecaca', badge:'#b91c1c', text:'Minor Safety',    svgPath:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z', rule:'Content unsafe around minors.' },
+              non_consensual:  { bg:'#fef2f2', border:'#fecaca', badge:'#b91c1c', text:'Non-consensual',  svgPath:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z', rule:'Non-consensual sexual content.' },
             };
-            const SEV = { low:'#6b7280', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' };
-            const SEV_BG = { low:'#f3f4f6', medium:'#fef3c7', high:'#fff7ed', critical:'#fee2e2' };
+            const SEV = { low:'#6b7280', medium:'#f59e0b', high:'#f97316', critical:'#dc2626', severe:'#dc2626' };
+            const SEV_BG = { low:'#f3f4f6', medium:'#fef3c7', high:'#fff7ed', critical:'#fee2e2', severe:'#fee2e2' };
             const ACT = {
-              WARN:        { color:'#f59e0b', bg:'#fef3c7', label:'Warning',     svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', desc:'User received a warning message from TingleBot.' },
-              MUTE:        { color:'#f97316', bg:'#fff7ed', label:'Muted',       svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was temporarily muted and cannot send messages.' },
-              KICK:        { color:'#dc2626', bg:'#fee2e2', label:'Kicked',       svgPath:'M16 17V14H9V10H16V7L21 12L16 17M14 2A2 2 0 0 1 16 4V6H14V4H5V20H14V18H16V20A2 2 0 0 1 14 22H5A2 2 0 0 1 3 20V4A2 2 0 0 1 5 2H14Z', desc:'User was kicked out of the room.' },
-              AUTO_DELETE: { color:'#7c3aed', bg:'#f5f3ff', label:'Auto-deleted', svgPath:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z', desc:'Offending message was automatically deleted.' },
-              NOTICE:      { color:'#3b82f6', bg:'#eff6ff', label:'Notice',       svgPath:'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z', desc:'TingleBot sent an informational notice.' },
+              warn:        { color:'#f59e0b', bg:'#fef3c7', label:'Warning',     svgPath:'M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2z', desc:'User received a warning message from TingleBot.' },
+              delete_warn: { color:'#7c3aed', bg:'#f5f3ff', label:'Deleted + Warned', svgPath:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z', desc:'Offending message was deleted and the user was warned.' },
+              mute_5:      { color:'#f97316', bg:'#fff7ed', label:'Muted 5m',    svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was muted for 5 minutes.' },
+              mute_30:     { color:'#f97316', bg:'#fff7ed', label:'Muted 30m',   svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was muted for 30 minutes.' },
+              mute_3h:     { color:'#f97316', bg:'#fff7ed', label:'Muted 3h',    svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was muted for 3 hours.' },
+              mute_24h:    { color:'#f97316', bg:'#fff7ed', label:'Muted 24h',   svgPath:'M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z', desc:'User was muted for 24 hours.' },
+              kick:        { color:'#dc2626', bg:'#fee2e2', label:'Kicked',      svgPath:'M16 17V14H9V10H16V7L21 12L16 17M14 2A2 2 0 0 1 16 4V6H14V4H5V20H14V18H16V20A2 2 0 0 1 14 22H5A2 2 0 0 1 3 20V4A2 2 0 0 1 5 2H14Z', desc:'User was kicked out of the room.' },
             };
 
             const filtered = violations.filter(v => {
@@ -3886,7 +3908,7 @@ const AdminPanelPage = () => {
 
                 {/* ── Filter bar ── */}
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16, alignItems:'center' }}>
-                  {['all','SPAM','PROFANITY','THREAT','PERSONAL_INFO','EXCESSIVE_CAPS','EMOJI_SPAM','HOMOGLYPH'].map(f => (
+                  {['all','spam','harassment','threat','doxxing','hate','scam','link','family_abuse'].map(f => (
                     <button key={f} onClick={() => setViolationsFilter(f)} style={{
                       display:'flex', alignItems:'center', gap:5,
                       padding:'5px 12px', borderRadius:20, border:'1.5px solid',

@@ -3446,9 +3446,17 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         const isFirstLoad = messages.length > 0 && !hasInitialScrolled;
         if (isFirstLoad) {
-            // Single scroll — avoid the 400ms double-scroll which causes a visible jump
-            setTimeout(() => scrollToBottom(true), 80);
+            // Several quick, non-animated (force) scroll-to-bottom attempts rather
+            // than one. A single early scroll can land short of the true bottom
+            // because avatars/images/embeds in the just-rendered messages keep
+            // growing scrollHeight for a bit after first paint — each attempt
+            // uses 'auto' behavior (no animation), so re-correcting the position
+            // multiple times causes no visible jump, it just guarantees we land
+            // at the real bottom once layout has settled.
+            const attempts = [0, 60, 150, 300, 600];
+            const timers = attempts.map(delay => setTimeout(() => scrollToBottom(true), delay));
             setHasUserScrolled(false);
+            return () => timers.forEach(clearTimeout);
         } else if (messages.length > 0) {
             // When a new message arrives, only auto-scroll if the user is
             // already sitting at the bottom. If they scrolled up to read
