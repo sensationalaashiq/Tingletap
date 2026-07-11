@@ -17,9 +17,10 @@ import {
   createR2Client,
   getBucketName,
   getPrivateBucketName,
+  getPublicBucketName,
 } from './shared/r2Client.js';
 
-// Legacy prefixes that still live in the old single bucket
+// Legacy prefixes — old single bucket (R2_BUCKET_NAME / R2_PRIVATE_BUCKET fallback)
 const LEGACY_PREFIXES = [
   'profiles/',
   'covers/',
@@ -30,15 +31,18 @@ const LEGACY_PREFIXES = [
   'rj-verifications/',
 ];
 
-// New private-chat prefixes that live in the private bucket.
-// NOTE — intentionally NO auth check here. Security for private-chat media
-// relies on URL possession: keys contain a cryptographically random UUID
-// that is stored only in the sender's and receiver's Firestore message docs.
-// This is the same "unguessable URL" model used by Discord, Slack, and
-// WhatsApp Web for inline media. <img>/<audio> tags cannot send auth headers,
-// so a server-side auth check would break all inline image/audio rendering.
-// If strict access control is ever required, migrate to a fetch-with-auth +
-// blob-URL pattern in the React components instead.
+// New PUBLIC bucket prefixes — served here as fallback if CDN URL fails
+const PUBLIC_BUCKET_PREFIXES = [
+  'profile/',
+  'cover/',
+  'homepage/images/',
+  'homepage/audio/',
+];
+
+// New private-chat prefixes — private bucket.
+// NOTE — intentionally NO auth check here. Security relies on unguessable
+// UUIDs in keys (same model as Discord/Slack). <img>/<audio> tags cannot
+// send auth headers, so server-side authz would break inline rendering.
 const PRIVATE_CHAT_PREFIXES = [
   'private-chat/images/',
   'private-chat/audio/',
@@ -65,14 +69,17 @@ export const handler = async (event) => {
   // Determine which bucket to use
   const isLegacy      = LEGACY_PREFIXES.some(p => decoded.startsWith(p));
   const isPrivateChat = PRIVATE_CHAT_PREFIXES.some(p => decoded.startsWith(p));
+  const isPublicNew   = PUBLIC_BUCKET_PREFIXES.some(p => decoded.startsWith(p));
 
-  if (!isLegacy && !isPrivateChat) {
+  if (!isLegacy && !isPrivateChat && !isPublicNew) {
     return { statusCode: 403, body: 'Forbidden' };
   }
 
   let bucketName;
   try {
-    bucketName = isPrivateChat ? getPrivateBucketName() : getBucketName();
+    if (isPrivateChat) bucketName = getPrivateBucketName();
+    else if (isPublicNew) bucketName = getPublicBucketName();
+    else bucketName = getBucketName();
   } catch (e) {
     console.error('[serveMedia] Bucket config error:', e.message);
     return { statusCode: 503, body: 'Storage not configured' };

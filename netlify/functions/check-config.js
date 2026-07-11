@@ -45,10 +45,10 @@ export const handler = async (event) => {
     R2_BUCKET_NAME:       r2LegacyBucket  ? `SET ✅ → "${r2LegacyBucket}"`   : 'MISSING ⚠️  (needed for old stored URLs backward compat)',
   };
 
-  // ── 2. R2 connectivity test ───────────────────────────────────────────────────
+  // ── 2. R2 connectivity test (PutObject + DeleteObject — HeadBucket is unreliable on R2) ──
   if (r2AccountId && r2AccessKey && r2SecretKey) {
     try {
-      const { S3Client, HeadBucketCommand } = await import('@aws-sdk/client-s3');
+      const { S3Client, PutObjectCommand, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
       const endpoint = process.env.R2_ENDPOINT || `https://${r2AccountId}.r2.cloudflarestorage.com`;
       const s3 = new S3Client({
         region: 'auto',
@@ -57,44 +57,32 @@ export const handler = async (event) => {
         forcePathStyle: true,
       });
 
+      const testKey = `_diag_test_${Date.now()}.txt`;
+      const testBody = Buffer.from('tingletap-diag-ok');
       const bucketTests = {};
 
-      // Test public bucket
-      if (r2PublicBucket) {
-        try {
-          await s3.send(new HeadBucketCommand({ Bucket: r2PublicBucket }));
-          bucketTests[`public_bucket (${r2PublicBucket})`] = 'ACCESSIBLE ✅';
-        } catch (e) {
-          bucketTests[`public_bucket (${r2PublicBucket})`] = `ERROR ❌: ${e.message}`;
-          errors.push(`R2 public bucket "${r2PublicBucket}" not accessible: ${e.message}`);
+      async function testBucket(label, bucket) {
+        if (!bucket) {
+          return `SKIPPED — not configured ❌`;
         }
-      } else {
-        bucketTests.public_bucket = 'SKIPPED — R2_PUBLIC_BUCKET not set ❌';
-        errors.push('R2_PUBLIC_BUCKET env var missing — profile/cover/image uploads will fail');
+        try {
+          await s3.send(new PutObjectCommand({
+            Bucket: bucket, Key: testKey, Body: testBody, ContentType: 'text/plain',
+          }));
+          // Clean up test file
+          await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: testKey })).catch(() => {});
+          return `WRITE OK ✅`;
+        } catch (e) {
+          const msg = e?.message || String(e);
+          errors.push(`R2 ${label} bucket "${bucket}" write failed: ${msg}`);
+          return `WRITE FAILED ❌: ${msg}`;
+        }
       }
 
-      // Test private bucket
-      if (r2PrivateBucket) {
-        try {
-          await s3.send(new HeadBucketCommand({ Bucket: r2PrivateBucket }));
-          bucketTests[`private_bucket (${r2PrivateBucket})`] = 'ACCESSIBLE ✅';
-        } catch (e) {
-          bucketTests[`private_bucket (${r2PrivateBucket})`] = `ERROR ❌: ${e.message}`;
-          errors.push(`R2 private bucket "${r2PrivateBucket}" not accessible: ${e.message}`);
-        }
-      } else {
-        bucketTests.private_bucket = 'SKIPPED — R2_PRIVATE_BUCKET not set ❌';
-        errors.push('R2_PRIVATE_BUCKET env var missing — private-chat/badge uploads will fail');
-      }
-
-      // Test legacy bucket
+      bucketTests[`public_bucket (${r2PublicBucket || 'NOT SET'})`]  = await testBucket('public',  r2PublicBucket);
+      bucketTests[`private_bucket (${r2PrivateBucket || 'NOT SET'})`] = await testBucket('private', r2PrivateBucket);
       if (r2LegacyBucket) {
-        try {
-          await s3.send(new HeadBucketCommand({ Bucket: r2LegacyBucket }));
-          bucketTests[`legacy_bucket (${r2LegacyBucket})`] = 'ACCESSIBLE ✅';
-        } catch (e) {
-          bucketTests[`legacy_bucket (${r2LegacyBucket})`] = `ERROR ❌: ${e.message}`;
-        }
+        bucketTests[`legacy_bucket (${r2LegacyBucket})`] = await testBucket('legacy', r2LegacyBucket);
       }
 
       results.r2_buckets = bucketTests;
