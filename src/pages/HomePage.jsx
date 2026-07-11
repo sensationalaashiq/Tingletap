@@ -229,7 +229,7 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
     // sender was using when they picked the colour.
     const pStyle = savedMsgStyle ? {
         ...(savedMsgStyle.fontSize   ? { fontSize: savedMsgStyle.fontSize }     : {}),
-        ...(savedMsgStyle.fontColor  ? { color:    savedMsgStyle.fontColor, textShadow: '0 0 3px rgba(255,255,255,0.5), 0 0 5px rgba(0,0,0,0.5)' } : {}),
+        ...(savedMsgStyle.fontColor  ? { color:    savedMsgStyle.fontColor } : {}),
         ...(savedMsgStyle.fontFamily ? { fontFamily: savedMsgStyle.fontFamily } : {}),
         fontWeight:     savedMsgStyle.isBold       ? 'bold'   : 'normal',
         fontStyle:      savedMsgStyle.isItalic     ? 'italic' : 'normal',

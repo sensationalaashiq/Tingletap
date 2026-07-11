@@ -896,43 +896,32 @@
   background-color: #2d1b69 !important; /* Keep dark lavender */
 }
 
-/* Theme-specific message text colors with proper enforcement */
-
-/* ── Message text: light / default theme ── */
-/* Non-badge / guest / regular users — 12px, normal weight */
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="color"]):not([style*="font-size"]),
-body.theme-light .message-row-wrapper[data-sender-badge="false"] .message-body p:not([style*="color"]):not([style*="font-size"]) {
-  color: #1a1a1a !important;
+/* ── Message text: 11px normal for EVERYONE — no role or badge differentiation ── */
+/* Font size and weight are the same regardless of role, badge, or theme.
+   Only user-chosen inline styles (color, font-family, bold, italic) override this.
+   :not([style*="..."]) guards prevent CSS !important from beating user-set inline styles. */
+.message-body p:not([style*="font-size"]) {
+  font-size: 11px !important;
+}
+.message-body p:not([style*="font-weight"]) {
   font-weight: normal !important;
-  font-style: normal !important;
-  font-size: 12px !important;
-  text-decoration: none !important;
-  opacity: 1 !important;
+}
+.message-body p {
   text-shadow: none !important;
 }
 
-/* Badge holders and staff — slightly bolder in light theme */
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-badge="true"] .message-body p:not([style*="color"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="owner"] .message-body p:not([style*="color"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="admin"] .message-body p:not([style*="color"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-row-wrapper[data-sender-role="moderator"] .message-body p:not([style*="color"]),
-body.theme-light .message-row-wrapper[data-sender-badge="true"] .message-body p:not([style*="color"]),
-body.theme-light .message-row-wrapper[data-sender-role="owner"] .message-body p:not([style*="color"]),
-body.theme-light .message-row-wrapper[data-sender-role="admin"] .message-body p:not([style*="color"]),
-body.theme-light .message-row-wrapper[data-sender-role="moderator"] .message-body p:not([style*="color"]) {
+/* Light/default theme message text color */
+body:not(.dark-mode):not([class*="theme-"]) .message-body p:not([style*="color"]),
+body.theme-light .message-body p:not([style*="color"]) {
   color: #1a1a1a !important;
-  font-weight: 600 !important;
   opacity: 1 !important;
-  text-shadow: none !important;
 }
 
-/* ── Dark mode message text — normal weight, light color ── */
+/* Dark mode message text color */
 body.dark-mode .message-body p:not([style*="color"]),
 body.theme-dark .message-body p:not([style*="color"]) {
   color: #f1f5f9 !important;
-  font-weight: normal !important;
   opacity: 1 !important;
-  text-shadow: none !important;
 }
 
 /* Ensure all media elements have solid visibility - NO WHITISH EFFECTS */
@@ -965,32 +954,18 @@ iframe[src*="youtu.be"] {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Username - badge holders and staff: 12px bold */
-.message-displayname[data-badge="true"],
-.message-displayname[data-role="owner"],
-.message-displayname[data-role="admin"],
-.message-displayname[data-role="moderator"] {
-  color: #1a1a1a;
-  font-weight: bold;
-  font-size: 12px;
-  opacity: 1;
-  text-shadow: none;
-  filter: none;
-  -webkit-filter: none;
+/* ── Username: 12px bold for EVERYONE — no role or badge size differentiation ── */
+/* Same size regardless of whether the sender is Owner, Admin, Moderator,
+   Badge holder, registered user, or guest. Only user-chosen inline font-size overrides this. */
+.message-displayname:not([style*="font-size"]) {
+  font-size: 12px !important;
 }
-
-/* Username for non-badge users (guests and regular users) — 11px bold (1px smaller than staff) */
-.message-displayname[data-badge="false"]:not([style*="font-size"]),
-.message-username:not([style*="font-size"]),
-.username:not([style*="font-size"]),
-.user-name:not([style*="font-size"]) {
-  color: #1a1a1a;
-  font-weight: bold;
-  font-size: 11px;
-  opacity: 1;
-  text-shadow: none;
-  filter: none;
-  -webkit-filter: none;
+.message-displayname {
+  font-weight: bold !important;
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
 }
 
 /* Badge elements - 14px font size and solid colors - NO WHITISH EFFECTS */
@@ -1062,89 +1037,25 @@ iframe[src*="youtu.be"] {
    via: html.dark-theme-variant .message-body p:not([style*="color"]) { color: var(--text-primary) !important; }
    No per-old-theme overrides needed — old themes removed. */
 
-/* ── Username theme colors (active themes only) ── */
+/* ── Username theme colors (color-only — font size/weight already set universally above) ── */
 
-/* Light / default: dark text, 11px for non-staff, 12px for staff/badge */
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([data-has-custom-style="true"]),
-body.theme-light .message-displayname:not([data-has-custom-style="true"]) {
+/* Light / default theme */
+body:not(.dark-mode):not([class*="theme-"]) .message-displayname:not([style*="color"]),
+body.theme-light .message-displayname:not([style*="color"]) {
   color: #000000;
-  font-weight: bold;
-  font-size: 11px;
-  text-shadow: none;
-  filter: none;
-  backdrop-filter: none;
 }
 
-/* Staff/badge override to keep 12px in light theme */
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
-body:not(.dark-mode):not([class*="theme-"]) .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]),
-body.theme-light .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
-body.theme-light .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
-body.theme-light .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
-body.theme-light .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
-  font-size: 12px;
-}
-
-/* Dark mode — light username, 11px for non-staff */
-body.dark-mode .message-displayname:not([data-has-custom-style="true"]),
-body.theme-dark .message-displayname:not([data-has-custom-style="true"]) {
+/* Dark mode */
+body.dark-mode .message-displayname:not([style*="color"]),
+body.theme-dark .message-displayname:not([style*="color"]) {
   color: #e0e0e0;
-  font-weight: bold;
-  font-size: 11px;
-  text-shadow: none;
-  filter: none;
-  backdrop-filter: none;
 }
 
-/* Dark mode staff/badge keep 12px */
-body.dark-mode .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
-body.dark-mode .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
-body.dark-mode .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
-body.dark-mode .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]),
-body.theme-dark .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
-body.theme-dark .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
-body.theme-dark .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
-body.theme-dark .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
-  font-size: 12px;
-}
+/* Dark theme variants — color from CSS variable set in Themes.css */
+/* (html.dark-theme-variant rule in Themes.css already handles this) */
 
-/* Dark theme variants (rose-pink, burgundy-wine, aurora, royal-purple, sunset-orange)
-   — username color comes from Themes.css via var(--username-color).
-   Font size: 11px for regular, 12px for staff/badge.
-   No !important on font-size so custom styled usernames can still override. */
-html.dark-theme-variant .message-displayname:not([data-has-custom-style="true"]) {
-  font-size: 11px;
-  font-weight: bold;
-}
-html.dark-theme-variant .message-displayname[data-badge="true"]:not([data-has-custom-style="true"]),
-html.dark-theme-variant .message-displayname[data-role="owner"]:not([data-has-custom-style="true"]),
-html.dark-theme-variant .message-displayname[data-role="admin"]:not([data-has-custom-style="true"]),
-html.dark-theme-variant .message-displayname[data-role="moderator"]:not([data-has-custom-style="true"]) {
-  font-size: 12px;
-}
-
-/* ── Message text: dark theme variants use CSS variable from Themes.css ── */
-/* Themes.css already sets:
-     html.dark-theme-variant .message-body p:not([style*="color"]) { color: var(--text-primary) !important; }
-   The rules below handle light + pure dark mode for users with NO inline styles. */
-
-/* Light/default — dark readable text, 12px, normal weight */
-body:not(.dark-mode):not([class*="theme-"]) .message-body p:not([style*="color"]):not([style*="font-size"]),
-body.theme-light .message-body p:not([style*="color"]):not([style*="font-size"]) {
-  color: #1a1a1a !important;
-  font-size: 12px !important;
-  font-weight: normal !important;
-}
-
-/* Dark mode — light text, 12px, normal weight */
-body.dark-mode .message-body p:not([style*="color"]):not([style*="font-size"]),
-body.theme-dark .message-body p:not([style*="color"]):not([style*="font-size"]) {
-  color: #f1f5f9 !important;
-  font-size: 12px !important;
-  font-weight: normal !important;
-}
+/* ── Message text theme colors (color only — font-size/weight set universally above) ── */
+/* Themes.css handles dark-theme-variant color via var(--text-primary). */
 
 /* Custom font colors set by user preferences are always respected — no override */
 .message-body p[style*="color"] {
