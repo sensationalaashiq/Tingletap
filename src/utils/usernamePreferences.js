@@ -262,6 +262,10 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
   }
 
   // Color or gradient
+  // Flat color is intentionally NOT injected via JS — CSS variables (.message-displayname)
+  // control the default color so it adapts to every theme without stale Firestore values
+  // (e.g. role-auto-assigned gold) overriding it. Gradient IS injected because it is
+  // always an explicit user choice and cannot be expressed in a single CSS variable.
   if (userSettings.usernameGradientEnabled) {
     const gradientType = userSettings.usernameGradientDirection === 'radial' ? 'radial-gradient' : 'linear-gradient';
     const direction = userSettings.usernameGradientDirection === 'radial' ? 'circle' : userSettings.usernameGradientDirection;
@@ -273,12 +277,11 @@ export const applyGlobalUsernameStylesForUser = (userId, userName, userSettings)
     customStyles += `-webkit-text-fill-color: transparent !important;\n`;
     customStyles += `color: transparent !important;\n`;
   } else {
-    const safeColor = userSettings.usernameFontColor || '#1a1a1a';
-    customStyles += `color: ${safeColor} !important;\n`;
-    customStyles += `-webkit-text-fill-color: ${safeColor} !important;\n`;
+    // No flat-color injection — let CSS theme variables take over
     customStyles += `background: none !important;\n`;
     customStyles += `-webkit-background-clip: unset !important;\n`;
     customStyles += `background-clip: unset !important;\n`;
+    customStyles += `-webkit-text-fill-color: unset !important;\n`;
   }
 
   // Animation
