@@ -347,6 +347,7 @@ function App() {
                   };
 
                   // Continuous enforcement for banned users
+                  if (window.banEnforcementInterval) clearInterval(window.banEnforcementInterval);
                   const banEnforcementInterval = setInterval(() => {
                     setShowBanModal(true);
                     setBanModalData(banData);
@@ -387,6 +388,10 @@ function App() {
                   // User is not banned, clear any stored ban status
                   localStorage.removeItem('userBanStatus');
                   localStorage.removeItem('isBannedUser');
+                  if (window.banEnforcementInterval) {
+                    clearInterval(window.banEnforcementInterval);
+                    window.banEnforcementInterval = null;
+                  }
                   console.log("✅ User is not banned, allowing normal flow");
                 }
               } else {
@@ -412,6 +417,7 @@ function App() {
 
               // Continue enforcement even when logged out
               setTimeout(() => {
+                if (window.banEnforcementInterval) clearInterval(window.banEnforcementInterval);
                 const banEnforcementInterval = setInterval(() => {
                   setShowBanModal(true);
                   setBanModalData(banData);
@@ -451,6 +457,7 @@ function App() {
               console.log("🚫 BANNED USER DETECTED IN APP.JSX - FORCING IMMEDIATE LOCKDOWN");
 
               // Immediately lock down everything
+              if (window.globalBanLockdownInterval) clearInterval(window.globalBanLockdownInterval);
               setBannedUser(currentUser);
               setShowGlobalBanModal(true);
 
@@ -525,6 +532,10 @@ function App() {
 
               return; // Exit early, don't process normal profile logic
             } else {
+              if (window.globalBanLockdownInterval) {
+                clearInterval(window.globalBanLockdownInterval);
+                window.globalBanLockdownInterval = null;
+              }
               // If this is an anonymous (guest) Firebase user, ensure the profile
               // always carries isGuest + role + gender so every downstream
               // component (Sidebar, SettingsSidebar, etc.) shows Purush/Stree/Navrang
@@ -666,6 +677,14 @@ function App() {
             if (window.cleanupFirestoreListeners) {
               delete window.cleanupFirestoreListeners;
             }
+            if (window.banEnforcementInterval) {
+              clearInterval(window.banEnforcementInterval);
+              window.banEnforcementInterval = null;
+            }
+            if (window.globalBanLockdownInterval) {
+              clearInterval(window.globalBanLockdownInterval);
+              window.globalBanLockdownInterval = null;
+            }
           } catch (error) {
             console.log('Error during listener cleanup:', error);
           }
@@ -714,6 +733,14 @@ function App() {
       unsubscribeAuth(); // Cleanup auth listener
       if (window.cleanupFirestoreListeners) {
         window.cleanupFirestoreListeners();
+      }
+      if (window.banEnforcementInterval) {
+        clearInterval(window.banEnforcementInterval);
+        window.banEnforcementInterval = null;
+      }
+      if (window.globalBanLockdownInterval) {
+        clearInterval(window.globalBanLockdownInterval);
+        window.globalBanLockdownInterval = null;
       }
     };
   }, []);

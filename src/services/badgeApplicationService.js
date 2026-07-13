@@ -5,7 +5,7 @@
 import { db, auth } from '../firebase/config';
 import {
   doc, getDoc, getDocs, collection, query,
-  where, orderBy, limit, startAfter,
+  where, orderBy, limit, startAfter, getCountFromServer,
   serverTimestamp, updateDoc, setDoc, Timestamp
 } from 'firebase/firestore';
 
@@ -148,19 +148,20 @@ export async function getApplicationStats() {
   const cacheKey = 'stats__summary';
   if (_cache.has(cacheKey)) return _cache.get(cacheKey);
 
+  // Aggregation count queries — server-side count, not a 1000-doc scan.
   const [pending, approved, rejected, expired] = await Promise.all([
-    getDocs(query(collection(db, COLLECTION), where('status', '==', 'pending'),  limit(1000))),
-    getDocs(query(collection(db, COLLECTION), where('status', '==', 'approved'), limit(1000))),
-    getDocs(query(collection(db, COLLECTION), where('status', '==', 'rejected'), limit(1000))),
-    getDocs(query(collection(db, COLLECTION), where('status', '==', 'expired'),  limit(1000))),
+    getCountFromServer(query(collection(db, COLLECTION), where('status', '==', 'pending'))),
+    getCountFromServer(query(collection(db, COLLECTION), where('status', '==', 'approved'))),
+    getCountFromServer(query(collection(db, COLLECTION), where('status', '==', 'rejected'))),
+    getCountFromServer(query(collection(db, COLLECTION), where('status', '==', 'expired'))),
   ]);
 
   const stats = {
-    pending:  pending.size,
-    approved: approved.size,
-    rejected: rejected.size,
-    expired:  expired.size,
-    total:    pending.size + approved.size + rejected.size + expired.size,
+    pending:  pending.data().count,
+    approved: approved.data().count,
+    rejected: rejected.data().count,
+    expired:  expired.data().count,
+    total:    pending.data().count + approved.data().count + rejected.data().count + expired.data().count,
   };
   _cache.set(cacheKey, stats);
   return stats;

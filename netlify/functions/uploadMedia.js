@@ -16,6 +16,7 @@ import {
   getPublicMediaUrl,
 } from './shared/r2Client.js';
 import { verifyToken, decodeJwt } from './shared/firestoreAdmin.js';
+import { verifyFileSignature } from './shared/fileSignature.js';
 import { randomUUID } from 'crypto';
 
 const CORS = {
@@ -173,6 +174,11 @@ export const handler = async (event) => {
   const maxBytes = config.maxMB * 1024 * 1024;
   if (buffer.length > maxBytes) {
     return resp({ error: `File too large (max ${config.maxMB} MB). Compress before uploading.` }, 413);
+  }
+
+  // ── Verify actual file content matches the claimed contentType ─────────────
+  if (!verifyFileSignature(buffer, contentType)) {
+    return resp({ error: `File content does not match declared type "${contentType}"` }, 400);
   }
 
   // ── Build R2 key ─────────────────────────────────────────────────────────────

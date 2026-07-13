@@ -9,6 +9,7 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { createR2Client, getPrivateBucketName } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
+import { verifyFileSignature } from './shared/fileSignature.js';
 import { randomUUID } from 'crypto';
 
 const CORS = {
@@ -70,6 +71,11 @@ export const handler = async (event) => {
   if (buffer.length > MAX_BYTES[mediaType]) {
     const mb = (MAX_BYTES[mediaType] / 1024 / 1024).toFixed(1);
     return resp({ error: `File too large for proxy upload (max ${mb} MB). Reduce recording length or quality.` }, 413);
+  }
+
+  // ── Verify actual file content matches the claimed contentType ─────────────
+  if (!verifyFileSignature(buffer, contentType)) {
+    return resp({ error: `File content does not match declared type "${contentType}"` }, 400);
   }
 
   // ── Build R2 object key (NEW private bucket prefix) ──────────────────────────

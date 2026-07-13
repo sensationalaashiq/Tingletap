@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import PremiumImageMessage from './PremiumImageMessage';
-import { auth } from '../firebase/config';
+import { auth, db } from '../firebase/config';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
 import './LuxuryPrivateMessageWindow.css';
@@ -294,6 +296,22 @@ const LuxuryPrivateMessageWindow = ({
   const [audioStream, setAudioStream] = useState(null);
   const audioInputRef = useRef(null);
   const recordingTimerRef = useRef(null);
+
+  // Message deletion (own messages only — mirrors firestore.rules: sender or staff)
+  const [confirmDeletePmId, setConfirmDeletePmId] = useState(null);
+  const [deletingPmId, setDeletingPmId] = useState(null);
+  const handleDeletePM = async (messageId) => {
+    setDeletingPmId(messageId);
+    try {
+      await deleteDoc(doc(db, 'privateMessages', messageId));
+      pt.success('Message deleted.');
+    } catch (e) {
+      pt.error('Could not delete message: ' + e.message);
+    } finally {
+      setDeletingPmId(null);
+      setConfirmDeletePmId(null);
+    }
+  };
 
   // Ultra-smooth dragging with dynamic viewport bounds
   const {
@@ -718,6 +736,41 @@ const LuxuryPrivateMessageWindow = ({
                             <span className="ultra-pm-timestamp">
                               {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
+                            {msg.senderId === auth.currentUser?.uid && (
+                              confirmDeletePmId === msg.id ? (
+                                <span className="ultra-pm-delete-confirm">
+                                  <button
+                                    type="button"
+                                    className="ultra-pm-delete-btn ultra-pm-delete-btn--confirm"
+                                    disabled={deletingPmId === msg.id}
+                                    onClick={() => handleDeletePM(msg.id)}
+                                    title="Confirm delete"
+                                  >
+                                    {deletingPmId === msg.id ? '…' : 'Delete?'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ultra-pm-delete-btn ultra-pm-delete-btn--cancel"
+                                    onClick={() => setConfirmDeletePmId(null)}
+                                    title="Cancel"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="ultra-pm-delete-btn"
+                                  onClick={() => setConfirmDeletePmId(msg.id)}
+                                  title="Delete message"
+                                  aria-label="Delete message"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </button>
+                              )
+                            )}
                           </div>
                           {msg.text && <PMTranslatedText msg={msg} currentUid={auth.currentUser?.uid} />}
                           {msg.imageUrl && (

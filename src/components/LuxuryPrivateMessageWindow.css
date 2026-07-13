@@ -351,6 +351,57 @@
   letter-spacing: 0.02em !important;
 }
 
+.ultra-pm-delete-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 2px !important;
+  margin-left: 2px !important;
+  color: #9ca3af !important;
+  cursor: pointer !important;
+  border-radius: 4px !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease !important;
+}
+
+.ultra-pm-message:hover .ultra-pm-delete-btn {
+  opacity: 1 !important;
+}
+
+.ultra-pm-delete-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.ultra-pm-delete-confirm {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  margin-left: 4px !important;
+}
+
+.ultra-pm-delete-btn--confirm {
+  opacity: 1 !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  padding: 2px 6px !important;
+  border-radius: 8px !important;
+}
+
+.ultra-pm-delete-btn--confirm:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.ultra-pm-delete-btn--cancel {
+  opacity: 1 !important;
+  font-size: 9px !important;
+  color: #9ca3af !important;
+}
+
 .ultra-pm-msg-text {
   margin: 0 !important;
   font-size: 12px !important;
