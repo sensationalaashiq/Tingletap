@@ -4,6 +4,7 @@
 // Incoming emails to support@tingletap.com → VyomAI inbox
 // Incoming emails to admin@tingletap.com   → Blurry inbox
 // Requires MX records pointing to Brevo's inbound servers.
+import crypto from 'node:crypto';
 import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
 import admin from 'firebase-admin';
 import { rateLimitCheck, sanitizeString } from './shared/validation.js';
@@ -11,6 +12,18 @@ import { log } from './shared/logger.js';
 
 const WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
 const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
+
+// Constant-time exact-match comparison. `sig.includes(WEBHOOK_SECRET)` (the old
+// check) accepted any header that merely *contained* the secret as a substring —
+// e.g. "garbage-<secret>-garbage" would pass — and used a non-constant-time
+// comparison susceptible to timing side-channels. This requires an exact match
+// using crypto.timingSafeEqual.
+function safeSecretMatch(candidate) {
+  const a = Buffer.from(String(candidate || ''), 'utf8');
+  const b = Buffer.from(WEBHOOK_SECRET, 'utf8');
+  if (a.length === 0 || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 const TO_INBOX_MAP = {
   'support@tingletap.com': { ownerInbox: 'VyomAI', name: `VyomAI — ${APP_NAME}` },
@@ -27,10 +40,15 @@ export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 
-  // Optional webhook secret validation
+  // Optional webhook secret validation — exact, constant-time match only.
+  // Accepts the secret via header (custom header set in Brevo's webhook config)
+  // or as a `?token=`/`?secret=` query param, since Brevo's inbound parsing
+  // webhook does not support HMAC request signing — a shared secret compared
+  // safely is the correct mechanism here, not a fabricated HMAC scheme.
   if (WEBHOOK_SECRET) {
-    const sig = event.headers['x-brevo-signature'] || event.headers['x-sib-signature'] || '';
-    if (!sig.includes(WEBHOOK_SECRET)) {
+    const headerSig = event.headers['x-brevo-signature'] || event.headers['x-sib-signature'] || event.headers['x-webhook-secret'] || '';
+    const queryToken = event.queryStringParameters?.token || event.queryStringParameters?.secret || '';
+    if (!safeSecretMatch(headerSig) && !safeSecretMatch(queryToken)) {
       log.warn('Webhook signature mismatch');
       return { statusCode: 403, headers, body: JSON.stringify({ error: 'Invalid signature' }) };
     }

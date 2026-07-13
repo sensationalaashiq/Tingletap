@@ -4,7 +4,7 @@ import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
 import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, deleteDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, orderBy } from 'firebase/firestore';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ToastContainer } from 'react-toastify';
@@ -49,6 +49,28 @@ const parseDurationMs = (dur) => {
 };
 
 const USERS_PER_PAGE = 20;
+
+// All privileged moderation writes (ban/unban/mute/unmute/kick/unkick) now go through
+// this server-side function, which independently re-verifies the caller's staff role
+// before writing — defense in depth on top of Firestore rules, so a rules mistake alone
+// can no longer let a non-staff user perform moderation actions from devtools.
+// See netlify/functions/moderationAction.js.
+async function callModerationAction(payload) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error('Not authenticated');
+  const token = await currentUser.getIdToken();
+  const res = await fetch('/.netlify/functions/moderationAction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `Moderation action failed (${res.status})`);
+  }
+  return data;
+}
 
 const BanKickMutePanel = () => {
   const navigate = useNavigate();
@@ -172,23 +194,21 @@ const BanKickMutePanel = () => {
     const updateSelectedUser = (patch) => setSelectedUser(prev => prev ? { ...prev, ...patch } : prev);
 
     try {
-      const userRef = doc(db, 'users', selectedUser.uid);
       const adminName = currentUserProfile?.displayName || 'Admin';
 
       switch (effectiveAction) {
         case 'ban': {
           const banMs = !actionData.expiresAt ? parseDurationMs(actionData.duration) : null;
           const banUntil = actionData.expiresAt || (banMs && banMs !== Infinity ? new Date(Date.now() + banMs).toISOString() : null);
-          const banInfo = {
+          const { banInfo } = await callModerationAction({
+            targetUid: selectedUser.uid,
+            action: 'ban',
             reason: actionData.reason || '',
-            bannedBy: adminName,
-            bannedAt: new Date().toISOString(),
-            banUntil,
             duration: actionData.duration,
+            expiresAt: banUntil,
             adminNotes: actionData.adminNotes || '',
             appealAllowed: actionData.appealAllowed,
-          };
-          await updateDoc(userRef, { isBanned: true, banInfo });
+          });
           remove(ref(rtdb, `status/${selectedUser.uid}`));
           const banRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (banRoomId) {
@@ -222,7 +242,7 @@ const BanKickMutePanel = () => {
         }
 
         case 'unban': {
-          await updateDoc(userRef, { isBanned: false, banInfo: null });
+          await callModerationAction({ targetUid: selectedUser.uid, action: 'unban' });
           const unbanRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unbanRoomId) {
             addDoc(collection(db, 'rooms', unbanRoomId, 'messages'), {
@@ -247,21 +267,12 @@ const BanKickMutePanel = () => {
         case 'mute': {
           const muteMs = !actionData.expiresAt ? parseDurationMs(actionData.duration) : null;
           const muteUntil = actionData.expiresAt || (muteMs && muteMs !== Infinity ? new Date(Date.now() + muteMs).toISOString() : null);
-          const mutedInfo = {
-            isMuted: true,
-            mutedAt: new Date().toISOString(),
-            mutedBy: adminName,
+          const { mutedInfo } = await callModerationAction({
+            targetUid: selectedUser.uid,
+            action: 'mute',
             reason: actionData.reason || '',
             duration: actionData.duration,
-            muteUntil,
-          };
-          await updateDoc(userRef, {
-            'mutedInfo.isMuted': true,
-            'mutedInfo.mutedAt': mutedInfo.mutedAt,
-            'mutedInfo.mutedBy': adminName,
-            'mutedInfo.reason': actionData.reason || '',
-            'mutedInfo.duration': actionData.duration,
-            'mutedInfo.muteUntil': muteUntil,
+            expiresAt: muteUntil,
           });
           const muteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (muteRoomId) {
@@ -280,13 +291,7 @@ const BanKickMutePanel = () => {
         }
 
         case 'unmute': {
-          await updateDoc(userRef, {
-            'mutedInfo.isMuted': false,
-            'mutedInfo.mutedAt': null,
-            'mutedInfo.mutedBy': null,
-            'mutedInfo.reason': null,
-            'mutedInfo.muteUntil': null,
-          });
+          await callModerationAction({ targetUid: selectedUser.uid, action: 'unmute' });
           const unmuteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unmuteRoomId) {
             addDoc(collection(db, 'rooms', unmuteRoomId, 'messages'), {
@@ -306,23 +311,18 @@ const BanKickMutePanel = () => {
           const kickReason = actionData?.reason || 'Kicked by admin';
           const kickDur = actionData?.duration || null;
           const kickUntil = actionData?.expiresAt || null;
-          const kickEntry = {
-            uid: selectedUser.uid,
-            displayName: selectedUser.displayName,
-            reason: kickReason,
-            kickedBy: adminName,
-            kickedAt: serverTimestamp(),
-            duration: kickDur,
-            kickDuration: kickDur,
-            kickUntil,
-            kickUntilTs: kickUntil ? Timestamp.fromDate(new Date(kickUntil)) : null,
-          };
 
           if (actionData?.kickScope === 'multiple_rooms' && actionData?.selectedRooms?.length > 0) {
+            let lastKickedFrom = null;
             for (const rid of actionData.selectedRooms) {
               const rSnap = await getDoc(doc(db, 'rooms', rid)).catch(() => null);
               const rName = rSnap?.data()?.name || rid;
-              await setDoc(doc(db, 'rooms', rid, 'kickedUsers', selectedUser.uid), { ...kickEntry, roomId: rid, roomName: rName });
+              const { kickedFrom } = await callModerationAction({
+                targetUid: selectedUser.uid, action: 'kick',
+                reason: kickReason, duration: kickDur, expiresAt: kickUntil,
+                roomId: rid, roomName: rName,
+              });
+              lastKickedFrom = kickedFrom;
               addDoc(collection(db, 'rooms', rid, 'messages'), {
                 text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
                 uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
@@ -333,17 +333,17 @@ const BanKickMutePanel = () => {
             }
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             pt.warn(`${selectedUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`);
-            const firstRid = actionData.selectedRooms[0];
-            updateSelectedUser({ kickedFrom: { roomId: firstRid, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason } });
+            updateSelectedUser({ kickedFrom: lastKickedFrom });
           } else {
             const kickRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId || currentRoomId || selectedUser.kickedFrom?.roomId;
             if (kickRoomId) {
               const kickRoomSnap = await getDoc(doc(db, 'rooms', kickRoomId)).catch(() => null);
               const kickRoomName = kickRoomSnap?.data()?.name || kickRoomId;
-              await setDoc(doc(db, 'rooms', kickRoomId, 'kickedUsers', selectedUser.uid), { ...kickEntry, roomId: kickRoomId, roomName: kickRoomName });
-              await updateDoc(userRef, {
-                kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason }
-              }).catch(() => {});
+              const { kickedFrom } = await callModerationAction({
+                targetUid: selectedUser.uid, action: 'kick',
+                reason: kickReason, duration: kickDur, expiresAt: kickUntil,
+                roomId: kickRoomId, roomName: kickRoomName,
+              });
               addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
                 text: `${selectedUser.displayName} has been kicked from ${kickRoomName}${kickReason ? ` — ${kickReason}` : '.'}`,
                 uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
@@ -352,7 +352,7 @@ const BanKickMutePanel = () => {
                 noReply: true, noReaction: true, noReport: true, noUnread: true,
               }).catch(() => {});
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
-              updateSelectedUser({ kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason } });
+              updateSelectedUser({ kickedFrom });
             } else {
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             }
@@ -366,13 +366,16 @@ const BanKickMutePanel = () => {
           if (unkickScopeMode === 'all_rooms') {
             const allRoomsSnap = await getDocs(query(collection(db, 'rooms'), limit(1000))).catch(() => null);
             if (allRoomsSnap) {
-              const tasks = allRoomsSnap.docs.map(rd => deleteDoc(doc(db, 'rooms', rd.id, 'kickedUsers', selectedUser.uid)).catch(() => {}));
+              const tasks = allRoomsSnap.docs.map(rd =>
+                callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: rd.id }).catch(() => {})
+              );
               await Promise.all(tasks);
             }
+            await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: null }).catch(() => {});
           } else {
             const kickedRoomId = selectedUser.kickedFrom?.roomId || actionData?.currentRoomId;
             if (kickedRoomId) {
-              await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid)).catch(() => {});
+              await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: kickedRoomId }).catch(() => {});
               const unkickRoomSnap = await getDoc(doc(db, 'rooms', kickedRoomId)).catch(() => null);
               const unkickRoomName = unkickRoomSnap?.data()?.name || kickedRoomId;
               addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
@@ -382,9 +385,10 @@ const BanKickMutePanel = () => {
                 createdAt: serverTimestamp(),
                 noReply: true, noReaction: true, noReport: true, noUnread: true,
               }).catch(() => {});
+            } else {
+              await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: null }).catch(() => {});
             }
           }
-          await updateDoc(userRef, { kickedFrom: null }).catch(() => {});
           pt.success(`${selectedUser.displayName} can now rejoin.`);
           updateSelectedUser({ kickedFrom: null });
           break;

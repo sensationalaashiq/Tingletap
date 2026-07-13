@@ -158,10 +158,12 @@ service cloud.firestore {
         'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
         'fcmToken', 'pushToken', 'notificationPreferences',
         'age', 'relationship', 'isGuest',
-        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt',
-        'trustScore', 'trustRank', 'trustData'
+        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt'
       ];
-      let staffOnly = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt'];
+      // trustScore/trustRank/trustData are computed moderation signals — staff/automation
+      // only. A regular user must never be able to set their own trust rank.
+      let staffOnly = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt',
+        'trustScore', 'trustRank', 'trustData'];
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       // Regular registered users only touch allowed fields; staff may also touch staffOnly
       return changed.hasOnly(allowed)
