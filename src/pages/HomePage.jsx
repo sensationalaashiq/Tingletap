@@ -1256,13 +1256,14 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
     
     // Function to toggle dropdown for a specific message
+    // C11: Debug logs gated behind DEV flag so they don't appear in production builds.
     const toggleDropdown = (messageId) => {
-        console.log('🔄 toggleDropdown called with messageId:', messageId, 'current openDropdownId:', openDropdownId);
+        if (import.meta.env.DEV) console.log('🔄 toggleDropdown called with messageId:', messageId, 'current openDropdownId:', openDropdownId);
         if (openDropdownId === messageId) {
-            console.log('🔒 CLOSING DROPDOWN for message:', messageId);
+            if (import.meta.env.DEV) console.log('🔒 CLOSING DROPDOWN for message:', messageId);
             setOpenDropdownId(null);
         } else {
-            console.log('🔓 OPENING DROPDOWN for message:', messageId);
+            if (import.meta.env.DEV) console.log('🔓 OPENING DROPDOWN for message:', messageId);
             setOpenDropdownId(messageId);
         }
     };
@@ -2926,18 +2927,32 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         let isInitialLoad = true;
 
+        // C1: Cache sender profiles for this listener's lifetime so repeated snapshot
+        // callbacks (status changes, read-receipt updates, etc.) don't re-fetch every
+        // sender profile from Firestore each time.
+        const _senderProfileCache = {};
+        const _SENDER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
         const unsubscribe = onSnapshot(friendRequestsQuery, 
             async (snapshot) => {
                 const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Always fetch each sender's LATEST profile so the popup never shows a
-                // stale/wrong avatar or name if the sender changed their photo/name
-                // after the request was originally created.
                 const enrichedRequests = await Promise.all(requests.map(async (request) => {
+                    const now = Date.now();
+                    const cached = _senderProfileCache[request.senderId];
+                    if (cached && (now - cached._cachedAt) < _SENDER_CACHE_TTL) {
+                        return {
+                            ...request,
+                            senderName: cached.displayName || request.senderName,
+                            senderGender: cached.gender || request.senderGender,
+                            senderPhoto: cached.photoURL || null,
+                        };
+                    }
                     try {
                         const senderSnap = await getDoc(doc(db, 'users', request.senderId));
                         if (senderSnap.exists()) {
                             const senderData = senderSnap.data();
+                            _senderProfileCache[request.senderId] = { ...senderData, _cachedAt: now };
                             return {
                                 ...request,
                                 senderName: senderData.displayName || request.senderName,
@@ -4080,8 +4095,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 gender = guestUser.gender || '';
                 role = 'guest';
                 
-                // Log guest username for debugging
-                console.log('🔵 Guest sending message:', { uid, displayName, username: guestUser.username });
+                // C11: Dev-only debug log.
+                if (import.meta.env.DEV) console.log('🔵 Guest sending message:', { uid, displayName, username: guestUser.username });
             } catch (error) {
                 console.error('Guest data parse error:', error);
                 pt.error("Guest session error. Please refresh and try again.");

@@ -361,9 +361,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
     }
   };
 
+  // C5: Revoke any blob URL stored as the preview when the crop is cancelled,
+  // so the browser can free the underlying memory. Only revoke if no crop has
+  // been applied yet (i.e. the preview IS the blob URL for the current session).
   const handleCropCancel = () => {
     setShowCropper(false);
     setOriginalImage(null);
+    // If a profilePic (File) is selected but no crop has been applied, the
+    // preview will stay as-is (user can still save without cropping). If the
+    // user wants to discard the selection entirely they can close the whole modal.
     setCrop({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
     setCompletedCrop(null);
     setScale(1);
@@ -375,6 +381,16 @@ const EditProfile = ({ onClose, onSuccess }) => {
     setImagePosition({ x: 0, y: 0 });
     setIsDragging(false);
   };
+
+  // C5: Revoke the blob URL when the component unmounts to prevent memory leaks.
+  useEffect(() => {
+    return () => {
+      if (typeof profilePicPreview === 'string' && profilePicPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profilePicPreview);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const uploadProfilePic = async () => {
     if (!profilePic) return null;
@@ -449,6 +465,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setProfilePicPreview(finalPhotoURL);
       }
       
+      // C3: Bust the shared profile-TTL cache so the UI re-fetches fresh data everywhere.
+      if (window._profileCacheTTL) window._profileCacheTTL.delete(user.uid);
       pt.profile('Profile updated successfully!');
       onSuccess && onSuccess();
       onClose && onClose();

@@ -63,6 +63,10 @@ export function extractR2Key(url) {
       return key || null;
     }
 
+    // C16: Log clearly when a URL doesn't match any known R2 pattern so misconfigurations surface.
+    if (import.meta.env?.DEV) {
+      console.warn('[extractR2Key] URL did not match any known R2 pattern:', url);
+    }
     return null;
   } catch { return null; }
 }
@@ -218,11 +222,21 @@ export async function uploadMedia(blob, mediaType, onProgress) {
   const base64Data = await blobToBase64(blob);
   if (onProgress) onProgress(15);
 
-  const res = await fetch(`${BASE}/uploadBadgeMedia`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ mediaType, contentType, data: base64Data }),
-  });
+  // C4: One retry on network failure (mirrors the pattern in uploadMediaFile).
+  let res;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      res = await fetch(`${BASE}/uploadBadgeMedia`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mediaType, contentType, data: base64Data }),
+      });
+      break;
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — badge upload failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
 
   if (onProgress) onProgress(90);
 
@@ -348,11 +362,21 @@ export async function uploadRJMedia(blob, section, onProgress) {
   const base64Data = await blobToBase64(blob);
   if (onProgress) onProgress(15);
 
-  const res = await fetch(`${BASE}/uploadRJMedia`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ section, contentType, data: base64Data }),
-  });
+  // C4: One retry on network failure (mirrors the pattern in uploadMediaFile).
+  let res;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      res = await fetch(`${BASE}/uploadRJMedia`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ section, contentType, data: base64Data }),
+      });
+      break;
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — RJ upload failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
 
   if (onProgress) onProgress(90);
 

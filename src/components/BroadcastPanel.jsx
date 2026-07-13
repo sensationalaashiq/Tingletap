@@ -1785,17 +1785,26 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   const startLocalMic = async () => {
-    // Note: getUserMedia errors (permission denied, no device, etc.) are
-    // intentionally left uncaught here and propagate to the caller — every
-    // call site (handleGoLive, handleMicToggle) is responsible for catching
-    // and toasting so the messaging can be tailored to that action.
     if (localStream.current) return localStream.current;
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
-      video: false
-    });
+    // C9: Catch mic-permission errors here as a universal safety net — every call
+    // site can still add its own catch for context-specific messaging, but at
+    // minimum the user always sees something actionable instead of a silent hang.
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+        video: false
+      });
+    } catch (err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        bpToast.error('Microphone access blocked. Please allow mic permission in your browser settings.');
+      } else if (err.name === 'NotFoundError') {
+        bpToast.error('No microphone found. Please connect a microphone and try again.');
+      }
+      throw err; // re-throw so callers can add their own context-specific handling
+    }
     localStream.current = stream;
-    startMicLevelMeter(stream);
+    startMicLevelMeter(stream); // eslint-disable-line no-use-before-define
 
     /* Create Web Audio mixer — all audio sources (RJ mic + speakers) are routed
        through this AudioContext and delivered to listeners as one mixed stream.    */

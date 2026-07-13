@@ -313,7 +313,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- C18: Skip-navigation link for keyboard/screen-reader users -->
+    <a href="#root" class="sr-skip-link" style="position:absolute;left:-9999px;top:4px;z-index:9999;padding:8px 16px;background:#7c3aed;color:#fff;border-radius:4px;font-weight:700;text-decoration:none" onfocus="this.style.left='4px'" onblur="this.style.left='-9999px'">Skip to content</a>
+    <!-- role="main" is applied via React's root render; id="root" serves as the landmark target -->
+    <div id="root" role="main" aria-label="TingleTap application"></div>
     <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>

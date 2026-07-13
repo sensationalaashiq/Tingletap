@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -82,6 +83,16 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // C17: R2 public CDN images (pub-*.r2.dev) — Cache First (7 days)
+          {
+            urlPattern: /^https:\/\/pub-[a-zA-Z0-9]+\.r2\.dev\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'r2-public-images',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
 
@@ -90,6 +101,13 @@ export default defineConfig({
       },
     }),
   ],
+
+  // C13: Path alias — import from '@/components/Foo' instead of '../../components/Foo'
+  resolve: {
+    alias: {
+      '@': path.resolve(path.dirname(new URL(import.meta.url).pathname), 'src'),
+    },
+  },
 
   server: {
     host: '0.0.0.0',

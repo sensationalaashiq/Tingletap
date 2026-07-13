@@ -206,8 +206,12 @@ app.post('/api/send-email', async (req, res) => {
     return res.status(502).json({ error: 'Email delivery failed', detail: brData?.message });
   }
 
-  console.log(`[EmailCenter] ✓ ${v.displayName} (${sender.email}) → ${recipientEmail} | "${subject.trim()}" | msgId: ${brData.messageId}`);
-  return res.json({ ok: true, messageId: brData.messageId, sender: sender.email });
+  // C10: Mask full email addresses in logs to avoid storing PII in server logs.
+  const _maskEmail = e => (typeof e === 'string' && e.includes('@'))
+    ? e.replace(/^(.{1,3})(.*)(@.*)$/, (_, a, b, c) => a + '*'.repeat(Math.min(b.length, 4)) + c)
+    : '?';
+  console.log(`[EmailCenter] ✓ ${v.displayName} (${_maskEmail(sender.email)}) → ${_maskEmail(recipientEmail)} | "${subject.trim()}" | msgId: ${brData.messageId}`);
+  return res.json({ ok: true, messageId: brData.messageId, sender: _maskEmail(sender.email) });
 });
 
 // ── Firestore REST helpers (uses caller's Firebase ID token) ──────────────────

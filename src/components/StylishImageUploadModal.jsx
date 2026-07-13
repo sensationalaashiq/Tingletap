@@ -39,8 +39,16 @@ const StylishImageUploadModal = React.memo(({
     // Image URL tab: only tier3 and staff
     const canUseUrl = badgeTier === 'tier3' || badgeTier === 'staff';
 
+    // C15: Client-side file-size guard matching the 5 MB limit enforced in EditProfile.jsx.
     const handleFileUpload = () => {
-        if (selectedImage && onImageUpload) { onImageUpload(selectedImage, imageCaption); resetModal(); }
+        if (selectedImage && onImageUpload) {
+            if (selectedImage.size && selectedImage.size > 5 * 1024 * 1024) {
+                alert('Image must be less than 5 MB. Please choose a smaller file.');
+                return;
+            }
+            onImageUpload(selectedImage, imageCaption);
+            resetModal();
+        }
     };
 
     const handleUrlUpload = () => {
