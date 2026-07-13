@@ -95,10 +95,15 @@ export const handler = async (event) => {
   const now = new Date().toISOString();
   const staffName = staff.displayName || staff.uid;
 
+  // B5: Strip HTML tags and cap text fields to prevent stored XSS and oversized payloads.
+  const sanitizeText = (s, max = 500) => String(s || '').replace(/<[^>]*>/g, '').trim().slice(0, max);
+
   try {
     switch (action) {
       case 'ban': {
-        const { reason = '', duration = null, expiresAt = null, adminNotes = '', appealAllowed = false } = body;
+        const { reason: _reason = '', duration = null, expiresAt = null, adminNotes: _adminNotes = '', appealAllowed = false } = body;
+        const reason = sanitizeText(_reason);
+        const adminNotes = sanitizeText(_adminNotes);
         const banInfo = {
           reason, bannedBy: staffName, bannedAt: now,
           banUntil: expiresAt || null, duration, adminNotes,
@@ -114,7 +119,8 @@ export const handler = async (event) => {
       }
 
       case 'mute': {
-        const { reason = '', duration = null, expiresAt = null } = body;
+        const { reason: _muteReason = '', duration = null, expiresAt = null } = body;
+        const reason = sanitizeText(_muteReason);
         const mutedInfo = {
           isMuted: true, mutedAt: now, mutedBy: staffName,
           reason, duration, muteUntil: expiresAt || null,
@@ -130,7 +136,8 @@ export const handler = async (event) => {
       }
 
       case 'kick': {
-        const { reason = 'Kicked by admin', duration = null, expiresAt = null, roomId = null, roomName = null } = body;
+        const { reason: _kickReason = 'Kicked by admin', duration = null, expiresAt = null, roomId = null, roomName = null } = body;
+        const reason = sanitizeText(_kickReason);
         if (roomId) {
           await setDoc(`rooms/${roomId}/kickedUsers/${targetUid}`, {
             uid: targetUid,

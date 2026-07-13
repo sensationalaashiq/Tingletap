@@ -5,7 +5,7 @@ import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit, Timestamp } from 'firebase/firestore';
+import { collection, collectionGroup, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc, setDoc, where, addDoc, serverTimestamp, getDocs, getDoc, limit, startAfter, Timestamp } from 'firebase/firestore';
 import { nameToSlug } from '../utils/roomSlug';
 import { ref, onValue, remove, update as rtdbUpdate } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -860,17 +860,27 @@ const AdminPanelPage = () => {
   };
 
   // Rooms tab: load ALL kicked users from ALL rooms
+  // B3: Paginate in batches of 500 instead of a single limit(2000) read.
   const loadAllKickedUsers = async (roomsList) => {
     const list = roomsList || rooms;
     setKickedUsersLoading(true);
     try {
-      const snap = await getDocs(query(collectionGroup(db, 'kickedUsers'), limit(2000)));
       const all = [];
-      snap.docs.forEach(d => {
-        const roomId = d.ref.parent.parent?.id;
-        const room = list.find(r => r.id === roomId);
-        all.push({ uid: d.id, roomId, roomName: room?.name || roomId, ...d.data() });
-      });
+      let lastKickedDoc = null;
+      do {
+        const batchQ = lastKickedDoc
+          ? query(collectionGroup(db, 'kickedUsers'), limit(500), startAfter(lastKickedDoc))
+          : query(collectionGroup(db, 'kickedUsers'), limit(500));
+        const batchSnap = await getDocs(batchQ);
+        if (batchSnap.empty) break;
+        batchSnap.docs.forEach(d => {
+          const roomId = d.ref.parent.parent?.id;
+          const room = list.find(r => r.id === roomId);
+          all.push({ uid: d.id, roomId, roomName: room?.name || roomId, ...d.data() });
+        });
+        lastKickedDoc = batchSnap.docs[batchSnap.docs.length - 1];
+        if (batchSnap.docs.length < 500) break;
+      } while (true);
       setKickedUsersList(all);
     } catch (e) {
       console.error('Failed to load kicked users:', e);

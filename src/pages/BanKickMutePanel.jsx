@@ -4,7 +4,7 @@ import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
 import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
-import { collection, query, onSnapshot, doc, deleteDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, deleteDoc, addDoc, serverTimestamp, getDocs, getDoc, limit, orderBy, startAfter } from 'firebase/firestore';
 import { ref, onValue, remove } from 'firebase/database';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ToastContainer } from 'react-toastify';
@@ -158,29 +158,34 @@ const BanKickMutePanel = () => {
     return () => unsub();
   }, [user]);
 
-  // Reports listener (loads when on reports/appeals tabs)
+  // B6: Reports — one-time read scoped to the active tab, refreshed manually.
+  // Avoids a permanent background listener for data that doesn't need live updates.
+  const [reportsRefresh, setReportsRefresh] = useState(0);
   useEffect(() => {
     if (!isRoleReady) return;
+    if (activeTab !== 'reports' && activeTab !== 'appeals') return;
+    let cancelled = false;
     setReportsLoading(true);
-    const q = query(collection(db, 'reports'), orderBy('timestamp', 'desc'), limit(150));
-    const unsub = onSnapshot(q, snap => {
-      setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setReportsLoading(false);
-    }, () => setReportsLoading(false));
-    return () => unsub();
-  }, [isRoleReady]);
+    getDocs(query(collection(db, 'reports'), orderBy('timestamp', 'desc'), limit(150)))
+      .then(snap => { if (!cancelled) setReports(snap.docs.map(d => ({ id: d.id, ...d.data() }))); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setReportsLoading(false); });
+    return () => { cancelled = true; };
+  }, [isRoleReady, activeTab, reportsRefresh]);
 
-  // Live violations listener
+  // B6: Violations — one-time read scoped to the active tab, refreshed manually.
+  const [violationsRefresh, setViolationsRefresh] = useState(0);
   useEffect(() => {
     if (!isRoleReady) return;
+    if (activeTab !== 'violations') return;
+    let cancelled = false;
     setViolationsLoading(true);
-    const q = query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(200));
-    const unsub = onSnapshot(q, snap => {
-      setViolations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setViolationsLoading(false);
-    }, () => setViolationsLoading(false));
-    return () => unsub();
-  }, [isRoleReady]);
+    getDocs(query(collection(db, 'modLogs'), orderBy('timestamp', 'desc'), limit(200)))
+      .then(snap => { if (!cancelled) setViolations(snap.docs.map(d => ({ id: d.id, ...d.data() }))); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setViolationsLoading(false); });
+    return () => { cancelled = true; };
+  }, [isRoleReady, activeTab, violationsRefresh]);
 
   const handleModerateUser = (u, action) => {
     setSelectedUser(u);
@@ -364,13 +369,20 @@ const BanKickMutePanel = () => {
         case 'unkick': {
           const unkickScopeMode = actionData?.unkickScope || 'all_rooms';
           if (unkickScopeMode === 'all_rooms') {
-            const allRoomsSnap = await getDocs(query(collection(db, 'rooms'), limit(1000))).catch(() => null);
-            if (allRoomsSnap) {
-              const tasks = allRoomsSnap.docs.map(rd =>
+            // B3: Paginate rooms in batches of 100 instead of a single limit(1000) read.
+            let lastRoomDoc = null;
+            do {
+              const batchQ = lastRoomDoc
+                ? query(collection(db, 'rooms'), limit(100), startAfter(lastRoomDoc))
+                : query(collection(db, 'rooms'), limit(100));
+              const batchSnap = await getDocs(batchQ).catch(() => null);
+              if (!batchSnap || batchSnap.empty) break;
+              await Promise.all(batchSnap.docs.map(rd =>
                 callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: rd.id }).catch(() => {})
-              );
-              await Promise.all(tasks);
-            }
+              ));
+              lastRoomDoc = batchSnap.docs[batchSnap.docs.length - 1];
+              if (batchSnap.docs.length < 100) break;
+            } while (true);
             await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: null }).catch(() => {});
           } else {
             const kickedRoomId = selectedUser.kickedFrom?.roomId || actionData?.currentRoomId;
@@ -803,6 +815,10 @@ const BanKickMutePanel = () => {
                 <path fill={activeTab==='appeals'?'#10b981':'#f59e0b'} d="M11,4.5H13V15.5H11V4.5M13,17.5V19.5H11V17.5H13M2,22H22L12,2L2,22Z"/>
               </svg>
               {activeTab==='appeals' ? 'Ban Appeals' : 'Reports'}
+              <button onClick={() => setReportsRefresh(r => r + 1)} disabled={reportsLoading} title="Refresh" style={{marginLeft:'auto',padding:'4px 12px',borderRadius:8,border:'1.5px solid #e5e7eb',background:'#f9fafb',cursor:'pointer',fontSize:12,fontWeight:700,color:'#6b7280',display:'flex',alignItems:'center',gap:4}}>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#6b7280" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>
+                Refresh
+              </button>
             </h2>
             <p>User-submitted reports, flagged messages, and ban appeal requests</p>
           </div>
@@ -919,7 +935,11 @@ const BanKickMutePanel = () => {
               <svg viewBox="0 0 24 24" fill="none" style={{width:28,height:28,flexShrink:0}}>
                 <path fill="#ef4444" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z"/>
               </svg>
-              Live Violations Feed
+              Violations Feed
+              <button onClick={() => setViolationsRefresh(r => r + 1)} disabled={violationsLoading} title="Refresh" style={{marginLeft:'auto',padding:'4px 12px',borderRadius:8,border:'1.5px solid #e5e7eb',background:'#f9fafb',cursor:'pointer',fontSize:12,fontWeight:700,color:'#6b7280',display:'flex',alignItems:'center',gap:4}}>
+                <svg viewBox="0 0 24 24" fill="none" style={{width:13,height:13}}><path fill="#6b7280" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>
+                Refresh
+              </button>
             </h2>
             <p>TingleBot AutoMod log — user, fault, and action taken</p>
           </div>

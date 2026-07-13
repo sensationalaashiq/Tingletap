@@ -211,13 +211,15 @@ app.post('/api/send-email', async (req, res) => {
 });
 
 // ── Firestore REST helpers (uses caller's Firebase ID token) ──────────────────
-function fsVal(v) {
+function fsVal(v, _depth = 0) {
+  // B7: Guard against deeply-nested payloads that cause excessive recursion / CPU.
+  if (_depth > 10) throw new Error('fsVal: max recursion depth (10) exceeded — payload too deeply nested');
   if (v === null || v === undefined) return { nullValue: null };
   if (typeof v === 'boolean')        return { booleanValue: v };
   if (typeof v === 'number')         return { integerValue: String(v) };
   if (typeof v === 'string')         return { stringValue: v };
-  if (Array.isArray(v))             return { arrayValue: { values: v.map(fsVal) } };
-  if (typeof v === 'object')         return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, fv]) => [k, fsVal(fv)])) } };
+  if (Array.isArray(v))             return { arrayValue: { values: v.map(i => fsVal(i, _depth + 1)) } };
+  if (typeof v === 'object')         return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, fv]) => [k, fsVal(fv, _depth + 1)])) } };
   return { stringValue: String(v) };
 }
 function fromFsVal(v) {
@@ -381,10 +383,11 @@ app.post('/api/email-action', async (req, res) => {
     labels:        [],
     messageId:     brData.messageId || null,
   };
-  await fsCreate(token, 'ownerEmails', sentRecord).catch(() => {});
+  // B8: Log audit-log write failures instead of silently swallowing them.
+  await fsCreate(token, 'ownerEmails', sentRecord).catch(err => console.error('[EmailCenter] Audit log write failed (sent record):', err.message));
   if (parent && emailId) {
     const updateField = action === 'reply' ? 'replied' : 'forwarded';
-    await fsPatch(token, `ownerEmails/${emailId}`, { [updateField]: true }).catch(() => {});
+    await fsPatch(token, `ownerEmails/${emailId}`, { [updateField]: true }).catch(err => console.error('[EmailCenter] Audit log write failed (parent update):', err.message));
   }
 
   console.log(`[EmailCenter] ✓ ${action} | ${v.displayName} → ${toEmail} | "${subject}" | msgId: ${brData.messageId}`);

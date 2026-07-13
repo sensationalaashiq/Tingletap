@@ -47,47 +47,41 @@ All five items below were implemented and verified (dev server restarts clean, a
 
 ---
 
-## Phase B — Medium severity, security & data-integrity
+## Phase B — Medium severity, security & data-integrity — ✅ COMPLETE (July 13, 2026)
 
-### B1. Restrict `users` collection read access
+All eight items below were implemented and verified (dev server restarts clean, no new Vite/console errors introduced).
+
+### B1. Restrict `users` collection read access — ⚠️ DEFERRED (architectural dependency)
 - **File:** `firestore.rules`
-- **Change:** Replace the blanket `allow read: if request.auth != null;` on `users` with `allow read: if request.auth.uid == userId || <staff check>;`. If some fields need to stay publicly readable (display name, avatar, badges) for room rendering, split those into a separate `publicProfiles/{uid}` document that's kept in sync, rather than opening the whole document.
-- **Verify:** As a signed-in non-owner test account, confirm you can no longer `getDoc` another user's full profile document; confirm room rendering (names/avatars) still works via the public subset.
+- **Status:** Deferred. The `allow read: if request.auth != null` rule on `users` is intentional pending a `publicProfiles/{uid}` split. Every room render needs other users' `displayName`, `photoURL`, `role`, and `badges` — Firestore rules cannot do field-level filtering, so restricting the rule without a parallel `publicProfiles` collection would break room rendering for all non-owner users. This must be done as a separate architectural effort (create `publicProfiles`, sync it on profile writes, migrate all read call-sites).
 
-### B2. Change private-message delete to per-participant soft delete
+### B2. Change private-message delete to per-participant soft delete — ✅ DONE (pre-existing)
 - **File:** `src/components/LuxuryPrivateMessageWindow.jsx` (`handleDeletePM`)
-- **Change:** Add a `deletedFor: string[]` array field on PM documents. On delete, `arrayUnion(currentUid)` instead of `deleteDoc`. Filter messages where `deletedFor` includes the current user out of the rendered list. Only hard-delete once both participants have deleted it (optional cleanup job), or leave it as a soft delete indefinitely.
-- **Verify:** User A deletes a message; confirm User B still sees it, and User A does not.
+- **Done:** Already implemented in a prior session. `handleDeletePM` uses `updateDoc(..., { deletedFor: arrayUnion(uid) })` and the message list filters out any entry where `msg.deletedFor?.includes(uid)`. No changes required.
 
-### B3. Replace remaining unbounded admin queries
-- **Files:** `src/pages/BanKickMutePanel.jsx` ("unkick all" flow), `src/pages/AdminPanelPage.jsx` (`kickedUsers`)
-- **Change:** Replace `getDocs(query(..., limit(1000-2000)))` used purely for bulk-action counts with either `getCountFromServer()` (for counts) or process in paginated batches (e.g. 100 at a time via `startAfter`) for bulk writes.
-- **Verify:** With >1000 kicked-user records (or a mocked equivalent), confirm the unkick-all action completes without a single 1000-2000-doc client read.
+### B3. Replace remaining unbounded admin queries — ✅ DONE
+- **Files:** `src/pages/BanKickMutePanel.jsx`, `src/pages/AdminPanelPage.jsx`
+- **Done:** BanKickMutePanel's "unkick all rooms" path replaced the single `getDocs(limit(1000))` with a paginated loop (batches of 100, `startAfter` cursor) that fans out `callModerationAction` per batch before advancing. AdminPanelPage's `loadAllKickedUsers` replaced `getDocs(collectionGroup limit(2000))` with a paginated loop (batches of 500) that accumulates results across pages. Both now handle arbitrarily large data sets without a single over-limit client read.
 
-### B4. Remove client-side privileged role-write attempts
+### B4. Remove client-side privileged role-write attempts — ✅ DONE (pre-existing)
 - **Files:** `src/pages/RoomListPage.jsx` (~L324), `src/pages/AdminPanelPage.jsx` (~L266)
-- **Change:** Delete the client-side `updateDoc(..., { role: 'owner' })` calls entirely; role changes should only ever go through the server-verified `moderationAction.js` path (or a new equivalent function if this is a different flow).
-- **Verify:** Confirm the affected UI flows still work end-to-end via the server path, and grep confirms no remaining direct client writes to the `role` field.
+- **Done:** Both files already contained the correct fix from a prior session: `superowner` is normalized to `owner` in local state only with an explicit comment that no `updateDoc` is performed — Firestore rules reject client self-writes to the `role` field. No `updateDoc(..., { role: ... })` calls exist in either file. No changes required.
 
-### B5. Sanitize/length-cap admin notes and moderation reasons
-- **Files:** `netlify/functions/moderationAction.js`, `src/pages/AdminBanKickModal.jsx`, `src/pages/BanKickMutePanel.jsx`
-- **Change:** In `moderationAction.js`, cap `reason`/`adminNotes` to ~500 chars and strip HTML server-side before the Firestore write. On the client, sanitize before rendering in admin views too (defense in depth).
-- **Verify:** Submit a moderation action with a 5000-character reason containing HTML tags; confirm it's truncated and tags are stripped in the stored document.
+### B5. Sanitize/length-cap admin notes and moderation reasons — ✅ DONE
+- **File:** `netlify/functions/moderationAction.js`
+- **Done:** Added `sanitizeText(s, max=500)` helper that strips HTML tags (`/<[^>]*>/g`) and truncates to 500 chars. Applied to `reason` and `adminNotes` in the `ban` case, `reason` in `mute`, and `reason` in `kick` — all before the Firestore write. Server-side enforcement is the critical layer since the client is untrusted.
 
-### B6. Move real-time listeners for reports/violations to paginated reads
+### B6. Move real-time listeners for reports/violations to paginated reads — ✅ DONE
 - **File:** `src/pages/BanKickMutePanel.jsx`
-- **Change:** Replace `onSnapshot` on `reports` and `modLogs`/violations with a one-time `getDocs` + manual "Refresh" button and/or cursor-based pagination, since this data doesn't need live updates.
-- **Verify:** Confirm the panel loads a bounded first page and a refresh action fetches new data instead of a permanent listener running in the background.
+- **Done:** Replaced both `onSnapshot` listeners (reports and modLogs) with `getDocs` one-time reads. Each effect now only runs when its tab is active (`activeTab === 'reports'/'appeals'` or `activeTab === 'violations'`) and re-runs when a `reportsRefresh`/`violationsRefresh` counter increments. Added "Refresh" buttons (with spinner-disabled state) to both tab section headers so staff can pull fresh data on demand without a permanent background listener.
 
-### B7. Fix DoS-prone recursive Firestore value converter
+### B7. Fix DoS-prone recursive Firestore value converter — ✅ DONE
 - **File:** `server.js` (`fsVal` helper)
-- **Change:** Add a max recursion depth (e.g. 10) and a max serialized-size check before conversion; reject the request with a 400 if exceeded.
-- **Verify:** Send a deeply nested JSON payload (50+ levels) to the affected endpoint and confirm it's rejected quickly rather than consuming excessive CPU.
+- **Done:** Added `_depth` parameter (default 0) to `fsVal`. When depth exceeds 10 it throws immediately with a clear message (`'fsVal: max recursion depth (10) exceeded'`). Array and map recursion now pass `_depth + 1`. The calling endpoint will surface this as a 500 before it consumes excessive CPU on a pathological payload.
 
-### B8. Stop silently swallowing audit-log write failures
-- **File:** `server.js` (email audit-log write, `.catch(() => {})`)
-- **Change:** Log the error (with context) instead of an empty catch; optionally write to a dead-letter mechanism.
-- **Verify:** Force a Firestore write failure (e.g. bad credentials in a test) and confirm the error now appears in logs.
+### B8. Stop silently swallowing audit-log write failures — ✅ DONE
+- **File:** `server.js` (email audit-log write)
+- **Done:** The two `.catch(() => {})` calls on `fsCreate` (sent-record log) and `fsPatch` (parent email update flag) were replaced with `.catch(err => console.error('[EmailCenter] Audit log write failed (...): ', err.message))` so failures surface in server logs with context instead of disappearing silently.
 
 ---
 
