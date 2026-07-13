@@ -2,10 +2,11 @@ const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone password reset sender — no shared imports, no file system, HTML inline.
 import admin from 'firebase-admin';
 
-// FIREBASE_WEB_API_KEY is the Firebase Web API key (same value as VITE_FIREBASE_API_KEY).
-// Set it as a Netlify environment variable; VITE_FIREBASE_API_KEY is used as fallback
-// since it is already present in the Netlify build environment.
-const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+// FIREBASE_WEB_API_KEY is the Firebase Web API key used by the server-side REST fallback.
+// It must be set as its own server-only Netlify environment variable. We intentionally do
+// NOT fall back to VITE_FIREBASE_API_KEY here: that variable is bundled into the client build
+// and treating it as interchangeable with a server-only secret defeats the point of having one.
+const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY;
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -293,6 +294,14 @@ export const handler = async (event) => {
 };
 
 async function sendViaFirebaseRest(email, headers) {
+  if (!FIREBASE_WEB_API_KEY) {
+    console.error('[sendPasswordReset] FIREBASE_WEB_API_KEY is not set — cannot use Firebase REST fallback');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Password reset service is misconfigured. Please contact support at support@tingletap.com' }),
+    };
+  }
   try {
     const fbRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_WEB_API_KEY}`,

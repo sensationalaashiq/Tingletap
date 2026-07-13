@@ -83,9 +83,6 @@ function App() {
     isUnderline: false,
     isStrikethrough: false
   });
-  const [showGlobalBanModal, setShowGlobalBanModal] = useState(false);
-  const [globalBanInfo, setGlobalBanInfo] = useState(null);
-  const [bannedUser, setBannedUser] = useState(null);
   const [banModalData, setBanModalData] = useState({}); // Added state for ban modal data
   const [showBanModal, setShowBanModal] = useState(false); // Added state for ban modal visibility
   const [error, setError] = useState(''); // Added state for error messages
@@ -262,191 +259,11 @@ function App() {
           console.log('IP capture skipped:', e.message);
         }
 
-        // Listen for auth state changes and banned users
-        // Listen for auth state changes and banned users
-        const unsubscribeAuthCheck = auth.onAuthStateChanged(async (user) => {
-          if (user) {
-            console.log("🔍 Auth state changed - checking ban status for:", user.uid);
-
-            try {
-              const userDocRef = doc(db, 'users', user.uid);
-              const userSnap = await getDoc(userDocRef);
-
-              if (userSnap.exists()) {
-                const userData = userSnap.data();
-                console.log("🔍 User data loaded:", { isBanned: userData.isBanned, uid: user.uid });
-
-                if (userData.isBanned === true) {
-                  console.log("🚫 BANNED USER DETECTED - IMMEDIATE LOCKDOWN PROTOCOL ACTIVATED");
-
-                  // Store ban info in localStorage for persistence across reloads
-                  const banData = {
-                    reason: userData.banReason || "Account suspended due to policy violations",
-                    bannedBy: userData.bannedBy || "System Administrator",
-                    bannedAt: userData.bannedAt ? userData.bannedAt.toDate().toISOString() : new Date().toISOString(),
-                    type: "account_banned",
-                    userId: user.uid,
-                    email: user.email,
-                    timestamp: Date.now()
-                  };
-
-                  // Store ban status in localStorage for persistence
-                  localStorage.setItem('userBanStatus', JSON.stringify(banData));
-                  localStorage.setItem('isBannedUser', 'true');
-
-                  console.log("🚫 Ban data stored in localStorage:", banData);
-                  setBanModalData(banData);
-                  setShowBanModal(true);
-
-                  // Force sign out the banned user immediately
-                  await auth.signOut();
-
-                  // AGGRESSIVE modal and page lockdown
-                  for (let i = 0; i < 15; i++) {
-                    setTimeout(() => {
-                      console.log(`🚫 FORCE MODAL ATTEMPT ${i + 1}`);
-                      setShowBanModal(true);
-                      setBanModalData(banData);
-
-                      // Lock the page completely
-                      document.body.style.overflow = 'hidden';
-                      document.body.style.position = 'fixed';
-                      document.body.style.width = '100%';
-                      document.body.style.height = '100%';
-                      document.body.style.top = '0';
-                      document.body.style.left = '0';
-                      document.body.style.userSelect = 'none';
-                      document.body.style.pointerEvents = 'none';
-
-                      // Force modal styling
-                      const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                      if (modalElement) {
-                        modalElement.style.display = 'flex';
-                        modalElement.style.zIndex = '2147483647';
-                        modalElement.style.pointerEvents = 'all';
-                        modalElement.style.opacity = '1';
-                        modalElement.style.visibility = 'visible';
-                        modalElement.style.position = 'fixed';
-                        modalElement.style.top = '0';
-                        modalElement.style.left = '0';
-                        modalElement.style.width = '100vw';
-                        modalElement.style.height = '100vh';
-                        modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
-                      }
-                    }, i * 5);
-                  }
-
-                  // Force redirect to login page
-                  window.history.replaceState(null, null, '/login');
-
-                  // Prevent navigation attempts
-                  window.onbeforeunload = (e) => {
-                    e.preventDefault();
-                    e.returnValue = 'Account is suspended';
-                    return 'Account is suspended';
-                  };
-
-                  // Continuous enforcement for banned users
-                  if (window.banEnforcementInterval) clearInterval(window.banEnforcementInterval);
-                  const banEnforcementInterval = setInterval(() => {
-                    setShowBanModal(true);
-                    setBanModalData(banData);
-
-                    // Keep page locked
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.position = 'fixed';
-                    document.body.style.userSelect = 'none';
-                    document.body.style.pointerEvents = 'none';
-
-                    // Force modal styling
-                    const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                    if (modalElement) {
-                      modalElement.style.zIndex = '2147483647';
-                      modalElement.style.position = 'fixed';
-                      modalElement.style.top = '0';
-                      modalElement.style.left = '0';
-                      modalElement.style.width = '100vw';
-                      modalElement.style.height = '100vh';
-                      modalElement.style.display = 'flex';
-                      modalElement.style.visibility = 'visible';
-                      modalElement.style.opacity = '1';
-                      modalElement.style.pointerEvents = 'all';
-                      modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
-                    }
-
-                    // Keep on login page
-                    if (window.location.pathname !== '/login') {
-                      window.history.replaceState(null, null, '/login');
-                    }
-                  }, 3000); // Every 3s — sufficient to enforce, not wasteful
-
-                  // Store interval globally
-                  window.banEnforcementInterval = banEnforcementInterval;
-
-                  return; // Don't proceed with normal flow
-                } else {
-                  // User is not banned, clear any stored ban status
-                  localStorage.removeItem('userBanStatus');
-                  localStorage.removeItem('isBannedUser');
-                  if (window.banEnforcementInterval) {
-                    clearInterval(window.banEnforcementInterval);
-                    window.banEnforcementInterval = null;
-                  }
-                  console.log("✅ User is not banned, allowing normal flow");
-                }
-              } else {
-                console.log("❌ User document does not exist for:", user.uid);
-              }
-            } catch (error) {
-              console.error("Error checking ban status in auth listener:", error);
-            }
-          } else {
-            // No user logged in - check if there's a stored ban status
-            const storedBanStatus = localStorage.getItem('isBannedUser');
-            if (storedBanStatus === 'true') {
-              console.log("🚫 Found stored ban status - maintaining ban modal");
-              const banData = JSON.parse(localStorage.getItem('userBanStatus') || '{}');
-
-              // Convert stored ISO string back to Date object
-              if (banData.bannedAt) {
-                banData.bannedAt = new Date(banData.bannedAt);
-              }
-
-              setBanModalData(banData);
-              setShowBanModal(true);
-
-              // Continue enforcement even when logged out
-              setTimeout(() => {
-                if (window.banEnforcementInterval) clearInterval(window.banEnforcementInterval);
-                const banEnforcementInterval = setInterval(() => {
-                  setShowBanModal(true);
-                  setBanModalData(banData);
-
-                  // Keep page locked
-                  document.body.style.overflow = 'hidden';
-                  document.body.style.position = 'fixed';
-
-                  // Force modal styling
-                  const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                  if (modalElement) {
-                    modalElement.style.zIndex = '2147483647';
-                    modalElement.style.display = 'flex';
-                    modalElement.style.visibility = 'visible';
-                    modalElement.style.opacity = '1';
-                    modalElement.style.pointerEvents = 'all';
-                  }
-
-                  // Keep on login page
-                  if (window.location.pathname !== '/login') {
-                    window.history.replaceState(null, null, '/login');
-                  }
-                }, 3000); // Every 3s — sufficient enforcement
-
-                window.banEnforcementInterval = banEnforcementInterval;
-              }, 100);
-            }
-          }
-        });
+        // Ban enforcement is handled entirely by the single profile onSnapshot
+        // listener below (real-time, single source of truth). A second
+        // onAuthStateChanged-driven ban check + its own polling interval used to
+        // live here, duplicating the same enforcement — removed as part of the
+        // Phase A ban-enforcement consolidation.
 
         // Listen to profile changes when user is logged in
         const userDocRef = doc(db, 'users', currentUser.uid);
@@ -454,36 +271,30 @@ function App() {
           if (docSnap.exists()) {
             const profile = docSnap.data();
             if (profile.isBanned) {
-              console.log("🚫 BANNED USER DETECTED IN APP.JSX - FORCING IMMEDIATE LOCKDOWN");
-
-              // Immediately lock down everything
-              if (window.globalBanLockdownInterval) clearInterval(window.globalBanLockdownInterval);
-              setBannedUser(currentUser);
-              setShowGlobalBanModal(true);
+              console.log("🚫 BANNED USER DETECTED - single-listener lockdown (CSS-only, no polling interval)");
 
               const banData = {
                 reason: profile.banReason || "Account suspended due to policy violations",
                 bannedBy: profile.bannedBy || "System Administrator",
-                bannedAt: profile.bannedAt ? profile.bannedAt.toDate() : new Date(),
+                bannedAt: profile.bannedAt ? profile.bannedAt.toDate().toISOString() : new Date().toISOString(),
                 type: "account_banned",
                 userId: currentUser.uid,
-                email: currentUser.email
+                email: currentUser.email,
+                timestamp: Date.now()
               };
 
-              setGlobalBanInfo(banData);
+              // Persist so LoginPage can show the modal immediately after the forced
+              // sign-out redirects there, before this listener re-attaches.
+              localStorage.setItem('userBanStatus', JSON.stringify(banData));
+              localStorage.setItem('isBannedUser', 'true');
+
+              setBanModalData(banData);
+              setShowBanModal(true);
 
               // Force sign out immediately
               signOut(auth);
               setUserProfile(null);
               setUser(null);
-
-              // Lock the entire page
-              document.body.style.overflow = 'hidden';
-              document.body.style.position = 'fixed';
-              document.body.style.width = '100%';
-              document.body.style.height = '100%';
-              document.body.style.top = '0';
-              document.body.style.left = '0';
 
               // Block all browser navigation
               window.onbeforeunload = (e) => {
@@ -492,50 +303,31 @@ function App() {
                 return 'Account is suspended';
               };
 
-              // Force URL to stay on current page
-              const currentPath = window.location.pathname;
-              window.history.replaceState(null, null, currentPath);
+              // Force URL to stay on the login page
+              window.history.replaceState(null, null, '/login');
 
-              // Continuous modal forcing and page locking
-              const banLockdownInterval = setInterval(() => {
-                setShowGlobalBanModal(true);
-                setGlobalBanInfo(banData);
-                setBannedUser(currentUser);
-
-                // Keep page locked
-                document.body.style.overflow = 'hidden';
-                document.body.style.position = 'fixed';
-
-                // Prevent any navigation attempts
-                if (window.location.pathname !== currentPath) {
-                  window.history.replaceState(null, null, currentPath);
-                }
-
-                // Force modal visibility
-                const modalElement = document.querySelector('.ban-kick-modal-overlay');
-                if (modalElement) {
-                  modalElement.style.zIndex = '999999';
-                  modalElement.style.position = 'fixed';
-                  modalElement.style.top = '0';
-                  modalElement.style.left = '0';
-                  modalElement.style.width = '100vw';
-                  modalElement.style.height = '100vh';
-                  modalElement.style.display = 'flex';
-                  modalElement.style.visibility = 'visible';
-                  modalElement.style.opacity = '1';
-                  modalElement.style.pointerEvents = 'all';
-                }
-              }, 2000); // Every 2s — enforces lockdown without CPU waste
-
-              // Store interval globally for cleanup
-              window.globalBanLockdownInterval = banLockdownInterval;
+              // CSS-only lock — replaces the two separate setInterval-based
+              // lockdown loops that used to run here and in a duplicate
+              // onAuthStateChanged listener. A single <style> tag is enforced
+              // natively by the browser and cannot be bypassed by DOM
+              // manipulation, with zero ongoing JS/CPU cost.
+              if (!document.getElementById('app-ban-lock')) {
+                const banLockStyle = document.createElement('style');
+                banLockStyle.id = 'app-ban-lock';
+                banLockStyle.textContent = [
+                  'body{overflow:hidden!important;position:fixed!important;width:100%!important;height:100%!important;top:0!important;left:0!important;user-select:none!important;pointer-events:none!important;}',
+                  '.ban-kick-modal-overlay{z-index:2147483647!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;background-color:rgba(0,0,0,0.95)!important;}',
+                ].join('');
+                document.head.appendChild(banLockStyle);
+              }
 
               return; // Exit early, don't process normal profile logic
             } else {
-              if (window.globalBanLockdownInterval) {
-                clearInterval(window.globalBanLockdownInterval);
-                window.globalBanLockdownInterval = null;
-              }
+              // User is not (or no longer) banned — clear any stored ban state/lock
+              localStorage.removeItem('userBanStatus');
+              localStorage.removeItem('isBannedUser');
+              const existingLock = document.getElementById('app-ban-lock');
+              if (existingLock) existingLock.remove();
               // If this is an anonymous (guest) Firebase user, ensure the profile
               // always carries isGuest + role + gender so every downstream
               // component (Sidebar, SettingsSidebar, etc.) shows Purush/Stree/Navrang
@@ -662,7 +454,6 @@ function App() {
         window.cleanupFirestoreListeners = () => {
           try {
             unsubscribeProfile();
-            if (unsubscribeAuthCheck) unsubscribeAuthCheck();
             console.log('Firestore listeners cleaned up');
           } catch (error) {
             console.log('Error cleaning up listeners:', error);
@@ -672,19 +463,12 @@ function App() {
         return () => {
           try {
             unsubscribeProfile();
-            if (unsubscribeAuthCheck) unsubscribeAuthCheck();
             if (unsubscribeConnected) unsubscribeConnected();
             if (window.cleanupFirestoreListeners) {
               delete window.cleanupFirestoreListeners;
             }
-            if (window.banEnforcementInterval) {
-              clearInterval(window.banEnforcementInterval);
-              window.banEnforcementInterval = null;
-            }
-            if (window.globalBanLockdownInterval) {
-              clearInterval(window.globalBanLockdownInterval);
-              window.globalBanLockdownInterval = null;
-            }
+            const existingLock = document.getElementById('app-ban-lock');
+            if (existingLock) existingLock.remove();
           } catch (error) {
             console.log('Error during listener cleanup:', error);
           }
@@ -734,14 +518,8 @@ function App() {
       if (window.cleanupFirestoreListeners) {
         window.cleanupFirestoreListeners();
       }
-      if (window.banEnforcementInterval) {
-        clearInterval(window.banEnforcementInterval);
-        window.banEnforcementInterval = null;
-      }
-      if (window.globalBanLockdownInterval) {
-        clearInterval(window.globalBanLockdownInterval);
-        window.globalBanLockdownInterval = null;
-      }
+      const existingLock = document.getElementById('app-ban-lock');
+      if (existingLock) existingLock.remove();
     };
   }, []);
 

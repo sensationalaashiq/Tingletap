@@ -607,7 +607,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     actualDisplayName
                                 )}
                             </span>
-                            {badge && badges[badge] && (<span className={`inline-badge badge-${badge}`} dangerouslySetInnerHTML={{ __html: badges[badge].svg }} title={badges[badge].name} />)}
+                            {badge && badges[badge] && (<span className={`inline-badge badge-${badge}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(badges[badge].svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }} title={badges[badge].name} />)}
                             
                             {showUserDropdown && !isBot && isMyMessage && (
                                 <div className="user-dropdown">
@@ -4266,7 +4266,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                             if (!title) return;
                             toast(
                                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                    <div dangerouslySetInnerHTML={{ __html: title.svg }}
+                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(title.svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }}
                                          style={{ width:30, height:30, flexShrink:0 }}/>
                                     <div>
                                         <div style={{ fontWeight:700, fontSize:12.5, color:'#1f2937' }}>Achievement Unlocked!</div>
@@ -7970,12 +7970,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     <span className="vpm-name" data-user-id={profileUser.uid} data-user-uid={profileUser.uid}>{profileUser.displayName || 'Anonymous'}</span>
                                     {profileUser.badge && badges[profileUser.badge] && (
                                         <span className={`vpm-badge-wrap badge-${profileUser.badge}`} title={badges[profileUser.badge].name}
-                                            dangerouslySetInnerHTML={{ __html: badges[profileUser.badge].svg }} />
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(badges[profileUser.badge].svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }} />
                                     )}
                                     {isTodayBirthday(profileUser.dateOfBirth) && (
                                         <span className="vpm-badge-wrap birthday-badge-glow"
                                             title="Happy Birthday!"
-                                            dangerouslySetInnerHTML={{ __html: BIRTHDAY_BADGE_SVG_LG }} />
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(BIRTHDAY_BADGE_SVG_LG, { USE_PROFILES: { svg: true, svgFilters: true } }) }} />
                                     )}
                                 </div>
 
@@ -7986,7 +7986,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     return (
                                         <div className="vpm-ach-chip" title={latestAch.description}
                                             style={{ background: latestAch.gradient, borderColor: latestAch.borderColor }}>
-                                            <span className="vpm-ach-chip-icon" dangerouslySetInnerHTML={{ __html: latestAch.svg }} />
+                                            <span className="vpm-ach-chip-icon" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(latestAch.svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }} />
                                             <span className="vpm-ach-chip-label" style={{ color: latestAch.color }}>{latestAch.name}</span>
                                         </div>
                                     );

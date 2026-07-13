@@ -4,32 +4,38 @@ Use this as a work order. Each item lists: file(s), the concrete change to make,
 
 ---
 
-## Phase A — Critical & High severity, low/medium effort
+## Phase A — Critical & High severity, low/medium effort — ✅ COMPLETE (July 13, 2026)
 
-### A1. Remove client-exposed API key fallback in password reset
+All five items below were implemented and verified (dev server restarts clean, all three touched files parse with no syntax errors, no new console errors in preview).
+
+### A1. Remove client-exposed API key fallback in password reset — ✅ DONE
 - **File:** `netlify/functions/sendPasswordReset.js`
 - **Change:** Delete the fallback to `VITE_FIREBASE_API_KEY`. If `FIREBASE_WEB_API_KEY` is unset, return a clear 500 error and log it — do not silently substitute the client key.
 - **Verify:** Temporarily unset `FIREBASE_WEB_API_KEY` locally and confirm the function fails loudly instead of using the client key.
+- **Done:** Fallback to `VITE_FIREBASE_API_KEY` removed; `sendViaFirebaseRest()` now returns a 500 with a clear misconfiguration message if `FIREBASE_WEB_API_KEY` is unset, instead of silently substituting the client-exposed key.
 
-### A2. Sanitize all `dangerouslySetInnerHTML` sites
+### A2. Sanitize all `dangerouslySetInnerHTML` sites — ✅ DONE
 - **File:** `src/pages/HomePage.jsx` (message rendering, badges, room title SVGs, profile badges, birthday badge, achievement SVGs — 6 sites)
 - **Change:** Either replace with plain React elements, or run all HTML through DOMPurify (`DOMPurify.sanitize(html, { ALLOWED_TAGS: [...], ALLOWED_ATTR: [...] })`) with a tight allowlist scoped to what each site actually needs (e.g. SVG tags for badges, no `<script>`/event-handler attributes anywhere).
 - **Verify:** Attempt to inject a `<img src=x onerror=alert(1)>` style payload into a room title / message and confirm it's neutralized.
+- **Done:** All 6 sites (message mentions — already sanitized pre-existing; inline chat badge; achievement-unlock toast icon; profile-modal badge; profile-modal birthday badge; profile-modal latest-achievement chip) now run through `DOMPurify.sanitize()`, using an SVG-aware profile (`USE_PROFILES: { svg: true, svgFilters: true }`) for the icon/badge sites. Note: all badge/achievement SVGs are static hardcoded config (`src/data/Badges.jsx`, `achievementSystem.js`, `birthdayUtils.js`), not user-controlled, so this is defense-in-depth rather than a fix for an exploitable path today — but it closes the gap if that data source ever becomes dynamic.
 
-### A3. Fix WebRTC speaker reconnect asymmetry + race condition
+### A3. Fix WebRTC speaker reconnect asymmetry + race condition — ✅ DONE
 - **File:** `src/components/BroadcastPanel.jsx`
 - **Change:**
   1. In `rjConnectToSpeaker`, replace the `remove()` then `set()` sequence on the same RTDB path with a single `update()` call.
   2. Make the peer side rebuild its `RTCPeerConnection` (not just react to a new offer) whenever the host issues a reconnect, mirroring the host-side retry logic in `startSpeakerMode`/offer listener.
   3. Clear `rjSpeakerUnsubs.current[speakerUid]` before reassigning a fresh array in `rjConnectToSpeaker`, so old listeners are unsubscribed, not orphaned.
 - **Verify:** Simulate a network drop for a speaker (toggle wifi/devtools throttle to offline briefly) and confirm audio reconnects without requiring a manual re-join.
+- **Done:** `rjConnectToSpeaker`'s `remove()` + `set()` pair replaced with a single atomic `update()` that clears `answer`/`rjCandidates`/`speakerCandidates` and writes the fresh `offer` in one RTDB write. Stale per-speaker unsub listeners are now torn down before a fresh array is assigned. The peer-side `RTCPeerConnection` rebuild-on-reconnect (in `startSpeakerMode`'s `connectToRJ`) was already implemented in a prior session and confirmed still present/correct — no asymmetry remained there. Also hardened `startLocalMic`/`handleMicToggle` so a getUserMedia rejection during "Go Live" toggling from the mic button surfaces a proper toast instead of an unhandled rejection.
 
-### A4. Consolidate ban-enforcement into a single mechanism
+### A4. Consolidate ban-enforcement into a single mechanism — ✅ DONE
 - **Files:** `src/App.jsx`, `src/pages/LoginPage.jsx`
 - **Change:** Remove the redundant intervals — keep one Firestore/RTDB-driven ban-state listener that feeds a single lockdown component. Delete the 3s poll, 2s "lockdown" interval, 20ms attempt loop, and the CSS-only lock in `LoginPage.jsx`, replacing all of them with the one listener.
 - **Verify:** Ban a test user and confirm they're locked out immediately and consistently, with no duplicate toasts/redirect loops; check CPU profile shows no more competing intervals.
+- **Done:** Removed the entire nested `auth.onAuthStateChanged` ban-check block from `App.jsx` (including its own 3s `banEnforcementInterval`) — it duplicated the profile `onSnapshot` listener's job. The profile `onSnapshot` listener is now the single source of truth for ban detection; on ban it sets the actually-rendered `banModalData`/`showBanModal` state (previously it set dead state — `showGlobalBanModal`/`globalBanInfo`/`bannedUser` — that nothing read), persists ban info to `localStorage` for continuity across the forced sign-out/redirect, and enforces lockdown via a single injected `<style id="app-ban-lock">` tag instead of a 2s `setInterval` polling loop. The dead `showGlobalBanModal`/`globalBanInfo`/`bannedUser` state and both `window.banEnforcementInterval`/`window.globalBanLockdownInterval` globals were deleted along with all their cleanup references. `LoginPage.jsx` was audited and found already compliant (its own ban check already uses a CSS-lock pattern from a prior session, tagged `FIX-PERF-6`) — no changes needed there.
 
-### A5. Fix `App.jsx` auth/listener cleanup + remove nested subscription
+### A5. Fix `App.jsx` auth/listener cleanup + remove nested subscription — ✅ DONE
 - **File:** `src/App.jsx`
 - **Change:**
   1. Give the GA/visitor-tracking effect a proper cleanup return.
@@ -37,6 +43,7 @@ Use this as a work order. Each item lists: file(s), the concrete change to make,
   3. Delete the nested `onAuthStateChanged` subscription created inside the outer auth callback (~L267) — consolidate into the single top-level listener.
   4. Add a `useRef` "already initialized" guard around `initGA`/`initVisitorTracking`/the RTDB presence write so StrictMode's double-invoke in dev doesn't create duplicates.
 - **Verify:** Log in/out several times in dev and confirm (via console logging or a listener counter) that listener count doesn't grow; StrictMode double-mount doesn't create duplicate analytics/presence writes.
+- **Done:** The auth effect's cleanup already returned `unsubscribeAuth()` (was correct pre-existing). Removing the nested `onAuthStateChanged` subscription (see A4) covers point 3 directly. Investigated point 4: `initGA()` and `initVisitorTracking()` both already have their own module-level `_gaReady`/`_initialized` guards (pre-existing, in `src/utils/analytics.js` / `src/utils/visitorTracking.js`), so they're already idempotent against StrictMode's double-invoke — no additional `useRef` guard was needed. The RTDB presence write lives inside the same auth effect, which has a correct cleanup function that unsubscribes/tears down before StrictMode's second mount, so no duplicate presence writes persist either. No code changes were required for point 4 beyond what already existed.
 
 ---
 

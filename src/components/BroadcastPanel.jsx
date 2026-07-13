@@ -1401,9 +1401,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (!canManageRJ || !myUid || speakerUid === myUid) return;
     if (rjSpeakerPCs.current[speakerUid]) return; // already connecting/connected
 
-    if (!rjSpeakerUnsubs.current[speakerUid]) {
-      rjSpeakerUnsubs.current[speakerUid] = [];
+    // Always start from a clean unsub list for this speaker — if a previous
+    // session left stale listeners behind (e.g. teardown didn't run), reusing
+    // the old array would silently orphan them instead of replacing them.
+    if (rjSpeakerUnsubs.current[speakerUid]?.length) {
+      rjSpeakerUnsubs.current[speakerUid].forEach(u => { try { u(); } catch {} });
     }
+    rjSpeakerUnsubs.current[speakerUid] = [];
 
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     rjSpeakerPCs.current[speakerUid] = pc;
@@ -1457,9 +1461,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     /* RJ creates offer specifying it wants to RECEIVE audio from the speaker */
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: false });
     await pc.setLocalDescription(offer);
-    /* Clear stale signaling data before writing new offer so speaker always sees fresh offer */
-    await remove(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`)).catch(() => {});
-    await set(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/offer`), { type: offer.type, sdp: offer.sdp }).catch(() => {});
+    /* Replace the whole speakerConnections node for this speaker atomically via a
+       single update() — a remove() followed by a separate set() left a window
+       where a slow client could observe (or miss) the transient removed state,
+       causing reconnects to silently fail to propagate. update() with an
+       explicit null for the parent-relative children we want cleared, plus the
+       new offer, applies as one RTDB write. */
+    await update(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`), {
+      offer: { type: offer.type, sdp: offer.sdp },
+      answer: null,
+      rjCandidates: null,
+      speakerCandidates: null,
+    }).catch(() => {});
 
     /* Watch for speaker's answer — stored per-speaker for isolated teardown */
     const unsubAns = onValue(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/answer`), snap => {
@@ -1750,8 +1763,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const handleMicToggle = async () => {
     if (!localStream.current) {
-      await startLocalMic();
-      setMicMuted(false);
+      try {
+        await startLocalMic();
+        setMicMuted(false);
+      } catch (err) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          bpToast.error('Microphone blocked. Allow mic access in your browser settings, then try again.');
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          bpToast.error('No microphone detected. Please connect a mic and try again.');
+        } else if (err.name === 'NotReadableError') {
+          bpToast.error('Microphone is in use by another app. Close it and try again.');
+        } else {
+          bpToast.error('Could not access microphone: ' + (err.message || 'Unknown error'));
+        }
+      }
     } else {
       const nowMuted = !micMuted;
       localStream.current.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
@@ -1760,6 +1785,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   const startLocalMic = async () => {
+    // Note: getUserMedia errors (permission denied, no device, etc.) are
+    // intentionally left uncaught here and propagate to the caller — every
+    // call site (handleGoLive, handleMicToggle) is responsible for catching
+    // and toasting so the messaging can be tailored to that action.
     if (localStream.current) return localStream.current;
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
