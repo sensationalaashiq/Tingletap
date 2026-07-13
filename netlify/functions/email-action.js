@@ -285,10 +285,14 @@ export const handler = async (event) => {
       });
     }
 
+    // C10: Mask both addresses in logs — never write full emails to function logs.
+    const _maskEmail = e => (typeof e === 'string' && e.includes('@'))
+      ? e.replace(/^(.{1,3})(.*)(@.*)$/, (_, a, b, c) => a + '*'.repeat(Math.min(b.length, 4)) + c)
+      : '?';
     log.info(`Owner email ${action} sent`, {
-      sender: sender.email,
-      to: toEmail.replace(/(.{2}).+(@.+)/, '$1***$2'),
-      theme: themeKey,
+      sender: _maskEmail(sender.email),
+      to:     _maskEmail(toEmail),
+      theme:  themeKey,
     });
 
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true, messageId: brevoResult?.messageId }) };

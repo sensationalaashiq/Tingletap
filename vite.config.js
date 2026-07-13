@@ -119,62 +119,7 @@ export default defineConfig({
       'Pragma': 'no-cache',
       'Expires': '0',
     },
-    proxy: {
-      '/.netlify/functions/send-email': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/send-email',
-      },
-      '/.netlify/functions/email-action': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/email-action',
-      },
-      '/.netlify/functions/contact': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/contact',
-      },
-      '/.netlify/functions/sendOTP': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/sendOTP',
-      },
-      '/.netlify/functions/sendPasswordReset': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/sendPasswordReset',
-      },
-      '/.netlify/functions/sendVerification': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/sendVerification',
-      },
-      '/.netlify/functions/getUploadUrl': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/getUploadUrl',
-      },
-      '/.netlify/functions/submitBadgeApplication': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/submitBadgeApplication',
-      },
-      '/.netlify/functions/generateSignedMediaUrl': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/generateSignedMediaUrl',
-      },
-      '/.netlify/functions/reviewBadgeApplication': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/reviewBadgeApplication',
-      },
-      '/.netlify/functions/post-automod-notice': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        rewrite: () => '/api/post-automod-notice',
-      },
-    },
+    // All API calls go to /.netlify/functions/* — handled by Netlify in production.
+    // No dev proxy needed; use `netlify dev` locally if you need to invoke functions.
   },
 })

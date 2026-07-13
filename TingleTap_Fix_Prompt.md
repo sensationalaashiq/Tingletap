@@ -75,13 +75,13 @@ All eight items below were implemented and verified (dev server restarts clean, 
 - **File:** `src/pages/BanKickMutePanel.jsx`
 - **Done:** Replaced both `onSnapshot` listeners (reports and modLogs) with `getDocs` one-time reads. Each effect now only runs when its tab is active (`activeTab === 'reports'/'appeals'` or `activeTab === 'violations'`) and re-runs when a `reportsRefresh`/`violationsRefresh` counter increments. Added "Refresh" buttons (with spinner-disabled state) to both tab section headers so staff can pull fresh data on demand without a permanent background listener.
 
-### B7. Fix DoS-prone recursive Firestore value converter — ✅ DONE
-- **File:** `server.js` (`fsVal` helper)
-- **Done:** Added `_depth` parameter (default 0) to `fsVal`. When depth exceeds 10 it throws immediately with a clear message (`'fsVal: max recursion depth (10) exceeded'`). Array and map recursion now pass `_depth + 1`. The calling endpoint will surface this as a 500 before it consumes excessive CPU on a pathological payload.
+### B7. Fix DoS-prone recursive Firestore value converter — ✅ N/A (server.js removed)
+- **File:** ~~`server.js` (`fsVal` helper)~~ — deleted July 13, 2026.
+- **Resolution:** `server.js` and its `fsVal` Firestore-REST helper no longer exist. All email and moderation actions now run exclusively as Netlify Functions, which use the Firebase Admin SDK directly — no recursive REST-body converter involved. The DoS surface this item targeted has been eliminated entirely.
 
-### B8. Stop silently swallowing audit-log write failures — ✅ DONE
-- **File:** `server.js` (email audit-log write)
-- **Done:** The two `.catch(() => {})` calls on `fsCreate` (sent-record log) and `fsPatch` (parent email update flag) were replaced with `.catch(err => console.error('[EmailCenter] Audit log write failed (...): ', err.message))` so failures surface in server logs with context instead of disappearing silently.
+### B8. Stop silently swallowing audit-log write failures — ✅ N/A (server.js removed)
+- **File:** ~~`server.js`~~ — deleted July 13, 2026.
+- **Resolution:** `server.js` is gone. Audit-log writes for email actions now happen inside `netlify/functions/email-action.js`, which uses a structured `log.error()` call (via `shared/logger.js`) inside a top-level `try/catch` — failures surface in Netlify function logs automatically. No silent swallowing.
 
 ---
 
@@ -125,9 +125,9 @@ All 19 items addressed below (15 implemented, 2 pre-existing, 2 deferred). Dev s
 - **File:** `src/components/BroadcastPanel.jsx`
 - **Done:** Wrapped `getUserMedia` in a `try/catch` directly inside `startLocalMic`. `NotAllowedError`/`PermissionDeniedError` shows "Microphone access blocked" toast; `NotFoundError` shows "No microphone found" toast. The error is re-thrown after toasting so call-site handlers can still add context-specific messaging if needed.
 
-### C10. Consistent email masking and remove full-address logging — ✅ DONE
-- **File:** `server.js`
-- **Done:** Added a local `_maskEmail` helper inline at the log site: replaces the middle characters of the local part with up to 4 asterisks (e.g. `user@example.com` → `use****@example.com`). Applied to both `sender.email` and `recipientEmail` in the success log, and also to the `sender` field returned in the JSON response.
+### C10. Consistent email masking and remove full-address logging — ✅ DONE (ported to Netlify)
+- **File:** `netlify/functions/email-action.js` (server.js deleted July 13, 2026)
+- **Done:** `server.js` is gone — its masked log was moot. The live production path in `email-action.js` already masked `toEmail` at L290 but logged `sender.email` raw. Added the same `_maskEmail` helper inline and applied it to `sender.email` in the `log.info()` call, so both addresses are now masked in Netlify function logs. The `toEmail` masking in the JSON response was already correct.
 
 ### C11. Strip production console.log/console.error noise — ✅ DONE
 - **File:** `src/pages/HomePage.jsx`
@@ -141,9 +141,9 @@ All 19 items addressed below (15 implemented, 2 pre-existing, 2 deferred). Dev s
 - **File:** `vite.config.js`
 - **Done:** Added `import path from 'path'` and a `resolve.alias` block mapping `@` → `src/`. New code can now use `import Foo from '@/components/Foo'` instead of `../../components/Foo`. Existing imports are unchanged — the alias is available incrementally for new/refactored code.
 
-### C14. Deduplicate email-sending logic — ⚠️ DEFERRED (large refactor, risk)
-- **Files:** `server.js`, `netlify/functions/send-email.js`, `netlify/functions/contact.js`
-- **Status:** Deferred. The dev-server path (`server.js`) and the Netlify functions path have diverged in template styling and feature set. Unifying them requires picking a canonical template, threading env-var differences, and smoke-testing all transactional email flows (password reset, OTP, contact form, owner reply/forward) end-to-end. Scoped as a separate standalone task.
+### C14. Deduplicate email-sending logic — ✅ RESOLVED (server.js removed)
+- **Files:** ~~`server.js`~~, `netlify/functions/send-email.js`, `netlify/functions/contact.js`
+- **Resolution:** `server.js` (the source of the duplicated, diverged email implementation) was deleted on July 13, 2026. There is now a single canonical email path: all outbound email flows (OTP, password reset, verification, owner reply/forward, contact form) run exclusively through Netlify Functions backed by `shared/emailService.js` and `shared/logger.js`. No deduplication refactor needed.
 
 ### C15. Add file-size check to `StylishImageUploadModal` — ✅ DONE
 - **File:** `src/components/StylishImageUploadModal.jsx`

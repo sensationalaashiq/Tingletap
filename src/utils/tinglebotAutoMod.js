@@ -674,8 +674,7 @@ export const postNotice = async (roomId, { violatorUid, violatorDisplayName, vio
 
         const idToken = await currentUser.getIdToken();
 
-        // In development Vite proxies /.netlify/functions/* → local server.js
-        // In production the Netlify CDN routes it to the function.
+        // Calls the Netlify function directly — use `netlify dev` locally to test.
         const fnUrl = '/.netlify/functions/post-automod-notice';
 
         const res = await fetch(fnUrl, {
