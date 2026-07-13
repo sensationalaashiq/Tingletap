@@ -1,3 +1,10 @@
+# Running this project on Replit
+
+- **Frontend (Vite dev server):** `npm run dev` — workflow "Start application", serves on port 5000.
+- **Email Center API (Express):** `node server.js` — workflow "Email Center API", serves on port 5001. Contact-form Firestore writes and outbound email are disabled in dev without `BREVO_API_KEY` / Firebase Admin credentials — this is expected locally.
+- **Preview renders blank in Replit dev:** Firebase config (API keys, project id, etc.) for this project lives in Netlify environment variables / GitHub, not in Replit secrets. Without them the app can't initialize Firebase, so the dev preview is intentionally blank here. The user has previously declined adding Firebase config to Replit — production runs via Netlify.
+- Dependencies are managed via `npm install` (already run); no additional setup is required to start both workflows.
+
 # Recent Changes (July 11, 2026) — Dual-Bucket R2 Refactor (Session 14)
 
 **Two separate Cloudflare R2 buckets** — public media loads via permanent CDN URL (never expires), private media stays in an isolated private bucket served only through auth-gated Netlify proxy functions.
