@@ -7,7 +7,7 @@ import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import PremiumImageMessage from './PremiumImageMessage';
 import { auth, db } from '../firebase/config';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
@@ -297,13 +297,24 @@ const LuxuryPrivateMessageWindow = ({
   const audioInputRef = useRef(null);
   const recordingTimerRef = useRef(null);
 
+  // Per-participant soft delete: hide any message the current user has deleted
+  // for themselves, without affecting what the other participant sees.
+  const visiblePrivateMessages = React.useMemo(() => {
+    const uid = auth.currentUser?.uid;
+    return (privateMessages || []).filter(msg => !msg.deletedFor?.includes(uid));
+  }, [privateMessages]);
+
   // Message deletion (own messages only — mirrors firestore.rules: sender or staff)
   const [confirmDeletePmId, setConfirmDeletePmId] = useState(null);
   const [deletingPmId, setDeletingPmId] = useState(null);
   const handleDeletePM = async (messageId) => {
     setDeletingPmId(messageId);
     try {
-      await deleteDoc(doc(db, 'privateMessages', messageId));
+      // Per-participant soft delete: mark this message hidden for the current
+      // user only, instead of hard-deleting it (which used to remove it from
+      // the other participant's conversation too).
+      const uid = auth.currentUser?.uid;
+      await updateDoc(doc(db, 'privateMessages', messageId), { deletedFor: arrayUnion(uid) });
       pt.success('Message deleted.');
     } catch (e) {
       pt.error('Could not delete message: ' + e.message);
@@ -677,7 +688,7 @@ const LuxuryPrivateMessageWindow = ({
               transition={{ delay: 0.2 }}
             >
               <AnimatePresence>
-                {privateMessages.length === 0 ? (
+                {visiblePrivateMessages.length === 0 ? (
                   <motion.div
                     className="ultra-pm-empty-state"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -693,7 +704,7 @@ const LuxuryPrivateMessageWindow = ({
                   </motion.div>
                 ) : (
                   <div className="ultra-pm-messages-list">
-                    {privateMessages.map((msg, index) => {
+                    {visiblePrivateMessages.map((msg, index) => {
                       // TingleBot system notification rendering
                       if (msg.isBot || msg.isBotNotification || msg.senderId === 'tinglebot_system_official_2024') {
                         return (

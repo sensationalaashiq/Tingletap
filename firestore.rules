@@ -375,14 +375,19 @@ service cloud.firestore {
                          (isGuest() && getRole(request.resource.data.get('receiverId', '_')) == 'guest')
                        );
 
+      // Participants may only touch isRead (read receipts) and deletedFor (their own
+      // per-participant soft delete) — never rewrite message content/sender/etc.
       allow update: if isStaff()
                     || (request.auth != null
                         && (request.auth.uid in resource.data.get('participants', [])
                             || resource.data.get('receiverId', '') == request.auth.uid)
-                        && notBanned());
+                        && notBanned()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'deletedFor']));
 
-      allow delete: if isStaff()
-                    || (request.auth != null && resource.data.senderId == request.auth.uid);
+      // Hard delete is now staff-only (moderation cleanup). Regular users soft-delete
+      // via the `deletedFor` array update above instead of removing the doc, so the
+      // other participant's copy of the conversation is never destroyed.
+      allow delete: if isStaff();
     }
 
 

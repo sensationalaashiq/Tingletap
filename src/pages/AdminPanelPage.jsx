@@ -261,9 +261,12 @@ const AdminPanelPage = () => {
     const unsubscribe = onSnapshot(userRef, async (docSnap) => {
       if (docSnap.exists()) {
         let userData = docSnap.data();
-        // Permanent fix: convert any legacy 'superowner' → 'owner' in Firestore immediately
+        // Legacy 'superowner' values are normalized to 'owner' for local display only.
+        // We intentionally do NOT write this back from the client — Firestore rules
+        // correctly reject client self-writes to the `role` field (and 'superowner'
+        // isn't recognized as staff), so persisting this migration must go through a
+        // server-verified path (see moderationAction.js), not a client updateDoc.
         if (userData.role === 'superowner') {
-          try { await updateDoc(userRef, { role: 'owner' }); } catch {}
           userData = { ...userData, role: 'owner' };
         }
         setCurrentUserProfile(userData);

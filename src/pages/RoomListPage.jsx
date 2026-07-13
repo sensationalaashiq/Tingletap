@@ -320,8 +320,12 @@ const RoomListPage = () => {
     getDoc(doc(db, 'users', cu.uid)).then(snap => {
       if (snap.exists()) {
         let role = snap.data().role || 'user';
+        // Legacy 'superowner' values are normalized to 'owner' for local display only.
+        // We intentionally do NOT write this back from the client — Firestore rules
+        // correctly reject client self-writes to the `role` field (and 'superowner'
+        // isn't recognized as staff), so persisting this migration must go through a
+        // server-verified path (see moderationAction.js), not a client updateDoc.
         if (role === 'superowner') {
-          updateDoc(doc(db, 'users', cu.uid), { role: 'owner' }).catch(() => {});
           role = 'owner';
         }
         setUserRole(role);

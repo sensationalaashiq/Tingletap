@@ -5948,10 +5948,14 @@ const HomePage = ({ user, roomIdOverride }) => {
             );
             const snap = await getDocs(msgQuery);
             const batch = writeBatch(db);
+            const myUid = auth.currentUser.uid;
+            // Per-participant soft delete: mark every message in this conversation as
+            // deleted for the current user only. A hard delete() here used to wipe the
+            // conversation for the other participant too — arrayUnion keeps their copy intact.
             snap.docs.forEach((docSnap) => {
                 const d = docSnap.data();
                 if (d.participants?.includes(conversation.otherUserId)) {
-                    batch.delete(docSnap.ref);
+                    batch.update(docSnap.ref, { deletedFor: arrayUnion(myUid) });
                 }
             });
             await batch.commit();
