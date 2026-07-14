@@ -3,6 +3,7 @@ import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 
 const ChangeUsernameModal = React.memo(({ isOpen, onClose, onSuccess }) => {
   const [username, setUsername] = useState(auth.currentUser?.displayName || '');
@@ -20,6 +21,8 @@ const ChangeUsernameModal = React.memo(({ isOpen, onClose, onSuccess }) => {
       const user = auth.currentUser;
       await updateProfile(user, { displayName: val });
       await setDoc(doc(db, 'users', user.uid), { displayName: val, updatedAt: new Date().toISOString() }, { merge: true });
+      // B1: Keep publicProfile in sync with the new display name.
+      syncPublicProfile(user.uid, { uid: user.uid, displayName: val, username: val }).catch(() => {});
       pt.username('Username updated!');
       onSuccess && onSuccess();
       onClose();

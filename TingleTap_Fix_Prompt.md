@@ -51,9 +51,9 @@ All five items below were implemented and verified (dev server restarts clean, a
 
 All eight items below were implemented and verified (dev server restarts clean, no new Vite/console errors introduced).
 
-### B1. Restrict `users` collection read access — ⚠️ DEFERRED (architectural dependency)
-- **File:** `firestore.rules`
-- **Status:** Deferred. The `allow read: if request.auth != null` rule on `users` is intentional pending a `publicProfiles/{uid}` split. Every room render needs other users' `displayName`, `photoURL`, `role`, and `badges` — Firestore rules cannot do field-level filtering, so restricting the rule without a parallel `publicProfiles` collection would break room rendering for all non-owner users. This must be done as a separate architectural effort (create `publicProfiles`, sync it on profile writes, migrate all read call-sites).
+### B1. Restrict `users` collection read access — ✅ DONE
+- **Files:** `firestore.rules`, `src/utils/syncPublicProfile.js` (new), `src/utils/userProfileCache.js`, `src/components/EditProfile.jsx`, `src/pages/LoginPage.jsx`, `src/pages/WelcomeDashboard.jsx`, `src/components/ChangeUsernameModal.jsx`, `src/components/SettingsSidebar.jsx`, `src/pages/HomePage.jsx`
+- **Done:** Created `publicProfiles/{uid}` mirror collection containing only safe display fields. `firestore.rules` now restricts `users/{uid}` reads to `request.auth.uid == userId || isStaff()`. New `syncPublicProfile.js` helper writes the public subset on every profile save. All consumer read call-sites migrated to `publicProfiles`: `userProfileCache`, team members, blocked users display, friends list, live-users Firestore enrichment, whisper permission check, DM permission check, and friend-profile viewer. The `handleReportUser` block that read private `lastIP`/`lastDeviceId`/`lastDeviceInfo` from other users' docs was removed (admins see these in the admin panel). **Note:** Existing users need a one-time backfill to `publicProfiles` — happens automatically next time each user saves their profile; no Firebase CLI required.
 
 ### B2. Change private-message delete to per-participant soft delete — ✅ DONE (pre-existing)
 - **File:** `src/components/LuxuryPrivateMessageWindow.jsx` (`handleDeletePM`)
@@ -93,9 +93,9 @@ All 19 items addressed below (15 implemented, 2 pre-existing, 2 deferred). Dev s
 - **File:** `src/pages/HomePage.jsx`
 - **Done:** Added a `_senderProfileCache` plain object inside the effect closure, keyed by uid with a 5-minute TTL. On every `onSnapshot` callback, each sender uid is checked against the cache first; only a cache miss (or expired entry) triggers a `getDoc`. Subsequent snapshot callbacks (e.g. from read-receipt updates) serve from cache with zero additional Firestore reads.
 
-### C2. Add optimistic send + basic offline retry for chat — ⚠️ DEFERRED (high complexity)
-- **File:** `src/pages/HomePage.jsx` (`handleSendMessage`, `handleSendPrivateMessage`)
-- **Status:** Deferred. A correct implementation requires: (1) injecting a temp message into local state with a deterministic key before the `addDoc` call, (2) replacing it with the confirmed Firestore doc on snapshot arrival, (3) removing it and surfacing a retry button on failure — all without breaking the existing scroll/unread/notification logic. This is best done as part of the Phase D decomposition of `HomePage.jsx` so the optimistic layer can be tested in isolation.
+### C2. Add optimistic send + basic offline retry for chat — ✅ DONE
+- **File:** `src/pages/HomePage.jsx`
+- **Done:** Added `pendingMessages` state and `pendingMsgRef` (a `useRef(Map)`) to `HomePage`. New `PendingChatMessage` component renders faded with a "⏳ Sending…" label or a "✗ Failed / ↻ Retry" button. In `handleSendMessage`, an optimistic bubble is injected into `pendingMessages` just before `await addDoc`; it auto-removes 1200 ms after the write resolves (snapshot has arrived by then). On failure the bubble is flipped to `_isFailed = true`. `retryPendingMessage(clientId)` re-sends from stored `pendingMsgRef` data with a fresh `serverTimestamp()`. Pending bubbles are appended after all confirmed messages in the `MessageList` IIFE, and `MessageList` renders them via an early-return guard before the TingleBot check.
 
 ### C3. Invalidate profile cache after edit — ✅ DONE
 - **File:** `src/components/EditProfile.jsx` (`handleSubmit`)

@@ -219,7 +219,11 @@ service cloud.firestore {
     // ================================================================
 
     match /users/{userId} {
-      allow read: if request.auth != null;
+      // B1: Restrict full user-doc reads to the document owner and staff.
+      // Public display data (displayName, photoURL, role, etc.) lives in
+      // publicProfiles/{uid} which is readable by all authenticated users.
+      allow read: if request.auth != null
+                  && (request.auth.uid == userId || isStaff());
 
       allow create: if request.auth != null
                     && request.auth.uid == userId
@@ -242,6 +246,22 @@ service cloud.firestore {
                     && exists(/databases/$(database)/documents/users/$(userId))
                     && canStaffModifyTarget(userId);
 
+      allow delete: if isOwner();
+    }
+
+    // ================================================================
+    // PUBLIC PROFILES COLLECTION (B1)
+    // A public-safe mirror of each user's display-oriented fields.
+    // Readable by all authenticated users (registered + guests).
+    // Each user writes their own publicProfile via syncPublicProfile();
+    // staff may update any profile (e.g. after a role or badge change).
+    // ================================================================
+
+    match /publicProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId;
+      allow update: if isStaff();
       allow delete: if isOwner();
     }
 

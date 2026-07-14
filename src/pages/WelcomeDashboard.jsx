@@ -3,6 +3,7 @@ import PremiumCopyright from '../components/PremiumCopyright';
 import { Badges } from '../data/Badges';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { auth, db, rtdb } from '../firebase/config';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, remove } from 'firebase/database';
 import {
@@ -1335,6 +1336,8 @@ const ChangeUsernamePanel = ({ user, onDone }) => {
         usernameChangedAt: changedAt,
         updatedAt: changedAt
       }, { merge: true });
+      // B1: Keep publicProfile in sync with the new display name.
+      syncPublicProfile(user.uid, { uid: user.uid, displayName: val, username: val }).catch(() => {});
       pt.username('Username updated! Next change allowed in 90 days.');
       onDone();
     } catch (e) { pt.error(e.message); }

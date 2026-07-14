@@ -9,6 +9,7 @@ import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 
 const COUNTRIES = [
   { name: 'Afghanistan', flag: '🇦🇫' }, { name: 'Algeria', flag: '🇩🇿' },
@@ -459,6 +460,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
         photoURL: finalPhotoURL 
       });
       await setDoc(userDocRef, profileData, { merge: true });
+      // B1: Keep publicProfile in sync with updated display fields.
+      syncPublicProfile(user.uid, profileData).catch(() => {});
       
       if (profilePic) {
         setProfilePic(null);

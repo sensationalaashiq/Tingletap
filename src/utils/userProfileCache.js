@@ -36,7 +36,11 @@ export async function getCachedUserProfile(uid, options = {}) {
     return inFlight.get(uid);
   }
 
-  const promise = getDoc(doc(db, 'users', uid))
+  // B1: Read from publicProfiles (readable by all authenticated users) instead
+  // of users/{uid} (now restricted to the owner and staff). publicProfiles
+  // contains all display-safe fields (displayName, photoURL, role, badges, etc.)
+  // synced by syncPublicProfile after every users/{uid} write.
+  const promise = getDoc(doc(db, 'publicProfiles', uid))
     .then(snap => {
       const data = snap.exists() ? snap.data() : null;
       cache.set(uid, { data, ts: Date.now() });

@@ -321,7 +321,8 @@ const SettingsSidebar = ({
             // blockedUsersMap holds display info for guests who have no Firestore doc
             const blockedUsersMap = userDoc.data()?.blockedUsersMap || {};
 
-            const userDocs = await Promise.all(blockedIds.map(uid => getDoc(doc(db, 'users', uid))));
+            // B1: Read display data from publicProfiles (readable by all auth users).
+            const userDocs = await Promise.all(blockedIds.map(uid => getDoc(doc(db, 'publicProfiles', uid))));
 
             const profiles = blockedIds.map((uid, i) => {
                 const d = userDocs[i];
@@ -357,7 +358,9 @@ const SettingsSidebar = ({
     // Load team members (owners, admins, moderators) in real-time — only when logged in
     useEffect(() => {
         if (!auth.currentUser) return;
-        const q = query(collection(db, 'users'), where('role', 'in', ['owner', 'admin', 'moderator']));
+        // B1: Query publicProfiles (readable by all auth users) instead of
+        // users collection (now restricted to owner/staff reads).
+        const q = query(collection(db, 'publicProfiles'), where('role', 'in', ['owner', 'admin', 'moderator']));
         const unsub = onSnapshot(q, snap => {
             const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             const roleOrder = { owner: 0, admin: 1, moderator: 2 };
@@ -383,7 +386,8 @@ const SettingsSidebar = ({
                         const friendProfiles = await Promise.all(
                             friendsList.map(async (friendId) => {
                                 try {
-                                    const friendDoc = await getDoc(doc(db, 'users', friendId));
+                                    // B1: Read display data from publicProfiles.
+                                    const friendDoc = await getDoc(doc(db, 'publicProfiles', friendId));
                                     if (friendDoc.exists()) {
                                         return { id: friendDoc.id, ...friendDoc.data() };
                                     }

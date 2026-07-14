@@ -480,6 +480,8 @@ const LoginPage = () => {
       };
       await updateProfile(user, { displayName: guestFormData.displayName, photoURL: guestUserData.photoURL });
       await setDoc(doc(db, 'users', user.uid), guestUserData);
+      // B1: Mirror public-safe fields so other users can read this guest's display data.
+      syncPublicProfile(user.uid, guestUserData).catch(() => {});
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');
       localStorage.setItem('guestGender', guestFormData.gender);

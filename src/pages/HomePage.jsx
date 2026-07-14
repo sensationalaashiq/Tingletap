@@ -987,6 +987,64 @@ const getGenderBorderClass = (userOrGender) => {
 // Extracted so the (potentially large) message array filter/map only
 // re-runs when messages/blocklists/handlers actually change, instead of on
 // every HomePage render (e.g. while the user is typing in the chat input).
+// ── C2: Lightweight pending / failed message bubble for optimistic UI ─────────────
+// Rendered in place of ChatMessage for local-only sends not yet confirmed by Firestore.
+const PendingChatMessage = React.memo(function PendingChatMessage({ message, onRetry }) {
+    const { text, displayName, photoURL, fontSize, fontColor, fontFamily,
+            isBold, isItalic, _isPending, _isFailed, _clientId } = message;
+    return (
+        <div style={{ opacity: _isPending ? 0.6 : 1, padding: '2px 10px 4px 8px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <img
+                    src={photoURL || ''}
+                    alt=""
+                    width={24}
+                    height={24}
+                    style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 2 }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: fontColor || 'inherit' }}>
+                            {displayName}
+                        </span>
+                        {_isPending && (
+                            <span style={{ fontSize: 9, color: '#a78bfa', opacity: 0.85 }}>⏳ Sending…</span>
+                        )}
+                        {_isFailed && (
+                            <span style={{ fontSize: 9, color: '#ef4444' }}>✗ Failed</span>
+                        )}
+                    </div>
+                    <p style={{
+                        fontSize: fontSize || 11,
+                        color: fontColor || 'inherit',
+                        fontFamily: fontFamily || 'inherit',
+                        fontWeight: isBold ? 700 : 400,
+                        fontStyle: isItalic ? 'italic' : 'normal',
+                        margin: '2px 0 0',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                    }}>
+                        {text}
+                    </p>
+                    {_isFailed && onRetry && (
+                        <button
+                            onClick={() => onRetry(_clientId)}
+                            style={{
+                                marginTop: 3, fontSize: 10, color: '#ef4444',
+                                background: 'none', border: '1px solid #ef4444',
+                                borderRadius: 4, padding: '1px 8px', cursor: 'pointer',
+                            }}
+                        >
+                            ↻ Retry
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+});
+
 const MessageList = React.memo(({
     messages,
     blockedUsers,
@@ -1008,6 +1066,7 @@ const MessageList = React.memo(({
     closeAllDropdowns,
     toggleDropdown,
     setOpenDropdownId,
+    onRetryPending,
 }) => {
     // FLICKER-FIX: stable parity map — once a non-bot message is assigned
     // isEven=true/false it NEVER changes, even when limitToLast(60) drops the
@@ -1064,6 +1123,10 @@ const MessageList = React.memo(({
     return (
         <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
             {filteredMessages.map((msg) => {
+                // C2: Render optimistic pending/failed bubbles before any other checks.
+                if (msg._isPending || msg._isFailed) {
+                    return <PendingChatMessage key={msg.id || msg._clientId} message={msg} onRetry={onRetryPending} />;
+                }
                 // TingleBot messages render as premium notification strips.
                 // Also check tinglebotType for join/leave messages (written by real users).
                 const isTingleBot = msg.isBot ||
@@ -1116,6 +1179,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     const roomId = roomIdOverride || roomIdParam;
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
+    // C2: Optimistic pending messages shown before Firestore confirms addDoc.
+    const [pendingMessages, setPendingMessages] = useState([]);
     // Instant, self-only AutoMod notices — rendered locally the moment a
     // violation is detected on THIS client's own message, without waiting
     // for the Netlify function round trip. Kept separate from `messages`
@@ -1581,6 +1646,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Reusing the same JS object reference for unchanged messages lets
     // ChatMessage's React.memo bail out without re-rendering.
     const messageCacheRef = useRef(new Map());
+    const pendingMsgRef   = useRef(new Map()); // C2: _clientId → { messageData, roomId } for retry
     // Holds latest profile data so presence effect can read it WITHOUT being in its dep array
     const loggedInUserProfileRef = useRef(null);
 
@@ -1930,7 +1996,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const profiles = [];
                 for (let i = 0; i < friendIds.length; i += 10) {
                     const batch = friendIds.slice(i, i + 10);
-                    const snap = await getDocs(query(collection(db, 'users'), where('uid', 'in', batch)));
+                    const snap = await getDocs(query(collection(db, 'publicProfiles'), where('uid', 'in', batch)));
                     snap.forEach(d => { if (d.exists()) profiles.push({ uid: d.id, ...d.data() }); });
                 }
                 setProfileFriends(profiles);
@@ -3738,7 +3804,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         Promise.all(
             batches.map(batch =>
-                getDocs(query(collection(db, 'users'), where('uid', 'in', batch)))
+                getDocs(query(collection(db, 'publicProfiles'), where('uid', 'in', batch)))
             )
         ).then(snapshots => {
             if (cancelled) return;
@@ -4188,6 +4254,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
+        let _pendingMsgClientId = null; // C2: tracks the local pending bubble for this send attempt
         try {
             const messageData = {
                 text: newMessage,
@@ -4261,7 +4328,27 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
             // ────────────────────────────────────────────────────────────
 
+            // C2: Inject optimistic bubble — sender sees their message instantly while
+            // Firestore confirms the write. Bubble disappears ~1200ms after addDoc
+            // resolves (the onSnapshot will have delivered the real message by then).
+            _pendingMsgClientId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            pendingMsgRef.current.set(_pendingMsgClientId, { messageData: { ...messageData }, roomId });
+            setPendingMessages(prev => [...prev, {
+                ...messageData,
+                id: _pendingMsgClientId,
+                _clientId: _pendingMsgClientId,
+                _isPending: true,
+                createdAt: { toMillis: () => Date.now() },
+            }]);
+
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
+
+            // Remove pending bubble after snapshot has had time to arrive
+            setTimeout(() => {
+                setPendingMessages(prev => prev.filter(m => m._clientId !== _pendingMsgClientId));
+                pendingMsgRef.current.delete(_pendingMsgClientId);
+            }, 1200);
+
             setNewMessage('');
             
             // Force auto-scroll to show the latest message
@@ -4304,6 +4391,14 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
             // ────────────────────────────────────────────────────────────────
         } catch (error) {
+            // C2: Mark the optimistic bubble as failed so the user can retry.
+            if (_pendingMsgClientId) {
+                setPendingMessages(prev => prev.map(m =>
+                    m._clientId === _pendingMsgClientId
+                        ? { ...m, _isPending: false, _isFailed: true }
+                        : m
+                ));
+            }
             if (error.code === 'permission-denied') {
                 pt.error("Permission denied. Please check your account status.");
             } else if (error.code === 'unavailable') {
@@ -4697,19 +4792,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                 name: auth.currentUser.displayName || loggedInUserProfile?.displayName || 'Anonymous'
             };
 
-            // Capture IP and Device ID of reported user for admin panel
-            let reportedUserIp = null;
-            let reportedUserDeviceId = null;
-            let reportedUserDeviceInfo = null;
-            try {
-                const reportedSnap = await getDoc(doc(db, 'users', messageToReport.uid));
-                if (reportedSnap.exists()) {
-                    const rd = reportedSnap.data();
-                    reportedUserIp = rd.lastIP || rd.ipAddress || rd.lastIp || null;
-                    reportedUserDeviceId = rd.lastDeviceId || rd.deviceId || null;
-                    reportedUserDeviceInfo = rd.lastDeviceInfo || null;
-                }
-            } catch {}
+            // B1: Private fields (lastIP, lastDeviceId, lastDeviceInfo) are no longer
+            // readable by other clients — they live in users/{uid} which is now
+            // owner/staff-only. Admins can see these details in the admin panel instead.
+            const reportedUserIp = null;
+            const reportedUserDeviceId = null;
+            const reportedUserDeviceInfo = null;
             
             const report = {
                 reportType: reportData.reportType || 'Message',
@@ -4764,7 +4852,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Check if target has whisper messages disabled
         try {
             if (message.uid && !message.isGuest) {
-                const targetDoc = await getDoc(doc(db, 'users', message.uid));
+                const targetDoc = await getDoc(doc(db, 'publicProfiles', message.uid));
                 if (targetDoc.exists()) {
                     const targetSettings = targetDoc.data()?.settings || {};
                     if (targetSettings.allowWhisperMessages === false) {
@@ -5778,7 +5866,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // DM permission check — always fetch fresh target profile from Firestore
         // (privateMessageTarget may only have { uid, displayName } when opened from header box)
         try {
-            const targetDocSnap = await getDoc(doc(db, 'users', privateMessageTarget.uid));
+            const targetDocSnap = await getDoc(doc(db, 'publicProfiles', privateMessageTarget.uid));
             const freshTarget = targetDocSnap.exists()
                 ? { ...targetDocSnap.data(), uid: privateMessageTarget.uid }
                 : privateMessageTarget;
@@ -7166,6 +7254,32 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     };
 
+    // C2: Re-send a message whose optimistic bubble was marked failed.
+    // Looks up stored messageData from pendingMsgRef and retries the Firestore write.
+    const retryPendingMessage = useCallback(async (clientId) => {
+        const stored = pendingMsgRef.current.get(clientId);
+        if (!stored) return;
+        const { messageData, roomId: storedRoomId } = stored;
+        // Flip back to pending so the user gets visual feedback
+        setPendingMessages(prev => prev.map(m =>
+            m._clientId === clientId ? { ...m, _isPending: true, _isFailed: false } : m
+        ));
+        try {
+            await addDoc(collection(db, 'rooms', storedRoomId, 'messages'), {
+                ...messageData,
+                createdAt: serverTimestamp(),
+            });
+            setTimeout(() => {
+                setPendingMessages(prev => prev.filter(m => m._clientId !== clientId));
+                pendingMsgRef.current.delete(clientId);
+            }, 1200);
+        } catch {
+            setPendingMessages(prev => prev.map(m =>
+                m._clientId === clientId ? { ...m, _isPending: false, _isFailed: true } : m
+            ));
+        }
+    }, [roomId]);
+
     // Stable-identity handler wrappers for the memoized MessageList component
     // (see useStableCallback definition above HomePage). These never change
     // reference across renders, so MessageList only re-renders when messages/
@@ -7418,10 +7532,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
                                   )
                                 : messages;
-                            if (!localAutoModNotices.length) return base;
-                            return [...base, ...localAutoModNotices].sort(
-                                (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
-                            );
+                            const sorted = localAutoModNotices.length
+                                ? [...base, ...localAutoModNotices].sort(
+                                    (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
+                                  )
+                                : base;
+                            // C2: Append pending/failed optimistic bubbles after all confirmed messages.
+                            return pendingMessages.length ? [...sorted, ...pendingMessages] : sorted;
                         })()}
                         blockedUsers={blockedUsers}
                         usersWhoBlockedMe={usersWhoBlockedMe}
@@ -7442,6 +7559,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         closeAllDropdowns={stableCloseAllDropdowns}
                         toggleDropdown={stableToggleDropdown}
                         setOpenDropdownId={stableHandleSetOpenDropdownId}
+                        onRetryPending={retryPendingMessage}
                     />
                     
 
