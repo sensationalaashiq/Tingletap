@@ -5390,9 +5390,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                     pmListenerRef.current();
                     pmListenerRef.current = null;
                 }
+
+                // FIX C-01: Cancellation flag prevents a stale async listener
+                // from calling setPrivateMessages after this effect has been
+                // superseded by a newer target (rapid conversation switching).
+                let cancelled = false;
                 
                 const unsubscribe = onSnapshot(messagesQuery, 
                     async (snapshot) => {
+                        if (cancelled) return;
                         const messages = snapshot.docs
                             .map(doc => ({ id: doc.id, ...doc.data() }))
                             .sort((a, b) => {
@@ -5468,9 +5474,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 );
                 
-                // Store unsubscribe so it can be cancelled when opening a new PM
-                pmListenerRef.current = unsubscribe;
-                return unsubscribe;
+                // Store unsubscribe + cancellation flag together so the next
+                // listener setup both stops Firebase delivery AND prevents the
+                // stale callback from writing to state.
+                const cancelAndUnsub = () => { cancelled = true; unsubscribe(); };
+                pmListenerRef.current = cancelAndUnsub;
+                return cancelAndUnsub;
             } catch (error) {
                 setPrivateMessages([]);
             }
@@ -5949,8 +5958,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                     pmListenerRef.current();
                     pmListenerRef.current = null;
                 }
+
+                // FIX C-01: Cancellation flag prevents stale callbacks from a
+                // previous conversation's listener from writing to state after
+                // handleOpenConversation is called for a new conversation.
+                let cancelledConv = false;
                 
                 const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
+                    if (cancelledConv) return;
                     const messages = snapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }));
                     setPrivateMessages(messages);
@@ -5973,7 +5988,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                         requestAnimationFrame(scrollToBottom);
                     });
                 });
-                pmListenerRef.current = unsubscribe;
+                const cancelAndUnsubConv = () => { cancelledConv = true; unsubscribe(); };
+                pmListenerRef.current = cancelAndUnsubConv;
                 
                 // Mark messages as read
                 try {

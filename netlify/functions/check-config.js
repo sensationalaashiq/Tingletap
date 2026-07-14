@@ -11,10 +11,26 @@ const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 export const handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+
+  // ── FIX C-03: Auth guard — owner only ────────────────────────────────────
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized — Bearer token required' }) };
+  }
+  try {
+    const { verifyToken } = await import('./shared/firestoreAdmin.js');
+    const auth = await verifyToken(token, ['owner']);
+    if (!auth.ok) {
+      return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden — owner role required', detail: auth.err }) };
+    }
+  } catch (e) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Auth check failed', detail: e.message }) };
+  }
 
   const qs = event.queryStringParameters || {};
   const testEmail     = qs.testEmail     || null;

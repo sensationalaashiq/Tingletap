@@ -4457,7 +4457,7 @@ const AdminPanelPage = () => {
                 </h2>
                 <p>Manage coin packages, UPI settings, payment orders, and RJ earnings</p>
               </div>
-              <AdminCoinsPanel />
+              <AdminCoinsPanel currentUserProfile={currentUserProfile} />
             </div>
           )}
 

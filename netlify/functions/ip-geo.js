@@ -58,6 +58,24 @@ export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'GET') return jsonResp({ error: 'Method not allowed' }, 405);
 
+  // ── FIX C-03: Require a valid Firebase ID token (any authenticated user).
+  // This prevents unauthenticated enumeration of IP geolocation data and
+  // exhaustion of the ABSTRACT_API_KEY quota.
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) {
+    return jsonResp({ error: 'Unauthorized — Bearer token required' }, 401);
+  }
+  try {
+    const { verifyToken } = await import('./shared/firestoreAdmin.js');
+    const auth = await verifyToken(token, null); // any authenticated user
+    if (!auth.ok) {
+      return jsonResp({ error: 'Forbidden', detail: auth.err }, 403);
+    }
+  } catch (e) {
+    return jsonResp({ error: 'Auth check failed', detail: e.message }, 500);
+  }
+
   const ip = (event.queryStringParameters?.ip || '').trim();
   const isIPv4 = IPv4_RE.test(ip);
   const isIPv6 = !isIPv4 && IPv6_RE.test(ip) && ip.includes(':');

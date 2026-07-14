@@ -726,7 +726,7 @@ const TABS = [
   { id: 'rj',       label: 'RJ Pay',   Icon: MicIcon  },
 ];
 
-export default function AdminCoinsPanel() {
+export default function AdminCoinsPanel({ currentUserProfile }) {
   const [config, setConfig] = useState(null);
   const [activeTab, setActiveTab] = useState('packages');
 
@@ -738,6 +738,19 @@ export default function AdminCoinsPanel() {
   const handleSave = async (updates) => {
     await updateCoinConfig(updates);
   };
+
+  // ── FIX C-02: Internal role guard (placed AFTER all hooks per React rules).
+  // Defence-in-depth beyond the page-level route: even if a malicious actor
+  // bypasses the router this component refuses to render.
+  const userRole = currentUserProfile?.role;
+  if (!userRole || !['owner', 'admin'].includes(userRole)) {
+    return (
+      <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: 15, fontWeight: 600 }}>Access Denied</p>
+        <p style={{ fontSize: 13, marginTop: 8 }}>Owner or Admin role required.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="acp-root">

@@ -770,6 +770,18 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
     { id: 'expired',  label: 'Expired',   count: stats?.expired  },
   ];
 
+  // ── FIX C-02: Internal role guard placed AFTER all hooks (React rules).
+  // Defence-in-depth beyond the page-level route.
+  const _role = currentUserProfile?.role;
+  if (!_role || !['owner', 'admin'].includes(_role)) {
+    return (
+      <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: 15, fontWeight: 600 }}>Access Denied</p>
+        <p style={{ fontSize: 13, marginTop: 8 }}>Owner or Admin role required.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bvp-root">
       {/* Header */}

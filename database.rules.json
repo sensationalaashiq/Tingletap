@@ -138,13 +138,16 @@
       ".read": "auth != null",
       "active": {
         "$sid": {
-          ".write": true,
+          // FIX C-04: Previously ".write": true (unauthenticated flood attack possible).
+          // Now requires auth so anonymous external scripts cannot pollute visitor data.
+          ".write": "auth != null && auth.uid === $sid",
           ".validate": "newData.hasChildren(['device','browser','joinedAt'])"
         }
       },
       "daily": {
         "$date": {
-          ".write": true
+          // FIX C-04: Previously ".write": true — now requires authentication.
+          ".write": "auth != null"
         }
       }
     },
