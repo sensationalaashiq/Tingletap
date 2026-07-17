@@ -7,6 +7,8 @@ import {
 } from 'firebase/firestore';
 import { formatCoins } from '../../utils/coinSystem';
 import { getCachedUserProfile } from '../../utils/userProfileCache';
+import { useLiveDisplayName } from '../../utils/liveUsernames';
+import LiveAvatarImg from '../LiveAvatar';
 import './Leaderboard.css';
 
 /* ── Icons ── */
@@ -208,6 +210,60 @@ function RankBadge({ rank }) {
   return <div className="lb-rank-num">#{rank}</div>;
 }
 
+/**
+ * LbPodiumItem — isolated component so useLiveDisplayName is called once per uid,
+ * never inside a .map() body (Rules of Hooks).
+ */
+function LbPodiumItem({ entry, rank, fallbackName, fallbackPhotoURL }) {
+  const name = useLiveDisplayName(entry.uid, fallbackName);
+  return (
+    <div className={`lb-podium-item lb-podium-item--${rank}`}>
+      <div className="lb-podium-avatar-wrap">
+        <LiveAvatarImg
+          uid={entry.uid}
+          fallbackPhotoURL={fallbackPhotoURL}
+          className="lb-podium-avatar"
+          alt={name}
+        />
+        <div className="lb-podium-medal" style={{ background: MEDAL_COLORS[rank - 1] }}>
+          {rank}
+        </div>
+      </div>
+      <div className="lb-podium-name">{name.split(' ')[0]}</div>
+      <div className="lb-podium-coins">
+        <CoinIcon size={12} /> {formatCoins(entry.coins)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * LbListRow — isolated component for the same reason as LbPodiumItem.
+ */
+function LbListRow({ entry, index, fallbackName, fallbackPhotoURL }) {
+  const name = useLiveDisplayName(entry.uid, fallbackName);
+  return (
+    <div className={`lb-row ${index < 3 ? 'lb-row--top' : ''}`}>
+      <RankBadge rank={index + 1} />
+      <LiveAvatarImg
+        uid={entry.uid}
+        fallbackPhotoURL={fallbackPhotoURL}
+        className="lb-avatar"
+        alt={name}
+      />
+      <div className="lb-user-info">
+        <span className="lb-user-name">{name}</span>
+        <span className="lb-user-gifts">{entry.gifts} gifts</span>
+      </div>
+      <div className="lb-user-coins">
+        <CoinIcon size={13} />
+        <span>{formatCoins(entry.coins)}</span>
+      </div>
+      {index < 3 && <div className="lb-glow" style={{ background: MEDAL_COLORS[index] }} />}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const navigate = useNavigate();
   const [period, setPeriod] = useState('all');
@@ -277,23 +333,14 @@ export default function Leaderboard() {
               if (!entry) return null;
               const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
               const user = userMap[entry.uid] || {};
-              const name = user.displayName || 'User';
-              const photo = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${entry.uid}`;
               return (
-                <div key={entry.uid} className={`lb-podium-item lb-podium-item--${rank}`}>
-                  <div className="lb-podium-avatar-wrap">
-                    <img src={photo} alt={name} className="lb-podium-avatar"
-                      onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${entry.uid}`; }}
-                    />
-                    <div className="lb-podium-medal" style={{ background: MEDAL_COLORS[rank - 1] }}>
-                      {rank}
-                    </div>
-                  </div>
-                  <div className="lb-podium-name">{name.split(' ')[0]}</div>
-                  <div className="lb-podium-coins">
-                    <CoinIcon size={12} /> {formatCoins(entry.coins)}
-                  </div>
-                </div>
+                <LbPodiumItem
+                  key={entry.uid}
+                  entry={entry}
+                  rank={rank}
+                  fallbackName={user.displayName || 'User'}
+                  fallbackPhotoURL={user.photoURL}
+                />
               );
             })}
           </div>
@@ -312,24 +359,14 @@ export default function Leaderboard() {
           <div className="lb-list">
             {data.map((entry, i) => {
               const user = userMap[entry.uid] || {};
-              const name = user.displayName || 'User';
-              const photo = user.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${entry.uid}`;
               return (
-                <div key={entry.uid} className={`lb-row ${i < 3 ? 'lb-row--top' : ''}`}>
-                  <RankBadge rank={i + 1} />
-                  <img src={photo} alt={name} className="lb-avatar"
-                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${entry.uid}`; }}
-                  />
-                  <div className="lb-user-info">
-                    <span className="lb-user-name">{name}</span>
-                    <span className="lb-user-gifts">{entry.gifts} gifts</span>
-                  </div>
-                  <div className="lb-user-coins">
-                    <CoinIcon size={13} />
-                    <span>{formatCoins(entry.coins)}</span>
-                  </div>
-                  {i < 3 && <div className="lb-glow" style={{ background: MEDAL_COLORS[i] }} />}
-                </div>
+                <LbListRow
+                  key={entry.uid}
+                  entry={entry}
+                  index={i}
+                  fallbackName={user.displayName || 'User'}
+                  fallbackPhotoURL={user.photoURL}
+                />
               );
             })}
           </div>

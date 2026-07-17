@@ -3265,11 +3265,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         const pos = songQueue.indexOf(req) + 1;
         return (
           <div key={req.uid} className="bp-sq-item">
-            <img
+            <LiveAvatarImg
+              uid={req.uid}
+              fallbackPhotoURL={req.avatar}
               className="bp-sq-avatar"
-              src={req.avatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`}
               alt={req.username}
-              onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`; }}
             />
             <div className="bp-sq-info">
               <div className="bp-sq-song">{req.songName}</div>
@@ -3463,11 +3463,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             <div className="bp-sq-list">
               {songQueue.filter(r => r.status === 'approved').map(req => (
                 <div key={req.uid} className="bp-sq-item listener">
-                  <img
+                  <LiveAvatarImg
+                    uid={req.uid}
+                    fallbackPhotoURL={req.avatar}
                     className="bp-sq-avatar"
-                    src={req.avatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`}
                     alt={req.username}
-                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${req.uid}`; }}
                   />
                   <div className="bp-sq-info">
                     <div className="bp-sq-song">{req.songName}</div>
