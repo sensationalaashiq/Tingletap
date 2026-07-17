@@ -6,70 +6,22 @@
     <!-- Viewport — no user-scalable=no (accessibility + SEO penalty removed) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Mobile-specific — recognized by older crawlers & Yandex ── -->
-    <meta name="HandheldFriendly" content="True" />
-    <meta name="MobileOptimized" content="320" />
-
     <!-- ══════════════════════════════════════════════════════════
-         PRIMARY SEO — Fallback before React Helmet renders
+         PRIMARY SEO — pre-JS fallback for crawlers that skip JavaScript.
+         data-rh="true" tells react-helmet-async to treat these as its own
+         tags and REPLACE them on mount — preventing any duplicate in the DOM.
+         All other duplicated tags (OG, Twitter, DC, robots, per-bot,
+         content-classification, HandheldFriendly) are now Helmet-only; they
+         no longer live here, eliminating the H-08 duplicate-tag bug.
     ══════════════════════════════════════════════════════════ -->
-    <title>TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls</title>
-    <meta name="description" content="TingleTap is India's #1 free online chat platform — trusted by users worldwide. Join live chat rooms, send private messages, make voice & video calls, share GIFs. Connect with Indians and people across the globe — free forever." />
-    <meta name="keywords" content="TingleTap, Indian chat app, online chat India free, desi chat rooms, Hindi chat room, free chatting India, live chat rooms India, voice chat India, video call India, chat with strangers India, best chat app India, Indian chat community, desi chat USA, desi chat UK, Indian chat abroad, NRI chat app, South Asian chat, free chat rooms worldwide, chat with strangers online free, online chat rooms 2025, free online chat no registration, meet people online free, Indian diaspora chat" />
-    <meta name="author" content="TingleTap — Adrashtra Inc." />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <title data-rh="true">TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls</title>
+    <meta data-rh="true" name="description" content="TingleTap is India's #1 free online chat platform — trusted by users worldwide. Join live chat rooms, send private messages, make voice & video calls, share GIFs. Connect with Indians and people across the globe — free forever." />
     <meta name="theme-color" content="#7c3aed" />
-    <meta name="language" content="en" />
-    <meta name="rating" content="general" />
-    <meta name="revisit-after" content="3 days" />
-    <meta name="copyright" content="TingleTap — Adrashtra Inc." />
-    <meta name="application-name" content="TingleTap" />
-    <meta name="generator" content="TingleTap v1.0" />
 
-    <!-- ══════════════════════════════════════════════════════════
-         Content classification — used by Yandex, Baidu, gov & academic crawlers
-    ══════════════════════════════════════════════════════════ -->
-    <meta name="abstract"        content="TingleTap is India's #1 free real-time chat platform — live chat rooms, voice broadcasts, RJ radio shows, private messaging, and virtual gifting. Free forever. No download needed." />
-    <meta name="subject"         content="Online Chat Platform, Real-time Communication, Social Networking India" />
-    <meta name="category"        content="Social Networking, Communication, Entertainment" />
-    <meta name="classification"  content="Social Networking" />
-    <meta name="page-topic"      content="Online Chat, Real-time Communication, Social Networking, Indian Community" />
-    <meta name="page-type"       content="Website" />
-
-    <!-- Dublin Core — recognized by Yandex, Baidu, academic & government crawlers -->
-    <meta name="DC.title"        content="TingleTap — India's #1 Free Chat App" />
-    <meta name="DC.description"  content="India's #1 free real-time chat platform — live chat rooms, private messaging, voice & video calls, RJ radio shows. Connect with Indians worldwide, free forever." />
-    <meta name="DC.creator"      content="Adrashtra Inc." />
-    <meta name="DC.publisher"    content="TingleTap" />
-    <meta name="DC.subject"      content="Online Chat, Social Networking, Real-time Communication" />
-    <meta name="DC.language"     content="en-IN" />
-    <meta name="DC.type"         content="Text" />
-    <meta name="DC.format"       content="text/html" />
-    <meta name="DC.identifier"   content="https://tingletap.com/" />
-    <meta name="DC.rights"       content="© 2024 Adrashtra Inc. — All Rights Reserved" />
-    <meta name="DC.coverage"     content="Worldwide" />
-
-    <!-- Per-bot robot directives (fallback — per-page overrides handled by React Helmet) -->
-    <meta name="googlebot"         content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="googlebot-image"   content="index, follow" />
-    <meta name="googlebot-news"    content="index, follow" />
-    <meta name="bingbot"           content="index, follow, max-snippet:-1, max-image-preview:large" />
-    <meta name="Slurp"             content="index, follow" />
-    <meta name="yandex"            content="index, follow" />
-    <meta name="Baiduspider"       content="index, follow" />
-    <meta name="Applebot"          content="index, follow" />
-    <meta name="teoma"             content="index, follow" />
-    <meta name="msnbot"            content="index, follow" />
-
-    <!-- Geo targeting — Primary: India (founding country & largest audience) -->
+    <!-- Geo targeting — not managed by React Helmet -->
     <meta name="geo.region" content="IN" />
     <meta name="geo.country" content="India" />
     <meta name="ICBM" content="20.5937, 78.9629" />
-    <!-- Worldwide audience signal -->
-    <meta name="target" content="all" />
-    <meta name="audience" content="all" />
-    <meta name="coverage" content="Worldwide" />
-    <meta name="distribution" content="Global" />
 
     <!-- ══════════════════════════════════════════════════════════
          PWA / Mobile App Meta Tags
@@ -146,39 +98,9 @@
     <!-- Preload Google Fonts stylesheet (non-blocking via media trick) -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" />
 
-    <!-- ══════════════════════════════════════════════════════════
-         Open Graph (Facebook, WhatsApp, Telegram, Discord)
-    ══════════════════════════════════════════════════════════ -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="TingleTap" />
-    <meta property="og:title" content="TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls" />
-    <meta property="og:description" content="Join TingleTap — India's #1 free chat platform, loved by Indians worldwide. Live chat rooms, private messaging, voice & video calls, GIFs. Connect with India and the global desi community — free today." />
-    <meta property="og:url" content="https://tingletap.com/" />
-    <meta property="og:image" content="https://tingletap.com/tingletap-logo.jpg" />
-    <meta property="og:image:secure_url" content="https://tingletap.com/tingletap-logo.jpg" />
-    <meta property="og:image:alt" content="TingleTap — India's #1 Free Chat Platform" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:locale" content="en_IN" />
-    <meta property="og:locale:alternate" content="hi_IN" />
-    <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:locale:alternate" content="en_GB" />
-    <meta property="og:locale:alternate" content="en_CA" />
-    <meta property="og:locale:alternate" content="en_AU" />
-    <meta property="og:locale:alternate" content="en_AE" />
-    <meta property="og:locale:alternate" content="en_SG" />
-
-    <!-- ══════════════════════════════════════════════════════════
-         Twitter / X Card
-    ══════════════════════════════════════════════════════════ -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@tingletaps" />
-    <meta name="twitter:creator" content="@tingletaps" />
-    <meta name="twitter:title" content="TingleTap — India's #1 Free Chat App" />
-    <meta name="twitter:description" content="India's #1 free chat app — loved by Indians at home and worldwide. Live rooms, private chats, voice & video calls. Join free, no download needed." />
-    <meta name="twitter:image" content="https://tingletap.com/tingletap-logo.jpg" />
-    <meta name="twitter:image:alt" content="TingleTap — India's #1 Free Chat Platform" />
+    <!-- OG / Twitter / DC / robots / per-bot / content-classification:
+         All injected exclusively by React Helmet (SEO.jsx) — removed from here
+         to eliminate duplicate meta tags after React mounts (H-08 fix). -->
 
     <!-- ══════════════════════════════════════════════════════════
          Structured Data — Global schema only (pre-render fallback).
