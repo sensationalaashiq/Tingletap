@@ -268,15 +268,17 @@ export async function submitBadgeApplication(data) {
 /**
  * Fetch badge verification media as a Blob via the auth-gated server proxy.
  * Owner/admin only. Works with both new "badge/" and legacy "verifications/" keys.
- * @param {string} key  R2 object key
+ * @param {string} key            R2 object key
+ * @param {string} [applicantUid] UID of the applicant — used server-side to verify the key
+ *                                belongs to this specific application (IDOR protection M-20).
  * @returns {Promise<Blob>}
  */
-export async function getBadgeMedia(key) {
+export async function getBadgeMedia(key, applicantUid) {
   const token = await getIdToken();
   const res = await fetch(`${BASE}/getBadgeMedia`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ key }),
+    body: JSON.stringify({ key, ...(applicantUid ? { applicantUid } : {}) }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -408,15 +410,17 @@ export async function submitRJApplication(data) {
 /**
  * Fetch RJ verification audio as a Blob via the auth-gated server proxy.
  * Owner/admin only. Works with both new "rj/" and legacy "rj-verifications/" keys.
- * @param {string} key  R2 object key
+ * @param {string} key            R2 object key
+ * @param {string} [applicantUid] UID of the applicant — used server-side to verify the key
+ *                                belongs to this specific application (IDOR protection M-20).
  * @returns {Promise<Blob>}
  */
-export async function getRJMedia(key) {
+export async function getRJMedia(key, applicantUid) {
   const token = await getIdToken();
   const res = await fetch(`${BASE}/getRJMedia`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ key }),
+    body: JSON.stringify({ key, ...(applicantUid ? { applicantUid } : {}) }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

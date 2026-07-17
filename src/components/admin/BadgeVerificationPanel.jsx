@@ -240,7 +240,7 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
     setLoadingV(true);
     setVideoError(false);
     try {
-      const blob = await getBadgeMedia(app.videoKey);
+      const blob = await getBadgeMedia(app.videoKey, app.uid);
       if (videoBlobRef.current) URL.revokeObjectURL(videoBlobRef.current);
       const blobUrl = URL.createObjectURL(blob);
       videoBlobRef.current = blobUrl;
@@ -256,7 +256,7 @@ function ApplicationDetail({ app, onClose, onAction, onGeoUpdate }) {
     setLoadingA(true);
     setAudioError(false);
     try {
-      const blob = await getBadgeMedia(app.audioKey);
+      const blob = await getBadgeMedia(app.audioKey, app.uid);
       if (audioBlobRef.current) URL.revokeObjectURL(audioBlobRef.current);
       const blobUrl = URL.createObjectURL(blob);
       audioBlobRef.current = blobUrl;

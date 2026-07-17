@@ -9,7 +9,7 @@ import { sanitizeString } from './shared/validation.js';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };

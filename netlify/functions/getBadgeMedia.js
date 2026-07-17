@@ -12,10 +12,10 @@ import {
   getPrivateBucketName,
   getBucketName,
 } from './shared/r2Client.js';
-import { verifyToken } from './shared/firestoreAdmin.js';
+import { verifyToken, getAdminDb } from './shared/firestoreAdmin.js';
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -39,7 +39,7 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); }
   catch { return errResp('Invalid JSON', 400); }
 
-  const { key } = body;
+  const { key, applicantUid } = body;
 
   // Accept both new "badge/" prefix and legacy "verifications/" prefix
   const isNewKey    = key && typeof key === 'string' && key.startsWith('badge/');
@@ -49,9 +49,46 @@ export const handler = async (event) => {
     return errResp('Invalid or missing key', 400);
   }
 
+  // applicantUid is REQUIRED — callers must always scope requests to a specific applicant.
+  // Accepting requests without it would allow bypassing the ownership check entirely.
+  if (!applicantUid || typeof applicantUid !== 'string' || applicantUid.trim() === '') {
+    return errResp('applicantUid is required', 400);
+  }
+
   // Restrict to owner / admin
   const user = await verifyToken(token, ['owner', 'admin']);
   if (!user.ok) return errResp(user.err, 403);
+
+  // FIX M-20 (fail-closed): Verify the key belongs to this specific applicant's
+  // application document. Prevents IDOR — a staff member fetching any applicant's
+  // private verification media by guessing or manipulating R2 key paths.
+  //
+  // Fail-closed policy:
+  //   • Admin SDK unavailable → 503 (never skip the check)
+  //   • App doc missing       → 403 (no application = no entitlement)
+  //   • Admin SDK error       → 503 (safe failure, not silent bypass)
+  //   • Key not in allowed list → 403
+  try {
+    const adminDb = getAdminDb();
+    if (!adminDb) {
+      console.error('[getBadgeMedia] Firebase Admin not configured — cannot perform ownership check.');
+      return errResp('Server configuration error — media access unavailable.', 503);
+    }
+    const appSnap = await adminDb.collection('badgeApplications').doc(applicantUid).get();
+    if (!appSnap.exists) {
+      console.warn('[getBadgeMedia] Application not found for applicantUid:', applicantUid);
+      return errResp('Application not found or media access denied.', 403);
+    }
+    const { videoKey, audioKey } = appSnap.data();
+    const allowedKeys = [videoKey, audioKey].filter(Boolean);
+    if (!allowedKeys.includes(key)) {
+      console.warn('[getBadgeMedia] Key mismatch — applicant:', applicantUid, 'requested key:', key, 'allowed:', allowedKeys);
+      return errResp('Media key does not match this application.', 403);
+    }
+  } catch (e) {
+    console.error('[getBadgeMedia] Ownership check error:', e.message);
+    return errResp('Media access check failed — try again.', 503);
+  }
 
   // Choose bucket based on key prefix
   let bucketName;

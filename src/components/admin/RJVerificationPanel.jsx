@@ -346,9 +346,9 @@ function ApplicationDetail({ app, onClose, onAction }) {
           <div className="bvp-section-title" style={{ marginBottom: 12 }}>
             <AudioIcon /> Recordings
           </div>
-          <AudioBlock label="Funny Introduction" mediaKey={app.introKey}   onLoad={getRJMedia} />
-          <AudioBlock label="Song"               mediaKey={app.songKey}    onLoad={getRJMedia} />
-          <AudioBlock label="Welcome Message"    mediaKey={app.welcomeKey} onLoad={getRJMedia} />
+          <AudioBlock label="Funny Introduction" mediaKey={app.introKey}   onLoad={(k) => getRJMedia(k, app.uid)} />
+          <AudioBlock label="Song"               mediaKey={app.songKey}    onLoad={(k) => getRJMedia(k, app.uid)} />
+          <AudioBlock label="Welcome Message"    mediaKey={app.welcomeKey} onLoad={(k) => getRJMedia(k, app.uid)} />
         </div>
       )}
 

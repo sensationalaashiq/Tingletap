@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import TranslatedMessage from './TranslatedMessage';
 import { translateText as _ttPM, getTranslationSettings as _tsPM, getLanguageName as _glnPM } from '../utils/translationService';
@@ -261,6 +261,137 @@ function PMTranslatedText({ msg, currentUid }) {
   return <p className="ultra-pm-msg-text">{msg.text}</p>;
 }
 
+/* ── FIX M-06: Memoized message row — isolates per-row re-renders ────────────
+ * LiveAvatarImg and LivePMSenderName resolve names/avatars asynchronously. Each
+ * resolution triggers a state update that previously caused the entire message
+ * list to re-render (O(N) re-renders per avatar/name resolution event).
+ * Extracting into React.memo means only the row whose avatar/name resolved
+ * re-renders, not every row in the list. Callback props are stable (useCallback)
+ * so the memo comparator sees them as unchanged on parent re-renders.
+ * ─────────────────────────────────────────────────────────────────────────── */
+const PMMessageRow = React.memo(function PMMessageRow({
+  msg,
+  currentUid,
+  myGender,
+  myPhotoURL,
+  targetGender,
+  targetPhotoURL,
+  confirmDeletePmId,
+  deletingPmId,
+  onDeleteRequest,
+  onDeleteConfirm,
+  onDeleteCancel,
+}) {
+  // Bot notification — different rendering path
+  if (msg.isBot || msg.isBotNotification || msg.senderId === 'tinglebot_system_official_2024') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+        style={{ padding: '4px 2px' }}
+      >
+        <UltraPMBotNotice msg={msg} />
+      </motion.div>
+    );
+  }
+
+  const isSent = msg.senderId === currentUid;
+  return (
+    <motion.div
+      className={`ultra-pm-message ${isSent ? 'sent' : 'received'}`}
+      initial={{ opacity: 0, x: isSent ? 20 : -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 400, delay: 0 }}
+    >
+      <div className="ultra-pm-msg-avatar">
+        <LiveAvatarImg
+          uid={msg.senderId}
+          gender={isSent ? myGender : targetGender}
+          fallbackPhotoURL={isSent ? myPhotoURL : targetPhotoURL}
+          alt="avatar"
+          className="ultra-msg-avatar-img"
+        />
+      </div>
+      <div className="ultra-pm-msg-content">
+        <div className="ultra-pm-msg-header">
+          <span className="ultra-pm-sender">
+            <LivePMSenderName uid={msg.senderId} fallback={msg.senderName} />
+          </span>
+          <span className="ultra-pm-timestamp">
+            {msg.createdAt?.toDate
+              ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+              : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+          </span>
+          {isSent && (
+            confirmDeletePmId === msg.id ? (
+              <span className="ultra-pm-delete-confirm">
+                <button
+                  type="button"
+                  className="ultra-pm-delete-btn ultra-pm-delete-btn--confirm"
+                  disabled={deletingPmId === msg.id}
+                  onClick={() => onDeleteConfirm(msg.id)}
+                  title="Confirm delete"
+                >
+                  {deletingPmId === msg.id ? '…' : 'Delete?'}
+                </button>
+                <button
+                  type="button"
+                  className="ultra-pm-delete-btn ultra-pm-delete-btn--cancel"
+                  onClick={onDeleteCancel}
+                  title="Cancel"
+                >
+                  ✕
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="ultra-pm-delete-btn"
+                onClick={() => onDeleteRequest(msg.id)}
+                title="Delete message"
+                aria-label="Delete message"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )
+          )}
+        </div>
+        {msg.text && <PMTranslatedText msg={msg} currentUid={currentUid} />}
+        {msg.imageUrl && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.88, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 24 }}
+          >
+            <PremiumImageMessage
+              imageUrl={msg.imageUrl}
+              imageFileName={msg.imageFileName}
+              compact={true}
+            />
+          </motion.div>
+        )}
+        {msg.audioUrl && (
+          <motion.div
+            className="ultra-pm-audio-wrapper"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <CustomAudioPlayer
+              audioUrl={msg.audioUrl}
+              audioFileName={msg.audioFileName}
+              className="compact-audio-player"
+            />
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+});
+
 const LuxuryPrivateMessageWindow = ({
   isOpen,
   privateMessageTarget,
@@ -307,7 +438,7 @@ const LuxuryPrivateMessageWindow = ({
   // Message deletion (own messages only — mirrors firestore.rules: sender or staff)
   const [confirmDeletePmId, setConfirmDeletePmId] = useState(null);
   const [deletingPmId, setDeletingPmId] = useState(null);
-  const handleDeletePM = async (messageId) => {
+  const handleDeletePM = useCallback(async (messageId) => {
     setDeletingPmId(messageId);
     try {
       // Per-participant soft delete: mark this message hidden for the current
@@ -322,7 +453,11 @@ const LuxuryPrivateMessageWindow = ({
       setDeletingPmId(null);
       setConfirmDeletePmId(null);
     }
-  };
+  }, []);
+
+  // Stable callbacks for PMMessageRow — stable identity prevents memo from busting on every render
+  const handleDeleteRequest = useCallback((id) => setConfirmDeletePmId(id), []);
+  const handleDeleteCancel  = useCallback(() => setConfirmDeletePmId(null), []);
 
   // Ultra-smooth dragging with dynamic viewport bounds
   const {
@@ -708,117 +843,22 @@ const LuxuryPrivateMessageWindow = ({
                   </motion.div>
                 ) : (
                   <div className="ultra-pm-messages-list">
-                    {visiblePrivateMessages.map((msg, index) => {
-                      // TingleBot system notification rendering
-                      if (msg.isBot || msg.isBotNotification || msg.senderId === 'tinglebot_system_official_2024') {
-                        return (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, scale: 0.92, y: 4 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-                            style={{ padding: '4px 2px' }}
-                          >
-                            <UltraPMBotNotice msg={msg} />
-                          </motion.div>
-                        );
-                      }
-                      return (
-                      <motion.div
+                    {visiblePrivateMessages.map((msg) => (
+                      <PMMessageRow
                         key={msg.id}
-                        className={`ultra-pm-message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
-                        initial={{ opacity: 0, x: msg.senderId === auth.currentUser?.uid ? 20 : -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          type: "spring",
-                          damping: 25,
-                          stiffness: 400,
-                          delay: 0
-                        }}
-                      >
-                        <div className="ultra-pm-msg-avatar">
-                          <LiveAvatarImg
-                            uid={msg.senderId}
-                            gender={msg.senderId === auth.currentUser?.uid ? loggedInUserProfile?.gender : privateMessageTarget?.gender}
-                            fallbackPhotoURL={msg.senderId === auth.currentUser?.uid ? loggedInUserProfile?.photoURL : privateMessageTarget?.photoURL}
-                            alt="avatar"
-                            className="ultra-msg-avatar-img"
-                          />
-                        </div>
-                        <div className="ultra-pm-msg-content">
-                          <div className="ultra-pm-msg-header">
-                            <span className="ultra-pm-sender"><LivePMSenderName uid={msg.senderId} fallback={msg.senderName} /></span>
-                            <span className="ultra-pm-timestamp">
-                              {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                            </span>
-                            {msg.senderId === auth.currentUser?.uid && (
-                              confirmDeletePmId === msg.id ? (
-                                <span className="ultra-pm-delete-confirm">
-                                  <button
-                                    type="button"
-                                    className="ultra-pm-delete-btn ultra-pm-delete-btn--confirm"
-                                    disabled={deletingPmId === msg.id}
-                                    onClick={() => handleDeletePM(msg.id)}
-                                    title="Confirm delete"
-                                  >
-                                    {deletingPmId === msg.id ? '…' : 'Delete?'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ultra-pm-delete-btn ultra-pm-delete-btn--cancel"
-                                    onClick={() => setConfirmDeletePmId(null)}
-                                    title="Cancel"
-                                  >
-                                    ✕
-                                  </button>
-                                </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="ultra-pm-delete-btn"
-                                  onClick={() => setConfirmDeletePmId(msg.id)}
-                                  title="Delete message"
-                                  aria-label="Delete message"
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </button>
-                              )
-                            )}
-                          </div>
-                          {msg.text && <PMTranslatedText msg={msg} currentUid={auth.currentUser?.uid} />}
-                          {msg.imageUrl && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.88, y: 4 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 24 }}
-                            >
-                              <PremiumImageMessage
-                                imageUrl={msg.imageUrl}
-                                imageFileName={msg.imageFileName}
-                                compact={true}
-                              />
-                            </motion.div>
-                          )}
-                          {msg.audioUrl && (
-                            <motion.div
-                              className="ultra-pm-audio-wrapper"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.1 }}
-                            >
-                              <CustomAudioPlayer
-                                audioUrl={msg.audioUrl}
-                                audioFileName={msg.audioFileName}
-                                className="compact-audio-player"
-                              />
-                            </motion.div>
-                          )}
-                        </div>
-                      </motion.div>
-                    );
-                    })}
+                        msg={msg}
+                        currentUid={auth.currentUser?.uid}
+                        myGender={loggedInUserProfile?.gender}
+                        myPhotoURL={loggedInUserProfile?.photoURL}
+                        targetGender={privateMessageTarget?.gender}
+                        targetPhotoURL={privateMessageTarget?.photoURL}
+                        confirmDeletePmId={confirmDeletePmId}
+                        deletingPmId={deletingPmId}
+                        onDeleteRequest={handleDeleteRequest}
+                        onDeleteConfirm={handleDeletePM}
+                        onDeleteCancel={handleDeleteCancel}
+                      />
+                    ))}
                   </div>
                 )}
               </AnimatePresence>

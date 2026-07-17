@@ -52,7 +52,7 @@ export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' },
+      headers: { 'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' },
       body: '',
     };
   }
@@ -106,7 +106,7 @@ export const handler = async (event) => {
         'Cache-Control': isPrivateChat
           ? 'private, max-age=3600'
           : 'public, max-age=86400, stale-while-revalidate=3600',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
       },
       body: buffer.toString('base64'),
       isBase64Encoded: true,
@@ -116,7 +116,7 @@ export const handler = async (event) => {
     // Return transparent 1×1 PNG so broken-image icons don't flash
     return {
       statusCode: 404,
-      headers: { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*' },
       body: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
       isBase64Encoded: true,
     };

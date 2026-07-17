@@ -32,7 +32,7 @@ const TO_INBOX_MAP = {
 
 const headers = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 

@@ -9,7 +9,7 @@ import admin from 'firebase-admin';
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY;
 
 const CORS = {
-  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
