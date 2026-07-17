@@ -130,6 +130,12 @@ const applyAutoMute = async (uid, durationMs, reason, violationDetails = null) =
     console.error('[AntiSpam] Error applying auto-mute:', err);
   }
 
+  // FIX M-09: Snapshot the expected muteUntil timestamp at the moment we set the mute.
+  // The auto-unmute timer checks both mutedBy AND muteUntil so that an admin who
+  // manually extends the mute (changing muteUntil forward) prevents this timer from
+  // firing early and silently reverting their action.
+  const expectedMuteUntilIso = new Date(until).toISOString();
+
   setTimeout(async () => {
     mutedUsers.delete(uid);
     try {
@@ -137,7 +143,10 @@ const applyAutoMute = async (uid, durationMs, reason, violationDetails = null) =
       const snap = await getDoc(userRef);
       if (snap.exists()) {
         const data = snap.data();
-        if (data.mutedInfo?.mutedBy === 'AutoMod') {
+        const info = data.mutedInfo || {};
+        // Only clear if: (a) still AutoMod-owned AND (b) muteUntil matches
+        // what THIS timer originally set — guards against admin extending the mute.
+        if (info.mutedBy === 'AutoMod' && info.muteUntil === expectedMuteUntilIso) {
           await updateDoc(userRef, {
             'mutedInfo.isMuted': false,
             'mutedInfo.mutedBy': null,

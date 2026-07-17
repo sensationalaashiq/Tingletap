@@ -91,8 +91,10 @@ export const checkUsernameAvailability = async (username) => {
         const usernameSnap = await getDoc(usernameRef);
         return !usernameSnap.exists(); // true = available, false = taken
     } catch (error) {
-        console.warn('Username check error (assuming available):', error);
-        return true; // On error, assume available — final check happens at submit
+        // FIX L-01: Fail-closed — return false (unavailable) on error so two users
+        // cannot simultaneously claim the same username if Firestore is unreachable.
+        console.warn('Username check error (assuming unavailable for safety):', error);
+        return false;
     }
 };
 

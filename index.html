@@ -83,63 +83,10 @@
     <meta name="msapplication-config" content="none" />
     <meta name="format-detection" content="telephone=no" />
 
-    <!-- ══════════════════════════════════════════════════════════
-         hreflang — Global targeting
-         India is primary. All regions receive the same URL (single-language
-         app). x-default catches every country not listed below.
-    ══════════════════════════════════════════════════════════ -->
-    <!-- India — primary -->
-    <link rel="alternate" hreflang="en-IN" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="hi"    href="https://tingletap.com/" />
-    <!-- USA & Canada -->
-    <link rel="alternate" hreflang="en-US" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-CA" href="https://tingletap.com/" />
-    <!-- United Kingdom & Ireland -->
-    <link rel="alternate" hreflang="en-GB" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-IE" href="https://tingletap.com/" />
-    <!-- Oceania -->
-    <link rel="alternate" hreflang="en-AU" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-NZ" href="https://tingletap.com/" />
-    <!-- South Asia -->
-    <link rel="alternate" hreflang="en-PK" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-BD" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-LK" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-NP" href="https://tingletap.com/" />
-    <!-- Middle East — large NRI belt -->
-    <link rel="alternate" hreflang="en-AE" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-SA" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-QA" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-KW" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-BH" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-OM" href="https://tingletap.com/" />
-    <!-- South-East Asia -->
-    <link rel="alternate" hreflang="en-SG" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-MY" href="https://tingletap.com/" />
-    <!-- Africa -->
-    <link rel="alternate" hreflang="en-ZA" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-MU" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-KE" href="https://tingletap.com/" />
-    <!-- Caribbean & South America diaspora -->
-    <link rel="alternate" hreflang="en-TT" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-GY" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-FJ" href="https://tingletap.com/" />
-    <!-- Europe -->
-    <link rel="alternate" hreflang="en-DE" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-FR" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-NL" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-IT" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-ES" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-PT" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-SE" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-NO" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-DK" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-FI" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-BE" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-AT" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-CH" href="https://tingletap.com/" />
-    <link rel="alternate" hreflang="en-PL" href="https://tingletap.com/" />
-    <!-- Generic English + global fallback -->
-    <link rel="alternate" hreflang="en"        href="https://tingletap.com/" />
+    <!-- FIX M-17: Removed 30+ hreflang tags that all pointed to the same URL.
+         Google flags duplicate hreflang signals as errors in Search Console and
+         ignores them. hreflang is only meaningful when distinct translated pages
+         exist at distinct URLs. Kept only x-default (universal fallback). -->
     <link rel="alternate" hreflang="x-default" href="https://tingletap.com/" />
 
     <!-- ══════════════════════════════════════════════════════════
@@ -311,6 +258,28 @@
          Google Fonts — render-blocking minimized, display=swap
     ══════════════════════════════════════════════════════════ -->
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
+
+    <!-- FIX M-18: FOUC prevention — apply theme class synchronously before first paint.
+         useEffect fires after the browser paints, causing a visible white flash for
+         dark-mode users. This inline script reads localStorage and applies the correct
+         class before any CSS or React renders, eliminating the flicker entirely. -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('selectedTheme') || 'light';
+          var body = document.documentElement;
+          if (theme === 'dark' || theme === 'dark-mode') {
+            body.classList.add('dark-mode', 'theme-dark');
+          } else if (theme === 'burgundy') {
+            body.classList.add('theme-burgundy');
+          } else if (theme === 'aurora') {
+            body.classList.add('theme-aurora');
+          } else {
+            body.classList.add('theme-light');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <!-- C18: Skip-navigation link for keyboard/screen-reader users -->

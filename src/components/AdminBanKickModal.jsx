@@ -218,7 +218,10 @@ const AdminBanKickModal = React.memo(({
   const needsRoomPicker = localAction === 'kick';
 
   useEffect(() => {
-    if (!needsRoomPicker && localAction !== 'unkick') {
+    // FIX M-04: Also cancel the listener when the modal is hidden (isVisible=false)
+    // without unmounting. Without this guard, the rooms onSnapshot kept running
+    // and accumulating on every admin panel open.
+    if (!isVisible || (!needsRoomPicker && localAction !== 'unkick')) {
       setRooms([]);
       return;
     }
@@ -231,7 +234,7 @@ const AdminBanKickModal = React.memo(({
       }
     });
     return () => unsub();
-  }, [needsRoomPicker, localAction]);
+  }, [isVisible, needsRoomPicker, localAction]);
 
   /* ── Confirm handler ─────────────────────────── */
   const handleConfirm = async () => {

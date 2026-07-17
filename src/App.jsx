@@ -123,20 +123,21 @@ function App() {
       }
     };
 
-    // Import periodic VPN check functions
+    // FIX H-04: Capture the stop function in a ref so the useEffect cleanup can
+    // reliably call it. The previous code returned stop() inside .then() which is
+    // just a Promise resolve value — it never reached useEffect's cleanup chain.
+    let stopVPN = () => {};
     import('./utils/vpnDetection.js').then(({ startPeriodicVPNCheck, stopPeriodicVPNCheck }) => {
-      // Start periodic VPN monitoring
       startPeriodicVPNCheck((vpnResult) => {
         setVpnInfo(vpnResult);
         setVpnBlocked(true);
       });
-
-      // Cleanup on unmount
-      return () => stopPeriodicVPNCheck();
+      stopVPN = stopPeriodicVPNCheck;
     });
 
     // Perform VPN check on app start
     performVPNCheck();
+    return () => stopVPN();
   }, []);
 
   useEffect(() => {
@@ -564,13 +565,17 @@ function App() {
   }, []);
 
   // Guest user authentication helper
+  // FIX M-01: Changed dependency from [user] to [] — run only once on mount.
+  // The [user] dependency caused this effect to re-run on every auth state change.
+  // Since localStorage doesn't change mid-session, a single read on mount is correct.
   useEffect(() => {
     const isGuest = localStorage.getItem('isGuest') === 'true';
     const guestData = localStorage.getItem('guestUser');
 
-    if (isGuest && guestData && !user) {
+    if (isGuest && guestData) {
       try {
         const parsedGuestData = JSON.parse(guestData);
+        if (!parsedGuestData?.uid) return; // guard against corrupt guest data
         setUser({ 
           isGuest: true,
           uid: parsedGuestData.uid,
@@ -585,7 +590,7 @@ function App() {
         localStorage.removeItem('guestGender');
       }
     }
-  }, [user]);
+  }, []);
 
   // 5-minute inactivity auto-logout for guest users
   useEffect(() => {

@@ -168,6 +168,13 @@ export function useAudioRecorder({ minDuration = 5, maxDuration = 15 }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       streamRef.current = stream;
 
+      // FIX L-06: Close any existing AudioContext before creating a new one.
+      // Without this, every requestMic call leaked an AudioContext instance;
+      // browsers warn about too many concurrent AudioContexts and may throttle.
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+
       // Set up analyser for waveform visualization
       const ctx      = new (window.AudioContext || window.webkitAudioContext)();
       const src      = ctx.createMediaStreamSource(stream);

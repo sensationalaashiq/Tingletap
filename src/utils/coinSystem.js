@@ -72,7 +72,9 @@ export async function fetchWallet(uid) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
-    await setDoc(getWalletRef(uid), initial);
+    // FIX L-15: Use { merge: true } so concurrent first-login writes don't race
+    // to overwrite each other with a full document replacement.
+    await setDoc(getWalletRef(uid), initial, { merge: true });
     return initial;
   }
   return snap.data();
@@ -85,7 +87,8 @@ export function subscribeWallet(uid, callback) {
         balance: 0, totalPurchased: 0, totalGifted: 0,
         totalReceived: 0, totalTransactions: 0,
       };
-      await setDoc(getWalletRef(uid), { ...initial, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      // FIX L-15: merge:true prevents race on simultaneous first-login wallet creation.
+      await setDoc(getWalletRef(uid), { ...initial, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
       callback(initial);
     } else {
       callback(snap.data());

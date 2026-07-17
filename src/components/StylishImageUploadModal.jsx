@@ -39,11 +39,16 @@ const StylishImageUploadModal = React.memo(({
     // Image URL tab: only tier3 and staff
     const canUseUrl = badgeTier === 'tier3' || badgeTier === 'staff';
 
+    // FIX L-17: Single constant for the file-size limit so the validation and
+    // the UI hint always agree. Previously validation used 5 MB but hint said 10 MB.
+    const MAX_FILE_MB = 5;
+    const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
     // C15: Client-side file-size guard matching the 5 MB limit enforced in EditProfile.jsx.
     const handleFileUpload = () => {
         if (selectedImage && onImageUpload) {
-            if (selectedImage.size && selectedImage.size > 5 * 1024 * 1024) {
-                alert('Image must be less than 5 MB. Please choose a smaller file.');
+            if (selectedImage.size && selectedImage.size > MAX_FILE_BYTES) {
+                alert(`Image must be less than ${MAX_FILE_MB} MB. Please choose a smaller file.`);
                 return;
             }
             onImageUpload(selectedImage, imageCaption);
@@ -144,7 +149,7 @@ const StylishImageUploadModal = React.memo(({
                                     <path d="M24 14v-6M21 11l3-3 3 3" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
                                 </svg>
                                 <p className="sim-drop-text">Click to select image</p>
-                                <span className="sim-drop-hint">JPG, PNG, GIF, WEBP · Max 10MB</span>
+                                <span className="sim-drop-hint">JPG, PNG, GIF, WEBP · Max 5MB</span>
                             </div>
                         )
                     ) : (

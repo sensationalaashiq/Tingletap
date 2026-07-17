@@ -28,6 +28,9 @@ function stopSharedListener() {
     unsubscribeFn();
     unsubscribeFn = null;
   }
+  // FIX M-07: Reset stale cache so the next subscriber does not briefly receive
+  // outdated room data before the first new snapshot arrives.
+  sharedRooms = [];
 }
 
 export default function useRoomsListener() {

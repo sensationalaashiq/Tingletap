@@ -1,7 +1,7 @@
 import { db, auth } from '../firebase/config';
 import { collection, addDoc, query, where, limit, getDocs, deleteDoc, doc, updateDoc, onSnapshot, getDoc, arrayUnion } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { VPNDetector } from './vpnDetection';
+import { getUserIP as _getVpnUserIP } from './vpnDetection';
 
 /**
  * IP Ban System Utility
@@ -68,8 +68,8 @@ export class IPBanSystem {
    */
   static async getUserIP() {
     try {
-      const ipData = await VPNDetector.getUserIP();
-      return ipData?.ip || null;
+      const ip = await _getVpnUserIP();
+      return (typeof ip === 'string' ? ip : ip?.ip) || null;
     } catch (error) {
       console.error('IP Ban System: Failed to get user IP', error);
       return null;

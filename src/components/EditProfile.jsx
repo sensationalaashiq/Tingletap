@@ -7,6 +7,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { invalidateCachedUserProfile } from '../utils/userProfileCache';
 import { pt } from '../utils/premiumToast';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 import { syncPublicProfile } from '../utils/syncPublicProfile';
@@ -455,21 +456,28 @@ const EditProfile = ({ onClose, onSuccess }) => {
         fontPreferences: getCurrentFontPreferences()
       };
 
+      // FIX H-02: Write to Firestore FIRST, await it, then update Firebase Auth.
+      // Previously the order was reversed: Auth.updateProfile fired first, causing
+      // Auth-subscribed components to re-render with the new photoURL while Firestore
+      // was still holding the old value — visible as a 200–500ms avatar flicker.
+      await setDoc(userDocRef, profileData, { merge: true });
+      // B1: Keep publicProfile in sync with updated display fields.
+      syncPublicProfile(user.uid, profileData).catch(() => {});
+      // Auth displayName + photoURL updated AFTER Firestore is consistent.
       await updateProfile(user, { 
         displayName: formData.displayName, 
         photoURL: finalPhotoURL 
       });
-      await setDoc(userDocRef, profileData, { merge: true });
-      // B1: Keep publicProfile in sync with updated display fields.
-      syncPublicProfile(user.uid, profileData).catch(() => {});
       
       if (profilePic) {
         setProfilePic(null);
         setProfilePicPreview(finalPhotoURL);
       }
       
-      // C3: Bust the shared profile-TTL cache so the UI re-fetches fresh data everywhere.
-      if (window._profileCacheTTL) window._profileCacheTTL.delete(user.uid);
+      // FIX H-09: Properly invalidate the shared in-memory profile cache so
+      // chat avatars / sidebar names refresh immediately without a 60-second TTL wait.
+      // (The old call window._profileCacheTTL.delete() pointed to a stale API.)
+      invalidateCachedUserProfile(user.uid);
       pt.profile('Profile updated successfully!');
       onSuccess && onSuccess();
       onClose && onClose();

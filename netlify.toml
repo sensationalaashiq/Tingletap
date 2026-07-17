@@ -40,6 +40,10 @@
     Permissions-Policy         = "camera=(self), microphone=(self), geolocation=(), payment=()"
     Strict-Transport-Security  = "max-age=31536000; includeSubDomains; preload"
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    # FIX H-07: Content-Security-Policy — defence-in-depth against XSS.
+    # 'unsafe-inline' is needed for Vite's injected runtime styles and inline event handlers.
+    # Tighten by replacing 'unsafe-inline' with hashes/nonces once the build pipeline supports it.
+    Content-Security-Policy    = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.hcaptcha.com https://hcaptcha.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebasestorage.googleapis.com https://api.abstractapi.com https://api.giphy.com https://tingletap.com https://*.netlify.app wss:; frame-src https://hcaptcha.com https://js.hcaptcha.com https://accounts.google.com; object-src 'none'; base-uri 'self';"
     # Tell CDNs/proxies to serve different cached versions per language preference
     Vary                       = "Accept-Language"
     # Primary content language — India English; app also serves English globally

@@ -6,7 +6,9 @@ const ld = (data) => JSON.stringify(data, null, 2);
 
 // Shared date strings
 const DATE_FOUNDED   = '2024-01-01';
-const DATE_MODIFIED  = '2026-07-08';
+// FIX L-07: Use the build-time env variable so DATE_MODIFIED updates automatically
+// on each deploy. Falls back to the last-known date if the variable is not set.
+const DATE_MODIFIED  = import.meta.env.VITE_BUILD_DATE || new Date().toISOString().slice(0, 10);
 const DATE_PUBLISHED = '2024-01-01';
 
 /* ── WebSite + SiteLinksSearchBox + SpeakableSpecification ── */

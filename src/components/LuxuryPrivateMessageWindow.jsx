@@ -355,10 +355,14 @@ const LuxuryPrivateMessageWindow = ({
     }
   });
 
-  // Auto-scroll to bottom when new messages arrive
+  // FIX L-05: Only auto-scroll when the user is already near the bottom.
+  // Previously scrolled unconditionally, yanking users reading history on every new message.
   useEffect(() => {
-    if (chatAreaRef.current) {
-      chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+    const el = chatAreaRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 80) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [privateMessages]);
 

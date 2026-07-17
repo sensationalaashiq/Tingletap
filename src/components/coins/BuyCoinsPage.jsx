@@ -216,7 +216,9 @@ export default function BuyCoinsPage() {
 
       {/* Header */}
       <header className="bc-header">
-        <button className="bc-back-btn" onClick={() => navigate(-1)}>
+        {/* FIX L-10: navigate(-1) can exit the app if user arrived via a direct link.
+            Fall back to /wallet so "Back" always stays inside TingleTap. */}
+        <button className="bc-back-btn" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/wallet')}>
           <ArrowLeftIcon />
         </button>
         <div className="bc-header-brand">
@@ -326,7 +328,8 @@ export default function BuyCoinsPage() {
                       <QRIcon size={18} />
                       <span>Scan to Pay</span>
                     </div>
-                    <img src={qrDataUrl} alt="UPI QR Code" className="bc-qr-img" />
+                    {/* FIX L-16: Constrain QR image so it never overflows on small viewports */}
+                    <img src={qrDataUrl} alt="UPI QR Code" className="bc-qr-img" style={{ maxWidth: '100%', width: 240, height: 'auto' }} />
                     <div className="bc-qr-amount">₹{selectedPkg.price}</div>
                   </div>
 

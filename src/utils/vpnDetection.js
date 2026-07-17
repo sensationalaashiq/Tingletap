@@ -14,7 +14,9 @@ const IP_SERVICES = [
 
 const IPv4_RE = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
 
-async function getUserIP() {
+// FIX L-09 companion: exported so ipBanSystem.js can call it directly
+// instead of going through the now-removed legacy VPNDetector class.
+export async function getUserIP() {
   for (const { url, key } of IP_SERVICES) {
     try {
       const ctrl = new AbortController();
@@ -95,8 +97,14 @@ function setCache(ip, result) {
 
 // ─── Periodic check ──────────────────────────────────────────────────────────
 let _periodicTimer = null;
+// FIX L-20: Module-level guard prevents double-registration when React StrictMode
+// or a hot-reload calls startPeriodicVPNCheck twice before the first clearInterval
+// has a chance to assign _periodicTimer.
+let _isRunning = false;
 
 export const startPeriodicVPNCheck = (onBlocked) => {
+  if (_isRunning) return; // already running — do not register a second interval
+  _isRunning = true;
   if (_periodicTimer) clearInterval(_periodicTimer);
   _periodicTimer = setInterval(async () => {
     // Clear cache so the periodic check always hits the server
@@ -109,6 +117,7 @@ export const startPeriodicVPNCheck = (onBlocked) => {
 
 export const stopPeriodicVPNCheck = () => {
   if (_periodicTimer) { clearInterval(_periodicTimer); _periodicTimer = null; }
+  _isRunning = false;
 };
 
 // ─── Main exported check ─────────────────────────────────────────────────────
@@ -212,9 +221,5 @@ export const checkUserVPN = async (userContext = null) => {
   }
 };
 
-// Legacy export kept for backward compatibility
-export class VPNDetector {
-  static async checkIP(ip) { return callVPNServer(ip, null); }
-  static async getUserIP()  { return getUserIP(); }
-  static isValidIP(ip)      { return IPv4_RE.test(ip); }
-}
+// FIX L-09: Removed legacy VPNDetector class — unused dead code that inflated
+// the bundle. All callers use the named function exports above directly.
