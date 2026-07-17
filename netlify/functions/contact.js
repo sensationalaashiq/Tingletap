@@ -210,17 +210,8 @@ function buildContactHtml({ name, email, subject, message, route, date, theme })
 </html>`;
 }
 
-// ── Rate limiter ───────────────────────────────────────────────────────────────
-const rateLimits = new Map();
-function rateLimit(key, max, windowMs) {
-  const now = Date.now();
-  const entry = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
-  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + windowMs; }
-  entry.count++;
-  rateLimits.set(key, entry);
-  if (entry.count > max) return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
-  return { ok: true };
-}
+// ── Rate limiter (Firestore-backed, cold-start-proof) ──────────────────────────
+import { firestoreRateLimitCheck } from './shared/validation.js';
 
 // ── Input helpers ──────────────────────────────────────────────────────────────
 function sanitize(val, max = 500) {
@@ -237,7 +228,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
 
   const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const rl = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000);
+  const rl = await firestoreRateLimitCheck(`contact:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: `Too many messages. Try again in ${rl.retryAfter}s.` }) };
 
   let body;

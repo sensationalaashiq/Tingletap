@@ -1,7 +1,11 @@
 // netlify/functions/getUploadUrl.js
-// Returns a presigned PUT URL for uploading badge verification media directly
-// to the PRIVATE Cloudflare R2 bucket (R2_Private_Bucket).
-// Key prefix: badge/{uid}/{mediaType}-{uuid}.{ext}
+// Returns a presigned PUT URL for uploading badge or RJ verification media
+// directly to the PRIVATE Cloudflare R2 bucket, bypassing the Netlify 4.5 MB
+// body limit (M-14 fix).
+//
+// Key prefixes:
+//   badge/{uid}/{mediaType}-{uuid}.{ext}   — badge verification
+//   rj/{uid}/{section}-{uuid}.{ext}        — RJ verification audio
 
 import { createPresignedPutUrl } from './shared/r2Client.js';
 import { verifyToken } from './shared/firestoreAdmin.js';
@@ -19,7 +23,13 @@ const ALLOWED_TYPES = {
   audio: ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'],
 };
 
-const MAX_SIZES = { video: 30 * 1024 * 1024, audio: 10 * 1024 * 1024 };
+const ALLOWED_SECTIONS = ['intro', 'song', 'welcome'];
+
+// badge → up to 30 MB video / 10 MB audio; rj → audio only, up to 15 MB
+const MAX_SIZES = {
+  video: 30 * 1024 * 1024,
+  audio: 15 * 1024 * 1024,
+};
 
 function resp(data, status = 200) {
   return { statusCode: status, headers: CORS, body: JSON.stringify(data) };
@@ -36,32 +46,45 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); }
   catch { return resp({ error: 'Invalid JSON' }, 400); }
 
+  // prefix: 'badge' (default) | 'rj'
+  const prefix         = body.prefix === 'rj' ? 'rj' : 'badge';
   const { mediaType, fileSize } = body;
   const rawContentType = body.contentType || '';
   const contentType    = rawContentType.split(';')[0].trim().toLowerCase();
 
-  if (!mediaType || !['video', 'audio'].includes(mediaType))
-    return resp({ error: 'mediaType must be "video" or "audio"' }, 400);
-  if (!contentType || !ALLOWED_TYPES[mediaType].includes(contentType))
-    return resp({ error: `Invalid contentType for ${mediaType}: "${contentType}" (raw: "${rawContentType}")` }, 400);
-  if (!fileSize || fileSize > MAX_SIZES[mediaType])
-    return resp({ error: `File too large (max ${MAX_SIZES[mediaType] / 1024 / 1024}MB)` }, 413);
+  // RJ uploads are audio-only
+  if (prefix === 'rj') {
+    const section = body.section || '';
+    if (!ALLOWED_SECTIONS.includes(section))
+      return resp({ error: `section must be one of: ${ALLOWED_SECTIONS.join(', ')}` }, 400);
+    if (!contentType || !ALLOWED_TYPES.audio.includes(contentType))
+      return resp({ error: `Invalid contentType for RJ audio: "${contentType}"` }, 400);
+  } else {
+    if (!mediaType || !['video', 'audio'].includes(mediaType))
+      return resp({ error: 'mediaType must be "video" or "audio"' }, 400);
+    if (!contentType || !ALLOWED_TYPES[mediaType].includes(contentType))
+      return resp({ error: `Invalid contentType for ${mediaType}: "${contentType}" (raw: "${rawContentType}")` }, 400);
+  }
+
+  if (!fileSize || fileSize > MAX_SIZES[prefix === 'rj' ? 'audio' : mediaType])
+    return resp({ error: `File too large or fileSize missing` }, 413);
 
   const user = await verifyToken(token);
   if (!user.ok) return resp({ error: user.err }, 401);
   if (user.role === 'guest') return resp({ error: 'Registered accounts only' }, 403);
 
-  // Build key using the new "badge/" prefix in the private bucket
   const uuid = randomUUID();
   const ext  = contentType.includes('mp4') ? 'mp4'
              : contentType.includes('ogg') ? 'ogg'
              : contentType.includes('wav') ? 'wav'
              : 'webm';
-  const key = `badge/${user.uid}/${mediaType}-${uuid}.${ext}`;
+
+  const key = prefix === 'rj'
+    ? `rj/${user.uid}/${body.section}-${uuid}.${ext}`
+    : `badge/${user.uid}/${mediaType}-${uuid}.${ext}`;
 
   let uploadUrl;
   try {
-    // createPresignedPutUrl targets the private bucket by default
     uploadUrl = await createPresignedPutUrl(key, contentType, 600); // 10-min window
   } catch (e) {
     console.error('[getUploadUrl] R2 error:', e.message);

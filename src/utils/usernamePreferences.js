@@ -565,11 +565,12 @@ export const loadAllGlobalUsernameStyles = () => {
 export const syncAllUsersStyles = async () => {
   try {
     const { db } = await import('../firebase/config');
-    const { collection, getDocs } = await import('firebase/firestore');
+    const { collection, getDocs, query, limit } = await import('firebase/firestore');
 
     console.log('🔄 Syncing all users username styles from Firebase...');
 
-    const usersRef = collection(db, 'users');
+    // Cap at 200 docs — avoids an unbounded full-collection scan on large user bases.
+    const usersRef = query(collection(db, 'users'), limit(200));
     const snapshot = await getDocs(usersRef);
 
     let syncedCount = 0;

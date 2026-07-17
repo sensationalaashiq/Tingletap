@@ -202,8 +202,67 @@ function blobToBase64(blob) {
 
 // ── Badge verification ─────────────────────────────────────────────────────────
 
+// ── Presigned PUT helper (M-14) ────────────────────────────────────────────────
+
 /**
- * Upload a badge verification media blob (video/audio) via the Netlify proxy.
+ * Upload a Blob directly to R2 via a presigned PUT URL.
+ * Bypasses the Netlify 4.5 MB body limit entirely — the blob goes straight
+ * from the browser to Cloudflare R2.
+ *
+ * Flow:
+ *  1. Call getUploadUrl (Netlify) → { uploadUrl, key }
+ *  2. PUT the blob directly to uploadUrl (no Netlify in the path)
+ *  3. Return the key to the caller
+ *
+ * @param {Blob|File} blob
+ * @param {string}    contentType  e.g. 'video/webm'
+ * @param {Object}    urlPayload   body sent to getUploadUrl (mediaType, prefix, section, …)
+ * @param {string}    token        Firebase ID token
+ * @param {(n:number)=>void} [onProgress]
+ * @returns {Promise<string>} R2 object key
+ */
+async function uploadViaPresignedUrl(blob, contentType, urlPayload, token, onProgress) {
+  if (onProgress) onProgress(5);
+
+  // Step 1 — ask Netlify for a presigned PUT URL
+  const urlRes = await fetch(`${BASE}/getUploadUrl`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ ...urlPayload, contentType, fileSize: blob.size }),
+  });
+  if (!urlRes.ok) {
+    const err = await urlRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to get upload URL (${urlRes.status})`);
+  }
+  const { uploadUrl, key } = await urlRes.json();
+  if (onProgress) onProgress(15);
+
+  // Step 2 — PUT the blob directly to R2 (no Netlify body-size limit)
+  let putRes;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': contentType },
+        body: blob,
+      });
+      break;
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — upload to R2 failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+
+  if (!putRes.ok) throw new Error(`R2 upload failed (HTTP ${putRes.status})`);
+  if (onProgress) onProgress(100);
+  return key;
+}
+
+// ── Badge verification ─────────────────────────────────────────────────────────
+
+/**
+ * Upload a badge verification media blob directly to R2 via a presigned PUT URL
+ * (M-14 fix — bypasses Netlify 4.5 MB body limit).
  * Stored in the PRIVATE bucket under badge/{uid}/{type}-{uuid}.{ext}.
  * Returns the R2 object key only — never a URL.
  *
@@ -214,40 +273,9 @@ function blobToBase64(blob) {
  */
 export async function uploadMedia(blob, mediaType, onProgress) {
   const token = await getIdToken();
-
   const rawType     = blob.type || (mediaType === 'video' ? 'video/webm' : 'audio/webm');
   const contentType = rawType.split(';')[0].trim().toLowerCase();
-
-  if (onProgress) onProgress(5);
-  const base64Data = await blobToBase64(blob);
-  if (onProgress) onProgress(15);
-
-  // C4: One retry on network failure (mirrors the pattern in uploadMediaFile).
-  let res;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      res = await fetch(`${BASE}/uploadBadgeMedia`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ mediaType, contentType, data: base64Data }),
-      });
-      break;
-    } catch (networkErr) {
-      if (attempt === 1) throw new Error('Network error — badge upload failed after retry');
-      await new Promise(r => setTimeout(r, 1200));
-    }
-  }
-
-  if (onProgress) onProgress(90);
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Upload failed (${res.status})`);
-  }
-
-  const { key } = await res.json();
-  if (onProgress) onProgress(100);
-  return key; // R2 object key — store in Firestore, not a URL
+  return uploadViaPresignedUrl(blob, contentType, { prefix: 'badge', mediaType }, token, onProgress);
 }
 
 /**
@@ -355,41 +383,22 @@ export async function reviewApplication(applicantUid, action, reviewNotes = '') 
  * @param {(progress: number) => void} [onProgress]
  * @returns {Promise<string>} R2 object key
  */
+/**
+ * Upload RJ verification audio directly to R2 via a presigned PUT URL
+ * (M-14 fix — bypasses Netlify 4.5 MB body limit).
+ * Stored in the PRIVATE bucket under rj/{uid}/{section}-{uuid}.{ext}.
+ * Returns the R2 object key only — never a URL.
+ *
+ * @param {Blob|File} blob
+ * @param {'intro'|'song'|'welcome'} section
+ * @param {(progress: number) => void} [onProgress]  0–100
+ * @returns {Promise<string>} R2 object key
+ */
 export async function uploadRJMedia(blob, section, onProgress) {
   const token = await getIdToken();
   const rawType     = blob.type || 'audio/webm';
   const contentType = rawType.split(';')[0].trim().toLowerCase();
-
-  if (onProgress) onProgress(5);
-  const base64Data = await blobToBase64(blob);
-  if (onProgress) onProgress(15);
-
-  // C4: One retry on network failure (mirrors the pattern in uploadMediaFile).
-  let res;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      res = await fetch(`${BASE}/uploadRJMedia`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ section, contentType, data: base64Data }),
-      });
-      break;
-    } catch (networkErr) {
-      if (attempt === 1) throw new Error('Network error — RJ upload failed after retry');
-      await new Promise(r => setTimeout(r, 1200));
-    }
-  }
-
-  if (onProgress) onProgress(90);
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Upload failed (${res.status})`);
-  }
-
-  const { key } = await res.json();
-  if (onProgress) onProgress(100);
-  return key; // R2 object key — store in Firestore, not a URL
+  return uploadViaPresignedUrl(blob, contentType, { prefix: 'rj', section }, token, onProgress);
 }
 
 /**
