@@ -199,15 +199,27 @@ function useLeaderboard(type, period) {
   return { data, loading, userMap };
 }
 
+// FIX L-12: Add aria-label so screen readers announce the rank position.
+// Previously the medal divs had no accessible name — MEDAL_LABELS text ("1st"
+// etc.) was readable but the surrounding context ("this is a rank") was not.
 function RankBadge({ rank }) {
   if (rank <= 3) {
     return (
-      <div className="lb-medal" style={{ background: MEDAL_COLORS[rank - 1] }}>
-        {MEDAL_LABELS[rank - 1]}
+      <div
+        className="lb-medal"
+        style={{ background: MEDAL_COLORS[rank - 1] }}
+        aria-label={`Rank ${rank}`}
+        role="img"
+      >
+        <span aria-hidden="true">{MEDAL_LABELS[rank - 1]}</span>
       </div>
     );
   }
-  return <div className="lb-rank-num">#{rank}</div>;
+  return (
+    <div className="lb-rank-num" aria-label={`Rank ${rank}`} role="img">
+      <span aria-hidden="true">#{rank}</span>
+    </div>
+  );
 }
 
 /**

@@ -263,6 +263,12 @@ export const handler = async (event) => {
     proxy:            vpnInfo.proxy,
     tor:              vpnInfo.tor,
     hosting:          vpnInfo.hosting,
+    // FIX M-13: Denormalized lowercase search token — enables server-side prefix
+    // search (where >= term, where <= term+'\uf8ff') without needing full-text
+    // search. Covers username, email, uid, and country in one scannable field.
+    searchIndex: [
+      username || '', email || user.email || '', user.uid, geo.country || ''
+    ].join(' ').toLowerCase().trim(),
   };
 
   try {

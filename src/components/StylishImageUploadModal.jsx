@@ -44,11 +44,35 @@ const StylishImageUploadModal = React.memo(({
     const MAX_FILE_MB = 5;
     const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
-    // C15: Client-side file-size guard matching the 5 MB limit enforced in EditProfile.jsx.
-    const handleFileUpload = () => {
+    // FIX L-18: Read first 12 bytes and verify the file is actually an image
+    // before accepting it. Browser-reported MIME type can be spoofed by renaming
+    // a non-image file to .jpg etc. Magic bytes confirm the real format.
+    const checkImageMagicBytes = (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const b = new Uint8Array(ev.target.result);
+          const isJpeg = b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF;
+          const isPng  = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
+          const isGif  = b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38;
+          const isWebp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+                         b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
+          resolve(isJpeg || isPng || isGif || isWebp);
+        };
+        reader.onerror = () => resolve(false);
+        reader.readAsArrayBuffer(file.slice(0, 12));
+      });
+
+    // C15: Client-side file-size guard + magic-byte MIME validation.
+    const handleFileUpload = async () => {
         if (selectedImage && onImageUpload) {
             if (selectedImage.size && selectedImage.size > MAX_FILE_BYTES) {
                 alert(`Image must be less than ${MAX_FILE_MB} MB. Please choose a smaller file.`);
+                return;
+            }
+            const isValidImage = await checkImageMagicBytes(selectedImage);
+            if (!isValidImage) {
+                alert('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
                 return;
             }
             onImageUpload(selectedImage, imageCaption);

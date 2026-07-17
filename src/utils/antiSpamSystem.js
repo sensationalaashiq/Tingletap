@@ -22,12 +22,29 @@ const SPAM_CONFIG = {
 
 const EMOJI_REGEX = /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu;
 
+// FIX M-10: For messages longer than 100 chars, Levenshtein is O(N×M) — 40 000+
+// cell fills per comparison when both strings are ~200 chars, repeated for every
+// entry in the 10-message history window. Use fast Jaccard token-overlap instead
+// for long messages; Levenshtein is still used for short messages where its
+// character-level precision matters most for catching near-duplicate spam.
 const stringSimilarity = (a, b) => {
   if (!a || !b) return 0;
   if (a === b) return 1;
   const la = a.toLowerCase().trim();
   const lb = b.toLowerCase().trim();
   if (la === lb) return 1;
+
+  // Fast path for long messages: Jaccard word-overlap (O(N+M))
+  if (la.length > 100 || lb.length > 100) {
+    const wordsA = new Set(la.split(/\s+/).filter(Boolean));
+    const wordsB = new Set(lb.split(/\s+/).filter(Boolean));
+    let intersection = 0;
+    wordsA.forEach(w => { if (wordsB.has(w)) intersection++; });
+    const union = wordsA.size + wordsB.size - intersection;
+    return union === 0 ? 1 : intersection / union;
+  }
+
+  // Levenshtein for short messages (≤100 chars)
   const longer = la.length > lb.length ? la : lb;
   const shorter = la.length > lb.length ? lb : la;
   if (longer.length === 0) return 1;

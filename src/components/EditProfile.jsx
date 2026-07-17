@@ -128,11 +128,37 @@ const EditProfile = ({ onClose, onSuccess }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleProfilePicChange = (e) => {
+  // FIX L-18: Validate file magic bytes (first 12 bytes) before accepting the file.
+  // MIME type reported by the browser can be spoofed by renaming a .exe to .jpg.
+  // Magic-byte check reads the actual file header to confirm it's a real image.
+  const checkImageMagicBytes = (file) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const bytes = new Uint8Array(ev.target.result);
+        const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+        const isPng  = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+        const isGif  = bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38;
+        const isWebp = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+                       bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+        resolve(isJpeg || isPng || isGif || isWebp);
+      };
+      reader.onerror = () => resolve(false);
+      reader.readAsArrayBuffer(file.slice(0, 12));
+    });
+
+  const handleProfilePicChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         pt.error('Profile picture must be less than 5MB');
+        e.target.value = '';
+        return;
+      }
+
+      const isValidImage = await checkImageMagicBytes(file);
+      if (!isValidImage) {
+        pt.error('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
         e.target.value = '';
         return;
       }

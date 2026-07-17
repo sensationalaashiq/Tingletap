@@ -227,6 +227,7 @@ const PremiumRelationshipCard = ({
               <span className="prc-compact-spacer" />
 
               <div style={{ position: 'relative' }}>
+                {/* FIX L-11: aria-controls links trigger to its listbox */}
                 <button
                   ref={btnRef}
                   type="button"
@@ -234,6 +235,7 @@ const PremiumRelationshipCard = ({
                   onClick={(e) => { e.stopPropagation(); setPopoverOpen(p => !p); }}
                   aria-haspopup="listbox"
                   aria-expanded={popoverOpen}
+                  aria-controls="prc-listbox-compact"
                   aria-label={viewerMark ? 'Change relationship mark' : 'Mark relationship'}
                 >
                   {viewerMark ? (
@@ -257,6 +259,7 @@ const PremiumRelationshipCard = ({
                 {popoverOpen && (
                   <div
                     ref={popoverRef}
+                    id="prc-listbox-compact"
                     className="prc-popover prc-popover--compact"
                     role="listbox"
                     aria-label="Choose relationship"
@@ -326,6 +329,7 @@ const PremiumRelationshipCard = ({
                 onClick={(e) => { e.stopPropagation(); setPopoverOpen(p => !p); }}
                 aria-haspopup="listbox"
                 aria-expanded={popoverOpen}
+                aria-controls="prc-listbox-full"
                 aria-label={viewerMark ? 'Change relationship mark' : 'Add relationship mark'}
               >
                 {viewerMark ? (
@@ -350,6 +354,7 @@ const PremiumRelationshipCard = ({
               {popoverOpen && (
                 <div
                   ref={popoverRef}
+                  id="prc-listbox-full"
                   className="prc-popover"
                   role="listbox"
                   aria-label="Choose relationship"

@@ -94,24 +94,48 @@ export async function getApplicationsPage(statusFilter = 'all', searchTerm = '',
 
   let q = collection(db, COLLECTION);
   const constraints = [];
+  const term = searchTerm.trim().toLowerCase();
 
-  // A composite index on (status ASC, submittedAt DESC) is defined in firestore.indexes.json.
-  // Both filter strategies therefore use server-side orderBy + cursor pagination.
-  if (statusFilter !== 'all') {
-    constraints.push(where('status', '==', statusFilter));
+  // FIX M-13: When a search term is given and no status filter is active, use
+  // server-side prefix search on the `searchIndex` field (populated by the
+  // submitBadgeApplication Netlify function since the M-13 fix).
+  // This fixes the previous limitation where only the first 30 documents were
+  // searched client-side, making searches miss matches beyond page 1.
+  //
+  // The range query (>= term, <= term + '\uf8ff') implements prefix matching and
+  // works with Firestore's auto-generated single-field index — no composite index
+  // needed for this case since we omit orderBy when using the range filter.
+  //
+  // When both statusFilter AND searchTerm are set, we fall back to fetching a
+  // larger page (100 docs) and filtering client-side, since combining equality +
+  // range on different fields requires a composite index we haven't deployed.
+  if (term && statusFilter === 'all') {
+    constraints.push(where('searchIndex', '>=', term));
+    constraints.push(where('searchIndex', '<=', term + '\uf8ff'));
+    constraints.push(limit(50));
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+  } else {
+    // A composite index on (status ASC, submittedAt DESC) is defined in firestore.indexes.json.
+    if (statusFilter !== 'all') {
+      constraints.push(where('status', '==', statusFilter));
+    }
+    constraints.push(orderBy('submittedAt', 'desc'));
+    // Use a larger page when filtering by status + search so client-side filter
+    // has more candidates to scan (still bounded — avoids unbounded reads).
+    constraints.push(limit(term ? 100 : PAGE_SIZE));
+    if (lastDoc) constraints.push(startAfter(lastDoc));
   }
-  constraints.push(orderBy('submittedAt', 'desc'));
-  constraints.push(limit(PAGE_SIZE));
-  if (lastDoc) constraints.push(startAfter(lastDoc));
 
   const snap = await getDocs(query(q, ...constraints));
   const docs = snap.docs.map(d => ({ id: d.id, _snap: d, ...d.data() }));
 
-  // Client-side search filter (name/email/uid/country)
-  const filtered = searchTerm.trim()
+  // Client-side fallback filter — only applies when status+search combo is active
+  // (server-side search handled the term-only path above)
+  const filtered = (term && statusFilter !== 'all')
     ? docs.filter(app => {
-        const s = searchTerm.toLowerCase();
+        const s = term;
         return (
+          app.searchIndex?.includes(s) ||
           app.username?.toLowerCase().includes(s) ||
           app.displayName?.toLowerCase().includes(s) ||
           app.email?.toLowerCase().includes(s) ||
@@ -121,7 +145,7 @@ export async function getApplicationsPage(statusFilter = 'all', searchTerm = '',
       })
     : docs;
 
-  const hasMore = snap.docs.length === PAGE_SIZE;
+  const hasMore = snap.docs.length >= (term && statusFilter === 'all' ? 50 : (term ? 100 : PAGE_SIZE));
   const result = { docs: filtered, lastDoc: snap.docs[snap.docs.length - 1] || null, hasMore };
   _cache.set(cacheKey, result);
   return result;
