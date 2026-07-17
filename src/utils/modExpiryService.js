@@ -79,20 +79,36 @@ export const autoCheckUnmute = async (uid, mutedInfo) => {
 export const autoCheckUnban = async (uid, userProfile) => {
   if (!uid || !userProfile?.isBanned) return false;
 
-  const dur = parseDurationMs(userProfile.banDuration);
-  if (dur === Infinity) return false; // permanent – never auto-lifts
+  // FIX: moderationAction.js stores bans as banInfo.banUntil (absolute ISO).
+  // The old code read userProfile.banDuration + userProfile.bannedAt which no
+  // longer exist in the new schema — client-side unban was silently a no-op.
+  let expired = false;
 
-  const bannedAt = toMs(userProfile.bannedAt);
-  if (!bannedAt) return false;
-  if (Date.now() < bannedAt + dur) return false; // not yet
+  const banUntil = userProfile.banInfo?.banUntil;
+  if (banUntil) {
+    // New schema (absolute expiry timestamp)
+    if (Date.now() < new Date(banUntil).getTime()) return false; // not yet
+    expired = true;
+  } else {
+    // Legacy fallback: relative duration stored on the root user doc
+    const dur = parseDurationMs(userProfile.banDuration);
+    if (dur === Infinity) return false; // permanent — never auto-lifts
+    const bannedAt = toMs(userProfile.bannedAt ?? userProfile.banInfo?.bannedAt);
+    if (!bannedAt) return false;
+    if (Date.now() < bannedAt + dur) return false; // not yet
+    expired = true;
+  }
+
+  if (!expired) return false;
 
   try {
     await updateDoc(doc(db, 'users', uid), {
       isBanned   : false,
+      banInfo    : null,
+      // also clear legacy fields in case this is an old-schema record
       banReason  : null,
       bannedAt   : null,
       banDuration: null,
-      banInfo    : null,
       unbannedAt : serverTimestamp(),
       unbannedBy : 'System (timer expired)',
     });
