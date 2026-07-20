@@ -4,7 +4,9 @@
 import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
 import admin from 'firebase-admin';
 import { sendEmailWithTemplate } from './shared/emailService.js';
-import { rateLimitCheck, sanitizeString, validateEmail } from './shared/validation.js';
+// H-06 fix: replaced in-memory rateLimitCheck with Firestore-backed firestoreRateLimitCheck
+// so limits persist across cold starts (Netlify spins up new instances per-invocation).
+import { firestoreRateLimitCheck, sanitizeString, validateEmail } from './shared/validation.js';
 import { log } from './shared/logger.js';
 
 const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
@@ -183,7 +185,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 
   const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const rl = rateLimitCheck(`email-action:${ip}`, 30, 60 * 60 * 1000);
+  const rl = await firestoreRateLimitCheck(`email-action:${ip}`, 30, 60 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers, body: JSON.stringify({ error: `Rate limited. Retry in ${rl.retryAfter}s.` }) };
 
   const authHeader = event.headers.authorization || event.headers.Authorization || '';

@@ -154,14 +154,20 @@
 
     "privateMessages": {
       "$conversationId": {
-        // FIX 10: Conversation IDs are uid1_uid2 (UIDs separated by _).
-        // .contains() checks that auth.uid appears as a substring.
-        // Firebase UIDs are 28-char alphanumeric with no underscores, making
-        // false positives from substring matching extremely unlikely.
-        // A fully-secure implementation would use an explicit participants
-        // map: data.child('participants').child(auth.uid).exists()
-        ".read": "auth != null && $conversationId.contains(auth.uid)",
-        ".write": "auth != null && $conversationId.contains(auth.uid)",
+        // M-19 fix: replaced .contains(auth.uid) with anchored .beginsWith / .endsWith checks.
+        //
+        // Problem: .contains() is a substring match — a UID that happens to be a substring
+        // of another UID (or of a crafted conversationId) would wrongly grant access.
+        // Firebase UIDs are 28-char base62 (no underscores) so false positives were
+        // "unlikely", but the rule still passed the security audit as M-19 (medium severity).
+        //
+        // Fix: conversationId format is always "<uidA>_<uidB>" (sorted at write time).
+        // The read/write rule now checks that the caller's uid is either the LEFT component
+        // (beginsWith uid + '_') or the RIGHT component (endsWith '_' + uid).  This is an
+        // exact boundary check — a UID cannot satisfy it unless it occupies one of the two
+        // canonical positions, regardless of the other party's UID length or value.
+        ".read":  "auth != null && ($conversationId.beginsWith(auth.uid + '_') || $conversationId.endsWith('_' + auth.uid))",
+        ".write": "auth != null && ($conversationId.beginsWith(auth.uid + '_') || $conversationId.endsWith('_' + auth.uid))",
         "messages": {
           "$messageId": {
             ".write": "auth != null && auth.uid == newData.child('senderId').val()"

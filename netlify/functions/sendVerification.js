@@ -156,16 +156,11 @@ async function sendViaBrevo({ to, subject, html, text }) {
   return res.json();
 }
 
-const rateLimits = new Map();
-function rateLimit(key, max, windowMs) {
-  const now = Date.now();
-  const entry = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
-  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + windowMs; }
-  entry.count++;
-  rateLimits.set(key, entry);
-  if (entry.count > max) return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
-  return { ok: true };
-}
+// H-06 fix: removed in-memory rateLimits Map (resets on every cold start, so it
+// provided no real protection across Netlify function invocations).
+// firestoreRateLimitCheck persists counters in Firestore/_rateLimits and falls
+// back to an in-memory check only when Firebase Admin is unavailable.
+import { firestoreRateLimitCheck } from './shared/validation.js';
 
 export const handler = async (event) => {
   const headers = { 'Content-Type': 'application/json', ...CORS };
@@ -183,7 +178,7 @@ export const handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Valid email required' }) };
 
   const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const rl = rateLimit(`verify:${ip}`, 5, 60 * 60 * 1000);
+  const rl = await firestoreRateLimitCheck(`verify:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers: { ...headers, 'Retry-After': String(rl.retryAfter) }, body: JSON.stringify({ error: 'Too many requests. Please try again later.' }) };
 
   // ── Try Firebase Admin path (branded Brevo email) ────────────────────────────

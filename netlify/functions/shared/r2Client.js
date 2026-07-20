@@ -211,6 +211,18 @@ export async function createPresignedPutUrl(key, contentType, expiresIn = 300) {
   return getSignedUrl(getClient(), cmd, { expiresIn });
 }
 
+/**
+ * M-14 fix: presigned PUT URL targeting the PUBLIC bucket.
+ * Allows clients to upload large public media (profile photos, covers, chat images,
+ * homepage audio) directly to R2, bypassing Netlify's 4.5 MB request-body limit.
+ */
+export async function createPublicPresignedPutUrl(key, contentType, expiresIn = 600) {
+  const cmd = new PutObjectCommand({
+    Bucket: getPublicBucketName(), Key: key, ContentType: contentType,
+  });
+  return getSignedUrl(getClient(), cmd, { expiresIn });
+}
+
 /** Kept for backward compat — presigned PUT defaults to private bucket. */
 export async function ensureR2Cors() {
   // No-op: we no longer need browser direct-upload PUT flows.

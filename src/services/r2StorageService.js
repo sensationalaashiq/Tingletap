@@ -136,17 +136,29 @@ export function compressImageToWebP(file, { maxDim = 1080, quality = 0.80 } = {}
  * @param {(pct: number) => void} [onProgress]  0–100 callback
  * @returns {Promise<{ key: string, url: string }>}
  */
+// PUBLIC upload types that support presigned PUT (M-14 fix).
+// Files above this threshold bypass Netlify's 4.5 MB body limit by uploading
+// directly to R2 via a presigned PUT URL from getPublicUploadUrl.
+const PUBLIC_UPLOAD_TYPES = new Set(['profile', 'cover', 'chat-image', 'homepage-audio']);
+const PRESIGNED_THRESHOLD_BYTES = 3 * 1024 * 1024; // 3 MB
+
 export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   const user = auth.currentUser;
   if (!user) throw new Error('Not authenticated');
   const token = await user.getIdToken();
 
+  const rawType     = blob.type || 'application/octet-stream';
+  const contentType = rawType.split(';')[0].trim().toLowerCase();
+
+  // M-14 fix: for public media types above 3 MB, upload directly to R2 via
+  // a presigned PUT URL so we never hit Netlify's 4.5 MB request-body limit.
+  if (PUBLIC_UPLOAD_TYPES.has(uploadType) && blob.size > PRESIGNED_THRESHOLD_BYTES) {
+    return _uploadPublicMediaDirect(blob, uploadType, contentType, token, onProgress);
+  }
+
   if (onProgress) onProgress(5);
   const base64Data = await blobToBase64(blob);
   if (onProgress) onProgress(20);
-
-  const rawType     = blob.type || 'application/octet-stream';
-  const contentType = rawType.split(';')[0].trim().toLowerCase();
 
   // One retry on network failure
   let res;
@@ -177,6 +189,54 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   const result = await res.json();
   if (onProgress) onProgress(100);
   return result; // { key, url }
+}
+
+/**
+ * M-14: Upload a large public media blob directly to R2 via a presigned PUT URL.
+ * Used automatically by uploadMediaFile() for PUBLIC upload types > 3 MB.
+ *
+ * @param {Blob|File} blob
+ * @param {string}    uploadType  — one of PUBLIC_UPLOAD_TYPES
+ * @param {string}    contentType — MIME type (no codec suffix)
+ * @param {string}    token       — Firebase ID token
+ * @param {Function}  [onProgress]
+ * @returns {Promise<{ key: string, url: string }>}
+ */
+async function _uploadPublicMediaDirect(blob, uploadType, contentType, token, onProgress) {
+  if (onProgress) onProgress(5);
+
+  // Step 1 — get a presigned PUT URL from the Netlify function
+  const urlRes = await fetch(`${BASE}/getPublicUploadUrl`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body:    JSON.stringify({ uploadType, contentType, fileSize: blob.size }),
+  });
+  if (!urlRes.ok) {
+    const err = await urlRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to get presigned upload URL (HTTP ${urlRes.status})`);
+  }
+  const { uploadUrl, key, publicUrl } = await urlRes.json();
+  if (onProgress) onProgress(15);
+
+  // Step 2 — PUT blob directly to R2 (no Netlify in the path)
+  let putRes;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      putRes = await fetch(uploadUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': contentType },
+        body:    blob,
+      });
+      break;
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — direct R2 upload failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+  if (!putRes.ok) throw new Error(`R2 upload failed (HTTP ${putRes.status})`);
+
+  if (onProgress) onProgress(100);
+  return { key, url: publicUrl };
 }
 
 // ── Base64 encode ──────────────────────────────────────────────────────────────
