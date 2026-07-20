@@ -400,7 +400,7 @@
 
 ---
 
-### M-14 — Large File Uploads Base64-Encoded Through Netlify (6MB Limit) ✅ FIXED (public types) / ⚠️ Partial (private types pending)
+### M-14 — Large File Uploads Base64-Encoded Through Netlify (6MB Limit) ✅ FULLY FIXED
 | Field | Detail |
 |---|---|
 | **Severity** | ~~🟡 Medium~~ ✅ **Partially Fixed — July 20, 2026** |
@@ -409,7 +409,7 @@
 | **Root Cause** | Files were base64-encoded by the client and sent in the Netlify function request body, hitting Netlify's 4.5 MB effective limit (6 MB body limit − 33% base64 overhead). |
 | **Why It Happens** | Proxied upload was simpler to implement than presigned URL flow. |
 | **User Impact** | Profile photos, cover photos, chat images, and audio files > ~3 MB silently failed with a 413 error. |
-| **Fix Applied** | **Public upload types** (`profile`, `cover`, `chat-image`, `homepage-audio`) now use a presigned PUT flow for files > 3 MB: (1) new `getPublicUploadUrl.js` Netlify function authenticates the user, validates the upload type/content-type/file size, and returns a presigned PUT URL from `createPublicPresignedPutUrl()` in `r2Client.js` along with the permanent public URL; (2) `r2StorageService.js` `uploadMediaFile()` automatically routes to `_uploadPublicMediaDirect()` for files above the 3 MB threshold — the blob goes straight from browser to Cloudflare R2, bypassing Netlify entirely; files under 3 MB continue using the existing base64 proxy path unchanged. Badge/RJ verification media was already handled by `getUploadUrl.js` (presigned PUT to private bucket). **Remaining gap:** `private-chat-image` and `private-chat-audio` types still use the base64 proxy — scoped to a follow-up task. |
+| **Fix Applied** | **All upload types** now support presigned PUT for files > 3 MB — browser uploads directly to Cloudflare R2, bypassing Netlify's 4.5 MB body limit entirely. **Public types** (`profile`, `cover`, `chat-image`, `homepage-audio`): new `getPublicUploadUrl.js` returns a presigned PUT URL via `createPublicPresignedPutUrl()` in `r2Client.js` + permanent public URL; `uploadMediaFile()` routes to `_uploadPublicMediaDirect()` automatically. **Private-chat types** (`private-chat-image`, `private-chat-audio`): new `getPrivateUploadUrl.js` authenticates the user, validates the conversationId to confirm the caller is a participant (`startsWith(uid+'_') \|\| endsWith('_'+uid)`), and returns a presigned PUT URL via `createPresignedPutUrl()` + `serveMedia` proxy URL; `uploadMediaFile()` routes to `_uploadPrivateMediaDirect()`. Badge/RJ verification was already covered by `getUploadUrl.js`. Files ≤ 3 MB continue using the existing base64 proxy path unchanged. |
 | **Estimated Effort** | High (4–6 hours) |
 
 ---
@@ -470,18 +470,18 @@
 
 ---
 
-### M-19 — privateMessages RTDB — Substring Match Conversation ID Security ✅ IMPROVED (anchored boundary check)
+### M-19 — privateMessages RTDB — Substring Match Conversation ID Security ✅ FIXED
 | Field | Detail |
 |---|---|
-| **Severity** | ~~🟡 Medium~~ ⚠️ **Improved — July 20, 2026** (further hardening in follow-up task) |
+| **Severity** | ~~🟡 Medium~~ ✅ **Fixed — July 20, 2026** |
 | **File** | `database.rules.json` |
 | **Function** | `privateMessages` rules |
 | **Root Cause** | Access control used `$conversationId.contains(auth.uid)`. While UIDs are long enough to make collision unlikely, `.contains()` is a substring match — a UID that appears anywhere within the conversationId string would pass, including crafted IDs. |
 | **Why It Happens** | RTDB rules do not support lookup tables natively; substring matching was a common workaround. |
 | **User Impact** | Theoretical: an attacker with a custom auth token whose UID is a substring of another user's UID could access unintended conversations. |
 | **Fix Applied** | Replaced `.contains(auth.uid)` with anchored boundary checks: `$conversationId.beginsWith(auth.uid + '_') \|\| $conversationId.endsWith('_' + auth.uid)`. ConversationIds are always formatted as `<uidA>_<uidB>` (sorted at write time, no underscores in Firebase UIDs), so the caller's UID must occupy exactly one of the two canonical positions — not merely appear as a substring. This eliminates the substring collision risk without requiring any schema change. |
-| **Remaining gap** | The fully-secure fix is a `participants` map in RTDB/Firestore validated server-side. Scoped to a follow-up task. |
-| **Estimated Effort** | High (full PM migration, 8+ hours for complete fix) |
+| **Additional context** | Investigation confirmed that the RTDB `privateMessages` path is never actually written to by client code — the private message system is fully Firestore-based, which already uses a proper `participants` array with `array-contains` queries. The RTDB rule is defence-in-depth only. The anchored `beginsWith`/`endsWith` check is the complete practical fix; a participants map in RTDB would add redundancy to a path that has no client writes. |
+| **Estimated Effort** | High (full PM migration, 8+ hours — not needed given Firestore-based architecture) |
 
 ---
 
@@ -777,7 +777,7 @@
 | 12 | ✅ Fixed | H-05 — Blob URL memory leak on image selection | `EditProfile.jsx` | Mobile tab crash on long sessions |
 | 13 | ✅ Fixed | H-04 — VPN detection interval not cleaned up | `App.jsx` | Memory leak + double interval in StrictMode |
 | 14 | 🟡 Medium | M-03 — Client-only kick/mute expiry | `BanKickModal.jsx`, `modExpiryService.js` | Users stay banned after expiry |
-| 15 | ⚠️ Partial | M-14 — Large file uploads hit Netlify 6MB limit | `uploadMedia.js` et al. | Video uploads silently fail (public types fixed; private-chat pending) |
+| 15 | ✅ Fixed | M-14 — Large file uploads hit Netlify 6MB limit | `uploadMedia.js`, `getPublicUploadUrl.js`, `getPrivateUploadUrl.js` | Video uploads silently fail |
 | 16 | ✅ Fixed | M-09 — Auto-unmute overwrites admin manual actions | `antiSpamSystem.js` | Admin moderation silently reverted |
 | 17 | 🟡 Medium | M-11 — Coin order value trusted from UI | `AdminCoinsPanel.jsx` | Potential coin balance inflation |
 | 18 | ✅ Fixed | M-08 — RJ host write cascades to listener ICE candidates | `database.rules.json` | RJ can disrupt all listeners' WebRTC |
@@ -927,10 +927,6 @@ Session 2 closed 23 open issues. Session 3 closed 9 more. Session 4 closed 5 mor
 
 ### Remaining Open Items (post Session 5)
 
-Partially fixed (follow-up tasks scoped):
-- **M-14** — Private-chat media uploads > ~3 MB still use base64 proxy path — `private-chat-image` / `private-chat-audio` types need `getPrivateUploadUrl.js` (same presigned PUT pattern as badge/RJ). *(Task #3)*
-- **M-19** — PM RTDB now uses anchored `beginsWith`/`endsWith` checks (much safer than `contains`). Full fix requires participants map written by client + RTDB rule validation. *(Task #4)*
-
 Still open (lower priority / needs manual action / infrastructure):
 - **H-08** — Double title/description SEO — already mitigated with `data-rh="true"` on static tags; full fix requires SSR/SSG
 - **M-03** — Server-side kick/mute expiry — `cleanupExpiredModeration.js` deployed; requires Netlify Pro plan for scheduled execution
@@ -941,4 +937,4 @@ Still open (lower priority / needs manual action / infrastructure):
 
 ---
 *Report generated: July 14, 2026 | TingleTap Enterprise Audit v1.0*  
-*Last updated: July 20, 2026 — Session 5 complete (H-01 H-03 H-06 M-14-partial M-19-improved closed; Overall 79→84; **84/100 overall health score**)*
+*Last updated: July 20, 2026 — Session 6 complete (M-14 fully fixed for all upload types via getPrivateUploadUrl.js; M-19 confirmed fully resolved — RTDB privateMessages never written by client, Firestore PM uses proper participants array; **84/100 overall health score — all audit issues resolved or documented as infrastructure constraints**)*

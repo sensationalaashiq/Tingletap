@@ -136,10 +136,11 @@ export function compressImageToWebP(file, { maxDim = 1080, quality = 0.80 } = {}
  * @param {(pct: number) => void} [onProgress]  0–100 callback
  * @returns {Promise<{ key: string, url: string }>}
  */
-// PUBLIC upload types that support presigned PUT (M-14 fix).
+// Upload types that support presigned PUT (M-14 fix — Task #3 extends to private types).
 // Files above this threshold bypass Netlify's 4.5 MB body limit by uploading
-// directly to R2 via a presigned PUT URL from getPublicUploadUrl.
-const PUBLIC_UPLOAD_TYPES = new Set(['profile', 'cover', 'chat-image', 'homepage-audio']);
+// directly to R2 via a presigned PUT URL.
+const PUBLIC_UPLOAD_TYPES  = new Set(['profile', 'cover', 'chat-image', 'homepage-audio']);
+const PRIVATE_UPLOAD_TYPES = new Set(['private-chat-image', 'private-chat-audio']);
 const PRESIGNED_THRESHOLD_BYTES = 3 * 1024 * 1024; // 3 MB
 
 export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
@@ -150,10 +151,14 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   const rawType     = blob.type || 'application/octet-stream';
   const contentType = rawType.split(';')[0].trim().toLowerCase();
 
-  // M-14 fix: for public media types above 3 MB, upload directly to R2 via
-  // a presigned PUT URL so we never hit Netlify's 4.5 MB request-body limit.
+  // M-14 / Task #3: for public media types > 3 MB, upload directly to R2 via presigned PUT.
   if (PUBLIC_UPLOAD_TYPES.has(uploadType) && blob.size > PRESIGNED_THRESHOLD_BYTES) {
     return _uploadPublicMediaDirect(blob, uploadType, contentType, token, onProgress);
+  }
+
+  // Task #3: for private-chat types > 3 MB, also use presigned PUT directly to private bucket.
+  if (PRIVATE_UPLOAD_TYPES.has(uploadType) && blob.size > PRESIGNED_THRESHOLD_BYTES) {
+    return _uploadPrivateMediaDirect(blob, uploadType, contentType, token, opts, onProgress);
   }
 
   if (onProgress) onProgress(5);
@@ -237,6 +242,60 @@ async function _uploadPublicMediaDirect(blob, uploadType, contentType, token, on
 
   if (onProgress) onProgress(100);
   return { key, url: publicUrl };
+}
+
+/**
+ * Task #3: Upload a large private-chat media blob directly to the PRIVATE R2
+ * bucket via a presigned PUT URL, bypassing Netlify's 4.5 MB body limit.
+ * Used automatically by uploadMediaFile() for private-chat types > 3 MB.
+ * Returns { key, url } where url is the serveMedia proxy URL (same as proxy path).
+ *
+ * @param {Blob|File} blob
+ * @param {string}    uploadType  — 'private-chat-image' | 'private-chat-audio'
+ * @param {string}    contentType — MIME type (no codec suffix)
+ * @param {string}    token       — Firebase ID token
+ * @param {{ roomId?: string }} opts — roomId (conversationId) is required
+ * @param {Function}  [onProgress]
+ * @returns {Promise<{ key: string, url: string }>}
+ */
+async function _uploadPrivateMediaDirect(blob, uploadType, contentType, token, opts, onProgress) {
+  if (onProgress) onProgress(5);
+
+  const roomId = opts?.roomId;
+  if (!roomId) throw new Error('roomId (conversationId) is required for private-chat uploads');
+
+  // Step 1 — get a presigned PUT URL from the Netlify function
+  const urlRes = await fetch(`${BASE}/getPrivateUploadUrl`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body:    JSON.stringify({ uploadType, contentType, fileSize: blob.size, roomId }),
+  });
+  if (!urlRes.ok) {
+    const err = await urlRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to get private upload URL (HTTP ${urlRes.status})`);
+  }
+  const { uploadUrl, key, serveUrl } = await urlRes.json();
+  if (onProgress) onProgress(15);
+
+  // Step 2 — PUT blob directly to R2 (no Netlify in the data path)
+  let putRes;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      putRes = await fetch(uploadUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': contentType },
+        body:    blob,
+      });
+      break;
+    } catch (networkErr) {
+      if (attempt === 1) throw new Error('Network error — direct R2 upload failed after retry');
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+  if (!putRes.ok) throw new Error(`R2 upload failed (HTTP ${putRes.status})`);
+
+  if (onProgress) onProgress(100);
+  return { key, url: serveUrl }; // serveUrl is the /.netlify/functions/serveMedia proxy URL
 }
 
 // ── Base64 encode ──────────────────────────────────────────────────────────────
