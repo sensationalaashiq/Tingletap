@@ -172,6 +172,30 @@ async function runCleanup() {
     await flushBatch(adminDb, batch, ops);
   }
 
+  // ── 4. EXPIRED RATE-LIMIT COUNTERS ──────────────────────────────────────────
+  // _rateLimits docs have a `resetAt` epoch-ms field. Once resetAt < now the
+  // counter is stale — future requests will overwrite it anyway, but leaving
+  // docs accumulating forever wastes storage and slows queries.
+  // Cap the sweep to 200 docs per run to stay within batch limits.
+  {
+    const nowMs = Date.now();
+    const snap = await adminDb
+      .collection('_rateLimits')
+      .where('resetAt', '<', nowMs)
+      .limit(200)
+      .get();
+
+    let { batch, ops } = { batch: adminDb.batch(), ops: 0 };
+
+    for (const doc of snap.docs) {
+      batch.delete(doc.ref);
+      ops++;
+      if (ops >= 490) ({ batch, ops } = await flushBatch(adminDb, batch, ops));
+    }
+    await flushBatch(adminDb, batch, ops);
+    stats.rateLimitsCleared = snap.size;
+  }
+
   return stats;
 }
 

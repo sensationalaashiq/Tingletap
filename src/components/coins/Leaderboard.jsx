@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase/config';
 import {
-  collection, query, where, orderBy, limit, getDocs
+  collection, query, where, orderBy, limit, getDocs, doc, getDoc
 } from 'firebase/firestore';
 import { formatCoins } from '../../utils/coinSystem';
 import { getCachedUserProfile } from '../../utils/userProfileCache';
@@ -132,40 +132,62 @@ function useLeaderboard(type, period) {
 
       setLoading(true);
       try {
-        const txType = type === 'senders' ? 'gift_sent' : 'gift_received';
-        const now = new Date();
-        const todayKey = now.toISOString().slice(0, 10);
-        const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        // FIX-PERF-3: getDocs (one-time read) instead of onSnapshot (permanent listener)
-        const q = query(
-          collection(db, 'coinTransactions'),
-          where('type', '==', txType),
-          orderBy('timestamp', 'desc'),
-          limit(500)
-        );
-        const snap = await getDocs(q);
+        // H-03 fix: read pre-computed leaderboard doc first (1 read, no aggregation).
+        // The computeLeaderboard scheduled function writes leaderboard/{type}_{period}
+        // hourly. If the doc exists and is < 2h old, use it directly.
+        // Falls back to the legacy 500-doc client-side aggregation when the
+        // pre-computed doc is missing or stale (e.g. before the first scheduled run).
+        let sorted = null;
+        try {
+          const lbDoc = await getDoc(doc(db, 'leaderboard', `${type}_${period}`));
+          if (lbDoc.exists()) {
+            const lbData = lbDoc.data();
+            const ageMs = lbData.computedAt
+              ? Date.now() - new Date(lbData.computedAt).getTime()
+              : Infinity;
+            if (ageMs < 2 * 60 * 60 * 1000 && Array.isArray(lbData.top)) {
+              sorted = lbData.top; // already sorted top-20
+            }
+          }
+        } catch { /* no pre-computed doc — fall through to legacy aggregation */ }
         if (cancelled) return;
-        const txs = snap.docs.map(d => d.data());
 
-        const filtered = txs.filter(tx => {
-          if (!tx.timestamp) return false;
-          const ts = tx.timestamp.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp);
-          if (period === 'today') return ts.toISOString().slice(0, 10) === todayKey;
-          if (period === 'week') return ts >= weekStart;
-          if (period === 'month') return ts >= monthStart;
-          return true;
-        });
+        if (!sorted) {
+          // Legacy client-side aggregation (fallback when no pre-computed doc yet)
+          const txType = type === 'senders' ? 'gift_sent' : 'gift_received';
+          const now = new Date();
+          const todayKey = now.toISOString().slice(0, 10);
+          const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const map = {};
-        filtered.forEach(tx => {
-          const uid = tx.uid;
-          if (!map[uid]) map[uid] = { uid, coins: 0, gifts: 0 };
-          map[uid].coins += Math.abs(tx.coins);
-          map[uid].gifts += 1;
-        });
-        const sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
+          const q = query(
+            collection(db, 'coinTransactions'),
+            where('type', '==', txType),
+            orderBy('timestamp', 'desc'),
+            limit(500)
+          );
+          const snap = await getDocs(q);
+          if (cancelled) return;
+          const txs = snap.docs.map(d => d.data());
+
+          const filtered = txs.filter(tx => {
+            if (!tx.timestamp) return false;
+            const ts = tx.timestamp.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp);
+            if (period === 'today') return ts.toISOString().slice(0, 10) === todayKey;
+            if (period === 'week') return ts >= weekStart;
+            if (period === 'month') return ts >= monthStart;
+            return true;
+          });
+
+          const map = {};
+          filtered.forEach(tx => {
+            const uid = tx.uid;
+            if (!map[uid]) map[uid] = { uid, coins: 0, gifts: 0 };
+            map[uid].coins += Math.abs(tx.coins);
+            map[uid].gifts += 1;
+          });
+          sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
+        }
 
         const newMap = { ...lbResultCache[cacheKey]?.userMap };
         await Promise.all(sorted.map(s => s.uid).filter(uid => !newMap[uid]).map(async uid => {

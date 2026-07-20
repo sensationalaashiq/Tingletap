@@ -1238,6 +1238,29 @@ service cloud.firestore {
 
 
     // ================================================================
+    // SERVER-ONLY COLLECTIONS
+    // These collections are written exclusively by Netlify functions
+    // via Firebase Admin SDK (which bypasses rules). Client-side access
+    // is always denied — explicit false prevents the catch-all from
+    // accidentally opening them to owner/admin browser sessions.
+    // ================================================================
+
+    // H-06: rate-limit counters — written by firestoreRateLimitCheck()
+    // in Netlify functions. Denying client reads/writes prevents an
+    // attacker from deleting their own counter to reset their quota.
+    match /_rateLimits/{doc} {
+      allow read, write: if false;
+    }
+
+    // H-03: pre-computed leaderboard snapshots — written by the hourly
+    // computeLeaderboard scheduled function. All authenticated users can
+    // read; only the Admin SDK (server) can write.
+    match /leaderboard/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Admin SDK only
+    }
+
+    // ================================================================
     // CATCH-ALL FALLBACK
     // Any collection not matched above is locked to owner and admin.
     // This prevents accidental exposure of new collections.

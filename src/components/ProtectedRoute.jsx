@@ -1,49 +1,71 @@
+// H-01 fix: eliminated the redundant onAuthStateChanged subscription.
+//
+// Problem: every ProtectedRoute mount started its own onAuthStateChanged
+// listener, duplicating the one already running in App.jsx and causing a
+// "loading" flash on every protected-page navigation after initial login.
+//
+// Fix: resolve auth state synchronously from auth.currentUser (populated by
+// App.jsx's listener before any route renders) or from localStorage for guests.
+// Only fall back to a one-shot subscription on the very first page load, when
+// Firebase hasn't yet fired its first auth event (auth.currentUser === null).
+
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
+// Try to resolve the current user without starting a subscription.
+// Returns { user, resolved } — resolved=true means no subscription is needed.
+function resolveSync() {
+  const isGuest   = localStorage.getItem('isGuest') === 'true';
+  const guestData = localStorage.getItem('guestUser');
+
+  if (isGuest && guestData) {
+    try {
+      const parsed = JSON.parse(guestData);
+      return {
+        resolved: true,
+        user: { isGuest: true, uid: parsed.uid, displayName: parsed.displayName, ...parsed },
+      };
+    } catch {
+      localStorage.removeItem('guestUser');
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('guestGender');
+    }
+  }
+
+  // auth.currentUser is synchronously populated after App.jsx's onAuthStateChanged
+  // fires. On normal page navigation (post-login) this is always non-null, so we
+  // never need to open an extra subscription.
+  if (auth.currentUser !== null) {
+    return { resolved: true, user: auth.currentUser };
+  }
+
+  // auth.currentUser is null only on the very first cold load before Firebase has
+  // fired its initial event. Fall through to the one-shot subscription below.
+  return { resolved: false, user: null };
+}
+
 const ProtectedRoute = ({ children, profile }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [state] = useState(resolveSync);            // run once on mount only
+  const [user, setUser]       = useState(state.user);
+  const [loading, setLoading] = useState(!state.resolved);
 
   useEffect(() => {
-    // Check for guest user first
-    const isGuest = localStorage.getItem('isGuest') === 'true';
-    const guestData = localStorage.getItem('guestUser');
+    // Fast path: auth was already resolved synchronously — no subscription needed.
+    if (state.resolved) return;
 
-    if (isGuest && guestData) {
-      try {
-        const parsedGuestData = JSON.parse(guestData);
-        // Guest user is logged in
-        setUser({ 
-          isGuest: true, 
-          uid: parsedGuestData.uid,
-          displayName: parsedGuestData.displayName,
-          ...parsedGuestData 
-        });
-        setLoading(false);
-        return;
-      } catch (error) {
-        console.error('Error parsing guest data:', error);
-        localStorage.removeItem('guestUser');
-        localStorage.removeItem('isGuest');
-        localStorage.removeItem('guestGender');
-      }
-    }
-
-    // Check for Firebase authenticated user
+    // Slow path: Firebase hasn't fired yet (first cold load). Subscribe once,
+    // then immediately unsubscribe after the first event.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        setUser(null);
-      }
+      setUser(currentUser ?? null);
       setLoading(false);
+      // Unsubscribe right away — App.jsx owns the authoritative listener.
+      unsubscribe();
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -77,12 +99,10 @@ const ProtectedRoute = ({ children, profile }) => {
     );
   }
 
-  // Check authentication
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Pass the user and profile prop to children
   if (React.isValidElement(children)) {
     return React.cloneElement(children, { user, profile });
   }
