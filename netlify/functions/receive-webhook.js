@@ -7,7 +7,9 @@
 import crypto from 'node:crypto';
 import { initFirebaseAdmin } from './shared/firebaseAdmin.js';
 import admin from 'firebase-admin';
-import { rateLimitCheck, sanitizeString } from './shared/validation.js';
+// H-06 fix: replaced in-memory rateLimitCheck with Firestore-backed firestoreRateLimitCheck
+// so limits survive across cold starts (Netlify spins up fresh instances per invocation).
+import { firestoreRateLimitCheck, sanitizeString } from './shared/validation.js';
 import { log } from './shared/logger.js';
 
 const WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
@@ -55,7 +57,7 @@ export const handler = async (event) => {
   }
 
   const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  const rl = rateLimitCheck(`webhook:${ip}`, 200, 60 * 1000);
+  const rl = await firestoreRateLimitCheck(`webhook:${ip}`, 200, 60 * 1000);
   if (!rl.ok) return { statusCode: 429, headers, body: JSON.stringify({ error: 'Rate limited' }) };
 
   let payload;
