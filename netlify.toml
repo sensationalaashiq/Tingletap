@@ -7,6 +7,15 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# ── Secrets scanning ──────────────────────────────────────────────────────────
+# ALLOWED_ORIGIN holds the site's own public domain (e.g. https://example.com).
+# That same domain legitimately appears in index.html, sitemap.xml, robots.txt,
+# seoConfig.js, manifest.json, etc. for SEO/canonical purposes — it is NOT a
+# secret. Omit it from Netlify's secrets scanner to prevent false-positive
+# build failures.
+[secrets_scanning]
+  omit_keys = ["ALLOWED_ORIGIN"]
+
 # ── SPA fallback — /landing canonical-redirects to / ──────────────────────────
 [[redirects]]
   from   = "/landing"
