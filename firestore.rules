@@ -307,9 +307,12 @@ service cloud.firestore {
     // ================================================================
 
     match /rooms/{roomId} {
-      // Public read (room name/order/icon only — no messages) so the
-      // landing page can show a real, live "Chat Rooms" count before login.
-      allow read:   if true;
+      // Fix L-13: rooms were publicly readable (exposing owner UIDs, mod configs
+      // etc. to unauthenticated users). Restricted to authenticated users only.
+      // The landing page room count is now served via getPublicRoomCount.js
+      // (Firebase Admin SDK, no Firestore read rules apply) instead of
+      // direct client-side getCountFromServer().
+      allow read:   if request.auth != null;
       allow create: if isStaff();
       allow update: if isStaff();
       allow delete: if isOwner() || isAdmin();

@@ -796,7 +796,7 @@ const WelcomeDashboard = () => {
               <button className="wd-chip" onClick={() => setShowUserDrop(p => !p)}>
                 <span className="wd-chip-av">
                   {userPhoto
-                    ? <img src={userPhoto} alt={initials} className="wd-chip-av-img" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    ? <img src={userPhoto} alt={initials} className="wd-chip-av-img" loading="lazy" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
                     : null}
                   <span className="wd-chip-init" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
                 </span>
@@ -1194,7 +1194,7 @@ const WelcomeDashboard = () => {
               <div className="wd-panel-user">
                 <div className="wd-panel-av">
                   {userPhoto
-                    ? <img src={userPhoto} alt={initials} className="wd-panel-av-img" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    ? <img src={userPhoto} alt={initials} className="wd-panel-av-img" loading="lazy" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
                     : null}
                   <span className="wd-panel-av-i" style={userPhoto ? {display:'none'} : {}}>{initials}</span>
                 </div>

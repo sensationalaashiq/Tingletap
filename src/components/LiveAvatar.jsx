@@ -77,6 +77,7 @@ export default function LiveAvatarImg({
       alt={alt}
       className={className}
       onError={handleError}
+      loading="lazy"
       {...rest}
     />
   );

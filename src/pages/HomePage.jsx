@@ -417,7 +417,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                     <img 
                         ref={avatarRef}
                         src={avatarUrl} 
-                        alt="avatar" 
+                        alt="avatar"
+                        loading="lazy"
                         className={`message-avatar avatar-gender-${avatarGender}${!hasCustomAvatar ? ' default-avatar-animated' : ''}`}
                         onClick={(e) => {
                             if (!isBot && !isMyMessage) {
@@ -506,7 +507,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     >
                                         <div className="sb-apd-header">
                                             <div className="sb-apd-avatar-wrap">
-                                                <img src={avatarUrl} alt="avatar" className="sb-apd-avatar" />
+                                                <img src={avatarUrl} alt="avatar" className="sb-apd-avatar" loading="lazy" />
                                                 <span className={`sb-apd-dot ${isOnlineNow ? 'online' : ''}`}/>
                                             </div>
                                             <div>
@@ -8044,7 +8045,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 if (profileUser.coverPhotoURL) return (
                                     <div className="vpm-cover-section vpm-cover-image" style={{cursor:'zoom-in'}}
                                         onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'cover', url: profileUser.coverPhotoURL }); }}>
-                                        <img src={profileUser.coverPhotoURL} alt="Cover" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={(e) => {
+                                        <img src={profileUser.coverPhotoURL} alt="Cover" loading="lazy" style={{width:'100%',height:'160px',objectFit:'cover',objectPosition:'center 20%',display:'block'}} onError={(e) => {
                                             const key = profileUser.coverPhotoKey;
                                             if (!key || e.target.dataset.r2Retried) { e.target.style.display = 'none'; return; }
                                             e.target.dataset.r2Retried = '1';

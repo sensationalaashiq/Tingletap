@@ -17,6 +17,7 @@
 | Session 3 — Medium & Low severity fixes | ✅ **DONE** | July 17, 2026 | M-10 M-11✓already M-12✓already M-13 M-15 L-04 L-11 L-12 L-18 L-19✓already — see individual issues below |
 | Session 4 — Remaining open items | ✅ **DONE** | July 17, 2026 | M-06 M-16 M-20 H-08✓already M-03✓already — see individual issues below |
 | Session 5 — All remaining fixable issues | ✅ **DONE** | July 20, 2026 | H-01 H-03 H-06 M-14(partial) M-19(improved) — see individual issues below. All previously-deferred "architectural" items now resolved or explicitly scoped to follow-up tasks. |
+| Session 7 — L-13 rooms exposure + image lazy loading | ✅ **DONE** | July 21, 2026 | L-13 fixed (rooms auth-gated, getPublicRoomCount.js Netlify function, LandingPage updated); image lazy loading added to LiveAvatar.jsx + key images in HomePage/WelcomeDashboard |
 
 ---
 
@@ -657,15 +658,15 @@
 
 ---
 
-### L-13 — Firestore rooms — allow read: if true Exposes All Room Metadata
+### L-13 — Firestore rooms — allow read: if true Exposes All Room Metadata ✅ FIXED
 | Field | Detail |
 |---|---|
-| **Severity** | 🟢 Low |
-| **File** | `firestore.rules` |
+| **Severity** | ~~🟢 Low~~ ✅ **Fixed — July 21, 2026** |
+| **File** | `firestore.rules`, `netlify/functions/getPublicRoomCount.js` (new), `src/pages/LandingPage.jsx` |
 | **Function** | `/rooms/{roomId}` read rule |
-| **Root Cause** | Room documents are fully readable by anyone, including unauthenticated users. |
-| **User Impact** | Room metadata (owner UIDs, settings, mod configurations) is publicly enumerable by anyone with the Firestore project ID. |
-| **Recommended Fix** | If public room lists are required, use Firestore field masks or a separate public-facing `roomSummaries` collection with only non-sensitive fields. |
+| **Root Cause** | Room documents were fully readable by anyone, including unauthenticated users. |
+| **User Impact** | Room metadata (owner UIDs, settings, mod configurations) was publicly enumerable by anyone with the Firestore project ID. |
+| **Fix Applied** | Changed `rooms` read rule from `if true` to `if request.auth != null` — restricting full room document access to authenticated users only. Created new `netlify/functions/getPublicRoomCount.js` (Firebase Admin SDK, no Firestore rules apply) that returns only a count (no room data) for the landing page. Updated `LandingPage.jsx` to fetch from this endpoint instead of `getCountFromServer(collection(db, 'rooms'))`. The 5-minute CDN cache on the function response reduces Admin SDK calls. |
 | **Effort** | Medium (2 hours) |
 
 ---
@@ -793,7 +794,7 @@ Scores are out of 100. Each category was evaluated by static analysis across all
 
 ---
 
-### 📊 Performance Score: ~~58~~ ~~63~~ ~~70~~ ~~77~~ ~~80~~ **86 / 100** *(+28 total; +6 Session 5 — leaderboard pre-computed aggregation + M-14 public presigned PUT)*
+### 📊 Performance Score: ~~58~~ ~~63~~ ~~70~~ ~~77~~ ~~80~~ ~~86~~ **88 / 100** *(+30 total; +2 Session 7 — `loading="lazy"` on LiveAvatar.jsx + all key avatar/cover images in HomePage/WelcomeDashboard)*
 
 | Factor | Finding | Impact |
 |---|---|---|
@@ -809,11 +810,11 @@ Scores are out of 100. Each category was evaluated by static analysis across all
 | ~~WarningsContext 5-min poll~~ | ✅ **FIXED M-02** — Converted to onSnapshot for real-time delivery | ~~−1~~ **0** |
 | useRoomsListener | ✅ Correctly singleton — saves significant reads | +0 (baseline) |
 | Lazy loading | ✅ Code splitting via dynamic imports | +0 (baseline) |
-| Missing image lazy loading | No `loading="lazy"` on avatar images | −2 |
+| ~~Missing image lazy loading~~ | ✅ **FIXED Session 7** — `loading="lazy"` on `LiveAvatar.jsx` (all avatar renders), chat-message avatars, profile panel cover photo, WelcomeDashboard user chip/panel avatars | **0** |
 
 ---
 
-### 🔒 Security Score: ~~52~~ ~~72~~ ~~88~~ ~~92~~ ~~95~~ **97 / 100** *(+45 total; +2 Session 5 — H-06 Firestore rate limiting, M-19 anchored PM rules)*
+### 🔒 Security Score: ~~52~~ ~~72~~ ~~88~~ ~~92~~ ~~95~~ ~~97~~ **98 / 100** *(+46 total; +1 Session 7 — L-13 rooms auth-gated, getPublicRoomCount.js public endpoint)*
 
 | Factor | Finding | Impact |
 |---|---|---|
@@ -900,17 +901,17 @@ Scores are out of 100. Each category was evaluated by static analysis across all
 
 ---
 
-### ⭐ Overall Health Score: ~~57~~ ~~62~~ ~~69~~ ~~76~~ ~~79~~ **84 / 100** *(+27 total; +5 after Session 5)*
+### ⭐ Overall Health Score: ~~57~~ ~~62~~ ~~69~~ ~~76~~ ~~79~~ ~~84~~ **85 / 100** *(+28 total; +1 after Session 7)*
 
-| Category | Score | Baseline | After Task #2 | After Session 2 | After Session 3 | After Session 4 | After Session 5 | Weight | Weighted |
-|---|---|---|---|---|---|---|---|---|---|
-| Performance | — | 58 | 63 (+5) | 70 (+7) | 77 (+7) | 80 (+3) | **86** (+6) | 20% | 17.2 |
-| Security | — | 52 | 72 (+20) | 88 (+16) | 92 (+4) | 95 (+3) | **97** (+2) | 25% | 24.25 |
-| Architecture | — | 64 | 64 | 69 (+5) | 69 (0) | 69 (0) | **72** (+3) | 15% | 10.8 |
-| Scalability | — | 49 | 49 | 50 (+1) | 50 (0) | 50 (0) | **56** (+6) | 20% | 11.2 |
-| Code Quality | — | 61 | 61 | 67 (+6) | 70 (+3) | 71 (+1) | **71** (0) | 10% | 7.1 |
-| Maintainability | — | 59 | 59 | 63 (+4) | 63 (0) | 63 (0) | **63** (0) | 10% | 6.3 |
-| **Overall** | | **57** | **62** | **69** | **76** | **79** | **84** | **100%** | **76.85** |
+| Category | Score | Baseline | After Task #2 | After Session 2 | After Session 3 | After Session 4 | After Session 5 | After Session 7 | Weight | Weighted |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Performance | — | 58 | 63 (+5) | 70 (+7) | 77 (+7) | 80 (+3) | 86 (+6) | **88** (+2) | 20% | 17.6 |
+| Security | — | 52 | 72 (+20) | 88 (+16) | 92 (+4) | 95 (+3) | 97 (+2) | **98** (+1) | 25% | 24.5 |
+| Architecture | — | 64 | 64 | 69 (+5) | 69 (0) | 69 (0) | 72 (+3) | **72** (0) | 15% | 10.8 |
+| Scalability | — | 49 | 49 | 50 (+1) | 50 (0) | 50 (0) | 56 (+6) | **56** (0) | 20% | 11.2 |
+| Code Quality | — | 61 | 61 | 67 (+6) | 70 (+3) | 71 (+1) | 71 (0) | **71** (0) | 10% | 7.1 |
+| Maintainability | — | 59 | 59 | 63 (+4) | 63 (0) | 63 (0) | 63 (0) | **63** (0) | 10% | 6.3 |
+| **Overall** | | **57** | **62** | **69** | **76** | **79** | **84** | **85** | **100%** | **77.5** |
 
 ---
 
@@ -925,16 +926,15 @@ TingleTap is a feature-rich, ambitious application with strong domain modeling, 
 
 Session 2 closed 23 open issues. Session 3 closed 9 more. Session 4 closed 5 more. **Session 5 closed the final 5 previously-deferred "architectural" items** (H-01, H-03, H-06, M-14 public path, M-19 improved). Overall score advanced from 57 → 84.
 
-### Remaining Open Items (post Session 5)
+### Remaining Open Items (post Session 7)
 
 Still open (lower priority / needs manual action / infrastructure):
 - **H-08** — Double title/description SEO — already mitigated with `data-rh="true"` on static tags; full fix requires SSR/SSG
 - **M-03** — Server-side kick/mute expiry — `cleanupExpiredModeration.js` deployed; requires Netlify Pro plan for scheduled execution
-- **L-13** — Firestore `rooms` fully public read (landing page needs it; needs `roomSummaries` collection)
 - **M-16** — ⚠️ **Needs one manual step**: Set `ALLOWED_ORIGIN=https://tingletap.com` in Netlify → Site settings → Environment variables to activate the CORS restriction in production
 - **RTDB 100-connection cap** — Infrastructure constraint; requires Firebase Blaze plan upgrade (no code fix possible)
-- **HomePage.jsx God component** — 8000+ lines; extracting ChatInput and remaining sub-components would be the highest-value maintainability investment
+- **HomePage.jsx God component** — 8000+ lines; Phase D-I/D-II work order files (`TingleTap_Phase_D1_Prompt.md`, `TingleTap_Phase_D2_Prompt.md`) contain the detailed extraction plan
 
 ---
 *Report generated: July 14, 2026 | TingleTap Enterprise Audit v1.0*  
-*Last updated: July 20, 2026 — Session 6 complete (M-14 fully fixed for all upload types via getPrivateUploadUrl.js; M-19 confirmed fully resolved — RTDB privateMessages never written by client, Firestore PM uses proper participants array; **84/100 overall health score — all audit issues resolved or documented as infrastructure constraints**)*
+*Last updated: July 21, 2026 — Session 7 complete (L-13 fully fixed: rooms Firestore read rule changed to `auth != null`, new `getPublicRoomCount.js` Netlify function serves unauthenticated landing page count; image lazy loading added to `LiveAvatar.jsx` + key images in `HomePage.jsx` / `WelcomeDashboard.jsx`; Performance 86→88, Security 97→98; **85/100 overall health score**. Remaining: M-16 ALLOWED_ORIGIN Netlify env var (manual step), RTDB Blaze upgrade (infrastructure), HomePage.jsx D-I/D-II refactor (see phase prompt files).)*

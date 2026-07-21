@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getCountFromServer } from 'firebase/firestore';
-import { db } from '../firebase/config';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
 import SEO from '../seo/SEO';
@@ -275,13 +273,16 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  // Real room count straight from Firestore — no hardcoded/fake number.
+  // Real room count via public Netlify function — no Firestore auth needed on the landing page.
+  // Fix L-13: rooms collection is now auth-gated; this endpoint provides count-only public access.
   useEffect(() => {
     let cancelled = false;
     const fetchRoomCount = async () => {
       try {
-        const snap = await getCountFromServer(collection(db, 'rooms'));
-        if (!cancelled) setTotalRooms(snap.data().count);
+        const res = await fetch('/.netlify/functions/getPublicRoomCount');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { count } = await res.json();
+        if (!cancelled && typeof count === 'number') setTotalRooms(count);
       } catch (err) {
         console.warn('Room count fetch failed:', err?.message);
       }
