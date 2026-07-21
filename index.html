@@ -7,16 +7,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- ══════════════════════════════════════════════════════════
-         PRIMARY SEO — pre-JS fallback for crawlers that skip JavaScript.
-         data-rh="true" tells react-helmet-async to treat these as its own
-         tags and REPLACE them on mount — preventing any duplicate in the DOM.
-         All other duplicated tags (OG, Twitter, DC, robots, per-bot,
-         content-classification, HandheldFriendly) are now Helmet-only; they
-         no longer live here, eliminating the H-08 duplicate-tag bug.
+         PRIMARY SEO — static fallback for bots/crawlers that skip JavaScript.
+
+         data-rh="true" tells react-helmet-async to REPLACE each tag on mount
+         with the page-specific value from SEO.jsx — zero duplicates in the DOM
+         for real users who execute JS.
+
+         For social-media bots (WhatsApp, Telegram, Facebook, Twitter/X,
+         Discord, LinkedIn, Slack) that do NOT execute JS, the Netlify Edge
+         Function `seo-bot-meta` intercepts the request first, swaps in the
+         path-specific title/description/url, and returns the modified HTML so
+         bots see the correct card for every public page.
+
+         These static values are the site-level landing-page defaults — correct
+         for the root URL ("/") and a safe fallback for any unrecognised path.
     ══════════════════════════════════════════════════════════ -->
-    <title data-rh="true">TingleTap — India's #1 Free Chat App | Chat Rooms, Voice & Video Calls</title>
-    <meta data-rh="true" name="description" content="TingleTap is India's #1 free online chat platform — trusted by users worldwide. Join live chat rooms, send private messages, make voice & video calls, share GIFs. Connect with Indians and people across the globe — free forever." />
+
+    <!-- Core title + description -->
+    <title data-rh="true">TingleTap — India's #1 Free Chat App | Live Chat Rooms, Voice &amp; Video Calls</title>
+    <meta data-rh="true" name="description" content="Join TingleTap — India's most vibrant free chat platform, loved by Indians worldwide. Live chat rooms, private messaging, voice &amp; video calls, RJ radio shows, GIF sharing, auto translation. Connect with India and the global desi community. 100% free, no download required." />
     <meta name="theme-color" content="#7c3aed" />
+
+    <!-- Open Graph — WhatsApp, Telegram, Facebook, Discord, LinkedIn previews -->
+    <meta data-rh="true" property="og:type"         content="website" />
+    <meta data-rh="true" property="og:site_name"    content="TingleTap" />
+    <meta data-rh="true" property="og:title"        content="TingleTap — India's #1 Free Chat App | Live Chat Rooms, Voice &amp; Video Calls" />
+    <meta data-rh="true" property="og:description"  content="Join TingleTap — India's most vibrant free chat platform. Live chat rooms, private messaging, voice &amp; video calls, RJ radio shows, GIF sharing, auto translation. 100% free." />
+    <meta data-rh="true" property="og:url"          content="https://tingletap.com/" />
+    <meta data-rh="true" property="og:image"        content="https://tingletap.com/tingletap-logo.jpg" />
+    <meta data-rh="true" property="og:image:secure_url" content="https://tingletap.com/tingletap-logo.jpg" />
+    <meta data-rh="true" property="og:image:alt"    content="TingleTap — Free Chat Rooms, Voice &amp; Video Calls" />
+    <meta data-rh="true" property="og:image:width"  content="1200" />
+    <meta data-rh="true" property="og:image:height" content="630" />
+    <meta data-rh="true" property="og:image:type"   content="image/jpeg" />
+    <meta data-rh="true" property="og:locale"       content="en_IN" />
+
+    <!-- Twitter / X Card — bot preview fallback -->
+    <meta data-rh="true" name="twitter:card"        content="summary_large_image" />
+    <meta data-rh="true" name="twitter:site"        content="@tingletaps" />
+    <meta data-rh="true" name="twitter:creator"     content="@tingletaps" />
+    <meta data-rh="true" name="twitter:title"       content="TingleTap — India's #1 Free Chat App | Live Chat Rooms, Voice &amp; Video Calls" />
+    <meta data-rh="true" name="twitter:description" content="Join TingleTap — India's most vibrant free chat platform. Live chat rooms, private messaging, voice &amp; video calls, RJ radio shows, GIF sharing, auto translation. 100% free." />
+    <meta data-rh="true" name="twitter:image"       content="https://tingletap.com/tingletap-logo.jpg" />
+    <meta data-rh="true" name="twitter:image:alt"   content="TingleTap — Free Chat Rooms, Voice &amp; Video Calls" />
+
+    <!-- Canonical — default to root; Helmet sets the page-specific href on mount -->
+    <link data-rh="true" rel="canonical" href="https://tingletap.com/" />
 
     <!-- Geo targeting — not managed by React Helmet -->
     <meta name="geo.region" content="IN" />
