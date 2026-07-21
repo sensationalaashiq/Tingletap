@@ -5383,7 +5383,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     collection(db, 'privateMessages'),
                     where('conversationId', '==', conversationId),
                     orderBy('createdAt'),
-                    limit(30)
+                    limitToLast(30)
                 );
                 
                 // Cancel any existing PM listener before creating a new one
@@ -5400,14 +5400,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const unsubscribe = onSnapshot(messagesQuery, 
                     async (snapshot) => {
                         if (cancelled) return;
+                        // FIX M-05: limitToLast(30) + orderBy('createdAt') already returns
+                        // the 30 most-recent messages in ascending order — no client sort needed.
                         const messages = snapshot.docs
-                            .map(doc => ({ id: doc.id, ...doc.data() }))
-                            .sort((a, b) => {
-                                const timeA = a.createdAt?.toDate?.() || new Date(0);
-                                const timeB = b.createdAt?.toDate?.() || new Date(0);
-                                return timeA - timeB;
-                            })
-                            .slice(-30); // Keep only last 30 messages
+                            .map(doc => ({ id: doc.id, ...doc.data() }));
                         
                         setPrivateMessages(messages);
                         
@@ -5952,7 +5948,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     collection(db, 'privateMessages'),
                     where('conversationId', '==', conversation.conversationId),
                     orderBy('createdAt'),
-                    limit(30)
+                    limitToLast(30)
                 );
                 
                 if (pmListenerRef.current) {
@@ -5967,6 +5963,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 
                 const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
                     if (cancelledConv) return;
+                    // FIX M-05: limitToLast(30) + orderBy('createdAt') returns the
+                    // 30 most-recent messages in ascending order — no client sort needed.
                     const messages = snapshot.docs
                         .map(doc => ({ id: doc.id, ...doc.data() }));
                     setPrivateMessages(messages);

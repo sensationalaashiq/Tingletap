@@ -18,6 +18,7 @@
 | Session 4 — Remaining open items | ✅ **DONE** | July 17, 2026 | M-06 M-16 M-20 H-08✓already M-03✓already — see individual issues below |
 | Session 5 — All remaining fixable issues | ✅ **DONE** | July 20, 2026 | H-01 H-03 H-06 M-14(partial) M-19(improved) — see individual issues below. All previously-deferred "architectural" items now resolved or explicitly scoped to follow-up tasks. |
 | Session 7 — L-13 rooms exposure + image lazy loading | ✅ **DONE** | July 21, 2026 | L-13 fixed (rooms auth-gated, getPublicRoomCount.js Netlify function, LandingPage updated); image lazy loading added to LiveAvatar.jsx + key images in HomePage/WelcomeDashboard |
+| Session 8 — M-05 PM ordering + env/git cleanup | ✅ **DONE** | July 21, 2026 | M-05 fixed (both PM listeners switched from `limit(30)` to `limitToLast(30)` + redundant client-side `.sort()` removed); workbox generated file untracked from git; .gitignore updated |
 
 ---
 
@@ -281,16 +282,16 @@
 
 ---
 
-### M-05 — PM Message Ordering — Client-Side Sort Instead of Firestore orderBy
+### M-05 — PM Message Ordering — Client-Side Sort Instead of Firestore orderBy ✅ FIXED
 | Field | Detail |
 |---|---|
-| **Severity** | 🟡 Medium |
-| **File** | `src/components/LuxuryPrivateMessageWindow.jsx`, `src/pages/HomePage.jsx` |
-| **Function** | `messagesQuery`, `visiblePrivateMessages` |
-| **Root Cause** | Messages fetched from Firestore are sorted client-side (`.sort()`) after retrieval rather than using Firestore's `orderBy('createdAt', 'asc')` in the query. |
+| **Severity** | ~~🟡 Medium~~ ✅ **Fixed — July 21, 2026** |
+| **File** | `src/pages/HomePage.jsx` |
+| **Function** | `handleOpenPrivateMessage`, `handleOpenConversation` |
+| **Root Cause** | Messages fetched from Firestore were sorted client-side (`.sort()`) after retrieval rather than relying on Firestore's `orderBy`. Also, `limit(30)` returned the 30 oldest messages rather than the 30 most recent. |
 | **Why It Happens** | Possibly to avoid adding a composite index; client-side sort is simpler to implement. |
 | **User Impact** | When server timestamps resolve asynchronously (Firestore pending writes use client time first), messages "jump" in position as the server timestamp is confirmed. |
-| **Recommended Fix** | Add `orderBy('createdAt', 'asc')` to the messages query and create the required composite index in `firestore.indexes.json`. |
+| **Fix Applied** | Both PM listeners in `HomePage.jsx` (`handleOpenPrivateMessage` and `handleOpenConversation`) updated: (1) `limit(30)` → `limitToLast(30)` so the 30 most-recent messages are returned in ascending order; (2) redundant client-side `.sort()` and `.slice(-30)` removed from the first listener. The composite index for `privateMessages (conversationId ASC + createdAt ASC)` was already present in `firestore.indexes.json`. |
 | **Estimated Effort** | Low (1 hour) |
 
 ---

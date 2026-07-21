@@ -134,3 +134,6 @@ dist
 
 # Uploaded zip archives
 zipFile.zip
+
+# Workbox generated service-worker files (emitted into dist/, not repo root)
+workbox-*.js
