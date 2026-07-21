@@ -438,8 +438,8 @@
 | **Function** | CORS headers |
 | **Root Cause** | Every function sets `Access-Control-Allow-Origin: *`, allowing any website to call the API endpoints. |
 | **Why It Happens** | Open CORS was set during development and never restricted for production. |
-| **User Impact** | Any malicious website can make authenticated requests to TingleTap's Netlify functions if it can obtain the user's token (e.g., via phishing). Restricting to `https://tingletap.com` limits the blast radius. |
-| **Fix Applied** | Changed `'Access-Control-Allow-Origin': '*'` to `'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN \|\| '*'` in all 22 Netlify function files. In production, set `ALLOWED_ORIGIN=https://tingletap.com` in Netlify → Site settings → Environment variables. Falls back to `*` if the variable is not set (preserves local dev behaviour). `check-config.js` and `email-test.js` already used this pattern; all others are now consistent. |
+| **User Impact** | Any malicious website can make authenticated requests to TingleTap's Netlify functions if it can obtain the user's token (e.g., via phishing). Restricting to your production domain limits the blast radius. |
+| **Fix Applied** | Changed `'Access-Control-Allow-Origin': '*'` to `'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN \|\| '*'` in all 22 Netlify function files. In production, set `ALLOWED_ORIGIN=<your-production-domain>` in Netlify → Site settings → Environment variables. Falls back to `*` if the variable is not set (preserves local dev behaviour). `check-config.js` and `email-test.js` already used this pattern; all others are now consistent. |
 | **Estimated Effort** | Very Low (30 min) |
 
 ---
@@ -932,7 +932,7 @@ Session 2 closed 23 open issues. Session 3 closed 9 more. Session 4 closed 5 mor
 Still open (lower priority / needs manual action / infrastructure):
 - **H-08** — Double title/description SEO — already mitigated with `data-rh="true"` on static tags; full fix requires SSR/SSG
 - **M-03** — Server-side kick/mute expiry — `cleanupExpiredModeration.js` deployed; requires Netlify Pro plan for scheduled execution
-- **M-16** — ⚠️ **Needs one manual step**: Set `ALLOWED_ORIGIN=https://tingletap.com` in Netlify → Site settings → Environment variables to activate the CORS restriction in production
+- **M-16** — ⚠️ **Needs one manual step**: Set `ALLOWED_ORIGIN=<your-production-domain>` in Netlify → Site settings → Environment variables to activate the CORS restriction in production
 - **RTDB 100-connection cap** — Infrastructure constraint; requires Firebase Blaze plan upgrade (no code fix possible)
 - **HomePage.jsx God component** — 8000+ lines; Phase D-I/D-II work order files (`TingleTap_Phase_D1_Prompt.md`, `TingleTap_Phase_D2_Prompt.md`) contain the detailed extraction plan
 
