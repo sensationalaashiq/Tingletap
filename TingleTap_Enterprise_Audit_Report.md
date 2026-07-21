@@ -450,10 +450,10 @@
 | **Severity** | ~~🟡 Medium~~ ✅ **Fixed — July 17, 2026** |
 | **File** | `index.html` |
 | **Function** | `<head>` hreflang links |
-| **Root Cause** | Over 30 `<link rel="alternate" hreflang="...">` tags all pointed to `https://tingletap.com/`. Google flags this as a Search Console error. |
+| **Root Cause** | Over 30 `<link rel="alternate" hreflang="...">` tags all pointed to the site root. Google flags this as a Search Console error. |
 | **Why It Happens** | Hreflang added for SEO without actual language-specific URLs. |
 | **User Impact** | Google ignores redundant hreflang signals; no SEO benefit; Search Console error count inflated. |
-| **Fix Applied** | Removed all 34 region-specific hreflang `<link>` tags. Kept only `<link rel="alternate" hreflang="x-default" href="https://tingletap.com/" />` as the universal fallback. Saved ~2KB of static HTML per load. |
+| **Fix Applied** | Removed all 34 region-specific hreflang `<link>` tags. Kept only `<link rel="alternate" hreflang="x-default" href="<your-domain>/" />` as the universal fallback. Saved ~2KB of static HTML per load. |
 | **Estimated Effort** | Very Low (15 min) |
 
 ---

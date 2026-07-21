@@ -252,7 +252,7 @@ export const handler = async (event) => {
       try {
         const parsed  = new URL(firebaseLink);
         const oobCode = parsed.searchParams.get('oobCode');
-        if (oobCode) resetUrl = `https://tingletap.com/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
+        if (oobCode) resetUrl = `${process.env.ALLOWED_ORIGIN || ''}/reset-password?oobCode=${encodeURIComponent(oobCode)}`;
       } catch {}
 
       const displayName = userName || userRecord.displayName || email.split('@')[0];

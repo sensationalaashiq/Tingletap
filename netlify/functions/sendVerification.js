@@ -192,7 +192,7 @@ export const handler = async (event) => {
     let firebaseLink;
     try {
       firebaseLink = await admin.auth().generateEmailVerificationLink(email, {
-        url: 'https://tingletap.com/verify-email',
+        url: `${process.env.ALLOWED_ORIGIN || ''}/verify-email`,
         handleCodeInApp: false,
       });
     } catch (err) {
@@ -205,7 +205,7 @@ export const handler = async (event) => {
       try {
         const parsed  = new URL(firebaseLink);
         const oobCode = parsed.searchParams.get('oobCode');
-        if (oobCode) verifyUrl = `https://tingletap.com/verify-email?oobCode=${encodeURIComponent(oobCode)}`;
+        if (oobCode) verifyUrl = `${process.env.ALLOWED_ORIGIN || ''}/verify-email?oobCode=${encodeURIComponent(oobCode)}`;
       } catch {}
 
       const displayName = userName || email.split('@')[0];

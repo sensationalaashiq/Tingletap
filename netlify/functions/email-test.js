@@ -1,7 +1,7 @@
 const APP_NAME = process.env.BREVO_SENDER_NAME || 'App';
 // Standalone email test — zero shared-module dependencies.
 // FIX C-03: Now requires owner-role Firebase ID token via Authorization: Bearer <token>
-// Just open: https://tingletap.com/.netlify/functions/email-test?to=you@gmail.com
+// Just open: <your-domain>/.netlify/functions/email-test?to=you@gmail.com
 export const handler = async (event) => {
   const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: h, body: '' };
