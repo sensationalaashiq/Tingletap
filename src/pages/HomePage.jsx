@@ -2833,7 +2833,18 @@ const HomePage = ({ user, roomIdOverride }) => {
             set(ref(rtdb, `roomCounts/${roomId}/${currentUid}`), true).catch(() => {});
         }
         // No cleanup — offline transition is handled by the stable effect below
-    }, [roomId, user?.uid, loggedInUserProfile]);
+        // Narrow deps to only the fields that go into statusData — prevents re-writing
+        // RTDB presence (and triggering liveUsers re-renders on all clients) on every
+        // font-pref save, theme change, or other profile field update.
+    }, [roomId, user?.uid,
+        loggedInUserProfile?.displayName,
+        loggedInUserProfile?.role,
+        loggedInUserProfile?.gender,
+        loggedInUserProfile?.country,
+        loggedInUserProfile?.photoURL,
+        loggedInUserProfile?.badge,
+        loggedInUserProfile?.settings?.showOnlineStatus,
+    ]);
 
     // ── PRESENCE PART 2: Stable setup — onDisconnect + heartbeat ─────────────
     // Narrow deps [roomId, user?.uid] so cleanup (offline) ONLY fires on room
@@ -3825,7 +3836,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                     photoURL: fs.photoURL || p.photoURL,
                     badge: fs.badge || p.badge,
                     gender: fs.gender || p.gender,
-                    role: fs.role || p.role,
+                    // Preserve staff role from RTDB (fresh, written on login) — publicProfiles
+                    // can be stale if role was changed server-side without a re-login.
+                    role: (['owner','admin','moderator'].includes(p.role) ? p.role : (fs.role || p.role)),
                     country: fs.country || p.country,
                     friends: fs.friends,
                     status: fs.status || '',

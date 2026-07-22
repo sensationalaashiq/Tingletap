@@ -158,7 +158,8 @@ service cloud.firestore {
         'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
         'fcmToken', 'pushToken', 'notificationPreferences',
         'age', 'relationship', 'isGuest',
-        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt'
+        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt',
+        'achievements', 'dateOfBirth'
       ];
       // trustScore/trustRank/trustData are computed moderation signals — staff/automation
       // only. A regular user must never be able to set their own trust rank.
