@@ -1,0 +1,16 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    { "name": "VITE_FIREBASE_API_KEY", "description": "Firebase web app SDK config: apiKey", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_AUTH_DOMAIN", "description": "Firebase web app SDK config: authDomain", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_DATABASE_URL", "description": "Firebase web app SDK config: databaseURL (Realtime DB)", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_PROJECT_ID", "description": "Firebase web app SDK config: projectId", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_STORAGE_BUCKET", "description": "Firebase web app SDK config: storageBucket", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_MESSAGING_SENDER_ID", "description": "Firebase web app SDK config: messagingSenderId", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_APP_ID", "description": "Firebase web app SDK config: appId", "requiredAtBoot": true },
+    { "name": "VITE_FIREBASE_MEASUREMENT_ID", "description": "Optional – Firebase web app SDK config: measurementId (Analytics)", "requiredAtBoot": false },
+    { "name": "VITE_GIPHY_API_KEY", "description": "Optional – Giphy developers dashboard API key for GIF search", "requiredAtBoot": false }
+  ]
+}
