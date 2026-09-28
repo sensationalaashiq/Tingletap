@@ -55,6 +55,9 @@ export default function BadgeAudioRecorder({ onRecorded, onBack }) {
 
   useEffect(() => {
     requestMic();
+    return () => {
+      try { reset(); } catch (_) {}
+    };
   }, []);
 
   if (status === 'requesting') {

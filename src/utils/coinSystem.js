@@ -47,6 +47,9 @@ export function subscribeCoinConfig(callback) {
   return onSnapshot(getCoinConfigRef(), (snap) => {
     if (snap.exists()) callback(snap.data());
     else callback(DEFAULT_COIN_CONFIG);
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeCoinConfig error:', err);
+    callback(DEFAULT_COIN_CONFIG);
   });
 }
 
@@ -88,11 +91,14 @@ export function subscribeWallet(uid, callback) {
         totalReceived: 0, totalTransactions: 0,
       };
       // FIX L-15: merge:true prevents race on simultaneous first-login wallet creation.
-      await setDoc(getWalletRef(uid), { ...initial, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+      await setDoc(getWalletRef(uid), { ...initial, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
       callback(initial);
     } else {
       callback(snap.data());
     }
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeWallet error:', err);
+    callback({ balance: 0, totalPurchased: 0, totalGifted: 0, totalReceived: 0, totalTransactions: 0 });
   });
 }
 
@@ -109,6 +115,9 @@ export function subscribeUserTransactions(uid, callback, limitCount = 50) {
   );
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeUserTransactions error:', err);
+    callback([]);
   });
 }
 
@@ -322,6 +331,9 @@ export function subscribePaymentOrders(callback) {
   );
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribePaymentOrders error:', err);
+    callback([]);
   });
 }
 
@@ -393,6 +405,9 @@ export async function rejectPaymentOrder(orderDocId) {
 export function subscribeRJEarnings(rjUid, callback) {
   return onSnapshot(doc(db, 'rjEarnings', rjUid), (snap) => {
     callback(snap.exists() ? snap.data() : null);
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeRJEarnings error:', err);
+    callback(null);
   });
 }
 
@@ -400,6 +415,9 @@ export function subscribeAllRJEarnings(callback) {
   const q = query(collection(db, 'rjEarnings'), limit(100));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeAllRJEarnings error:', err);
+    callback([]);
   });
 }
 
@@ -441,6 +459,9 @@ export function subscribeRJPayments(callback) {
   );
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeRJPayments error:', err);
+    callback([]);
   });
 }
 
@@ -533,6 +554,9 @@ export function subscribeLeaderboard(type, period, callback) {
 
     const sorted = Object.values(map).sort((a, b) => b.coins - a.coins).slice(0, 20);
     callback(sorted);
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('subscribeLeaderboard error:', err);
+    callback([]);
   });
 }
 

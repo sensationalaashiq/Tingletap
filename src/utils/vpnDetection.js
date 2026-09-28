@@ -127,6 +127,21 @@ export const stopPeriodicVPNCheck = () => {
  */
 export const checkUserVPN = async (userContext = null) => {
   try {
+    // In dev / preview environments (AI Studio, localhost, .run.app), instantly allow without network delays
+    const isDevOrPreview = import.meta.env.DEV ||
+      (typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('.run.app') ||
+        window.location.hostname.includes('webcontainer') ||
+        window.location.hostname.includes('10.0.') ||
+        window.location.hostname.includes('192.168.')
+      ));
+
+    if (isDevOrPreview) {
+      return { allowed: true, reason: 'Dev/Preview environment bypass' };
+    }
+
     // Admin bypass (dev only)
     if (SECURITY_CONFIG.ADMIN_BYPASS.enabled && localStorage.getItem('vpn_bypass') === 'true') {
       return { allowed: true, reason: 'Admin bypass' };

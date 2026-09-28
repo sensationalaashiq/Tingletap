@@ -1,0 +1,7 @@
+{
+  "name": "TingleTap — India's #1 Free Chat App | Live Chat Rooms, Voice & Video Calls",
+  "description": "Join TingleTap — India's most vibrant free chat platform, loved by Indians worldwide. Live chat rooms, private messaging, voice & video calls, RJ radio shows, GIF sharing, auto translation. Connect with India and the global desi community. 100% free, no download required.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

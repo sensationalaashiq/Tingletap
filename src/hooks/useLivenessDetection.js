@@ -73,13 +73,25 @@ export function useLivenessDetection() {
     try {
       const { FaceLandmarker, FilesetResolver } = await import(/* @vite-ignore */ MEDIAPIPE_CDN);
       const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
-      const lm = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions:       { modelAssetPath: MODEL_URL, delegate: 'GPU' },
-        runningMode:       'VIDEO',
-        numFaces:          1,
-        outputFaceBlendshapes: true,
-        outputFacialTransformationMatrixes: true,
-      });
+      let lm;
+      try {
+        lm = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions:       { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+          runningMode:       'VIDEO',
+          numFaces:          1,
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true,
+        });
+      } catch (gpuErr) {
+        console.warn('[useLivenessDetection] GPU delegate failed, falling back to CPU:', gpuErr);
+        lm = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions:       { modelAssetPath: MODEL_URL, delegate: 'CPU' },
+          runningMode:       'VIDEO',
+          numFaces:          1,
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true,
+        });
+      }
       landmarkerRef.current = lm;
       if (mountedRef.current) setStatus('ready');
     } catch (e) {

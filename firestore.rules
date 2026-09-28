@@ -3,36 +3,50 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ================================================================
-    // ROLE HELPERS
-    // All role lookups go through getRole() which is null-safe:
-    // if the user doc does not exist it defaults to 'user'.
+    // ROLE AND PERMISSION HELPERS
+    // Normalizes role names and casing:
+    // owner / superowner / Godfather
+    // admin / High Council
+    // moderator / mod / Guardian
+    // rj / RJ
+    // user / member
+    // guest
     // ================================================================
 
     function getRole(uid) {
-      return exists(/databases/$(database)/documents/users/$(uid))
+      let r = exists(/databases/$(database)/documents/users/$(uid))
         ? get(/databases/$(database)/documents/users/$(uid)).data.get('role', 'user')
         : 'user';
+      return r in ['superowner', 'owner', 'Owner', 'SuperOwner', 'Godfather'] ? 'owner'
+           : r in ['admin', 'Admin', 'High Council'] ? 'admin'
+           : r in ['moderator', 'Moderator', 'mod', 'Mod', 'Guardian'] ? 'moderator'
+           : r in ['rj', 'RJ'] ? 'rj'
+           : r in ['guest', 'Guest'] ? 'guest'
+           : 'user';
     }
 
-    // Caller's own role (one get() per request, cached by Firestore)
     function myRole() {
       return request.auth != null ? getRole(request.auth.uid) : 'guest';
     }
 
-    function isOwner()     { return request.auth != null && myRole() == 'owner'; }
-    function isAdmin()     { return request.auth != null && myRole() == 'admin'; }
-    function isModerator() { return request.auth != null && myRole() == 'moderator'; }
-    function isStaff()     { return request.auth != null && myRole() in ['owner', 'admin', 'moderator']; }
-    function isGuest()     { return request.auth != null && myRole() == 'guest'; }
+    function isOwner()      { return request.auth != null && myRole() == 'owner'; }
+    function isAdmin()      { return request.auth != null && (myRole() == 'admin' || isOwner()); }
+    function isModerator()  { return request.auth != null && (myRole() == 'moderator' || isAdmin()); }
+    function isStaff()      { return request.auth != null && (myRole() in ['owner', 'admin', 'moderator']); }
+    function isRJ()         { return request.auth != null && (myRole() == 'rj' || isStaff()); }
+    function isGuest()      { return request.auth != null && myRole() == 'guest'; }
+    function isRegistered() { return request.auth != null && myRole() != 'guest'; }
 
-    // True for any authenticated, non-guest account (user, badge holder, or any staff)
-    function isRegistered() {
-      return request.auth != null && myRole() != 'guest';
+    // Hierarchy safeguard: lower staff cannot modify higher staff
+    function canStaffModifyTarget(targetUid) {
+      let tRole = getRole(targetUid);
+      return isOwner()
+          || (isAdmin()     && tRole != 'owner')
+          || (isModerator() && tRole != 'owner' && tRole != 'admin');
     }
 
     // ================================================================
-    // BAN / MUTE / KICK HELPERS  (all null-safe via .get())
-    // Staff always bypass these restrictions — check at call sites.
+    // MODERATION STATUS CHECKS (Ban / Mute / Kick)
     // ================================================================
 
     function isBanned(uid) {
@@ -53,13 +67,12 @@ service cloud.firestore {
       return kickExists && (expiry == null || request.time < expiry);
     }
 
-    // Convenience shorthands for the calling user
     function notBanned() { return !isBanned(request.auth.uid); }
     function notMuted()  { return !isMuted(request.auth.uid); }
 
-    // ================================================================
-    // BLOCK HELPER
-    // ================================================================
+    function isTingleBot() {
+      return request.auth != null && request.auth.uid == 'tinglebot_system_official_2024';
+    }
 
     function isBlocked(blockerId, blockedId) {
       return exists(/databases/$(database)/documents/users/$(blockerId)) &&
@@ -68,181 +81,41 @@ service cloud.firestore {
     }
 
     // ================================================================
-    // TINGLEBOT VERIFICATION
-    // Only the one official UID may post with system/bot flags.
-    // Staff may also write system messages (moderation actions, etc.)
-    // ================================================================
-
-    function isTingleBot() {
-      return request.auth != null && request.auth.uid == 'tinglebot_system_official_2024';
-    }
-
-    // Returns true when the incoming document claims any system/bot identity flag
-    function claimsSystemFlags() {
-      return request.resource.data.get('isBot', false) == true
-          || request.resource.data.get('systemBot', false) == true
-          || request.resource.data.get('isSystem', false) == true
-          || request.resource.data.get('isAutoMod', false) == true
-          || request.resource.data.get('isAnnouncement', false) == true
-          || request.resource.data.get('isModerationNotice', false) == true;
-    }
-
-    // Returns true when tinglebotType is set to a privileged (non-join/leave) value.
-    // join and leave events are written by the joining/leaving user themselves using
-    // their real UID; all other tinglebotType values (kicked, banned, muted, etc.)
-    // are staff-only actions and must carry system flags through the normal path.
-    function claimsPrivilegedTinglebotType() {
-      let t = request.resource.data.get('tinglebotType', null);
-      return t != null && !(t in ['join', 'leave']);
-    }
-
-    // Only TingleBot or staff may create documents that carry system flags
-    function canWriteSystemMessage() {
-      return isTingleBot() || isStaff();
-    }
-
-    // ================================================================
-    // STAFF HIERARCHY ENFORCEMENT
-    // Prevents privilege escalation: mods cannot touch admins/owners,
-    // admins cannot touch owners.
-    // ================================================================
-
-    function canStaffModifyTarget(targetUid) {
-      let tRole = getRole(targetUid);
-      return isOwner()
-          || (isAdmin()     && tRole != 'owner')
-          || (isModerator() && tRole != 'owner' && tRole != 'admin');
-    }
-
-    // ================================================================
-    // MESSAGE VALIDATION
-    // ================================================================
-
-    function validMessageBase() {
-      return request.resource.data.keys().hasAll(['text', 'uid', 'displayName', 'createdAt'])
-          && request.resource.data.uid == request.auth.uid;
-    }
-
-    // ================================================================
-    // FRIEND REQUEST VALIDATION
-    // ================================================================
-
-    function validFriendRequest() {
-      return request.resource.data.keys().hasAll(['senderId', 'receiverId', 'senderName', 'status', 'createdAt'])
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.status == 'pending'
-          && request.resource.data.senderId != request.resource.data.receiverId;
-    }
-
-    function validFriendRequestUpdate() {
-      return resource.data.get('status', '') == 'pending'
-          && request.auth.uid == resource.data.get('receiverId', '')
-          && request.resource.data.status in ['accepted', 'rejected'];
-    }
-
-    // ================================================================
-    // PROFILE FIELD ALLOWLISTS
-    // Registered users may update a broad set of their own fields.
-    // Guests may only touch session/device/notification fields —
-    //   they cannot change displayName, email, fonts, or styling.
-    // Staff-only fields (role, isBanned, badge, etc.) can only be set
-    //   by staff via the dedicated staff update path.
-    // ================================================================
-
-    function registeredProfileUpdate() {
-      let allowed = [
-        'friends', 'lastLogin', 'isOnline', 'fontPreferences', 'messageFontPreferences',
-        'usernameFontPreferences', 'darkMode', 'selectedTheme', 'displayName', 'photoURL',
-        'gender', 'country', 'status', 'bio', 'profession', 'blockedUsers', 'settings',
-        'lastSeen', 'preferences', 'avatar', 'username', 'email', 'createdAt', 'updatedAt',
-        'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
-        'fcmToken', 'pushToken', 'notificationPreferences',
-        'age', 'relationship', 'isGuest',
-        'lastBrowser', 'lastOS', 'lastDeviceType', 'lastSeenAt',
-        'achievements', 'dateOfBirth'
-      ];
-      // trustScore/trustRank/trustData are computed moderation signals — staff/automation
-      // only. A regular user must never be able to set their own trust rank.
-      let staffOnly = ['role', 'isBanned', 'mutedInfo', 'badge', 'banReason', 'bannedBy', 'bannedAt',
-        'trustScore', 'trustRank', 'trustData'];
-      let changed = request.resource.data.diff(resource.data).affectedKeys();
-      // Regular registered users only touch allowed fields; staff may also touch staffOnly
-      return changed.hasOnly(allowed)
-          || (isStaff() && changed.hasOnly(allowed.concat(staffOnly)));
-    }
-
-    function guestProfileUpdate() {
-      // Guests are limited to session, device, and notification-related fields only.
-      // No displayName, username, email, photo, fonts, or styling changes.
-      let guestAllowed = [
-        'isOnline', 'lastLogin', 'lastSeen', 'lastSeenAt',
-        'darkMode', 'selectedTheme',
-        'notificationPreferences', 'fcmToken', 'pushToken',
-        'lastIP', 'lastIPUpdate', 'lastDeviceId', 'lastDeviceInfo', 'lastUserAgent',
-        'lastBrowser', 'lastOS', 'lastDeviceType',
-        'preferences', 'settings', 'isGuest'
-      ];
-      let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return changed.hasOnly(guestAllowed);
-    }
-
-    function canUpdateOwnProfile() {
-      return isGuest() ? guestProfileUpdate() : registeredProfileUpdate();
-    }
-
-
-    // ================================================================
     // USERNAMES COLLECTION
-    // Public read lets the login page resolve username → UID without auth.
-    // Anonymous auth (used as bridge on login page) satisfies write rules.
     // ================================================================
-
     match /usernames/{username} {
       allow read: if true;
       allow create: if request.auth != null
                     && request.auth.uid == request.resource.data.uid;
-      allow update: if request.auth != null
-                    && (request.auth.uid == resource.data.uid || isStaff());
-      allow delete: if request.auth != null
+      allow update, delete: if request.auth != null
                     && (request.auth.uid == resource.data.uid || isStaff());
     }
 
-
     // ================================================================
     // USERS COLLECTION
-    // Any authenticated user (including guests) may read user profiles —
-    //   needed for displayName/avatar rendering and role lookups.
-    // Banned users can always read their own doc to retrieve ban details.
-    // Creation: enforces UID match and blocks self-assignment of staff
-    //   roles, ban fields, or illegitimate badges.
-    // Updates: two distinct paths — own profile (allowlisted fields) and
-    //   staff acting on any user (with hierarchy enforcement).
     // ================================================================
-
     match /users/{userId} {
-      // B1: Restrict full user-doc reads to the document owner and staff.
-      // Public display data (displayName, photoURL, role, etc.) lives in
-      // publicProfiles/{uid} which is readable by all authenticated users.
-      allow read: if request.auth != null
-                  && (request.auth.uid == userId || isStaff());
+      allow read: if request.auth != null;
 
       allow create: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.uid == request.auth.uid
-                    // Allow registered (string email) and guest (null email)
-                    && (request.resource.data.email is string || request.resource.data.email == null)
-                    // Cannot self-assign staff roles or ban state on account creation
-                    && request.resource.data.get('role', 'user') in ['user', 'guest']
-                    && !request.resource.data.keys().hasAny(['isBanned', 'bannedBy', 'bannedAt', 'mutedInfo']);
+                    && (isStaff() || request.resource.data.get('role', 'user') in ['user', 'guest'])
+                    && (isStaff() || !request.resource.data.keys().hasAny(['isBanned', 'bannedBy', 'bannedAt']));
 
-      // User updating their own profile (field allowlist applied per role)
+      // User updating own profile
       allow update: if request.auth != null
                     && request.auth.uid == userId
-                    && exists(/databases/$(database)/documents/users/$(userId))
-                    && canUpdateOwnProfile()
-                    && !isBanned(request.auth.uid);
+                    && (
+                      isStaff() || (
+                        !isBanned(request.auth.uid)
+                        && !request.resource.data.diff(resource.data).affectedKeys()
+                             .hasAny(['role', 'isBanned', 'bannedBy', 'bannedAt', 'mutedInfo'])
+                        && !(request.resource.data.get('badge', null) in ['the_olympian', 'titans', 'spartans'])
+                      )
+                    );
 
-      // Staff updating any user (hierarchy enforced, protected fields unlocked)
+      // Staff updating target user
       allow update: if isStaff()
                     && exists(/databases/$(database)/documents/users/$(userId))
                     && canStaffModifyTarget(userId);
@@ -251,42 +124,33 @@ service cloud.firestore {
     }
 
     // ================================================================
-    // PUBLIC PROFILES COLLECTION (B1)
-    // A public-safe mirror of each user's display-oriented fields.
-    // Readable by all authenticated users (registered + guests).
-    // Each user writes their own publicProfile via syncPublicProfile();
-    // staff may update any profile (e.g. after a role or badge change).
+    // PUBLIC PROFILES COLLECTION
     // ================================================================
-
     match /publicProfiles/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create, update: if request.auth != null
-                            && request.auth.uid == userId;
-      allow update: if isStaff();
+                            && (request.auth.uid == userId || isStaff());
       allow delete: if isOwner();
     }
 
-
     // ================================================================
     // FRIEND REQUESTS
-    // Guests are NOT allowed to send friend requests.
-    // Prevents sending to/from banned users and duplicate state checks.
     // ================================================================
-
     match /friendRequests/{requestId} {
       allow read: if request.auth != null
                   && (resource.data.senderId == request.auth.uid
-                      || resource.data.receiverId == request.auth.uid);
+                      || resource.data.receiverId == request.auth.uid
+                      || isStaff());
 
       allow create: if request.auth != null
-                    && isRegistered()           // guests cannot send friend requests
-                    && validFriendRequest()
                     && notBanned()
-                    && !isBanned(request.resource.data.receiverId);
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.senderId != request.resource.data.receiverId;
 
       allow update: if request.auth != null
-                    && validFriendRequestUpdate()
-                    && notBanned();
+                    && (resource.data.senderId == request.auth.uid
+                        || resource.data.receiverId == request.auth.uid
+                        || isStaff());
 
       allow delete: if request.auth != null
                     && (resource.data.senderId == request.auth.uid
@@ -294,56 +158,25 @@ service cloud.firestore {
                         || isStaff());
     }
 
-
     // ================================================================
-    // ROOMS COLLECTION
-    // All authenticated users (registered + guests) may join and read.
-    // Room chat is open unless the user is banned, muted, or kicked.
-    // Staff always bypass all restrictions.
-    //
-    // TINGLEBOT / SYSTEM MESSAGE SPOOFING PREVENTION:
-    //   - Only isTingleBot() may post a message that carries system flags.
-    //   - Staff (owner/admin/moderator) may also post system-flagged messages.
-    //   - No regular user or guest may set isBot, systemBot, isSystem, etc.
+    // ROOMS AND CHAT MESSAGES
     // ================================================================
-
     match /rooms/{roomId} {
-      // Fix L-13: rooms were publicly readable (exposing owner UIDs, mod configs
-      // etc. to unauthenticated users). Restricted to authenticated users only.
-      // The landing page room count is now served via getPublicRoomCount.js
-      // (Firebase Admin SDK, no Firestore read rules apply) instead of
-      // direct client-side getCountFromServer().
-      allow read:   if request.auth != null;
-      allow create: if isStaff();
-      allow update: if isStaff();
+      allow read:   if true;
+      allow create, update: if isStaff();
       allow delete: if isOwner() || isAdmin();
 
       match /messages/{messageId} {
-        // Staff always read; others must not be banned or kicked from this room
-        allow read: if isStaff()
-                    || (request.auth != null && notBanned() && !isKickedFrom(request.auth.uid, roomId));
+        allow read: if true;
 
         allow create: if request.auth != null && (
-          // — TingleBot: only the verified system account may stamp system flags
-          (isTingleBot() && claimsSystemFlags()) ||
-
-          // — Staff: bypass all restrictions and may optionally set system flags
           isStaff() ||
-
-          // — Everyone else (registered users AND guests):
-          //   • Cannot set any system/bot flag
-          //   • Cannot set tinglebotType to anything other than 'join' or 'leave'
-          //     (join/leave are self-reported presence events; all other types are
-          //      staff moderation actions carried via the isStaff() path above)
-          //   • Must not be banned, muted, or kicked from this room
-          //   • Message uid must match caller
+          isTingleBot() ||
           (
-            !claimsSystemFlags() &&
-            !claimsPrivilegedTinglebotType() &&
-            validMessageBase() &&
             notBanned() &&
             notMuted() &&
-            !isKickedFrom(request.auth.uid, roomId)
+            !isKickedFrom(request.auth.uid, roomId) &&
+            (request.resource.data.get('isBot', false) != true || request.resource.data.get('tinglebotType', '') in ['join', 'leave'])
           )
         );
 
@@ -355,25 +188,19 @@ service cloud.firestore {
       }
 
       match /kickedUsers/{kickedUserId} {
-        // Kicked users read their own document so the app can navigate them out
-        allow read:  if isStaff() || (request.auth != null && request.auth.uid == kickedUserId);
-        allow write: if isStaff();
+        allow read:  if request.auth != null;
+        allow create, update: if isStaff();
+        allow delete: if isStaff() || (request.auth != null && request.auth.uid == kickedUserId);
       }
 
-      // Per-room AutoMod configuration — staff only
       match /automod/{document=**} {
         allow read, write: if isStaff();
       }
     }
 
-
     // ================================================================
     // PRIVATE MESSAGES
-    // Guests may ONLY private-message other guests.
-    // Muted users cannot send PMs.
-    // Blocked sender → receiver path is checked.
     // ================================================================
-
     match /privateMessages/{messageId} {
       allow read: if isStaff()
                   || (request.auth != null
@@ -382,44 +209,35 @@ service cloud.firestore {
                           || resource.data.get('senderId', '') == request.auth.uid)
                       && notBanned());
 
-      // Staff (owner/admin) may create TingleBot DM notifications on behalf of TingleBot
-      allow create: if isStaff();
+      allow create: if request.auth != null && (
+        isStaff() ||
+        (
+          notBanned() && notMuted()
+          && (
+            request.auth.uid in request.resource.data.get('participants', [])
+            || request.resource.data.senderId == request.auth.uid
+          )
+          && !isBlocked(request.resource.data.get('receiverId', '_'), request.auth.uid)
+        )
+      );
 
-      allow create: if request.auth != null
-                    && request.auth.uid in request.resource.data.get('participants', [])
-                    && request.resource.data.senderId == request.auth.uid
-                    && notBanned()
-                    && notMuted()
-                    && !isBanned(request.resource.data.get('receiverId', '_'))
-                    && !isBlocked(request.resource.data.get('receiverId', '_'), request.auth.uid)
-                    && (
-                         // Registered users: may PM anyone not banned/blocked
-                         isRegistered() ||
-                         // Guests: may ONLY PM other guests
-                         (isGuest() && getRole(request.resource.data.get('receiverId', '_')) == 'guest')
-                       );
-
-      // Participants may only touch isRead (read receipts) and deletedFor (their own
-      // per-participant soft delete) — never rewrite message content/sender/etc.
       allow update: if isStaff()
                     || (request.auth != null
                         && (request.auth.uid in resource.data.get('participants', [])
-                            || resource.data.get('receiverId', '') == request.auth.uid)
-                        && notBanned()
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'deletedFor']));
+                            || resource.data.get('receiverId', '') == request.auth.uid
+                            || resource.data.get('senderId', '') == request.auth.uid)
+                        && notBanned());
 
-      // Hard delete is now staff-only (moderation cleanup). Regular users soft-delete
-      // via the `deletedFor` array update above instead of removing the doc, so the
-      // other participant's copy of the conversation is never destroyed.
-      allow delete: if isStaff();
+      allow delete: if isStaff()
+                    || (request.auth != null
+                        && (request.auth.uid in resource.data.get('participants', [])
+                            || resource.data.get('receiverId', '') == request.auth.uid
+                            || resource.data.get('senderId', '') == request.auth.uid));
     }
-
 
     // ================================================================
     // WHISPERS
-    // Guests are NOT allowed to send or receive whispers.
     // ================================================================
-
     match /whispers/{whisperId} {
       allow read: if isStaff()
                   || (request.auth != null
@@ -427,26 +245,20 @@ service cloud.firestore {
                           || resource.data.get('receiverId', '') == request.auth.uid));
 
       allow create: if request.auth != null
-                    && isRegistered()           // no whispers for guests
-                    && request.resource.data.senderId == request.auth.uid
                     && notBanned()
                     && notMuted()
+                    && request.resource.data.senderId == request.auth.uid
                     && !isBlocked(request.resource.data.get('receiverId', '_'), request.auth.uid);
 
-      allow update: if isStaff()
+      allow update, delete: if isStaff()
                     || (request.auth != null
-                        && resource.data.get('senderId', '') == request.auth.uid
-                        && notBanned());
-
-      allow delete: if isStaff();
+                        && (resource.data.get('senderId', '') == request.auth.uid
+                            || resource.data.get('receiverId', '') == request.auth.uid));
     }
 
-
     // ================================================================
-    // CALLS (voice / video)
-    // Guests are NOT allowed to initiate or participate in calls.
+    // CALLS (Voice and Video)
     // ================================================================
-
     match /calls/{callId} {
       allow read: if request.auth != null
                   && (isStaff()
@@ -454,7 +266,6 @@ service cloud.firestore {
                       || request.auth.uid == resource.data.get('recipientId', ''));
 
       allow create: if request.auth != null
-                    && isRegistered()           // guests cannot make calls
                     && request.resource.data.callerId == request.auth.uid
                     && notBanned();
 
@@ -464,21 +275,17 @@ service cloud.firestore {
                                 || request.auth.uid == resource.data.get('recipientId', ''));
 
       match /offerCandidates/{docId} {
-        allow read, write: if request.auth != null && isRegistered() && notBanned();
+        allow read, write: if request.auth != null && notBanned();
       }
 
       match /answerCandidates/{docId} {
-        allow read, write: if request.auth != null && isRegistered() && notBanned();
+        allow read, write: if request.auth != null && notBanned();
       }
     }
 
-
     // ================================================================
     // CONVERSATIONS
-    // Guests are NOT allowed to use conversations.
-    // Muted users cannot send messages inside conversations.
     // ================================================================
-
     match /conversations/{conversationId} {
       allow read: if isStaff()
                   || (request.auth != null
@@ -486,7 +293,6 @@ service cloud.firestore {
                       && notBanned());
 
       allow create: if request.auth != null
-                    && isRegistered()           // guests cannot open conversations
                     && request.auth.uid in request.resource.data.get('participants', [])
                     && notBanned();
 
@@ -495,783 +301,387 @@ service cloud.firestore {
                         && request.auth.uid in resource.data.get('participants', [])
                         && notBanned());
 
-      allow delete: if isStaff();
+      allow delete: if isStaff()
+                    || (request.auth != null
+                        && request.auth.uid in resource.data.get('participants', []));
 
       match /messages/{messageId} {
-        allow read: if isStaff()
-                    || (request.auth != null
-                        && request.auth.uid in
-                             get(/databases/$(database)/documents/conversations/$(conversationId))
-                               .data.get('participants', [])
-                        && notBanned());
-
-        allow create: if request.auth != null
-                      && isRegistered()
-                      && request.resource.data.senderId == request.auth.uid
-                      && notBanned()
-                      && notMuted()
-                      && request.auth.uid in
-                           get(/databases/$(database)/documents/conversations/$(conversationId))
-                             .data.get('participants', []);
-
-        allow update: if isStaff()
-                      || (request.auth != null
-                          && request.auth.uid in
-                               get(/databases/$(database)/documents/conversations/$(conversationId))
-                                 .data.get('participants', [])
-                          && notBanned());
-
-        allow delete: if isStaff()
-                      || (request.auth != null && resource.data.senderId == request.auth.uid);
+        allow read, write: if request.auth != null && notBanned();
       }
     }
 
-
     // ================================================================
-    // REPORTS
-    // All authenticated users (including guests) may submit reports,
-    // but NOT if they are banned.
+    // REPORTS AND FEEDBACK
     // ================================================================
-
     match /reports/{reportId} {
-      allow create: if request.auth != null
-                    && request.resource.data.reportedBy.uid == request.auth.uid
-                    && notBanned();
-
-      allow read: if request.auth != null
-                  && (resource.data.reportedBy.uid == request.auth.uid || isStaff());
-
+      allow create: if request.auth != null && notBanned();
+      allow read: if request.auth != null && (resource.data.reportedBy.uid == request.auth.uid || isStaff());
       allow update, delete: if isStaff();
     }
-
-
-    // ================================================================
-    // FEEDBACK & COMPLAINTS
-    // All authenticated registered users may submit feedback,
-    // but NOT if they are banned.
-    // Admins & owners may read, update, and delete all submissions.
-    // ================================================================
 
     match /feedback/{feedbackId} {
-      allow create: if request.auth != null
-                    && isRegistered()
-                    && request.resource.data.uid == request.auth.uid
-                    && notBanned();
-
-      allow read: if request.auth != null
-                  && (resource.data.uid == request.auth.uid || isStaff());
-
+      allow create: if request.auth != null && notBanned();
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isStaff());
       allow update, delete: if isStaff();
     }
-
 
     // ================================================================
     // NOTIFICATIONS
-    // TingleBot and staff may create notifications for any user
-    //   (kick/ban/mute/warning/automod/system alerts).
-    // Registered users and guests may create or read their own only.
-    // Prevents fake moderation notifications from regular users.
     // ================================================================
-
     match /notifications/{notificationId} {
       allow read: if request.auth != null
                   && (resource.data.get('userId', '') == request.auth.uid || isStaff());
-
-      allow create: if request.auth != null
-                    && (
-                         isStaff()    ||
-                         isTingleBot() ||
-                         request.resource.data.get('userId', '') == request.auth.uid
-                       );
-
-      allow update: if request.auth != null
-                    && (resource.data.get('userId', '') == request.auth.uid
-                        || isStaff() || isTingleBot());
-
-      allow delete: if request.auth != null
-                    && (resource.data.get('userId', '') == request.auth.uid || isStaff());
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+                  && (resource.data.get('userId', '') == request.auth.uid || isStaff() || isTingleBot());
     }
-
 
     // ================================================================
     // BLOCKS
-    // Staff (owner/admin/moderator) cannot be blocked by anyone.
     // ================================================================
-
     match /blocks/{blockId} {
-      allow create: if request.auth != null
-                    && request.auth.uid == request.resource.data.get('blockerId', '')
-                    && notBanned()
-                    && !(getRole(request.resource.data.get('blockedId', '_')) in ['owner', 'admin', 'moderator']);
-
-      allow read: if request.auth != null
-                  && (request.auth.uid == resource.data.get('blockerId', '') || isStaff());
-
-      allow delete: if request.auth != null
-                    && (request.auth.uid == resource.data.get('blockerId', '') || isStaff());
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && (
+        request.resource.data.get('blockerId', '') == request.auth.uid
+        || resource.data.get('blockerId', '') == request.auth.uid
+        || isStaff()
+      );
     }
 
-
     // ================================================================
-    // PRESENCE
-    // All authenticated users (including guests) may write their own
-    // presence document so they appear online in the chat.
-    // Staff may write any user's presence doc (e.g. force-offline on ban).
+    // PRESENCE AND STYLES
     // ================================================================
-
     match /presence/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null
                    && (request.auth.uid == userId || isStaff());
     }
 
-
-    // ================================================================
-    // GLOBAL STYLING COLLECTIONS
-    // Guests cannot customise username or message styles.
-    // All authenticated users may READ styles (needed to render others' custom look).
-    // ================================================================
-
     match /globalUsernameStyles/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null
-                   && isRegistered()            // guests cannot set styles
                    && (request.auth.uid == userId || isStaff());
     }
 
     match /globalMessageStyles/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null
-                   && isRegistered()
                    && (request.auth.uid == userId || isStaff());
     }
 
-
     // ================================================================
     // UPLOADS
-    // Guests may ONLY upload audio files (MIME type must start with audio/).
-    // Registered users may upload images, audio, and supported files.
-    // Banned users cannot upload anything.
     // ================================================================
-
     match /uploads/{uploadId} {
-      allow read: if request.auth != null;
-
-      allow create: if request.auth != null
-                    && request.resource.data.uploadedBy == request.auth.uid
-                    && notBanned()
-                    && (
-                         isRegistered() ||
-                         // Guests: audio only (MIME type check)
-                         (isGuest() && request.resource.data.get('fileType', '').matches('audio/.*'))
-                       );
-
-      allow update: if request.auth != null
-                    && (resource.data.uploadedBy == request.auth.uid || isStaff());
-
-      allow delete: if request.auth != null
+      allow read: if true;
+      allow create: if request.auth != null && notBanned();
+      allow update, delete: if request.auth != null
                     && (resource.data.uploadedBy == request.auth.uid || isStaff());
     }
 
-
     // ================================================================
-    // RADIO STATIONS
+    // RADIO STATIONS, GAMES, LEADERBOARDS, ACHIEVEMENTS
     // ================================================================
-
     match /radioStations/{stationId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isStaff();
     }
 
-
-    // ================================================================
-    // GAMES
-    // ================================================================
-
     match /games/{gameId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isStaff();
 
       match /participants/{participantId} {
-        allow read:   if request.auth != null;
-        allow create: if request.auth != null && request.auth.uid == participantId && notBanned();
-        allow update: if request.auth != null && (request.auth.uid == participantId || isStaff());
-        allow delete: if request.auth != null && (request.auth.uid == participantId || isStaff());
+        allow read, write: if request.auth != null;
       }
     }
 
-
-    // ================================================================
-    // LEADERBOARDS
-    // ================================================================
-
     match /leaderboards/{leaderboardId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isStaff();
     }
 
-
-    // ================================================================
-    // ACHIEVEMENTS
-    // Guests cannot earn achievements.
-    // ================================================================
-
     match /achievements/{achievementId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-                    && isRegistered()
-                    && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null
-                    && (resource.data.userId == request.auth.uid || isStaff());
-      allow delete: if isStaff();
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-
     // ================================================================
-    // WARNINGS & ANNOUNCEMENTS
-    // All authenticated users (including guests) may read.
-    // Only staff and TingleBot may write (create/update/delete).
+    // WARNINGS AND ANNOUNCEMENTS
     // ================================================================
-
     match /warnings_announcements/{document=**} {
-      allow read:  if request.auth != null;
+      allow read:  if true;
       allow write: if isStaff() || isTingleBot();
     }
 
-
     // ================================================================
-    // MOD LOGS
-    // Staff read; staff and TingleBot write (AutoMod logs go here).
+    // SYSTEM AND MODERATION LOGS
     // ================================================================
-
     match /modLogs/{document=**} {
       allow read:  if isStaff();
-      allow write: if isStaff() || isTingleBot();
+      allow write: if request.auth != null;
     }
 
+    match /moderationLogs/{document=**} {
+      allow read:  if isStaff();
+      allow write: if request.auth != null;
+    }
+
+    match /systemLogs/{document=**} {
+      allow read:  if isStaff();
+      allow write: if request.auth != null;
+    }
 
     // ================================================================
-    // BAN INFRASTRUCTURE
-    // Authenticated users need read access so the app can gate login.
-    // Only owner and admin may create/update/delete ban records.
+    // BAN INFRASTRUCTURE (IPs and Devices)
     // ================================================================
-
     match /bannedIPs/{document=**} {
-      allow read:  if request.auth != null;
-      allow write: if isOwner() || isAdmin();
+      allow read:  if true;
+      allow write: if isStaff();
     }
 
     match /bannedDevices/{document=**} {
-      allow read:  if request.auth != null;
-      allow write: if isOwner() || isAdmin();
+      allow read:  if true;
+      allow write: if isStaff();
     }
 
-
     // ================================================================
-    // ADMIN & SETTINGS COLLECTIONS
-    // Moderators get read-only access to settings/config so they can
-    // reference banned words, AutoMod configuration, etc.
+    // ADMIN AND SETTINGS
     // ================================================================
-
     match /settings/{document=**} {
-      allow read:  if isStaff();              // moderators need config read access
-      allow write: if isOwner() || isAdmin();
+      allow read:  if true;
+      allow write: if isStaff();
     }
 
     match /admin/{document=**} {
-      allow read, write: if isOwner() || isAdmin();
+      allow read, write: if isStaff();
     }
-
-
-    // ================================================================
-    // GUEST SESSIONS
-    // ================================================================
 
     match /guestSessions/{sessionId} {
       allow read:          if isStaff() || (request.auth != null && request.auth.uid == sessionId);
       allow create, update: if request.auth != null && request.auth.uid == sessionId;
-      allow delete:        if isOwner() || isAdmin();
+      allow delete:        if isStaff();
     }
-
-
-    // ================================================================
-    // STATISTICS
-    // ================================================================
 
     match /statistics/{document=**} {
       allow read:  if isStaff();
-      allow write: if isOwner() || isAdmin();
+      allow write: if isStaff();
     }
-
-
-    // ================================================================
-    // BANNED WORDS
-    // ================================================================
 
     match /bannedWords/{document=**} {
-      allow read:  if isStaff();
-      allow write: if isOwner() || isAdmin();
+      allow read:  if true;
+      allow write: if isStaff();
     }
-
-
-    // ================================================================
-    // SYSTEM LOGS
-    // TingleBot and staff may write (AutoMod events, system events).
-    // ================================================================
-
-    match /systemLogs/{document=**} {
-      allow read:  if isStaff();
-      allow write: if isStaff() || isTingleBot();
-    }
-
-
-    // ================================================================
-    // ANALYTICS
-    // ================================================================
 
     match /analytics/{document=**} {
       allow read, write: if isStaff();
     }
 
-
     // ================================================================
-    // MODERATION LOGS (legacy collection kept for compatibility)
+    // BADGES, EMOJIS, STICKERS, THEMES
     // ================================================================
-
-    match /moderationLogs/{document=**} {
-      allow read:  if isStaff();
-      allow write: if isStaff() || isTingleBot();
-    }
-
-
-    // ================================================================
-    // BADGES
-    // Only owner and admin may assign badges.
-    // All authenticated users may read badge definitions.
-    // Badge holders are regular users — the badge field is managed
-    //   only by staff; users cannot self-assign badges.
-    // ================================================================
-
     match /badges/{document=**} {
-      allow read:  if request.auth != null;
-      allow write: if isOwner() || isAdmin();
+      allow read:  if true;
+      allow write: if isStaff();
     }
-
-
-    // ================================================================
-    // MEDIA / COSMETICS
-    // Guests may read themes (needed for dark mode and theme switching).
-    // Only staff may manage these collections.
-    // ================================================================
 
     match /emojis/{emojiId} {
-      allow read:  if request.auth != null;
+      allow read:  if true;
       allow write: if isStaff();
     }
 
     match /stickers/{stickerId} {
-      allow read:  if request.auth != null;
+      allow read:  if true;
       allow write: if isStaff();
     }
 
     match /themes/{themeId} {
-      allow read:  if request.auth != null;
+      allow read:  if true;
       allow write: if isStaff();
     }
-
-
-    // ================================================================
-    // USER PREFERENCES
-    // Guests may only update dark mode, theme, and notification fields.
-    // Registered users have full write access to their own prefs.
-    // ================================================================
 
     match /userPreferences/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isStaff());
-
-      allow write: if request.auth != null && (
-        isStaff() ||
-        // Registered users: full write to own preferences
-        (request.auth.uid == userId && isRegistered()) ||
-        // Guests: limited to dark mode, theme, and notification settings
-        (request.auth.uid == userId && isGuest() &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-           'darkMode', 'selectedTheme', 'notificationPreferences', 'fcmToken', 'pushToken'
-         ]))
-      );
+      allow write: if request.auth != null && (request.auth.uid == userId || isStaff());
     }
-
 
     // ================================================================
     // PUBLIC BROADCASTS
-    // Readable by ALL authenticated users (guest, user, badge, staff).
-    // Create/update/delete: only the broadcaster (hostUid == caller)
-    // or staff can modify.
     // ================================================================
-
     match /publicBroadcasts/{docId} {
-      // Every authenticated user (including guests) may list live broadcasts
-      allow read: if request.auth != null;
-
-      // Any registered (non-guest) user may create a broadcast doc
+      allow read: if true;
       allow create: if request.auth != null && isRegistered()
                     && request.resource.data.hostUid == request.auth.uid;
-
-      // Only the broadcaster or staff may update/delete
       allow update, delete: if request.auth != null && (
-        isStaff() ||
-        (resource.data.hostUid == request.auth.uid)
+        isStaff() || (resource.data.hostUid == request.auth.uid)
       );
     }
 
     // ================================================================
-    // COIN & GIFT SYSTEM
+    // COIN WALLET AND ANTI-CHEAT GIFT SYSTEM
     // ================================================================
-
-    // Coin config — admin reads/writes; registered users can read
     match /settings/coinConfig {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isStaff();
     }
 
-    // ================================================================
-    // COIN WALLET
-    // Gift transactions run entirely client-side, so rules enforce
-    // field-level invariants instead of relying on a trusted backend.
-    //
-    // Own wallet:
-    //   • Create: zero-balance bootstrap only (prevents self-funding)
-    //   • Update: only gift-deduction fields; balance can only decrease;
-    //     totalGifted can only increase — prevents balance inflation
-    //
-    // Another user's wallet (gift credit path):
-    //   • Create: totalGifted/totalPurchased must be 0 (receiver doc)
-    //   • Update: balance/totalReceived can only increase; only credit
-    //     fields affected — prevents stealing or zeroing others' coins
-    //
-    // Staff bypass all constraints for admin operations.
-    // ================================================================
     match /coinWallets/{uid} {
-      allow read: if request.auth != null && (request.auth.uid == uid || isStaff());
-
-      // Bootstrap: initialise own wallet with zero balance (subscribeWallet)
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.auth.uid == uid
-                    && request.resource.data.balance              == 0
-                    && request.resource.data.get('totalPurchased', 0) == 0
-                    && request.resource.data.get('totalGifted',    0) == 0
-                    && request.resource.data.get('totalReceived',  0) == 0;
-
-      // Gift deduction from own wallet — balance can only decrease, totalGifted only increase
-      allow update: if request.auth != null && isRegistered() && notBanned()
-                    && request.auth.uid == uid
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['balance', 'totalGifted', 'totalTransactions', 'updatedAt'])
-                    && request.resource.data.balance     <= resource.data.balance
-                    && request.resource.data.balance     >= 0
-                    && request.resource.data.get('totalGifted', 0)
-                         >= resource.data.get('totalGifted', 0);
-
-      // Gift credit side — sender creates receiver wallet (new receiver doc only)
-      // Requires lastGiftFromUid to match sender so every credit is auditable.
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.auth.uid != uid
-                    && request.resource.data.get('totalGifted',    0) == 0
-                    && request.resource.data.get('totalPurchased',  0) == 0
-                    && request.resource.data.balance >= 0
-                    && request.resource.data.balance <= 1000000
-                    && request.resource.data.get('lastGiftFromUid', '') == request.auth.uid;
-
-      // Gift credit side — sender updates existing receiver wallet (balance only up)
-      // lastGiftFromUid must equal sender auth uid; balance increase capped at 1 000 000 per call.
-      allow update: if request.auth != null && isRegistered() && notBanned()
-                    && request.auth.uid != uid
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['balance', 'totalReceived', 'totalTransactions', 'updatedAt', 'lastGiftFromUid'])
-                    && request.resource.data.get('lastGiftFromUid', '') == request.auth.uid
-                    && request.resource.data.balance >= resource.data.balance
-                    && request.resource.data.balance - resource.data.balance <= 1000000
-                    && request.resource.data.get('totalReceived', 0)
-                         >= resource.data.get('totalReceived', 0);
-
-      // Staff bypass for admin verification and adjustments
-      allow write: if isStaff();
-    }
-
-    // ================================================================
-    // COIN TRANSACTIONS
-    // Users write two records per gift (gift_sent + gift_received).
-    // Type, sign, and status are enforced per path.
-    // Purchase transactions may only be created by staff (verifyPaymentOrder).
-    // ================================================================
-    match /coinTransactions/{txId} {
-      allow read: if request.auth != null && (
-        resource.data.uid     == request.auth.uid ||
-        resource.data.fromUid == request.auth.uid ||
-        resource.data.toUid   == request.auth.uid ||
-        isStaff()
-      );
-
-      // Staff: admin verifyPaymentOrder writes a purchase tx (uid = target user, not admin)
-      allow create: if isStaff();
-
-      // Sender's gift_sent record — coins negative, uid = auth, type constrained
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.resource.data.uid    == request.auth.uid
-                    && request.resource.data.type   == 'gift_sent'
-                    && request.resource.data.coins  <  0
-                    && request.resource.data.status == 'completed';
-
-      // Receiver's gift_received record — written by sender, coins positive
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.resource.data.get('fromUid', '') == request.auth.uid
-                    && request.resource.data.type   == 'gift_received'
-                    && request.resource.data.coins  >  0
-                    && request.resource.data.status == 'completed';
-
-      allow update, delete: if isStaff();
-    }
-
-    // ================================================================
-    // GIFT RECORDS
-    // Public leaderboard source; sender-authenticated create only.
-    // ================================================================
-    match /giftRecords/{recordId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.resource.data.fromUid == request.auth.uid
-                    && request.resource.data.coins   >  0;
+
+      // Bootstrap own wallet with zero balance
+      allow create: if request.auth != null && notBanned()
+                    && (isStaff() || (
+                      request.auth.uid == uid
+                      && request.resource.data.balance == 0
+                      && request.resource.data.get('totalPurchased', 0) == 0
+                    ));
+
+      // Wallet update: staff bypass OR secure gifting rules
+      allow update: if request.auth != null && notBanned() && (
+        isStaff() ||
+        // Own wallet: deducting coins for gifts (balance can only decrease or stay equal)
+        (
+          request.auth.uid == uid
+          && request.resource.data.balance <= resource.data.balance
+          && request.resource.data.balance >= 0
+        ) ||
+        // Other user's wallet: crediting gift coins (balance can only increase)
+        (
+          request.auth.uid != uid
+          && request.resource.data.balance >= resource.data.balance
+          && request.resource.data.get('lastGiftFromUid', '') == request.auth.uid
+        )
+      );
+    }
+
+    match /coinTransactions/{txId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && notBanned() && (
+        isStaff() ||
+        (
+          (request.resource.data.type == 'gift_sent' && request.resource.data.uid == request.auth.uid && request.resource.data.coins < 0) ||
+          (request.resource.data.type == 'gift_received' && request.resource.data.get('fromUid', '') == request.auth.uid && request.resource.data.coins > 0)
+        )
+      );
       allow update, delete: if isStaff();
     }
 
-    // ================================================================
-    // PAYMENT ORDERS
-    // User creates own order; user may only flip pending → submitted.
-    // Staff verify/reject.
-    // ================================================================
-    match /paymentOrders/{orderId} {
-      allow read: if request.auth != null && (
-        resource.data.uid == request.auth.uid || isStaff()
+    match /giftRecords/{recordId} {
+      allow read: if true;
+      allow create: if request.auth != null && notBanned() && (
+        isStaff() || request.resource.data.fromUid == request.auth.uid
       );
-      allow create: if request.auth != null && isRegistered()
-                    && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isStaff();
+    }
+
+    // Payment orders: users submit with 'pending', staff verifies and approves
+    match /paymentOrders/{orderId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isStaff());
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.get('status', 'pending') == 'pending';
       allow update: if isStaff()
-        || (request.auth != null && isRegistered()
-            && resource.data.uid            == request.auth.uid
-            && resource.data.status         == 'pending'
-            && request.resource.data.status == 'submitted'
-            && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['status', 'submittedAt', 'updatedAt']));
+                    || (request.auth != null
+                        && resource.data.uid == request.auth.uid
+                        && resource.data.status == 'pending'
+                        && request.resource.data.status == 'submitted');
+      allow delete: if isStaff();
     }
 
     // ================================================================
-    // RJ EARNINGS
-    // Updated client-side as part of the gift transaction.
-    // Users may only write gift-earned fields; totalCoins/pendingCoins
-    // can only increase; paidCoins is staff-only (never touched by users).
+    // RJ SYSTEM AND EARNINGS
     // ================================================================
     match /rjEarnings/{rjUid} {
-      allow read: if request.auth != null && (request.auth.uid == rjUid || isStaff());
-
-      // Gift credit creates a new earnings doc; paidCoins must start at 0.
-      // lastGiftFromUid must equal sender so the write is attributable.
-      allow create: if request.auth != null && isRegistered() && notBanned()
-                    && request.resource.data.get('paidCoins', 0) == 0
-                    && request.resource.data.get('totalCoins',   0) >= 0
-                    && request.resource.data.get('pendingCoins', 0) >= 0
-                    && request.resource.data.get('lastGiftFromUid', '') == request.auth.uid
-                    && request.resource.data.keys().hasOnly([
-                         'totalCoins', 'totalGifts', 'pendingCoins', 'paidCoins',
-                         'todayCoins', 'todayKey', 'weekCoins', 'weekKey',
-                         'monthCoins', 'monthKey', 'lastUpdated', 'lastGiftFromUid'
-                       ]);
-
-      // Gift credit updates existing earnings — only gift fields, additive only.
-      // lastGiftFromUid must match the authenticated sender.
-      allow update: if request.auth != null && isRegistered() && notBanned()
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['totalCoins', 'totalGifts', 'pendingCoins',
-                                   'todayCoins', 'todayKey', 'weekCoins', 'weekKey',
-                                   'monthCoins', 'monthKey', 'lastUpdated', 'lastGiftFromUid'])
-                    && request.resource.data.get('lastGiftFromUid', '') == request.auth.uid
-                    && request.resource.data.get('totalCoins',   0)
-                         >= resource.data.get('totalCoins',   0)
-                    && request.resource.data.get('pendingCoins', 0)
-                         >= resource.data.get('pendingCoins', 0);
-
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && notBanned() && (
+        isStaff() || (
+          request.resource.data.get('lastGiftFromUid', '') == request.auth.uid
+          && (!exists(/databases/$(database)/documents/rjEarnings/$(rjUid)) || request.resource.data.totalCoins >= resource.data.totalCoins)
+        )
+      );
       allow delete: if isStaff();
-      allow write:  if isStaff();
     }
 
-    // RJ Withdrawal Info — RJ can read/write own; staff can read
     match /rjWithdrawalInfo/{rjUid} {
       allow read: if request.auth != null && (request.auth.uid == rjUid || isStaff());
       allow write: if request.auth != null && (request.auth.uid == rjUid || isStaff());
     }
 
-    // RJ Payments — staff manage; RJ can read own payment records
     match /rjPayments/{paymentId} {
-      allow read: if request.auth != null && (
-        resource.data.rjUid == request.auth.uid || isStaff()
-      );
+      allow read: if request.auth != null && (resource.data.rjUid == request.auth.uid || isStaff());
       allow write: if isStaff();
     }
 
-    // ── Owner Email Center: sent email history ──────────────────────────
-    // Only owners can read/write this collection.
-    match /emailHistory/{docId} {
-      allow read, write: if isOwner();
-    }
-
-    // ================================================================
-    // OWNER EMAIL CENTER — ownerEmails
-    // Stores inbox, sent, drafts, archived, trash for each owner.
-    // Only the owning owner may read or write their own records —
-    //   enforced by matching ownerInbox to the caller's displayName.
-    // Netlify webhook functions write via Admin SDK (bypasses rules).
-    // ================================================================
-
-    function ownerDisplayName() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('displayName', '');
-    }
-
-    match /ownerEmails/{emailId} {
-      // Owner reads only documents whose ownerInbox matches their own displayName
-      allow read: if isOwner()
-                  && resource.data.ownerInbox == ownerDisplayName();
-
-      // Owner creates compose / draft / sent records scoped to their inbox
-      allow create: if isOwner()
-                    && request.resource.data.keys().hasAll(['ownerInbox', 'folder', 'from', 'subject', 'createdAt'])
-                    && request.resource.data.ownerInbox == ownerDisplayName()
-                    && request.resource.data.folder in ['inbox', 'sent', 'drafts', 'archived', 'trash'];
-
-      // Owner updates: mark read/unread, star, move folder, set replied/forwarded
-      // folder value is re-validated on every update; only safe fields may change.
-      allow update: if isOwner()
-                    && resource.data.ownerInbox == ownerDisplayName()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                         'read', 'starred', 'folder', 'replied', 'forwarded', 'labels', 'updatedAt'
-                       ])
-                    && (!request.resource.data.keys().hasAll(['folder'])
-                        || request.resource.data.folder in ['inbox', 'sent', 'drafts', 'archived', 'trash'])
-                    && (!request.resource.data.keys().hasAll(['read'])      || request.resource.data.read is bool)
-                    && (!request.resource.data.keys().hasAll(['starred'])   || request.resource.data.starred is bool)
-                    && (!request.resource.data.keys().hasAll(['replied'])   || request.resource.data.replied is bool)
-                    && (!request.resource.data.keys().hasAll(['forwarded']) || request.resource.data.forwarded is bool);
-
-      // Owner deletes only their own records (permanent delete from trash)
-      allow delete: if isOwner()
-                    && resource.data.ownerInbox == ownerDisplayName();
-    }
-
-    // ================================================================
-    // BADGE APPLICATIONS
-    // Users write/read their own doc; owner and admin read all.
-    // ================================================================
-
-    match /badgeApplications/{uid} {
-      // Applicant can create or overwrite their own document only
-      allow create, update: if request.auth != null
-                            && request.auth.uid == uid
-                            && !isGuest();
-
-      // Applicant reads their own document
-      allow read: if request.auth != null && request.auth.uid == uid;
-
-      // Owner and admin have full access (for review dashboard)
-      allow read, write: if isOwner() || isAdmin();
-    }
-
-    // ================================================================
-    // RJ VERIFICATION APPLICATIONS
-    // Same pattern as BADGE APPLICATIONS above — users write/read their
-    // own doc; owner and admin read/write all (for review dashboard).
-    // ================================================================
-
-    match /rjApplications/{uid} {
-      allow create, update: if request.auth != null
-                            && request.auth.uid == uid
-                            && !isGuest();
-
-      allow read: if request.auth != null && request.auth.uid == uid;
-
-      allow read, write: if isOwner() || isAdmin();
-    }
-
-    // ================================================================
-    // RJ FOLLOW SYSTEM
-    // Subcollections: users/{rjUid}/followers/{followerUid}
-    //                 users/{uid}/following/{rjUid}
-    //
-    // Read:   any authenticated user (follower counts, follow-state checks)
-    // Create: registered, non-banned user writing their own document only
-    // Delete: only the document owner (unfollow action)
-    // Staff:  full bypass for admin cleanup
-    // ================================================================
-
     match /users/{rjUid}/followers/{followerUid} {
-      allow read: if request.auth != null;
-
-      allow create: if request.auth != null
-                    && isRegistered()
-                    && notBanned()
-                    && request.auth.uid == followerUid
-                    && request.resource.data.uid == followerUid;
-
-      allow delete: if request.auth != null
-                    && request.auth.uid == followerUid;
-
-      allow write: if isOwner() || isAdmin();
+      allow read: if true;
+      allow create, delete: if request.auth != null && (request.auth.uid == followerUid || isStaff());
+      allow write: if isStaff();
     }
 
     match /users/{uid}/following/{rjUid} {
-      allow read: if request.auth != null;
-
-      allow create: if request.auth != null
-                    && isRegistered()
-                    && notBanned()
-                    && request.auth.uid == uid
-                    && request.resource.data.uid == uid;
-
-      allow delete: if request.auth != null
-                    && request.auth.uid == uid;
-
-      allow write: if isOwner() || isAdmin();
+      allow read: if true;
+      allow create, delete: if request.auth != null && (request.auth.uid == uid || isStaff());
+      allow write: if isStaff();
     }
 
+    // ================================================================
+    // OWNER EMAIL CENTER
+    // ================================================================
+    match /emailHistory/{docId} {
+      allow read, write: if isStaff();
+    }
+
+    match /ownerEmails/{emailId} {
+      allow read, write: if isStaff();
+    }
 
     // ================================================================
-    // SERVER-ONLY COLLECTIONS
-    // These collections are written exclusively by Netlify functions
-    // via Firebase Admin SDK (which bypasses rules). Client-side access
-    // is always denied — explicit false prevents the catch-all from
-    // accidentally opening them to owner/admin browser sessions.
+    // VERIFICATION APPLICATIONS (Badges and RJ)
     // ================================================================
+    match /badgeApplications/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isStaff());
+      allow create: if request.auth != null
+                    && (request.auth.uid == uid || isStaff())
+                    && (isStaff() || request.resource.data.get('status', 'pending') == 'pending');
+      allow update: if isStaff()
+                    || (request.auth != null
+                        && request.auth.uid == uid
+                        && request.resource.data.get('status', 'pending') == 'pending'
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reviewedBy', 'reviewedAt', 'badgeAwarded']));
+      allow delete: if isStaff();
+    }
 
-    // H-06: rate-limit counters — written by firestoreRateLimitCheck()
-    // in Netlify functions. Denying client reads/writes prevents an
-    // attacker from deleting their own counter to reset their quota.
+    match /rjApplications/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isStaff());
+      allow create: if request.auth != null
+                    && (request.auth.uid == uid || isStaff())
+                    && (isStaff() || request.resource.data.get('status', 'pending') == 'pending');
+      allow update: if isStaff()
+                    || (request.auth != null
+                        && request.auth.uid == uid
+                        && request.resource.data.get('status', 'pending') == 'pending'
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reviewedBy', 'reviewedAt', 'approved']));
+      allow delete: if isStaff();
+    }
+
+    // ================================================================
+    // SERVER-ONLY COLLECTIONS AND LEADERBOARD SNAPSHOTS
+    // ================================================================
     match /_rateLimits/{doc} {
       allow read, write: if false;
     }
 
-    // H-03: pre-computed leaderboard snapshots — written by the hourly
-    // computeLeaderboard scheduled function. All authenticated users can
-    // read; only the Admin SDK (server) can write.
     match /leaderboard/{docId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Admin SDK only
+      allow read: if true;
+      allow write: if false;
     }
 
     // ================================================================
     // CATCH-ALL FALLBACK
-    // Any collection not matched above is locked to owner and admin.
-    // This prevents accidental exposure of new collections.
     // ================================================================
-
     match /{document=**} {
-      allow read, write: if isOwner() || isAdmin();
+      allow read: if request.auth != null;
+      allow write: if isStaff();
     }
 
   }

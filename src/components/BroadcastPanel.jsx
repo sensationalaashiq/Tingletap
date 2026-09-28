@@ -751,6 +751,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const bcRef = ref(rtdb, 'broadcasts/rj');
     const unsub = onValue(bcRef, (snap) => {
       const data = snap.val();
+      // RJ Broadcast Stale Protection: if startedAt is > 8 hours ago, treat as stale/ended
+      const isTooOldRJ = data?.startedAt && (Date.now() - data.startedAt > 8 * 3600 * 1000);
+      if (isTooOldRJ) {
+        remove(ref(rtdb, 'broadcasts/rj')).catch(() => {});
+        setRjBroadcast(null);
+        setRjIsLive(false);
+        rjIsLiveRef.current = false;
+        setListenerCount(0);
+        setSpeakerMap({});
+        setIAmSpeaker(false);
+        setYtPlayerState('stopped');
+        setYtCurrentSongName('');
+        return;
+      }
+
       setRjBroadcast(data);
       const live = !!(data && data.isLive);
       setRjIsLive(live);
@@ -1020,12 +1035,44 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Public broadcasts Firestore listener (always-on for badge count) ── */
   useEffect(() => {
     const q = query(collection(db, 'publicBroadcasts'), where('isLive', '==', true));
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, async (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setPublicBroadcasts(list);
+      const now = Date.now();
+      const verifiedList = [];
+
+      for (const bc of list) {
+        // Auto-purge broadcasts older than 6 hours
+        if (bc.startedAt && (now - bc.startedAt > 6 * 3600 * 1000)) {
+          updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
+          remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
+          continue;
+        }
+
+        // Cross-verify with RTDB session node
+        try {
+          const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${bc.id}/session`));
+          if (!rtdbSnap.exists()) {
+            // RTDB session is gone => host disconnected/crashed => clean up Firestore doc
+            updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
+            remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
+            continue;
+          }
+        } catch {
+          // If RTDB read fails, verify age > 1 hour before dropping
+          if (bc.startedAt && (now - bc.startedAt > 3600 * 1000)) continue;
+        }
+
+        verifiedList.push(bc);
+      }
+
+      setPublicBroadcasts(verifiedList);
       if (myUid) {
-        const mine = list.find(b => b.hostUid === myUid);
+        const mine = verifiedList.find(b => b.hostUid === myUid);
         setMyActiveBroadcast(mine || null);
+      }
+    }, (error) => {
+      if (error?.code !== 'permission-denied') {
+        console.warn('publicBroadcasts onSnapshot error:', error);
       }
     });
     return () => unsub();
@@ -2497,12 +2544,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
        If a previous session ended via page reload, the Firestore doc may still say isLive:true
        but the RTDB session will be gone. We clean those up so the broadcaster can start fresh. ── */
   useEffect(() => {
-    if (!isOpen || !myUid) return;
+    if (!isOpen) return;
     const cleanStale = async () => {
       try {
         const q = query(
           collection(db, 'publicBroadcasts'),
-          where('hostUid', '==', myUid),
           where('isLive', '==', true)
         );
         const snap = await getDocs(q);
@@ -2518,7 +2564,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       } catch {}
     };
     cleanStale();
-  }, [isOpen, myUid]);
+  }, [isOpen]);
 
   /* ── Cleanup when panel closes ── */
   useEffect(() => {

@@ -73,7 +73,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [vpnBlocked, setVpnBlocked] = useState(false);
   const [vpnInfo, setVpnInfo] = useState(null);
-  const [vpnChecking, setVpnChecking] = useState(true);
+  const [vpnChecking, setVpnChecking] = useState(false);
   const [fontPreferences, setFontPreferences] = useState({
     fontSize: '8px',
     fontColor: '#333333',
@@ -93,6 +93,12 @@ function App() {
     const initialPage = window.location.pathname + window.location.search;
     initVisitorTracking({ page: initialPage });
     trackPageView(initialPage);
+
+    // Safety fallback: Ensure app never hangs on loading screen if auth/network lags
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 1800);
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   // VPN Detection Effect
@@ -416,6 +422,11 @@ function App() {
             }
           }
           setLoading(false);
+        }, (error) => {
+          if (error?.code !== 'permission-denied') {
+            console.error('App profile onSnapshot error:', error);
+          }
+          setLoading(false);
         });
 
         // Setup online presence
@@ -426,30 +437,6 @@ function App() {
             onDisconnect(userStatusRef).set({ state: 'offline', last_changed: serverTimestamp() })
                 .then(() => set(userStatusRef, onlineData));
         });
-
-        // One-time stale session cleanup: mark any status entry older than 8 min as offline
-        const cleanupStaleStatuses = async () => {
-          try {
-            const statusSnap = await get(ref(rtdb, 'status'));
-            if (!statusSnap.exists()) return;
-            const statuses = statusSnap.val();
-            const STALE_MS = 8 * 60 * 1000;
-            const now = Date.now();
-            const updates = {};
-            Object.entries(statuses).forEach(([uid, s]) => {
-              if (s?.state === 'online' && s?.last_changed && (now - s.last_changed) > STALE_MS) {
-                updates[`status/${uid}/state`] = 'offline';
-                updates[`status/${uid}/last_changed`] = now;
-              }
-            });
-            if (Object.keys(updates).length > 0) {
-              await update(ref(rtdb), updates);
-            }
-          } catch (e) {
-            // Silently ignore cleanup errors
-          }
-        };
-        cleanupStaleStatuses();
 
         // Store unsubscribe functions globally for cleanup
         window.cleanupFirestoreListeners = () => {

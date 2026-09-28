@@ -279,7 +279,7 @@ const AdminPanelPage = () => {
       } else {
         navigate('/');
       }
-    });
+    }, () => navigate('/'));
     
     return () => unsubscribe();
   }, [user, navigate]);
@@ -402,6 +402,8 @@ const AdminPanelPage = () => {
         totalRooms: roomsData.length,
         activeRooms: roomsData.filter(room => room.isActive !== false).length
       }));
+    }, (error) => {
+      if (error?.code !== 'permission-denied') console.warn('Admin rooms query error:', error);
     });
     
     return () => unsubscribe();
@@ -453,6 +455,8 @@ const AdminPanelPage = () => {
       const ipsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setBannedIPs(ipsData);
       setStats(prev => ({ ...prev, bannedIPs: ipsData.length }));
+    }, (error) => {
+      if (error?.code !== 'permission-denied') console.warn('Admin bannedIPs query error:', error);
     });
     
     return () => unsubscribe();
@@ -468,6 +472,8 @@ const AdminPanelPage = () => {
         ...prev,
         pendingReports: reportsData.filter(r => r.status === 'pending').length
       }));
+    }, (error) => {
+      if (error?.code !== 'permission-denied') console.warn('Admin reports query error:', error);
     });
     return () => unsubscribe();
   }, []);
@@ -486,6 +492,8 @@ const AdminPanelPage = () => {
         ...prev,
         bannedDevices: devicesData.length
       }));
+    }, (error) => {
+      if (error?.code !== 'permission-denied') console.warn('Admin bannedDevices query error:', error);
     });
     
     return () => unsubscribe();
@@ -813,7 +821,7 @@ const AdminPanelPage = () => {
         try { await deleteDoc(doc(db, 'usernames', oldName.toLowerCase())); } catch {}
       }
       await setDoc(doc(db, 'usernames', newName.toLowerCase()), {
-        uid, email: changeUsernameTarget.email || null, createdAt: new Date().toISOString()
+        uid, createdAt: new Date().toISOString()
       });
       await updateDoc(doc(db, 'users', uid), {
         displayName: newName, username: newName,

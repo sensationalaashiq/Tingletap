@@ -9221,9 +9221,11 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
   transform: scale(1.08) !important;
 }
 
-/* --- Premium Inline Badge Glow --- */
+/* --- Premium Inline Badge Glow & Vibrancy --- */
 .homepage-container .inline-badge {
-  filter: drop-shadow(0 0 3px rgba(139, 92, 246, 0.4)) !important;
+  filter: brightness(1.15) saturate(2.4) contrast(1.15) drop-shadow(0 1px 3px rgba(124, 58, 237, 0.4)) !important;
+  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* --- Premium Dropdown Menus --- */
@@ -9307,6 +9309,73 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
 /* Chat feed background */
 .homepage-container .chat-feed {
   background: #f8f6ff !important;
+}
+
+/* Dark mode chat feed & stripes - rich obsidian & midnight violet */
+.dark-mode .homepage-container .chat-feed,
+html.dark-mode .homepage-container .chat-feed {
+  background: #0f0c20 !important;
+}
+
+.dark-mode .homepage-container .message-row.row-even,
+html.dark-mode .homepage-container .message-row.row-even {
+  background: #140f2b !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16) !important;
+  color: #f3e8ff !important;
+}
+
+.dark-mode .homepage-container .message-row.row-odd,
+html.dark-mode .homepage-container .message-row.row-odd {
+  background: #191434 !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16) !important;
+  color: #f3e8ff !important;
+}
+
+.dark-mode .homepage-container .message-row.row-even:hover,
+html.dark-mode .homepage-container .message-row.row-even:hover {
+  background: #1f193f !important;
+}
+
+.dark-mode .homepage-container .message-row.row-odd:hover,
+html.dark-mode .homepage-container .message-row.row-odd:hover {
+  background: #231c47 !important;
+}
+
+.dark-mode .homepage-container .message-row.my-message.row-even,
+html.dark-mode .homepage-container .message-row.my-message.row-even {
+  background: #1d163c !important;
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.dark-mode .homepage-container .message-row.my-message.row-odd,
+html.dark-mode .homepage-container .message-row.my-message.row-odd {
+  background: #221b44 !important;
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.dark-mode .homepage-container .message-displayname,
+html.dark-mode .homepage-container .message-displayname {
+  color: #e9d5ff !important;
+  font-weight: 700 !important;
+}
+
+.dark-mode .homepage-container .message-body p,
+html.dark-mode .homepage-container .message-body p {
+  color: #f5f3ff !important;
+}
+
+/* Live broadcast button pulse & vibrant gradient */
+.bp-live-badge {
+  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.7), 0 0 18px rgba(139, 92, 246, 0.5) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #ffffff !important;
+}
+
+/* Chat character counter & attachment icon vibrancy */
+.homepage-container .attachment-btn svg {
+  filter: drop-shadow(0 2px 6px rgba(124, 58, 237, 0.35));
 }
 
 /* Remove compact-mode font shrinking that causes unreadable text */
@@ -10654,50 +10723,110 @@ body .homepage-container .attachment-dropdown {
   color: #e2e2e2;
 }
 
-/* ===== TAG MENTION STYLES ===== */
-/* Tag chip shown to the RECEIVER (the tagged person) —
-   light lavender, white text, no gradient, theme-aware */
-.tag-self-mention {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(167, 139, 250, 0.85);
+/* ===== TAG MENTION STYLES & PILLS ===== */
+/* Base Pill Container — ensures crisp 100% visibility on ANY background, font color, or theme */
+.tag-mention-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 2px 9px 2px 7px !important;
+  margin: 0 3px !important;
+  border-radius: 9999px !important;
+  font-size: 0.9em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.015em !important;
+  line-height: 1.35 !important;
+  vertical-align: baseline !important;
+  cursor: pointer !important;
+  user-select: all !important;
+  text-decoration: none !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+  -webkit-text-fill-color: #ffffff !important;
   color: #ffffff !important;
-  font-weight: 700;
-  font-size: 0.88em;
-  padding: 1px 7px 2px;
-  border-radius: 999px;
-  letter-spacing: 0.01em;
-  line-height: 1.5;
-  vertical-align: middle;
-  cursor: default;
-  /* no gradient, no box-shadow */
-}
-/* Slightly richer lavender in dark mode */
-.dark-mode .tag-self-mention,
-.theme-dark .tag-self-mention {
-  background: rgba(139, 92, 246, 0.90);
+  box-sizing: border-box !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-.tag-other-mention {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(167, 139, 250, 0.70);
-  color: #ffffff !important;
-  font-weight: 600;
-  font-size: 0.88em;
-  padding: 1px 7px 2px;
-  border-radius: 999px;
-  line-height: 1.5;
-  vertical-align: middle;
-  cursor: default;
-  letter-spacing: 0.01em;
+.tag-mention-pill:hover {
+  transform: translateY(-1px) scale(1.03) !important;
 }
-/* Dark / themed variants */
+
+/* Luminous contrast @ symbol */
+.tag-mention-pill .tag-at-symbol {
+  color: #fde047 !important; /* Radiant gold */
+  -webkit-text-fill-color: #fde047 !important;
+  font-weight: 900 !important;
+  font-size: 1.05em !important;
+  margin-right: 1.5px !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── 1. RECEIVER / SELF-MENTION: When the logged-in viewer is tagged ──
+   High-voltage Neon Violet-Magenta Gradient Strip with luminous glow */
+.tag-self-mention,
+.dark-mode .tag-self-mention,
+.theme-dark .tag-self-mention,
+html.dark-mode .tag-self-mention {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 48%, #ec4899 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.5), 0 0 0 1px rgba(124, 58, 237, 0.35) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  animation: tagSelfPulse 2.5s infinite ease-in-out !important;
+}
+
+@keyframes tagSelfPulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.45), 0 0 0 1px rgba(124, 58, 237, 0.3);
+  }
+  50% {
+    box-shadow: 0 3px 14px rgba(236, 72, 153, 0.7), 0 0 0 2px rgba(255, 255, 255, 0.55);
+  }
+}
+
+/* ── 2. SENDER-MENTION: When the message sender wrote the tag ──
+   Vibrant Royal Indigo-Violet Pill with luminous blue-purple presence */
+.tag-sender-mention,
+.dark-mode .tag-sender-mention,
+.theme-dark .tag-sender-mention,
+html.dark-mode .tag-sender-mention {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  border: 1.5px solid rgba(221, 214, 254, 0.65) !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.38) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ── 3. OTHER-MENTION: Public mentions seen by others in the chat ──
+   Rich Deep Violet-Purple Pill with high contrast border */
+.tag-other-mention,
 .dark-mode .tag-other-mention,
-.dark-theme-variant .tag-other-mention {
-  background: rgba(139, 92, 246, 0.20);
-  border-color: rgba(167, 139, 250, 0.35);
-  color: #c4b5fd;
+.theme-dark .tag-other-mention,
+html.dark-mode .tag-other-mention {
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%) !important;
+  border: 1.5px solid rgba(233, 213, 255, 0.55) !important;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.35) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Strong rule overrides: Stop parent message font colors, strikes, or underlines from altering the tag pill */
+.message-body .tag-mention-pill,
+.message-row .tag-mention-pill,
+.chat-feed .tag-mention-pill,
+.message-text .tag-mention-pill,
+p .tag-mention-pill {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+.message-body .tag-mention-pill *,
+.message-row .tag-mention-pill *,
+.chat-feed .tag-mention-pill *,
+.message-text .tag-mention-pill *,
+p .tag-mention-pill * {
+  text-decoration: none !important;
 }
 
 /* ═══════════════════════════════════════════

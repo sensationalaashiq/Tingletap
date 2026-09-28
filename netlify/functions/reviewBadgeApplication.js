@@ -78,10 +78,13 @@ export const handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return resp({ error: 'Invalid JSON' }, 400); }
 
-  const { applicantUid, action, reviewNotes } = body;
+  const { applicantUid, action, reviewNotes, badgeKey } = body;
   if (!applicantUid) return resp({ error: 'applicantUid required' }, 400);
   if (!['approve', 'reject', 'request_resubmit'].includes(action))
     return resp({ error: 'action must be approve, reject, or request_resubmit' }, 400);
+
+  const VALID_BADGES = ['gold_knight', 'platinum_lord', 'diamond_king', 'ruby_queen', 'emerald_empress', 'sapphire_goddess', 'rj'];
+  const finalBadgeKey = VALID_BADGES.includes(badgeKey) ? badgeKey : 'gold_knight';
 
   // Only owner/admin can review
   const reviewer = await verifyToken(token, ['owner', 'admin']);
@@ -142,17 +145,25 @@ export const handler = async (event) => {
     return resp({ error: 'Failed to update application' }, 500);
   }
 
-  // ── On approve: update users/{uid}.badge = 'verified' ────────────────────
+  // ── On approve: update users/{uid} and publicProfiles/{uid} ─────────────
   if (action === 'approve') {
     try {
       await fsPatch(`users/${applicantUid}`, {
-        badge:            'verified',
+        badge:            finalBadgeKey,
         verifiedAt:       now,
         badgeVerifiedBy:  reviewerName,
       }, token);
     } catch (e) {
       console.error('[reviewBadgeApplication] users update error:', e.message);
-      // Non-fatal — badge status is in badgeApplications too
+    }
+
+    try {
+      await fsPatch(`publicProfiles/${applicantUid}`, {
+        badge:            finalBadgeKey,
+        verifiedAt:       now,
+      }, token);
+    } catch (e) {
+      console.error('[reviewBadgeApplication] publicProfiles update error:', e.message);
     }
   }
 

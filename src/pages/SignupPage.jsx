@@ -270,7 +270,7 @@ const SignupPage = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       const result = await createUserProfile(userProfileData);
       if (result.success && formData.username) {
-        await reserveUsername(formData.username.toLowerCase(), user.uid, formData.email);
+        await reserveUsername(formData.username.toLowerCase(), user.uid);
       }
       if (!result.success) {
         try { await user.delete(); } catch (deleteError) {}

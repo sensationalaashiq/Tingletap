@@ -754,3 +754,89 @@ html.dark-mode .sb-ach-chip { border-color: rgba(255,255,255,0.25); }
 .male-border .sb-list-avatar        { border-color: rgba(59,130,246,0.4); }
 .female-border .sb-list-avatar      { border-color: rgba(236,72,153,0.4); }
 .transgender-border .sb-list-avatar { border-color: rgba(139,92,246,0.4); }
+
+/* ── Full Dark Mode Support for Sidebar ── */
+.dark-mode .sb-panel,
+html.dark-mode .sb-panel,
+body.dark-mode .sb-panel {
+  background: #110d24 !important;
+  border-left: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45) !important;
+  color: #f3e8ff !important;
+}
+
+.dark-mode .sb-profile-card,
+html.dark-mode .sb-profile-card {
+  background: linear-gradient(160deg, #181332 0%, #1e1740 60%, #171131 100%) !important;
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.35) !important;
+}
+
+.dark-mode .sb-profile-name,
+html.dark-mode .sb-profile-name {
+  color: #f3e8ff !important;
+}
+
+.dark-mode .sb-profile-role,
+html.dark-mode .sb-profile-role {
+  color: #c4b5fd !important;
+}
+
+.dark-mode .sb-close-btn,
+html.dark-mode .sb-close-btn {
+  background: rgba(30, 23, 64, 0.8) !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+}
+.dark-mode .sb-close-btn svg path,
+html.dark-mode .sb-close-btn svg path {
+  fill: #c4b5fd !important;
+}
+
+.dark-mode .sb-tabs,
+html.dark-mode .sb-tabs {
+  background: #15102d !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.25) !important;
+}
+
+.dark-mode .sb-tab,
+html.dark-mode .sb-tab {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .sb-tab.active,
+html.dark-mode .sb-tab.active {
+  color: #c084fc !important;
+  border-bottom: 2.5px solid #a855f7 !important;
+}
+
+.dark-mode .sb-tab-count,
+html.dark-mode .sb-tab-count {
+  background: rgba(139, 92, 246, 0.25) !important;
+  color: #e9d5ff !important;
+}
+
+.dark-mode .sb-user-item,
+html.dark-mode .sb-user-item {
+  background: rgba(26, 20, 53, 0.6) !important;
+  border: 1px solid rgba(139, 92, 246, 0.18) !important;
+}
+
+.dark-mode .sb-user-item:hover,
+html.dark-mode .sb-user-item:hover {
+  background: rgba(139, 92, 246, 0.22) !important;
+  border-color: rgba(168, 85, 247, 0.45) !important;
+}
+
+.dark-mode .sb-user-name,
+html.dark-mode .sb-user-name {
+  color: #f3e8ff !important;
+}
+
+.dark-mode .sb-user-role,
+html.dark-mode .sb-user-role {
+  color: #c4b5fd !important;
+}
+
+.dark-mode .sb-empty,
+html.dark-mode .sb-empty {
+  color: #94a3b8 !important;
+}

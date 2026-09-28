@@ -262,11 +262,15 @@ const WarningAnnouncementModal = React.memo(({ isVisible, onClose, currentUserPr
       setRooms(roomsData);
       if (currentRoomId && !selectedRooms.includes(currentRoomId)) setSelectedRooms([currentRoomId]);
       _cachedModalData = { ..._cachedModalData, rooms: roomsData, users: _cachedModalData?.users || [], fetchedAt: Date.now() };
+    }, (err) => {
+      if (err?.code !== 'permission-denied') console.warn('WarningModal rooms error:', err);
     });
-    const unsubUsers = onSnapshot(query(collection(db, 'users'), limit(100)), (snap) => {
+    const unsubUsers = onSnapshot(query(collection(db, 'publicProfiles'), limit(100)), (snap) => {
       const usersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setUsers(usersData);
       _cachedModalData = { ..._cachedModalData, users: usersData, rooms: _cachedModalData?.rooms || [], fetchedAt: Date.now() };
+    }, (err) => {
+      if (err?.code !== 'permission-denied') console.warn('WarningModal users error:', err);
     });
     return () => { unsubRooms(); unsubUsers(); };
   }, [isVisible, currentRoomId]);

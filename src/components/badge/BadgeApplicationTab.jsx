@@ -253,10 +253,9 @@ function AccountAgeTimeline({ accountAgeDays, gender }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function BadgeApplicationTab({ loggedInUserProfile }) {
   // Compute gender / age data synchronously from already-loaded auth metadata
-  // so male users blocked by the 60-day rule see the countdown card instantly
-  // (no Firestore round-trip needed to know they can't apply yet).
+  // Only male users blocked by the 60-day rule see the countdown card
   const [gender, setGender]                 = useState(
-    () => loggedInUserProfile?.gender || 'male'
+    () => loggedInUserProfile?.gender || null
   );
   const [accountAgeDays, setAccountAgeDays] = useState(
     () => getAccountAgeDays(auth.currentUser?.metadata?.creationTime)
@@ -265,12 +264,19 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
     () => msUntil60Days(auth.currentUser?.metadata?.creationTime)
   );
   const [pageState, setPageState]           = useState(() => {
-    const g  = loggedInUserProfile?.gender || 'male';
+    const g  = loggedInUserProfile?.gender;
     const ms = msUntil60Days(auth.currentUser?.metadata?.creationTime);
-    // Skip loading spinner for male users who definitely can't apply yet
+    // Only skip loading spinner if profile is loaded and is a male who can't apply yet
     return (g === 'male' && ms > 0) ? 'idle' : 'loading';
   });
   const [existingApp, setExistingApp]       = useState(null);
+
+  // Sync gender as soon as loggedInUserProfile updates
+  useEffect(() => {
+    if (loggedInUserProfile?.gender) {
+      setGender(loggedInUserProfile.gender);
+    }
+  }, [loggedInUserProfile?.gender]);
 
   // Flow state
   const [step, setStep]         = useState(0);
@@ -337,7 +343,8 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
 
   // ── Age eligibility check (re-evaluated at call time, not just at mount) ───
   const isEligibleToApply = useCallback(() => {
-    const g   = gender || loggedInUserProfile?.gender || 'male';
+    const g   = gender || loggedInUserProfile?.gender;
+    if (!g) return true; // allow loading or pending profile
     const meta = auth.currentUser?.metadata;
     const ms  = msUntil60Days(meta?.creationTime);
     // Males need 60-day-old account; females and trans have no age restriction
@@ -349,7 +356,7 @@ export default function BadgeApplicationTab({ loggedInUserProfile }) {
     // Hard guard — re-check at click time, not just at render time
     if (!isEligibleToApply()) return;
 
-    const g = gender || loggedInUserProfile?.gender || 'male';
+    const g = gender || loggedInUserProfile?.gender || 'female';
     const s = g === 'female' ? STEPS_FEMALE : STEPS_MALE;
     setSteps(s);
     setStep(0);

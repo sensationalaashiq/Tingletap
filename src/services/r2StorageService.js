@@ -478,12 +478,12 @@ export async function getSignedMediaUrl(key) {
 /**
  * Admin: approve, reject, or request resubmission.
  */
-export async function reviewApplication(applicantUid, action, reviewNotes = '') {
+export async function reviewApplication(applicantUid, action, reviewNotes = '', badgeKey = null) {
   const token = await getIdToken();
   const res = await fetch(`${BASE}/reviewBadgeApplication`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ applicantUid, action, reviewNotes }),
+    body: JSON.stringify({ applicantUid, action, reviewNotes, badgeKey }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || `Review action failed (${res.status})`);

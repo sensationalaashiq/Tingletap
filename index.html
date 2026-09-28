@@ -213,9 +213,15 @@
     </script>
 
     <!-- ══════════════════════════════════════════════════════════
-         Google Fonts — render-blocking minimized, display=swap
+         Google Fonts — non-blocking asynchronous load with preconnect
     ══════════════════════════════════════════════════════════ -->
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Kaushan+Script&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Permanent+Marker&family=Sacramento&family=Pinyon+Script&family=Cinzel:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Righteous&family=Bebas+Neue&family=Abril+Fatface&family=Fredoka:wght@400;600;700&family=Russo+One&family=Poiret+One&family=Press+Start+2P&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet" />
+    </noscript>
 
     <!-- FIX M-18: FOUC prevention — apply theme class synchronously before first paint.
          useEffect fires after the browser paints, causing a visible white flash for

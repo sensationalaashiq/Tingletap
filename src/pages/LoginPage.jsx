@@ -286,7 +286,7 @@ const LoginPage = () => {
         console.warn('Anonymous auth failed:', anonErr.code);
       }
 
-      // Strategy 1: Check usernames collection (has email stored directly)
+      // Strategy 1: Check usernames collection
       try {
         const usernameRef = doc(db, 'usernames', usernameToLookup.toLowerCase());
         const usernameSnap = await getDoc(usernameRef);
@@ -295,57 +295,17 @@ const LoginPage = () => {
           if (data.email) {
             foundEmail = data.email;
           } else if (data.uid) {
-            // email not in username doc — fetch from users doc
             try {
-              const userRef = doc(db, 'users', data.uid);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists() && userSnap.data().email) {
-                foundEmail = userSnap.data().email;
+              const pubRef = doc(db, 'publicProfiles', data.uid);
+              const pubSnap = await getDoc(pubRef);
+              if (pubSnap.exists() && pubSnap.data().email) {
+                foundEmail = pubSnap.data().email;
               }
             } catch (_) {}
           }
         }
       } catch (err) {
         console.warn('usernames collection lookup failed:', err.code || err.message);
-      }
-
-      // Strategy 2: Query users collection by username field
-      if (!foundEmail) {
-        try {
-          const usersQ = query(collection(db, 'users'), where('username', '==', usernameToLookup.toLowerCase()));
-          const usersSnap = await getDocs(usersQ);
-          if (!usersSnap.empty) {
-            foundEmail = usersSnap.docs[0].data().email;
-          }
-        } catch (err) {
-          console.warn('users username query failed:', err.code || err.message);
-        }
-      }
-
-      // Strategy 3: Query users by displayName (for older accounts without username field)
-      if (!foundEmail) {
-        try {
-          const displayQ = query(collection(db, 'users'), where('displayName', '==', usernameToLookup));
-          const displaySnap = await getDocs(displayQ);
-          if (!displaySnap.empty) {
-            foundEmail = displaySnap.docs[0].data().email;
-          }
-        } catch (err) {
-          console.warn('users displayName query failed:', err.code || err.message);
-        }
-      }
-
-      // Strategy 4: Case-insensitive displayName match (covers Vyom vs vyom etc.)
-      if (!foundEmail) {
-        try {
-          const displayQLower = query(collection(db, 'users'), where('displayName', '==', usernameToLookup.toLowerCase()));
-          const displaySnapLower = await getDocs(displayQLower);
-          if (!displaySnapLower.empty) {
-            foundEmail = displaySnapLower.docs[0].data().email;
-          }
-        } catch (err) {
-          console.warn('users displayName lowercase query failed:', err.code || err.message);
-        }
       }
 
       // Sign out the anonymous session before real login
@@ -402,7 +362,6 @@ const LoginPage = () => {
               if (!existing.exists() || existing.data().uid === user.uid) {
                 await setDoc(usernameDocRef, {
                   uid: user.uid,
-                  email: user.email,
                   reserved: true,
                   createdAt: existing.exists() ? existing.data().createdAt : new Date().toISOString()
                 });

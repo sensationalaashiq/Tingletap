@@ -698,10 +698,15 @@ export default function BadgeVerificationPanel({ currentUserProfile }) {
     }
     setAssigningBadge(true);
     try {
-      // 1. Approve the verification application
-      await reviewApplication(selectedApp.uid, 'approve', '');
-      // 2. Assign the selected badge to the user
+      // 1. Approve the verification application with selected badge key
+      await reviewApplication(selectedApp.uid, 'approve', '', pickerBadgeKey);
+      // 2. Assign the selected badge to the user & public profile
       await updateDoc(doc(db, 'users', selectedApp.uid), { badge: pickerBadgeKey });
+      try {
+        await updateDoc(doc(db, 'publicProfiles', selectedApp.uid), { badge: pickerBadgeKey });
+      } catch (pubErr) {
+        console.warn('publicProfiles update failed:', pubErr);
+      }
       const badgeName = Badges[pickerBadgeKey]?.name || pickerBadgeKey;
       pt.success(`Badge "${badgeName}" awarded to ${selectedApp.displayName || selectedApp.username}!`);
       setShowBadgePicker(false);

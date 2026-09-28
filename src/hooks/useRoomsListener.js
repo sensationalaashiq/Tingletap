@@ -20,6 +20,8 @@ function startSharedListener() {
   unsubscribeFn = onSnapshot(q, (snap) => {
     sharedRooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     subscribers.forEach((cb) => cb(sharedRooms));
+  }, (err) => {
+    if (err?.code !== 'permission-denied') console.warn('useRoomsListener error:', err);
   });
 }
 

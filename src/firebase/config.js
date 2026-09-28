@@ -1,24 +1,41 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, doc, getDoc, setDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { 
+    initializeFirestore, 
+    setLogLevel, 
+    doc, 
+    getDoc, 
+    setDoc, 
+    enableNetwork, 
+    disableNetwork 
+} from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA00000000000000000000000000000000",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "tingletap-app.firebaseapp.com",
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://tingletap-app-default-rtdb.firebaseio.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "tingletap-app",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "tingletap-app.appspot.com",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:abcdef1234567890abcdef",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-DEMO000000",
 };
+
+// Suppress Firestore verbose connection logs / retry warnings
+try {
+    setLogLevel('error');
+} catch (e) {
+    // Ignore in case of environment limitation
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+});
 export const rtdb = getDatabase(app);
 
 // Add connection management for Firestore
@@ -40,15 +57,11 @@ const handleFirestoreConnectionError = async (error) => {
                     isFirestoreConnected = true;
                     console.log('Firestore connection restored');
                 } catch (enableError) {
-                    console.error('Failed to restore Firestore connection:', enableError);
-                    // Force page reload as last resort
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 3000);
+                    console.warn('Network retry pending:', enableError);
                 }
             }, 2000);
         } catch (disableError) {
-            console.error('Failed to disable Firestore network:', disableError);
+            console.warn('Failed to toggle Firestore network:', disableError);
         }
     }
 };
@@ -98,12 +111,11 @@ export const checkUsernameAvailability = async (username) => {
     }
 };
 
-export const reserveUsername = async (username, uid, email) => {
+export const reserveUsername = async (username, uid) => {
     try {
         const usernameRef = doc(db, 'usernames', username.toLowerCase());
         await setDoc(usernameRef, { 
             uid, 
-            email: email || '',
             reserved: true, 
             createdAt: new Date().toISOString() 
         });

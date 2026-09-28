@@ -3578,7 +3578,7 @@ const SettingsSidebar = ({
 
             case 'badge-apply': {
                 const isGuest = !loggedInUserProfile || loggedInUserProfile.role === 'guest' || auth.currentUser?.isAnonymous;
-                const hasVerifiedBadge = loggedInUserProfile?.badge === 'verified';
+                const hasVerifiedBadge = !!loggedInUserProfile?.badge && loggedInUserProfile.badge !== 'none';
                 if (isGuest || hasVerifiedBadge) return null;
                 return (
                     <div className="settings-tab-content">

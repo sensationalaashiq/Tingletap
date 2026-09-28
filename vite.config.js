@@ -111,7 +111,7 @@ export default defineConfig({
 
   server: {
     host: '0.0.0.0',
-    port: 5000,
+    port: 3000,
     strictPort: true,
     allowedHosts: true,
     headers: {
@@ -121,5 +121,29 @@ export default defineConfig({
     },
     // All API calls go to /.netlify/functions/* — handled by Netlify in production.
     // No dev proxy needed; use `netlify dev` locally if you need to invoke functions.
+  },
+
+  build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/firebase/')) {
+            return 'vendor-firebase';
+          }
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'vendor-motion';
+          }
+          if (id.includes('node_modules/emoji-picker-react/')) {
+            return 'vendor-emoji';
+          }
+        },
+      },
+    },
   },
 })

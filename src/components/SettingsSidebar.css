@@ -2134,10 +2134,103 @@ button[title="Remove Cover Media"] {
 button[title="Remove Cover"]:hover,
 button[title="Remove Cover Media"]:hover { box-shadow: 0 4px 12px rgba(239,68,68,.15); }
 
-/* ── COLOR SCHEME (force light) ── */
-.settings-body, .settings-tabs, .settings-sidebar,
-.setting-group, .modern-setting-group, .modern-account-card {
+/* ── COLOR SCHEME ── */
+body:not(.dark-mode) .settings-body,
+body:not(.dark-mode) .settings-tabs,
+body:not(.dark-mode) .settings-sidebar,
+body:not(.dark-mode) .setting-group,
+body:not(.dark-mode) .modern-setting-group,
+body:not(.dark-mode) .modern-account-card {
     color-scheme: light;
+}
+
+/* ── Dark Mode Support for SettingsSidebar ── */
+.dark-mode .settings-sidebar,
+html.dark-mode .settings-sidebar,
+body.dark-mode .settings-sidebar {
+    color-scheme: dark;
+    background: linear-gradient(160deg, #120e25 0%, #191436 50%, #15102f 100%) !important;
+    color: #f3e8ff !important;
+    border-right: 1px solid rgba(139, 92, 246, 0.3) !important;
+    box-shadow: 6px 0 48px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark-mode .settings-header,
+html.dark-mode .settings-header {
+    background: linear-gradient(135deg, rgba(30, 23, 64, 0.9) 0%, rgba(26, 20, 54, 0.9) 100%) !important;
+    border-bottom: 1.5px solid rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark-mode .settings-title,
+html.dark-mode .settings-title {
+    color: #f3e8ff !important;
+}
+
+.dark-mode .settings-close-btn,
+html.dark-mode .settings-close-btn {
+    background: rgba(30, 23, 64, 0.8) !important;
+    border: 1px solid rgba(139, 92, 246, 0.35) !important;
+    color: #c4b5fd !important;
+}
+
+.dark-mode .settings-tabs,
+html.dark-mode .settings-tabs {
+    background: #140f2e !important;
+    border-right: 1px solid rgba(139, 92, 246, 0.25) !important;
+}
+
+.dark-mode .settings-tab-btn,
+html.dark-mode .settings-tab-btn {
+    color: #94a3b8 !important;
+}
+
+.dark-mode .settings-tab-btn:hover,
+html.dark-mode .settings-tab-btn:hover {
+    background: rgba(139, 92, 246, 0.18) !important;
+    color: #e9d5ff !important;
+}
+
+.dark-mode .settings-tab-btn.active,
+html.dark-mode .settings-tab-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(124, 58, 237, 0.2)) !important;
+    color: #c084fc !important;
+    border-left: 3px solid #a855f7 !important;
+}
+
+.dark-mode .settings-body,
+html.dark-mode .settings-body {
+    background: #120e25 !important;
+    color: #f3e8ff !important;
+}
+
+.dark-mode .setting-group,
+.dark-mode .modern-setting-group,
+.dark-mode .modern-account-card,
+html.dark-mode .setting-group,
+html.dark-mode .modern-setting-group,
+html.dark-mode .modern-account-card {
+    background: rgba(26, 20, 54, 0.7) !important;
+    border: 1px solid rgba(139, 92, 246, 0.25) !important;
+    color: #f3e8ff !important;
+}
+
+.dark-mode .setting-group-title,
+.dark-mode .setting-label,
+html.dark-mode .setting-group-title,
+html.dark-mode .setting-label {
+    color: #e9d5ff !important;
+}
+
+.dark-mode .setting-description,
+html.dark-mode .setting-description {
+    color: #a78bfa !important;
+}
+
+.dark-mode .modern-account-info h3,
+.dark-mode .modern-account-info h4,
+html.dark-mode .modern-account-info h3,
+html.dark-mode .modern-account-info h4 {
+    color: #f3e8ff !important;
 }
 
 /* ── AVATAR BORDERS (role-based) ── */

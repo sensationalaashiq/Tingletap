@@ -232,6 +232,8 @@ const AdminBanKickModal = React.memo(({
       if (needsRoomPicker && selectedRooms.length === 0) {
         setSelectedRooms(list.map(r => r.id));
       }
+    }, (err) => {
+      if (err?.code !== 'permission-denied') console.warn('AdminBanKickModal rooms error:', err);
     });
     return () => unsub();
   }, [isVisible, needsRoomPicker, localAction]);

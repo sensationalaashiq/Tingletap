@@ -1254,7 +1254,7 @@ const WelcomeDashboard = () => {
       </div>
 
       {showBanModal && (
-        <BanKickModal isVisible onClose={() => { setShowBanModal(true); }} />
+        <BanKickModal isVisible onClose={() => { handleLogout(); }} />
       )}
     </div>
   );

@@ -123,7 +123,7 @@ const BanKickMutePanel = () => {
       } else {
         navigate('/');
       }
-    });
+    }, () => navigate('/'));
     return () => unsub();
   }, [user, navigate]);
 

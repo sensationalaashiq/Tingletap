@@ -21,8 +21,12 @@ export default function BadgeVideoRecorder({ onRecorded, onBack }) {
     requestCamera(videoRef.current);
     return () => {
       if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+        try { videoRef.current.srcObject.getTracks().forEach(t => t.stop()); } catch (_) {}
       }
+      if (stream) {
+        try { stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      }
+      reset();
     };
   }, []);
 

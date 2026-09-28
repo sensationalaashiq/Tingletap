@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
@@ -221,16 +221,18 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
     };
-    const viewerName = auth.currentUser?.displayName;
+    const viewerName = auth.currentUser?.displayName || (typeof window !== 'undefined' && window.loggedInUserProfile?.displayName);
     const mentionedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
-        // Sender sees plain text — their own font/colour style applies, no chip
-        if (isMyMessage) return `@${name}`;
-        // Tagged person (receiver) sees solid lavender chip with white text
+        // Tagged person (receiver) sees solid radiant violet-pink pill
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
-            return `<span class="tag-self-mention">@${name}</span>`;
+            return `<span class="tag-mention-pill tag-self-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
         }
-        // All other viewers also see a lavender chip (lighter shade)
-        return `<span class="tag-other-mention">@${name}</span>`;
+        // Sender sees crisp royal indigo-violet pill
+        if (isMyMessage) {
+            return `<span class="tag-mention-pill tag-sender-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
+        }
+        // All other room viewers see royal violet pill
+        return `<span class="tag-mention-pill tag-other-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
     });
     const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
         ALLOWED_TAGS: ['span', 'br', 'b', 'i', 'em', 'strong', 'u'],
@@ -273,7 +275,7 @@ function useStableCallback(fn) {
     return useCallback((...args) => fnRef.current(...args), []);
 }
 
-const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
+const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, onTag, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -523,6 +525,19 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                             View Profile
                                         </button>
 
+                                        {/* Tag / Mention — available to all authenticated users */}
+                                        <button className="sb-apd-btn" onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onTag) onTag(actualDisplayName);
+                                            else if (window.insertTag) window.insertTag(actualDisplayName);
+                                            closeAllDropdowns();
+                                        }}>
+                                            <svg viewBox="0 0 24 24" width="15" height="15" fill="#a855f7">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+                                            </svg>
+                                            Tag @{actualDisplayName}
+                                        </button>
+
                                         {/* Add Friend — hidden if either side is guest */}
                                         {!isLimited && (
                                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); onAddFriend(message); closeAllDropdowns(); }}>
@@ -589,8 +604,12 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isBot) {
-                                        // Auto-tag user when clicking on their name
-                                        if (window.setNewMessage && window.textareaRef) {
+                                        // Auto-tag user cleanly when clicking on their name
+                                        if (onTag) {
+                                            onTag(actualDisplayName);
+                                        } else if (window.insertTag) {
+                                            window.insertTag(actualDisplayName);
+                                        } else if (window.setNewMessage && window.textareaRef) {
                                             const currentMessage = window.newMessage || '';
                                             const tagToAdd = `@${actualDisplayName} `;
                                             window.setNewMessage(currentMessage + tagToAdd);
@@ -988,13 +1007,13 @@ const getGenderBorderClass = (userOrGender) => {
 // Extracted so the (potentially large) message array filter/map only
 // re-runs when messages/blocklists/handlers actually change, instead of on
 // every HomePage render (e.g. while the user is typing in the chat input).
-// ── C2: Lightweight pending / failed message bubble for optimistic UI ─────────────
+// ── C2: Lightweight optimistic message bubble for instant chat ─────────────
 // Rendered in place of ChatMessage for local-only sends not yet confirmed by Firestore.
 const PendingChatMessage = React.memo(function PendingChatMessage({ message, onRetry }) {
     const { text, displayName, photoURL, fontSize, fontColor, fontFamily,
-            isBold, isItalic, _isPending, _isFailed, _clientId } = message;
+            isBold, isItalic, _isFailed, _clientId } = message;
     return (
-        <div style={{ opacity: _isPending ? 0.6 : 1, padding: '2px 10px 4px 8px' }}>
+        <div style={{ opacity: 1, padding: '2px 10px 4px 8px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <img
                     src={photoURL || ''}
@@ -1009,25 +1028,11 @@ const PendingChatMessage = React.memo(function PendingChatMessage({ message, onR
                         <span style={{ fontSize: 11, fontWeight: 700, color: fontColor || 'inherit' }}>
                             {displayName}
                         </span>
-                        {_isPending && (
-                            <span style={{ fontSize: 9, color: '#a78bfa', opacity: 0.85 }}>⏳ Sending…</span>
-                        )}
                         {_isFailed && (
                             <span style={{ fontSize: 9, color: '#ef4444' }}>✗ Failed</span>
                         )}
                     </div>
-                    <p style={{
-                        fontSize: fontSize || 11,
-                        color: fontColor || 'inherit',
-                        fontFamily: fontFamily || 'inherit',
-                        fontWeight: isBold ? 700 : 400,
-                        fontStyle: isItalic ? 'italic' : 'normal',
-                        margin: '2px 0 0',
-                        wordBreak: 'break-word',
-                        whiteSpace: 'pre-wrap',
-                    }}>
-                        {text}
-                    </p>
+                    <ChatMessageTranslatedBody text={text} uid={message.uid} isMyMessage={true} />
                     {_isFailed && onRetry && (
                         <button
                             onClick={() => onRetry(_clientId)}
@@ -1060,6 +1065,7 @@ const MessageList = React.memo(({
     onUnkick,
     onReport,
     onWhisper,
+    onTag,
     onViewProfile,
     onAddFriend,
     onPrivateMessage,
@@ -1157,6 +1163,7 @@ const MessageList = React.memo(({
                     onUnkick={onUnkick}
                     onReport={onReport}
                     onWhisper={onWhisper}
+                    onTag={onTag}
                     onViewProfile={onViewProfile}
                     onAddFriend={onAddFriend}
                     onPrivateMessage={onPrivateMessage}
@@ -1367,6 +1374,101 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [isGiphyStickersModalOpen, setGiphyStickersModalOpen] = useState(false);
     const [minimizedConversations, setMinimizedConversations] = useState([]);
     const [sendProgress, setSendProgress] = useState(null);
+    const [showTagPicker, setShowTagPicker] = useState(false);
+    const [activeTagQuery, setActiveTagQuery] = useState(null);
+
+    const insertTag = useCallback((name) => {
+        if (!name) return;
+        const cleanName = name.replace(/^@/, '').trim();
+        const tagText = `@${cleanName} `;
+        setNewMessage(prev => {
+            const ta = textareaRef.current;
+            if (ta && ta.selectionStart != null) {
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const before = prev.slice(0, start);
+                const after = prev.slice(end);
+                const res = before + tagText + after;
+                setTimeout(() => {
+                    ta.focus();
+                    const newPos = start + tagText.length;
+                    ta.setSelectionRange(newPos, newPos);
+                }, 0);
+                return res;
+            }
+            setTimeout(() => { ta?.focus(); }, 0);
+            return prev ? `${prev.trimEnd()} ${tagText}` : tagText;
+        });
+    }, []);
+
+    const checkTagTrigger = (val, cursorPos) => {
+        if (!val || cursorPos == null) {
+            setActiveTagQuery(null);
+            return;
+        }
+        const textBeforeCursor = val.slice(0, cursorPos);
+        const atIndex = textBeforeCursor.lastIndexOf('@');
+        if (atIndex === -1) {
+            setActiveTagQuery(null);
+            return;
+        }
+        const queryText = textBeforeCursor.slice(atIndex + 1);
+        if (/[\s\n]/.test(queryText)) {
+            setActiveTagQuery(null);
+            return;
+        }
+        setActiveTagQuery({ query: queryText.toLowerCase(), atIndex, queryLength: queryText.length });
+    };
+
+    const matchingTagUsers = useMemo(() => {
+        const pool = [];
+        const seen = new Set();
+        const currentUid = loggedInUserProfile?.uid;
+
+        (liveUsers || []).forEach(u => {
+            if (u && u.uid && u.uid !== currentUid && !seen.has(u.uid)) {
+                seen.add(u.uid);
+                pool.push(u);
+            }
+        });
+
+        (friendsProfiles || []).forEach(f => {
+            if (f && f.uid && f.uid !== currentUid && !seen.has(f.uid)) {
+                seen.add(f.uid);
+                pool.push(f);
+            }
+        });
+
+        const q = activeTagQuery?.query ?? '';
+        if (!q) return pool.slice(0, 8);
+        return pool.filter(u => (u.displayName || u.username || '').toLowerCase().includes(q)).slice(0, 8);
+    }, [liveUsers, friendsProfiles, loggedInUserProfile?.uid, activeTagQuery]);
+
+    const handleSelectTagUser = (targetUser) => {
+        if (!targetUser) return;
+        const rawName = targetUser.displayName || targetUser.username || 'User';
+        const cleanName = rawName.replace(/^@/, '').trim();
+        const tagText = `@${cleanName} `;
+        const ta = textareaRef.current;
+        if (ta && activeTagQuery) {
+            const { atIndex, queryLength } = activeTagQuery;
+            const before = newMessage.slice(0, atIndex);
+            const after = newMessage.slice(atIndex + 1 + queryLength);
+            const combined = before + tagText + after;
+            setNewMessage(combined);
+            setActiveTagQuery(null);
+            setShowTagPicker(false);
+            setTimeout(() => {
+                ta.focus();
+                const newPos = atIndex + tagText.length;
+                ta.setSelectionRange(newPos, newPos);
+            }, 0);
+        } else {
+            insertTag(cleanName);
+            setActiveTagQuery(null);
+            setShowTagPicker(false);
+        }
+    };
 
     // TingleBot notification filter — use React state so Firestore background sync
     // doesn't cause a mid-render flash and disappear for registered users.
@@ -2016,7 +2118,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // redundant re-renders) for no benefit.
         if (auth.currentUser?.uid && profileUser.uid === auth.currentUser.uid) return;
 
-        const userDocRef = doc(db, 'users', profileUser.uid);
+        const userDocRef = doc(db, 'publicProfiles', profileUser.uid);
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const updatedUserData = { ...docSnap.data(), uid: profileUser.uid };
@@ -2056,6 +2158,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 });
             }
+        }, (error) => {
+            if (error?.code !== 'permission-denied') console.warn('profileUser listener error:', error);
         });
 
         return () => unsubscribe();
@@ -2366,7 +2470,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 // Set up real-time listener for this uid
-                const unsub = onSnapshot(doc(db, 'users', uid), (docSnap) => {
+                const unsub = onSnapshot(doc(db, 'publicProfiles', uid), (docSnap) => {
                     if (!docSnap.exists()) return;
                     const userData = docSnap.data();
                     window.userProfilesCache.set(uid, userData);
@@ -2388,6 +2492,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     document.querySelectorAll(`[data-user-uid="${uid}"] .dropdown-avatar, [data-profile-uid="${uid}"] .dropdown-avatar`).forEach(av => {
                         if (av.src !== newAvatarUrl) av.src = newAvatarUrl;
                     });
+                }, (error) => {
+                    // Suppress permission-denied / offline errors
                 });
                 window._profileListeners.set(uid, unsub);
 
@@ -2440,11 +2546,15 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Used to show Unkick button on message hover for already-kicked users.
     useEffect(() => {
         if (!roomId) { setRoomKickedUserIds(new Set()); return; }
+        const isStaffUser = ['owner', 'superowner', 'admin', 'moderator'].includes((loggedInUserProfile?.role || '').toLowerCase());
+        if (!isStaffUser) { setRoomKickedUserIds(new Set()); return; }
         const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
             setRoomKickedUserIds(new Set(snap.docs.map(d => d.id)));
+        }, (error) => {
+            if (error?.code !== 'permission-denied') console.warn('kickedUsers snapshot error:', error);
         });
         return () => unsub();
-    }, [roomId]);
+    }, [roomId, loggedInUserProfile?.role]);
 
     // ── Kick listener: auto-navigate user out when kicked from this room ──
     // Also auto-unkicks if the timed kick has already expired.
@@ -3872,7 +3982,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         const batches = [];
         for (let i = 0; i < registeredUids.length; i += 10) batches.push(registeredUids.slice(i, i + 10));
         const unsubs = batches.map(batch => {
-            const q = query(collection(db, 'users'), where('uid', 'in', batch));
+            const q = query(collection(db, 'publicProfiles'), where('uid', 'in', batch));
             return onSnapshot(q, snap => {
                 const updates = {};
                 snap.forEach(d => { updates[d.id] = { ...d.data(), uid: d.id }; });
@@ -3886,6 +3996,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                         kickedFrom: fs.kickedFrom || null,
                     };
                 }));
+            }, (error) => {
+                if (error?.code !== 'permission-denied') console.warn('liveUsers onSnapshot error:', error);
             });
         });
         return () => unsubs.forEach(unsub => unsub());
@@ -4342,9 +4454,17 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
             // ────────────────────────────────────────────────────────────
 
-            // C2: Inject optimistic bubble — sender sees their message instantly while
-            // Firestore confirms the write. Bubble disappears ~1200ms after addDoc
-            // resolves (the onSnapshot will have delivered the real message by then).
+            // Instant 0ms input reset — user never waits for network to type next message
+            setNewMessage('');
+            setTextareaRows(1);
+            if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+                textareaRef.current.focus();
+            }
+            setShowTagPicker(false);
+            setActiveTagQuery(null);
+
+            // C2: Inject optimistic bubble — sender sees their message instantly with 100% normal appearance
             _pendingMsgClientId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
             pendingMsgRef.current.set(_pendingMsgClientId, { messageData: { ...messageData }, roomId });
             setPendingMessages(prev => [...prev, {
@@ -4355,6 +4475,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: { toMillis: () => Date.now() },
             }]);
 
+            // Force immediate auto-scroll to show the latest message
+            scrollToBottom(true);
+
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
 
             // Remove pending bubble after snapshot has had time to arrive
@@ -4362,11 +4485,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 setPendingMessages(prev => prev.filter(m => m._clientId !== _pendingMsgClientId));
                 pendingMsgRef.current.delete(_pendingMsgClientId);
             }, 1200);
-
-            setNewMessage('');
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
 
             // ── Achievement check (fire-and-forget, registered users only) ──
             if (!isGuest && uid && loggedInUserProfile && !loggedInUserProfile.isGuest) {
@@ -4466,14 +4584,13 @@ const HomePage = ({ user, roomIdOverride }) => {
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
-        const a = videoUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
+        const a = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/i) || videoUrl.match(/([\w-]{11})/);
         const videoId = a ? a[1] : null;
         if (!videoId) {
             pt.error("Invalid YouTube URL!");
             return;
         }
 
-        startSendProgress();
         setIsYouTubeSearchModalOpen(false);
 
         try {
@@ -4558,7 +4675,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
-        const a = youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?([\w-]{11})/);
+        const a = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/i) || youtubeUrl.match(/([\w-]{11})/);
         const videoId = a ? a[1] : null;
         if (!videoId) return pt.error("Invalid YouTube URL!");
 
@@ -5999,6 +6116,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(scrollToBottom);
                     });
+                }, (error) => {
+                    setPrivateMessages([]);
                 });
                 const cancelAndUnsubConv = () => { cancelledConv = true; unsubscribe(); };
                 pmListenerRef.current = cancelAndUnsubConv;
@@ -6204,6 +6323,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     React.useEffect(() => {
         window.newMessage = newMessage;
         window.setNewMessage = setNewMessage;
+        window.insertTag = insertTag;
         window.textareaRef = textareaRef;
         window.setPmHeaderBoxOpen = setPmHeaderBoxOpen;
         window.handlePrivateMessageFromSidebar = handlePrivateMessage;
@@ -6282,6 +6402,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         return () => {
             delete window.newMessage;
             delete window.setNewMessage;
+            delete window.insertTag;
             delete window.textareaRef;
             delete window.setPmHeaderBoxOpen;
             delete window.handlePrivateMessageFromSidebar;
@@ -7101,7 +7222,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        startSendProgress();
         setGiphyStickersModalOpen(false);
 
         try {
@@ -7194,7 +7314,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        startSendProgress();
         setGiphyStickersModalOpen(false);
 
         try {
@@ -7580,6 +7699,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         onUnkick={stableHandleUnkickUser}
                         onReport={stableHandleReportUser}
                         onWhisper={stableHandleWhisperUser}
+                        onTag={insertTag}
                         onViewProfile={stableHandleViewProfile}
                         onAddFriend={stableHandleAddFriend}
                         onPrivateMessage={stableHandlePrivateMessage}
@@ -8759,6 +8879,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                             <span className="hp-attach-label">GIF</span>
                         </button>
                     )}
+
+                    {/* ── 6. Tag @User ── */}
+                    <button className="hp-attach-btn" title="Mention / Tag User" onClick={() => {
+                        setIsAttachmentDropdownOpen(false);
+                        setShowTagPicker(true);
+                        textareaRef.current?.focus();
+                    }}>
+                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#a855f7,#6366f1)'}}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="white"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">Tag</span>
+                    </button>
                 </div>
                 );
             })()}
@@ -8943,6 +9077,101 @@ const HomePage = ({ user, roomIdOverride }) => {
                     )}
                     {/* ── Multiline Composer ── */}
                     <div style={{ flex: '1 1 auto', position: 'relative', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        {/* ── Floating @Tag Autocomplete Popup ── */}
+                        {(showTagPicker || (activeTagQuery && matchingTagUsers.length > 0)) && (
+                            <div className="tag-autocomplete-popup" style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 8px)',
+                                left: 0,
+                                zIndex: 2300,
+                                background: isDarkMode ? 'rgba(19, 15, 38, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                border: isDarkMode ? '1.5px solid rgba(139, 92, 246, 0.35)' : '1.5px solid rgba(196, 181, 253, 0.6)',
+                                borderRadius: '14px',
+                                padding: '6px',
+                                boxShadow: '0 8px 32px rgba(109, 40, 217, 0.28), 0 2px 8px rgba(0,0,0,0.15)',
+                                minWidth: '220px',
+                                maxWidth: '300px',
+                                maxHeight: '220px',
+                                overflowY: 'auto'
+                            }}>
+                                <div style={{
+                                    fontSize: '10px',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    padding: '4px 8px 6px',
+                                    color: isDarkMode ? '#a78bfa' : '#7c3aed',
+                                    borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(124,58,237,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span>Tag user (@)</span>
+                                    <button
+                                        type="button"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '11px', padding: 0 }}
+                                        onClick={() => { setShowTagPicker(false); setActiveTagQuery(null); }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                                    {matchingTagUsers.length === 0 ? (
+                                        <div style={{ padding: '8px', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>No users found</div>
+                                    ) : (
+                                        matchingTagUsers.map((u) => {
+                                            const uAvatar = u.photoURL || getDefaultAvatarUrl(u.uid, u.gender || 'male');
+                                            return (
+                                                <button
+                                                    key={u.uid}
+                                                    type="button"
+                                                    className="tag-autocomplete-item"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleSelectTagUser(u);
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        padding: '6px 8px',
+                                                        borderRadius: '8px',
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        textAlign: 'left',
+                                                        width: '100%',
+                                                        transition: 'background 0.15s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(139,92,246,0.2)' : 'rgba(237,233,254,0.7)'; }}
+                                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                                >
+                                                    <img src={uAvatar} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{
+                                                            fontSize: '12px',
+                                                            fontWeight: 700,
+                                                            color: isDarkMode ? '#f3e8ff' : '#2e1065',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}>
+                                                            @{u.displayName}
+                                                        </div>
+                                                        <div style={{ fontSize: '9px', color: isDarkMode ? '#94a3b8' : '#6b7280', textTransform: 'capitalize' }}>
+                                                            {u.role || (u.isGuest ? 'Guest' : 'Member')}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         <textarea
                             ref={textareaRef}
                             className="premium-input-field premium-textarea"
@@ -8958,12 +9187,29 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 const val = e.target.value;
                                 if (val.length <= MAX_CHAT_CHARS) {
                                     setNewMessage(val);
+                                    checkTagTrigger(val, e.target.selectionStart);
                                 }
                             }}
+                            onKeyUp={(e) => {
+                                checkTagTrigger(e.target.value, e.target.selectionStart);
+                            }}
                             onKeyDown={(e) => {
-                                // Enter = new line only; send via button
+                                if (activeTagQuery && (e.key === 'Tab' || (e.key === 'Enter' && matchingTagUsers.length > 0))) {
+                                    e.preventDefault();
+                                    handleSelectTagUser(matchingTagUsers[0]);
+                                    return;
+                                }
+                                if (activeTagQuery && e.key === 'Escape') {
+                                    setActiveTagQuery(null);
+                                    setShowTagPicker(false);
+                                    return;
+                                }
+                                // Enter sends message on desktop / physical keyboard; Shift+Enter inserts newline
                                 if (e.key === 'Enter' && !e.shiftKey) {
-                                    // Default: insert newline (do nothing special)
+                                    if (!('ontouchstart' in window) || window.innerWidth > 768) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
                                 }
                             }}
                             onPaste={(e) => {

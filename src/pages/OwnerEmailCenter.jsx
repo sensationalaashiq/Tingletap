@@ -812,7 +812,7 @@ const OwnerEmailCenter = () => {
       where('folder', '==', 'inbox'),
       where('read', '==', false),
     );
-    const unsub = onSnapshot(q, snap => setUnreadCount(snap.size));
+    const unsub = onSnapshot(q, snap => setUnreadCount(snap.size), () => setUnreadCount(0));
     return unsub;
   }, [isOwner, ownerName]);
 
@@ -829,7 +829,7 @@ const OwnerEmailCenter = () => {
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
       setThreads(t => ({ ...t, [selectedEmail.id]: replies }));
-    });
+    }, () => {});
     return unsub;
   }, [selectedEmail?.threadId, selectedEmail?.id, isOwner]);
 

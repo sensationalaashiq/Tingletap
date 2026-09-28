@@ -5,10 +5,10 @@
 
     "status": {
       // FIX 10: Presence status is non-sensitive; any auth user may READ.
-      // Each user may WRITE only their own status entry.
+      // Each user may WRITE only their own status entry; staff may moderate/clear status.
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'owner' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'moderator' || root.child('staff').child(auth.uid).val() === true)"
       }
     },
 
@@ -52,7 +52,7 @@
         //   top-level metadata writes (listenerCount) since RTDB cascades this
         //   root grant down to every descendant path for that same host.
         ".read": "auth != null",
-        ".write": "auth != null && (!data.exists() || auth.uid === data.child('rjUid').val())",
+        ".write": "auth != null && (!data.exists() ? (root.child('roles').child(auth.uid).val() === 'owner' || root.child('authorizedRJs').child(auth.uid).val() === true) : auth.uid === data.child('rjUid').val())",
 
         "connections": {
           "$uid": {
