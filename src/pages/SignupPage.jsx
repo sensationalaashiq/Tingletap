@@ -267,10 +267,18 @@ const SignupPage = () => {
         ...(profilePicKey ? { photoKey: profilePicKey } : {}),
         dateOfBirth: formData.dateOfBirth
       };
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const result = await createUserProfile(userProfileData);
+      localStorage.removeItem('guestUser');
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('guestGender');
+      localStorage.removeItem('guestSessionId');
+
+      let result = await createUserProfile(userProfileData);
+      if (!result.success) {
+        await new Promise(resolve => setTimeout(resolve, 450));
+        result = await createUserProfile(userProfileData);
+      }
       if (result.success && formData.username) {
-        await reserveUsername(formData.username.toLowerCase(), user.uid);
+        await reserveUsername(formData.username.toLowerCase().trim(), user.uid);
       }
       if (!result.success) {
         try { await user.delete(); } catch (deleteError) {}
@@ -278,8 +286,6 @@ const SignupPage = () => {
       }
       pt.success('Account created successfully! Welcome to TingleTap!');
       // Send branded email verification link via Brevo (Netlify Function)
-      // Fire-and-forget — account is already created, don't block navigation on email delivery
-      // idToken is passed so the REST API fallback can work if Firebase Admin is unavailable
       user.getIdToken().then(idToken => {
         fetch('/.netlify/functions/sendVerification', {
           method:  'POST',

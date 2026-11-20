@@ -21,6 +21,9 @@ import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import { getBadgeTier, hasMinTier } from '../utils/badgeTier';
+import { renderUserBadge } from '../utils/badgeRenderHelper';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 
 // Resolves a uid's CURRENT username live so friend/blocked/team lists
@@ -129,7 +132,6 @@ const SettingsSidebar = ({
         allowPrivateMessages: true,
         allowPrivateMessagesLevel: 'all',
         allowWhisperMessages: true,
-        showTyping: true,
         showLastSeen: false,
         showInSearch: true,
         allowFriendRequests: true,
@@ -222,7 +224,6 @@ const SettingsSidebar = ({
                         allowPrivateMessages: userSettings.allowPrivateMessages !== undefined ? userSettings.allowPrivateMessages : (localStorage.getItem('allowPrivateMessages') !== 'false'),
                         allowPrivateMessagesLevel: userSettings.allowPrivateMessagesLevel || localStorage.getItem('allowPrivateMessagesLevel') || 'all',
                         allowWhisperMessages: userSettings.allowWhisperMessages !== undefined ? userSettings.allowWhisperMessages : (localStorage.getItem('allowWhisperMessages') !== 'false'),
-                        showTyping: userSettings.showTyping !== undefined ? userSettings.showTyping : (localStorage.getItem('showTyping') !== 'false'),
                         showLastSeen: userSettings.showLastSeen !== undefined ? userSettings.showLastSeen : (localStorage.getItem('showLastSeen') === 'true'),
                         showInSearch: userSettings.showInSearch !== undefined ? userSettings.showInSearch : (localStorage.getItem('showInSearch') !== 'false'),
                         allowFriendRequests: userSettings.allowFriendRequests !== undefined ? userSettings.allowFriendRequests : (localStorage.getItem('allowFriendRequests') !== 'false'),
@@ -603,7 +604,7 @@ const SettingsSidebar = ({
                 'soundEnabled', 'messageNotifications', 'whisperNotifications', 
                 'privateMessageNotifications', 'incomingCallNotifications', 'friendRequestNotifications',
                 'roomEntryNotifications', 'mentionNotifications', 'notificationVolume',
-                'showOnlineStatus', 'allowPrivateMessages', 'allowWhisperMessages', 'showTyping', 'micVolume', 
+                'showOnlineStatus', 'allowPrivateMessages', 'allowWhisperMessages', 'micVolume', 
                 'speakerVolume', 'echoCancellation', 'noiseSuppression',
                 'usernameFontSize', 'usernameFontColor', 'usernameFontFamily', 'usernameIsBold', 'usernameIsItalic',
                 'usernameIsUnderline', 'usernameTextShadow', 'usernameGradientEnabled', 'usernameGradientStart',
@@ -631,7 +632,6 @@ const SettingsSidebar = ({
                 showOnlineStatus: true,
                 allowPrivateMessages: true,
                 allowWhisperMessages: true,
-                showTyping: true,
                 micVolume: 80,
                 speakerVolume: 80,
                 echoCancellation: true,
@@ -2540,25 +2540,30 @@ const SettingsSidebar = ({
                                     <div className="modern-status-indicator"></div>
                                 </div>
                                 <div className="modern-profile-info">
-                                    <h4 className="modern-profile-name" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>{
-                                        loggedInUserProfile?.displayName ||
-                                        auth.currentUser?.displayName ||
-                                        (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').displayName || null; } catch { return null; } })() ||
-                                        (auth.currentUser?.isAnonymous ? 'Guest' : 'Anonymous')
-                                    }</h4>
+                                    <h4 className="modern-profile-name" data-user-id={auth.currentUser?.uid} data-user-uid={auth.currentUser?.uid}>
+                                        <span style={{ verticalAlign: 'middle' }}>{
+                                            loggedInUserProfile?.displayName ||
+                                            auth.currentUser?.displayName ||
+                                            (() => { try { return JSON.parse(localStorage.getItem('guestUser') || '{}').displayName || null; } catch { return null; } })() ||
+                                            (auth.currentUser?.isAnonymous ? 'Guest' : 'Anonymous')
+                                        }</span>
+                                        {renderUserBadge(loggedInUserProfile, 18)}
+                                    </h4>
                                     <p className="modern-profile-email">{
                                         auth.currentUser?.isAnonymous
                                             ? 'Guest Account (Temporary)'
                                             : (auth.currentUser?.email || '')
                                     }</p>
-                                    <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'))}>
-                                        {getRoleDisplayLabel({
-                                            role: loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'),
-                                            gender: loggedInUserProfile?.gender || getStoredGuestGender(),
-                                            isGuest: loggedInUserProfile?.isGuest || auth.currentUser?.isAnonymous || false,
-                                            badge: loggedInUserProfile?.badge
-                                        })}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                        <span className="modern-role-badge" data-role={loggedInUserProfile?.badge ? 'badge_holder' : (loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'))}>
+                                            {getRoleDisplayLabel({
+                                                role: loggedInUserProfile?.role || (auth.currentUser?.isAnonymous ? 'guest' : 'user'),
+                                                gender: loggedInUserProfile?.gender || getStoredGuestGender(),
+                                                isGuest: loggedInUserProfile?.isGuest || auth.currentUser?.isAnonymous || false,
+                                                badge: loggedInUserProfile?.badge
+                                            })}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2727,6 +2732,67 @@ const SettingsSidebar = ({
 
                                 return (
                                     <>
+                                        {/* Active Cover Preview Card if user has any cover */}
+                                        {(loggedInUserProfile?.coverVideoURL || loggedInUserProfile?.coverPhotoURL || loggedInUserProfile?.spotifyTrackURL) && (
+                                            <div style={{
+                                                marginBottom: '16px',
+                                                borderRadius: '12px',
+                                                overflow: 'hidden',
+                                                border: '1px solid rgba(139, 92, 246, 0.3)',
+                                                background: '#0d0d1a',
+                                                boxShadow: '0 4px 18px rgba(0, 0, 0, 0.4)'
+                                            }}>
+                                                <div style={{
+                                                    padding: '8px 12px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.25), transparent)',
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+                                                }}>
+                                                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#c4b5fd', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                                        Active Cover Preview
+                                                    </span>
+                                                    <span style={{ fontSize: '10px', color: '#a78bfa', background: 'rgba(124, 58, 237, 0.3)', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                                                        {loggedInUserProfile?.coverVideoURL ? 'YouTube Video' : loggedInUserProfile?.spotifyTrackURL ? 'Spotify Song' : 'Photo'}
+                                                    </span>
+                                                </div>
+
+                                                {loggedInUserProfile?.coverVideoURL && (
+                                                    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', maxHeight: '180px' }}>
+                                                        <iframe
+                                                            src={getYouTubeEmbedUrl(loggedInUserProfile.coverVideoURL) || loggedInUserProfile.coverVideoURL}
+                                                            title="Cover Video Preview"
+                                                            style={{ width: '100%', height: '100%', border: 'none' }}
+                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                            referrerPolicy="strict-origin-when-cross-origin"
+                                                            allowFullScreen
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {!loggedInUserProfile?.coverVideoURL && loggedInUserProfile?.coverPhotoURL && (
+                                                    <img
+                                                        src={loggedInUserProfile.coverPhotoURL}
+                                                        alt="Cover Photo Preview"
+                                                        style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }}
+                                                    />
+                                                )}
+
+                                                {!loggedInUserProfile?.coverVideoURL && !loggedInUserProfile?.coverPhotoURL && loggedInUserProfile?.spotifyTrackURL && (
+                                                    <iframe
+                                                        src={loggedInUserProfile.spotifyTrackURL}
+                                                        width="100%"
+                                                        height="80"
+                                                        frameBorder="0"
+                                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                                        title="Spotify Preview"
+                                                        style={{ display: 'block' }}
+                                                    />
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Cover Photo Upload */}
                                         <div className="modern-button-grid">
                                             <button 
@@ -2746,18 +2812,21 @@ const SettingsSidebar = ({
                                                                 pt.camera('Uploading cover photo...');
                                                                 const compressed = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
                                                                 const { key: coverKey, url: coverUrl } = await uploadMediaFile(compressed, 'cover');
-                                                                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                                                const photoUpdateData = {
                                                                     coverPhotoURL: coverUrl,
-                                                                    // R2 key stored so expired 7-day signed URLs can be refreshed
                                                                     ...(coverKey ? { coverPhotoKey: coverKey } : {}),
                                                                     coverVideoURL: null,
                                                                     coverVideoType: null,
                                                                     spotifyTrackURL: null,
                                                                     spotifyTrackData: null,
                                                                     updatedAt: new Date().toISOString()
-                                                                });
+                                                                };
+                                                                await updateDoc(doc(db, 'users', auth.currentUser.uid), photoUpdateData);
+                                                                syncPublicProfile(auth.currentUser.uid, photoUpdateData);
+                                                                if (typeof setLoggedInUserProfile === 'function') {
+                                                                    setLoggedInUserProfile(prev => ({ ...(prev || {}), ...photoUpdateData }));
+                                                                }
                                                                 pt.camera('Cover photo uploaded successfully!');
-                                                                setTimeout(() => { window.location.reload(); }, 1000);
                                                             } catch (error) {
                                                                 console.error('Cover photo upload error:', error);
                                                                 pt.error('Upload failed. Please try again.');
@@ -2821,53 +2890,40 @@ const SettingsSidebar = ({
                                                             return;
                                                         }
 
-                                                        // Extract YouTube video ID with improved regex
-                                                        const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-                                                        const match = youtubeUrl.match(youtubeRegex);
-
-                                                        if (!match) {
-                                                            pt.error('Invalid YouTube URL. Please enter a valid YouTube video URL.');
+                                                        const videoId = extractYouTubeVideoId(youtubeUrl);
+                                                        if (!videoId) {
+                                                            pt.error('Invalid YouTube link. Please enter a valid YouTube video link, shorts, or 11-digit Video ID.');
                                                             return;
                                                         }
 
-                                                        const videoId = match[1];
-
-                                                        // Validate video exists by checking if we can access it
-                                                        try {
-                                                            const testUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-                                                            const response = await fetch(testUrl);
-                                                            if (!response.ok) {
-                                                                pt.error('This YouTube video is not available or may be private/restricted.');
-                                                                return;
-                                                            }
-                                                        } catch (error) {
-                                                            console.warn('Could not validate video availability:', error);
-                                                            // Continue anyway as the validation might fail due to CORS
-                                                        }
-
-                                                        // Convert to embed URL with proper parameters for modal display
-                                                        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&rel=0&modestbranding=1&showinfo=0&fs=1&cc_load_policy=0&iv_load_policy=3&origin=${window.location.origin}`;
+                                                        const embedUrl = getYouTubeEmbedUrl(videoId);
 
                                                         try {
                                                             pt.youtube('Setting YouTube cover video...');
 
-                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                                            const coverUpdateData = {
                                                                 coverVideoURL: embedUrl,
                                                                 coverVideoType: 'youtube',
                                                                 coverPhotoURL: null, // Remove photo when setting video
+                                                                coverPhotoKey: null,
                                                                 spotifyTrackURL: null, // Remove Spotify when setting YouTube
                                                                 spotifyTrackData: null,
                                                                 updatedAt: new Date().toISOString()
-                                                            });
+                                                            };
+
+                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), coverUpdateData);
+                                                            syncPublicProfile(auth.currentUser.uid, coverUpdateData);
 
                                                             input.value = '';
 
                                                             pt.youtube('YouTube cover video set successfully!');
 
-                                                            // Force immediate refresh
-                                                            setTimeout(() => {
-                                                                window.location.reload();
-                                                            }, 1000);
+                                                            if (typeof setLoggedInUserProfile === 'function') {
+                                                                setLoggedInUserProfile(prev => ({
+                                                                    ...(prev || {}),
+                                                                    ...coverUpdateData
+                                                                }));
+                                                            }
 
                                                         } catch (error) {
                                                             console.error('Error setting cover video:', error);
@@ -3114,14 +3170,24 @@ const SettingsSidebar = ({
                                                         pt.delete('Removing cover media...');
 
                                                         // Delete all cover media data from Firebase
-                                                        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                                        const clearCoverData = {
                                                             coverPhotoURL: null,
+                                                            coverPhotoKey: null,
                                                             coverVideoURL: null,
                                                             coverVideoType: null,
                                                             spotifyTrackURL: null,
                                                             spotifyTrackData: null,
                                                             updatedAt: new Date().toISOString()
-                                                        });
+                                                        };
+                                                        await updateDoc(doc(db, 'users', auth.currentUser.uid), clearCoverData);
+                                                        syncPublicProfile(auth.currentUser.uid, clearCoverData);
+
+                                                        if (typeof setLoggedInUserProfile === 'function') {
+                                                            setLoggedInUserProfile(prev => ({
+                                                                ...(prev || {}),
+                                                                ...clearCoverData
+                                                            }));
+                                                        }
 
                                                         // Clear from localStorage if exists
                                                         localStorage.removeItem('coverPhotoURL');

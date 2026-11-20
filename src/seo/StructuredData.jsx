@@ -226,7 +226,7 @@ export const WebApplicationSchema = () => (
                 'Guest Access — no sign-up required to browse and chat',
                 'Anonymous Mode — join with no personal information required',
                 'Friend Request System',
-                'Real-time Typing Indicators',
+                'Instant SVG Reactions',
                 'Message Read Receipts',
                 'Multi-language Support (Hindi, English, Tamil, Telugu, Bengali, and more)',
             ],

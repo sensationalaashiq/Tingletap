@@ -215,19 +215,35 @@ const getRoomIcon = (name) => {
 };
 
 const getRoomGradient = (name) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('adult') || n.includes('18+')) {
+    return 'linear-gradient(135deg, #be123c 0%, #e11d48 45%, #7c3aed 100%)';
+  }
+  if (n.includes('indian') || n.includes('hindi') || n.includes('desi')) {
+    return 'linear-gradient(135deg, #ea580c 0%, #7c3aed 50%, #059669 100%)';
+  }
+  if (n.includes('gaming') || n.includes('game')) {
+    return 'linear-gradient(135deg, #6d28d9 0%, #2563eb 50%, #06b6d4 100%)';
+  }
+  if (n.includes('music') || n.includes('song')) {
+    return 'linear-gradient(135deg, #d97706 0%, #ec4899 50%, #6366f1 100%)';
+  }
+  if (n.includes('staff') || n.includes('admin')) {
+    return 'linear-gradient(135deg, #b45309 0%, #d97706 40%, #7c3aed 100%)';
+  }
+  if (n.includes('universal') || n.includes('world') || n.includes('global')) {
+    return 'linear-gradient(135deg, #059669 0%, #0284c7 50%, #4f46e5 100%)';
+  }
+
   const gradients = [
-    'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
-    'linear-gradient(135deg,#f093fb 0%,#f5576c 100%)',
-    'linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)',
-    'linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)',
-    'linear-gradient(135deg,#fa709a 0%,#fee140 100%)',
-    'linear-gradient(135deg,#a18cd1 0%,#fbc2eb 100%)',
-    'linear-gradient(135deg,#ff6b6b 0%,#4ecdc4 100%)',
-    'linear-gradient(135deg,#8360c3 0%,#2ebf91 100%)',
-    'linear-gradient(135deg,#ff8a80 0%,#ea6100 100%)',
-    'linear-gradient(135deg,#667db6 0%,#0082c8 100%)',
-    'linear-gradient(135deg,#11998e 0%,#38ef7d 100%)',
-    'linear-gradient(135deg,#c94b4b 0%,#4b134f 100%)',
+    'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%)',
+    'linear-gradient(135deg, #db2777 0%, #e11d48 50%, #fb923c 100%)',
+    'linear-gradient(135deg, #0284c7 0%, #06b6d4 50%, #3b82f6 100%)',
+    'linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%)',
+    'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)',
+    'linear-gradient(135deg, #ea580c 0%, #f59e0b 50%, #e11d48 100%)',
+    'linear-gradient(135deg, #4338ca 0%, #6366f1 50%, #38bdf8 100%)',
+    'linear-gradient(135deg, #be185d 0%, #8b5cf6 50%, #06b6d4 100%)',
   ];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -564,7 +580,11 @@ const RoomListPage = () => {
     <div className="rl-root">
       {/* Ambient orbs */}
       <div className="rl-bg" aria-hidden="true">
-        <div className="rl-orb rl-orb-1"/><div className="rl-orb rl-orb-2"/><div className="rl-orb rl-orb-3"/>
+        <div className="rl-orb rl-orb-1"/>
+        <div className="rl-orb rl-orb-2"/>
+        <div className="rl-orb rl-orb-3"/>
+        <div className="rl-orb rl-orb-4"/>
+        <div className="rl-orb rl-orb-5"/>
       </div>
 
       {/* ══ FLOATING ADMIN CONSOLE (Owner only) ══ */}

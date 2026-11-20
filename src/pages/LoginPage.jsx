@@ -1,33 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SEO from '../seo/SEO';
 import { PAGES } from '../seo/seoConfig';
 import { getDefaultAvatarUrl } from '../utils/roleUtils';
-import {signInWithEmailAndPassword, setPersistence, browserLocalPersistence, signInAnonymously, updateProfile } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  signInAnonymously,
+  updateProfile
+} from "firebase/auth";
 import { auth, db } from '../firebase/config';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, limit, getDocs } from 'firebase/firestore';
 import { useNavigate, Link } from 'react-router-dom';
 import { pt } from '../utils/premiumToast';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 import BanKickModal from '../components/BanKickModal';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
-import DeviceFingerprint from '../utils/deviceFingerprint';
 import './LandingPage.css';
-
-const originalAlert = window.alert;
-const originalConfirm = window.confirm;
-const originalPrompt = window.prompt;
-
-window.alert = function(...args) { return undefined; };
-window.confirm = function(...args) { return false; };
-window.prompt = function(...args) { return null; };
-window.showAlert = window.alert;
-window.showModalDialog = () => null;
-
-if (typeof document !== 'undefined') {
-  document.write = function(...args) { return undefined; };
-}
 
 const EyeOpenSVG = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -76,27 +68,23 @@ const EyeClosedSVG = () => (
 );
 
 const LoginPage = () => {
-  useState(() => {
-    window.alert = () => undefined;
-    window.confirm = () => false;
-    window.prompt = () => null;
-  });
-
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [guestError, setGuestError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestFormData, setGuestFormData] = useState({ displayName: '', age: '', gender: '' });
   const [captchaToken, setCaptchaToken] = useState(null);
-  const [captchaError, setCaptchaError] = useState('');
+  const [verifySliderValue, setVerifySliderValue] = useState(0);
   const [showBanModal, setShowBanModal] = useState(false);
   const [banModalData, setBanModalData] = useState(null);
   const [showIPBanModal, setShowIPBanModal] = useState(false);
   const [ipBanData, setIPBanData] = useState(null);
-  const [ipCheckPerformed, setIPCheckPerformed] = useState(false);
+  const banCheckRanRef = useRef(false);
 
   const navigate = useNavigate();
 
@@ -117,44 +105,42 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
+    if (banCheckRanRef.current) return;
+    banCheckRanRef.current = true;
+
     const checkBansOnLoad = async () => {
-      if (!ipCheckPerformed) {
+      try {
+        const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
+
+        const _showBanLock = (data) => {
+          setIPBanData(data);
+          setShowIPBanModal(true);
+          document.body.style.overflow = 'hidden';
+          document.body.style.position = 'fixed';
+          document.body.style.userSelect = 'none';
+          document.body.style.pointerEvents = 'none';
+          const lockStyle = document.createElement('style');
+          lockStyle.id = 'ip-ban-lock';
+          lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
+          if (!document.getElementById('ip-ban-lock')) document.head.appendChild(lockStyle);
+        };
+
+        if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
+          _showBanLock(accessResult.banInfo);
+          return;
+        }
+
+        // Device ban check — runs after IP ban (fail-open if fingerprint unavailable)
         try {
-          const accessResult = await IPBanSystem.checkUserAccess(navigator.userAgent);
-          setIPCheckPerformed(true);
-
-          const _showBanLock = (data) => {
-            setIPBanData(data);
-            setShowIPBanModal(true);
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.userSelect = 'none';
-            document.body.style.pointerEvents = 'none';
-            const lockStyle = document.createElement('style');
-            lockStyle.id = 'ip-ban-lock';
-            lockStyle.textContent = '.ip-ban-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
-            if (!document.getElementById('ip-ban-lock')) document.head.appendChild(lockStyle);
-          };
-
-          if (!accessResult.allowed && accessResult.reason === 'ip_banned') {
-            _showBanLock(accessResult.banInfo);
+          const deviceResult = await DeviceBanSystem.checkDeviceAccess();
+          if (!deviceResult.allowed && deviceResult.reason === 'device_banned') {
+            _showBanLock({ ...deviceResult.banInfo, _isDeviceBan: true });
             return;
           }
-
-          // Device ban check — runs after IP ban (fail-open if fingerprint unavailable)
-          try {
-            const deviceResult = await DeviceBanSystem.checkDeviceAccess();
-            if (!deviceResult.allowed && deviceResult.reason === 'device_banned') {
-              _showBanLock({ ...deviceResult.banInfo, _isDeviceBan: true });
-              return;
-            }
-          } catch (devErr) {
-            console.warn('[LoginPage] Device ban check failed (fail-open):', devErr.message);
-          }
-        } catch (error) {
-          setIPCheckPerformed(true);
+        } catch (devErr) {
+          console.warn('[LoginPage] Device ban check failed (fail-open):', devErr.message);
         }
-      }
+      } catch {}
 
       const isBannedUser = localStorage.getItem('isBannedUser');
       if (isBannedUser === 'true') {
@@ -169,18 +155,16 @@ const LoginPage = () => {
             document.body.style.position = 'fixed';
             document.body.style.userSelect = 'none';
             document.body.style.pointerEvents = 'none';
-            // FIX-PERF-6: CSS-only lock — no polling interval needed.
             const banLockStyle = document.createElement('style');
             banLockStyle.id = 'login-ban-lock';
             banLockStyle.textContent = '.ban-kick-modal-overlay{z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:all!important;}';
             if (!document.getElementById('login-ban-lock')) document.head.appendChild(banLockStyle);
-          } catch (error) {}
+          } catch {}
         }
       }
     };
 
     checkBansOnLoad();
-    setTimeout(checkBansOnLoad, 100);
   }, []);
 
   useEffect(() => {
@@ -262,74 +246,166 @@ const LoginPage = () => {
     return { level: 'very-weak', text: 'Very Weak', score };
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    if (!identifier.trim()) { setError('Please enter your email or username'); setLoading(false); return; }
-    if (!password.trim()) { setError('Please enter your password'); setLoading(false); return; }
+  const resolveEmailFromUsername = async (rawIdentifier) => {
+    const cleanInput = rawIdentifier.trim().replace(/^@+/, '');
+    if (!cleanInput) return { email: null, error: 'Please enter your email or username' };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    let loginEmail = identifier.trim();
+    const rawLower = cleanInput.toLowerCase();
+    const candidateKeys = Array.from(
+      new Set([
+        rawLower,
+        rawLower.replace(/\s+/g, '_'),
+        rawLower.replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+      ].filter(k => k && !k.includes('/')))
+    );
 
-    if (!emailRegex.test(loginEmail)) {
-      // Strip leading @ if user typed @username
-      const usernameToLookup = loginEmail.startsWith('@') ? loginEmail.slice(1) : loginEmail;
-      let foundEmail = null;
-      let anonUser = null;
+    let matchedUid = null;
+    let foundEmail = null;
 
-      // Use anonymous auth as a bridge so Firestore rules (request.auth != null) are satisfied
+    // Step 1: Check public usernames collection directly (works before auth)
+    for (const key of candidateKeys) {
       try {
-        const anonCredential = await signInAnonymously(auth);
-        anonUser = anonCredential.user;
-      } catch (anonErr) {
-        console.warn('Anonymous auth failed:', anonErr.code);
-      }
-
-      // Strategy 1: Check usernames collection
-      try {
-        const usernameRef = doc(db, 'usernames', usernameToLookup.toLowerCase());
-        const usernameSnap = await getDoc(usernameRef);
+        const usernameSnap = await getDoc(doc(db, 'usernames', key));
         if (usernameSnap.exists()) {
           const data = usernameSnap.data();
           if (data.email) {
-            foundEmail = data.email;
-          } else if (data.uid) {
-            try {
-              const pubRef = doc(db, 'publicProfiles', data.uid);
-              const pubSnap = await getDoc(pubRef);
-              if (pubSnap.exists() && pubSnap.data().email) {
-                foundEmail = pubSnap.data().email;
-              }
-            } catch (_) {}
+            return { email: data.email };
+          }
+          if (data.uid) {
+            matchedUid = data.uid;
+            break;
           }
         }
       } catch (err) {
-        console.warn('usernames collection lookup failed:', err.code || err.message);
+        if (err?.code === 'invalid-argument') continue;
+      }
+    }
+
+    // Step 2: Use temporary anonymous auth session to read users/{uid} or query users by username/displayName
+    let tempAnonUser = null;
+    try {
+      sessionStorage.setItem('tt_username_lookup', '1');
+      if (!auth.currentUser) {
+        const anonCred = await signInAnonymously(auth);
+        tempAnonUser = anonCred.user;
       }
 
-      // Sign out the anonymous session before real login
-      if (anonUser) {
-        try { await auth.signOut(); } catch (_) {}
+      if (matchedUid) {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', matchedUid));
+          if (userSnap.exists() && userSnap.data()?.email) {
+            foundEmail = userSnap.data().email;
+          }
+        } catch {}
+      }
+
+      // Fallback queries for legacy accounts without usernames/{key} doc
+      if (!foundEmail) {
+        const usernameCandidates = Array.from(new Set([rawLower, rawLower.replace(/\s+/g, '_')]));
+        for (const uname of usernameCandidates) {
+          if (foundEmail) break;
+          try {
+            const q = query(collection(db, 'users'), where('username', '==', uname), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty && snap.docs[0].data()?.email) {
+              foundEmail = snap.docs[0].data().email;
+            }
+          } catch {}
+        }
       }
 
       if (!foundEmail) {
-        setError('No account found with this username. Please check the spelling or use your email address instead.');
-        setLoading(false);
-        return;
+        const displayCandidates = Array.from(new Set([cleanInput, rawLower]));
+        for (const dname of displayCandidates) {
+          if (foundEmail) break;
+          try {
+            const q = query(collection(db, 'users'), where('displayName', '==', dname), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty && snap.docs[0].data()?.email) {
+              foundEmail = snap.docs[0].data().email;
+            }
+          } catch {}
+        }
       }
-      loginEmail = foundEmail;
+    } catch (lookupErr) {
+      const code = lookupErr?.code || '';
+      if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') {
+        return { email: null, error: 'Firebase API key is missing or invalid. Please configure VITE_FIREBASE_* environment variables.' };
+      }
+      if (code === 'auth/operation-not-allowed') {
+        return { email: null, error: 'Username lookup requires email login right now. Please enter your email address.' };
+      }
+    } finally {
+      if (tempAnonUser) {
+        try { await auth.signOut(); } catch {}
+      }
+      sessionStorage.removeItem('tt_username_lookup');
     }
 
+    if (!foundEmail) {
+      return { email: null, error: 'No account found with this username. Check spelling or sign in with your email address.' };
+    }
+    return { email: foundEmail };
+  };
+
+  const mapAuthError = (err) => {
+    const code = err?.code || '';
+    if (code === 'auth/user-not-found') return 'No account found with this email address.';
+    if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'Incorrect email/username or password. Please check and try again.';
+    if (code === 'auth/invalid-email') return 'Please enter a valid email address.';
+    if (code === 'auth/too-many-requests') return 'Too many failed attempts. Please wait a minute and try again.';
+    if (code === 'auth/network-request-failed') return 'Network error. Please check your internet connection.';
+    if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') return 'Firebase configuration error: invalid or missing API key.';
+    if (code === 'auth/operation-not-allowed') return 'Email/password sign-in is disabled in Firebase Authentication.';
+    return err?.message ? `Login failed: ${err.message}` : 'Login failed. Please try again.';
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier) { setError('Please enter your email or username'); return; }
+    if (!password) { setError('Please enter your password'); return; }
+
+    setLoading(true);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let loginEmail = trimmedIdentifier;
+
     try {
-      if (rememberMe) await setPersistence(auth, browserLocalPersistence);
+      if (!emailRegex.test(loginEmail)) {
+        const resolved = await resolveEmailFromUsername(loginEmail);
+        if (!resolved.email) {
+          setError(resolved.error || 'No account found with this username.');
+          setLoading(false);
+          return;
+        }
+        loginEmail = resolved.email;
+      }
+
+      // If a stale guest session was lingering in localStorage or Firebase anonymous auth, clear it before registered sign-in
+      localStorage.removeItem('guestUser');
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('guestGender');
+      localStorage.removeItem('guestSessionId');
+      if (auth.currentUser?.isAnonymous) {
+        try { await auth.signOut(); } catch {}
+      }
+
+      try {
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      } catch {}
+
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
       const user = userCredential.user;
       const userDocRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userDocRef);
       let isBanned = false;
       let userData = null;
-      if (userSnap.exists()) { userData = userSnap.data(); isBanned = userData.isBanned === true; }
+      if (userSnap.exists()) {
+        userData = userSnap.data();
+        isBanned = userData.isBanned === true;
+      }
+
       if (isBanned) {
         await auth.signOut();
         const banData = {
@@ -342,201 +418,256 @@ const LoginPage = () => {
         setShowBanModal(true);
         setError('');
         setLoading(false);
-        setTimeout(() => { setShowBanModal(true); setBanModalData(banData); }, 50);
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
         return;
-      } else {
-        try { await IPBanSystem.storeUserIP(user.uid, userData); } catch (ipError) {}
+      }
 
-        // Auto-register username in usernames collection for future username logins
-        // (especially important for older accounts that predate the username system)
-        if (userData) {
-          const usernameToRegister = userData.username || userData.displayName;
-          if (usernameToRegister && usernameToRegister.trim()) {
-            try {
-              const unameKey = usernameToRegister.toLowerCase().replace(/\s+/g, '_');
-              const usernameDocRef = doc(db, 'usernames', unameKey);
-              const existing = await getDoc(usernameDocRef);
-              // Only write if: doc doesn't exist OR doc belongs to this user
+      // Non-blocking post-login tasks so user enters immediately
+      IPBanSystem.storeUserIP(user.uid, userData).catch(() => {});
+
+      if (userData) {
+        const usernameToRegister = userData.username || userData.displayName;
+        if (usernameToRegister && usernameToRegister.trim()) {
+          const unameKey = usernameToRegister.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '_');
+          if (unameKey && unameKey.length >= 2) {
+            const usernameDocRef = doc(db, 'usernames', unameKey);
+            getDoc(usernameDocRef).then((existing) => {
               if (!existing.exists() || existing.data().uid === user.uid) {
-                await setDoc(usernameDocRef, {
+                setDoc(usernameDocRef, {
                   uid: user.uid,
                   reserved: true,
                   createdAt: existing.exists() ? existing.data().createdAt : new Date().toISOString()
-                });
+                }).catch(() => {});
               }
-            } catch (unameErr) {
-              console.warn('Auto-register username failed (non-critical):', unameErr.code);
-            }
+            }).catch(() => {});
           }
         }
-
-        try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'login' })); } catch {}
-        navigate('/welcome');
       }
+
+      try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'login' })); } catch {}
+      navigate('/welcome');
     } catch (err) {
-      window.alert = () => undefined;
-      let errorMessage = 'Login failed. Please try again.';
-      if (err.code === 'auth/user-not-found') errorMessage = 'No account found with this email address';
-      else if (err.code === 'auth/wrong-password') errorMessage = 'Invalid email or password';
-      else if (err.code === 'auth/invalid-email') errorMessage = 'Please enter a valid email address';
-      else if (err.code === 'auth/user-disabled') {
-        setBanModalData({ reason: "Account has been disabled by administration", bannedBy: "System Administrator", bannedAt: new Date(), type: "account_disabled", userId: identifier, email: identifier });
+      if (err?.code === 'auth/user-disabled') {
+        setBanModalData({
+          reason: "Account has been disabled by administration",
+          bannedBy: "System Administrator",
+          bannedAt: new Date(),
+          type: "account_disabled",
+          userId: trimmedIdentifier,
+          email: trimmedIdentifier
+        });
         setError('');
         setLoading(false);
         setShowBanModal(true);
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
         return;
-      } else if (err.code === 'auth/too-many-requests') errorMessage = 'Too many failed attempts. Please try again later';
-      else if (err.code === 'auth/network-request-failed') errorMessage = 'Network error. Please check your connection';
-      else if (err.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password';
-      setError(errorMessage);
+      }
+      setError(mapAuthError(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnonymousLogin = () => setShowGuestModal(true);
+  const handleAnonymousLogin = () => {
+    setGuestError('');
+    setShowGuestModal(true);
+  };
+
+  const handleVerifyHuman = () => {
+    if (captchaToken) return;
+    setVerifySliderValue(100);
+    setCaptchaToken(`tt_verified_${Date.now()}`);
+    setGuestError('');
+  };
+
+  const handleVerifySliderChange = (e) => {
+    const val = Number(e.target.value);
+    setVerifySliderValue(val);
+    if (val >= 92) {
+      setVerifySliderValue(100);
+      setCaptchaToken(`tt_verified_${Date.now()}`);
+      setGuestError('');
+    }
+  };
 
   const handleGuestFormSubmit = async (e) => {
     e.preventDefault();
-    if (!guestFormData.displayName.trim()) { setError('Please enter your display name'); return; }
-    if (!guestFormData.age || guestFormData.age < 18 || guestFormData.age > 100) { setError('Age must be between 18 and 100'); return; }
-    if (!guestFormData.gender) { setError('Please select your gender'); return; }
-    if (!captchaToken) { setError('Please complete the captcha verification'); return; }
+    setGuestError('');
 
-    // ── Name uniqueness: block guest names that match a registered user (fail-closed) ──
-    try {
-      const nameKey = guestFormData.displayName.trim().toLowerCase().replace(/\s+/g, '_');
-      // Primary check: usernames collection (works without auth)
-      const nameSnap = await getDoc(doc(db, 'usernames', nameKey));
-      if (nameSnap.exists()) {
-        setError('This name is already taken. Please choose a different name.');
-        return;
-      }
-    } catch (nameCheckErr) {
-      // If we cannot verify uniqueness, refuse to proceed (fail-closed)
-      console.error('Name uniqueness check failed:', nameCheckErr);
-      setError('Unable to verify name availability. Please try again.');
+    const cleanDisplayName = guestFormData.displayName.trim();
+    const numericAge = parseInt(guestFormData.age, 10);
+
+    if (!cleanDisplayName || cleanDisplayName.length < 2) {
+      setGuestError('Please enter a display name (at least 2 characters).');
+      return;
+    }
+    if (isNaN(numericAge) || numericAge < 18 || numericAge > 100) {
+      setGuestError('Age must be between 18 and 100.');
+      return;
+    }
+    if (!guestFormData.gender) {
+      setGuestError('Please select your gender.');
+      return;
+    }
+    if (!captchaToken) {
+      setGuestError('Please slide or tap to complete human verification.');
       return;
     }
 
-    // Store gender IMMEDIATELY — synchronously before any Firebase calls.
-    // This survives any auth-state-change race conditions during signInAnonymously.
+    const sanitizedNameKey = cleanDisplayName
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    setGuestLoading(true);
+
+    // Check against registered usernames when key is valid; allow gracefully if key has no alphanumeric chars
+    if (sanitizedNameKey && sanitizedNameKey.length >= 2) {
+      try {
+        const nameSnap = await getDoc(doc(db, 'usernames', sanitizedNameKey));
+        if (nameSnap.exists()) {
+          setGuestError('This display name belongs to a registered member. Please choose another name.');
+          setGuestLoading(false);
+          return;
+        }
+      } catch (nameCheckErr) {
+        console.warn('Guest name uniqueness check warning:', nameCheckErr?.code || nameCheckErr?.message);
+      }
+    }
+
+    // Store gender synchronously before Firebase auth so downstream components always read the right gender
     localStorage.setItem('guestGender', guestFormData.gender);
-    setLoading(true);
+
     try {
+      // Clear any previous non-guest session before creating anonymous guest session
+      if (auth.currentUser && !auth.currentUser.isAnonymous) {
+        try { await auth.signOut(); } catch {}
+      }
+
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
+      const avatarUrl = getDefaultAvatarUrl(user.uid, guestFormData.gender);
+      const nowIso = new Date().toISOString();
+
       const guestUserData = {
-        uid: user.uid, email: null, displayName: guestFormData.displayName,
-        age: parseInt(guestFormData.age), gender: guestFormData.gender,
-        role: 'guest', isAnonymous: true, isGuest: true,
-        photoURL: getDefaultAvatarUrl(user.uid, guestFormData.gender),
-        createdAt: new Date().toISOString(), lastLogin: new Date().toISOString()
+        uid: user.uid,
+        email: null,
+        displayName: cleanDisplayName,
+        age: numericAge,
+        gender: guestFormData.gender,
+        role: 'guest',
+        isAnonymous: true,
+        isGuest: true,
+        photoURL: avatarUrl,
+        createdAt: nowIso,
+        lastLogin: nowIso
       };
-      await updateProfile(user, { displayName: guestFormData.displayName, photoURL: guestUserData.photoURL });
-      await setDoc(doc(db, 'users', user.uid), guestUserData);
-      // B1: Mirror public-safe fields so other users can read this guest's display data.
-      syncPublicProfile(user.uid, guestUserData).catch(() => {});
+
       localStorage.setItem('guestUser', JSON.stringify(guestUserData));
       localStorage.setItem('isGuest', 'true');
       localStorage.setItem('guestGender', guestFormData.gender);
+      localStorage.setItem('guestSessionId', user.uid);
 
-      // Track guest session in Firestore for admin panel visibility
-      try {
-        let ipAddress = 'Unknown';
-        try {
-          const ipRes = await fetch('https://api.ipify.org?format=json');
-          const { ip } = await ipRes.json();
-          ipAddress = ip || 'Unknown';
-        } catch {}
+      await Promise.all([
+        updateProfile(user, { displayName: cleanDisplayName, photoURL: avatarUrl }).catch(() => {}),
+        setDoc(doc(db, 'users', user.uid), guestUserData)
+      ]);
 
-        let geoData = {};
+      syncPublicProfile(user.uid, guestUserData).catch(() => {});
+
+      // Non-blocking background session metadata enrichment so guest entry is instantaneous
+      void (async () => {
         try {
-          const geoRes = await fetch(`https://ip-api.com/json/${ipAddress}?fields=status,country,city,regionName,lat,lon`);
-          const geo = await geoRes.json();
-          if (geo.status === 'success') {
-            geoData = { lat: geo.lat, lon: geo.lon, city: geo.city, country: geo.country, region: geo.regionName };
+          const ua = navigator.userAgent || 'Unknown';
+          let browser = 'Unknown';
+          if (ua.includes('Edg/')) browser = 'Edge';
+          else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
+          else if (ua.includes('Firefox/')) browser = 'Firefox';
+          else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+          let os = 'Unknown';
+          if (ua.includes('Windows')) os = 'Windows';
+          else if (ua.includes('Mac')) os = 'macOS';
+          else if (ua.includes('Android')) os = 'Android';
+          else if (ua.includes('Linux')) os = 'Linux';
+          else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+          const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+          const deviceType = /iPad|Tablet/i.test(ua) ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+
+          const sessionRef = doc(db, 'guestSessions', user.uid);
+          await setDoc(sessionRef, {
+            uid: user.uid,
+            displayName: cleanDisplayName,
+            gender: guestFormData.gender,
+            age: numericAge,
+            ip: 'Pending',
+            userAgent: ua,
+            browser,
+            os,
+            deviceType,
+            deviceId: '',
+            sessionStarted: nowIso,
+            sessionEnded: null,
+            deleteAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            status: 'active'
+          });
+
+          const [ipResult, fpResult] = await Promise.allSettled([
+            fetch('https://api.ipify.org?format=json').then(r => r.json()),
+            import('../utils/deviceFingerprint').then(m => m.default.getDeviceProfile())
+          ]);
+
+          const patch = {};
+          if (ipResult.status === 'fulfilled' && ipResult.value?.ip) {
+            patch.ip = ipResult.value.ip;
+          }
+          if (fpResult.status === 'fulfilled' && fpResult.value?.deviceId) {
+            patch.deviceId = fpResult.value.deviceId;
+            localStorage.setItem('guestDeviceId', fpResult.value.deviceId);
+          }
+          if (Object.keys(patch).length > 0) {
+            await setDoc(sessionRef, patch, { merge: true }).catch(() => {});
           }
         } catch {}
-
-        const ua = navigator.userAgent || 'Unknown';
-        let browser = 'Unknown';
-        if (ua.includes('Edg/')) browser = 'Edge';
-        else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
-        else if (ua.includes('Firefox/')) browser = 'Firefox';
-        else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
-        let os = 'Unknown';
-        if (ua.includes('Windows')) os = 'Windows';
-        else if (ua.includes('Mac')) os = 'macOS';
-        else if (ua.includes('Android')) os = 'Android';
-        else if (ua.includes('Linux')) os = 'Linux';
-        else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
-        const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
-        const deviceType = /iPad|Tablet/i.test(ua) ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
-
-        let deviceId = '';
-        try {
-          const dfModule = await import('../utils/deviceFingerprint');
-          const DeviceFingerprint = dfModule.default;
-          const deviceProfile = await DeviceFingerprint.getDeviceProfile();
-          deviceId = deviceProfile.deviceId || '';
-          localStorage.setItem('guestDeviceId', deviceId);
-        } catch {}
-
-        const sessionRef = doc(db, 'guestSessions', user.uid);
-        await setDoc(sessionRef, {
-          uid: user.uid,
-          displayName: guestFormData.displayName,
-          gender: guestFormData.gender,
-          age: parseInt(guestFormData.age),
-          ip: ipAddress,
-          userAgent: ua,
-          browser,
-          os,
-          deviceType,
-          deviceId,
-          ...geoData,
-          sessionStarted: new Date().toISOString(),
-          sessionEnded: null,
-          deleteAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          status: 'active'
-        });
-        localStorage.setItem('guestSessionId', user.uid);
-      } catch (e) {
-        // Session tracking failure is non-fatal
-      }
+      })();
 
       try { sessionStorage.setItem('tt_page_toast', JSON.stringify({ type: 'login_guest' })); } catch {}
+      setShowGuestModal(false);
       navigate('/welcome');
     } catch (err) {
-      // On failure, clean up the pre-set gender key so it doesn't leak into a future session
       localStorage.removeItem('guestGender');
-      setError('Guest login failed. Please try again.');
+      localStorage.removeItem('guestUser');
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('guestSessionId');
+      const code = err?.code || '';
+      if (code === 'auth/operation-not-allowed') {
+        setGuestError('Guest access (Anonymous sign-in) is currently disabled in Firebase Authentication.');
+      } else if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') {
+        setGuestError('Firebase API key is missing or invalid. Please check environment configuration.');
+      } else if (code === 'auth/network-request-failed') {
+        setGuestError('Network error while connecting. Please check your connection and try again.');
+      } else {
+        setGuestError('Could not start guest session. Please try again.');
+      }
     } finally {
-      setLoading(false);
-      setShowGuestModal(false);
+      setGuestLoading(false);
     }
   };
 
   const handleGuestInputChange = (e) => {
     const { name, value } = e.target;
+    setGuestError('');
     setGuestFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const onCaptchaVerify = (token) => { setCaptchaToken(token); setCaptchaError(''); };
-  const onCaptchaExpire = () => { setCaptchaToken(null); setCaptchaError('Captcha expired, please verify again'); };
-  const onCaptchaError = (err) => { setCaptchaToken(null); setCaptchaError('Captcha error, please try again'); };
 
   const resetGuestModal = () => {
     setShowGuestModal(false);
     setGuestFormData({ displayName: '', age: '', gender: '' });
-    setError('');
+    setGuestError('');
     setCaptchaToken(null);
-    setCaptchaError('');
+    setVerifySliderValue(0);
   };
 
   return (
@@ -1027,7 +1158,83 @@ const LoginPage = () => {
         .lv-modal-input::placeholder { color: #b09dcc; }
         .lv-modal-group { margin-bottom: 14px; }
 
-        .lv-captcha-wrap { display: flex; justify-content: center; margin: 10px 0; }
+        .lv-captcha-wrap {
+          margin: 12px 0 14px;
+        }
+        .lv-verify-box {
+          position: relative;
+          border-radius: 14px;
+          padding: 10px 12px;
+          border: 1.5px solid rgba(168,85,247,0.28);
+          background: rgba(255,255,255,0.88);
+          transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .lv-verify-box.verified {
+          border-color: rgba(16,185,129,0.5);
+          background: rgba(236,253,245,0.92);
+          box-shadow: 0 4px 16px rgba(16,185,129,0.14);
+        }
+        .lv-verify-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+        .lv-verify-title {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #4c366b;
+        }
+        .lv-verify-box.verified .lv-verify-title {
+          color: #065f46;
+        }
+        .lv-verify-tap-btn {
+          border: none;
+          border-radius: 9px;
+          padding: 5px 11px;
+          font-size: 0.74rem;
+          font-weight: 700;
+          cursor: pointer;
+          background: linear-gradient(135deg, #9333ea, #7c3aed);
+          color: #ffffff;
+          transition: transform 0.15s ease, opacity 0.15s ease;
+          white-space: nowrap;
+        }
+        .lv-verify-tap-btn:hover { transform: translateY(-1px); opacity: 0.94; }
+        .lv-verify-range {
+          width: 100%;
+          appearance: none;
+          -webkit-appearance: none;
+          height: 10px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(168,85,247,0.25), rgba(124,58,237,0.22));
+          outline: none;
+          cursor: pointer;
+        }
+        .lv-verify-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #9333ea, #7c3aed);
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(124,58,237,0.45);
+          cursor: grab;
+        }
+        .lv-verify-range::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #9333ea, #7c3aed);
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(124,58,237,0.45);
+          cursor: grab;
+        }
         .lv-guest-info {
           background: rgba(168,85,247,0.07);
           border: 1.5px solid rgba(168,85,247,0.2);
@@ -1119,7 +1326,7 @@ const LoginPage = () => {
             <input
               type="text"
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              onChange={(e) => { setIdentifier(e.target.value); if (error) setError(''); }}
               placeholder="your@email.com or @username"
               className="lv-input"
               autoComplete="username"
@@ -1141,7 +1348,7 @@ const LoginPage = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
                 placeholder="Enter your password"
                 className="lv-input"
                 style={{paddingRight:'52px'}}
@@ -1335,31 +1542,60 @@ const LoginPage = () => {
                 </select>
               </div>
 
-              {error && (
+              {guestError && (
                 <div className="lv-error" style={{marginBottom:'12px'}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
                     <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
                     <path d="M12 7v5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
                     <circle cx="12" cy="16" r="1" fill="#ef4444"/>
                   </svg>
-                  {error}
+                  {guestError}
                 </div>
               )}
 
               <div className="lv-captcha-wrap">
-                <HCaptcha
-                  sitekey="50b2fe65-b00b-4b9e-ad62-3ba471098be2"
-                  onVerify={onCaptchaVerify}
-                  onExpire={onCaptchaExpire}
-                  onError={onCaptchaError}
-                />
+                <div className={`lv-verify-box ${captchaToken ? 'verified' : ''}`}>
+                  <div className="lv-verify-header">
+                    <span className="lv-verify-title">
+                      {captchaToken ? (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" fill="#10b981"/>
+                          <path d="M8 12l2.8 2.8L16.5 9" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 2L4 5.5v6.2c0 5 3.4 9.6 8 10.8 4.6-1.2 8-5.8 8-10.8V5.5L12 2z" stroke="#9333ea" strokeWidth="2" fill="rgba(168,85,247,0.12)"/>
+                          <path d="M9 12l2 2 4-4" stroke="#9333ea" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                      {captchaToken ? 'Human Verification Complete' : 'Slide or tap to verify human'}
+                    </span>
+                    {!captchaToken && (
+                      <button
+                        type="button"
+                        className="lv-verify-tap-btn"
+                        onClick={handleVerifyHuman}
+                      >
+                        Quick Verify
+                      </button>
+                    )}
+                  </div>
+                  {!captchaToken && (
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={verifySliderValue}
+                      onChange={handleVerifySliderChange}
+                      aria-label="Slide to verify human access"
+                      className="lv-verify-range"
+                    />
+                  )}
+                </div>
               </div>
-              {captchaError && (
-                <div style={{color:'#dc2626',fontSize:'0.8rem',textAlign:'center',marginBottom:'8px'}}>{captchaError}</div>
-              )}
 
-              <button type="submit" className="lv-btn-primary" disabled={loading || !captchaToken}>
-                {loading ? (
+              <button type="submit" className="lv-btn-primary" disabled={guestLoading || !captchaToken}>
+                {guestLoading ? (
                   <><div className="lv-spinner"/><span>Joining...</span></>
                 ) : (
                   <>

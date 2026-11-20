@@ -57,6 +57,9 @@ import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName, useLivePhotoURL } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
+import { PremiumReactionBar, PremiumReactionPicker } from '../components/chat/PremiumReactions';
+import { renderUserBadge } from '../utils/badgeRenderHelper';
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -275,7 +278,7 @@ function useStableCallback(fn) {
     return useCallback((...args) => fnRef.current(...args), []);
 }
 
-const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, onTag, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId }) => {
+const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, onTag, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId, allUsersMap }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -295,27 +298,29 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
 
     const reactions = message.reactions || {};
 
-    const handleReact = async (emoji) => {
+    const handleReact = async (reactionKey) => {
         setShowReactionPicker(false);
         const user = auth.currentUser;
-        if (!user || user.isAnonymous || !roomId) return;
+        if (!user || !roomId) return;
         const msgRef = doc(db, 'rooms', roomId, 'messages', id);
-        const alreadyReacted = Array.isArray(reactions[emoji]) && reactions[emoji].includes(user.uid);
+        const alreadyReacted = Array.isArray(reactions[reactionKey]) && reactions[reactionKey].includes(user.uid);
         try {
             await updateDoc(msgRef, {
-                [`reactions.${emoji}`]: alreadyReacted ? arrayRemove(user.uid) : arrayUnion(user.uid)
+                [`reactions.${reactionKey}`]: alreadyReacted ? arrayRemove(user.uid) : arrayUnion(user.uid)
             });
-        } catch {}
+        } catch (err) {
+            console.warn('Reaction update error:', err);
+        }
     };
 
     const openPicker = () => {
         const user = auth.currentUser;
-        if (!user || user.isAnonymous) return;
+        if (!user) return;
         const anchor = reactBtnRef.current || msgBodyRef.current;
         const rect = anchor?.getBoundingClientRect();
         if (!rect) return;
-        const pickerW = 260;
-        const pickerH = 220;
+        const pickerW = 310;
+        const pickerH = 260;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         // Place above anchor by default; flip below if not enough room
@@ -627,7 +632,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     actualDisplayName
                                 )}
                             </span>
-                            {badge && badges[badge] && (<span className={`inline-badge badge-${badge}`} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(badges[badge].svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }} title={badges[badge].name} />)}
+                            {renderUserBadge(message, 16)}
                             
                             {showUserDropdown && !isBot && isMyMessage && (
                                 <div className="user-dropdown">
@@ -702,49 +707,25 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         <div className="msg-ts-row">
                             {!isBot && (
                                 <div className="message-actions">
-                                                    {/* Reaction trigger — tier-gated */}
-                                    {showReactBtn && currentUser && !currentUser.isAnonymous && (() => {
-                                        const _rxnBadge  = loggedInUserProfile?.badge;
-                                        const _rxnRole   = loggedInUserProfile?.role;
-                                        const _rxnGuest  = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
-                                        const _rxnTier   = getBadgeTier(_rxnBadge, _rxnRole, _rxnGuest);
-                                        // hidden for guest & member
-                                        if (_rxnTier === 'guest' || _rxnTier === 'member') return null;
-                                        // locked (show lock icon) for tier1
-                                        if (_rxnTier === 'tier1') {
-                                            return (
-                                                <button
-                                                    className="message-action-btn rxn-trigger-btn"
-                                                    style={{ opacity: 0.55, cursor: 'not-allowed', position: 'relative' }}
-                                                    onClick={(e) => { e.stopPropagation(); pt.info('Upgrade to Platinum Lord or higher to react!', { position: 'top-center', autoClose: 3000 }); }}
-                                                    title="Upgrade Badge to React"
-                                                >
-                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                                                    </svg>
-                                                </button>
-                                            );
-                                        }
-                                        // tier2+ — fully functional
-                                        return (
-                                            <button
-                                                ref={reactBtnRef}
-                                                className={`message-action-btn rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
-                                                onClick={(e) => { e.stopPropagation(); openPicker(); }}
-                                                onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
-                                                onMouseLeave={handleRowLeave}
-                                                title="Add Reaction"
-                                            >
-                                                <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
-                                                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7"/>
-                                                    <path d="M7 11.5s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                                                    <circle cx="7.5" cy="8.5" r="1" fill="currentColor"/>
-                                                    <circle cx="12.5" cy="8.5" r="1" fill="currentColor"/>
-                                                    <path d="M12 5.5l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                                                </svg>
-                                            </button>
-                                        );
-                                    })()}
+                                {/* Reaction trigger — available to all active chatters */}
+                                    {showReactBtn && currentUser && (
+                                        <button
+                                            ref={reactBtnRef}
+                                            className={`message-action-btn rxn-trigger-btn${showReactionPicker ? ' rxn-trigger-btn--active' : ''}`}
+                                            onClick={(e) => { e.stopPropagation(); openPicker(); }}
+                                            onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
+                                            onMouseLeave={handleRowLeave}
+                                            title="Add Reaction"
+                                        >
+                                            <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
+                                                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.7"/>
+                                                <path d="M7 11.5s.8 1.5 3 1.5 3-1.5 3-1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                                <circle cx="7.5" cy="8.5" r="1" fill="currentColor"/>
+                                                <circle cx="12.5" cy="8.5" r="1" fill="currentColor"/>
+                                                <path d="M12 5.5l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                                            </svg>
+                                        </button>
+                                    )}
                                     {canDelete && <button onClick={(e) => { e.stopPropagation(); onDelete(id) }} className="message-action-btn" title="Delete Message"><DeleteIconSVG /></button>}
                                     {!isMyMessage && (
                                         <>
@@ -822,9 +803,10 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 <div className="youtube-embed-container">
                                     <div className="youtube-embed">
                                         <iframe 
-                                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=0&disablekb=1&playsinline=1&origin=${window.location.origin}`}
+                                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&playsinline=1`}
                                             frameBorder="0" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            referrerPolicy="strict-origin-when-cross-origin"
                                             allowFullScreen 
                                             title="Embedded youtube"
                                         />
@@ -833,31 +815,15 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             )
                         )}
 
-                        {/* Reaction bar — only for tier2+ (badge-holder/staff); hidden for guest & member */}
-                        {Object.keys(reactions).length > 0 && (() => {
-                            const _barBadge = loggedInUserProfile?.badge;
-                            const _barRole  = loggedInUserProfile?.role;
-                            const _barGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
-                            const _barTier  = getBadgeTier(_barBadge, _barRole, _barGuest);
-                            if (_barTier === 'guest' || _barTier === 'member') return null;
-                            return (
-                                <div className="rxn-bar">
-                                    {Object.entries(reactions)
-                                        .filter(([, uids]) => Array.isArray(uids) && uids.length > 0)
-                                        .map(([emoji, uids]) => (
-                                            <button
-                                                key={emoji}
-                                                className={`rxn-chip${currentUser && uids.includes(currentUser.uid) ? ' rxn-chip--mine' : ''}`}
-                                                onClick={() => handleReact(emoji)}
-                                                title={`${uids.length} reaction${uids.length !== 1 ? 's' : ''}`}
-                                            >
-                                                <span className="rxn-chip-emoji">{emoji}</span>
-                                                <span className="rxn-chip-count">{uids.length}</span>
-                                            </button>
-                                        ))}
-                                </div>
-                            );
-                        })()}
+                        {/* Premium SVG Reactions Bar */}
+                        {Object.keys(reactions).length > 0 && (
+                            <PremiumReactionBar
+                                reactions={reactions}
+                                currentUid={currentUser?.uid}
+                                onReact={handleReact}
+                                allUsers={allUsersMap || {}}
+                            />
+                        )}
 
                     </div>
                     
@@ -865,34 +831,15 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
             </div>
         </div>
 
-        {/* Emoji Reaction Picker Portal */}
+        {/* Premium SVG Reaction Picker Portal */}
         {showReactionPicker && createPortal(
-            <>
-                <div className="rxn-overlay" onClick={() => setShowReactionPicker(false)} />
-                <div
-                    className="rxn-picker"
-                    style={{ left: pickerPos.x, top: pickerPos.y }}
-                    onMouseEnter={() => clearTimeout(hoverLeaveRef.current)}
-                    onMouseLeave={handleRowLeave}
-                >
-                    <div className="rxn-picker-header">React to message</div>
-                    <div className="rxn-picker-grid">
-                        {REACTION_EMOJIS.map(emoji => {
-                            const alreadyReacted = Array.isArray(reactions[emoji]) && currentUser && reactions[emoji].includes(currentUser.uid);
-                            return (
-                                <button
-                                    key={emoji}
-                                    className={`rxn-picker-btn${alreadyReacted ? ' rxn-picker-btn--active' : ''}`}
-                                    onClick={() => handleReact(emoji)}
-                                    title={emoji}
-                                >
-                                    <span className="rxn-picker-emoji">{emoji}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </>,
+            <PremiumReactionPicker
+                reactions={reactions}
+                currentUid={currentUser?.uid}
+                onSelect={handleReact}
+                onClose={() => setShowReactionPicker(false)}
+                position={pickerPos}
+            />,
             document.body
         )}
 
@@ -1074,6 +1021,7 @@ const MessageList = React.memo(({
     toggleDropdown,
     setOpenDropdownId,
     onRetryPending,
+    allUsersMap,
 }) => {
     // FLICKER-FIX: stable parity map — once a non-bot message is assigned
     // isEven=true/false it NEVER changes, even when limitToLast(60) drops the
@@ -1175,6 +1123,7 @@ const MessageList = React.memo(({
                     setOpenDropdownId={setOpenDropdownId}
                     kickedUserIds={roomKickedUserIds}
                     roomId={roomId}
+                    allUsersMap={allUsersMap}
                 />
                 );
             })}
@@ -1502,6 +1451,37 @@ const HomePage = ({ user, roomIdOverride }) => {
         progressTimerRef.current = setTimeout(() => setSendProgress(null), 650);
     }, []);
 
+    // Lookup map so reactions can display reactor usernames and UIDs instantly
+    const userLookupMap = useMemo(() => {
+        const map = {};
+        if (loggedInUserProfile?.uid) {
+            map[loggedInUserProfile.uid] = loggedInUserProfile;
+        }
+        if (Array.isArray(liveUsers)) {
+            liveUsers.forEach(u => {
+                if (u?.uid) map[u.uid] = u;
+            });
+        }
+        if (Array.isArray(friendsProfiles)) {
+            friendsProfiles.forEach(f => {
+                if (f?.uid) map[f.uid] = f;
+            });
+        }
+        if (Array.isArray(messages)) {
+            messages.forEach(m => {
+                if (m?.uid && !map[m.uid]) {
+                    map[m.uid] = {
+                        uid: m.uid,
+                        displayName: m.displayName || m.username || 'User',
+                        badge: m.badge,
+                        role: m.role
+                    };
+                }
+            });
+        }
+        return map;
+    }, [loggedInUserProfile, liveUsers, friendsProfiles, messages]);
+
     // Keep chat-feed's bottom offset perfectly synced to the footer's real
     // rendered height (no gap, no overlap) — footer height changes as the
     // multiline composer grows/shrinks, so this is measured live.
@@ -1529,7 +1509,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             ro.disconnect();
             window.removeEventListener('resize', syncHeight);
         };
-    }, [textareaRows, newMessage, whisperTarget]);
+    }, []);
 
     // Listen for user-initiated notification setting changes from SettingsSidebar
     useEffect(() => {
@@ -3589,18 +3569,14 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
-    const lastScrollTop = useRef(0);
-    const scrollTimeoutRef = useRef(null);
-    // Flag to suppress scroll-handler during programmatic scrolls so they don't
-    // falsely set hasUserScrolled=true and block new-message auto-scroll for 1 s.
+    const userInitiatedScrollRef = useRef(false);
+    const userTouchWheelTimerRef = useRef(null);
     const isProgrammaticScrollRef = useRef(false);
     const programmaticScrollTimerRef = useRef(null);
 
     // Enhanced auto-scroll functionality with professional chat behavior
-    const scrollToBottom = (force = false) => {
+    const scrollToBottom = useCallback((force = false, smooth = false) => {
         if (!chatFeedRef.current) return;
-        // Respect the auto-scroll toggle unless this is a forced scroll
-        // (initial load, user's own sent message, or manual "scroll to bottom" click)
         const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
         if (!force && !autoScrollEnabled) return;
         
@@ -3608,54 +3584,53 @@ const HomePage = ({ user, roomIdOverride }) => {
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        
-        // Check if user is at bottom (within 100px for precision)
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-        setIsAtBottom(isNearBottom);
         
         // Auto-scroll conditions:
-        // 1. Force is true (initial load, user sent message, etc.)
-        // 2. Haven't done initial scroll yet (room entry)
-        // 3. User is at bottom and hasn't manually scrolled
+        // 1. Force is true (room entry, user sent message, manual button click)
+        // 2. Haven't done initial scroll yet
+        // 3. User is sitting at the bottom and hasn't scrolled up to read history
         if (force || !hasInitialScrolled || (isNearBottom && !hasUserScrolled)) {
-            // Guard: if we're already at the very bottom (within 5 px), skip the
-            // scrollTo call entirely.  This prevents a second smooth-scroll
-            // animation firing when Firestore confirms a pending write (the
-            // optimistic snapshot already scrolled us there).
-            const alreadyAtBottom = scrollHeight - scrollTop - clientHeight < 5;
-            if (!alreadyAtBottom) {
-                // Mark as programmatic so handleScroll ignores this movement
-                isProgrammaticScrollRef.current = true;
-                if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
-                programmaticScrollTimerRef.current = setTimeout(() => {
-                    isProgrammaticScrollRef.current = false;
-                }, 150);
+            isProgrammaticScrollRef.current = true;
+            if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+            programmaticScrollTimerRef.current = setTimeout(() => {
+                isProgrammaticScrollRef.current = false;
+            }, 180);
 
+            if (smooth && hasInitialScrolled) {
                 element.scrollTo({
                     top: scrollHeight,
-                    behavior: force || !hasInitialScrolled ? 'auto' : 'smooth'
+                    behavior: 'smooth'
                 });
+            } else {
+                element.scrollTop = scrollHeight;
             }
             
-            // NOTE: do NOT set scrollTop after smooth scrollTo — it cancels the animation and causes jumps.
             setIsAtBottom(true);
             setShowScrollToBottomBtn(false);
-            
-            // Mark initial scroll as done
-            if (!hasInitialScrolled) {
-                setHasInitialScrolled(true);
+            if (force) {
+                setHasUserScrolled(false);
+                userInitiatedScrollRef.current = false;
             }
         } else if (!isNearBottom) {
             setShowScrollToBottomBtn(true);
         }
-    };
+    }, [hasInitialScrolled, hasUserScrolled]);
+
+    // Track real user interaction (wheel, touch, pointer) so layout shifts don't fake a scroll
+    const handleUserInteractionStart = useCallback(() => {
+        userInitiatedScrollRef.current = true;
+        if (userTouchWheelTimerRef.current) clearTimeout(userTouchWheelTimerRef.current);
+        userTouchWheelTimerRef.current = setTimeout(() => {
+            userInitiatedScrollRef.current = false;
+        }, 1200);
+    }, []);
 
     // Handle scroll events to detect manual scrolling
     const handleScroll = useCallback(() => {
         if (!chatFeedRef.current) return;
         // Ignore scroll events triggered by our own programmatic scrollToBottom calls
         if (isProgrammaticScrollRef.current) {
-            lastScrollTop.current = chatFeedRef.current.scrollTop;
             return;
         }
         
@@ -3663,93 +3638,127 @@ const HomePage = ({ user, roomIdOverride }) => {
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        const currentScrollTop = scrollTop;
         
-        // Clear existing timeout
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-        }
-        
-        // Check if user is at bottom
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        // Check if user is near bottom (within 90px)
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 90;
         setIsAtBottom(isNearBottom);
         
-        // Detect manual scrolling (user initiated)
-        if (Math.abs(currentScrollTop - lastScrollTop.current) > 10) {
+        if (isNearBottom) {
+            // User scrolled back to the very bottom — re-enable auto-scroll
+            setHasUserScrolled(false);
+            setShowScrollToBottomBtn(false);
+        } else if (userInitiatedScrollRef.current) {
+            // User scrolled UP manually via wheel/touch — respect their position and show quick button
             setHasUserScrolled(true);
-            
-            // Show/hide scroll to bottom button
-            if (!isNearBottom) {
-                setShowScrollToBottomBtn(true);
-            } else {
-                setShowScrollToBottomBtn(false);
-                // Reset user scroll flag when they scroll back to bottom
-                scrollTimeoutRef.current = setTimeout(() => {
-                    setHasUserScrolled(false);
-                }, 1000);
-            }
+            setShowScrollToBottomBtn(true);
         }
-        
-        lastScrollTop.current = currentScrollTop;
     }, []);
 
     // Scroll to bottom manually (when button is clicked)
     const handleScrollToBottomClick = () => {
         if (!chatFeedRef.current) return;
-        
-        chatFeedRef.current.scrollTo({
-            top: chatFeedRef.current.scrollHeight,
-            behavior: 'smooth'
-        });
-        
-        // Reset user scroll state temporarily to allow auto-scroll for new messages
         setHasUserScrolled(false);
-        setIsAtBottom(true);
-        setShowScrollToBottomBtn(false);
+        userInitiatedScrollRef.current = false;
+        scrollToBottom(true, true);
     };
 
-    // Add scroll event listener to chat feed
+    // Add scroll & user interaction event listeners to chat feed
     useEffect(() => {
         const chatElement = chatFeedRef.current;
         if (chatElement) {
             chatElement.addEventListener('scroll', handleScroll, { passive: true });
+            chatElement.addEventListener('wheel', handleUserInteractionStart, { passive: true });
+            chatElement.addEventListener('touchmove', handleUserInteractionStart, { passive: true });
+            chatElement.addEventListener('pointerdown', handleUserInteractionStart, { passive: true });
             return () => {
                 chatElement.removeEventListener('scroll', handleScroll);
+                chatElement.removeEventListener('wheel', handleUserInteractionStart);
+                chatElement.removeEventListener('touchmove', handleUserInteractionStart);
+                chatElement.removeEventListener('pointerdown', handleUserInteractionStart);
             };
         }
-    }, [handleScroll]);
+    }, [handleScroll, handleUserInteractionStart]);
 
-    // Auto-scroll on new messages — only on first room entry; never interrupt
-    // the user while they are reading old messages.
+    // Keep view pinned to bottom as media/images/embeds load, unless user scrolled up
     useEffect(() => {
-        const isFirstLoad = messages.length > 0 && !hasInitialScrolled;
+        const el = chatFeedRef.current;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver(() => {
+            if (!hasUserScrolled) {
+                isProgrammaticScrollRef.current = true;
+                el.scrollTop = el.scrollHeight;
+                setIsAtBottom(true);
+                setShowScrollToBottomBtn(false);
+                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
+            }
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [hasUserScrolled]);
+
+    // Reset scroll states and jump to bottom whenever switching rooms
+    useEffect(() => {
+        setHasInitialScrolled(false);
+        setHasUserScrolled(false);
+        setIsAtBottom(true);
+        setShowScrollToBottomBtn(false);
+        userInitiatedScrollRef.current = false;
+
+        const pin = () => {
+            if (chatFeedRef.current) {
+                isProgrammaticScrollRef.current = true;
+                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+                setIsAtBottom(true);
+                setShowScrollToBottomBtn(false);
+                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
+            }
+        };
+
+        const delays = [0, 40, 100, 250, 500, 900, 1500];
+        const timers = delays.map(d => setTimeout(pin, d));
+        return () => timers.forEach(clearTimeout);
+    }, [roomId]);
+
+    // Auto-scroll on new messages / room entry
+    useEffect(() => {
+        if (!messages.length) return;
+        const isFirstLoad = !hasInitialScrolled;
+
+        const pin = () => {
+            if (chatFeedRef.current) {
+                isProgrammaticScrollRef.current = true;
+                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+                setIsAtBottom(true);
+                setShowScrollToBottomBtn(false);
+                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
+            }
+        };
+
         if (isFirstLoad) {
-            // Several quick, non-animated (force) scroll-to-bottom attempts rather
-            // than one. A single early scroll can land short of the true bottom
-            // because avatars/images/embeds in the just-rendered messages keep
-            // growing scrollHeight for a bit after first paint — each attempt
-            // uses 'auto' behavior (no animation), so re-correcting the position
-            // multiple times causes no visible jump, it just guarantees we land
-            // at the real bottom once layout has settled.
-            const attempts = [0, 60, 150, 300, 600];
-            const timers = attempts.map(delay => setTimeout(() => scrollToBottom(true), delay));
-            setHasUserScrolled(false);
-            return () => timers.forEach(clearTimeout);
-        } else if (messages.length > 0) {
-            // When a new message arrives, only auto-scroll if the user is
-            // already sitting at the bottom. If they scrolled up to read
-            // history, just show the "scroll to bottom" chip — don't force scroll.
+            // Pinned instant jumps to bottom so entering a room never starts at top
+            const attempts = [0, 40, 100, 250, 500, 900, 1500];
+            const timers = attempts.map(delay => setTimeout(pin, delay));
+            const finishTimer = setTimeout(() => {
+                setHasInitialScrolled(true);
+                setHasUserScrolled(false);
+            }, 800);
+            return () => {
+                timers.forEach(clearTimeout);
+                clearTimeout(finishTimer);
+            };
+        } else {
+            // When a new message arrives: only auto-scroll if user has not scrolled up to read history
             if (!chatFeedRef.current) return;
             const el = chatFeedRef.current;
             const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-            if (nearBottom) {
-                scrollToBottom(false);
+            if (nearBottom || !hasUserScrolled) {
+                scrollToBottom(false, true);
             } else {
                 setShowScrollToBottomBtn(true);
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages]);
+    }, [messages, roomId]);
 
     // Apply font styles whenever preferences change — separate from scroll effect
     // to avoid triggering DOM manipulation on every new message.
@@ -3832,57 +3841,22 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     // Removed global username styling - now handled per user in SettingsSidebar
 
-    // Auto-scroll when user is typing - only if they're at bottom
-    useEffect(() => {
-        if (newMessage.trim() && isAtBottom) {
-            // Only scroll if user is at bottom to avoid interrupting reading
-            scrollToBottom(true);
-            
-            // Additional scrolls for mobile keyboards
-            setTimeout(() => scrollToBottom(true), 100);
-            setTimeout(() => scrollToBottom(true), 300);
-        }
-    }, [newMessage, isAtBottom]);
-
-    // Handle textarea focus and input - respect user scroll position
+    // Handle textarea focus for mobile keyboards — zero scroll churn while typing
     useEffect(() => {
         const textarea = textareaRef.current;
-        if (textarea) {
-            const handleFocus = () => {
-                // Only scroll if user is at bottom when focusing
-                if (isAtBottom) {
-                    scrollToBottom(true);
-                    setTimeout(() => scrollToBottom(true), 100);
-                    setTimeout(() => scrollToBottom(true), 300);
-                    setTimeout(() => scrollToBottom(true), 600);
-                }
-            };
-            
-            const handleInput = () => {
-                // Only scroll on input if user is at bottom
-                if (isAtBottom) {
-                    scrollToBottom(true);
-                    setTimeout(() => scrollToBottom(true), 50);
-                }
-            };
-            
-            const handleTouchStart = () => {
-                // Only scroll when touching textarea if at bottom
-                if (isAtBottom) {
-                    setTimeout(() => scrollToBottom(true), 100);
-                }
-            };
-            
-            textarea.addEventListener('focus', handleFocus);
-            textarea.addEventListener('input', handleInput);
-            textarea.addEventListener('touchstart', handleTouchStart);
-            
-            return () => {
-                textarea.removeEventListener('focus', handleFocus);
-                textarea.removeEventListener('input', handleInput);
-                textarea.removeEventListener('touchstart', handleTouchStart);
-            };
-        }
+        if (!textarea) return;
+        let keyboardTimer = null;
+        const handleFocus = () => {
+            if (isAtBottom) {
+                clearTimeout(keyboardTimer);
+                keyboardTimer = setTimeout(() => scrollToBottomRef.current?.(true), 220);
+            }
+        };
+        textarea.addEventListener('focus', handleFocus);
+        return () => {
+            clearTimeout(keyboardTimer);
+            textarea.removeEventListener('focus', handleFocus);
+        };
     }, [isAtBottom]);
 
     useEffect(() => {
@@ -4584,10 +4558,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
-        const a = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/i) || videoUrl.match(/([\w-]{11})/);
-        const videoId = a ? a[1] : null;
+        // Robust YouTube video ID extraction supporting shorts, embed, watch?v=, youtu.be, live, and raw ID
+        const videoId = extractYouTubeVideoId(videoUrl);
         if (!videoId) {
-            pt.error("Invalid YouTube URL!");
+            pt.error("Invalid YouTube URL! Please enter a valid video or shorts link.");
             return;
         }
 
@@ -4675,9 +4649,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             updateDoc(doc(db, 'users', uid), { kickedFrom: null }).catch(() => {});
         }
 
-        const a = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/i) || youtubeUrl.match(/([\w-]{11})/);
-        const videoId = a ? a[1] : null;
-        if (!videoId) return pt.error("Invalid YouTube URL!");
+        const videoId = extractYouTubeVideoId(youtubeUrl);
+        if (!videoId) return pt.error("Invalid YouTube URL! Please enter a valid YouTube video or shorts link.");
 
         try {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), {
@@ -6319,9 +6292,14 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
 
-    // Expose functions for auto-tag functionality and private messages
+    // Keep window.newMessage synced independently so other globals don't rebind per keystroke
     React.useEffect(() => {
         window.newMessage = newMessage;
+        return () => { delete window.newMessage; };
+    }, [newMessage]);
+
+    // Expose functions for auto-tag functionality and private messages
+    React.useEffect(() => {
         window.setNewMessage = setNewMessage;
         window.insertTag = insertTag;
         window.textareaRef = textareaRef;
@@ -6365,7 +6343,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 isStrikethrough
             };
             
-            // Apply styles to current user's messages only
             setTimeout(() => {
                 const messages = document.querySelectorAll('.message-row-wrapper');
                 const currentUserId = auth.currentUser?.uid;
@@ -6376,7 +6353,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     const usernameElement = messageRow.querySelector('.message-displayname');
                     const messageUsername = usernameElement?.textContent?.trim();
                     
-                    // Check if this is current user's message by UID or username
                     const isCurrentUserMessage = (messageUid === currentUserId) || 
                                                (messageUsername === currentUserName);
                     
@@ -6400,7 +6376,6 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
         
         return () => {
-            delete window.newMessage;
             delete window.setNewMessage;
             delete window.insertTag;
             delete window.textareaRef;
@@ -6417,7 +6392,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             delete window.setOpenDropdownId;
             delete window.closeAllDropdowns;
         };
-    }, [newMessage, friendRequests.length, friendsProfiles, fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);
+    }, [friendRequests.length, friendsProfiles, fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);
 
     // ULTRA FAST DRAGGING - Optimized with hardware acceleration
     const dragRefreshRate = useRef(null);
@@ -7708,6 +7683,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         toggleDropdown={stableToggleDropdown}
                         setOpenDropdownId={stableHandleSetOpenDropdownId}
                         onRetryPending={retryPendingMessage}
+                        allUsersMap={userLookupMap}
                     />
                     
 
@@ -8141,11 +8117,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 };
                                 const convertYouTube = (url) => {
                                     if (!url) return null;
-                                    // Already an embed URL — use it directly
-                                    if (url.includes('youtube.com/embed/')) return url;
-                                    // Extract video ID from watch / short / share URLs
-                                    const m = url.match(/(?:v=|youtu\.be\/|\/embed\/)([a-zA-Z0-9_-]{11})/);
-                                    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=0&controls=1&rel=0` : null;
+                                    return getYouTubeEmbedUrl(url);
                                 };
                                 const spotifyEmbed = convertSpotify(profileUser.spotifyTrackURL);
                                 const ytEmbed = convertYouTube(profileUser.coverVideoURL);
@@ -8164,8 +8136,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     <div className="vpm-cover-section vpm-cover-youtube" style={{overflow:'visible'}}>
                                         <div className="vpm-cover-youtube-ratio">
                                             <iframe src={ytEmbed} frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowFullScreen title="YouTube"/>
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerPolicy="strict-origin-when-cross-origin"
+                                                allowFullScreen title="YouTube Cover Video"/>
                                         </div>
                                         <div className="vpm-cover-badge-inline vpm-cb-youtube">
                                             YouTube
@@ -9018,37 +8991,25 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </button>
             )}
 
-            <div className="chat-footer" ref={footerRef} style={{
-                position: 'fixed', bottom: 0, left: 0, right: 0,
-                width: '100vw',
-                padding: '5px 8px',
-                boxSizing: 'border-box',
-                display: 'flex', alignItems: 'flex-end',
-                background: 'transparent',
-                borderTop: 'none',
-                boxShadow: 'none',
-                zIndex: 2000, overflow: 'visible',
-                opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.45 : 1,
-                pointerEvents: loggedInUserProfile?.mutedInfo?.isMuted ? 'none' : 'auto',
-            }}>
-                <form onSubmit={handleSendMessage} className="message-form" style={{
-                    width: '100%', margin: 0, padding: 0,
-                    display: 'flex', alignItems: 'flex-end', background: 'transparent', gap: '4px'
-                }}>
+            <div
+                className="chat-footer hp-composer-footer"
+                ref={footerRef}
+                style={{
+                    opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.48 : 1,
+                    pointerEvents: loggedInUserProfile?.mutedInfo?.isMuted ? 'none' : 'auto',
+                }}
+            >
+                <form onSubmit={handleSendMessage} className="message-form hp-composer-dock">
                     <button
                         type="button"
-                        className="premium-footer-btn attachment-btn"
-                        style={{
-                            width: '46px', height: '42px', minWidth: '46px', flexShrink: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer'
-                        }}
+                        className="premium-footer-btn attachment-btn hp-composer-attach"
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setIsAttachmentDropdownOpen(prev => !prev);
                         }}
                         title="Add attachment"
+                        aria-label="Add attachment"
                         disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
                     >
                         <AttachmentIconSVG />
@@ -9068,6 +9029,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 className="whisper-chip-close"
                                 onClick={() => setWhisperTarget(null)}
                                 title="Cancel whisper"
+                                aria-label="Cancel whisper"
                             >
                                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                                     <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
@@ -9075,13 +9037,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                             </button>
                         </div>
                     )}
-                    {/* ── Multiline Composer ── */}
-                    <div style={{ flex: '1 1 auto', position: 'relative', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    {/* ── Clean Multiline Composer (zero counters / typing clutter) ── */}
+                    <div className="hp-composer-input-wrap">
                         {/* ── Floating @Tag Autocomplete Popup ── */}
                         {(showTagPicker || (activeTagQuery && matchingTagUsers.length > 0)) && (
                             <div className="tag-autocomplete-popup" style={{
                                 position: 'absolute',
-                                bottom: 'calc(100% + 8px)',
+                                bottom: 'calc(100% + 10px)',
                                 left: 0,
                                 zIndex: 2300,
                                 background: isDarkMode ? 'rgba(19, 15, 38, 0.98)' : 'rgba(255, 255, 255, 0.98)',
@@ -9108,7 +9070,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     alignItems: 'center',
                                     justifyContent: 'space-between'
                                 }}>
-                                    <span>Tag user (@)</span>
+                                    <span>Mention User</span>
                                     <button
                                         type="button"
                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '11px', padding: 0 }}
@@ -9149,7 +9111,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                     onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(139,92,246,0.2)' : 'rgba(237,233,254,0.7)'; }}
                                                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                                 >
-                                                    <img src={uAvatar} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                                                    <img src={uAvatar} alt={u.displayName || 'User'} referrerPolicy="no-referrer" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
                                                     <div style={{ flex: 1, minWidth: 0 }}>
                                                         <div style={{
                                                             fontSize: '12px',
@@ -9177,11 +9139,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                             className="premium-input-field premium-textarea"
                             rows={textareaRows}
                             maxLength={MAX_CHAT_CHARS}
-                            style={{
-                                color: isDarkMode ? '#e9d5ff' : '#2e1065',
-                                caretColor: '#7c3aed',
-                            }}
-                            placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Type a message...')}
+                            placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Message this room...')}
                             value={newMessage}
                             onChange={(e) => {
                                 const val = e.target.value;
@@ -9189,6 +9147,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     setNewMessage(val);
                                     checkTagTrigger(val, e.target.selectionStart);
                                 }
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 116)}px`;
                             }}
                             onKeyUp={(e) => {
                                 checkTagTrigger(e.target.value, e.target.selectionStart);
@@ -9214,40 +9174,22 @@ const HomePage = ({ user, roomIdOverride }) => {
                             }}
                             onPaste={(e) => {
                                 const text = e.clipboardData?.getData('text') || '';
-                                const current = newMessage;
-                                const combined = current + text;
+                                const combined = newMessage + text;
                                 if (combined.length > MAX_CHAT_CHARS) {
                                     e.preventDefault();
-                                    const truncated = combined.slice(0, MAX_CHAT_CHARS);
-                                    setNewMessage(truncated);
+                                    setNewMessage(combined.slice(0, MAX_CHAT_CHARS));
                                 }
                             }}
                             disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
                             readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
                         />
-                        {/* Live character counter */}
-                        <div style={{
-                            position: 'absolute', bottom: 2, right: 5,
-                            fontSize: '9px', fontWeight: 700, letterSpacing: '0.02em',
-                            color: newMessage.length > 220
-                                ? (newMessage.length >= MAX_CHAT_CHARS ? '#ef4444' : '#f97316')
-                                : 'rgba(124,58,237,0.35)',
-                            pointerEvents: 'none', userSelect: 'none',
-                            transition: 'color 0.2s',
-                        }}>
-                            {newMessage.length}/{MAX_CHAT_CHARS}
-                        </div>
                     </div>
                     <button
                         type="submit"
-                        className="premium-footer-btn send-btn"
-                        style={{
-                            width: '46px', height: '42px', minWidth: '46px', flexShrink: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-                            opacity: (!newMessage.trim() || loggedInUserProfile?.mutedInfo?.isMuted) ? 0.5 : 1
-                        }}
+                        className="premium-footer-btn send-btn hp-composer-send"
                         disabled={!newMessage.trim() || !!loggedInUserProfile?.mutedInfo?.isMuted}
+                        aria-label="Send message"
+                        title="Send message"
                     >
                         <SendIconSVG />
                     </button>

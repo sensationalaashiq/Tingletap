@@ -21,7 +21,8 @@ const PUBLIC_FIELDS = [
   'gender', 'bio', 'profession', 'age', 'country', 'relationship', 'achievements',
   'isOnline', 'lastSeenAt', 'createdAt', 'isGuest', 'isBanned', 'trustScore', 'trustRank',
   'isVerified', 'selectedTheme', 'status', 'statusMessage', 'statusColor', 'statusStyle',
-  'statusStyles', 'darkMode',
+  'statusStyles', 'darkMode', 'coverPhotoURL', 'coverPhotoKey', 'coverVideoURL', 'coverVideoType',
+  'spotifyTrackURL', 'spotifyTrackData',
 ];
 
 // Sub-fields from settings that other users legitimately need (for PM / whisper permission checks).

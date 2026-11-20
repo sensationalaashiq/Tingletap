@@ -40,6 +40,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthRoute from './components/AuthRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import VPNBlockModal from './components/VPNBlockModal';
+import LuxuryPageLoader from './components/LuxuryPageLoader';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -195,6 +196,9 @@ function App() {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        if (currentUser.isAnonymous && sessionStorage.getItem('tt_username_lookup') === '1') {
+          return;
+        }
         setUser(currentUser);
 
         // Start global style listeners now that the user is authenticated.
@@ -205,66 +209,61 @@ function App() {
         setTimeout(() => {
           syncAllUsersStyles();
           syncAllUsersMessageStyles();
-        }, 500);
+        }, 400);
 
-        // Capture IP + run authenticated VPN check (with user context for server logging)
-        try {
-          const ipRes = await fetch('https://api.ipify.org?format=json');
-          const { ip } = await ipRes.json();
-          if (ip) {
-            const userRef = doc(db, 'users', currentUser.uid);
-            // Read username before the VPN check so we can log it server-side
-            let username = null;
-            try {
-              const snap = await getDoc(userRef);
-              username = snap.data()?.displayName || snap.data()?.username || null;
-            } catch { /* non-fatal */ }
+        // Capture IP + run authenticated VPN check in background (never block profile load or login)
+        void (async () => {
+          try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const { ip } = await ipRes.json();
+            if (ip) {
+              const userRef = doc(db, 'users', currentUser.uid);
+              let username = null;
+              try {
+                const snap = await getDoc(userRef);
+                username = snap.data()?.displayName || snap.data()?.username || null;
+              } catch { /* non-fatal */ }
 
-            // Update Firestore with current IP
-            await updateDoc(userRef, {
-              lastIP: ip,
-              lastIPUpdate: new Date().toISOString()
-            });
+              updateDoc(userRef, {
+                lastIP: ip,
+                lastIPUpdate: new Date().toISOString()
+              }).catch(() => {});
 
-            // Authenticated VPN check — POST to server so blocked attempts are logged.
-            // The response also includes full geo data (lat/lon/city/country) from
-            // Abstract API which we store to Firestore for the Admin Panel.
-            try {
-              const { checkUserVPN: _authVPNCheck } = await import('./utils/vpnDetection.js');
-              const vpnResult = await _authVPNCheck({
-                uid:      currentUser.uid,
-                email:    currentUser.email || null,
-                username: username,
-              });
+              try {
+                const { checkUserVPN: _authVPNCheck } = await import('./utils/vpnDetection.js');
+                const vpnResult = await _authVPNCheck({
+                  uid:      currentUser.uid,
+                  email:    currentUser.email || null,
+                  username: username,
+                });
 
-              // Store full geo data from Abstract API to Firestore user doc.
-              // Admin Panel reads lastLat/lastLon/lastCity/lastCountry from here.
-              if (vpnResult && (vpnResult.city || vpnResult.country || vpnResult.lat != null)) {
-                const geoUpdate = {};
-                if (vpnResult.lat      != null) geoUpdate.lastLat      = vpnResult.lat;
-                if (vpnResult.lon      != null) geoUpdate.lastLon      = vpnResult.lon;
-                if (vpnResult.city)             geoUpdate.lastCity     = vpnResult.city;
-                if (vpnResult.country)          geoUpdate.lastCountry  = vpnResult.country;
-                if (vpnResult.region)           geoUpdate.lastRegion   = vpnResult.region;
-                if (vpnResult.timezone)         geoUpdate.lastTimezone = vpnResult.timezone;
-                if (vpnResult.isp)              geoUpdate.lastISP      = vpnResult.isp;
-                if (Object.keys(geoUpdate).length) {
-                  updateDoc(userRef, geoUpdate).catch(() => {}); // non-blocking
+                if (vpnResult && (vpnResult.city || vpnResult.country || vpnResult.lat != null)) {
+                  const geoUpdate = {};
+                  if (vpnResult.lat      != null) geoUpdate.lastLat      = vpnResult.lat;
+                  if (vpnResult.lon      != null) geoUpdate.lastLon      = vpnResult.lon;
+                  if (vpnResult.city)             geoUpdate.lastCity     = vpnResult.city;
+                  if (vpnResult.country)          geoUpdate.lastCountry  = vpnResult.country;
+                  if (vpnResult.region)           geoUpdate.lastRegion   = vpnResult.region;
+                  if (vpnResult.timezone)         geoUpdate.lastTimezone = vpnResult.timezone;
+                  if (vpnResult.isp)              geoUpdate.lastISP      = vpnResult.isp;
+                  if (Object.keys(geoUpdate).length) {
+                    updateDoc(userRef, geoUpdate).catch(() => {});
+                  }
                 }
-              }
 
-              if (!vpnResult.allowed && !vpnResult._unavailable) {
-                console.warn('[VPN] Authenticated user on restricted connection — blocking');
-                setVpnInfo(vpnResult);
-                setVpnBlocked(true);
+                if (!vpnResult.allowed && !vpnResult._unavailable) {
+                  console.warn('[VPN] Authenticated user on restricted connection — blocking');
+                  setVpnInfo(vpnResult);
+                  setVpnBlocked(true);
+                }
+              } catch (vpnErr) {
+                console.warn('[VPN] Auth VPN check error (fail open):', vpnErr.message);
               }
-            } catch (vpnErr) {
-              console.warn('[VPN] Auth VPN check error (fail open):', vpnErr.message);
             }
+          } catch (e) {
+            console.log('IP capture skipped:', e.message);
           }
-        } catch (e) {
-          console.log('IP capture skipped:', e.message);
-        }
+        })();
 
         // Ban enforcement is handled entirely by the single profile onSnapshot
         // listener below (real-time, single source of truth). A second
@@ -800,11 +799,7 @@ function App() {
   }
 
   if (loading) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>
-        Loading Application...
-      </div>
-    );
+    return <LuxuryPageLoader message="Initializing TingleTap…" subtitle="Loading encrypted session" />;
   }
 
   return (
@@ -816,21 +811,18 @@ function App() {
         <Route path="/login" element={<AuthRoute user={user}><LoginPage /></AuthRoute>} />
         <Route path="/forgot-password" element={<AuthRoute user={user}><ForgotPasswordPage /></AuthRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/verify-email" element={<Suspense fallback={null}><VerifyEmailPage /></Suspense>} />
-        <Route path="/owner/email-center" element={<Suspense fallback={null}><OwnerEmailCenter /></Suspense>} />
+        <Route path="/verify-email" element={<Suspense fallback={<LuxuryPageLoader message="Verifying Account…" />}><VerifyEmailPage /></Suspense>} />
+        <Route path="/owner/email-center" element={<Suspense fallback={<LuxuryPageLoader message="Loading Email Center…" />}><OwnerEmailCenter /></Suspense>} />
 
         {/* ✅ FIX: Pass 'profile' to all ProtectedRoutes for consistency */}
         <Route path="/rooms" element={<ProtectedRoute user={user} profile={userProfile}><RoomListPage /></ProtectedRoute>} />
         <Route path="/room/:roomId" element={<ProtectedRoute user={user} profile={userProfile}><ErrorBoundary><HomePage user={user} /></ErrorBoundary></ProtectedRoute>} />
 
-
-
-        {/* This route is now fully corrected */}
         <Route
           path="/admin-panel"
           element={
             <ProtectedRoute user={user} profile={userProfile}>
-              <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading Admin Panel...</div>}>
+              <Suspense fallback={<LuxuryPageLoader message="Loading High Council Console…" subtitle="Accessing privileged controls" />}>
                 <AdminPanelPage />
               </Suspense>
             </ProtectedRoute>
@@ -841,13 +833,12 @@ function App() {
           path="/mod-panel"
           element={
             <ProtectedRoute user={user} profile={userProfile}>
-              <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading Panel...</div>}>
+              <Suspense fallback={<LuxuryPageLoader message="Loading Guardian Shield…" subtitle="Accessing moderation tools" />}>
                 <BanKickMutePanel />
               </Suspense>
             </ProtectedRoute>
           }
         />
-
 
         {/* Welcome Dashboard route */}
         <Route path="/welcome" element={<ProtectedRoute user={user} profile={userProfile}><WelcomeDashboard /></ProtectedRoute>} />
@@ -867,11 +858,11 @@ function App() {
         <Route path="/r/:roomSlug" element={<ProtectedRoute user={user} profile={userProfile}><RoomSlugPage user={user} /></ProtectedRoute>} />
 
         {/* ── Coin & Gift System (lazy-loaded, wrapped in a single Suspense) ── */}
-        <Route path="/buy-coins" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><BuyCoinsPage /></Suspense></ProtectedRoute>} />
-        <Route path="/wallet" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><CoinWalletPage /></Suspense></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><Leaderboard /></Suspense></ProtectedRoute>} />
-        <Route path="/rj-earnings" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><RJEarningsDashboard /></Suspense></ProtectedRoute>} />
-        <Route path="/rj-withdrawal" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Loading...</div>}><RJWithdrawal /></Suspense></ProtectedRoute>} />
+        <Route path="/buy-coins" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<LuxuryPageLoader message="Opening Coin Vault…" subtitle="Loading secure coin packages" />}><BuyCoinsPage /></Suspense></ProtectedRoute>} />
+        <Route path="/wallet" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<LuxuryPageLoader message="Opening Royal Wallet…" subtitle="Fetching balances & transactions" />}><CoinWalletPage /></Suspense></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<LuxuryPageLoader message="Loading Royal Hall of Fame…" subtitle="Calculating top gifters & receivers" />}><Leaderboard /></Suspense></ProtectedRoute>} />
+        <Route path="/rj-earnings" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<LuxuryPageLoader message="Loading RJ Studio Earnings…" subtitle="Fetching broadcast revenue" />}><RJEarningsDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/rj-withdrawal" element={<ProtectedRoute user={user} profile={userProfile}><Suspense fallback={<LuxuryPageLoader message="Loading RJ Payout Portal…" subtitle="Opening withdrawal desk" />}><RJWithdrawal /></Suspense></ProtectedRoute>} />
 
         {/* Default route */}
         <Route path="/" element={user

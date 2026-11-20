@@ -293,7 +293,7 @@ const LandingPage = () => {
   }, []);
 
   const features = [
-    { Icon: IconChatRooms,  title: 'Real-Time Chat Rooms',        desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and Staff Rooms with live messaging, typing indicators and styled text.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
+    { Icon: IconChatRooms,  title: 'Real-Time Chat Rooms',        desc: '9+ themed rooms — Indian, International, Gaming, Music Lounge and Staff Rooms with live messaging, SVG reactions and styled text.', tags: ['Live', 'Auto-Scroll', 'Styled Text'], bg: 'linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))', color: '#6366f1' },
     { Icon: IconTingleBot,  title: 'TingleBot AutoMod',            desc: 'Built-in moderation bot that auto-detects spam, abuse, homoglyphs and toxic language in real-time — keeping every room clean 24/7.', tags: ['AutoMod', 'Anti-Spam', 'Guardian'], bg: 'linear-gradient(135deg,rgba(168,85,247,0.12),rgba(109,40,217,0.08))', color: '#a855f7' },
     { Icon: IconBroadcast,  title: 'RJ Radio Shows',               desc: 'Verified RJs host live voice shows with synced YouTube music for all listeners. Background audio keeps playing even when the panel is minimized.', tags: ['RJ Live', 'Voice Shows', 'Background Play'], bg: 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(220,38,38,0.08))', color: '#ef4444' },
     { Icon: IconRadio,      title: 'Live Broadcast',               desc: 'Any user can go live — one-to-one or one-to-all — with optional password protection. Start your own broadcast room and invite listeners instantly.', tags: ['Go Live', 'Password Lock', 'One-to-All'], bg: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.08))', color: '#f97316' },
@@ -369,6 +369,8 @@ const LandingPage = () => {
         <div className="lp-orb lp-orb-1" />
         <div className="lp-orb lp-orb-2" />
         <div className="lp-orb lp-orb-3" />
+        <div className="lp-orb lp-orb-4" />
+        <div className="lp-orb lp-orb-5" />
       </div>
 
       {/* ══ HEADER ══ */}

@@ -776,7 +776,11 @@ const WelcomeDashboard = () => {
     <div className="wd-root">
       {/* Ambient bg orbs */}
       <div className="wd-bg" aria-hidden="true">
-        <div className="wd-orb wd-orb-1" /><div className="wd-orb wd-orb-2" /><div className="wd-orb wd-orb-3" />
+        <div className="wd-orb wd-orb-1" />
+        <div className="wd-orb wd-orb-2" />
+        <div className="wd-orb wd-orb-3" />
+        <div className="wd-orb wd-orb-4" />
+        <div className="wd-orb wd-orb-5" />
       </div>
 
       {/* ══ HEADER ══ */}

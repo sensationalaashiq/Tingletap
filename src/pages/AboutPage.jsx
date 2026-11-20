@@ -311,7 +311,7 @@ const AboutPage = () => {
                 'TingleBot AutoMod — a 24/7 AI-assisted, rule-based moderation engine that understands context, casual slang, and Hindi/English mixed speech. No blunt banning, intelligent escalation only',
                 'Auto Translation — every message in every room can be instantly translated into your preferred language, removing language barriers across India\'s linguistic diversity',
                 'Virtual Gifts & Coin Economy — send roses, crowns, diamonds, and more to your favourite RJs. A transparent coin wallet, gift log, and RJ earnings dashboard built-in',
-                'Private Encrypted Messaging — end-to-end encrypted 1-on-1 conversations with read receipts and live typing indicators',
+                'Private Encrypted Messaging — end-to-end encrypted 1-on-1 conversations with read receipts and instant delivery',
                 'Voice Messages with Waveform Player — record up to 60 seconds, send instantly. Playback speed control, waveform visualisation, and auto-play support',
                 'Radio Channels — multiple curated live music and talk radio stations streaming in real-time, playable in the background while you chat',
                 'Rich Profile Customisation — username gradients, message fonts, themes, profile pictures, custom status messages, and gender verification badges',

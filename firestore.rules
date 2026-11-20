@@ -181,7 +181,8 @@ service cloud.firestore {
         );
 
         allow update: if isStaff()
-                      || (request.auth != null && resource.data.uid == request.auth.uid && notBanned());
+                      || (request.auth != null && resource.data.uid == request.auth.uid && notBanned())
+                      || (request.auth != null && notBanned() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
 
         allow delete: if isStaff()
                       || (request.auth != null && resource.data.uid == request.auth.uid);

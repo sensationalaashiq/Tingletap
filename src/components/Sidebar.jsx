@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
+import { renderUserBadge } from '../utils/badgeRenderHelper';
 import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
@@ -123,13 +124,16 @@ const GUEST_GENDER_PILL = {
 
 const getRolePill = (role, badge = null, isGuest = false, gender = null) => {
   const badgeMap = {
-    gold_knight:      { bg: 'linear-gradient(135deg,#f59e0b,#b45309)',   color: '#fff', shadow: '0 1px 5px rgba(245,158,11,0.5)' },
-    platinum_lord:    { bg: 'linear-gradient(135deg,#94a3b8,#475569)',   color: '#fff', shadow: '0 1px 5px rgba(100,116,139,0.45)' },
-    diamond_king:     { bg: 'linear-gradient(135deg,#22d3ee,#0369a1)',   color: '#fff', shadow: '0 1px 5px rgba(6,182,212,0.5)' },
-    ruby_queen:       { bg: 'linear-gradient(135deg,#f87171,#b91c1c)',   color: '#fff', shadow: '0 1px 5px rgba(239,68,68,0.5)' },
-    emerald_empress:  { bg: 'linear-gradient(135deg,#34d399,#047857)',   color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
-    sapphire_goddess: { bg: 'linear-gradient(135deg,#818cf8,#3730a3)',   color: '#fff', shadow: '0 1px 5px rgba(99,102,241,0.5)' },
-    rj:               { bg: 'linear-gradient(135deg,#a78bfa,#db2777)',   color: '#fff', shadow: '0 1px 7px rgba(167,139,250,0.65)' },
+    the_olympian:     { bg: 'linear-gradient(135deg,#ffd700,#b45309)', color: '#fff', shadow: '0 1px 7px rgba(245,158,11,0.65)' },
+    titans:           { bg: 'linear-gradient(135deg,#a855f7,#4c1d95)', color: '#fff', shadow: '0 1px 7px rgba(168,85,247,0.6)' },
+    spartans:         { bg: 'linear-gradient(135deg,#ef4444,#991b1b)', color: '#fff', shadow: '0 1px 7px rgba(239,68,68,0.6)' },
+    gold_knight:      { bg: 'linear-gradient(135deg,#f59e0b,#b45309)', color: '#fff', shadow: '0 1px 5px rgba(245,158,11,0.5)' },
+    platinum_lord:    { bg: 'linear-gradient(135deg,#94a3b8,#475569)', color: '#fff', shadow: '0 1px 5px rgba(100,116,139,0.45)' },
+    diamond_king:     { bg: 'linear-gradient(135deg,#22d3ee,#0369a1)', color: '#fff', shadow: '0 1px 5px rgba(6,182,212,0.5)' },
+    ruby_queen:       { bg: 'linear-gradient(135deg,#f87171,#b91c1c)', color: '#fff', shadow: '0 1px 5px rgba(239,68,68,0.5)' },
+    emerald_empress:  { bg: 'linear-gradient(135deg,#34d399,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
+    sapphire_goddess: { bg: 'linear-gradient(135deg,#818cf8,#3730a3)', color: '#fff', shadow: '0 1px 5px rgba(99,102,241,0.5)' },
+    rj:               { bg: 'linear-gradient(135deg,#a78bfa,#db2777)', color: '#fff', shadow: '0 1px 7px rgba(167,139,250,0.65)' },
   };
   if (badge && badgeMap[badge]) return badgeMap[badge];
 
@@ -138,11 +142,17 @@ const getRolePill = (role, badge = null, isGuest = false, gender = null) => {
   }
 
   const roleMap = {
-    owner:     { bg: 'linear-gradient(135deg,#fbbf24,#92400e)', color: '#fff', shadow: '0 1px 5px rgba(251,191,36,0.45)' },
-    admin:     { bg: 'linear-gradient(135deg,#a78bfa,#5b21b6)', color: '#fff', shadow: '0 1px 5px rgba(167,139,250,0.4)' },
-    moderator: { bg: 'linear-gradient(135deg,#34d399,#065f46)', color: '#fff', shadow: '0 1px 5px rgba(52,211,153,0.4)' },
-    user:      { bg: '#e5e7eb', color: '#374151', shadow: 'none' },
-    guest:     { bg: '#f3f4f6', color: '#6b7280', shadow: 'none' },
+    superowner:   { bg: 'linear-gradient(135deg,#f59e0b,#b45309)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.6)' },
+    owner:        { bg: 'linear-gradient(135deg,#f59e0b,#92400e)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.55)' },
+    godfather:    { bg: 'linear-gradient(135deg,#f59e0b,#92400e)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.55)' },
+    admin:        { bg: 'linear-gradient(135deg,#ef4444,#7c3aed)', color: '#fff', shadow: '0 1px 6px rgba(239,68,68,0.5)' },
+    high_council: { bg: 'linear-gradient(135deg,#ef4444,#7c3aed)', color: '#fff', shadow: '0 1px 6px rgba(239,68,68,0.5)' },
+    moderator:    { bg: 'linear-gradient(135deg,#10b981,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
+    guardian:     { bg: 'linear-gradient(135deg,#10b981,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
+    rj:           { bg: 'linear-gradient(135deg,#ec4899,#8b5cf6)', color: '#fff', shadow: '0 1px 6px rgba(236,72,153,0.5)' },
+    user:         { bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', shadow: '0 1px 4px rgba(99,102,241,0.3)' },
+    member:       { bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', shadow: '0 1px 4px rgba(99,102,241,0.3)' },
+    guest:        { bg: '#f3f4f6', color: '#6b7280', shadow: 'none' },
   };
   return roleMap[role?.toLowerCase()] || roleMap.user;
 };
@@ -600,10 +610,7 @@ const Sidebar = ({
                     >
                       {loggedInUserProfile.displayName || user.displayName || 'User'}
                     </span>
-                    {loggedInUserProfile.badge && badges[loggedInUserProfile.badge] && (
-                      <span className={`inline-badge badge-${loggedInUserProfile.badge}`} title={badges[loggedInUserProfile.badge].name}
-                        dangerouslySetInnerHTML={{ __html: badges[loggedInUserProfile.badge].svg }} />
-                    )}
+                    {renderUserBadge(loggedInUserProfile, 18)}
                     {isTodayBirthday(loggedInUserProfile.dateOfBirth) && (
                       <span className="inline-badge birthday-badge-glow"
                         title="Happy Birthday!"
@@ -945,10 +952,7 @@ const Sidebar = ({
                           >
                             <SidebarLiveName uid={userItem.uid} fallback={userItem.displayName} />
                           </span>
-                          {userItem.badge && badges[userItem.badge] && (
-                            <span className={`inline-badge badge-${userItem.badge}`} title={badges[userItem.badge].name}
-                              dangerouslySetInnerHTML={{ __html: badges[userItem.badge].svg }} />
-                          )}
+                          {renderUserBadge(userItem, 15)}
                           {isTodayBirthday(userItem.dateOfBirth) && (
                             <span className="inline-badge birthday-badge-glow"
                               title="Happy Birthday!"
