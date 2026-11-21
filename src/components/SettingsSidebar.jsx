@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { pt } from '../utils/premiumToast';
 import { SUPPORTED_LANGUAGES } from '../utils/translationService';
-import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import {
+  normalizeRole,
+  isOwnerRole,
+  isAdminRole,
+  isStaffRole,
+  isRjRole,
+  resolveBadgeKey,
+  getRoleDisplayLabel,
+  getStoredGuestGender,
+  getDefaultAvatarUrl
+} from '../utils/roleUtils';
 import LiveAvatarImg from './LiveAvatar';
 import { auth, db, rtdb } from '../firebase/config';
 import { ref as rtdbRef, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
@@ -360,16 +370,16 @@ const SettingsSidebar = ({
     // Load team members (owners, admins, moderators, app team / RJs) in real-time
     useEffect(() => {
         if (!auth.currentUser) return;
-        const ROLE_GROUP_A = ['owner', 'Owner', 'superowner', 'SuperOwner', 'Godfather', 'admin', 'Admin', 'High Council'];
-        const ROLE_GROUP_B = ['moderator', 'Moderator', 'mod', 'Mod', 'Guardian', 'rj', 'RJ'];
+        const ROLE_GROUP_A = ['owner', 'Owner', 'superowner', 'SuperOwner', 'Godfather', 'godfather', 'admin', 'Admin', 'High Council', 'high_council'];
+        const ROLE_GROUP_B = ['moderator', 'Moderator', 'mod', 'Mod', 'Guardian', 'guardian', 'rj', 'RJ', 'verified_rj', 'radio_jockey'];
         const TEAM_BADGES  = ['rj', 'verified_rj', 'the_olympian', 'titans', 'spartans', 'streamers', 'content_creator'];
 
         const mapByUid = new Map();
         const roleRank = (m) => {
-            const r = (m.role || '').toLowerCase().trim();
-            if (r === 'owner' || r === 'superowner' || r === 'godfather') return 0;
-            if (r === 'admin' || r === 'high council') return 1;
-            if (r === 'moderator' || r === 'mod' || r === 'guardian') return 2;
+            const r = normalizeRole(m.role);
+            if (r === 'owner') return 0;
+            if (r === 'admin') return 1;
+            if (r === 'moderator') return 2;
             return 3;
         };
         const emitSorted = () => {
@@ -401,8 +411,7 @@ const SettingsSidebar = ({
 
         // Also query authoritative `users` collection so admins/owners/app-team created before
         // publicProfiles mirror existed always appear, and backfill publicProfiles if current user is staff.
-        const myRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
-        const amStaff = ['owner', 'superowner', 'godfather', 'admin', 'high council', 'moderator', 'mod', 'guardian'].includes(myRole);
+        const amStaff = isStaffRole(loggedInUserProfile?.role);
 
         Promise.all([
             getDocs(query(collection(db, 'users'), where('role', 'in', ROLE_GROUP_A))).catch(() => ({ docs: [] })),
@@ -1845,7 +1854,7 @@ const SettingsSidebar = ({
                                             />
                                             <div className="blocked-user-details">
                                                 <span className="blocked-user-name"><LiveUserName uid={user.uid || user.id} fallback={user.displayName} /></span>
-                                                <small className="blocked-user-role">{user.role || 'user'}</small>
+                                                <small className="blocked-user-role">{getRoleDisplayLabel({ role: user.role, gender: user.gender, isGuest: user.isGuest, badge: user.badge })}</small>
                                             </div>
                                         </div>
                                         <button
@@ -2111,9 +2120,8 @@ const SettingsSidebar = ({
 
             case 'username-font':
                 // Check access permissions
-                const userRole = loggedInUserProfile?.role?.toLowerCase();
-                const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                const hasBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
+                const hasAccess = hasBadge || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
 
                 if (!hasAccess) {
                     return (
@@ -2525,13 +2533,14 @@ const SettingsSidebar = ({
             case 'team': {
                 const TEAM_BADGE_IDS = new Set(['rj', 'verified_rj', 'the_olympian', 'titans', 'spartans', 'streamers', 'content_creator']);
                 const normalizeBucket = (m) => {
-                    const r = (m.role || '').toLowerCase().trim();
+                    const r = normalizeRole(m.role);
                     const b = (m.badge || '').toLowerCase().trim();
+                    const resolvedB = resolveBadgeKey(m.badge) || '';
                     const extraBadges = Array.isArray(m.badges) ? m.badges.map(x => String(x).toLowerCase().trim()) : [];
-                    if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
-                    if (r === 'admin' || r === 'high_council' || r === 'high council') return 'admin';
-                    if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'moderator';
-                    if (r === 'rj' || TEAM_BADGE_IDS.has(b) || extraBadges.some(x => TEAM_BADGE_IDS.has(x))) return 'appTeam';
+                    if (r === 'owner') return 'owner';
+                    if (r === 'admin') return 'admin';
+                    if (r === 'moderator') return 'moderator';
+                    if (r === 'rj' || TEAM_BADGE_IDS.has(b) || TEAM_BADGE_IDS.has(resolvedB) || extraBadges.some(x => TEAM_BADGE_IDS.has(x))) return 'appTeam';
                     return null;
                 };
                 const roleConfig = {
@@ -2593,7 +2602,7 @@ const SettingsSidebar = ({
                                                         <div className="sf-friend-info">
                                                             <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}>
                                                                 <LiveUserName uid={member.id} fallback={member.displayName || 'Unknown'} />
-                                                                {renderUserBadge(member, { size: 14 })}
+                                                                {renderUserBadge(member, 14)}
                                                             </div>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}`, fontSize: '9px', fontWeight: 700, color: cfg.color, marginTop: '2px' }}>
                                                                 {cfg.icon}{memberBadgeLabel}
@@ -3423,7 +3432,7 @@ const SettingsSidebar = ({
                                                 return;
                                             }
                                             console.warn('Profile modal function not found');
-                                            pt.info(`${loggedInUserProfile?.displayName || 'User'} — ${loggedInUserProfile?.role || 'user'} from ${loggedInUserProfile?.country || 'Unknown'}`);
+                                            pt.info(`${loggedInUserProfile?.displayName || 'User'} — ${getRoleDisplayLabel(loggedInUserProfile || {})} from ${loggedInUserProfile?.country || 'Unknown'}`);
                                         } catch (error) {
                                             console.error('Error opening profile:', error);
                                             pt.error('Failed to open profile modal');
@@ -3491,7 +3500,7 @@ const SettingsSidebar = ({
                         </div>
 
                         {/* Warning & Announcement Section (for staff and above) */}
-                        {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
+                        {isStaffRole(loggedInUserProfile?.role) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3539,7 +3548,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* Admin Section (if applicable) */}
-                        {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
+                        {isAdminRole(loggedInUserProfile?.role) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title admin-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3548,7 +3557,7 @@ const SettingsSidebar = ({
                                     ADMIN CONTROLS
                                 </h4>
                                 <div className="modern-admin-buttons">
-                                    {['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim()) && (
+                                    {isOwnerRole(loggedInUserProfile?.role) && (
                                         <button 
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3565,7 +3574,7 @@ const SettingsSidebar = ({
                                         </button>
                                     )}
 
-                                    {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
+                                    {isAdminRole(loggedInUserProfile?.role) && (
                                         <button
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3804,7 +3813,7 @@ const SettingsSidebar = ({
                         </div>
 
                         {/* Community Rules Editor — Owner only */}
-                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && <div className="setting-group">
+                        {isOwnerRole(loggedInUserProfile?.role) && <div className="setting-group">
                             <h4>
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
@@ -3914,7 +3923,7 @@ const SettingsSidebar = ({
                         </div>}
 
                         {/* Send custom announcement — Owner only */}
-                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && <div className="setting-group">
+                        {isOwnerRole(loggedInUserProfile?.role) && <div className="setting-group">
                             <h4>
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/>
@@ -4438,9 +4447,8 @@ const SettingsSidebar = ({
                         </button>
 
                         {(() => {
-                            const userRoleForFriends = (loggedInUserProfile?.role || '').toLowerCase().trim();
-                            const hasBadgeForFriends = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                            const hasFriendsAccess = hasBadgeForFriends || ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(userRoleForFriends);
+                            const hasBadgeForFriends = !!resolveBadgeKey(loggedInUserProfile?.badge);
+                            const hasFriendsAccess = hasBadgeForFriends || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
                             return (
                                 <button 
                                     className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
@@ -4461,9 +4469,8 @@ const SettingsSidebar = ({
                         })()}
 
                         {(() => {
-                            const userRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
-                            const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                            const hasAccess = hasBadge || ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(userRole);
+                            const hasBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
+                            const hasAccess = hasBadge || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
 
                             return (
                                 <button 
@@ -4541,7 +4548,7 @@ const SettingsSidebar = ({
                         </button>
 
                         {/* Badge Apply tab — visible ONLY to registered members with role=user AND no badge at all; hidden for staff, badge-holders, guests */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !loggedInUserProfile?.badge && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !resolveBadgeKey(loggedInUserProfile?.badge) && normalizeRole(loggedInUserProfile?.role) === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'badge-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('badge-apply')}
@@ -4562,7 +4569,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* RJ Apply tab — visible ONLY to registered members with role=user AND not already RJ-badged; hidden for staff, guests */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && loggedInUserProfile?.badge !== 'rj' && loggedInUserProfile?.role?.toLowerCase() === 'user' && (
+                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge) && normalizeRole(loggedInUserProfile?.role) === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'rj-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('rj-apply')}
@@ -4584,7 +4591,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* TingleBot tab — owner only */}
-                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
+                        {isOwnerRole(loggedInUserProfile?.role) && (
                             <button
                                 className={`settings-tab ${activeTab === 'tinglebot' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('tinglebot')}

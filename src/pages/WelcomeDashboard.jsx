@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumCopyright from '../components/PremiumCopyright';
 import { Badges } from '../data/Badges';
-import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import {
+  normalizeRole,
+  isOwnerRole,
+  isRjRole,
+  isGuestUser as checkIsGuestUser,
+  resolveBadgeKey,
+  getRoleDisplayLabel,
+  getStoredGuestGender,
+  getDefaultAvatarUrl
+} from '../utils/roleUtils';
 import { auth, db, rtdb } from '../firebase/config';
 import { syncPublicProfile } from '../utils/syncPublicProfile';
 import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -411,8 +420,14 @@ const WelcomeDashboard = () => {
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showUserDrop, setShowUserDrop]   = useState(false);
   const [activeSubPanel, setActiveSubPanel] = useState(null);
-  const [userRole, setUserRole]       = useState(() => localStorage.getItem('isGuest') === 'true' ? 'guest' : 'registered');
-  const [userBadge, setUserBadge]     = useState(null);
+  const [userRole, setUserRole]       = useState(() => {
+    if (localStorage.getItem('isGuest') === 'true') return 'guest';
+    return window._appUserProfile?.role || 'registered';
+  });
+  const [userBadge, setUserBadge]     = useState(() => {
+    if (localStorage.getItem('isGuest') === 'true') return null;
+    return window._appUserProfile?.badge || null;
+  });
 
   // Cross-page toast: show welcome message after login
   useEffect(() => {
@@ -547,8 +562,22 @@ const WelcomeDashboard = () => {
       } catch { setCurrentDate(''); }
     });
 
+    const handleLiveAppProfile = (e) => {
+      const p = e?.detail;
+      if (!p) return;
+      if (checkIsGuestUser(p)) {
+        setUserRole('guest');
+        setUserBadge(null);
+      } else {
+        if (p.role) setUserRole(p.role);
+        setUserBadge(p.badge || null);
+      }
+    };
+    window.addEventListener('_appUserProfileChanged', handleLiveAppProfile);
+
     return () => {
       unsubAuth();
+      window.removeEventListener('_appUserProfileChanged', handleLiveAppProfile);
       if (banModalIntervalRef.current) {
         clearInterval(banModalIntervalRef.current);
         banModalIntervalRef.current = null;
@@ -584,18 +613,22 @@ const WelcomeDashboard = () => {
 
   /* ── Role chip config ── */
   const getRoleConfig = () => {
-    const normalizedRole = userRole === 'superowner' ? 'owner' : userRole;
+    const isGuestSession = checkIsGuestUser({ isGuest: userRole === 'guest', role: userRole });
+    const normalizedRole = normalizeRole(userRole);
+    const resolvedBadgeKey = resolveBadgeKey(userBadge);
     const staffRoles = ['owner', 'admin', 'moderator'];
-    const effectiveRole = staffRoles.includes(normalizedRole)
-      ? normalizedRole
-      : (userBadge ? 'badge_holder' : normalizedRole);
+    const effectiveRole = isGuestSession
+      ? 'guest'
+      : staffRoles.includes(normalizedRole)
+        ? normalizedRole
+        : (resolvedBadgeKey ? 'badge_holder' : normalizedRole);
     switch (effectiveRole) {
       case 'owner': {
-        const ownerBadgeKey = userBadge || 'the_olympian';
+        const ownerBadgeKey = resolvedBadgeKey || 'the_olympian';
         const ownerBadgeData = Badges[ownerBadgeKey];
         const ownerBadgeHtml = ownerBadgeData?.svg?.replace(/\{\.\.\.props\}/g, '') || '';
         return {
-          label: ownerBadgeData?.name || 'Owner',
+          label: ownerBadgeData?.name || 'Godfather',
           cls: 'wd-role--owner',
           icon: ownerBadgeHtml
             ? <span style={{width:16,height:16,display:'inline-block',verticalAlign:'middle',flexShrink:0}} dangerouslySetInnerHTML={{__html: ownerBadgeHtml}} />
@@ -630,11 +663,21 @@ const WelcomeDashboard = () => {
           </svg>
         )
       };
+      case 'rj': {
+        const rjBadgeHtml = Badges.rj?.svg?.replace(/\{\.\.\.props\}/g, '') || '';
+        return {
+          label: 'RJ',
+          cls: 'wd-role--badge',
+          icon: rjBadgeHtml
+            ? <span style={{width:15,height:15,display:'inline-block',verticalAlign:'middle'}} dangerouslySetInnerHTML={{__html: rjBadgeHtml}} />
+            : <SparkleIcon />
+        };
+      }
       case 'badge_holder': {
-        const badgeData = Badges[userBadge];
+        const badgeData = Badges[resolvedBadgeKey];
         const badgeHtml = badgeData?.svg?.replace(/\{\.\.\.props\}/g, '') || '';
         return {
-          label: badgeData?.name || userBadge,
+          label: badgeData?.name || resolvedBadgeKey || 'Member',
           cls: 'wd-role--badge',
           icon: badgeHtml
             ? <span style={{width:15,height:15,display:'inline-block',verticalAlign:'middle'}} dangerouslySetInnerHTML={{__html: badgeHtml}} />
@@ -642,7 +685,7 @@ const WelcomeDashboard = () => {
         };
       }
       default: {
-        if (userRole === 'guest') {
+        if (isGuestSession) {
           // Read gender from ALL sources — state first (includes Firestore data), then localStorage
           const gender = (
             guestUser?.gender ||
@@ -739,7 +782,7 @@ const WelcomeDashboard = () => {
     : '';
 
   /* ── settings rows ── */
-  const isGuestUser = userRole === 'guest';
+  const isGuestUser = checkIsGuestUser({ isGuest: userRole === 'guest', role: userRole });
   const settingsRows = isGuestUser ? [
     { section: 'Session', items: [
       { label: 'Sign Out', sub: 'End current session', IconEl: <SignOutIcon animated />, color: '#f97316', bg: 'rgba(249,115,22,0.1)', action: handleLogout, danger: false },
@@ -874,7 +917,7 @@ const WelcomeDashboard = () => {
         </div>
 
         {/* ── COIN WALLET QUICK ACCESS (registered users only) ── */}
-        {userRole !== 'guest' && (
+        {!isGuestUser && (
           <div className="wd-coins-strip">
             <button className="wd-coin-btn wd-coin-btn--wallet" onClick={() => navigate('/wallet')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -903,7 +946,7 @@ const WelcomeDashboard = () => {
               </svg>
               <span>Leaderboard</span>
             </button>
-            {(userBadge?.toLowerCase() === 'rj' || userRole === 'rj') && (
+            {isRjRole(userRole, userBadge) && (
               <button className="wd-coin-btn wd-coin-btn--rj" onClick={() => navigate('/rj-earnings')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <rect x="9" y="2" width="6" height="12" rx="3" fill="#34d399"/>
@@ -914,7 +957,7 @@ const WelcomeDashboard = () => {
                 <span>RJ Earnings</span>
               </button>
             )}
-            {userRole === 'owner' && (
+            {isOwnerRole(userRole) && (
               <button className="wd-coin-btn wd-coin-btn--owner-email" onClick={() => navigate('/owner/email-center')}
                       title="Owner Email Center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -945,11 +988,11 @@ const WelcomeDashboard = () => {
                   const dt = new Date(src.createdAt);
                   if (!isNaN(dt)) return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 }
-                if (userRole === 'guest' || src) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                if (isGuestUser || src) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 return '—';
               })()}</span>
             </div>
-            <div className={`wd-ms-badge wd-ms-badge--${userBadge ? 'badge' : (userRole || 'registered')}`}>
+            <div className={`wd-ms-badge wd-ms-badge--${resolveBadgeKey(userBadge) ? 'badge' : (normalizeRole(userRole) === 'user' ? 'registered' : normalizeRole(userRole))}`}>
               <span className="wd-ms-badge-icon">{roleConfig.icon}</span>
               <span>{roleConfig.label}</span>
             </div>

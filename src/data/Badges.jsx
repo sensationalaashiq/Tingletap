@@ -135,6 +135,24 @@ export const Badges = {
   }
   };
 export const getRoleBadge = (role) => {
-  if (!role || !Badges[role]) return '';
-  return Badges[role].svg;
+  if (!role) return '';
+  if (Badges[role]) return Badges[role].svg;
+  const lower = String(role).toLowerCase().trim();
+  const aliasMap = {
+    owner: 'the_olympian',
+    superowner: 'the_olympian',
+    godfather: 'the_olympian',
+    admin: 'titans',
+    high_council: 'titans',
+    'high council': 'titans',
+    moderator: 'spartans',
+    mod: 'spartans',
+    guardian: 'spartans',
+    verified_rj: 'rj',
+    radio_jockey: 'rj',
+  };
+  const aliased = aliasMap[lower];
+  if (aliased && Badges[aliased]) return Badges[aliased].svg;
+  const matched = Object.keys(Badges).find(k => k.toLowerCase() === lower);
+  return matched ? Badges[matched].svg : '';
 };

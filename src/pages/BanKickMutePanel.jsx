@@ -1,6 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
+import {
+  getDefaultAvatarUrl,
+  getRoleDisplayLabel,
+  normalizeRole,
+  isOwnerRole,
+  isAdminRole,
+} from '../utils/roleUtils';
 import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, rtdb } from '../firebase/config';
@@ -113,9 +119,9 @@ const BanKickMutePanel = () => {
     const unsub = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         const userData = snap.data();
-        const role = userData.role === 'superowner' ? 'owner' : userData.role;
+        const role = normalizeRole(userData.role);
         setCurrentUserProfile({ ...userData, role, uid: user.uid });
-        if (!['owner', 'admin'].includes(role)) {
+        if (!isAdminRole(role)) {
           pt.error('Access denied. Owner/Admin privileges required.');
           navigate('/');
         } else {
@@ -135,7 +141,7 @@ const BanKickMutePanel = () => {
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
       const usersData = snapshot.docs
         .map(d => ({ id: d.id, uid: d.id, ...d.data() }))
-        .filter(u => (u.role || '').toLowerCase() !== 'owner' && (u.role || '').toLowerCase() !== 'superowner');
+        .filter(u => !isOwnerRole(u.role));
       setUsers(usersData);
       setLoading(false);
     }, () => setLoading(false));
@@ -457,7 +463,7 @@ const BanKickMutePanel = () => {
                 <circle cx="12" cy="8" r="4" fill="#ffffff" />
                 <path d="M4 20v-1a8 8 0 0 1 16 0v1" fill="#ffffff" />
               </svg>
-              {getRoleDisplayLabel({ role: currentUserProfile?.role }).toUpperCase()}
+              {getRoleDisplayLabel({ role: currentUserProfile?.role, badge: currentUserProfile?.badge }).toUpperCase()}
             </div>
             <div className="luxury-admin-profile">
               <span className="luxury-admin-name">{currentUserProfile?.displayName}</span>
@@ -641,7 +647,7 @@ const BanKickMutePanel = () => {
                           )}
                         </div>
                         <div className="luxury-role-section">
-                          <span className={`luxury-role-badge role-${u.isGuest ? 'user' : (u.role === 'superowner' ? 'owner' : (u.role || 'user'))}`}>
+                          <span className={`luxury-role-badge role-${u.isGuest ? 'user' : normalizeRole(u.role)}`}>
                             {typeLabel.toUpperCase()}
                           </span>
                         </div>

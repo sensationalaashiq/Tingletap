@@ -5,24 +5,38 @@ service cloud.firestore {
     // ================================================================
     // ROLE AND PERMISSION HELPERS
     // Normalizes role names and casing:
-    // owner / superowner / Godfather
-    // admin / High Council
-    // moderator / mod / Guardian
-    // rj / RJ
+    // owner / superowner / godfather
+    // admin / high_council / high council
+    // moderator / mod / guardian
+    // rj / radio_jockey / verified_rj
     // user / member
     // guest
     // ================================================================
 
+    function normalizeRoleStr(raw) {
+      let rl = (raw is string) ? raw.lower() : 'user';
+      return rl in ['owner', 'superowner', 'godfather'] ? 'owner'
+           : rl in ['admin', 'high_council', 'high council'] ? 'admin'
+           : rl in ['moderator', 'mod', 'guardian'] ? 'moderator'
+           : rl in ['rj', 'radio_jockey', 'verified_rj'] ? 'rj'
+           : rl == 'guest' ? 'guest'
+           : 'user';
+    }
+
     function getRole(uid) {
-      let r = exists(/databases/$(database)/documents/users/$(uid))
+      let raw = exists(/databases/$(database)/documents/users/$(uid))
         ? get(/databases/$(database)/documents/users/$(uid)).data.get('role', 'user')
         : 'user';
-      return r in ['superowner', 'owner', 'Owner', 'SuperOwner', 'Godfather'] ? 'owner'
-           : r in ['admin', 'Admin', 'High Council'] ? 'admin'
-           : r in ['moderator', 'Moderator', 'mod', 'Mod', 'Guardian'] ? 'moderator'
-           : r in ['rj', 'RJ'] ? 'rj'
-           : r in ['guest', 'Guest'] ? 'guest'
-           : 'user';
+      return normalizeRoleStr(raw);
+    }
+
+    function isReservedBadge(b) {
+      return b is string && b.lower() in [
+        'the_olympian', 'godfather',
+        'titans', 'high_council', 'high council',
+        'spartans', 'guardian',
+        'rj', 'verified_rj', 'radio_jockey'
+      ];
     }
 
     function myRole() {
@@ -100,7 +114,10 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.uid == request.auth.uid
-                    && (isStaff() || request.resource.data.get('role', 'user') in ['user', 'guest'])
+                    && (isStaff() || (
+                      normalizeRoleStr(request.resource.data.get('role', 'user')) in ['user', 'guest']
+                      && !isReservedBadge(request.resource.data.get('badge', ''))
+                    ))
                     && (isStaff() || !request.resource.data.keys().hasAny(['isBanned', 'bannedBy', 'bannedAt']));
 
       // User updating own profile
@@ -112,7 +129,8 @@ service cloud.firestore {
                         && !request.resource.data.diff(resource.data).affectedKeys()
                              .hasAny(['role', 'isBanned', 'bannedBy', 'bannedAt', 'mutedInfo'])
                         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['badge'])
-                            || !(request.resource.data.get('badge', null) in ['the_olympian', 'titans', 'spartans']))
+                            || request.resource.data.get('badge', null) == null
+                            || !isReservedBadge(request.resource.data.get('badge', '')))
                       )
                     );
 
@@ -136,10 +154,29 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if request.auth != null
                             && (
-                              request.auth.uid == userId
-                              || isStaff()
-                              || (!isBanned(request.auth.uid)
-                                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends', '_syncedAt']))
+                              isStaff()
+                              || (
+                                request.auth.uid == userId
+                                && !isBanned(request.auth.uid)
+                                && (
+                                  !('role' in request.resource.data)
+                                  || normalizeRoleStr(request.resource.data.get('role', 'user')) in ['user', 'guest']
+                                  || (exists(/databases/$(database)/documents/users/$(userId))
+                                      && normalizeRoleStr(request.resource.data.get('role', 'user')) == getRole(userId))
+                                )
+                                && (
+                                  !('badge' in request.resource.data)
+                                  || request.resource.data.get('badge', null) == null
+                                  || !isReservedBadge(request.resource.data.get('badge', ''))
+                                  || (exists(/databases/$(database)/documents/users/$(userId))
+                                      && request.resource.data.get('badge', null) == get(/databases/$(database)/documents/users/$(userId)).data.get('badge', null))
+                                )
+                              )
+                              || (
+                                !isBanned(request.auth.uid)
+                                && resource != null
+                                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends', '_syncedAt'])
+                              )
                             );
       allow delete: if isOwner();
     }

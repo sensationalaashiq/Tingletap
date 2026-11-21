@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase/config';
+import { isOwnerRole } from '../utils/roleUtils';
 import {
   collection, query, where, limit, onSnapshot,
   doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
@@ -764,7 +765,7 @@ const OwnerEmailCenter = () => {
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         const data = snap.data() || {};
-        if (data.role !== 'owner') { navigate('/welcome'); return; }
+        if (!isOwnerRole(data.role)) { navigate('/welcome'); return; }
         setOwnerName(data.displayName || user.displayName || '');
         setIsOwner(true);
       } catch { navigate('/welcome'); }

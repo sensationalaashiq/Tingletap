@@ -7,9 +7,9 @@
       // FIX 10: Presence status is non-sensitive; any auth user may READ.
       // Each user may WRITE only their own status entry; staff may moderate/clear status.
       ".read": "auth != null",
-      ".indexOn": ["currentRoomId", "state"],
+      ".indexOn": ["currentRoomId", "state", "last_changed"],
       "$uid": {
-        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'owner' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'moderator' || root.child('staff').child(auth.uid).val() === true)"
+        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'owner' || root.child('roles').child(auth.uid).val() === 'superowner' || root.child('roles').child(auth.uid).val() === 'godfather' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'high_council' || root.child('roles').child(auth.uid).val() === 'moderator' || root.child('roles').child(auth.uid).val() === 'guardian' || root.child('staff').child(auth.uid).val() === true)"
       }
     },
 
@@ -20,6 +20,7 @@
       // Writes are uid-scoped (each user writes only their own entry).
       "$roomId": {
         ".read": "auth != null",
+        ".indexOn": ["state", "last_changed"],
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
         }
@@ -28,11 +29,11 @@
 
     "roomCounts": {
       // Room-member counts are maintained by client-side presence writes.
-      // FIX: previously had no write grant, so every client write here was
-      // silently rejected by the root ".write": false — counts never populated.
+      // Stores { online: true, last_changed: <ms> } (or legacy true) for stale-entry filtering.
       // Each user may write only their own entry within a room.
       ".read": "auth != null",
       "$roomId": {
+        ".indexOn": ["last_changed"],
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
         }

@@ -2,6 +2,7 @@
 // Centralized, ultra-premium badge and staff insignia renderer for TingleTap
 import React from 'react';
 import { Badges } from '../data/Badges';
+import { normalizeRole, resolveBadgeKey } from './roleUtils';
 
 export const OWNER_CROWN_SVG = (size = 16, title = 'Owner / Godfather') => (
   <span className="inline-badge badge-owner-crown" title={title} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', flexShrink: 0, background: 'transparent', boxShadow: 'none' }}>
@@ -82,14 +83,10 @@ export const RJ_MIC_SVG = (size = 15, title = 'Radio Jockey') => (
  */
 export const renderUserBadge = (userOrProps, size = 16) => {
   if (!userOrProps) return null;
-  const rawBadge = userOrProps.badge;
-  const badgeKey = rawBadge ? String(rawBadge).trim().toLowerCase() : '';
-  const role = (userOrProps.role || '').toLowerCase().trim();
+  const iconSize = typeof size === 'number' ? size : (size?.size || 16);
 
-  // 1. Custom acquired VIP Badge (case-insensitive lookup)
-  const resolvedBadge = badgeKey
-    ? (Badges[rawBadge] ? rawBadge : Object.keys(Badges).find(k => k.toLowerCase() === badgeKey))
-    : null;
+  // 1. Custom acquired VIP Badge (case-insensitive + alias lookup)
+  const resolvedBadge = resolveBadgeKey(userOrProps.badge);
   if (resolvedBadge && Badges[resolvedBadge]) {
     return (
       <span
@@ -101,18 +98,19 @@ export const renderUserBadge = (userOrProps, size = 16) => {
     );
   }
 
-  // 2. Staff Roles
-  if (['owner', 'superowner', 'godfather'].includes(role)) {
-    return OWNER_CROWN_SVG(size, 'Godfather / Owner');
+  // 2. Staff & RJ Roles
+  const normRole = normalizeRole(userOrProps.role);
+  if (normRole === 'owner') {
+    return OWNER_CROWN_SVG(iconSize, 'Godfather / Owner');
   }
-  if (['admin', 'high_council', 'high council'].includes(role)) {
-    return ADMIN_SHIELD_SVG(size, 'Administrator');
+  if (normRole === 'admin') {
+    return ADMIN_SHIELD_SVG(iconSize, 'Administrator');
   }
-  if (['moderator', 'guardian', 'mod'].includes(role)) {
-    return MODERATOR_SHIELD_SVG(size, 'Moderator');
+  if (normRole === 'moderator') {
+    return MODERATOR_SHIELD_SVG(iconSize, 'Moderator');
   }
-  if (['rj', 'radio_jockey', 'verified_rj'].includes(role)) {
-    return RJ_MIC_SVG(size, 'Radio Jockey');
+  if (normRole === 'rj') {
+    return RJ_MIC_SVG(iconSize, 'Radio Jockey');
   }
 
   return null;

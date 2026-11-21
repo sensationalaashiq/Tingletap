@@ -12,6 +12,7 @@ import AdultRoomModal from '../components/AdultRoomModal';
 import { getRoomSlug } from '../utils/roomSlug';
 import BanKickModal from '../components/BanKickModal';
 import { isKickExpired, autoCheckUnkick } from '../utils/modExpiryService';
+import { normalizeRole, isOwnerRole, isStaffRole } from '../utils/roleUtils';
 import './RoomListPage.css';
 
 /* FIX 19: Cache external geolocation lookups in sessionStorage for 1 hour so we
@@ -298,12 +299,25 @@ const RoomListPage = () => {
   // This avoids downloading the full status/ tree (which contains all user data)
   // just to count room members.
   useEffect(() => {
+    const STALE_COUNT_MS = 15 * 60 * 1000;
     return onValue(ref(rtdb, 'roomCounts'), (snap) => {
       const data = snap.val() || {};
+      const now = Date.now();
       const counts = {};
       Object.entries(data).forEach(([roomId, members]) => {
         if (members && typeof members === 'object') {
-          counts[roomId] = Object.keys(members).length;
+          let active = 0;
+          Object.values(members).forEach((v) => {
+            if (!v) return;
+            if (typeof v === 'object') {
+              if (v.online === false) return;
+              if (v.last_changed && (now - v.last_changed) >= STALE_COUNT_MS) return;
+              active += 1;
+            } else if (v === true) {
+              active += 1;
+            }
+          });
+          counts[roomId] = active;
         }
       });
       setRoomCounts(counts);
@@ -335,17 +349,10 @@ const RoomListPage = () => {
     if (!cu) return;
     getDoc(doc(db, 'users', cu.uid)).then(snap => {
       if (snap.exists()) {
-        let role = snap.data().role || 'user';
-        // Legacy 'superowner' values are normalized to 'owner' for local display only.
-        // We intentionally do NOT write this back from the client — Firestore rules
-        // correctly reject client self-writes to the `role` field (and 'superowner'
-        // isn't recognized as staff), so persisting this migration must go through a
-        // server-verified path (see moderationAction.js), not a client updateDoc.
-        if (role === 'superowner') {
-          role = 'owner';
-        }
+        const rawRole = snap.data().role || 'user';
+        const role = normalizeRole(rawRole);
         setUserRole(role);
-        setIsOwner(role === 'owner');
+        setIsOwner(isOwnerRole(rawRole));
       }
     });
 
@@ -548,7 +555,7 @@ const RoomListPage = () => {
 
     const name = room.name.toLowerCase();
     if (name.includes('staff') || name.includes('admin')) {
-      if (!['owner','admin','moderator'].includes(role.toLowerCase())) {
+      if (!isStaffRole(role)) {
         return;
       }
     }

@@ -69,24 +69,73 @@ export const dicebearSex = (gender) => {
   return (gender || '').toLowerCase() === 'female' ? 'female' : 'male';
 };
 
+const BADGE_ALIASES = {
+  verified_rj: 'rj',
+  radio_jockey: 'rj',
+  godfather: 'the_olympian',
+  high_council: 'titans',
+  'high council': 'titans',
+  guardian: 'spartans',
+};
+
+export const normalizeRole = (role) => {
+  const r = String(role || '').toLowerCase().trim();
+  if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
+  if (r === 'admin' || r === 'high_council' || r === 'high council') return 'admin';
+  if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'moderator';
+  if (r === 'rj' || r === 'verified_rj' || r === 'radio_jockey') return 'rj';
+  if (r === 'guest') return 'guest';
+  return 'user';
+};
+
+export const isOwnerRole = (role) => normalizeRole(role) === 'owner';
+export const isAdminRole = (role) => ['owner', 'admin'].includes(normalizeRole(role));
+export const isModRole   = (role) => ['owner', 'admin', 'moderator'].includes(normalizeRole(role));
+export const isStaffRole = (role) => ['owner', 'admin', 'moderator'].includes(normalizeRole(role));
+
+export const resolveBadgeKey = (badge) => {
+  if (!badge) return null;
+  const raw = String(badge).trim();
+  if (!raw) return null;
+  if (Badges[raw]) return raw;
+  const lower = raw.toLowerCase();
+  const aliased = BADGE_ALIASES[lower];
+  if (aliased && Badges[aliased]) return aliased;
+  const matched = Object.keys(Badges).find(k => k.toLowerCase() === lower);
+  return matched || null;
+};
+
+export const isRjRole = (role, badge) =>
+  normalizeRole(role) === 'rj' || resolveBadgeKey(badge) === 'rj';
+
+export const isGuestUser = (userOrProps) => {
+  if (!userOrProps) return false;
+  return (
+    userOrProps.isGuest === true ||
+    String(userOrProps.isGuest) === 'true' ||
+    normalizeRole(userOrProps.role) === 'guest'
+  );
+};
+
 export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
-  const r = (role || '').toLowerCase().trim();
   const g = (gender || '').toLowerCase().trim();
 
-  if (isGuest || r === 'guest') {
+  if (isGuestUser({ isGuest, role })) {
     if (g === 'female') return 'Female';
     if (g === 'transgender' || g === 'other') return 'Transgender';
     return 'Male';
   }
 
-  if (badge && Badges[badge]?.name) {
-    return Badges[badge].name;
+  const badgeKey = resolveBadgeKey(badge);
+  if (badgeKey && Badges[badgeKey]?.name) {
+    return Badges[badgeKey].name;
   }
 
-  if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'Godfather';
-  if (r === 'admin' || r === 'high_council' || r === 'high council') return 'High Council';
-  if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'Guardian';
-  if (r === 'rj' || r === 'radio_jockey') return 'RJ';
+  const norm = normalizeRole(role);
+  if (norm === 'owner') return 'Godfather';
+  if (norm === 'admin') return 'High Council';
+  if (norm === 'moderator') return 'Guardian';
+  if (norm === 'rj') return 'RJ';
 
   return 'Member';
 };

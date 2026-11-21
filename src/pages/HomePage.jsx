@@ -52,7 +52,18 @@ import TingleBotNotification from '../components/TingleBotNotification';
 import TranslatedMessage from '../components/TranslatedMessage';
 import { useTranslation } from '../hooks/useTranslation';
 import { Badges as badges } from '../data/Badges';
-import { getRoleDisplayLabel, getStoredGuestGender, dicebearSex, getDefaultAvatarUrl } from '../utils/roleUtils';
+import {
+    getRoleDisplayLabel,
+    getStoredGuestGender,
+    dicebearSex,
+    getDefaultAvatarUrl,
+    normalizeRole,
+    isOwnerRole,
+    isStaffRole,
+    isRjRole,
+    isGuestUser,
+    resolveBadgeKey
+} from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
@@ -1576,28 +1587,39 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Lookup map so reactions can display reactor usernames and UIDs instantly
     const userLookupMap = useMemo(() => {
         const map = {};
+        const mergeEntry = (incoming) => {
+            if (!incoming?.uid) return;
+            const prev = map[incoming.uid];
+            if (!prev) {
+                map[incoming.uid] = incoming;
+                return;
+            }
+            const nextRole = isStaffRole(prev.role)
+                ? prev.role
+                : (isStaffRole(incoming.role) ? incoming.role : (incoming.role || prev.role));
+            const nextBadge = resolveBadgeKey(prev.badge)
+                ? (resolveBadgeKey(incoming.badge) ? incoming.badge : prev.badge)
+                : (incoming.badge || prev.badge);
+            map[incoming.uid] = { ...prev, ...incoming, role: nextRole, badge: nextBadge };
+        };
         if (loggedInUserProfile?.uid) {
-            map[loggedInUserProfile.uid] = loggedInUserProfile;
+            mergeEntry(loggedInUserProfile);
         }
         if (Array.isArray(liveUsers)) {
-            liveUsers.forEach(u => {
-                if (u?.uid) map[u.uid] = u;
-            });
+            liveUsers.forEach(mergeEntry);
         }
         if (Array.isArray(friendsProfiles)) {
-            friendsProfiles.forEach(f => {
-                if (f?.uid) map[f.uid] = f;
-            });
+            friendsProfiles.forEach(mergeEntry);
         }
         if (Array.isArray(messages)) {
             messages.forEach(m => {
-                if (m?.uid && !map[m.uid]) {
-                    map[m.uid] = {
+                if (m?.uid) {
+                    mergeEntry({
                         uid: m.uid,
                         displayName: m.displayName || m.username || 'User',
                         badge: m.badge,
                         role: m.role
-                    };
+                    });
                 }
             });
         }
@@ -2254,11 +2276,20 @@ const HomePage = ({ user, roomIdOverride }) => {
             if (docSnap.exists()) {
                 const pubData = docSnap.data();
                 setProfileUser(prev => {
+                    const prevObj = prev?.uid === targetUid ? prev : {};
+                    const keepPrevRole = (isStaffRole(prevObj.role) && !isStaffRole(pubData.role))
+                        || (isRjRole(prevObj.role, prevObj.badge) && normalizeRole(pubData.role) === 'user');
+                    const resolvedRole = keepPrevRole ? prevObj.role : (pubData.role || prevObj.role);
+                    const resolvedBadge = resolveBadgeKey(pubData.badge)
+                        ? pubData.badge
+                        : (resolveBadgeKey(prevObj.badge) ? prevObj.badge : (pubData.badge !== undefined ? pubData.badge : prevObj.badge));
                     const updatedUserData = {
-                        ...(prev?.uid === targetUid ? prev : {}),
+                        ...prevObj,
                         ...pubData,
                         uid: targetUid,
-                        friends: Array.isArray(pubData.friends) ? pubData.friends : prev?.friends,
+                        role: resolvedRole,
+                        badge: resolvedBadge,
+                        friends: Array.isArray(pubData.friends) ? pubData.friends : prevObj.friends,
                     };
 
                     setUserFriends(uf => uf.map(friend =>
@@ -3035,7 +3066,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         set(userStatusRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] status PART 0 write failed:', err?.message));
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         set(roomPresenceRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] room_presence PART 0 write failed:', err?.message));
-        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), true).catch(() => {});
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: Date.now() }).catch(() => {});
     }, [roomId, user?.uid, firebaseAuthUid]);
 
     // ── PRESENCE PART 1: Write full online status whenever profile + auth ready ─
@@ -3074,7 +3105,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         set(roomPresenceRef, statusData).catch(err => console.warn('[Presence] room_presence PART 1 write failed:', err?.message));
-        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), true).catch(() => {});
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: Date.now() }).catch(() => {});
     }, [roomId, user?.uid, firebaseAuthUid,
         loggedInUserProfile?.displayName,
         loggedInUserProfile?.role,
@@ -3085,7 +3116,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         loggedInUserProfile?.settings?.showOnlineStatus,
     ]);
 
-    // ── PRESENCE PART 2: Stable setup — onDisconnect + heartbeat ─────────────
+    // ── PRESENCE PART 2: Room-scoped onDisconnect + 60s heartbeat ───────────
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
         const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
@@ -3103,21 +3134,33 @@ const HomePage = ({ user, roomIdOverride }) => {
         onDisconnect(roomCountRef).remove();
 
         const heartbeatInterval = setInterval(() => {
+            const now = Date.now();
             const cached = window._currentStatusData;
-            if (!cached) return;
-            const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: Date.now() };
-            window._currentStatusData = fresh;
-            update(userStatusRef, fresh).catch(() => {});
-            set(roomPresenceRef, fresh).catch(() => {});
-        }, 120000);
+            if (cached) {
+                const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: now };
+                window._currentStatusData = fresh;
+                update(userStatusRef, fresh).catch(() => {});
+                set(roomPresenceRef, fresh).catch(() => {});
+            }
+            set(roomCountRef, { online: true, last_changed: now }).catch(() => {});
+        }, 60000);
 
         return () => {
             clearInterval(heartbeatInterval);
-            update(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+            // Room-scoped cleanup ONLY: never clobber global status/{uid} to offline during room switches
             remove(roomPresenceRef).catch(() => {});
             remove(roomCountRef).catch(() => {});
         };
     }, [roomId, user?.uid, firebaseAuthUid]);
+
+    // Global offline cleanup runs ONLY when leaving HomePage completely (unmount) or signing out
+    useEffect(() => {
+        return () => {
+            const authUid = auth.currentUser?.uid || firebaseAuthUid;
+            if (!authUid) return;
+            update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+        };
+    }, [firebaseAuthUid]);
 
     // ── PRESENCE PART 3: Store device info in Firestore once per login ────────
     // Isolated so its Firestore write never triggers loggedInUserProfile listener
@@ -5185,8 +5228,27 @@ const HomePage = ({ user, roomIdOverride }) => {
         textareaRef.current?.focus();
     };
 
-    const handleViewProfile = (user) => {
-        setProfileUser(user);
+    const handleViewProfile = (targetUser) => {
+        if (!targetUser) return;
+        const uid = targetUser.uid || targetUser.id;
+        const isSelf = uid && (uid === auth.currentUser?.uid || uid === loggedInUserProfile?.uid);
+        const cached = (uid && (
+            (isSelf ? loggedInUserProfile : null) ||
+            userLookupMap?.[uid] ||
+            liveUsers?.find(u => u?.uid === uid) ||
+            window.userProfilesCache?.get?.(uid)
+        )) || null;
+        if (cached) {
+            const mergedRole = isStaffRole(cached.role)
+                ? cached.role
+                : (isStaffRole(targetUser.role) ? targetUser.role : (cached.role || targetUser.role));
+            const mergedBadge = resolveBadgeKey(cached.badge)
+                ? cached.badge
+                : (resolveBadgeKey(targetUser.badge) ? targetUser.badge : (cached.badge || targetUser.badge));
+            setProfileUser({ ...targetUser, ...cached, uid, role: mergedRole, badge: mergedBadge });
+        } else {
+            setProfileUser({ ...targetUser, ...(uid ? { uid } : {}) });
+        }
     };
 
     // ── Relationship Mark System ─────────────────────────────────────────────
@@ -8469,10 +8531,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 {/* Name + badge */}
                                 <div className="vpm-name-row">
                                     <span className="vpm-name" data-user-id={profileUser.uid} data-user-uid={profileUser.uid}>{profileUser.displayName || 'Anonymous'}</span>
-                                    {profileUser.badge && badges[profileUser.badge] && (
-                                        <span className={`vpm-badge-wrap badge-${profileUser.badge}`} title={badges[profileUser.badge].name}
-                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(badges[profileUser.badge].svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }} />
-                                    )}
+                                    {renderUserBadge(profileUser, 18)}
                                     {isTodayBirthday(profileUser.dateOfBirth) && (
                                         <span className="vpm-badge-wrap birthday-badge-glow"
                                             title="Happy Birthday!"
@@ -8496,7 +8555,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 {/* Compact badges row: role + online + trust */}
                                 <div className="vpm-badges-row">
                                     {(() => {
-                                        const rl = profileUser.role?.toLowerCase() || 'user';
+                                        const rl = isGuestUser(profileUser) ? 'guest' : normalizeRole(profileUser.role);
                                         const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
                                         return (
                                             <div className={`vpm-role-pill-badge vpm-role-pill--${rl}`}>

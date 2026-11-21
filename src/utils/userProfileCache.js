@@ -7,7 +7,8 @@
 // (callers still get a fresh read once the TTL expires).
 
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, auth } from '../firebase/config';
+import { isStaffRole, isRjRole, resolveBadgeKey } from './roleUtils';
 
 const DEFAULT_TTL_MS = 60 * 1000; // 1 minute
 
@@ -41,8 +42,26 @@ export async function getCachedUserProfile(uid, options = {}) {
   // contains all display-safe fields (displayName, photoURL, role, badges, etc.)
   // synced by syncPublicProfile after every users/{uid} write.
   const promise = getDoc(doc(db, 'publicProfiles', uid))
-    .then(snap => {
-      const data = snap.exists() ? snap.data() : null;
+    .then(async (snap) => {
+      let data = snap.exists() ? snap.data() : null;
+      const needsAuthoritative =
+        !data ||
+        (!isStaffRole(data.role) && !isRjRole(data.role, data.badge) && !resolveBadgeKey(data.badge));
+      if (needsAuthoritative && auth.currentUser) {
+        try {
+          const uSnap = await getDoc(doc(db, 'users', uid));
+          if (uSnap.exists()) {
+            const uData = uSnap.data();
+            const mergedRole = isStaffRole(uData.role)
+              ? uData.role
+              : (isStaffRole(data?.role) ? data.role : (uData.role || data?.role));
+            const mergedBadge = resolveBadgeKey(uData.badge)
+              ? uData.badge
+              : (uData.badge !== undefined && uData.badge !== null ? uData.badge : data?.badge);
+            data = { ...(data || {}), ...uData, role: mergedRole, badge: mergedBadge, uid };
+          }
+        } catch (_) {}
+      }
       cache.set(uid, { data, ts: Date.now() });
       inFlight.delete(uid);
       return data;

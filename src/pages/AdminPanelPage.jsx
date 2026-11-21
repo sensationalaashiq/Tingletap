@@ -1,6 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import {
+  getDefaultAvatarUrl,
+  normalizeRole,
+  isOwnerRole,
+  isAdminRole,
+  resolveBadgeKey,
+  getRoleDisplayLabel,
+} from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
 import { useNavigate } from 'react-router-dom';
@@ -268,11 +275,10 @@ const AdminPanelPage = () => {
         // correctly reject client self-writes to the `role` field (and 'superowner'
         // isn't recognized as staff), so persisting this migration must go through a
         // server-verified path (see moderationAction.js), not a client updateDoc.
-        if (userData.role === 'superowner') {
-          userData = { ...userData, role: 'owner' };
-        }
+        const normalizedRole = normalizeRole(userData.role);
+        userData = { ...userData, role: normalizedRole };
         setCurrentUserProfile(userData);
-        if (userData.role !== 'owner') {
+        if (!isOwnerRole(normalizedRole)) {
           pt.error('Access denied. Owner privileges required.');
           navigate('/');
         } else {
@@ -1013,20 +1019,21 @@ const AdminPanelPage = () => {
     },
   ];
 
-  const ROLE_RANK = { owner: 4, superowner: 4, admin: 3, moderator: 2, user: 1, '': 1 };
+  const ROLE_RANK = { owner: 4, admin: 3, moderator: 2, rj: 1, user: 1, guest: 0 };
 
   const handleOpenRoleModal = (targetUser) => {
-    const myRole = currentUserProfile?.role;
-    if (!['owner', 'admin'].includes(myRole)) {
+    const myRole = normalizeRole(currentUserProfile?.role);
+    const targetRole = normalizeRole(targetUser.role);
+    if (!isAdminRole(myRole)) {
       pt.error('Only Owner and Admin can change roles.'); return;
     }
     if (targetUser.uid === currentUserProfile?.uid) {
       pt.error("You cannot change your own role."); return;
     }
-    if ((targetUser.role === 'owner' || targetUser.role === 'superowner')) {
+    if (isOwnerRole(targetRole)) {
       pt.error("The Owner's role cannot be changed."); return;
     }
-    if (myRole === 'admin' && targetUser.role === 'admin') {
+    if (myRole === 'admin' && targetRole === 'admin') {
       pt.error("Admins cannot demote other Admins."); return;
     }
     setRoleTarget(targetUser);
@@ -1034,27 +1041,29 @@ const AdminPanelPage = () => {
   };
 
   const confirmChangeRole = async (newRole) => {
-    if (!roleTarget || !newRole || newRole === roleTarget.role) return;
-    const myRole = currentUserProfile?.role;
+    const normNewRole = normalizeRole(newRole);
+    const normTargetRole = normalizeRole(roleTarget?.role);
+    if (!roleTarget || !newRole || normNewRole === normTargetRole) return;
+    const myRole = normalizeRole(currentUserProfile?.role);
     /* FIX 23: defense-in-depth guard — re-validate permissions here even though
        handleOpenRoleModal already checks, in case this is ever invoked directly.
        Blocks self-escalation, non-privileged callers, and assigning 'owner'. */
-    if (!['owner', 'admin'].includes(myRole)) {
+    if (!isAdminRole(myRole)) {
       pt.error('Only Owner and Admin can change roles.'); return;
     }
     if (roleTarget.uid === currentUserProfile?.uid) {
       pt.error('You cannot change your own role.'); return;
     }
-    if (roleTarget.role === 'owner' || roleTarget.role === 'superowner') {
+    if (isOwnerRole(normTargetRole)) {
       pt.error("The Owner's role cannot be changed."); return;
     }
-    if (newRole === 'owner' || newRole === 'superowner') {
+    if (isOwnerRole(normNewRole)) {
       pt.error('The Owner role cannot be assigned through this panel.'); return;
     }
-    if (myRole === 'admin' && (newRole === 'owner' || newRole === 'admin')) {
+    if (myRole === 'admin' && (normNewRole === 'owner' || normNewRole === 'admin')) {
       pt.error('Admins cannot assign Owner or Admin roles.'); return;
     }
-    if (myRole === 'admin' && roleTarget.role === 'admin') {
+    if (myRole === 'admin' && normTargetRole === 'admin') {
       pt.error('Admins cannot demote other Admins.'); return;
     }
     setChangingRole(true);
@@ -1062,13 +1071,13 @@ const AdminPanelPage = () => {
       const userRef = doc(db, 'users', roleTarget.id || roleTarget.uid);
       // Badge sync: admin ↔ titans badge, moderator ↔ spartans badge
       const ROLE_BADGE_MAP = { admin: 'titans', moderator: 'spartans' };
-      const newRoleBadge = ROLE_BADGE_MAP[newRole];
-      const oldRoleBadge = ROLE_BADGE_MAP[roleTarget.role];
-      const updateObj = { role: newRole };
+      const newRoleBadge = ROLE_BADGE_MAP[normNewRole];
+      const oldRoleBadge = ROLE_BADGE_MAP[normTargetRole];
+      const updateObj = { role: normNewRole };
       if (newRoleBadge) {
         // Promoting to a role that carries a badge — set it automatically
         updateObj.badge = newRoleBadge;
-      } else if (oldRoleBadge && roleTarget.badge === oldRoleBadge) {
+      } else if (oldRoleBadge && resolveBadgeKey(roleTarget.badge) === oldRoleBadge) {
         // Demoting from a role whose badge was auto-assigned — remove it
         updateObj.badge = null;
       }
@@ -1076,14 +1085,14 @@ const AdminPanelPage = () => {
       await updateDoc(userRef, updateObj);
       syncPublicProfile(targetUid, { ...roleTarget, ...updateObj, uid: targetUid });
 
-      const oldRank = ROLE_RANK[roleTarget.role] || 1;
-      const newRank = ROLE_RANK[newRole] || 1;
+      const oldRank = ROLE_RANK[normTargetRole] || 1;
+      const newRank = ROLE_RANK[normNewRole] || 1;
       const isPromotion = newRank > oldRank;
       const tinglebotType = isPromotion ? 'promoted' : 'demoted';
-      const roleLabelMap = { admin: 'High Council', moderator: 'Guardian', user: 'Member', owner: 'Godfather' };
+      const newRoleLabel = getRoleDisplayLabel({ role: normNewRole });
       const msgText = isPromotion
-        ? `${roleTarget.displayName} has been promoted to ${roleLabelMap[newRole] || newRole}.`
-        : `${roleTarget.displayName} has been demoted to ${roleLabelMap[newRole] || newRole}.`;
+        ? `${roleTarget.displayName} has been promoted to ${newRoleLabel}.`
+        : `${roleTarget.displayName} has been demoted to ${newRoleLabel}.`;
 
       const targetRoomId = onlineStatuses[roleTarget.uid]?.currentRoomId;
       const adminRoomId  = onlineStatuses[currentUserProfile?.uid]?.currentRoomId;
@@ -1095,11 +1104,10 @@ const AdminPanelPage = () => {
         postTingleBotRoomMessage(adminRoomId, { text: msgText, tinglebotType });
       }
 
-      const roleLabelMap2 = { admin: 'High Council', moderator: 'Guardian', user: 'Member', owner: 'Godfather' };
       if (isPromotion) {
-        pt.success(`${roleTarget.displayName} promoted to ${roleLabelMap2[newRole] || newRole}.`);
+        pt.success(`${roleTarget.displayName} promoted to ${newRoleLabel}.`);
       } else {
-        pt.warn(`${roleTarget.displayName} demoted to ${roleLabelMap2[newRole] || newRole}.`);
+        pt.warn(`${roleTarget.displayName} demoted to ${newRoleLabel}.`);
       }
       setShowRoleModal(false);
       setRoleTarget(null);
@@ -1111,12 +1119,12 @@ const AdminPanelPage = () => {
   };
 
   const handleAssignBadge = (targetUser) => {
-    const myRole = currentUserProfile?.role;
-    if (!['owner', 'admin'].includes(myRole)) {
+    const myRole = normalizeRole(currentUserProfile?.role);
+    if (!isAdminRole(myRole)) {
       pt.error('Only Owner and Admin can assign badges.');
       return;
     }
-    if (myRole === 'admin' && targetUser.role === 'owner') {
+    if (myRole === 'admin' && isOwnerRole(targetUser.role)) {
       pt.error("Admins cannot modify the Owner's profile.");
       return;
     }
@@ -1615,7 +1623,7 @@ const AdminPanelPage = () => {
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
         
-      const matchesRole = filterRole === 'all' || user.role === filterRole;
+      const matchesRole = filterRole === 'all' || normalizeRole(user.role) === filterRole;
       
       const matchesStatus = filterStatus === 'all' || 
         (filterStatus === 'online' && isEffectivelyOnline(onlineStatuses[user.uid])) ||
@@ -1736,7 +1744,7 @@ const AdminPanelPage = () => {
     };
   };
 
-  if (!currentUserProfile || !['owner', 'admin'].includes(currentUserProfile.role)) {
+  if (!currentUserProfile || !isAdminRole(currentUserProfile.role)) {
     return (
       <div className="luxury-admin-container">
         <div className="luxury-access-denied">
@@ -1776,13 +1784,19 @@ const AdminPanelPage = () => {
             
             <div className="luxury-admin-info">
               <div className="luxury-admin-badge">
-                <svg viewBox="0 0 24 24" fill="none">
-                  {currentUserProfile?.role === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
-                  {currentUserProfile?.role === 'admin' && <path fill="#ffffff" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
-                  {currentUserProfile?.role === 'moderator' && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
-                  {!currentUserProfile?.role && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
-                </svg>
-                {({'owner':'GODFATHER','admin':'HIGH COUNCIL','moderator':'GUARDIAN'}[currentUserProfile?.role]) || (currentUserProfile?.role?.toUpperCase()) || 'STAFF'}
+                {(() => {
+                  const myNormRole = normalizeRole(currentUserProfile?.role);
+                  return (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none">
+                        {myNormRole === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                        {myNormRole === 'admin' && <path fill="#ffffff" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                        {(myNormRole === 'moderator' || !myNormRole) && <path fill="#ffffff" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                      </svg>
+                      {getRoleDisplayLabel({ role: currentUserProfile?.role, badge: currentUserProfile?.badge }).toUpperCase()}
+                    </>
+                  );
+                })()}
               </div>
               <div className="luxury-admin-profile">
                 <span className="luxury-admin-name">{currentUserProfile?.displayName}</span>
@@ -2034,7 +2048,7 @@ const AdminPanelPage = () => {
               );
             })}
             {/* Email Center — owner only */}
-            {currentUserProfile?.role === 'owner' && (
+            {isOwnerRole(currentUserProfile?.role) && (
               <button
                 className="luxury-nav-tab"
                 onClick={() => navigate('/owner/email-center')}
@@ -2224,15 +2238,21 @@ const AdminPanelPage = () => {
                               </div>
                               
                               <div className="luxury-role-section">
-                                <span className={`luxury-role-badge role-${(user.role === 'superowner' ? 'owner' : user.role) || 'user'}`}>
-                                  <svg viewBox="0 0 24 24" fill="none">
-                                    {(user.role === 'owner' || user.role === 'superowner') && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
-                                    {user.role === 'admin' && <path fill="#3b82f6" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
-                                    {user.role === 'moderator' && <path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
-                                    {(!user.role || user.role === 'user') && <path fill="#3b82f6" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
-                                  </svg>
-                                  {({'owner':'GODFATHER','superowner':'GODFATHER','admin':'HIGH COUNCIL','moderator':'GUARDIAN'}[user.role]) || (user.role?.toUpperCase()) || 'USER'}
-                                </span>
+                                {(() => {
+                                  const uNormRole = normalizeRole(user.role);
+                                  const uRoleLabel = getRoleDisplayLabel({ role: user.role, gender: user.gender, isGuest: user.isGuest, badge: user.badge }).toUpperCase();
+                                  return (
+                                    <span className={`luxury-role-badge role-${user.isGuest ? 'user' : uNormRole}`}>
+                                      <svg viewBox="0 0 24 24" fill="none">
+                                        {uNormRole === 'owner' && <path fill="#FFD700" d="M5,16L3,5L8.5,10L12,4L15.5,10L21,5L19,16H5M19,19A1,1 0 0,1 18,20H6A1,1 0 0,1 5,19V18H19V19Z"/>}
+                                        {uNormRole === 'admin' && <path fill="#3b82f6" d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z"/>}
+                                        {uNormRole === 'moderator' && <path fill="#10b981" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>}
+                                        {!['owner', 'admin', 'moderator'].includes(uNormRole) && <path fill="#3b82f6" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>}
+                                      </svg>
+                                      {uRoleLabel}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               
                               <div className="luxury-moderation-status">
@@ -2444,8 +2464,8 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
                                 
-                                {['owner', 'admin'].includes(currentUserProfile?.role) &&
-                                  !(currentUserProfile?.role === 'admin' && user.role === 'owner') && (
+                                {isAdminRole(currentUserProfile?.role) &&
+                                  !(normalizeRole(currentUserProfile?.role) === 'admin' && isOwnerRole(user.role)) && (
                                   <>
                                     <button
                                       className="luxury-action-btn"
@@ -2458,8 +2478,8 @@ const AdminPanelPage = () => {
                                       </svg>
                                       <span>Badge</span>
                                     </button>
-                                    {!(user.role === 'owner' || user.role === 'superowner') &&
-                                      !(currentUserProfile?.role === 'admin' && user.role === 'admin') && (
+                                    {!isOwnerRole(user.role) &&
+                                      !(normalizeRole(currentUserProfile?.role) === 'admin' && normalizeRole(user.role) === 'admin') && (
                                       <button
                                         className="luxury-action-btn"
                                         style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}
@@ -2475,7 +2495,7 @@ const AdminPanelPage = () => {
                                   </>
                                 )}
 
-                                {currentUserProfile?.role === 'owner' && (
+                                {isOwnerRole(currentUserProfile?.role) && (
                                   <>
                                     <button
                                       className="luxury-action-btn"
@@ -3641,31 +3661,41 @@ const AdminPanelPage = () => {
                                   {u.displayName || u.username || 'Unknown'}
                                 </span>
                                 {/* Badge pill */}
-                                {u.badge && (
-                                  <span style={{
-                                    fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:99,
-                                    background:'linear-gradient(135deg,#fde68a,#f59e0b)',
-                                    color:'#78350f', letterSpacing:'0.04em', flexShrink:0,
-                                    border:'1px solid #fcd34d',
-                                  }}>
-                                    {u.badge.toUpperCase()}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const bKey = resolveBadgeKey(u.badge);
+                                  const badgeText = bKey ? (Badges[bKey]?.name || bKey) : u.badge;
+                                  if (!u.badge) return null;
+                                  return (
+                                    <span style={{
+                                      fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:99,
+                                      background:'linear-gradient(135deg,#fde68a,#f59e0b)',
+                                      color:'#78350f', letterSpacing:'0.04em', flexShrink:0,
+                                      border:'1px solid #fcd34d',
+                                    }}>
+                                      {String(badgeText).toUpperCase()}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               {/* Sub-info row */}
                               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                                 {u.username && (
                                   <span style={{ fontSize:11, color:'#7c3aed', fontWeight:700 }}>@{u.username}</span>
                                 )}
-                                {u.role && u.role !== 'user' && (
-                                  <span style={{
-                                    fontSize:10, padding:'1px 7px', borderRadius:99, fontWeight:700,
-                                    background: u.role==='owner'?'#fef3c7': u.role==='admin'?'#ede9fe': u.role==='moderator'?'#dcfce7':'#f1f5f9',
-                                    color: u.role==='owner'?'#92400e': u.role==='admin'?'#5b21b6': u.role==='moderator'?'#15803d':'#475569',
-                                  }}>
-                                    {u.role}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const uNorm = normalizeRole(u.role);
+                                  if (uNorm === 'user' && !u.isGuest) return null;
+                                  const rLabel = getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge });
+                                  return (
+                                    <span style={{
+                                      fontSize:10, padding:'1px 7px', borderRadius:99, fontWeight:700,
+                                      background: uNorm==='owner'?'#fef3c7': uNorm==='admin'?'#ede9fe': uNorm==='moderator'?'#dcfce7': uNorm==='rj'?'#fdf2f8':'#f1f5f9',
+                                      color: uNorm==='owner'?'#92400e': uNorm==='admin'?'#5b21b6': uNorm==='moderator'?'#15803d': uNorm==='rj'?'#9d174d':'#475569',
+                                    }}>
+                                      {rLabel}
+                                    </span>
+                                  );
+                                })()}
                                 {u.email && (
                                   <span style={{ fontSize:10, color:'#9ca3af', overflow:'hidden', textOverflow:'ellipsis', maxWidth:140 }}>{u.email}</span>
                                 )}
@@ -5103,7 +5133,7 @@ const AdminPanelPage = () => {
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.82)', marginTop: 2 }}>
                   Assigning to <strong style={{ color: '#fff' }}>{roleTarget.displayName}</strong>
                   <span style={{ marginLeft: 8, background: 'rgba(255,255,255,0.18)', borderRadius: 6, padding: '1px 7px', fontSize: 10.5, color: '#fff', fontWeight: 600 }}>
-                    Current: {({'owner':'Godfather','superowner':'Godfather','admin':'High Council','moderator':'Guardian'}[roleTarget.role]) || 'Member'}
+                    Current: {getRoleDisplayLabel({ role: roleTarget.role, badge: roleTarget.badge })}
                   </span>
                 </div>
               </div>
@@ -5127,10 +5157,10 @@ const AdminPanelPage = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {ROLE_DEFS.filter(rd => {
-                  if (currentUserProfile?.role !== 'owner' && rd.ownerOnly) return false;
+                  if (!isOwnerRole(currentUserProfile?.role) && rd.ownerOnly) return false;
                   return true;
                 }).map((rd) => {
-                  const isCurrent = roleTarget.role === rd.key || (!roleTarget.role && rd.key === 'user');
+                  const isCurrent = normalizeRole(roleTarget.role) === rd.key;
                   const isLocked = changingRole;
                   return (
                     <button
@@ -5200,7 +5230,7 @@ const AdminPanelPage = () => {
                 })}
               </div>
 
-              {currentUserProfile?.role !== 'owner' && (
+              {!isOwnerRole(currentUserProfile?.role) && (
                 <div style={{ marginTop: 12, padding: '10px 13px', borderRadius: 11, background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>

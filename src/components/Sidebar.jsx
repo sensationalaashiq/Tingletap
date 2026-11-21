@@ -15,7 +15,17 @@ import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { renderUserBadge } from '../utils/badgeRenderHelper';
-import { getRoleDisplayLabel, getStoredGuestGender, getDefaultAvatarUrl } from '../utils/roleUtils';
+import {
+  normalizeRole,
+  isStaffRole,
+  isAdminRole,
+  isModRole,
+  isGuestUser,
+  resolveBadgeKey,
+  getRoleDisplayLabel,
+  getStoredGuestGender,
+  getDefaultAvatarUrl
+} from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
 
@@ -135,26 +145,23 @@ const getRolePill = (role, badge = null, isGuest = false, gender = null) => {
     sapphire_goddess: { bg: 'linear-gradient(135deg,#818cf8,#3730a3)', color: '#fff', shadow: '0 1px 5px rgba(99,102,241,0.5)' },
     rj:               { bg: 'linear-gradient(135deg,#a78bfa,#db2777)', color: '#fff', shadow: '0 1px 7px rgba(167,139,250,0.65)' },
   };
-  if (badge && badgeMap[badge]) return badgeMap[badge];
+  const resolvedB = resolveBadgeKey(badge);
+  if (resolvedB && badgeMap[resolvedB]) return badgeMap[resolvedB];
 
-  if (isGuest || role?.toLowerCase() === 'guest') {
+  const normRole = normalizeRole(role);
+  if (isGuest || normRole === 'guest') {
     return GUEST_GENDER_PILL[(gender || '').toLowerCase()] || GUEST_GENDER_PILL.male;
   }
 
   const roleMap = {
-    superowner:   { bg: 'linear-gradient(135deg,#f59e0b,#b45309)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.6)' },
-    owner:        { bg: 'linear-gradient(135deg,#f59e0b,#92400e)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.55)' },
-    godfather:    { bg: 'linear-gradient(135deg,#f59e0b,#92400e)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.55)' },
-    admin:        { bg: 'linear-gradient(135deg,#ef4444,#7c3aed)', color: '#fff', shadow: '0 1px 6px rgba(239,68,68,0.5)' },
-    high_council: { bg: 'linear-gradient(135deg,#ef4444,#7c3aed)', color: '#fff', shadow: '0 1px 6px rgba(239,68,68,0.5)' },
-    moderator:    { bg: 'linear-gradient(135deg,#10b981,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
-    guardian:     { bg: 'linear-gradient(135deg,#10b981,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
-    rj:           { bg: 'linear-gradient(135deg,#ec4899,#8b5cf6)', color: '#fff', shadow: '0 1px 6px rgba(236,72,153,0.5)' },
-    user:         { bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', shadow: '0 1px 4px rgba(99,102,241,0.3)' },
-    member:       { bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', shadow: '0 1px 4px rgba(99,102,241,0.3)' },
-    guest:        { bg: '#f3f4f6', color: '#6b7280', shadow: 'none' },
+    owner:     { bg: 'linear-gradient(135deg,#f59e0b,#92400e)', color: '#fff', shadow: '0 1px 6px rgba(245,158,11,0.55)' },
+    admin:     { bg: 'linear-gradient(135deg,#ef4444,#7c3aed)', color: '#fff', shadow: '0 1px 6px rgba(239,68,68,0.5)' },
+    moderator: { bg: 'linear-gradient(135deg,#10b981,#047857)', color: '#fff', shadow: '0 1px 5px rgba(16,185,129,0.5)' },
+    rj:        { bg: 'linear-gradient(135deg,#ec4899,#8b5cf6)', color: '#fff', shadow: '0 1px 6px rgba(236,72,153,0.5)' },
+    user:      { bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', shadow: '0 1px 4px rgba(99,102,241,0.3)' },
+    guest:     { bg: '#f3f4f6', color: '#6b7280', shadow: 'none' },
   };
-  return roleMap[role?.toLowerCase()] || roleMap.user;
+  return roleMap[normRole] || roleMap.user;
 };
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -296,9 +303,20 @@ const Sidebar = ({
         ref(rtdb, 'roomCounts'),
         (snap) => {
           const data = snap.val() || {};
+          const now = Date.now();
+          const STALE_COUNT_MS = 15 * 60 * 1000;
           const counts = {};
           Object.entries(data).forEach(([rid, members]) => {
-            if (members && typeof members === 'object') counts[rid] = Object.keys(members).length;
+            if (members && typeof members === 'object') {
+              counts[rid] = Object.values(members).filter(v => {
+                if (v && typeof v === 'object') {
+                  if (v.online === false) return false;
+                  const ts = typeof v.last_changed === 'number' ? v.last_changed : 0;
+                  return !ts || ts > now || (now - ts) < STALE_COUNT_MS;
+                }
+                return Boolean(v);
+              }).length;
+            }
           });
           setRoomCounts(counts);
         },
@@ -518,13 +536,12 @@ const Sidebar = ({
       return true;
     }).sort((a, b) => {
       const roleRank = (u) => {
-        const role = (u.role || '').toLowerCase().trim();
-        if (role === 'owner' || role === 'superowner' || role === 'godfather') return 5;
-        if (role === 'admin' || role === 'high_council' || role === 'high council') return 4;
-        if (role === 'moderator' || role === 'mod' || role === 'guardian') return 3;
-        if (role === 'guest' || u.isGuest) return 0;
-        // registered user — badge holders above regular members
-        return (u.badge && u.badge !== '') ? 2 : 1;
+        if (isGuestUser(u)) return 0;
+        const norm = normalizeRole(u.role);
+        if (norm === 'owner') return 5;
+        if (norm === 'admin') return 4;
+        if (norm === 'moderator') return 3;
+        return (resolveBadgeKey(u.badge) || norm === 'rj') ? 2 : 1;
       };
       const diff = roleRank(b) - roleRank(a);
       if (diff !== 0) return diff;
@@ -534,37 +551,21 @@ const Sidebar = ({
   }, [liveUsers, searchQuery, genderFilter]);
 
   /* -- role-based mod permissions (for viewer) -- */
-  const viewerRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
-  const isStaff = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(viewerRole);
+  const viewerNormRole = normalizeRole(loggedInUserProfile?.role);
+  const isStaff = isStaffRole(loggedInUserProfile?.role);
 
   const canModerate = (targetUser) => {
     if (!isStaff) return false;
-    const targetRole = (targetUser.role || '').toLowerCase().trim();
-    const hierarchy = {
-      owner: 4, superowner: 4, godfather: 4,
-      admin: 3, high_council: 3, 'high council': 3,
-      moderator: 2, mod: 2, guardian: 2,
-      user: 1, guest: 0,
-    };
-    const vLevel = hierarchy[viewerRole] || 0;
-    const tLevel = hierarchy[targetRole] ?? (targetUser.isGuest ? 0 : 1);
+    const targetNorm = isGuestUser(targetUser) ? 'guest' : normalizeRole(targetUser.role);
+    const hierarchy = { owner: 4, admin: 3, moderator: 2, rj: 1, user: 1, guest: 0 };
+    const vLevel = hierarchy[viewerNormRole] || 0;
+    const tLevel = hierarchy[targetNorm] ?? (isGuestUser(targetUser) ? 0 : 1);
     return vLevel > tLevel;
   };
 
-  const canDoMute = (targetUser) => {
-    if (!canModerate(targetUser)) return false;
-    return isStaff;
-  };
-
-  const canDoKick = (targetUser) => {
-    if (!canModerate(targetUser)) return false;
-    return isStaff;
-  };
-
-  const canDoBan = (targetUser) => {
-    if (!canModerate(targetUser)) return false;
-    return ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes(viewerRole);
-  };
+  const canDoMute = (targetUser) => canModerate(targetUser) && isStaff;
+  const canDoKick = (targetUser) => canModerate(targetUser) && isStaff;
+  const canDoBan  = (targetUser) => canModerate(targetUser) && isAdminRole(loggedInUserProfile?.role);
 
   /* ──────────────────────────────────────────────────────────────────────── */
   return (
@@ -695,10 +696,9 @@ const Sidebar = ({
                     </button>
                   )}
                   {(() => {
-                    const uRole = (loggedInUserProfile.role || '').toLowerCase().trim();
-                    const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
-                    const isGuest = auth.currentUser?.isAnonymous || uRole === 'guest';
-                    if (!isGuest && (hasBadge || ['admin','owner','moderator','superowner','godfather','high_council','high council','guardian','mod'].includes(uRole))) return (
+                    const hasBadge = !!resolveBadgeKey(loggedInUserProfile.badge);
+                    const isGuest = auth.currentUser?.isAnonymous || isGuestUser(loggedInUserProfile);
+                    if (!isGuest && (hasBadge || isStaffRole(loggedInUserProfile.role))) return (
                       <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); setDropdownUser(null); }}>
                         <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                         Change Status
@@ -819,7 +819,7 @@ const Sidebar = ({
               {rooms.map(room => {
                 const isStaffRoom  = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
                 const isAdultRoom  = room.name.toLowerCase().includes('adult') || room.name.toLowerCase().includes('18+') || room.type === 'adult';
-                const hasStaffAccess = loggedInUserProfile && ['owner','superowner','godfather','admin','high_council','high council','moderator','mod','guardian'].includes((loggedInUserProfile.role || '').toLowerCase().trim());
+                const hasStaffAccess = loggedInUserProfile && isStaffRole(loggedInUserProfile.role);
                 const locked       = isStaffRoom && !hasStaffAccess;
                 const hasPassword  = room.password && room.password.trim() !== '';
                 const isLocked     = locked || hasPassword;
@@ -850,7 +850,8 @@ const Sidebar = ({
                     <div style={{display:'flex',alignItems:'center',gap:'3px',marginLeft:'auto',flexShrink:0}}>
                       {/* Live user count pill */}
                       {(() => {
-                        const cnt = roomCounts[room.id] || 0;
+                        const baseCnt = roomCounts[room.id] || 0;
+                        const cnt = room.id === roomId ? Math.max(baseCnt, liveUsers.length) : baseCnt;
                         return (
                           <div title={`${cnt} online`} style={{
                             display:'flex', alignItems:'center', gap:2,
@@ -909,8 +910,8 @@ const Sidebar = ({
                                    && statusEntry?.showOnlineStatus !== false;
                 const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
                 const isGuest   = !hasRealAuth && (loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous);
-                const tIsGuest  = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
-                const tIsStaff  = ['owner','superowner','godfather','admin','high_council','high council','moderator','mod','guardian'].includes((userItem.role || '').toLowerCase().trim());
+                const tIsGuest  = isGuestUser(userItem);
+                const tIsStaff  = isStaffRole(userItem.role);
                 const limited   = isGuest || tIsGuest;
                 const pill      = getRolePill(userItem.role, userItem.badge, tIsGuest, userItem.gender);
                 const showMod   = !isSelf && canModerate(userItem);
@@ -1262,7 +1263,7 @@ const Sidebar = ({
         currentUserProfile={loggedInUserProfile}
         currentRoomId={roomId}
         currentRoomName={rooms.find(r => r.id === roomId)?.name || ''}
-        hideBanTab={['moderator','mod','guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
+        hideBanTab={normalizeRole(loggedInUserProfile?.role) === 'moderator'}
       />
 
       {showEditProfileModal && (
