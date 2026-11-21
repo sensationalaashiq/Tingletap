@@ -819,7 +819,7 @@ const Sidebar = ({
               {rooms.map(room => {
                 const isStaffRoom  = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
                 const isAdultRoom  = room.name.toLowerCase().includes('adult') || room.name.toLowerCase().includes('18+') || room.type === 'adult';
-                const hasStaffAccess = loggedInUserProfile && ['owner','admin','moderator'].includes(loggedInUserProfile.role?.toLowerCase());
+                const hasStaffAccess = loggedInUserProfile && ['owner','superowner','godfather','admin','high_council','high council','moderator','mod','guardian'].includes((loggedInUserProfile.role || '').toLowerCase().trim());
                 const locked       = isStaffRoom && !hasStaffAccess;
                 const hasPassword  = room.password && room.password.trim() !== '';
                 const isLocked     = locked || hasPassword;
@@ -907,9 +907,10 @@ const Sidebar = ({
                 const statusEntry  = window.userOnlineStatuses?.[userItem.uid];
                 const isOnline     = (window.onlineUsers?.has(userItem.uid) || statusEntry?.state === 'online' || userItem.isOnline)
                                    && statusEntry?.showOnlineStatus !== false;
-                const isGuest   = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous;
+                const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+                const isGuest   = !hasRealAuth && (loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous);
                 const tIsGuest  = userItem.isGuest === true || userItem.role?.toLowerCase() === 'guest';
-                const tIsStaff  = ['owner','admin','moderator'].includes(userItem.role?.toLowerCase());
+                const tIsStaff  = ['owner','superowner','godfather','admin','high_council','high council','moderator','mod','guardian'].includes((userItem.role || '').toLowerCase().trim());
                 const limited   = isGuest || tIsGuest;
                 const pill      = getRolePill(userItem.role, userItem.badge, tIsGuest, userItem.gender);
                 const showMod   = !isSelf && canModerate(userItem);
@@ -1261,7 +1262,7 @@ const Sidebar = ({
         currentUserProfile={loggedInUserProfile}
         currentRoomId={roomId}
         currentRoomName={rooms.find(r => r.id === roomId)?.name || ''}
-        hideBanTab={loggedInUserProfile?.role?.toLowerCase() === 'moderator'}
+        hideBanTab={['moderator','mod','guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
       />
 
       {showEditProfileModal && (

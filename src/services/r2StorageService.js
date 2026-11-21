@@ -142,6 +142,7 @@ export function compressImageToWebP(file, { maxDim = 1080, quality = 0.80 } = {}
 const PUBLIC_UPLOAD_TYPES  = new Set(['profile', 'cover', 'chat-image', 'homepage-audio']);
 const PRIVATE_UPLOAD_TYPES = new Set(['private-chat-image', 'private-chat-audio']);
 const PRESIGNED_THRESHOLD_BYTES = 3 * 1024 * 1024; // 3 MB
+export const MAX_AUDIO_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB audio upload cap
 
 const AUDIO_MIME_ALIASES = {
   'audio/mp3': 'audio/mpeg',
@@ -172,7 +173,7 @@ async function _blobToDataUrl(blob) {
 
 async function _uploadViaFreeHost(blob, contentType, token, onProgress) {
   if (blob.size > 4.1 * 1024 * 1024) {
-    throw new Error('File exceeds 4 MB free upload limit');
+    throw new Error('File exceeds 4 MB Netlify proxy limit');
   }
   if (onProgress) onProgress(30);
   const base64Data = await blobToBase64(blob);
@@ -202,6 +203,41 @@ async function _uploadViaFreeHost(blob, contentType, token, onProgress) {
   return { key: null, url: result.url };
 }
 
+async function _uploadDirectFreeCorsHost(blob, contentType, onProgress) {
+  if (contentType.startsWith('audio/') && blob.size > MAX_AUDIO_UPLOAD_BYTES) {
+    throw new Error('Audio size must be less than 15MB!');
+  }
+  if (onProgress) onProgress(35);
+
+  const form = new FormData();
+  const subtype = contentType.split('/')[1] || 'bin';
+  const ext = subtype === 'mpeg' ? 'mp3' : subtype === 'mp4' ? 'm4a' : subtype;
+  const filename = blob.name || `tingletap-media-${Date.now()}.${ext}`;
+  form.append('file', blob, filename);
+
+  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+    method: 'POST',
+    body: form,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Free CDN upload failed (HTTP ${res.status})`);
+  }
+
+  const data = await res.json().catch(() => ({}));
+  const rawUrl = data?.data?.url;
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    throw new Error('Free CDN did not return a download URL');
+  }
+
+  const directUrl = rawUrl
+    .replace(/^http:\/\//i, 'https://')
+    .replace(/tmpfiles\.org\/(?!dl\/)/i, 'tmpfiles.org/dl/');
+
+  if (onProgress) onProgress(100);
+  return { key: null, url: directUrl };
+}
+
 async function _buildCompactDataUrlFallback(blob, contentType) {
   if (contentType.startsWith('image/')) {
     const presets = [
@@ -229,7 +265,7 @@ async function _buildCompactDataUrlFallback(blob, contentType) {
     return { key: null, url: await _blobToDataUrl(blob) };
   }
 
-  throw new Error('Audio exceeds 680 KB offline fallback limit');
+  throw new Error('Audio upload failed (15 MB max). Please check your connection and try again.');
 }
 
 async function _tryR2Upload(blob, uploadType, contentType, token, opts, onProgress) {
@@ -280,6 +316,9 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   const token = await user.getIdToken();
 
   const contentType = normalizeClientMime(blob.type);
+  if (contentType.startsWith('audio/') && blob.size > MAX_AUDIO_UPLOAD_BYTES) {
+    throw new Error('Audio size must be less than 15MB!');
+  }
 
   // 1. Primary: Cloudflare R2 via Netlify Functions
   try {
@@ -288,14 +327,21 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
     console.warn('[uploadMediaFile] R2 unavailable, trying free media host:', r2Err.message);
   }
 
-  // 2. Secondary: Unlimited free temporary media host (uguu.se proxy)
+  // 2. Secondary: Unlimited free temporary media host via Netlify proxy (uguu.se, <= 4 MB)
   try {
     return await _uploadViaFreeHost(blob, contentType, token, onProgress);
   } catch (freeErr) {
-    console.warn('[uploadMediaFile] Free media host unavailable, trying compact inline fallback:', freeErr.message);
+    console.warn('[uploadMediaFile] Free proxy host unavailable, trying direct CORS host:', freeErr.message);
   }
 
-  // 3. Tertiary: Compact WebP / audio DataURL fallback (always works within Firestore limits)
+  // 3. Tertiary: Direct CORS free CDN host (tmpfiles.org — supports up to 15 MB audio)
+  try {
+    return await _uploadDirectFreeCorsHost(blob, contentType, onProgress);
+  } catch (cdnErr) {
+    console.warn('[uploadMediaFile] Direct CORS host unavailable, trying compact inline fallback:', cdnErr.message);
+  }
+
+  // 4. Quaternary: Compact WebP / small audio DataURL fallback
   if (onProgress) onProgress(85);
   const fallbackResult = await _buildCompactDataUrlFallback(blob, contentType);
   if (onProgress) onProgress(100);

@@ -46,40 +46,41 @@ const _isDark = () =>
   document.documentElement.classList.contains('dark-theme-variant');
 
 const _toastStyle = (dark) => ({
-  background: dark ? 'rgba(14,8,36,0.97)' : 'rgba(255,255,255,0.98)',
-  color: dark ? 'var(--text-primary, #ede9fe)' : '#1e1b4b',
-  border: `1.5px solid ${dark ? 'rgba(139,92,246,0.30)' : 'rgba(139,92,246,0.16)'}`,
-  borderRadius: 16,
-  backdropFilter: 'blur(28px)',
-  WebkitBackdropFilter: 'blur(28px)',
+  background: dark ? 'rgba(24,18,48,0.97)' : 'rgba(255,255,255,0.98)',
+  color: dark ? '#f5f3ff' : '#1e1b4b',
+  border: `1px solid ${dark ? 'rgba(167,139,250,0.40)' : 'rgba(139,92,246,0.22)'}`,
+  borderRadius: 11,
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
   boxShadow: dark
-    ? '0 20px 56px rgba(0,0,0,0.60), 0 4px 16px rgba(109,40,217,0.20)'
-    : '0 16px 48px rgba(109,40,217,0.14), 0 4px 12px rgba(0,0,0,0.07)',
-  fontSize: 13,
+    ? '0 10px 28px rgba(0,0,0,0.55), 0 2px 10px rgba(109,40,217,0.24)'
+    : '0 8px 24px rgba(109,40,217,0.14), 0 2px 8px rgba(0,0,0,0.08)',
+  fontSize: 12.5,
   fontWeight: 600,
   fontFamily: 'Inter, system-ui, sans-serif',
-  padding: '10px 16px',
+  padding: '8px 12px',
   minHeight: 'unset',
+  lineHeight: '1.35',
 });
 
 const _TISuccess = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiOk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399"/><stop offset="100%" stopColor="#059669"/></linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#tiOk)" opacity=".16"/>
+    <circle cx="12" cy="12" r="10" fill="url(#tiOk)" opacity=".18"/>
     <circle cx="12" cy="12" r="10" stroke="url(#tiOk)" strokeWidth="1.8" fill="none"/>
     <path d="M7.5 12l3 3 6-6" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const _TIError = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiErr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f87171"/><stop offset="100%" stopColor="#dc2626"/></linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#tiErr)" opacity=".14"/>
+    <circle cx="12" cy="12" r="10" fill="url(#tiErr)" opacity=".18"/>
     <circle cx="12" cy="12" r="10" stroke="url(#tiErr)" strokeWidth="1.8" fill="none"/>
     <path d="M9 9l6 6M15 9l-6 6" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"/>
   </svg>
 );
 const _TIMic = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiMic" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
     <circle cx="12" cy="12" r="10" fill="url(#tiMic)" opacity=".18"/>
     <path d="M12 4a3 3 0 00-3 3v5a3 3 0 006 0V7a3 3 0 00-3-3z" stroke="url(#tiMic)" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
@@ -89,26 +90,26 @@ const _TIMic = () => (
   </svg>
 );
 const _TIWarning = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiWrn" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
-    <path d="M12 3L2.5 20h19L12 3z" fill="url(#tiWrn)" opacity=".15"/>
+    <path d="M12 3L2.5 20h19L12 3z" fill="url(#tiWrn)" opacity=".18"/>
     <path d="M12 3L2.5 20h19L12 3z" stroke="url(#tiWrn)" strokeWidth="1.8" strokeLinejoin="round" fill="none"/>
     <path d="M12 10v5" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round"/>
     <circle cx="12" cy="17.5" r="1" fill="#f59e0b"/>
   </svg>
 );
 const _TIInfo = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiInf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#38bdf8"/><stop offset="100%" stopColor="#0284c7"/></linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#tiInf)" opacity=".15"/>
+    <circle cx="12" cy="12" r="10" fill="url(#tiInf)" opacity=".18"/>
     <circle cx="12" cy="12" r="10" stroke="url(#tiInf)" strokeWidth="1.8" fill="none"/>
     <path d="M12 8v1M12 11v6" stroke="#0ea5e9" strokeWidth="2.2" strokeLinecap="round"/>
   </svg>
 );
 const _TIBroadcast = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="tiBc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#c084fc"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#tiBc)" opacity=".15"/>
+    <circle cx="12" cy="12" r="10" fill="url(#tiBc)" opacity=".18"/>
     <circle cx="12" cy="12" r="3" fill="url(#tiBc)"/>
     <path d="M8.5 8.5a5 5 0 000 7" stroke="url(#tiBc)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
     <path d="M15.5 8.5a5 5 0 010 7" stroke="url(#tiBc)" strokeWidth="1.8" strokeLinecap="round" fill="none"/>

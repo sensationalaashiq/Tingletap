@@ -194,7 +194,13 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
             </svg>
           </span>
         )}
-        <span className="player-song-title" title={displayTitle}>{displayTitle}</span>
+        <span
+          className="player-song-title"
+          title={displayTitle}
+          style={isYouTubeMusic ? { color: '#ffffff' } : undefined}
+        >
+          {displayTitle}
+        </span>
       </div>
 
       {/* ── Visualizer ── */}
@@ -247,10 +253,10 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
           </svg>
         </button>
 
-        <div className="time-info">
-          <span>{formatTime(currentTime)}</span>
-          <span className="time-sep">/</span>
-          <span>{formatTime(duration)}</span>
+        <div className="time-info" style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>
+          <span style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>{formatTime(currentTime)}</span>
+          <span className="time-sep" style={isYouTubeMusic ? { color: 'rgba(255,255,255,0.8)' } : undefined}>/</span>
+          <span style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>{formatTime(duration)}</span>
         </div>
       </div>
 

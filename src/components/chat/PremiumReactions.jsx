@@ -37,19 +37,26 @@ export const REACTION_ICONS = {
       <svg viewBox="0 0 24 24" width={size} height={size} fill="none" style={{ display: 'block', flexShrink: 0 }}>
         <defs>
           <linearGradient id="pr_crown_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fde047" />
-            <stop offset="40%" stopColor="#eab308" />
+            <stop offset="0%" stopColor="#fff3b0" />
+            <stop offset="40%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+          <linearGradient id="pr_crown_band" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#d97706" />
+            <stop offset="50%" stopColor="#fde68a" />
             <stop offset="100%" stopColor="#b45309" />
           </linearGradient>
         </defs>
-        <path d="M3 18h18l-1.5 3H4.5L3 18z" fill="#92400e" />
-        <path d="M2 7l4.5 5 5.5-8 5.5 8 4.5-5-2 11H4L2 7z" fill="url(#pr_crown_grad)" filter="drop-shadow(0 2px 8px rgba(245,158,11,0.5))" />
-        <circle cx="2" cy="7" r="1.6" fill="#fef08a" />
-        <circle cx="12" cy="4" r="2" fill="#fef08a" />
-        <circle cx="22" cy="7" r="1.6" fill="#fef08a" />
-        <circle cx="7" cy="15" r="1.3" fill="#e11d48" />
-        <circle cx="12" cy="15" r="1.5" fill="#38bdf8" />
-        <circle cx="17" cy="15" r="1.3" fill="#10b981" />
+        <path d="M2.5 8.5L6.5 13 9 6.5l3 5.5 3-5.5L17.5 13l4-4.5-1.5 9.5H4L2.5 8.5z" fill="url(#pr_crown_grad)" stroke="#92400e" strokeWidth="0.7" strokeLinejoin="round" />
+        <rect x="3.8" y="18.2" width="16.4" height="3" rx="1.2" fill="url(#pr_crown_band)" stroke="#92400e" strokeWidth="0.6" />
+        <circle cx="2.5" cy="7.6" r="1.45" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+        <circle cx="9" cy="5.8" r="1.5" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+        <circle cx="12" cy="4.4" r="1.7" fill="#fffbeb" stroke="#b45309" strokeWidth="0.45" />
+        <circle cx="15" cy="5.8" r="1.5" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+        <circle cx="21.5" cy="7.6" r="1.45" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+        <circle cx="7.5" cy="14.6" r="1.2" fill="#e11d48" />
+        <circle cx="12" cy="14.2" r="1.45" fill="#38bdf8" />
+        <circle cx="16.5" cy="14.6" r="1.2" fill="#10b981" />
       </svg>
     )
   },

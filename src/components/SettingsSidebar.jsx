@@ -2529,7 +2529,7 @@ const SettingsSidebar = ({
                     const b = (m.badge || '').toLowerCase().trim();
                     const extraBadges = Array.isArray(m.badges) ? m.badges.map(x => String(x).toLowerCase().trim()) : [];
                     if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
-                    if (r === 'admin' || r === 'high council') return 'admin';
+                    if (r === 'admin' || r === 'high_council' || r === 'high council') return 'admin';
                     if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'moderator';
                     if (r === 'rj' || TEAM_BADGE_IDS.has(b) || extraBadges.some(x => TEAM_BADGE_IDS.has(x))) return 'appTeam';
                     return null;
@@ -2572,7 +2572,7 @@ const SettingsSidebar = ({
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', padding: '0 2px' }}>
                                                 <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cfg.icon}</div>
                                                 <span style={{ fontSize: '10px', fontWeight: 800, color: cfg.color, letterSpacing: '.08em', textTransform: 'uppercase' }}>{cfg.plural}</span>
-                                                <span style={{ fontSize: '10px', color: '#9ca3af', background: '#f3f4f6', borderRadius: '10px', padding: '1px 6px', fontWeight: 700 }}>{members.length}</span>
+                                                <span style={{ fontSize: '10px', color: 'var(--text-secondary, #a78bfa)', background: 'rgba(139,92,246,0.14)', borderRadius: '10px', padding: '1px 6px', fontWeight: 700 }}>{members.length}</span>
                                             </div>
                                             <div className="sf-friends-list">
                                                 {members.map(member => {
@@ -2689,21 +2689,21 @@ const SettingsSidebar = ({
                                             </svg>
                                         </div>
                                         <div>
-                                            <div style={{fontSize:'13px',fontWeight:800,color:'#1e1b4b',lineHeight:1.2}}>Status — Guest Locked</div>
-                                            <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Register to unlock this feature</div>
+                                            <div style={{fontSize:'13px',fontWeight:800,color:'var(--text-primary, #1e1b4b)',lineHeight:1.2}}>Status — Guest Locked</div>
+                                            <div style={{fontSize:'11px',color:'var(--text-secondary, #6b7280)',marginTop:'2px'}}>Register to unlock this feature</div>
                                         </div>
                                     </div>
-                                    <p style={{margin:'0 0 10px',fontSize:'11.5px',color:'#6b7280',lineHeight:1.55}}>
+                                    <p style={{margin:'0 0 10px',fontSize:'11.5px',color:'var(--text-secondary, #6b7280)',lineHeight:1.55}}>
                                         Set your mood, activity, and style with custom animated status messages. Available to registered members.
                                     </p>
-                                    <div style={{display:'flex',flexDirection:'column',gap:'5px',background:'rgba(255,255,255,.6)',borderRadius:'9px',padding:'10px 12px',border:'1px solid rgba(99,102,241,.12)'}}>
-                                        <div style={{fontSize:'10px',fontWeight:800,color:'#6366f1',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'3px'}}>What you unlock:</div>
+                                    <div style={{display:'flex',flexDirection:'column',gap:'5px',background:'rgba(139,92,246,0.1)',borderRadius:'9px',padding:'10px 12px',border:'1px solid rgba(139,92,246,0.22)'}}>
+                                        <div style={{fontSize:'10px',fontWeight:800,color:'#8b5cf6',letterSpacing:'.06em',textTransform:'uppercase',marginBottom:'3px'}}>What you unlock:</div>
                                         {[
                                             {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Custom status messages'},
                                             {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Gold, Neon, Royal premium styles'},
                                             {icon:<svg viewBox="0 0 24 24" width="10" height="10"><path fill="#10b981" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>, text:'Animated & gradient text effects'},
                                         ].map((item,i) => (
-                                            <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',color:'#4b5563'}}>
+                                            <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'11px',color:'var(--text-primary, #4b5563)'}}>
                                                 {item.icon}{item.text}
                                             </div>
                                         ))}
@@ -2765,7 +2765,6 @@ const SettingsSidebar = ({
                                                     if (confirmClear) {
                                                         try {
                                                             await updateDoc(doc(db, 'users', auth.currentUser.uid), { status: '', updatedAt: new Date().toISOString() });
-                                                            pt.success('Status cleared!');
                                                         } catch (error) {
                                                             pt.error('Failed to clear status.');
                                                         }
@@ -2907,7 +2906,6 @@ const SettingsSidebar = ({
                                                                 return;
                                                             }
                                                             try {
-                                                                pt.camera('Uploading cover photo...');
                                                                 const compressed = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
                                                                 const { key: coverKey, url: coverUrl } = await uploadMediaFile(compressed, 'cover');
                                                                 const photoUpdateData = {
@@ -2924,7 +2922,6 @@ const SettingsSidebar = ({
                                                                 if (typeof setLoggedInUserProfile === 'function') {
                                                                     setLoggedInUserProfile(prev => ({ ...(prev || {}), ...photoUpdateData }));
                                                                 }
-                                                                pt.camera('Cover photo uploaded successfully!');
                                                             } catch (error) {
                                                                 console.error('Cover photo upload error:', error);
                                                                 pt.error('Upload failed. Please try again.');
@@ -2997,8 +2994,6 @@ const SettingsSidebar = ({
                                                         const embedUrl = getYouTubeEmbedUrl(videoId);
 
                                                         try {
-                                                            pt.youtube('Setting YouTube cover video...');
-
                                                             const coverUpdateData = {
                                                                 coverVideoURL: embedUrl,
                                                                 coverVideoType: 'youtube',
@@ -3013,8 +3008,6 @@ const SettingsSidebar = ({
                                                             syncPublicProfile(auth.currentUser.uid, coverUpdateData);
 
                                                             input.value = '';
-
-                                                            pt.youtube('YouTube cover video set successfully!');
 
                                                             if (typeof setLoggedInUserProfile === 'function') {
                                                                 setLoggedInUserProfile(prev => ({
@@ -3087,8 +3080,6 @@ const SettingsSidebar = ({
                                                         const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&view=coverart&show-cover=0`;
 
                                                         try {
-                                                            pt.audio('Setting Spotify cover song...');
-
                                                             const spotifyTrackData = {
                                                                 id: trackId,
                                                                 url: spotifyUrl,
@@ -3117,7 +3108,6 @@ const SettingsSidebar = ({
                                                             }
 
                                                             input.value = '';
-                                                            pt.audio('Spotify cover song set successfully!');
                                                         } catch (error) {
                                                             console.error('Error setting Spotify cover song:', error);
                                                             pt.error('Failed to set Spotify cover song. Please try again.');
@@ -3189,53 +3179,55 @@ const SettingsSidebar = ({
                                                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                                                     `;
                                                     
+                                                    const _isDark = document.documentElement.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-theme-variant');
                                                     confirmDialog.innerHTML = `
                                                         <div style="
-                                                            background: white;
-                                                            padding: 30px;
-                                                            border-radius: 12px;
-                                                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                                                            max-width: 400px;
+                                                            background: ${_isDark ? '#161628' : '#ffffff'};
+                                                            border: ${_isDark ? '1px solid rgba(139,92,246,0.3)' : 'none'};
+                                                            padding: 26px;
+                                                            border-radius: 14px;
+                                                            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+                                                            max-width: 390px;
                                                             width: 90%;
                                                             text-align: center;
                                                         ">
                                                             <div style="
-                                                                font-size: 48px;
-                                                                margin-bottom: 16px;
+                                                                font-size: 42px;
+                                                                margin-bottom: 12px;
                                                             ">🗑️</div>
                                                             <h3 style="
-                                                                margin: 0 0 16px 0;
-                                                                color: #1f2937;
-                                                                font-size: 18px;
-                                                                font-weight: 600;
+                                                                margin: 0 0 12px 0;
+                                                                color: ${_isDark ? '#f1f5f9' : '#1f2937'};
+                                                                font-size: 17px;
+                                                                font-weight: 700;
                                                             ">Remove Cover Media</h3>
                                                             <p style="
-                                                                margin: 0 0 24px 0;
-                                                                color: #6b7280;
-                                                                font-size: 14px;
+                                                                margin: 0 0 22px 0;
+                                                                color: ${_isDark ? '#cbd5e1' : '#6b7280'};
+                                                                font-size: 13px;
                                                                 line-height: 1.5;
                                                             ">Are you sure you want to permanently remove your cover media? This action cannot be undone.</p>
                                                             <div style="
                                                                 display: flex;
-                                                                gap: 12px;
+                                                                gap: 10px;
                                                                 justify-content: center;
                                                             ">
                                                                 <button id="cancelBtn" style="
-                                                                    background: #f3f4f6;
-                                                                    color: #374151;
-                                                                    border: none;
-                                                                    padding: 10px 20px;
+                                                                    background: ${_isDark ? '#262642' : '#f3f4f6'};
+                                                                    color: ${_isDark ? '#e2e8f0' : '#374151'};
+                                                                    border: ${_isDark ? '1px solid rgba(139,92,246,0.25)' : 'none'};
+                                                                    padding: 9px 18px;
                                                                     border-radius: 8px;
-                                                                    font-weight: 500;
+                                                                    font-weight: 600;
                                                                     cursor: pointer;
                                                                 ">Cancel</button>
                                                                 <button id="confirmBtn" style="
                                                                     background: #ef4444;
                                                                     color: white;
                                                                     border: none;
-                                                                    padding: 10px 20px;
+                                                                    padding: 9px 18px;
                                                                     border-radius: 8px;
-                                                                    font-weight: 500;
+                                                                    font-weight: 600;
                                                                     cursor: pointer;
                                                                 ">Remove</button>
                                                             </div>
@@ -3267,8 +3259,6 @@ const SettingsSidebar = ({
 
                                                 if (userConfirmed) {
                                                     try {
-                                                        pt.delete('Removing cover media...');
-
                                                         // Delete all cover media data from Firebase
                                                         const clearCoverData = {
                                                             coverPhotoURL: null,
@@ -3295,8 +3285,6 @@ const SettingsSidebar = ({
                                                         localStorage.removeItem('spotifyTrackURL');
                                                         localStorage.removeItem('coverVideoType');
                                                         localStorage.removeItem('spotifyTrackData');
-
-                                                        pt.success('Cover media removed successfully!');
 
                                                         onClose();
 
@@ -3503,7 +3491,7 @@ const SettingsSidebar = ({
                         </div>
 
                         {/* Warning & Announcement Section (for staff and above) */}
-                        {(['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role)) && (
+                        {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3551,7 +3539,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* Admin Section (if applicable) */}
-                        {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
+                        {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title admin-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3560,7 +3548,7 @@ const SettingsSidebar = ({
                                     ADMIN CONTROLS
                                 </h4>
                                 <div className="modern-admin-buttons">
-                                    {loggedInUserProfile?.role === 'owner' && (
+                                    {['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim()) && (
                                         <button 
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3577,7 +3565,7 @@ const SettingsSidebar = ({
                                         </button>
                                     )}
 
-                                    {(['owner', 'admin'].includes(loggedInUserProfile?.role)) && (
+                                    {(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
                                         <button
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3816,7 +3804,7 @@ const SettingsSidebar = ({
                         </div>
 
                         {/* Community Rules Editor — Owner only */}
-                        {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && <div className="setting-group">
+                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && <div className="setting-group">
                             <h4>
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
@@ -3832,7 +3820,7 @@ const SettingsSidebar = ({
                                                     value={editingRuleText}
                                                     onChange={e => setEditingRuleText(e.target.value)}
                                                     rows={2}
-                                                    style={{flex:1,fontSize:'11px',borderRadius:'6px',border:'1px solid rgba(139,92,246,0.35)',padding:'4px 6px',resize:'vertical',fontFamily:'inherit',color:'#374151'}}
+                                                    style={{flex:1,fontSize:'11px',borderRadius:'6px',border:'1px solid rgba(139,92,246,0.35)',padding:'4px 6px',resize:'vertical',fontFamily:'inherit',background:'var(--input-bg, transparent)',color:'var(--text-primary, inherit)'}}
                                                 />
                                                 <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
                                                     <button
@@ -3848,13 +3836,13 @@ const SettingsSidebar = ({
                                                     >Save</button>
                                                     <button
                                                         onClick={() => setEditingRuleIdx(null)}
-                                                        style={{fontSize:'10px',padding:'3px 7px',background:'transparent',color:'#6b7280',border:'1px solid #d1d5db',borderRadius:'5px',cursor:'pointer'}}
+                                                        style={{fontSize:'10px',padding:'3px 7px',background:'transparent',color:'var(--text-secondary, #6b7280)',border:'1px solid rgba(139,92,246,0.3)',borderRadius:'5px',cursor:'pointer'}}
                                                     >Cancel</button>
                                                 </div>
                                             </>
                                         ) : (
                                             <>
-                                                <span style={{flex:1,fontSize:'11px',color:'#4b5563',lineHeight:'1.4'}}>{idx+1}. {renderTextWithLinks(rule)}</span>
+                                                <span style={{flex:1,fontSize:'11px',color:'var(--text-primary, #4b5563)',lineHeight:'1.4'}}>{idx+1}. {renderTextWithLinks(rule)}</span>
                                                 <div style={{display:'flex',flexDirection:'column',gap:'3px',flexShrink:0}}>
                                                     <button
                                                         onClick={() => { setEditingRuleIdx(idx); setEditingRuleText(rule); }}
@@ -3893,7 +3881,7 @@ const SettingsSidebar = ({
                                             setNewRule('');
                                         }
                                     }}
-                                    style={{flex:1,fontSize:'11px',padding:'6px 8px',borderRadius:'7px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',color:'#374151'}}
+                                    style={{flex:1,fontSize:'11px',padding:'6px 8px',borderRadius:'7px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',background:'var(--input-bg, transparent)',color:'var(--text-primary, inherit)'}}
                                 />
                                 <button
                                     onClick={() => { if (newRule.trim()) { setBotRules([...botRules, newRule.trim()]); setNewRule(''); } }}
@@ -3926,20 +3914,20 @@ const SettingsSidebar = ({
                         </div>}
 
                         {/* Send custom announcement — Owner only */}
-                        {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && <div className="setting-group">
+                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && <div className="setting-group">
                             <h4>
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 7h9l3-3v10l-3-3H3V7z"/><path d="M21 12a2 2 0 0 0-2-2M21 12a2 2 0 0 1-2 2"/>
                                 </svg>
                                 SEND ANNOUNCEMENT
                             </h4>
-                            <small style={{display:'block',marginBottom:'8px',color:'#9ca3af',fontSize:'10px'}}>Sends a TingleBot announcement to the current chat room.</small>
+                            <small style={{display:'block',marginBottom:'8px',color:'var(--text-secondary, #9ca3af)',fontSize:'10px'}}>Sends a TingleBot announcement to the current chat room.</small>
                             <textarea
                                 rows={3}
                                 placeholder="Type your announcement here…"
                                 value={announcementText}
                                 onChange={e => setAnnouncementText(e.target.value)}
-                                style={{width:'100%',boxSizing:'border-box',fontSize:'12px',padding:'8px',borderRadius:'8px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',color:'#374151',resize:'vertical',marginBottom:'8px'}}
+                                style={{width:'100%',boxSizing:'border-box',fontSize:'12px',padding:'8px',borderRadius:'8px',border:'1px solid rgba(139,92,246,0.3)',fontFamily:'inherit',background:'var(--input-bg, transparent)',color:'var(--text-primary, inherit)',resize:'vertical',marginBottom:'8px'}}
                             />
                             <button
                                 disabled={botSending || !announcementText.trim()}
@@ -4450,9 +4438,9 @@ const SettingsSidebar = ({
                         </button>
 
                         {(() => {
-                            const userRoleForFriends = loggedInUserProfile?.role?.toLowerCase();
+                            const userRoleForFriends = (loggedInUserProfile?.role || '').toLowerCase().trim();
                             const hasBadgeForFriends = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                            const hasFriendsAccess = hasBadgeForFriends || ['admin', 'owner', 'moderator'].includes(userRoleForFriends);
+                            const hasFriendsAccess = hasBadgeForFriends || ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(userRoleForFriends);
                             return (
                                 <button 
                                     className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
@@ -4473,9 +4461,9 @@ const SettingsSidebar = ({
                         })()}
 
                         {(() => {
-                            const userRole = loggedInUserProfile?.role?.toLowerCase();
+                            const userRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
                             const hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                            const hasAccess = hasBadge || ['admin', 'owner', 'moderator'].includes(userRole);
+                            const hasAccess = hasBadge || ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(userRole);
 
                             return (
                                 <button 
@@ -4596,7 +4584,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* TingleBot tab — owner only */}
-                        {(loggedInUserProfile?.role?.toLowerCase() === 'owner') && (
+                        {(['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())) && (
                             <button
                                 className={`settings-tab ${activeTab === 'tinglebot' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('tinglebot')}
@@ -4636,10 +4624,9 @@ const SettingsSidebar = ({
                     onClose={() => setShowEditProfileModal(false)}
                     onSuccess={() => {
                         setShowEditProfileModal(false);
-                        pt.profile('Profile updated successfully!');
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1000);
+                        }, 500);
                     }}
                 />
             )}

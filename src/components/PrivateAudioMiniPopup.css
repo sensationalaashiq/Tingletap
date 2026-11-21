@@ -354,24 +354,60 @@
     }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .dark-mode .mini-audio-popup,
-    .mini-audio-popup {
-        background: #E6E6FA !important;
-        border: 2px solid #DDA0DD !important;
-        box-shadow: 0 8px 24px rgba(221, 160, 221, 0.4) !important;
-    }
+/* Dark mode & theme parity */
+html.dark-mode .mini-audio-popup,
+.dark-mode .mini-audio-popup,
+html.dark-theme-variant .mini-audio-popup {
+    background: var(--bg-card, linear-gradient(135deg, #1b1730 0%, #261e47 100%)) !important;
+    border: 1.5px solid var(--border-accent, rgba(167, 139, 250, 0.35)) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+    color: var(--text-primary, #f1f5f9) !important;
+}
 
-    .dark-mode .popup-arrow,
-    .popup-arrow {
-        border-top-color: #E6E6FA !important;
-    }
+html.dark-mode .popup-arrow,
+.dark-mode .popup-arrow,
+html.dark-theme-variant .popup-arrow {
+    border-top-color: var(--bg-card, #1b1730) !important;
+}
 
-    .dark-mode .mini-audio-popup::before,
-    .mini-audio-popup::before {
-        border-top-color: #DDA0DD !important;
-    }
+html.dark-mode .mini-audio-popup::before,
+.dark-mode .mini-audio-popup::before,
+html.dark-theme-variant .mini-audio-popup::before {
+    border-top-color: var(--border-accent, rgba(167, 139, 250, 0.45)) !important;
+}
+
+html.dark-mode .mini-timer,
+.dark-mode .mini-timer,
+html.dark-theme-variant .mini-timer {
+    background: rgba(15, 23, 42, 0.72) !important;
+    border-color: rgba(167, 139, 250, 0.38) !important;
+}
+
+html.dark-mode .timer-text,
+.dark-mode .timer-text,
+html.dark-theme-variant .timer-text {
+    color: #e9d5ff !important;
+}
+
+html.dark-mode .mini-audio-preview,
+.dark-mode .mini-audio-preview,
+html.dark-theme-variant .mini-audio-preview {
+    background: rgba(15, 23, 42, 0.65) !important;
+    border-color: var(--border-accent, rgba(167, 139, 250, 0.45)) !important;
+}
+
+html.dark-mode .mini-time-display,
+.dark-mode .mini-time-display,
+html.dark-theme-variant .mini-time-display {
+    color: var(--text-primary, #f1f5f9) !important;
+}
+
+html.dark-mode .popup-close-btn,
+.dark-mode .popup-close-btn,
+html.dark-theme-variant .popup-close-btn {
+    background: #1e1b2e !important;
+    color: #f87171 !important;
+    border-color: #ef4444 !important;
 }
 
 /* Mini Audio Preview Styles */

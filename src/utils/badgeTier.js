@@ -43,10 +43,11 @@ export const getBadgeTier = (badge, role, isGuest) => {
   if (isGuest) return 'guest';
   const r = (role || '').toLowerCase().trim();
   if (STAFF_ROLES.has(r)) return 'staff';
-  if (!badge || badge === '') return 'member';
-  if (TIER3_BADGES.has(badge)) return 'tier3';
-  if (TIER2_BADGES.has(badge)) return 'tier2';
-  if (TIER1_BADGES.has(badge)) return 'tier1';
+  const b = String(badge || '').trim().toLowerCase();
+  if (!b) return 'member';
+  if (TIER3_BADGES.has(b)) return 'tier3';
+  if (TIER2_BADGES.has(b)) return 'tier2';
+  if (TIER1_BADGES.has(b)) return 'tier1';
   return 'tier1'; // any unrecognized badge → minimum tier1 access
 };
 

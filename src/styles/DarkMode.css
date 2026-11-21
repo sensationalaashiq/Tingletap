@@ -217,7 +217,7 @@ html.dark-mode .pm-time { color: #5f6880 !important; }
 /* All roles → same near-white theme color in dark mode. No per-role overrides.
    User-set custom colors win via inline style / -webkit-text-fill-color.      */
 html.dark-mode .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
-html.dark-mode .inline-badge svg { color: var(--icon-color) !important; stroke: var(--icon-color) !important; }
+html.dark-mode .inline-badge { background: transparent !important; box-shadow: none !important; border: none !important; }
 
 /* ══ 9. CHAT INPUT / FORM ═══════════════════════════════════════════ */
 html.dark-mode .message-form-container {

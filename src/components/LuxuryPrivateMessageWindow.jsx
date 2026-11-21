@@ -592,11 +592,24 @@ const LuxuryPrivateMessageWindow = ({
 
   const handleAudioFileSelect = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setSelectedAudio(file);
-      setAudioPreview(URL.createObjectURL(file));
-      setRecordedBlob(null); // Clear recorded audio if file is selected
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      pt.error('Audio size must be less than 15MB!');
+      event.target.value = '';
+      return;
     }
+
+    const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name || '');
+    if (!file.type.startsWith('audio/') && !isAudioExt) {
+      pt.error('Please select a valid audio file!');
+      event.target.value = '';
+      return;
+    }
+
+    setSelectedAudio(file);
+    setAudioPreview(URL.createObjectURL(file));
+    setRecordedBlob(null); // Clear recorded audio if file is selected
   };
 
   // Recording timer effect
@@ -732,36 +745,31 @@ const LuxuryPrivateMessageWindow = ({
               dragRef.current = el;
               windowRef.current = el;
             }}
-            className="ultra-luxury-pm-window"
+            className={`ultra-luxury-pm-window${isDragging ? ' dragging' : ''}`}
             style={{
               ...dragStyle,
               zIndex: isDragging ? 10001 : 10000,
-              transform: 'translate3d(0, 0, 0)',
-              transition: 'none',
               margin: 0,
               padding: 0,
               bottom: 'auto',
-              pointerEvents: isDragging ? 'none' : 'auto'
+              pointerEvents: 'auto'
             }}
-            initial={{ opacity: 0, scale: 0.8, rotateX: -15 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-            exit={{ opacity: 0, scale: 0.8, rotateX: 15 }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{
-              type: "spring",
-              damping: 20,
-              stiffness: 300,
-              duration: 0.4
+              duration: 0.14,
+              ease: 'easeOut'
             }}
-            layout
           >
             {/* Ultra Luxury Header */}
             <motion.div
               className="ultra-pm-header"
               onMouseDown={onMouseDown}
               onTouchStart={onTouchStart}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
             >
               <div className="ultra-pm-user-section">
                 <div className="ultra-pm-avatar-wrapper">
@@ -920,9 +928,9 @@ const LuxuryPrivateMessageWindow = ({
             {/* Ultra Compact Input Area */}
             <motion.div
               className="ultra-pm-input-area"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
             >
               <div className="ultra-pm-input-row">
                 <div className="ultra-pm-attachment-section" ref={attachmentDropdownRef} style={{ position: 'relative' }}>
@@ -1054,26 +1062,17 @@ const LuxuryPrivateMessageWindow = ({
                     <motion.div
                       ref={audioPopupRef}
                       className="ultra-mini-audio-popup"
-                      initial={{ opacity: 0, scale: 0.6, y: 15 }}
+                      initial={{ opacity: 0, scale: 0.85, y: 8 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.6, y: 15 }}
-                      transition={{ type: "spring", damping: 30, stiffness: 500 }}
+                      exit={{ opacity: 0, scale: 0.85, y: 8 }}
+                      transition={{ duration: 0.12, ease: 'easeOut' }}
                       style={{
                         position: 'absolute',
                         bottom: '120%',
                         right: '45px',
-                        background: 'linear-gradient(145deg, rgba(230, 230, 250, 0.98) 0%, rgba(221, 160, 221, 0.95) 100%)',
-                        backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                        borderRadius: '12px',
-                        padding: '8px',
-                        boxShadow: '0 8px 25px rgba(139, 92, 246, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
-                        border: '1.5px solid rgba(255, 255, 255, 0.5)',
-                        color: '#4c1d95',
                         width: '160px',
                         minHeight: '70px',
                         zIndex: 1000,
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                       }}
                     >
                       {/* Luxury Close Button */}
@@ -1368,17 +1367,7 @@ const LuxuryPrivateMessageWindow = ({
                       </div>
 
                       {/* Luxury Arrow pointing down to audio button */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: '20px',
-                        width: 0,
-                        height: 0,
-                        borderLeft: '8px solid transparent',
-                        borderRight: '8px solid transparent',
-                        borderTop: '8px solid rgba(221, 160, 221, 0.95)',
-                        filter: 'drop-shadow(0 2px 4px rgba(139, 92, 246, 0.3))'
-                      }} />
+                      <div className="ultra-mini-audio-arrow" />
                     </motion.div>
                   )}
                 </AnimatePresence>

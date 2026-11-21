@@ -38,9 +38,17 @@ const UPLOAD_CONFIGS = {
   },
   'private-chat-audio': {
     prefix:       'private-chat/audio',
-    maxMB:        10,
-    allowedTypes: ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'],
-    extMap:       { webm: 'webm', ogg: 'ogg', mp4: 'm4a', mpeg: 'mp3', wav: 'wav' },
+    maxMB:        15,
+    allowedTypes: [
+      'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/x-m4a',
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav',
+      'audio/aac', 'audio/flac', 'audio/opus',
+    ],
+    extMap: {
+      webm: 'webm', ogg: 'ogg', mp4: 'm4a', 'x-m4a': 'm4a',
+      mpeg: 'mp3', mp3: 'mp3', wav: 'wav', 'x-wav': 'wav',
+      aac: 'aac', flac: 'flac', opus: 'opus',
+    },
     defaultExt:   'webm',
     requiresRoomId: true,
   },

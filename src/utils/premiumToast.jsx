@@ -6,21 +6,21 @@ const CloseBtn = ({ closeToast }) => (
   <button
     onClick={closeToast}
     style={{
-      background: 'rgba(255,255,255,0.18)',
-      border: '1.5px solid rgba(255,255,255,0.35)',
+      background: 'rgba(255,255,255,0.2)',
+      border: '1px solid rgba(255,255,255,0.4)',
       borderRadius: '50%',
-      width: 22, height: 22,
-      minWidth: 22,
+      width: 18, height: 18,
+      minWidth: 18,
       cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 0, flexShrink: 0, marginLeft: 8,
+      padding: 0, flexShrink: 0, marginLeft: 6,
       transition: 'background 0.15s',
     }}
-    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.32)'}
-    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
+    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.34)'}
+    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
     aria-label="Close"
   >
-    <svg viewBox="0 0 24 24" width="10" height="10" fill="none">
+    <svg viewBox="0 0 24 24" width="9" height="9" fill="none">
       <path d="M18 6L6 18M6 6l12 12" stroke="#fff" strokeWidth="2.8" strokeLinecap="round"/>
     </svg>
   </button>
@@ -30,11 +30,11 @@ const CloseBtn = ({ closeToast }) => (
 const mkIcon = (svgContent) => (
   <span style={{
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: 28, height: 28, minWidth: 28,
+    width: 22, height: 22, minWidth: 22,
     background: 'rgba(255,255,255,0.22)',
     borderRadius: '50%', flexShrink: 0,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-    border: '1px solid rgba(255,255,255,0.30)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.16)',
+    border: '1px solid rgba(255,255,255,0.34)',
   }}>
     {svgContent}
   </span>
@@ -243,13 +243,13 @@ const Icon = {
   whisperOff: (
     <span style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 34, height: 34, minWidth: 34,
+      width: 26, height: 26, minWidth: 26,
       background: 'rgba(255,255,255,0.28)',
       borderRadius: '50%', flexShrink: 0,
-      boxShadow: '0 3px 12px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.15)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.24), inset 0 0 0 1px rgba(255,255,255,0.18)',
       border: '1.5px solid rgba(255,255,255,0.55)',
     }}>
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
         {/* Chat bubble */}
         <path d="M20 3H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(255,255,255,0.30)" stroke="#fff" strokeWidth="2" strokeLinejoin="round"/>
         {/* Slash line across the bubble */}
@@ -298,35 +298,37 @@ const Icon = {
 
 /* ─── Base style factory ─── */
 const makeStyle = (gradient, shadow) => ({
-  borderRadius: '14px',
-  color: '#fff',
+  borderRadius: '11px',
+  color: '#ffffff',
+  textShadow: '0 1px 2px rgba(0,0,0,0.22)',
   fontFamily: 'Inter, -apple-system, sans-serif',
-  fontSize: '13.5px',
+  fontSize: '12.5px',
   fontWeight: 600,
   letterSpacing: '0.01em',
-  padding: '12px 14px',
+  padding: '8px 11px',
   minHeight: 'unset',
-  border: '1px solid rgba(255,255,255,0.22)',
+  border: '1px solid rgba(255,255,255,0.28)',
   background: gradient,
-  boxShadow: `0 12px 36px ${shadow}, 0 4px 12px rgba(0,0,0,0.18)`,
-  lineHeight: '1.45',
+  boxShadow: `0 8px 24px ${shadow}, 0 3px 10px rgba(0,0,0,0.16)`,
+  lineHeight: '1.35',
 });
 
-/* ─── Extra-visible variant — bolder border, brighter text, deeper glow ─── */
+/* ─── Extra-visible variant — bolder border, brighter text, crisp glow ─── */
 const makeVividStyle = (gradient, shadow) => ({
   ...makeStyle(gradient, shadow),
-  fontSize: '14.5px',
+  fontSize: '13px',
   fontWeight: 700,
+  padding: '8px 12px',
   color: '#ffffff',
-  textShadow: '0 1px 3px rgba(0,0,0,0.35)',
+  textShadow: '0 1px 3px rgba(0,0,0,0.3)',
   border: '1.5px solid rgba(255,255,255,0.45)',
-  boxShadow: `0 14px 40px ${shadow}, 0 4px 14px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.08)`,
+  boxShadow: `0 10px 28px ${shadow}, 0 3px 12px rgba(0,0,0,0.22), inset 0 0 0 1px rgba(255,255,255,0.1)`,
 });
 
 const Styles = {
   youtube:       makeStyle('linear-gradient(135deg,#e52d27 0%,#b31217 100%)',         'rgba(229,45,39,0.45)'),
   audio:         makeStyle('linear-gradient(135deg,#6d28d9 0%,#8b5cf6 100%)',         'rgba(109,40,217,0.45)'),
-  mic:           makeStyle('linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%)',         'rgba(91,33,182,0.45)'),
+  mic:           makeStyle('linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%)',         'rgba(109,40,217,0.45)'),
   gif:           makeStyle('linear-gradient(135deg,#0284c7 0%,#06b6d4 100%)',         'rgba(6,182,212,0.45)'),
   image:         makeStyle('linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%)',         'rgba(59,130,246,0.45)'),
   success:       makeStyle('linear-gradient(135deg,#059669 0%,#10b981 100%)',         'rgba(16,185,129,0.45)'),
@@ -334,30 +336,30 @@ const Styles = {
   warn:          makeStyle('linear-gradient(135deg,#d97706 0%,#f59e0b 100%)',         'rgba(217,119,6,0.45)'),
   info:          makeStyle('linear-gradient(135deg,#2563eb 0%,#3b82f6 100%)',         'rgba(37,99,235,0.45)'),
   friend:        makeStyle('linear-gradient(135deg,#be185d 0%,#ec4899 100%)',         'rgba(236,72,153,0.45)'),
-  block:         makeStyle('linear-gradient(135deg,#1f2937 0%,#374151 100%)',         'rgba(31,41,55,0.55)'),
+  block:         makeStyle('linear-gradient(135deg,#334155 0%,#475569 100%)',         'rgba(51,65,85,0.45)'),
   report:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#a855f7 100%)',         'rgba(124,58,237,0.45)'),
   logout:        makeStyle('linear-gradient(135deg,#ea580c 0%,#f97316 100%)',         'rgba(234,88,12,0.45)'),
   profile:       makeStyle('linear-gradient(135deg,#4f46e5 0%,#6366f1 100%)',         'rgba(99,102,241,0.45)'),
   username:      makeStyle('linear-gradient(135deg,#7c3aed 0%,#6366f1 100%)',         'rgba(124,58,237,0.45)'),
-  password:      makeStyle('linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%)',         'rgba(15,23,42,0.55)'),
+  password:      makeStyle('linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%)',         'rgba(37,99,235,0.45)'),
   delete:        makeStyle('linear-gradient(135deg,#be123c 0%,#ef4444 100%)',         'rgba(190,18,60,0.45)'),
-  gift:          makeStyle('linear-gradient(135deg,#b45309 0%,#f59e0b 100%)',         'rgba(180,83,9,0.45)'),
-  coin:          makeStyle('linear-gradient(135deg,#92400e 0%,#d97706 100%)',         'rgba(146,64,14,0.45)'),
+  gift:          makeStyle('linear-gradient(135deg,#d97706 0%,#f59e0b 100%)',         'rgba(217,119,6,0.45)'),
+  coin:          makeStyle('linear-gradient(135deg,#b45309 0%,#f59e0b 100%)',         'rgba(180,83,9,0.45)'),
   otp:           makeStyle('linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%)',         'rgba(3,105,161,0.45)'),
-  unlock:        makeStyle('linear-gradient(135deg,#065f46 0%,#10b981 100%)',         'rgba(6,95,70,0.45)'),
+  unlock:        makeStyle('linear-gradient(135deg,#047857 0%,#10b981 100%)',         'rgba(4,120,87,0.45)'),
   withdraw:      makeStyle('linear-gradient(135deg,#1e40af 0%,#3b82f6 100%)',         'rgba(30,64,175,0.45)'),
-  schedule:      makeStyle('linear-gradient(135deg,#4338ca 0%,#818cf8 100%)',         'rgba(67,56,202,0.45)'),
-  cancel:        makeStyle('linear-gradient(135deg,#047857 0%,#34d399 100%)',         'rgba(4,120,87,0.45)'),
+  schedule:      makeStyle('linear-gradient(135deg,#4f46e5 0%,#818cf8 100%)',         'rgba(79,70,229,0.45)'),
+  cancel:        makeStyle('linear-gradient(135deg,#047857 0%,#10b981 100%)',         'rgba(4,120,87,0.45)'),
   login:         makeStyle('linear-gradient(135deg,#7c3aed 0%,#6366f1 50%,#3b82f6 100%)', 'rgba(99,102,241,0.5)'),
   emailVerified: makeStyle('linear-gradient(135deg,#059669 0%,#10b981 60%,#34d399 100%)', 'rgba(16,185,129,0.5)'),
-  rocket:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#c084fc 100%)',         'rgba(124,58,237,0.45)'),
-  whisperOff:    makeVividStyle('linear-gradient(135deg,#6d28d9 0%,#9333ea 55%,#c026d3 100%)', 'rgba(147,51,234,0.6)'),
-  mute:          makeStyle('linear-gradient(135deg,#78350f 0%,#b45309 100%)',         'rgba(120,53,15,0.5)'),
-  kick:          makeStyle('linear-gradient(135deg,#b45309 0%,#f59e0b 100%)',         'rgba(180,83,9,0.45)'),
-  ban:           makeStyle('linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%)',         'rgba(127,29,29,0.5)'),
+  rocket:        makeStyle('linear-gradient(135deg,#7c3aed 0%,#a855f7 100%)',         'rgba(124,58,237,0.45)'),
+  whisperOff:    makeVividStyle('linear-gradient(135deg,#6d28d9 0%,#9333ea 55%,#c026d3 100%)', 'rgba(147,51,234,0.5)'),
+  mute:          makeStyle('linear-gradient(135deg,#b45309 0%,#d97706 100%)',         'rgba(180,83,9,0.45)'),
+  kick:          makeStyle('linear-gradient(135deg,#d97706 0%,#f59e0b 100%)',         'rgba(217,119,6,0.45)'),
+  ban:           makeStyle('linear-gradient(135deg,#b91c1c 0%,#ef4444 100%)',         'rgba(185,28,28,0.45)'),
   camera:        makeStyle('linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%)',         'rgba(29,78,216,0.45)'),
   volume:        makeStyle('linear-gradient(135deg,#059669 0%,#10b981 100%)',         'rgba(5,150,105,0.45)'),
-  station:       makeStyle('linear-gradient(135deg,#1a0a2e 0%,#2d1b69 100%)',         'rgba(45,27,105,0.5)'),
+  station:       makeStyle('linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%)',         'rgba(91,33,182,0.45)'),
 };
 
 const OPT = {

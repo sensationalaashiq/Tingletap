@@ -380,8 +380,6 @@ const EditProfile = ({ onClose, onSuccess }) => {
         setTimeout(() => {
           setProfilePicPreview(previewUrl);
         }, 50);
-        
-        pt.image('Image cropped successfully! Save your profile to apply.');
       }
     } catch (error) {
       pt.error('Failed to crop image');
@@ -504,7 +502,6 @@ const EditProfile = ({ onClose, onSuccess }) => {
       // chat avatars / sidebar names refresh immediately without a 60-second TTL wait.
       // (The old call window._profileCacheTTL.delete() pointed to a stale API.)
       invalidateCachedUserProfile(user.uid);
-      pt.profile('Profile updated successfully!');
       onSuccess && onSuccess();
       onClose && onClose();
     } catch (error) {

@@ -354,8 +354,22 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     
     const currentUser = auth.currentUser;
     const isDropdownOpen = openDropdownId === id;
+    const isMyMessage = currentUser && currentUser.uid === uid;
+    const liveSender = isMyMessage
+        ? loggedInUserProfile
+        : (allUsersMap?.[uid] || (typeof window !== 'undefined' && window.userProfilesCache?.get?.(uid)) || null);
+    const STAFF_ROLE_LIST = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'];
+    const liveSenderRole = (liveSender?.role || '').toLowerCase().trim();
+    const msgRoleNorm = (role || '').toLowerCase().trim();
+    const resolvedRole = (liveSenderRole && (!['user', 'guest', 'member', ''].includes(liveSenderRole) || !msgRoleNorm || ['user', 'guest', ''].includes(msgRoleNorm)))
+        ? liveSender.role
+        : (role || liveSender?.role || 'user');
+    const resolvedBadge = (liveSender && liveSender.badge !== undefined && liveSender.badge !== null && liveSender.badge !== '')
+        ? liveSender.badge
+        : (badge || null);
+    const resolvedGender = liveSender?.gender || gender || 'male';
 
-    const avatarGender = isBot ? 'male' : (gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male'));
+    const avatarGender = isBot ? 'male' : (resolvedGender?.toLowerCase() === 'female' ? 'female' : (resolvedGender?.toLowerCase() === 'other' ? 'other' : 'male'));
     const getDefaultAvatar = (uid, gen) => getDefaultAvatarUrl(uid, gen);
     // Live photo — shared refcounted Firestore listener; null while loading
     const _livePhoto = useLivePhotoURL(isBot ? null : uid);
@@ -366,8 +380,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
             ? message.photoURL
             : getDefaultAvatar(uid, avatarGender);
     const hasCustomAvatar = _isRealUpload(_livePhoto) || _isRealUpload(message.photoURL);
-    const isMyMessage = currentUser && currentUser.uid === uid;
-    const viewerRole = loggedInUserProfile?.role || 'user';
+    const viewerRole = (loggedInUserProfile?.role || 'user').toLowerCase().trim();
     
     // Get the actual display name - prioritize message.displayName for guests
     // as a fallback, but resolve the LIVE current name for this uid so a
@@ -375,14 +388,19 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const staleDisplayName = message.displayName || displayName || 'Guest';
     const actualDisplayName = useLiveDisplayName(uid, staleDisplayName);
     
-    const canDelete = viewerRole === 'owner' || viewerRole === 'admin' || viewerRole === 'moderator' || isMyMessage;
+    const canDelete = STAFF_ROLE_LIST.includes(viewerRole) || isMyMessage;
     // Owner can never be kicked, by anyone (including other owners) — enforced regardless of viewer role.
-    const kickRoleHierarchy = { owner: 4, admin: 3, moderator: 2, user: 1, guest: 0 };
-    const targetKickLevel = kickRoleHierarchy[(role || 'user').toLowerCase()] ?? 1;
-    const viewerKickLevel = kickRoleHierarchy[viewerRole?.toLowerCase()] ?? 0;
+    const kickRoleHierarchy = {
+        owner: 4, superowner: 4, godfather: 4,
+        admin: 3, high_council: 3, 'high council': 3,
+        moderator: 2, mod: 2, guardian: 2,
+        user: 1, member: 1, guest: 0
+    };
+    const targetKickLevel = kickRoleHierarchy[(resolvedRole || 'user').toLowerCase().trim()] ?? 1;
+    const viewerKickLevel = kickRoleHierarchy[viewerRole] ?? 0;
     const canKick = !isMyMessage &&
-        role?.toLowerCase() !== 'owner' &&
-        ['owner', 'admin', 'moderator'].includes(viewerRole) &&
+        !['owner', 'superowner', 'godfather'].includes((resolvedRole || '').toLowerCase().trim()) &&
+        STAFF_ROLE_LIST.includes(viewerRole) &&
         viewerKickLevel > targetKickLevel;
 
     // Check if this whisper message should be visible to current user
@@ -403,9 +421,9 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     // Map Firestore role values to CSS-compatible hyphenated values expected by
     // DarkMode.css / Themes.css selectors. Firestore stores 'user' for regular
     // members but the CSS uses 'general'; badge holders are 'badge-holder' (hyphen).
-    const cssRole = badge ? 'badge-holder'
-        : (role === 'user' || !role) ? 'general'
-        : role;
+    const cssRole = resolvedBadge ? 'badge-holder'
+        : (!resolvedRole || resolvedRole.toLowerCase() === 'user') ? 'general'
+        : resolvedRole;
 
     return (<>
         <div className={`message-row-wrapper ${isEven ? 'row-even' : 'row-odd'}${isWhisper ? ' whisper-message' : ''}`}
@@ -413,7 +431,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
              data-user-id={uid}
              data-message-uid={uid}
              data-sender-role={cssRole}
-             data-sender-badge={badge ? 'true' : 'false'}
+             data-sender-badge={resolvedBadge ? 'true' : 'false'}
              data-sender-gender={avatarGender}
              data-sender-is-bot={isBot ? 'true' : 'false'}
              onMouseEnter={handleRowEnter}
@@ -421,7 +439,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
 >
             <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`}
                  data-role={cssRole}
-                 data-gender={gender || 'male'}>
+                 data-gender={resolvedGender}>
                 <div className={`avatar-wrapper ${getBorderClass()}`} style={{ position: 'relative' }}>
                     <img 
                         ref={avatarRef}
@@ -477,17 +495,20 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                     {!isBot && !isMyMessage && isDropdownOpen && createPortal(
                         (() => {
                             const isOnlineNow = window.onlineUsers?.has(uid);
-                            const targetRole = role?.toLowerCase() || '';
-                            const isTargetGuest = message.isGuest === true || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
-                            const isTargetStaff = ['owner', 'admin', 'moderator'].includes(targetRole);
-                            const viewerRole = loggedInUserProfile?.role?.toLowerCase() || '';
-                            // Robust guest detection — check every possible source
-                            const isViewerGuest = !loggedInUserProfile ||
+                            const targetRole = (resolvedRole || '').toLowerCase().trim();
+                            const isTargetGuest = (message.isGuest === true && !STAFF_ROLE_LIST.includes(targetRole)) || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
+                            const isTargetStaff = STAFF_ROLE_LIST.includes(targetRole);
+                            const vRoleLower = (loggedInUserProfile?.role || '').toLowerCase().trim();
+                            const viewerIsRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+                            // Robust guest detection — never treat a signed-in registered user as guest via stale localStorage
+                            const isViewerGuest = !viewerIsRealAuth && (
+                                !loggedInUserProfile ||
                                 loggedInUserProfile?.isGuest === true ||
                                 loggedInUserProfile?.isGuest === 'true' ||
-                                viewerRole === 'guest' ||
+                                vRoleLower === 'guest' ||
                                 localStorage.getItem('isGuest') === 'true' ||
-                                auth.currentUser?.isAnonymous === true;
+                                auth.currentUser?.isAnonymous === true
+                            );
                             // Add Friend + Whisper: hidden if EITHER side is guest (no exceptions)
                             const isLimited = isViewerGuest || isTargetGuest;
                             // Send Message visibility:
@@ -500,9 +521,9 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
 
                             const getRoleLabel = () => getRoleDisplayLabel({
                                 role: targetRole,
-                                gender,
+                                gender: resolvedGender,
                                 isGuest: isTargetGuest,
-                                badge
+                                badge: resolvedBadge
                             });
 
                             return (
@@ -604,9 +625,9 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 data-user-uid={uid}
                                 data-profile-uid={uid}
                                 data-role={cssRole}
-                                data-badge={badge ? 'true' : 'false'}
+                                data-badge={resolvedBadge ? 'true' : 'false'}
                                 data-is-bot={isBot ? 'true' : 'false'}
-                                data-gender={gender || 'male'}
+                                data-gender={resolvedGender}
                                 data-username={actualDisplayName}
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -634,7 +655,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     actualDisplayName
                                 )}
                             </span>
-                            {renderUserBadge(message, 16)}
+                            {renderUserBadge({ ...message, role: resolvedRole, badge: resolvedBadge, gender: resolvedGender }, 16)}
                             
                             {showUserDropdown && !isBot && isMyMessage && (
                                 <div className="user-dropdown">
@@ -681,8 +702,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                             {(() => {
                                                 // Block user option should only be visible for badge holders, users, and guests
                                                 // Should NOT be visible for owners, admins, or moderators
-                                                const currentUserRole = loggedInUserProfile?.role?.toLowerCase() || 'user';
-                                                const targetUserRole = message.role?.toLowerCase() || 'user';
+                                                const currentUserRole = (loggedInUserProfile?.role || 'user').toLowerCase().trim();
+                                                const targetUserRole = (resolvedRole || 'user').toLowerCase().trim();
                                                 const currentUserHasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
                                                 
                                                 // Current user must be badge holder, user, or guest (not owner, admin, or moderator)
@@ -690,7 +711,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                                     ['user', 'guest'].includes(currentUserRole);
                                                 
                                                 // Cannot block owners, admins, or moderators
-                                                const canBlockTarget = !['owner', 'admin', 'moderator'].includes(targetUserRole);
+                                                const canBlockTarget = !STAFF_ROLE_LIST.includes(targetUserRole);
                                                 
                                                 return (canShowBlockOption && canBlockTarget) ? (
                                                     <button onClick={(e) => { e.stopPropagation(); onBlock(message); setShowUserDropdown(false); }}>
@@ -846,35 +867,43 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
         )}
 
         {/* Compact Guest Feature Locked Modal */}
-        {guestLockModal && createPortal(
+        {guestLockModal && (() => {
+            const isDarkModal = document.documentElement.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-theme-variant');
+            return createPortal(
             <div
                 onClick={() => setGuestLockModal(null)}
-                style={{ position:'fixed', inset:0, zIndex:99998, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.55)' }}
+                style={{ position:'fixed', inset:0, zIndex:99998, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.62)' }}
             >
                 <div
                     onClick={e => e.stopPropagation()}
-                    style={{ background:'#fff', borderRadius:'20px', padding:'24px 20px 20px', width:'min(310px,88vw)', display:'flex', flexDirection:'column', alignItems:'center', gap:'12px', boxShadow:'0 8px 40px rgba(99,102,241,0.22),0 2px 12px rgba(0,0,0,0.14)', border:'1px solid rgba(99,102,241,0.13)' }}
+                    style={{
+                        background: isDarkModal ? 'var(--bg-card, #1a1829)' : '#fff',
+                        borderRadius:'20px', padding:'24px 20px 20px', width:'min(310px,88vw)',
+                        display:'flex', flexDirection:'column', alignItems:'center', gap:'12px',
+                        boxShadow: isDarkModal ? '0 12px 44px rgba(0,0,0,0.65)' : '0 8px 40px rgba(99,102,241,0.22),0 2px 12px rgba(0,0,0,0.14)',
+                        border: isDarkModal ? '1px solid rgba(139,92,246,0.32)' : '1px solid rgba(99,102,241,0.13)'
+                    }}
                 >
-                    <div style={{ width:'58px', height:'58px', borderRadius:'50%', background:'linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.16))', border:'2px solid rgba(99,102,241,.22)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div style={{ width:'58px', height:'58px', borderRadius:'50%', background:'linear-gradient(135deg,rgba(99,102,241,.14),rgba(139,92,246,.22))', border:'2px solid rgba(99,102,241,.28)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
                     </div>
-                    <div style={{ fontSize:'1.1rem', fontWeight:700, color:'#1a1a2e', letterSpacing:'-0.02em', textAlign:'center' }}>
+                    <div style={{ fontSize:'1.1rem', fontWeight:700, color: isDarkModal ? 'var(--text-primary, #f1f5f9)' : '#1a1a2e', letterSpacing:'-0.02em', textAlign:'center' }}>
                         {guestLockModal === 'friend' ? '🤝 Add Friend' : '🤫 Whisper'}
                     </div>
-                    <p style={{ fontSize:'0.8rem', color:'#6b7280', textAlign:'center', lineHeight:1.55, margin:0, padding:'0 4px' }}>
+                    <p style={{ fontSize:'0.8rem', color: isDarkModal ? 'var(--text-secondary, #cbd5e1)' : '#6b7280', textAlign:'center', lineHeight:1.55, margin:0, padding:'0 4px' }}>
                         {guestLockModal === 'friend'
                             ? 'Register an account or get a badge to send friend requests and build your connections.'
                             : 'Register an account or get a badge to send private whisper messages to other users.'}
                     </p>
-                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', width:'100%', background:'linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.04))', border:'1px solid rgba(99,102,241,.15)', borderRadius:'10px', padding:'9px 12px' }}>
-                        <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#6366f1' }}>🔒 Requires:</span>
-                        <span style={{ fontSize:'0.72rem', color:'#6b7280', lineHeight:1.5 }}>Registered account • Badge holder or Staff role</span>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', width:'100%', background: isDarkModal ? 'rgba(139,92,246,0.12)' : 'linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.04))', border:'1px solid rgba(139,92,246,.25)', borderRadius:'10px', padding:'9px 12px' }}>
+                        <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#8b5cf6' }}>🔒 Requires:</span>
+                        <span style={{ fontSize:'0.72rem', color: isDarkModal ? 'var(--text-secondary, #cbd5e1)' : '#6b7280', lineHeight:1.5 }}>Registered account • Badge holder or Staff role</span>
                     </div>
                     <div style={{ display:'flex', gap:'8px', width:'100%', marginTop:'2px' }}>
-                        <button onClick={() => setGuestLockModal(null)} style={{ flex:1, padding:'10px', borderRadius:'11px', background:'#fff', border:'1.5px solid #e5e7eb', color:'#6b7280', fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        <button onClick={() => setGuestLockModal(null)} style={{ flex:1, padding:'10px', borderRadius:'11px', background: isDarkModal ? 'rgba(255,255,255,0.08)' : '#fff', border: isDarkModal ? '1px solid rgba(255,255,255,0.16)' : '1.5px solid #e5e7eb', color: isDarkModal ? '#e2e8f0' : '#6b7280', fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                             Close
                         </button>
                         <button onClick={async () => {
@@ -891,7 +920,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                 </div>
             </div>,
             document.body
-        )}
+            );
+        })()}
     </>);
 // Custom memo comparator: only re-render this ChatMessage when something
 // that actually affects its output changes. This prevents the full-list
@@ -908,9 +938,17 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const prevKicked = prevProps.kickedUserIds?.has?.(prevProps.message.uid) ?? false;
     const nextKicked = nextProps.kickedUserIds?.has?.(nextProps.message.uid) ?? false;
     if (prevKicked !== nextKicked) return false;
-    // Re-render on auth-relevant profile changes (uid = identity, role = permissions)
+    // Re-render on auth-relevant profile or sender live role/badge changes
     if (prevProps.loggedInUserProfile?.uid !== nextProps.loggedInUserProfile?.uid) return false;
     if (prevProps.loggedInUserProfile?.role !== nextProps.loggedInUserProfile?.role) return false;
+    if (prevProps.loggedInUserProfile?.badge !== nextProps.loggedInUserProfile?.badge) return false;
+    const senderUid = prevProps.message.uid;
+    if (senderUid) {
+        const prevSender = prevProps.allUsersMap?.[senderUid];
+        const nextSender = nextProps.allUsersMap?.[senderUid];
+        if (prevSender?.role !== nextSender?.role) return false;
+        if (prevSender?.badge !== nextSender?.badge) return false;
+    }
     if (prevProps.roomId !== nextProps.roomId) return false;
     if (prevProps.isEven !== nextProps.isEven) return false;
     return true; // all relevant props unchanged → skip re-render
@@ -1158,7 +1196,7 @@ const MessageList = React.memo(({
                             key={msg.id}
                             message={msg}
                             onDelete={onDelete}
-                            isOwner={loggedInUserProfile?.role === 'owner'}
+                            isOwner={['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
                         />
                     );
                 }
@@ -1229,6 +1267,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Synchronous lazy init — guests get their profile immediately on first render
         // so Sidebar / SettingsSidebar never show "Guest" fallbacks
         try {
+            if (auth.currentUser && !auth.currentUser.isAnonymous) return null;
             if (localStorage.getItem('isGuest') !== 'true') return null;
             const raw = localStorage.getItem('guestUser');
             if (!raw) return null;
@@ -2318,9 +2357,16 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     // Enhanced useEffect to handle both authenticated users and guests
     useEffect(() => {
-        // Check for guest users from localStorage
-        const isGuest = localStorage.getItem('isGuest') === 'true';
-        const guestData = localStorage.getItem('guestUser');
+        // Check for guest users ONLY when there is no real non-anonymous Firebase user
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous) || !!(user && !user.isGuest && !user.isAnonymous);
+        if (hasRealAuth) {
+            localStorage.removeItem('guestUser');
+            localStorage.removeItem('isGuest');
+            localStorage.removeItem('guestGender');
+            localStorage.removeItem('guestSessionId');
+        }
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
+        const guestData = !hasRealAuth ? localStorage.getItem('guestUser') : null;
         
         const buildGuestProfile = (guestUser) => {
             const correctPhotoURL = getDefaultAvatarUrl(guestUser.uid, guestUser.gender);
@@ -2642,7 +2688,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Used to show Unkick button on message hover for already-kicked users.
     useEffect(() => {
         if (!roomId) { setRoomKickedUserIds(new Set()); return; }
-        const isStaffUser = ['owner', 'superowner', 'admin', 'moderator'].includes((loggedInUserProfile?.role || '').toLowerCase());
+        const isStaffUser = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim());
         if (!isStaffUser) { setRoomKickedUserIds(new Set()); return; }
         const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
             setRoomKickedUserIds(new Set(snap.docs.map(d => d.id)));
@@ -2927,7 +2973,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     // ── PRESENCE PART 0: Instant write — waits for confirmed Firebase Auth UID ─
     useEffect(() => {
         if (!roomId) return;
-        const isGuest = localStorage.getItem('isGuest') === 'true';
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
 
         let localGuestProfile = null;
         if (isGuest) {
@@ -2994,8 +3041,9 @@ const HomePage = ({ user, roomIdOverride }) => {
     // ── PRESENCE PART 1: Write full online status whenever profile + auth ready ─
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
-        const isGuest = localStorage.getItem('isGuest') === 'true';
-        const guestData = localStorage.getItem('guestUser');
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
+        const guestData = !hasRealAuth ? localStorage.getItem('guestUser') : null;
         if (!authUid || (!user && !(isGuest && guestData)) || !roomId || !loggedInUserProfile) return;
 
         let displayNameForStatus = loggedInUserProfile.displayName || 'Guest';
@@ -3012,7 +3060,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             country: loggedInUserProfile.country || 'Unknown',
             displayName: displayNameForStatus,
             gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
-            role: loggedInUserProfile.role || 'guest',
+            role: loggedInUserProfile.role || (isGuest ? 'guest' : 'user'),
             isGuest: isGuest || false,
             photoURL: loggedInUserProfile.photoURL || getDefaultAvatarUrl(authUid, loggedInUserProfile.gender),
             badge: loggedInUserProfile.badge || null,
@@ -3040,8 +3088,9 @@ const HomePage = ({ user, roomIdOverride }) => {
     // ── PRESENCE PART 2: Stable setup — onDisconnect + heartbeat ─────────────
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
-        const isGuest = localStorage.getItem('isGuest') === 'true';
-        const guestData = localStorage.getItem('guestUser');
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
+        const guestData = !hasRealAuth ? localStorage.getItem('guestUser') : null;
         if (!authUid || (!user && !(isGuest && guestData)) || !roomId) return;
 
         const userStatusRef = ref(rtdb, `status/${authUid}`);
@@ -3074,7 +3123,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Isolated so its Firestore write never triggers loggedInUserProfile listener
     // chain and causes presence to go offline→online.
     useEffect(() => {
-        const isGuest = localStorage.getItem('isGuest') === 'true';
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
         if (!user?.uid || isGuest) return;
         const storeDeviceInfo = async () => {
             try {
@@ -4022,14 +4072,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                 });
             });
 
-            // Fallback to users/{uid} for any uid absent from publicProfiles
-            const missingUids = registeredUids.filter(uid => !firestoreMap[uid]);
+            // Fallback to users/{uid} for any uid absent from publicProfiles OR with incomplete staff/badge fields
+            const missingUids = registeredUids.filter(uid =>
+                !firestoreMap[uid] ||
+                uid === auth.currentUser?.uid ||
+                !firestoreMap[uid]?.role ||
+                (firestoreMap[uid].role === 'user' && !firestoreMap[uid]?.badge)
+            );
             if (missingUids.length > 0 && auth.currentUser) {
                 await Promise.all(missingUids.map(async (uid) => {
                     try {
                         const uSnap = await getDoc(doc(db, 'users', uid));
                         if (uSnap.exists()) {
-                            firestoreMap[uid] = { ...uSnap.data(), uid };
+                            const ud = uSnap.data();
+                            const existing = firestoreMap[uid] || {};
+                            const uRole = (ud.role || '').toLowerCase().trim();
+                            const exRole = (existing.role || '').toLowerCase().trim();
+                            const mergedRole = STAFF_ROLE_SET.has(uRole) ? ud.role : (STAFF_ROLE_SET.has(exRole) ? existing.role : (ud.role || existing.role));
+                            firestoreMap[uid] = { ...existing, ...ud, role: mergedRole, uid };
                         }
                     } catch (_) {}
                 }));
@@ -4075,10 +4135,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         return () => { cancelled = true; };
     }, [onlineUserIds, presenceMetaKey]);
 
-    // ── Real-time moderation state sync (TingleBot automod + staff actions) ──
+    // ── Real-time moderation & role/badge sync (TingleBot automod + staff actions) ──
     useEffect(() => {
         const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
         if (registeredUids.length === 0) return;
+        const STAFF_SET = new Set(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian']);
         const batches = [];
         for (let i = 0; i < registeredUids.length; i += 10) batches.push(registeredUids.slice(i, i + 10));
         const unsubs = batches.map(batch => {
@@ -4089,8 +4150,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                 setLiveUsers(prev => prev.map(u => {
                     const fs = updates[u.uid];
                     if (!fs) return u;
+                    const uRole = (u.role || '').toLowerCase().trim();
+                    const fsRole = (fs.role || '').toLowerCase().trim();
+                    const nextRole = STAFF_SET.has(fsRole) ? fs.role : (STAFF_SET.has(uRole) ? u.role : (fs.role || u.role));
                     return {
                         ...u,
+                        displayName: fs.displayName || u.displayName,
+                        photoURL: fs.photoURL || u.photoURL,
+                        role: nextRole,
+                        badge: fs.badge !== undefined ? fs.badge : u.badge,
                         isBanned: fs.isBanned || false,
                         mutedInfo: fs.mutedInfo || { isMuted: false },
                         kickedFrom: fs.kickedFrom || null,
@@ -4362,8 +4430,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Close popup
             setShowFontPopup(false);
-            
-            pt.success("Message text style saved! (Usernames unchanged)");
         } catch (error) {
             pt.error("Failed to save message font preferences");
         }
@@ -4426,9 +4492,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        // Handle both authenticated users and guests
-        const isGuest = localStorage.getItem('isGuest') === 'true';
-        const guestData = localStorage.getItem('guestUser');
+        // Handle both authenticated users and guests (never let stale guest keys override real auth)
+        const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+        const isGuest = !hasRealAuth && localStorage.getItem('isGuest') === 'true';
+        const guestData = !hasRealAuth ? localStorage.getItem('guestUser') : null;
         
         let uid, displayName, email, photoURL, gender, role;
         
@@ -4587,7 +4654,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // ── Instant 0ms Synchronous Anti-Spam & Abuse Guard ──────────
             // Owners bypass auto-mod; spam checks run in <1ms in memory without blocking UI.
-            if (!isGuest && uid && (role || userProfile?.role || 'guest') !== 'owner') {
+            if (!isGuest && uid && !['owner', 'superowner', 'godfather'].includes((role || userProfile?.role || 'guest').toLowerCase().trim())) {
                 const spamResult = checkSpamSync(uid, trimmedText, roomId);
                 if (spamResult.isSpam) {
                     setNewMessage('');
@@ -4779,8 +4846,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
-            
-            pt.youtube("YouTube video shared successfully!");
         } catch (error) {
             completeSendProgress();
             if (error.code === 'permission-denied') {
@@ -4865,8 +4930,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
-            
-            pt.youtube("YouTube video shared successfully!");
         } catch (error) {
             if (error.code === 'permission-denied') {
                 pt.error("Permission denied. Please check your account status.");
@@ -5823,10 +5886,14 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
+            pt.error("Image size must be less than 10MB!");
+            e.target.value = '';
             return;
         }
 
         if (!file.type.startsWith('image/')) {
+            pt.error("Please select a valid image file!");
+            e.target.value = '';
             return;
         }
 
@@ -5905,14 +5972,17 @@ const HomePage = ({ user, roomIdOverride }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const maxSize = 10 * 1024 * 1024;
+        const maxSize = 15 * 1024 * 1024;
         if (file.size > maxSize) {
-            pt.error("Audio size must be less than 10MB!");
+            pt.error("Audio size must be less than 15MB!");
+            e.target.value = '';
             return;
         }
 
-        if (!file.type.startsWith('audio/')) {
+        const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name || '');
+        if (!file.type.startsWith('audio/') && !isAudioExt) {
             pt.error("Please select a valid audio file!");
+            e.target.value = '';
             return;
         }
 
@@ -5940,8 +6010,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 roomId: roomId
             });
 
-            pt.audio("Audio sent successfully!");
-            
             // Reset file input
             if (privateAudioInputRef.current) {
                 privateAudioInputRef.current.value = '';
@@ -6022,8 +6090,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             setPrivateAudioPreview(null);
             setPrivateMessage('');
             setPrivateAudioPopupOpen(false);
-
-                    pt.audio("Audio sent successfully!");
                 } catch (error) {
                     pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
                 }
@@ -6113,8 +6179,6 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                     setShowPrivateAudioMiniPopup(false);
                     // Keep attachment dropdown open after sending audio
-            
-                    pt.audio("Audio sent successfully!");
                 } catch (error) {
                     pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
                 }
@@ -7113,15 +7177,17 @@ const HomePage = ({ user, roomIdOverride }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const maxSize = 10 * 1024 * 1024;
+        const maxSize = 15 * 1024 * 1024;
         if (file.size > maxSize) {
-            pt.error("Audio size must be less than 10MB!");
+            pt.error("Audio size must be less than 15MB!");
+            e.target.value = '';
             return;
         }
 
         const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name || '');
         if (!file.type.startsWith('audio/') && !isAudioExt) {
             pt.error("Please select a valid audio file!");
+            e.target.value = '';
             return;
         }
 
@@ -7162,8 +7228,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             setMediaRecorder(recorder);
             recorder.start(100); // Collect data every 100ms
             setIsRecording(true);
-            
-            pt.mic("Recording started...", { autoClose: 2000 });
         } catch (error) {
             if (error.name === 'NotAllowedError') {
                 pt.error("Microphone access denied. Please allow microphone permissions.");
@@ -7179,7 +7243,6 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
             setIsRecording(false);
-            pt.mic("Recording stopped!", { autoClose: 2000 });
         }
     };
 
@@ -7290,8 +7353,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
-            
-            pt.audio("Audio sent successfully!");
         } catch (error) {
             completeSendProgress();
             pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
@@ -7424,8 +7485,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
-            
-            pt.gif("GIF sent successfully!");
         } catch (error) {
             pt.error(`Failed to send GIF: ${error.message || 'Please try again.'}`);
         }
@@ -7543,8 +7602,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             // Force auto-scroll to show the latest message
             setTimeout(() => scrollToBottom(true), 100);
-            
-            pt.success("Sticker sent!");
         } catch (error) {
             pt.error("Failed to send sticker. Please try again.");
         }
@@ -7635,7 +7692,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     currentUserProfile={loggedInUserProfile}
                     currentRoomId={roomId}
                     currentRoomName={roomName || ''}
-                    hideBanTab={loggedInUserProfile?.role === 'moderator'}
+                    hideBanTab={['moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
                 />
                 
                 <StylishConfirmationDialogue 
@@ -7714,7 +7771,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                           </div>
 
                           <div className="header-right">
-                              {(loggedInUserProfile?.role === 'owner' || loggedInUserProfile?.role === 'admin' || loggedInUserProfile?.role === 'moderator') && (
+                              {['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim()) && (
                                   <button 
                                       className="header-action-btn clear-chat-btn" 
                                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleClearChat(); }}
@@ -8664,7 +8721,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         {(() => {
                                             const viewerUid = auth.currentUser?.uid;
                                             const isSelf = viewerUid === profileUser.uid;
-                                            const isGuestViewer = !viewerUid || localStorage.getItem('isGuest') === 'true';
+                                            const viewerHasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+                                            const isGuestViewer = !viewerHasRealAuth && (!viewerUid || localStorage.getItem('isGuest') === 'true');
                                             return (
                                                 <div onClick={e => e.stopPropagation()}>
                                                     <PremiumRelationshipCard
@@ -8865,7 +8923,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                             {(() => {
                                 const isOwnProfile = profileUser?.uid === loggedInUserProfile?.uid;
                                 if (isOwnProfile) return null;
-                                const viewerIsGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true || localStorage.getItem('isGuest') === 'true';
+                                const viewerHasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
+                                const viewerIsGuest = !viewerHasRealAuth && (loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || auth.currentUser?.isAnonymous === true || localStorage.getItem('isGuest') === 'true');
                                 const targetIsGuest = profileUser?.isGuest === true || profileUser?.role?.toLowerCase() === 'guest';
                                 const canMsg = !viewerIsGuest;
                                 const canAddFriend = !viewerIsGuest && !targetIsGuest;
@@ -9056,18 +9115,24 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </div>
                 );
             })()}
-            {/* ── Premium Luxury Muted Banner — Light Lavender Glassmorphism ── */}
-            {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (
+            {/* ── Premium Luxury Muted Banner — Theme & Dark Mode Adaptive ── */}
+            {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (() => {
+                const isDarkMuteBanner = isDarkMode || document.documentElement.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-theme-variant');
+                return (
                 <div style={{
                     position: 'fixed', bottom: '44px', left: 0, right: 0,
                     zIndex: 1999,
-                    background: 'linear-gradient(135deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
+                    background: isDarkMuteBanner
+                        ? 'linear-gradient(135deg, rgba(24, 18, 43, 0.97) 0%, rgba(36, 26, 66, 0.99) 50%, rgba(24, 18, 43, 0.97) 100%)'
+                        : 'linear-gradient(135deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
                     backdropFilter: 'blur(24px)',
                     WebkitBackdropFilter: 'blur(24px)',
-                    borderTop: '1.5px solid rgba(139,92,246,0.2)',
+                    borderTop: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
                     padding: '8px 16px',
                     display: 'flex', alignItems: 'center', gap: '12px',
-                    boxShadow: '0 -8px 36px rgba(109,40,217,0.1), 0 -2px 8px rgba(139,92,246,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
+                    boxShadow: isDarkMuteBanner
+                        ? '0 -8px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(167,139,250,0.15)'
+                        : '0 -8px 36px rgba(109,40,217,0.1), 0 -2px 8px rgba(139,92,246,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
                     fontFamily: 'Inter, sans-serif',
                     animation: 'muteBannerSlide 0.32s cubic-bezier(0.34,1.56,0.64,1)',
                 }}>
@@ -9075,20 +9140,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
-                        background: 'linear-gradient(135deg, rgba(139,92,246,0.14), rgba(167,139,250,0.08))',
-                        border: '1.5px solid rgba(139,92,246,0.28)',
-                        boxShadow: '0 4px 14px rgba(109,40,217,0.14), inset 0 1px 0 rgba(255,255,255,0.75)',
+                        background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(167,139,250,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.14), rgba(167,139,250,0.08))',
+                        border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.38)' : '1.5px solid rgba(139,92,246,0.28)',
+                        boxShadow: isDarkMuteBanner ? '0 4px 14px rgba(109,40,217,0.35)' : '0 4px 14px rgba(109,40,217,0.14), inset 0 1px 0 rgba(255,255,255,0.75)',
                         animation: 'mutePulse 2.4s ease-in-out infinite',
                     }}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zM15 11.16L9 5.18V5a3 3 0 0 1 6 0v6.16zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill="#7c3aed"/>
+                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zM15 11.16L9 5.18V5a3 3 0 0 1 6 0v6.16zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill={isDarkMuteBanner ? '#c4b5fd' : '#7c3aed'}/>
                         </svg>
                     </div>
 
                     {/* Left: Muted label + moderator role + reason */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#3b0764', letterSpacing: '-0.01em' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: isDarkMuteBanner ? '#ede9fe' : '#3b0764', letterSpacing: '-0.01em' }}>
                                 Muted
                             </span>
                             {/* Role badge — never shows username, only role */}
@@ -9096,16 +9161,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 const mutedByRole = (loggedInUserProfile?.mutedInfo?.mutedByRole || '').toLowerCase();
                                 const isBot = mutedByRole.includes('automod') || mutedByRole.includes('tinglebot') || mutedByRole.includes('system');
                                 const roleLabel = isBot ? 'TingleBot'
-                                    : mutedByRole === 'owner' ? 'Owner'
-                                    : mutedByRole === 'admin' ? 'Administrator'
-                                    : mutedByRole === 'moderator' ? 'Moderator'
+                                    : ['owner', 'superowner', 'godfather'].includes(mutedByRole) ? 'Godfather'
+                                    : ['admin', 'high_council', 'high council'].includes(mutedByRole) ? 'Administrator'
+                                    : ['moderator', 'mod', 'guardian'].includes(mutedByRole) ? 'Moderator'
                                     : 'Staff';
                                 return (
                                     <span style={{
                                         fontSize: '10.5px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px',
-                                        background: isBot ? 'rgba(245,158,11,0.1)' : 'rgba(109,40,217,0.09)',
-                                        color: isBot ? '#92400e' : '#5b21b6',
-                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.25)' : 'rgba(109,40,217,0.18)'}`,
+                                        background: isBot ? 'rgba(245,158,11,0.16)' : (isDarkMuteBanner ? 'rgba(139,92,246,0.22)' : 'rgba(109,40,217,0.09)'),
+                                        color: isBot ? (isDarkMuteBanner ? '#fcd34d' : '#92400e') : (isDarkMuteBanner ? '#ddd6fe' : '#5b21b6'),
+                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.35)' : (isDarkMuteBanner ? 'rgba(167,139,250,0.3)' : 'rgba(109,40,217,0.18)')}`,
                                         whiteSpace: 'nowrap', letterSpacing: '0.01em',
                                     }}>
                                         {isBot ? `🤖 Muted by ${roleLabel}` : `by ${roleLabel}`}
@@ -9115,7 +9180,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </div>
                         {loggedInUserProfile?.mutedInfo?.reason && (
                             <div style={{
-                                fontSize: '11px', color: 'rgba(91,33,182,0.5)', marginTop: '2px',
+                                fontSize: '11px', color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.7)', marginTop: '2px',
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px',
                             }}>
                                 {loggedInUserProfile.mutedInfo.reason}
@@ -9127,16 +9192,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                     {muteTimeLeft && muteTimeLeft !== '__expired__' ? (
                         <div style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
-                            background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.06))',
-                            border: '1.5px solid rgba(139,92,246,0.22)',
+                            background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(109,40,217,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.06))',
+                            border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.35)' : '1.5px solid rgba(139,92,246,0.22)',
                             borderRadius: '12px', padding: '5px 14px', minWidth: '80px',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                            boxShadow: isDarkMuteBanner ? 'inset 0 1px 0 rgba(255,255,255,0.12)' : 'inset 0 1px 0 rgba(255,255,255,0.8)',
                         }}>
-                            <span style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(91,33,182,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '1px' }}>
+                            <span style={{ fontSize: '9px', fontWeight: 700, color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.55)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '1px' }}>
                                 Unmute in
                             </span>
                             <span style={{
-                                fontWeight: 900, fontSize: '16px', color: '#5b21b6',
+                                fontWeight: 900, fontSize: '16px', color: isDarkMuteBanner ? '#ede9fe' : '#5b21b6',
                                 fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
                                 fontFamily: "'JetBrains Mono', 'Courier New', monospace",
                                 lineHeight: 1,
@@ -9147,15 +9212,16 @@ const HomePage = ({ user, roomIdOverride }) => {
                     ) : (
                         <div style={{
                             display: 'flex', alignItems: 'center', gap: '5px',
-                            background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)',
+                            background: 'rgba(239,68,68,0.14)', border: '1px solid rgba(239,68,68,0.28)',
                             borderRadius: '10px', padding: '5px 12px', flexShrink: 0,
-                            fontSize: '11px', color: '#b91c1c', fontWeight: 700,
+                            fontSize: '11px', color: isDarkMuteBanner ? '#fca5a5' : '#b91c1c', fontWeight: 700,
                         }}>
                             ∞ Permanent
                         </div>
                     )}
                 </div>
-            )}
+                );
+            })()}
 
             <SendProgressBar progress={sendProgress} />
 

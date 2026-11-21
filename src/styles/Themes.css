@@ -514,7 +514,7 @@ html.dark-theme-variant .ultra-pm-sender { color: var(--username-color) !importa
 /* ── Username colors: all roles → theme variable (no per-role overrides) ── */
 /* Custom user-set colors win via inline style / -webkit-text-fill-color.     */
 html.dark-theme-variant .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
-html.dark-theme-variant .inline-badge svg { color: var(--icon-color) !important; stroke: var(--icon-color) !important; }
+html.dark-theme-variant .inline-badge { background: transparent !important; box-shadow: none !important; border: none !important; }
 
 /* ── Chat Input / Form ── */
 html.dark-theme-variant .message-form-container {

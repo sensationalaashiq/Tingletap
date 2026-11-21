@@ -3,23 +3,31 @@
 import React from 'react';
 import { Badges } from '../data/Badges';
 
-export const OWNER_CROWN_SVG = (size = 16, title = 'Owner / High Command') => (
-  <span className="inline-badge badge-owner-crown" title={title} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', flexShrink: 0 }}>
+export const OWNER_CROWN_SVG = (size = 16, title = 'Owner / Godfather') => (
+  <span className="inline-badge badge-owner-crown" title={title} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', flexShrink: 0, background: 'transparent', boxShadow: 'none' }}>
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="bh_owner_crown_g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fef08a" />
-          <stop offset="45%" stopColor="#f59e0b" />
+          <stop offset="0%" stopColor="#fff3b0" />
+          <stop offset="40%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+        <linearGradient id="bh_owner_band_g" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#d97706" />
+          <stop offset="50%" stopColor="#fde68a" />
           <stop offset="100%" stopColor="#b45309" />
         </linearGradient>
       </defs>
-      <path d="M2 7l4.5 5 5.5-8 5.5 8 4.5-5-2 11H4L2 7z" fill="url(#bh_owner_crown_g)" filter="drop-shadow(0 1px 4px rgba(245,158,11,0.6))" />
-      <circle cx="2" cy="7" r="1.5" fill="#fef08a" />
-      <circle cx="12" cy="4" r="1.8" fill="#fef08a" />
-      <circle cx="22" cy="7" r="1.5" fill="#fef08a" />
-      <circle cx="7" cy="14" r="1.2" fill="#ef4444" />
-      <circle cx="12" cy="14" r="1.4" fill="#38bdf8" />
-      <circle cx="17" cy="14" r="1.2" fill="#10b981" />
+      <path d="M2.5 8.5L6.5 13 9 6.5l3 5.5 3-5.5L17.5 13l4-4.5-1.5 9.5H4L2.5 8.5z" fill="url(#bh_owner_crown_g)" stroke="#92400e" strokeWidth="0.7" strokeLinejoin="round" />
+      <rect x="3.8" y="18.2" width="16.4" height="3" rx="1.2" fill="url(#bh_owner_band_g)" stroke="#92400e" strokeWidth="0.6" />
+      <circle cx="2.5" cy="7.6" r="1.45" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+      <circle cx="9" cy="5.8" r="1.5" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+      <circle cx="12" cy="4.4" r="1.7" fill="#fffbeb" stroke="#b45309" strokeWidth="0.45" />
+      <circle cx="15" cy="5.8" r="1.5" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+      <circle cx="21.5" cy="7.6" r="1.45" fill="#fef08a" stroke="#b45309" strokeWidth="0.4" />
+      <circle cx="7.5" cy="14.6" r="1.2" fill="#ef4444" />
+      <circle cx="12" cy="14.2" r="1.45" fill="#38bdf8" />
+      <circle cx="16.5" cy="14.6" r="1.2" fill="#10b981" />
     </svg>
   </span>
 );
@@ -74,32 +82,36 @@ export const RJ_MIC_SVG = (size = 15, title = 'Radio Jockey') => (
  */
 export const renderUserBadge = (userOrProps, size = 16) => {
   if (!userOrProps) return null;
-  const badgeKey = userOrProps.badge;
-  const role = (userOrProps.role || '').toLowerCase();
+  const rawBadge = userOrProps.badge;
+  const badgeKey = rawBadge ? String(rawBadge).trim().toLowerCase() : '';
+  const role = (userOrProps.role || '').toLowerCase().trim();
 
-  // 1. Custom acquired VIP Badge
-  if (badgeKey && Badges[badgeKey]) {
+  // 1. Custom acquired VIP Badge (case-insensitive lookup)
+  const resolvedBadge = badgeKey
+    ? (Badges[rawBadge] ? rawBadge : Object.keys(Badges).find(k => k.toLowerCase() === badgeKey))
+    : null;
+  if (resolvedBadge && Badges[resolvedBadge]) {
     return (
       <span
-        className={`inline-badge badge-${badgeKey}`}
-        title={Badges[badgeKey].name || 'VIP Badge'}
-        style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', flexShrink: 0 }}
-        dangerouslySetInnerHTML={{ __html: Badges[badgeKey].svg }}
+        className={`inline-badge badge-${resolvedBadge}`}
+        title={Badges[resolvedBadge].name || 'VIP Badge'}
+        style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', flexShrink: 0, background: 'transparent', boxShadow: 'none' }}
+        dangerouslySetInnerHTML={{ __html: Badges[resolvedBadge].svg }}
       />
     );
   }
 
   // 2. Staff Roles
   if (['owner', 'superowner', 'godfather'].includes(role)) {
-    return OWNER_CROWN_SVG(size, 'Owner / Founder');
+    return OWNER_CROWN_SVG(size, 'Godfather / Owner');
   }
-  if (['admin', 'high_council'].includes(role)) {
+  if (['admin', 'high_council', 'high council'].includes(role)) {
     return ADMIN_SHIELD_SVG(size, 'Administrator');
   }
   if (['moderator', 'guardian', 'mod'].includes(role)) {
     return MODERATOR_SHIELD_SVG(size, 'Moderator');
   }
-  if (['rj', 'radio_jockey'].includes(role)) {
+  if (['rj', 'radio_jockey', 'verified_rj'].includes(role)) {
     return RJ_MIC_SVG(size, 'Radio Jockey');
   }
 

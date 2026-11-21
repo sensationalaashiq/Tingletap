@@ -68,17 +68,6 @@ const StylishAudioUpload = ({
     const handleClose = () => { resetAudio(); onClose(); };
     const canSend = !!(audioPreview);
 
-    /* ── Tab active colour helper ─────────────────────────────────────── */
-    const tabStyle = (id) => ({
-        background: audioTab === id ? 'rgba(16,185,129,.12)' : '#fafafa',
-        color:      audioTab === id ? '#065f46'              : '#9ca3af',
-        border:     `1.5px solid ${audioTab === id ? '#10b981' : 'rgba(16,185,129,.2)'}`,
-    });
-    const lockedTabStyle = {
-        background: '#fafafa', color: '#c4b5fd',
-        border: '1.5px solid rgba(139,92,246,.25)', opacity: .7, position: 'relative',
-    };
-
     return (
         <div className="sau-overlay" onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
             <div className="sau-card" onClick={e => e.stopPropagation()}>
@@ -107,52 +96,49 @@ const StylishAudioUpload = ({
                 <div className="sau-tabs">
                     {/* Record — always visible */}
                     <button className={`sau-tab${audioTab === 'record' ? ' active' : ''}`}
-                        onClick={() => { setAudioTab('record'); setSelectedAudio(null); setAudioPreview(null); if (audioInputRef?.current) audioInputRef.current.value = ''; }}
-                        style={tabStyle('record')}>
+                        onClick={() => { setAudioTab('record'); setSelectedAudio(null); setAudioPreview(null); if (audioInputRef?.current) audioInputRef.current.value = ''; }}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-                            <rect x="7" y="2" width="6" height="11" rx="3" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" fill="none"/>
-                            <path d="M4 10c0 4.42 8 4.42 8 0" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                            <line x1="8" y1="17" x2="8" y2="19" stroke={audioTab === 'record' ? '#065f46' : '#9ca3af'} strokeWidth="1.5" strokeLinecap="round"/>
+                            <rect x="7" y="2" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                            <path d="M4 10c0 4.42 8 4.42 8 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                            <line x1="8" y1="17" x2="8" y2="19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                         </svg>
                         Record
                     </button>
 
                     {/* Upload File — locked for guest */}
-                    <button className={`sau-tab${audioTab === 'upload' ? ' active' : ''}`}
+                    <button className={`sau-tab${audioTab === 'upload' ? ' active' : ''}${!canUploadFile ? ' sau-tab-locked' : ''}`}
                         onClick={() => {
                             if (!canUploadFile) { setAudioTab('upload'); return; }
                             setAudioTab('upload'); setIsRecording(false); setRecordedBlob(null);
                             if (mediaRecorder && isRecording) mediaRecorder.stop();
-                        }}
-                        style={canUploadFile ? tabStyle('upload') : lockedTabStyle}>
+                        }}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3"
-                                stroke={canUploadFile ? (audioTab === 'upload' ? '#065f46' : '#9ca3af') : '#c4b5fd'}
+                                stroke="currentColor"
                                 strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Upload File
                         {!canUploadFile && (
-                            <span style={{ position:'absolute', top:-4, right:-4, width:13, height:13, background:'#ef4444', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'1.5px solid #fff' }}>
+                            <span className="sau-tab-lock-badge">
                                 <svg viewBox="0 0 24 24" width="7" height="7" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                             </span>
                         )}
                     </button>
 
                     {/* Audio by URL — locked for < tier3 */}
-                    <button className={`sau-tab${audioTab === 'url' ? ' active' : ''}`}
-                        onClick={() => { setAudioTab('url'); }}
-                        style={canUseUrl ? tabStyle('url') : lockedTabStyle}>
+                    <button className={`sau-tab${audioTab === 'url' ? ' active' : ''}${!canUseUrl ? ' sau-tab-locked' : ''}`}
+                        onClick={() => { setAudioTab('url'); }}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M7.5 10a2.5 2.5 0 003.536 3.536l2.5-2.5a2.5 2.5 0 00-3.536-3.536l-1.25 1.25"
-                                stroke={canUseUrl ? (audioTab === 'url' ? '#065f46' : '#9ca3af') : '#c4b5fd'}
+                                stroke="currentColor"
                                 strokeWidth="1.7" strokeLinecap="round"/>
                             <path d="M12.5 10a2.5 2.5 0 00-3.536-3.536l-2.5 2.5a2.5 2.5 0 003.536 3.536l1.25-1.25"
-                                stroke={canUseUrl ? (audioTab === 'url' ? '#065f46' : '#9ca3af') : '#c4b5fd'}
+                                stroke="currentColor"
                                 strokeWidth="1.7" strokeLinecap="round"/>
                         </svg>
                         Audio URL
                         {!canUseUrl && (
-                            <span style={{ position:'absolute', top:-4, right:-4, width:13, height:13, background:'#ef4444', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'1.5px solid #fff' }}>
+                            <span className="sau-tab-lock-badge">
                                 <svg viewBox="0 0 24 24" width="7" height="7" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                             </span>
                         )}
@@ -222,7 +208,7 @@ const StylishAudioUpload = ({
                                     <path d="M24 10v-6M21 7l3-3 3 3" stroke="#10b981" strokeWidth="2" strokeLinecap="round"/>
                                 </svg>
                                 <p className="sau-drop-text">Click to select audio</p>
-                                <span className="sau-drop-hint">MP3, WAV, M4A · Max 10MB</span>
+                                <span className="sau-drop-hint">MP3, WAV, M4A · Max 15MB</span>
                             </div>
                         ) : (
                             <div className="sau-audio-preview">
@@ -262,8 +248,7 @@ const StylishAudioUpload = ({
 
                 {/* ── Actions ────────────────────────────────────────── */}
                 <div className="sau-actions">
-                    <button className="sau-btn-cancel" onClick={handleClose}
-                        style={{ background: '#fff', border: '1.5px solid #e5e7eb', color: '#6b7280' }}>
+                    <button className="sau-btn-cancel" onClick={handleClose}>
                         Cancel
                     </button>
                     {audioTab !== 'url' && (
@@ -273,8 +258,6 @@ const StylishAudioUpload = ({
                             style={{
                                 opacity: (canSend && !(audioTab === 'upload' && !canUploadFile)) ? 1 : 0.45,
                                 cursor:  (canSend && !(audioTab === 'upload' && !canUploadFile)) ? 'pointer' : 'not-allowed',
-                                background: 'linear-gradient(135deg,#10b981,#0891b2)',
-                                color: '#fff', WebkitTextFillColor: '#fff', border: 'none',
                             }}>
                             <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
                                 <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -292,34 +275,21 @@ const StylishAudioUpload = ({
 const AudioUrlTab = ({ onSend }) => {
     const [url, setUrl] = React.useState('');
     return (
-        <div style={{ padding: '4px 0' }}>
+        <div className="sau-url-wrap">
             <input
                 type="url"
+                className="sau-url-input"
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 placeholder="https://example.com/audio.mp3"
-                style={{
-                    width: '100%', boxSizing: 'border-box',
-                    padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid rgba(16,185,129,.35)',
-                    fontSize: 13, outline: 'none', marginBottom: 8,
-                    fontFamily: 'inherit',
-                }}
             />
-            <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 10px', lineHeight: 1.45 }}>
+            <p className="sau-url-hint">
                 Paste a direct link to an MP3, WAV, or M4A file
             </p>
             <button
+                className="sau-url-send"
                 disabled={!url.trim()}
                 onClick={() => onSend(url)}
-                style={{
-                    width: '100%', padding: '10px', borderRadius: 10,
-                    background: url.trim() ? 'linear-gradient(135deg,#10b981,#0891b2)' : '#e5e7eb',
-                    border: 'none', color: '#fff', WebkitTextFillColor: '#fff',
-                    fontWeight: 700, fontSize: 13, cursor: url.trim() ? 'pointer' : 'not-allowed',
-                    opacity: url.trim() ? 1 : 0.55,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}
             >
                 <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
                     <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>

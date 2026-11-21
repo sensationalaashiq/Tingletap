@@ -50,6 +50,7 @@ import { initGA, trackPageView } from './utils/analytics';
 import { initVisitorTracking, updateVisitorPage, updateVisitorIdentity } from './utils/visitorTracking';
 import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
 import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
+import { syncPublicProfile } from './utils/syncPublicProfile';
 import BanKickModal from './components/BanKickModal';
 import { WarningsProvider } from './contexts/WarningsContext'; // FIX 6
 import './App.css';
@@ -338,6 +339,12 @@ function App() {
               // always carries isGuest + role + gender so every downstream
               // component (Sidebar, SettingsSidebar, etc.) shows Purush/Stree/Navrang
               // instead of "Member".
+              if (!currentUser.isAnonymous) {
+                localStorage.removeItem('guestUser');
+                localStorage.removeItem('isGuest');
+                localStorage.removeItem('guestGender');
+                localStorage.removeItem('guestSessionId');
+              }
               const resolvedProfile = currentUser.isAnonymous
                 ? {
                     ...profile,
@@ -345,8 +352,14 @@ function App() {
                     role: 'guest',
                     gender: profile.gender || getStoredGuestGender(),
                   }
-                : profile;
+                : {
+                    ...profile,
+                    isGuest: false,
+                  };
               setUserProfile(resolvedProfile);
+              if (!currentUser.isAnonymous) {
+                syncPublicProfile(currentUser.uid, resolvedProfile).catch(() => {});
+              }
               // Update visitor identity — map role to tracking type
               const _vRole = resolvedProfile.role || 'user';
               const _vType = _vRole === 'guest' ? 'guest' : 'registered';
@@ -555,6 +568,13 @@ function App() {
   // The [user] dependency caused this effect to re-run on every auth state change.
   // Since localStorage doesn't change mid-session, a single read on mount is correct.
   useEffect(() => {
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      localStorage.removeItem('guestUser');
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('guestGender');
+      localStorage.removeItem('guestSessionId');
+      return;
+    }
     const isGuest = localStorage.getItem('isGuest') === 'true';
     const guestData = localStorage.getItem('guestUser');
 
@@ -562,11 +582,15 @@ function App() {
       try {
         const parsedGuestData = JSON.parse(guestData);
         if (!parsedGuestData?.uid) return; // guard against corrupt guest data
-        setUser({ 
-          isGuest: true,
-          uid: parsedGuestData.uid,
-          displayName: parsedGuestData.displayName,
-          ...parsedGuestData 
+        setUser(prev => {
+          if (auth.currentUser && !auth.currentUser.isAnonymous) return prev;
+          if (prev && !prev.isAnonymous && !prev.isGuest) return prev;
+          return {
+            isGuest: true,
+            uid: parsedGuestData.uid,
+            displayName: parsedGuestData.displayName,
+            ...parsedGuestData
+          };
         });
         console.log('✅ Guest user authenticated from localStorage:', parsedGuestData.displayName);
       } catch (error) {

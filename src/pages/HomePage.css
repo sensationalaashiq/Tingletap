@@ -1419,8 +1419,9 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   flex-shrink: 0;
   margin-left: 2px;
   overflow: visible; /* never clip SVG artwork */
-  /* Boost saturation + contrast so badge colours pop on white and lavender strips */
-  filter: brightness(1.05) saturate(2.2) contrast(1.1) drop-shadow(0 0 1.5px rgba(0,0,0,0.18));
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .inline-badge svg {
@@ -9196,11 +9197,12 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
   transform: scale(1.08) !important;
 }
 
-/* --- Premium Inline Badge Glow & Vibrancy --- */
+/* --- Crisp Inline Badge Rendering (Transparent Background) --- */
 .homepage-container .inline-badge {
-  filter: brightness(1.15) saturate(2.4) contrast(1.15) drop-shadow(0 1px 3px rgba(124, 58, 237, 0.4)) !important;
-  transform: translateZ(0);
-  image-rendering: -webkit-optimize-contrast;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.16)) !important;
 }
 
 /* --- Premium Dropdown Menus --- */

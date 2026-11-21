@@ -116,13 +116,16 @@ const PrivateAudioMiniPopup = React.memo(({
         const file = e.target.files[0];
         if (!file) return;
 
-        if (file.size > 10 * 1024 * 1024) {
-            pt.error("Audio size must be less than 10MB!");
+        if (file.size > 15 * 1024 * 1024) {
+            pt.error("Audio size must be less than 15MB!");
+            e.target.value = '';
             return;
         }
 
-        if (!file.type.startsWith('audio/')) {
+        const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name || '');
+        if (!file.type.startsWith('audio/') && !isAudioExt) {
             pt.error("Please select a valid audio file!");
+            e.target.value = '';
             return;
         }
 

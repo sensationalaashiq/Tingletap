@@ -125,58 +125,149 @@
 .sau-btn-send:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(16,185,129,.48); }
 .sau-btn-send:active { transform: translateY(0); }
 
-/* ── Dark Mode ── */
-html.dark-mode .sau-overlay { background: rgba(0,0,0,0.80) !important; }
-html.dark-mode .sau-card {
-    background: #161625 !important;
-    border-color: rgba(16,185,129,0.2) !important;
+.sau-tab.sau-tab-locked {
+    position: relative;
+    opacity: 0.72;
+    color: #9ca3af;
+    border-color: rgba(139, 92, 246, 0.25);
+}
+.sau-tab-lock-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 13px;
+    height: 13px;
+    background: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #fff;
+}
+
+.sau-url-wrap { padding: 4px 0; }
+.sau-url-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(16, 185, 129, 0.35);
+    background: #fff;
+    color: #1f2937;
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 8px;
+    font-family: inherit;
+}
+.sau-url-hint {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 0 0 10px;
+    line-height: 1.45;
+}
+.sau-url-send {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #0891b2);
+    border: none;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.sau-url-send:disabled {
+    background: #9ca3af;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Dark Mode & Theme Variants ── */
+html.dark-mode .sau-overlay,
+html.dark-theme-variant .sau-overlay { background: rgba(0,0,0,0.80) !important; }
+html.dark-mode .sau-card,
+html.dark-theme-variant .sau-card {
+    background: var(--bg-card, #161625) !important;
+    border-color: var(--border-accent, rgba(16,185,129,0.22)) !important;
     box-shadow: 0 10px 48px rgba(0,0,0,0.5) !important;
+    color: var(--text-primary, #e8eaf0) !important;
 }
-html.dark-mode .sau-title { color: #e8eaf0 !important; }
-html.dark-mode .sau-tab {
-    background: #1e1e30 !important;
-    border-color: rgba(16,185,129,0.18) !important;
-    color: #6b7280 !important;
+html.dark-mode .sau-title,
+html.dark-theme-variant .sau-title { color: var(--text-primary, #e8eaf0) !important; }
+html.dark-mode .sau-tab,
+html.dark-theme-variant .sau-tab {
+    background: var(--bg-secondary, #1e1e30) !important;
+    border-color: var(--border-color, rgba(16,185,129,0.2)) !important;
+    color: var(--text-secondary, #9aa3b8) !important;
 }
-html.dark-mode .sau-tab:hover {
+html.dark-mode .sau-tab:hover,
+html.dark-theme-variant .sau-tab:hover {
     border-color: rgba(16,185,129,0.45) !important;
     color: #34d399 !important;
     background: rgba(16,185,129,0.08) !important;
 }
-html.dark-mode .sau-tab.active {
-    background: rgba(16,185,129,0.12) !important;
+html.dark-mode .sau-tab.active,
+html.dark-theme-variant .sau-tab.active {
+    background: rgba(16,185,129,0.14) !important;
     border-color: #10b981 !important;
     color: #34d399 !important;
 }
-html.dark-mode .sau-drop-zone {
+html.dark-mode .sau-drop-zone,
+html.dark-theme-variant .sau-drop-zone {
     background: rgba(16,185,129,0.06) !important;
     border-color: rgba(16,185,129,0.28) !important;
 }
-html.dark-mode .sau-drop-zone:hover {
+html.dark-mode .sau-drop-zone:hover,
+html.dark-theme-variant .sau-drop-zone:hover {
     background: rgba(16,185,129,0.10) !important;
     border-color: rgba(16,185,129,0.5) !important;
 }
-html.dark-mode .sau-drop-text { color: #34d399 !important; }
-html.dark-mode .sau-drop-hint { color: #5f6880 !important; }
-html.dark-mode .sau-audio-preview {
+html.dark-mode .sau-drop-text,
+html.dark-theme-variant .sau-drop-text { color: #34d399 !important; }
+html.dark-mode .sau-drop-hint,
+html.dark-theme-variant .sau-drop-hint { color: var(--text-muted, #8892b0) !important; }
+html.dark-mode .sau-audio-preview,
+html.dark-theme-variant .sau-audio-preview {
     background: rgba(16,185,129,0.07) !important;
-    border-color: rgba(16,185,129,0.2) !important;
+    border-color: rgba(16,185,129,0.22) !important;
 }
-html.dark-mode .sau-file-name { color: #9aa3b8 !important; }
-html.dark-mode .sau-reset-btn {
-    border-color: rgba(16,185,129,0.3) !important;
+html.dark-mode .sau-file-name,
+html.dark-theme-variant .sau-file-name { color: var(--text-secondary, #9aa3b8) !important; }
+html.dark-mode .sau-reset-btn,
+html.dark-theme-variant .sau-reset-btn {
+    border-color: rgba(16,185,129,0.35) !important;
     color: #34d399 !important;
     background: transparent !important;
 }
-html.dark-mode .sau-reset-btn:hover { background: rgba(16,185,129,0.1) !important; }
-html.dark-mode .sau-record-hint { color: #9aa3b8 !important; }
-html.dark-mode .sau-btn-cancel {
-    background: #1e1e30 !important;
-    border-color: #2d2d4a !important;
-    color: #9aa3b8 !important;
+html.dark-mode .sau-reset-btn:hover,
+html.dark-theme-variant .sau-reset-btn:hover { background: rgba(16,185,129,0.1) !important; }
+html.dark-mode .sau-record-hint,
+html.dark-theme-variant .sau-record-hint { color: var(--text-secondary, #9aa3b8) !important; }
+html.dark-mode .sau-btn-cancel,
+html.dark-theme-variant .sau-btn-cancel {
+    background: var(--bg-secondary, #1e1e30) !important;
+    border-color: var(--border-color, #2d2d4a) !important;
+    color: var(--text-secondary, #9aa3b8) !important;
 }
-html.dark-mode .sau-btn-cancel:hover {
-    background: #252540 !important;
-    border-color: #3a3a58 !important;
-    color: #e8eaf0 !important;
+html.dark-mode .sau-btn-cancel:hover,
+html.dark-theme-variant .sau-btn-cancel:hover {
+    background: var(--bg-tertiary, #252540) !important;
+    border-color: var(--border-accent, #3a3a58) !important;
+    color: var(--text-primary, #e8eaf0) !important;
 }
+html.dark-mode .sau-url-input,
+html.dark-theme-variant .sau-url-input {
+    background: var(--input-bg, #0d0d1e) !important;
+    color: var(--input-text, #e8eaf0) !important;
+    border-color: var(--input-border, rgba(16, 185, 129, 0.35)) !important;
+}
+html.dark-mode .sau-url-hint,
+html.dark-theme-variant .sau-url-hint {
+    color: var(--text-secondary, #9aa3b8) !important;
+}
+
