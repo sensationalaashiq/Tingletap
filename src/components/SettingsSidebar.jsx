@@ -356,21 +356,78 @@ const SettingsSidebar = ({
         }
     }, [activeTab]);
 
-    // Load team members (owners, admins, moderators) in real-time — only when logged in
+    // Load team members (owners, admins, moderators, app team / RJs) in real-time
     useEffect(() => {
         if (!auth.currentUser) return;
-        // B1: Query publicProfiles (readable by all auth users) instead of
-        // users collection (now restricted to owner/staff reads).
-        const q = query(collection(db, 'publicProfiles'), where('role', 'in', ['owner', 'admin', 'moderator']));
-        const unsub = onSnapshot(q, snap => {
-            const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const roleOrder = { owner: 0, admin: 1, moderator: 2 };
-            members.sort((a, b) => (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3));
-            setTeamMembers(members);
-        }, () => {});
-        teamUnsubRef.current = unsub;
-        return () => unsub();
-    }, [loggedInUserProfile?.uid]);
+        const ROLE_GROUP_A = ['owner', 'Owner', 'superowner', 'SuperOwner', 'Godfather', 'admin', 'Admin', 'High Council'];
+        const ROLE_GROUP_B = ['moderator', 'Moderator', 'mod', 'Mod', 'Guardian', 'rj', 'RJ'];
+        const TEAM_BADGES  = ['rj', 'verified_rj', 'the_olympian', 'titans', 'spartans', 'streamers', 'content_creator'];
+
+        const mapByUid = new Map();
+        const roleRank = (m) => {
+            const r = (m.role || '').toLowerCase().trim();
+            if (r === 'owner' || r === 'superowner' || r === 'godfather') return 0;
+            if (r === 'admin' || r === 'high council') return 1;
+            if (r === 'moderator' || r === 'mod' || r === 'guardian') return 2;
+            return 3;
+        };
+        const emitSorted = () => {
+            const list = Array.from(mapByUid.values()).filter(m => !m.isBanned);
+            list.sort((a, b) => {
+                const diff = roleRank(a) - roleRank(b);
+                if (diff !== 0) return diff;
+                return (a.displayName || '').localeCompare(b.displayName || '');
+            });
+            setTeamMembers(list);
+        };
+
+        const mergeDocs = (docs, fromUsersCol = false) => {
+            docs.forEach(d => {
+                const data = d.data();
+                const existing = mapByUid.get(d.id) || {};
+                // Prefer fresher/authoritative role & badge from users collection when available
+                const merged = fromUsersCol ? { ...existing, ...data, id: d.id } : { ...data, ...existing, id: d.id };
+                mapByUid.set(d.id, merged);
+            });
+            emitSorted();
+        };
+
+        const unsubs = [
+            onSnapshot(query(collection(db, 'publicProfiles'), where('role', 'in', ROLE_GROUP_A)), snap => mergeDocs(snap.docs), () => {}),
+            onSnapshot(query(collection(db, 'publicProfiles'), where('role', 'in', ROLE_GROUP_B)), snap => mergeDocs(snap.docs), () => {}),
+            onSnapshot(query(collection(db, 'publicProfiles'), where('badge', 'in', TEAM_BADGES)), snap => mergeDocs(snap.docs), () => {}),
+        ];
+
+        // Also query authoritative `users` collection so admins/owners/app-team created before
+        // publicProfiles mirror existed always appear, and backfill publicProfiles if current user is staff.
+        const myRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
+        const amStaff = ['owner', 'superowner', 'godfather', 'admin', 'high council', 'moderator', 'mod', 'guardian'].includes(myRole);
+
+        Promise.all([
+            getDocs(query(collection(db, 'users'), where('role', 'in', ROLE_GROUP_A))).catch(() => ({ docs: [] })),
+            getDocs(query(collection(db, 'users'), where('role', 'in', ROLE_GROUP_B))).catch(() => ({ docs: [] })),
+            getDocs(query(collection(db, 'users'), where('badge', 'in', TEAM_BADGES))).catch(() => ({ docs: [] })),
+        ]).then(([sA, sB, sC]) => {
+            const allUserDocs = [...(sA.docs || []), ...(sB.docs || []), ...(sC.docs || [])];
+            if (!allUserDocs.length) return;
+            const seen = new Set();
+            const uniqueDocs = allUserDocs.filter(d => {
+                if (seen.has(d.id)) return false;
+                seen.add(d.id);
+                return true;
+            });
+            mergeDocs(uniqueDocs, true);
+            if (amStaff) {
+                uniqueDocs.forEach(d => {
+                    syncPublicProfile(d.id, d.data()).catch(() => {});
+                });
+            }
+        });
+
+        const stopAll = () => unsubs.forEach(u => { try { u(); } catch {} });
+        teamUnsubRef.current = stopAll;
+        return stopAll;
+    }, [loggedInUserProfile?.uid, loggedInUserProfile?.role]);
 
     // Load friends profiles
     useEffect(() => {
@@ -2450,13 +2507,29 @@ const SettingsSidebar = ({
                 );
 
             case 'team': {
-                const roleConfig = {
-                    owner:     { label: getRoleDisplayLabel({ role: 'owner' }),     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#f59e0b"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg> },
-                    admin:     { label: getRoleDisplayLabel({ role: 'admin' }),     color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> },
-                    moderator: { label: getRoleDisplayLabel({ role: 'moderator' }), color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#3b82f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> },
+                const TEAM_BADGE_IDS = new Set(['rj', 'verified_rj', 'the_olympian', 'titans', 'spartans', 'streamers', 'content_creator']);
+                const normalizeBucket = (m) => {
+                    const r = (m.role || '').toLowerCase().trim();
+                    const b = (m.badge || '').toLowerCase().trim();
+                    const extraBadges = Array.isArray(m.badges) ? m.badges.map(x => String(x).toLowerCase().trim()) : [];
+                    if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
+                    if (r === 'admin' || r === 'high council') return 'admin';
+                    if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'moderator';
+                    if (r === 'rj' || TEAM_BADGE_IDS.has(b) || extraBadges.some(x => TEAM_BADGE_IDS.has(x))) return 'appTeam';
+                    return null;
                 };
-                const grouped = { owner: [], admin: [], moderator: [] };
-                teamMembers.forEach(m => { if (grouped[m.role]) grouped[m.role].push(m); });
+                const roleConfig = {
+                    owner:     { label: 'Godfather',      plural: 'Godfathers',          color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#f59e0b"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg> },
+                    admin:     { label: 'High Council',   plural: 'Admins & Council',    color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#7c3aed"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> },
+                    moderator: { label: 'Guardian',       plural: 'Moderators',          color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#3b82f6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> },
+                    appTeam:   { label: 'App Team / RJ',  plural: 'App Team & RJs',      color: '#ec4899', bg: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.3)', icon: <svg viewBox="0 0 24 24" width="10" height="10" fill="#ec4899"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg> },
+                };
+                const grouped = { owner: [], admin: [], moderator: [], appTeam: [] };
+                teamMembers.forEach(m => {
+                    const bucket = normalizeBucket(m);
+                    if (bucket && grouped[bucket]) grouped[bucket].push(m);
+                });
+                const totalCount = grouped.owner.length + grouped.admin.length + grouped.moderator.length + grouped.appTeam.length;
                 return (
                     <div className="settings-tab-content" style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0 }}>
                         <div className="sf-section">
@@ -2465,28 +2538,32 @@ const SettingsSidebar = ({
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                                 </div>
                                 <span className="sf-section-title">TingleTap Team</span>
-                                <span className="sf-section-badge">{teamMembers.length}</span>
+                                <span className="sf-section-badge">{totalCount}</span>
                             </div>
 
-                            {teamMembers.length === 0 ? (
+                            {totalCount === 0 ? (
                                 <div className="sf-empty">
                                     <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#c4b5fd" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                                     <div className="sf-empty-title">No team members found</div>
                                 </div>
                             ) : (
-                                ['owner', 'admin', 'moderator'].map(role => {
-                                    const members = grouped[role];
+                                ['owner', 'admin', 'moderator', 'appTeam'].map(roleKey => {
+                                    const members = grouped[roleKey];
                                     if (!members.length) return null;
-                                    const cfg = roleConfig[role];
+                                    const cfg = roleConfig[roleKey];
                                     return (
-                                        <div key={role} style={{ marginBottom: '10px' }}>
+                                        <div key={roleKey} style={{ marginBottom: '10px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', padding: '0 2px' }}>
                                                 <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cfg.icon}</div>
-                                                <span style={{ fontSize: '10px', fontWeight: 800, color: cfg.color, letterSpacing: '.08em', textTransform: 'uppercase' }}>{cfg.label}s</span>
+                                                <span style={{ fontSize: '10px', fontWeight: 800, color: cfg.color, letterSpacing: '.08em', textTransform: 'uppercase' }}>{cfg.plural}</span>
                                                 <span style={{ fontSize: '10px', color: '#9ca3af', background: '#f3f4f6', borderRadius: '10px', padding: '1px 6px', fontWeight: 700 }}>{members.length}</span>
                                             </div>
                                             <div className="sf-friends-list">
-                                                {members.map(member => (
+                                                {members.map(member => {
+                                                    const memberBadgeLabel = roleKey === 'appTeam'
+                                                        ? getRoleDisplayLabel({ role: member.role, badge: member.badge })
+                                                        : cfg.label;
+                                                    return (
                                                     <div key={member.id} className="sf-friend-item">
                                                         <LiveAvatarImg
                                                             uid={member.id}
@@ -2498,19 +2575,23 @@ const SettingsSidebar = ({
                                                             onClick={() => { if (window.setProfileUser) { window.setProfileUser(member); onClose(); } }}
                                                         />
                                                         <div className="sf-friend-info">
-                                                            <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}><LiveUserName uid={member.id} fallback={member.displayName || 'Unknown'} /></div>
+                                                            <div className="sf-friend-name" data-user-id={member.id} data-user-uid={member.id}>
+                                                                <LiveUserName uid={member.id} fallback={member.displayName || 'Unknown'} />
+                                                                {renderUserBadge(member, { size: 14 })}
+                                                            </div>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}`, fontSize: '9px', fontWeight: 700, color: cfg.color, marginTop: '2px' }}>
-                                                                {cfg.icon}{cfg.label}
+                                                                {cfg.icon}{memberBadgeLabel}
                                                             </div>
                                                         </div>
                                                         <div className="sf-friend-btns">
                                                             <button className="sf-btn sf-btn-msg" title="Send Message"
                                                                 onClick={() => { if (window.handlePrivateMessageFromSidebar) { window.handlePrivateMessageFromSidebar(member); onClose(); } }}>
-                                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0-.9-2-2-2z"/></svg>
                                                             </button>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
@@ -4453,7 +4534,7 @@ const SettingsSidebar = ({
                                     </linearGradient>
                                 </defs>
                                 <path d="M20 2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h3l3 3 3-3h7a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" fill="url(#fb_tab_g)"/>
-                                <path d="M12 7.5c-.9-1.8-3.5-1.8-3.5.5 0 1.8 1.75 3.2 3.5 4.5 1.75-1.3 3.5-2.7 3.5-4.5 0-2.3-2.6-2.3-3.5-.5z" fill="white" opacity="0.92"/>
+                                <path d="M12 7.5c-.9-1.8-3.5-1.8-3.5.5 0 1.8 1.75 3.2 3.5 4.5 1.75-1.3 3.5-2.7 3.5-4.5 0-2.3-2.6-2.3-3.5-.5z" fill={activeTab === 'feedback' ? '#6d28d9' : 'white'} opacity="0.95"/>
                             </svg>
                             <span>Feedback</span>
                         </button>

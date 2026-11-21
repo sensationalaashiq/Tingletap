@@ -52,7 +52,7 @@
         //   top-level metadata writes (listenerCount) since RTDB cascades this
         //   root grant down to every descendant path for that same host.
         ".read": "auth != null",
-        ".write": "auth != null && (!data.exists() ? (root.child('roles').child(auth.uid).val() === 'owner' || root.child('authorizedRJs').child(auth.uid).val() === true) : auth.uid === data.child('rjUid').val())",
+        ".write": "auth != null && (!data.exists() ? auth.uid === newData.child('rjUid').val() : auth.uid === data.child('rjUid').val())",
 
         "connections": {
           "$uid": {

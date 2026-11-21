@@ -12,6 +12,7 @@ import AdminBanKickModal from '../components/AdminBanKickModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { pt } from '../utils/premiumToast';
 import { isEffectivelyOnline } from '../utils/presenceStatus';
+import { postTingleBotRoomMessage } from '../utils/tinglebotAutoDelete';
 import './AdminPanelPage.css';
 import './BanKickMutePanel.css';
 
@@ -219,13 +220,10 @@ const BanKickMutePanel = () => {
           if (banRoomId) {
             getDoc(doc(db, 'rooms', banRoomId)).then(rs => {
               const banRoomName = rs?.data()?.name || 'this room';
-              addDoc(collection(db, 'rooms', banRoomId, 'messages'), {
+              postTingleBotRoomMessage(banRoomId, {
                 text: `${selectedUser.displayName} has been banned from ${banRoomName}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'banned',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'banned',
+              });
             }).catch(() => {});
           }
           const banLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
@@ -250,13 +248,10 @@ const BanKickMutePanel = () => {
           await callModerationAction({ targetUid: selectedUser.uid, action: 'unban' });
           const unbanRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unbanRoomId) {
-            addDoc(collection(db, 'rooms', unbanRoomId, 'messages'), {
+            postTingleBotRoomMessage(unbanRoomId, {
               text: `${selectedUser.displayName} has been unbanned and can rejoin.`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'unbanned',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'unbanned',
+            });
           }
           pt.success(`${selectedUser.displayName} has been unbanned.`);
           try {
@@ -281,13 +276,10 @@ const BanKickMutePanel = () => {
           });
           const muteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (muteRoomId) {
-            addDoc(collection(db, 'rooms', muteRoomId, 'messages'), {
+            postTingleBotRoomMessage(muteRoomId, {
               text: `${selectedUser.displayName} has been muted${actionData.duration && actionData.duration !== 'permanent' ? ` for ${actionData.duration}` : ''}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'muted',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'muted',
+            });
           }
           const muteLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
           pt.warn(`${selectedUser.displayName} muted ${muteLabel}.`);
@@ -299,13 +291,10 @@ const BanKickMutePanel = () => {
           await callModerationAction({ targetUid: selectedUser.uid, action: 'unmute' });
           const unmuteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unmuteRoomId) {
-            addDoc(collection(db, 'rooms', unmuteRoomId, 'messages'), {
+            postTingleBotRoomMessage(unmuteRoomId, {
               text: `${selectedUser.displayName} has been unmuted and can speak again.`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'unmuted',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'unmuted',
+            });
           }
           pt.success(`${selectedUser.displayName} has been unmuted.`);
           updateSelectedUser({ mutedInfo: { isMuted: false } });
@@ -328,13 +317,10 @@ const BanKickMutePanel = () => {
                 roomId: rid, roomName: rName,
               });
               lastKickedFrom = kickedFrom;
-              addDoc(collection(db, 'rooms', rid, 'messages'), {
+              postTingleBotRoomMessage(rid, {
                 text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'kicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'kicked',
+              });
             }
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             pt.warn(`${selectedUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`);
@@ -349,13 +335,10 @@ const BanKickMutePanel = () => {
                 reason: kickReason, duration: kickDur, expiresAt: kickUntil,
                 roomId: kickRoomId, roomName: kickRoomName,
               });
-              addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
+              postTingleBotRoomMessage(kickRoomId, {
                 text: `${selectedUser.displayName} has been kicked from ${kickRoomName}${kickReason ? ` — ${kickReason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'kicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'kicked',
+              });
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
               updateSelectedUser({ kickedFrom });
             } else {
@@ -390,13 +373,10 @@ const BanKickMutePanel = () => {
               await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: kickedRoomId }).catch(() => {});
               const unkickRoomSnap = await getDoc(doc(db, 'rooms', kickedRoomId)).catch(() => null);
               const unkickRoomName = unkickRoomSnap?.data()?.name || kickedRoomId;
-              addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
+              postTingleBotRoomMessage(kickedRoomId, {
                 text: `${selectedUser.displayName} has been unkicked and can rejoin ${unkickRoomName}.`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'unkicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'unkicked',
+              });
             } else {
               await callModerationAction({ targetUid: selectedUser.uid, action: 'unkick', roomId: null }).catch(() => {});
             }

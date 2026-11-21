@@ -1131,33 +1131,21 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 
 .message-row {
   margin: 0 !important;
-  padding: 2px 2px !important;
+  padding: 5px 10px !important;
   border-radius: 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 8px !important;
   width: 100%;
-  line-height: 1;
+  line-height: 1.35;
+  position: relative;
 }
 
 .dark-mode .message-row-wrapper:hover {
   background: rgba(139, 92, 246, 0.15) !important;
-}
-
-.message-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 8px 12px;
-  background: transparent;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  margin: 0;
-  position: relative;
 }
 
 
@@ -2387,7 +2375,7 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 /* ── Premium Scroll-to-Bottom Chip ───────────────────────────────────────── */
 .scroll-to-bottom-chip {
   position: fixed;
-  bottom: 52px;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(0);
   display: flex;
@@ -2759,8 +2747,7 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 /* Safari specific fixes */
 @supports (-webkit-appearance: none) {
   .chat-header,
-  .chat-feed,
-  .message-form {
+  .chat-feed {
     -webkit-transform: translateZ(0) !important;
     -webkit-backface-visibility: hidden !important;
   }
@@ -2778,10 +2765,6 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 /* Firefox specific fixes */
 @-moz-document url-prefix() {
   .chat-header {
-    position: fixed !important;
-  }
-
-  .message-form {
     position: fixed !important;
   }
   
@@ -10635,47 +10618,56 @@ body .homepage-container .attachment-dropdown {
 .whisper-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 21px;
-  padding: 0 5px 0 7px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 5px 0 4px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(237,233,254,0.98) 0%, rgba(216,180,254,0.55) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  box-shadow: 0 1px 5px rgba(124,58,237,0.18), inset 0 1px 0 rgba(255,255,255,0.65);
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 55%, #881337 100%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
-  animation: whisper-chip-in 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+  animation: whisper-chip-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
   user-select: none;
-  backdrop-filter: blur(4px);
 }
 @keyframes whisper-chip-in {
-  from { opacity: 0; transform: scale(0.72) translateX(-5px); }
+  from { opacity: 0; transform: scale(0.84) translateX(-4px); }
   to   { opacity: 1; transform: scale(1) translateX(0); }
 }
 
-.whisper-chip-icon {
-  color: #7c3aed;
+.whisper-chip-badge {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  opacity: 0.85;
+}
+
+.whisper-chip-icon {
+  color: #ffffff;
+  flex-shrink: 0;
 }
 
 .whisper-chip-label {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  line-height: 1;
 }
 .whisper-chip-to {
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 800;
-  color: #8b5cf6;
+  color: rgba(233, 213, 255, 0.9);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
+  letter-spacing: 0.05em;
 }
 .whisper-chip-name {
-  font-size: 10px;
-  font-weight: 800;
-  color: #5b21b6;
-  max-width: 72px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 78px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -10683,27 +10675,26 @@ body .homepage-container .attachment-dropdown {
 }
 
 .whisper-chip-close {
-  background: rgba(109, 40, 217, 0.1);
-  border: 1px solid rgba(109, 40, 217, 0.22);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 50%;
-  width: 15px;
-  height: 15px;
-  min-width: 15px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
   margin-left: 1px;
-  color: #7c3aed;
-  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  color: #ffffff;
+  transition: background 0.14s ease, transform 0.12s ease;
   flex-shrink: 0;
   line-height: 1;
 }
 .whisper-chip-close:hover {
-  background: rgba(109, 40, 217, 0.2);
-  border-color: rgba(109, 40, 217, 0.42);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
 }
 .whisper-chip-close svg {
   display: block;
@@ -10724,23 +10715,23 @@ body .homepage-container .attachment-dropdown {
 }
 
 /* ===== TAG MENTION STYLES & PILLS ===== */
-/* Base Pill Container — ensures crisp 100% visibility on ANY background, font color, or theme */
+/* Base Pill Container — pure white text on Royal Blue (tagged receiver) & rich Burgundy (everyone/sender) */
 .tag-mention-pill {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 2px !important;
+  gap: 1.5px !important;
   padding: 2px 9px 2px 7px !important;
   margin: 0 3px !important;
   border-radius: 9999px !important;
-  font-size: 0.9em !important;
+  font-size: 0.88em !important;
   font-weight: 700 !important;
-  letter-spacing: 0.015em !important;
-  line-height: 1.35 !important;
+  letter-spacing: 0.012em !important;
+  line-height: 1.32 !important;
   vertical-align: baseline !important;
   cursor: pointer !important;
   user-select: all !important;
   text-decoration: none !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
   -webkit-text-fill-color: #ffffff !important;
   color: #ffffff !important;
   box-sizing: border-box !important;
@@ -10751,73 +10742,66 @@ body .homepage-container .attachment-dropdown {
   transform: translateY(-1px) scale(1.03) !important;
 }
 
-/* Luminous contrast @ symbol */
+/* Crisp @ symbol */
 .tag-mention-pill .tag-at-symbol {
-  color: #fde047 !important; /* Radiant gold */
-  -webkit-text-fill-color: #fde047 !important;
-  font-weight: 900 !important;
-  font-size: 1.05em !important;
-  margin-right: 1.5px !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
+  font-weight: 800 !important;
+  font-size: 1.02em !important;
+  margin-right: 1px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* ── 1. RECEIVER / SELF-MENTION: When the logged-in viewer is tagged ──
-   High-voltage Neon Violet-Magenta Gradient Strip with luminous glow */
+/* ── 1. RECEIVER / SELF-MENTION: Vivid Royal Blue Pill (only for tagged person) ── */
 .tag-self-mention,
 .dark-mode .tag-self-mention,
 .theme-dark .tag-self-mention,
-html.dark-mode .tag-self-mention {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 48%, #ec4899 100%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
-  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.5), 0 0 0 1px rgba(124, 58, 237, 0.35) !important;
+html.dark-mode .tag-self-mention,
+html.dark-theme-variant .tag-self-mention {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(191, 219, 254, 0.78) !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  animation: tagSelfPulse 2.5s infinite ease-in-out !important;
 }
 
-@keyframes tagSelfPulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.45), 0 0 0 1px rgba(124, 58, 237, 0.3);
-  }
-  50% {
-    box-shadow: 0 3px 14px rgba(236, 72, 153, 0.7), 0 0 0 2px rgba(255, 255, 255, 0.55);
-  }
-}
-
-/* ── 2. SENDER-MENTION: When the message sender wrote the tag ──
-   Vibrant Royal Indigo-Violet Pill with luminous blue-purple presence */
+/* ── 2. SENDER & PUBLIC VIEWERS: Rich High-Contrast Burgundy Pill ── */
 .tag-sender-mention,
 .dark-mode .tag-sender-mention,
 .theme-dark .tag-sender-mention,
-html.dark-mode .tag-sender-mention {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-  border: 1.5px solid rgba(221, 214, 254, 0.65) !important;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.38) !important;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-/* ── 3. OTHER-MENTION: Public mentions seen by others in the chat ──
-   Rich Deep Violet-Purple Pill with high contrast border */
+html.dark-mode .tag-sender-mention,
+html.dark-theme-variant .tag-sender-mention,
 .tag-other-mention,
 .dark-mode .tag-other-mention,
 .theme-dark .tag-other-mention,
-html.dark-mode .tag-other-mention {
-  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%) !important;
-  border: 1.5px solid rgba(233, 213, 255, 0.55) !important;
-  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.35) !important;
+html.dark-mode .tag-other-mention,
+html.dark-theme-variant .tag-other-mention {
+  background: linear-gradient(135deg, #881337 0%, #9f1239 55%, #be123c 100%) !important;
+  border: 1px solid rgba(254, 205, 211, 0.55) !important;
+  box-shadow: 0 2px 8px rgba(159, 18, 57, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-/* Strong rule overrides: Stop parent message font colors, strikes, or underlines from altering the tag pill */
+/* Strong rule overrides: Stop parent custom font colors (#msg-font-{uid}) or themes from hiding tagged names */
+[data-user-id] .tag-mention-pill,
+[data-message-uid] .tag-mention-pill,
 .message-body .tag-mention-pill,
+.message-body p .tag-mention-pill,
 .message-row .tag-mention-pill,
 .chat-feed .tag-mention-pill,
 .message-text .tag-mention-pill,
 p .tag-mention-pill {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+[data-user-id] .tag-mention-pill .tag-at-symbol,
+.message-body .tag-mention-pill .tag-at-symbol,
+.message-body p .tag-mention-pill .tag-at-symbol {
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
   text-decoration: none !important;
 }
 
@@ -11231,8 +11215,18 @@ body .homepage-container .send-btn svg {
 .dark-mode .vpm-rel-remove { color: #fca5a5; border-top-color: rgba(255,255,255,0.08); }
 
 /* ══════════════════════════════════════════════════════════════════════
-   PREMIUM FROSTED CHAT COMPOSER (.hp-composer-*) — Light & Dark Modes
+   PREMIUM FROSTED CHAT COMPOSER (.hp-composer-*) — Light, Dark & Mobile Safe
    ══════════════════════════════════════════════════════════════════════ */
+
+body .homepage-container .chat-feed {
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: 6px !important;
+}
+
+body .homepage-container .message-body p {
+  margin: 2px 0 !important;
+  line-height: 1.38 !important;
+}
 
 body .homepage-container .chat-footer.hp-composer-footer {
   position: fixed !important;
@@ -11242,42 +11236,59 @@ body .homepage-container .chat-footer.hp-composer-footer {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
-  min-height: 58px !important;
-  padding: 7px 12px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
-  background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  min-height: 54px !important;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: none !important;
-  border-top: 1px solid rgba(139, 92, 246, 0.16) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
   border-radius: 0 !important;
-  box-shadow: 0 -4px 22px rgba(109, 40, 217, 0.08) !important;
+  box-shadow: 0 -4px 18px rgba(109, 40, 217, 0.08) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box !important;
-  z-index: 120 !important;
+  z-index: 200 !important;
 }
 
 body.dark-mode .homepage-container .chat-footer.hp-composer-footer,
 .dark-mode .homepage-container .chat-footer.hp-composer-footer {
-  background: rgba(14, 10, 32, 0.94) !important;
-  border-top: 1px solid rgba(139, 92, 246, 0.24) !important;
-  box-shadow: 0 -6px 26px rgba(0, 0, 0, 0.45) !important;
+  background: #0e0a20 !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.28) !important;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.48) !important;
 }
 
-body .homepage-container .message-form.hp-composer-dock {
+/* Reset all legacy fixed/translateZ/max-height rules inherited from .message-form
+   so Blink mobile IME & caret positioning stay strictly locked inside the dock */
+body .homepage-container .message-form.hp-composer-dock,
+html.dark-mode .homepage-container .message-form.hp-composer-dock,
+html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
   width: 100% !important;
+  max-width: 100% !important;
   height: auto !important;
   min-height: 44px !important;
+  max-height: none !important;
   margin: 0 !important;
-  padding: 4px 5px !important;
+  padding: 3px 4px !important;
   gap: 6px !important;
   display: flex !important;
-  align-items: flex-end !important;
-  background: rgba(248, 246, 255, 0.95) !important;
-  border: 1px solid rgba(139, 92, 246, 0.22) !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  background: rgba(248, 246, 255, 0.96) !important;
+  border: 1px solid rgba(139, 92, 246, 0.24) !important;
   border-radius: 20px !important;
   box-shadow: inset 0 1px 2px rgba(109, 40, 217, 0.04) !important;
+  overflow: visible !important;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
   box-sizing: border-box !important;
 }
@@ -11290,8 +11301,8 @@ body .homepage-container .message-form.hp-composer-dock:focus-within {
 
 body.dark-mode .homepage-container .message-form.hp-composer-dock,
 .dark-mode .homepage-container .message-form.hp-composer-dock {
-  background: rgba(24, 17, 52, 0.92) !important;
-  border: 1px solid rgba(167, 139, 250, 0.24) !important;
+  background: rgba(24, 17, 52, 0.94) !important;
+  border: 1px solid rgba(167, 139, 250, 0.28) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
 }
 
@@ -11308,19 +11319,23 @@ body.dark-mode .homepage-container .message-form.hp-composer-dock:focus-within,
   min-width: 0 !important;
   display: flex !important;
   align-items: center !important;
+  overflow: visible !important;
 }
 
 body .homepage-container .hp-composer-dock .premium-input-field.premium-textarea,
-body .homepage-container .hp-composer-dock .premium-textarea {
+body .homepage-container .hp-composer-dock .premium-textarea,
+html.dark-mode .homepage-container .hp-composer-dock .premium-textarea,
+html.dark-theme-variant .homepage-container .hp-composer-dock .premium-textarea {
+  position: relative !important;
   width: 100% !important;
-  height: auto !important;
+  height: 36px !important;
   min-height: 36px !important;
-  max-height: 116px !important;
+  max-height: 112px !important;
   padding: 7px 6px !important;
   margin: 0 !important;
   font-size: 15px !important;
   font-weight: 450 !important;
-  line-height: 1.45 !important;
+  line-height: 22px !important;
   color: #1e1b4b !important;
   caret-color: #7c3aed !important;
   background: transparent !important;
@@ -11331,7 +11346,16 @@ body .homepage-container .hp-composer-dock .premium-textarea {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   align-self: center !important;
+  transform: none !important;
+  -webkit-transform: none !important;
   box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch !important;
+  contain: layout style !important;
+}
+
+body .homepage-container .hp-composer-dock .premium-textarea:focus,
+body .homepage-container .hp-composer-dock .premium-input-field:focus {
+  padding: 7px 6px !important;
 }
 
 body .homepage-container .hp-composer-dock .premium-textarea::placeholder {
@@ -11340,37 +11364,38 @@ body .homepage-container .hp-composer-dock .premium-textarea::placeholder {
 
 body.dark-mode .homepage-container .hp-composer-dock .premium-input-field.premium-textarea,
 body.dark-mode .homepage-container .hp-composer-dock .premium-textarea,
-.dark-mode .homepage-container .hp-composer-dock .premium-textarea {
+.dark-mode .homepage-container .hp-composer-dock .premium-textarea,
+html.dark-mode .homepage-container .hp-composer-dock .premium-textarea {
   color: #f5f3ff !important;
   caret-color: #c4b5fd !important;
 }
 
 body.dark-mode .homepage-container .hp-composer-dock .premium-textarea::placeholder,
 .dark-mode .homepage-container .hp-composer-dock .premium-textarea::placeholder {
-  color: rgba(196, 181, 253, 0.48) !important;
+  color: rgba(196, 181, 253, 0.5) !important;
 }
 
 /* Attach button */
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  max-width: 40px !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
   border-radius: 13px !important;
-  background: rgba(124, 58, 237, 0.08) !important;
-  border: 1px solid transparent !important;
+  background: rgba(124, 58, 237, 0.1) !important;
+  border: 1px solid rgba(124, 58, 237, 0.12) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
-  align-self: flex-end !important;
+  align-self: center !important;
   cursor: pointer !important;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled) {
-  background: rgba(124, 58, 237, 0.16) !important;
-  border-color: rgba(124, 58, 237, 0.25) !important;
+  background: rgba(124, 58, 237, 0.18) !important;
+  border-color: rgba(124, 58, 237, 0.28) !important;
   transform: translateY(-1px) !important;
   opacity: 1 !important;
 }
@@ -11381,26 +11406,29 @@ body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:a
 
 body.dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach,
 .dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
-  background: rgba(167, 139, 250, 0.12) !important;
+  background: rgba(167, 139, 250, 0.14) !important;
+  border-color: rgba(167, 139, 250, 0.22) !important;
 }
 
 body.dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled),
 .dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled) {
-  background: rgba(167, 139, 250, 0.22) !important;
-  border-color: rgba(167, 139, 250, 0.32) !important;
+  background: rgba(167, 139, 250, 0.24) !important;
+  border-color: rgba(167, 139, 250, 0.36) !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg {
-  width: 21px !important;
-  height: 21px !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
 /* Send button */
-body .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  max-width: 40px !important;
+body .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
+html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
   border-radius: 13px !important;
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
   border: 1px solid rgba(124, 58, 237, 0.35) !important;
@@ -11409,7 +11437,7 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
-  align-self: flex-end !important;
+  align-self: center !important;
   cursor: pointer !important;
   opacity: 1 !important;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease !important;
@@ -11428,30 +11456,45 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:active:no
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send svg {
   width: 20px !important;
   height: 20px !important;
+  stroke: none !important;
   transition: transform 0.15s ease !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:not(:disabled) svg path[fill="#020288"] {
   fill: #ffffff !important;
+  stroke: none !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:not(:disabled) svg path[fill="#e2c4ff"] {
-  fill: rgba(255, 255, 255, 0.32) !important;
+  fill: rgba(255, 255, 255, 0.36) !important;
+  stroke: none !important;
 }
 
-body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
-  background: rgba(124, 58, 237, 0.1) !important;
-  border-color: rgba(124, 58, 237, 0.14) !important;
+body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
+html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
+  background: rgba(124, 58, 237, 0.14) !important;
+  border-color: rgba(124, 58, 237, 0.18) !important;
   box-shadow: none !important;
-  opacity: 0.55 !important;
+  opacity: 0.7 !important;
   transform: none !important;
   cursor: default !important;
 }
 
+body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"] {
+  fill: #7c3aed !important;
+  stroke: none !important;
+}
+
+body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#e2c4ff"] {
+  fill: rgba(124, 58, 237, 0.25) !important;
+  stroke: none !important;
+}
+
 body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
 .dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
-  background: rgba(167, 139, 250, 0.12) !important;
-  border-color: rgba(167, 139, 250, 0.18) !important;
+  background: rgba(167, 139, 250, 0.14) !important;
+  border-color: rgba(167, 139, 250, 0.22) !important;
 }
 
 body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"],
@@ -11460,21 +11503,29 @@ body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send
 }
 
 @media (max-width: 480px) {
+  body .homepage-container .chat-feed {
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
+  }
   body .homepage-container .chat-footer.hp-composer-footer {
-    min-height: 54px !important;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 52px !important;
+    padding: 5px 8px calc(5px + env(safe-area-inset-bottom, 0px)) !important;
   }
   body .homepage-container .message-form.hp-composer-dock {
-    min-height: 42px !important;
+    min-height: 40px !important;
     padding: 3px 4px !important;
     border-radius: 18px !important;
   }
+  body .homepage-container .hp-composer-dock .premium-textarea {
+    min-height: 34px !important;
+    padding: 6px 5px !important;
+    font-size: 15px !important;
+  }
   body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach,
   body .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
-    width: 38px !important;
-    height: 38px !important;
-    min-width: 38px !important;
-    max-width: 38px !important;
-    border-radius: 12px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    border-radius: 11px !important;
   }
 }

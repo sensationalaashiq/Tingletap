@@ -27,6 +27,8 @@ import '../components/admin/BadgeVerificationPanel.css';
 import RJVerificationPanel from '../components/admin/RJVerificationPanel';
 import '../components/RoyalTrustBadge.css';
 import { isEffectivelyOnline } from '../utils/presenceStatus';
+import { postTingleBotRoomMessage } from '../utils/tinglebotAutoDelete';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 import './AdminPanelPage.css';
 
 // Extract just the brand name from a device model string for admin panel display
@@ -853,13 +855,10 @@ const AdminPanelPage = () => {
       });
       // TingleBot strip in the room (visible to all)
       if (unkickTarget.roomId) {
-        addDoc(collection(db, 'rooms', unkickTarget.roomId, 'messages'), {
+        postTingleBotRoomMessage(unkickTarget.roomId, {
           text: `${unkickTarget.username || 'User'} has been unkicked and can rejoin.`,
-          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-          isBot: true, systemBot: true, tinglebotType: 'unkicked',
-          createdAt: serverTimestamp(),
-          noReply: true, noReaction: true, noReport: true, noUnread: true,
-        }).catch(() => {});
+          tinglebotType: 'unkicked',
+        });
       }
       setShowUnkickModal(false); setUnkickTarget(null);
     } catch (err) {
@@ -904,13 +903,10 @@ const AdminPanelPage = () => {
     try {
       await deleteDoc(doc(db, 'rooms', kicked.roomId, 'kickedUsers', kicked.uid));
       await updateDoc(doc(db, 'users', kicked.uid), { kickedFrom: null }).catch(() => {});
-      addDoc(collection(db, 'rooms', kicked.roomId, 'messages'), {
+      postTingleBotRoomMessage(kicked.roomId, {
         text: `${kicked.displayName || kicked.username || 'User'} has been unkicked and can rejoin.`,
-        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-        isBot: true, systemBot: true, tinglebotType: 'unkicked',
-        createdAt: serverTimestamp(),
-        noReply: true, noReaction: true, noReport: true, noUnread: true,
-      }).catch(() => {});
+        tinglebotType: 'unkicked',
+      });
       setKickedUsersList(prev => prev.filter(k => !(k.uid === kicked.uid && k.roomId === kicked.roomId)));
       pt.success(`${kicked.displayName || kicked.username || 'User'} unkicked from ${kicked.roomName}`);
     } catch (e) {
@@ -958,13 +954,10 @@ const AdminPanelPage = () => {
       // TingleBot strip in the user's current room (visible to all)
       const unmuteViolRoomId = onlineStatuses[unmuteTarget.userId]?.currentRoomId;
       if (unmuteViolRoomId) {
-        addDoc(collection(db, 'rooms', unmuteViolRoomId, 'messages'), {
+        postTingleBotRoomMessage(unmuteViolRoomId, {
           text: `${unmuteTarget.username || 'User'} has been unmuted and can speak again.`,
-          uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-          isBot: true, systemBot: true, tinglebotType: 'unmuted',
-          createdAt: serverTimestamp(),
-          noReply: true, noReaction: true, noReport: true, noUnread: true,
-        }).catch(() => {});
+          tinglebotType: 'unmuted',
+        });
       }
       setShowUnmuteModal(false); setUnmuteTarget(null);
     } catch (err) {
@@ -1079,7 +1072,9 @@ const AdminPanelPage = () => {
         // Demoting from a role whose badge was auto-assigned — remove it
         updateObj.badge = null;
       }
+      const targetUid = roleTarget.id || roleTarget.uid;
       await updateDoc(userRef, updateObj);
+      syncPublicProfile(targetUid, { ...roleTarget, ...updateObj, uid: targetUid });
 
       const oldRank = ROLE_RANK[roleTarget.role] || 1;
       const newRank = ROLE_RANK[newRole] || 1;
@@ -1092,19 +1087,12 @@ const AdminPanelPage = () => {
 
       const targetRoomId = onlineStatuses[roleTarget.uid]?.currentRoomId;
       const adminRoomId  = onlineStatuses[currentUserProfile?.uid]?.currentRoomId;
-      const botMsg = {
-        text: msgText,
-        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-        isBot: true, systemBot: true, tinglebotType,
-        createdAt: serverTimestamp(),
-        noReply: true, noReaction: true, noReport: true, noUnread: true,
-      };
       if (targetRoomId) {
-        addDoc(collection(db, 'rooms', targetRoomId, 'messages'), botMsg).catch(() => {});
+        postTingleBotRoomMessage(targetRoomId, { text: msgText, tinglebotType });
       }
       // Also broadcast to the admin's current room (if different) so staff in that room see it
       if (adminRoomId && adminRoomId !== targetRoomId) {
-        addDoc(collection(db, 'rooms', adminRoomId, 'messages'), botMsg).catch(() => {});
+        postTingleBotRoomMessage(adminRoomId, { text: msgText, tinglebotType });
       }
 
       const roleLabelMap2 = { admin: 'High Council', moderator: 'Guardian', user: 'Member', owner: 'Godfather' };
@@ -1141,26 +1129,21 @@ const AdminPanelPage = () => {
     setAssigningBadge(true);
     try {
       const userRef = doc(db, 'users', badgeTarget.id);
+      const targetBadgeUid = badgeTarget.id || badgeTarget.uid;
       await updateDoc(userRef, { badge: badgeKey || null });
+      syncPublicProfile(targetBadgeUid, { ...badgeTarget, badge: badgeKey || null, uid: targetBadgeUid });
 
       // TingleBot broadcast — fires to the target's current room (and admin room if different)
       const badgeName = Badges[badgeKey]?.name;
       const msgText = badgeKey
         ? `${badgeTarget.displayName} has been awarded the "${badgeName}" badge!`
         : `${badgeTarget.displayName}'s badge has been removed.`;
-      const botMsg = {
-        text: msgText,
-        uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-        isBot: true, systemBot: true,
-        tinglebotType: badgeKey ? 'badge_awarded' : 'demoted',
-        createdAt: serverTimestamp(),
-        noReply: true, noReaction: true, noReport: true, noUnread: true,
-      };
+      const badgeTinglebotType = badgeKey ? 'badge_awarded' : 'demoted';
       const targetRoomId = onlineStatuses[badgeTarget.uid || badgeTarget.id]?.currentRoomId;
       const adminRoomId  = onlineStatuses[currentUserProfile?.uid]?.currentRoomId;
-      if (targetRoomId) addDoc(collection(db, 'rooms', targetRoomId, 'messages'), botMsg).catch(() => {});
+      if (targetRoomId) postTingleBotRoomMessage(targetRoomId, { text: msgText, tinglebotType: badgeTinglebotType });
       if (adminRoomId && adminRoomId !== targetRoomId) {
-        addDoc(collection(db, 'rooms', adminRoomId, 'messages'), botMsg).catch(() => {});
+        postTingleBotRoomMessage(adminRoomId, { text: msgText, tinglebotType: badgeTinglebotType });
       }
 
       if (badgeKey) {
@@ -1417,18 +1400,16 @@ const AdminPanelPage = () => {
             appealAllowed: actionData.appealAllowed,
           };
           await updateDoc(userRef, { isBanned: true, banInfo });
+          syncPublicProfile(selectedUser.uid, { isBanned: true, uid: selectedUser.uid });
           remove(ref(rtdb, `status/${selectedUser.uid}`));
           const banRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (banRoomId) {
             getDoc(doc(db, 'rooms', banRoomId)).then(rs => {
               const banRoomName = rs?.data()?.name || 'this room';
-              addDoc(collection(db, 'rooms', banRoomId, 'messages'), {
+              postTingleBotRoomMessage(banRoomId, {
                 text: `${selectedUser.displayName} has been banned from ${banRoomName}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'banned',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'banned',
+              });
             }).catch(() => {});
           }
           const banLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
@@ -1452,15 +1433,13 @@ const AdminPanelPage = () => {
           
         case 'unban': {
           await updateDoc(userRef, { isBanned: false, banInfo: null });
+          syncPublicProfile(selectedUser.uid, { isBanned: false, uid: selectedUser.uid });
           const unbanRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unbanRoomId) {
-            addDoc(collection(db, 'rooms', unbanRoomId, 'messages'), {
+            postTingleBotRoomMessage(unbanRoomId, {
               text: `${selectedUser.displayName} has been unbanned and can rejoin.`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'unbanned',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'unbanned',
+            });
           }
           pt.success(`${selectedUser.displayName} has been unbanned.`);
           try {
@@ -1497,13 +1476,10 @@ const AdminPanelPage = () => {
           });
           const muteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (muteRoomId) {
-            addDoc(collection(db, 'rooms', muteRoomId, 'messages'), {
+            postTingleBotRoomMessage(muteRoomId, {
               text: `${selectedUser.displayName} has been muted${actionData.duration && actionData.duration !== 'permanent' ? ` for ${actionData.duration}` : ''}${actionData.reason ? ` — ${actionData.reason}` : '.'}`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'muted',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'muted',
+            });
           }
           const muteLabel = actionData.duration === 'permanent' ? 'permanently' : (actionData.duration ? `for ${actionData.duration}` : '');
           pt.warn(`${selectedUser.displayName} muted ${muteLabel}.`);
@@ -1521,13 +1497,10 @@ const AdminPanelPage = () => {
           });
           const unmuteRoomId = onlineStatuses[selectedUser.uid]?.currentRoomId;
           if (unmuteRoomId) {
-            addDoc(collection(db, 'rooms', unmuteRoomId, 'messages'), {
+            postTingleBotRoomMessage(unmuteRoomId, {
               text: `${selectedUser.displayName} has been unmuted and can speak again.`,
-              uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-              isBot: true, systemBot: true, tinglebotType: 'unmuted',
-              createdAt: serverTimestamp(),
-              noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).catch(() => {});
+              tinglebotType: 'unmuted',
+            });
           }
           pt.success(`${selectedUser.displayName} has been unmuted.`);
           updateSelectedUser({ mutedInfo: { isMuted: false } });
@@ -1558,13 +1531,10 @@ const AdminPanelPage = () => {
               await setDoc(doc(db, 'rooms', rid, 'kickedUsers', selectedUser.uid), {
                 ...kickEntry, roomId: rid, roomName: rName
               });
-              addDoc(collection(db, 'rooms', rid, 'messages'), {
+              postTingleBotRoomMessage(rid, {
                 text: `${selectedUser.displayName} has been kicked${kickReason ? ` — ${kickReason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'kicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'kicked',
+              });
             }
             remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
             pt.warn(`${selectedUser.displayName} kicked from ${actionData.selectedRooms.length} room(s).`);
@@ -1582,13 +1552,10 @@ const AdminPanelPage = () => {
               await updateDoc(userRef, {
                 kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason }
               }).catch(() => {});
-              addDoc(collection(db, 'rooms', kickRoomId, 'messages'), {
+              postTingleBotRoomMessage(kickRoomId, {
                 text: `${selectedUser.displayName} has been kicked from ${kickRoomName}${kickReason ? ` — ${kickReason}` : '.'}`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'kicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'kicked',
+              });
               remove(ref(rtdb, `status/${selectedUser.uid}/currentRoomId`));
               updateSelectedUser({ kickedFrom: { roomId: kickRoomId, kickedAt: new Date().toISOString(), kickedBy: adminName, reason: kickReason } });
             } else {
@@ -1617,13 +1584,10 @@ const AdminPanelPage = () => {
               await deleteDoc(doc(db, 'rooms', kickedRoomId, 'kickedUsers', selectedUser.uid)).catch(() => {});
               const unkickRoomSnap = await getDoc(doc(db, 'rooms', kickedRoomId)).catch(() => null);
               const unkickRoomName = unkickRoomSnap?.data()?.name || kickedRoomId;
-              addDoc(collection(db, 'rooms', kickedRoomId, 'messages'), {
+              postTingleBotRoomMessage(kickedRoomId, {
                 text: `${selectedUser.displayName} has been unkicked and can rejoin ${unkickRoomName}.`,
-                uid: 'tinglebot_system_official_2024', displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'unkicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-              }).catch(() => {});
+                tinglebotType: 'unkicked',
+              });
             }
           }
           // Always clear kickedFrom on the user doc

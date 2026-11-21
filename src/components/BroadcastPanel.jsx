@@ -539,6 +539,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [rjConnecting, setRjConnecting] = useState(false);
   const [rjAudioBlocked, setRjAudioBlocked] = useState(false);
   const [pubAudioBlocked, setPubAudioBlocked] = useState(false);
+  const [ytAudioBlocked, setYtAudioBlocked] = useState(false);
 
   /* ── Go Live state ── */
   const [goingLive, setGoingLive] = useState(false);
@@ -632,10 +633,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const ytPlayerRef = useRef(null);
   const ytContainerRef = useRef(null);
   const ytInitialized = useRef(false);
+  const currentYtVideoIdRef = useRef(null);
   /* Tracks the RJ's intended playback state so we can auto-resume after browser throttling */
   const ytIntendedStateRef = useRef('stopped');
-  /* Mirrors rjIsLive state — readable in timers/intervals without stale closures */
+  /* Mirrors live states for timeouts/listeners without stale closures */
   const rjIsLiveRef = useRef(false);
+  const speakerMapRef = useRef({});
+  const rjIsListeningRef = useRef(false);
+  const rjConnectingRef = useRef(false);
+  const listeningToRef = useRef(null);
+
+  useEffect(() => { speakerMapRef.current = speakerMap; }, [speakerMap]);
+  useEffect(() => { rjIsListeningRef.current = rjIsListening; }, [rjIsListening]);
+  useEffect(() => { rjConnectingRef.current = rjConnecting; }, [rjConnecting]);
+  useEffect(() => { listeningToRef.current = listeningTo; }, [listeningTo]);
 
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
@@ -645,10 +656,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const autoResumeAttempted = useRef(false);
 
   /* ── Permission flags ── */
-  const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj';
-  const canManageRJ = isRJ;
-  const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
   const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
+  const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj' || loggedInUserProfile?.role?.toLowerCase() === 'owner';
+  const canManageRJ = isRJ && (!rjIsLive || !rjBroadcast?.rjUid || rjBroadcast.rjUid === myUid);
+  const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
   const myName = loggedInUserProfile?.username || loggedInUserProfile?.displayName || 'User';
   const myPhoto = loggedInUserProfile?.photoURL || '';
 
@@ -676,6 +687,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
     if (!videoId) return;
     await ensureYtApiLoaded();
+    currentYtVideoIdRef.current = videoId;
     if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
       ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
       return;
@@ -686,20 +698,46 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       height: '1',
       width: '1',
       videoId,
-      playerVars: { autoplay: 1, controls: 0, start: Math.floor(startSeconds) },
+      playerVars: {
+        autoplay: ytIntendedStateRef.current === 'playing' ? 1 : 0,
+        controls: 0,
+        playsinline: 1,
+        enablejsapi: 1,
+        rel: 0,
+        origin: window.location.origin,
+        start: Math.floor(startSeconds),
+      },
       events: {
         onReady: (e) => {
-          e.target.setVolume(80);
-          if (startSeconds > 0) e.target.seekTo(startSeconds, true);
+          try {
+            e.target.unMute?.();
+            e.target.setVolume?.(80);
+            if (startSeconds > 0) e.target.seekTo?.(startSeconds, true);
+            if (ytIntendedStateRef.current === 'playing') {
+              e.target.playVideo?.();
+              setTimeout(() => {
+                try {
+                  if (ytIntendedStateRef.current === 'playing' && e.target.getPlayerState?.() !== 1) {
+                    setYtAudioBlocked(true);
+                  }
+                } catch {}
+              }, 1600);
+            }
+          } catch {}
         },
         onStateChange: (e) => {
-          /* YT.PlayerState.PAUSED = 2 — if browser throttled us while we intended to play, auto-resume */
+          const YT_PLAYING = 1;
           const YT_PAUSED = 2;
-          if (e.data === YT_PAUSED && ytIntendedStateRef.current === 'playing') {
+          if (e.data === YT_PLAYING) {
+            setYtAudioBlocked(false);
+          } else if (e.data === YT_PAUSED && ytIntendedStateRef.current === 'playing') {
             setTimeout(() => {
-              try { e.target.playVideo(); } catch {}
+              try { e.target.playVideo?.(); } catch {}
             }, 300);
           }
+        },
+        onError: () => {
+          bpToast.warning('Could not load YouTube track (embed may be restricted by owner).');
         }
       }
     });
@@ -708,6 +746,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const syncYouTubePlayer = useCallback((ytData) => {
     if (!ytData) return;
     const { state, videoId, seekTo, updatedAt } = ytData;
+    setYtPlayerState(state || 'stopped');
+    ytIntendedStateRef.current = state || 'stopped';
 
     /* Calculate time drift since RJ wrote the update */
     const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
@@ -721,22 +761,44 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     const player = ytPlayerRef.current;
 
-    if (videoId) {
-      const curUrl = player.getVideoUrl?.() || '';
-      if (!curUrl.includes(videoId)) {
-        player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
-        return;
+    if (videoId && currentYtVideoIdRef.current !== videoId) {
+      currentYtVideoIdRef.current = videoId;
+      player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
+      if (state !== 'playing') {
+        setTimeout(() => {
+          try {
+            if (state === 'paused') player.pauseVideo?.();
+            else if (state === 'stopped') player.stopVideo?.();
+          } catch {}
+        }, 250);
       }
+      return;
     }
 
     if (state === 'playing') {
-      player.seekTo?.(adjustedSeek, true);
-      player.playVideo?.();
+      const curTime = player.getCurrentTime?.() || 0;
+      if (Math.abs(curTime - adjustedSeek) > 2.5) {
+        player.seekTo?.(adjustedSeek, true);
+      }
+      if (player.getPlayerState?.() !== 1) {
+        player.unMute?.();
+        player.setVolume?.(80);
+        player.playVideo?.();
+        setTimeout(() => {
+          try {
+            if (ytIntendedStateRef.current === 'playing' && player.getPlayerState?.() !== 1) {
+              setYtAudioBlocked(true);
+            }
+          } catch {}
+        }, 1600);
+      }
     } else if (state === 'paused') {
       player.seekTo?.(seekTo || 0, true);
       player.pauseVideo?.();
+      setYtAudioBlocked(false);
     } else if (state === 'stopped') {
       player.stopVideo?.();
+      setYtAudioBlocked(false);
     }
   }, [initYtPlayer]);
 
@@ -781,13 +843,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         } else {
           setIAmSpeaker(false);
         }
-        /* Auto-sync YouTube for listeners: if the RJ becomes live and already has a video, init player */
-        if (live && data.youtube?.videoId && !canManageRJ) {
-          syncYouTubePlayer(data.youtube);
-        }
       } else {
         /* RJ went offline — clean up listener side silently */
-        if (rjIsListening) {
+        if (rjIsListeningRef.current) {
           _rjCleanupListenerSide(false);
           setRjIsListening(false);
         }
@@ -796,10 +854,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         setIAmSpeaker(false);
         setYtPlayerState('stopped');
         setYtCurrentSongName('');
+        setYtAudioBlocked(false);
       }
     });
     return () => unsub();
-  }, [myUid, canManageRJ]);
+  }, [myUid]);
 
   /* ── Join requests RTDB listener ── */
   useEffect(() => {
@@ -944,6 +1003,27 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     return () => clearInterval(interval);
   }, []);
 
+  /* ── AudioContext keepalive + user-gesture resume for RJ voice + stage audio ── */
+  useEffect(() => {
+    if (!rjIsLive) return;
+    const ensureActive = () => {
+      if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
+        rjAudioCtx.current.resume().catch(() => {});
+      }
+      if (rjAudioEl.current && rjIsListeningRef.current && rjAudioEl.current.paused) {
+        rjAudioEl.current.play().catch(() => {});
+      }
+    };
+    const iv = setInterval(ensureActive, 4000);
+    window.addEventListener('pointerdown', ensureActive, { passive: true });
+    window.addEventListener('keydown', ensureActive, { passive: true });
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener('pointerdown', ensureActive);
+      window.removeEventListener('keydown', ensureActive);
+    };
+  }, [rjIsLive]);
+
   /* ── MediaSession API — tells OS / browser this is active audio media ──
      Prevents mobile browsers from killing background audio.
      Updated whenever RJ voice or YouTube is playing.                      */
@@ -954,13 +1034,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       try {
         navigator.mediaSession.metadata = new window.MediaMetadata({
           title: ytCurrentSongName || 'TingleTap Live Radio',
-          artist: 'TingleTap Broadcast',
+          artist: rjBroadcast?.rjName ? `RJ ${rjBroadcast.rjName} · TingleTap Broadcast` : 'TingleTap Broadcast',
           album: 'Live Show',
         });
         navigator.mediaSession.playbackState = 'playing';
         navigator.mediaSession.setActionHandler('play', () => {
           ytPlayerRef.current?.playVideo?.();
           rjAudioEl.current?.play?.().catch(() => {});
+          if (rjAudioCtx.current?.state === 'suspended') {
+            rjAudioCtx.current.resume().catch(() => {});
+          }
         });
         navigator.mediaSession.setActionHandler('pause', null);
         navigator.mediaSession.setActionHandler('stop', null);
@@ -970,7 +1053,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         navigator.mediaSession.playbackState = 'none';
       } catch {}
     }
-  }, [rjIsLive, ytCurrentSongName]);
+  }, [rjIsLive, ytCurrentSongName, rjBroadcast?.rjName]);
 
   /* ── Visibility change: aggressive resume for BOTH YouTube and voice audio ──
      Fires when: tab becomes visible again, user switches back from another app. */
@@ -1303,7 +1386,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const rjCreateOfferForListener = async (listenerUid) => {
     const existing = rjHostPCs.current[listenerUid];
     if (existing) {
-      if (existing.connectionState !== 'failed' && existing.signalingState !== 'closed') return;
+      if (existing.connectionState !== 'failed' && existing.connectionState !== 'disconnected' && existing.signalingState !== 'closed') return;
       try { existing.close(); } catch {}
       delete rjHostPCs.current[listenerUid];
     }
@@ -1328,7 +1411,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     /* Handle connection state changes */
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        /* Auto-retry after brief delay */
         setTimeout(() => {
           if (rjHostPCs.current[listenerUid] === pc) {
             try { pc.close(); } catch {}
@@ -1339,22 +1421,45 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     };
 
+    let remoteDescReady = false;
+    const pendingCandidates = [];
+    const drainPending = async () => {
+      for (const c of pendingCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
+      pendingCandidates.length = 0;
+    };
+
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await set(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/offer`), { type: offer.type, sdp: offer.sdp }).catch(() => {});
+    await update(ref(rtdb, `broadcasts/rj/connections/${listenerUid}`), {
+      offer: { type: offer.type, sdp: offer.sdp },
+      answer: null,
+      hostCandidates: null,
+      listenerCandidates: null,
+    }).catch(() => {});
 
-    const unsubAns = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/answer`), snap => {
+    const unsubAns = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/answer`), async snap => {
       const ans = snap.val();
-      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
+      if (ans && pc === rjHostPCs.current[listenerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(ans));
+          remoteDescReady = true;
+          await drainPending();
+        } catch {}
       }
     });
     rjHostRtdbUnsubs.current.push(unsubAns);
 
-    /* Use onChildAdded so each listener ICE candidate is processed exactly once */
+    /* Buffer early listener ICE candidates until remoteDescription is set */
     const unsubLC = onChildAdded(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/listenerCandidates`), snap => {
       const c = snap.val();
-      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      if (!c || pc !== rjHostPCs.current[listenerUid]) return;
+      if (remoteDescReady) {
+        pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      } else {
+        pendingCandidates.push(c);
+      }
     });
     rjHostRtdbUnsubs.current.push(unsubLC);
   };
@@ -1446,11 +1551,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
    *  existing listeners automatically hear the speaker without renegotiation. */
   const rjConnectToSpeaker = async (speakerUid) => {
     if (!canManageRJ || !myUid || speakerUid === myUid) return;
-    if (rjSpeakerPCs.current[speakerUid]) return; // already connecting/connected
+    const existing = rjSpeakerPCs.current[speakerUid];
+    if (existing) {
+      if (existing.connectionState !== 'failed' && existing.connectionState !== 'disconnected' && existing.signalingState !== 'closed') return;
+      try { existing.close(); } catch {}
+      delete rjSpeakerPCs.current[speakerUid];
+    }
 
-    // Always start from a clean unsub list for this speaker — if a previous
-    // session left stale listeners behind (e.g. teardown didn't run), reusing
-    // the old array would silently orphan them instead of replacing them.
     if (rjSpeakerUnsubs.current[speakerUid]?.length) {
       rjSpeakerUnsubs.current[speakerUid].forEach(u => { try { u(); } catch {} });
     }
@@ -1463,20 +1570,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     pc.ontrack = (e) => {
       try {
         if (!rjAudioCtx.current || !rjMixDest.current) return;
-        /* Resume the mixer context if the browser suspended it (autoplay
-           policy) — otherwise the connected source produces silent audio. */
         if (rjAudioCtx.current.state === 'suspended') {
           rjAudioCtx.current.resume().catch(() => {});
         }
-        /* Disconnect any previous source node for this speaker (e.g. on
-           renegotiation) before wiring up the new track. */
         if (rjSpeakerSourceNodes.current[speakerUid]) {
           try { rjSpeakerSourceNodes.current[speakerUid].disconnect(); } catch {}
         }
         const speakerSrc = rjAudioCtx.current.createMediaStreamSource(e.streams?.[0] || new MediaStream([e.track]));
         speakerSrc.connect(rjMixDest.current);
-        /* Keep a strong reference — without this, some browsers garbage
-           collect the unreferenced source node and audio silently stops. */
         rjSpeakerSourceNodes.current[speakerUid] = speakerSrc;
         bpToast.mic('Speaker joined the stage and is now live!');
       } catch (err) {
@@ -1491,13 +1592,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     };
 
-    /* Auto-reconnect when the connection drops — only if speaker is still in speakerMap */
+    /* Auto-reconnect when the connection drops — only if speaker is still in speakerMapRef */
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
       if ((s === 'failed' || s === 'disconnected') && rjSpeakerPCs.current[speakerUid] === pc) {
         setTimeout(() => {
-          /* Only reconnect if the speaker is still accepted in the broadcast */
-          if (rjSpeakerPCs.current[speakerUid] === pc && speakerMap[speakerUid]) {
+          if (rjSpeakerPCs.current[speakerUid] === pc && speakerMapRef.current[speakerUid]) {
             _rjDisconnectSpeaker(speakerUid, true);
             rjConnectToSpeaker(speakerUid).catch(() => {});
           }
@@ -1505,15 +1605,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     };
 
+    let remoteDescReady = false;
+    const pendingCands = [];
+    const drainPending = async () => {
+      for (const c of pendingCands) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
+      pendingCands.length = 0;
+    };
+
     /* RJ creates offer specifying it wants to RECEIVE audio from the speaker */
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: false });
     await pc.setLocalDescription(offer);
-    /* Replace the whole speakerConnections node for this speaker atomically via a
-       single update() — a remove() followed by a separate set() left a window
-       where a slow client could observe (or miss) the transient removed state,
-       causing reconnects to silently fail to propagate. update() with an
-       explicit null for the parent-relative children we want cleared, plus the
-       new offer, applies as one RTDB write. */
     await update(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`), {
       offer: { type: offer.type, sdp: offer.sdp },
       answer: null,
@@ -1522,18 +1625,27 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }).catch(() => {});
 
     /* Watch for speaker's answer — stored per-speaker for isolated teardown */
-    const unsubAns = onValue(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/answer`), snap => {
+    const unsubAns = onValue(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/answer`), async snap => {
       const ans = snap.val();
-      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
+      if (ans && pc === rjSpeakerPCs.current[speakerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(ans));
+          remoteDescReady = true;
+          await drainPending();
+        } catch {}
       }
     });
     rjSpeakerUnsubs.current[speakerUid].push(unsubAns);
 
-    /* Watch for speaker's ICE candidates */
+    /* Buffer early speaker ICE candidates until remoteDescription is ready */
     const unsubSC = onChildAdded(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/speakerCandidates`), snap => {
       const c = snap.val();
-      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      if (!c || pc !== rjSpeakerPCs.current[speakerUid]) return;
+      if (remoteDescReady) {
+        pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      } else {
+        pendingCands.push(c);
+      }
     });
     rjSpeakerUnsubs.current[speakerUid].push(unsubSC);
   };
@@ -1596,7 +1708,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           audio.playsInline = true;
           rjAudioEl.current = audio;
         }
-        rjAudioEl.current.srcObject = e.streams[0];
+        rjAudioEl.current.srcObject = e.streams?.[0] || new MediaStream([e.track]);
         rjAudioEl.current.play().then(() => {
           setRjAudioBlocked(false);
           setRjConnState('connected');
@@ -1660,9 +1772,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       const ytData = ytSnap.val();
       if (ytData?.videoId) syncYouTubePlayer(ytData);
 
-      /* Connection timeout: if no track in 12 s, show error */
+      /* Connection timeout: check live refs rather than stale closure state */
       setTimeout(() => {
-        if (!rjIsListening && rjConnecting) {
+        if (!rjIsListeningRef.current && rjConnectingRef.current) {
           bpToast.warning('Connection is taking long. Check your network and try again.');
           setRjConnecting(false);
         }
@@ -1809,6 +1921,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   const handleMicToggle = async () => {
+    if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
+      rjAudioCtx.current.resume().catch(() => {});
+    }
     if (!localStream.current) {
       try {
         await startLocalMic();
@@ -1940,21 +2055,33 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     setPubMicLevel(0);
   };
 
-  const handleYtLoad = () => {
+  const handleYtLoad = async () => {
     const vid = extractYtId(ytUrl);
     if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube link.'); return; }
-    const songName = ytUrl;
+    let songName = `YouTube Track (${vid})`;
     const nowMs = Date.now();
     ytIntendedStateRef.current = 'paused';
     initYtPlayer(vid, 0);
-    update(ref(rtdb, 'broadcasts/rj/youtube'), {
+    await update(ref(rtdb, 'broadcasts/rj/youtube'), {
       videoId: vid,
       state: 'paused',
       seekTo: 0,
       songName,
       updatedAt: nowMs,
-    });
+    }).catch(() => {});
     setYtCurrentSongName(songName);
+    setYtPlayerState('paused');
+    try {
+      const resp = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${vid}`)}&format=json`);
+      if (resp.ok) {
+        const meta = await resp.json();
+        if (meta?.title) {
+          songName = meta.title;
+          setYtCurrentSongName(songName);
+          update(ref(rtdb, 'broadcasts/rj/youtube'), { songName }).catch(() => {});
+        }
+      }
+    } catch {}
   };
 
   const handleYtControl = (action) => {
@@ -2173,7 +2300,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const pubCreateOfferForListener = async (broadcastId, listenerUid) => {
     const existing = pubHostPCs.current[listenerUid];
     if (existing) {
-      if (existing.connectionState !== 'failed' && existing.signalingState !== 'closed') return;
+      if (existing.connectionState !== 'failed' && existing.connectionState !== 'disconnected' && existing.signalingState !== 'closed') return;
       try { existing.close(); } catch {}
       delete pubHostPCs.current[listenerUid];
     }
@@ -2203,22 +2330,45 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     };
 
+    let remoteDescReady = false;
+    const pendingCandidates = [];
+    const drainPending = async () => {
+      for (const c of pendingCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
+      pendingCandidates.length = 0;
+    };
+
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/offer`), { type: offer.type, sdp: offer.sdp }).catch(() => {});
+    await update(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}`), {
+      offer: { type: offer.type, sdp: offer.sdp },
+      answer: null,
+      hostCandidates: null,
+      listenerCandidates: null,
+    }).catch(() => {});
 
-    const unsubAns = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/answer`), snap => {
+    const unsubAns = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/answer`), async snap => {
       const ans = snap.val();
-      if (ans && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        pc.setRemoteDescription(new RTCSessionDescription(ans)).catch(() => {});
+      if (ans && pc === pubHostPCs.current[listenerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(ans));
+          remoteDescReady = true;
+          await drainPending();
+        } catch {}
       }
     });
     pubHostRtdbUnsubs.current.push(unsubAns);
 
-    /* Use onChildAdded so each listener ICE candidate is processed exactly once */
+    /* Buffer early listener ICE candidates until remoteDescription is set */
     const unsubLC = onChildAdded(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`), snap => {
       const c = snap.val();
-      if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      if (!c || pc !== pubHostPCs.current[listenerUid]) return;
+      if (remoteDescReady) {
+        pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+      } else {
+        pendingCandidates.push(c);
+      }
     });
     pubHostRtdbUnsubs.current.push(unsubLC);
   };
@@ -2323,7 +2473,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         pubAudioEl.current.autoplay = true;
         pubAudioEl.current.playsInline = true;
       }
-      pubAudioEl.current.srcObject = e.streams[0];
+      pubAudioEl.current.srcObject = e.streams?.[0] || new MediaStream([e.track]);
       pubAudioEl.current.play().then(() => {
         setPubAudioBlocked(false);
         setPubConnState('connected');
@@ -2569,11 +2719,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Cleanup when panel closes ── */
   useEffect(() => {
     if (!isOpen) {
-      // Public broadcast (music streams) stop when panel closes.
-      if (listeningTo) { pubLeaveAudio(listeningTo.id); setListeningTo(null); }
-      // RJ voice intentionally NOT stopped here — audio should keep playing
-      // even when the user minimises/closes the panel.
-      // Voice only stops when: RJ ends broadcast, user clicks Leave, page unloads.
+      if (listeningToRef.current) { pubLeaveAudio(listeningToRef.current.id); setListeningTo(null); }
     }
   }, [isOpen]);
 
@@ -2582,65 +2728,29 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   /* ── Global cleanup on unmount ── */
   useEffect(() => {
     return () => {
-      if (listeningTo) pubLeaveAudio(listeningTo.id);
-      if (rjIsListening) rjLeaveAudio();
+      if (listeningToRef.current) pubLeaveAudio(listeningToRef.current.id);
+      if (rjIsListeningRef.current) rjLeaveAudio();
       stopMicLevelMeter();
       stopPubMicLevelMeter();
     };
   }, []);
 
-  /* ── Utility: post system message to a room ── */
+  /* ── Utility: post system message to a room (always auto-deleted ≤50s) ── */
   const _postSystemMessage = async (rId, text, tinglebotType, deleteMsAfter) => {
     try {
-      const { serverTimestamp: fsST, addDoc: fsAdd, collection: fsColl } = await import('firebase/firestore');
-      const { db: fsDb } = await import('../firebase/config');
-      const r = await fsAdd(fsColl(fsDb, 'rooms', rId, 'messages'), {
-        text,
-        uid: 'tinglebot_system_official_2024',
-        displayName: 'TingleBot',
-        isBot: true, systemBot: true, tinglebotType,
-        createdAt: fsST(),
-        noReply: true, noReaction: true, noReport: true, noUnread: true,
-      });
-      if (r?.id && deleteMsAfter) {
-        setTimeout(() => deleteDoc(doc(db, 'rooms', rId, 'messages', r.id)).catch(() => {}), deleteMsAfter);
-      }
+      const { postTingleBotRoomMessage, TINGLEBOT_TTL_MS } = await import('../utils/tinglebotAutoDelete');
+      const ttl = deleteMsAfter ? Math.min(deleteMsAfter, TINGLEBOT_TTL_MS) : TINGLEBOT_TTL_MS;
+      await postTingleBotRoomMessage(rId, { text, tinglebotType }, ttl);
     } catch {}
   };
 
-  /* ── Panel closed: keep YouTube player alive in a hidden off-screen container ── */
-  if (!isOpen) {
-    return (
-      <div
-        style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, overflow: 'hidden', pointerEvents: 'none' }}
-        aria-hidden="true"
-      >
-        <div ref={ytContainerRef} id="bp-yt-player" />
-      </div>
-    );
-  }
-
-  /* ── Minimized floating bubble ──
-     IMPORTANT: ytContainerRef MUST stay in the DOM or the YouTube iframe is
-     destroyed and music stops. Keep it in a tiny off-screen div alongside the bubble. */
-  if (isMinimized) {
-    return (
-      <>
-        <div
-          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, overflow: 'hidden', pointerEvents: 'none' }}
-          aria-hidden="true"
-        >
-          <div ref={ytContainerRef} id="bp-yt-player" />
-        </div>
-        <FloatingMinimizedBubble
-          isLive={rjIsLive && canManageRJ}
-          pubIsLive={!!myActiveBroadcast}
-          onExpand={() => setIsMinimized(false)}
-          onClose={() => { setIsMinimized(false); onClose(); }}
-        />
-      </>
-    );
-  }
+  /* Persistent YouTube player wrapper rendered once unconditionally at top level
+     so toggling open / minimized / closed NEVER unmounts the iframe. */
+  const persistentYtElement = (
+    <div className="bp-yt-hidden-player" aria-hidden="true">
+      <div ref={ytContainerRef} id="bp-yt-player" />
+    </div>
+  );
 
   /* ══════════════════════════════════════
      RENDER HELPERS
@@ -2931,6 +3041,23 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               <div className="bp-song-label">Now Playing</div>
               <div className="bp-song-name">{ytCurrentSongName}</div>
             </div>
+            {ytAudioBlocked && !canManageRJ && (
+              <button
+                type="button"
+                className="bp-yt-load-btn"
+                style={{ marginLeft: 'auto', padding: '5px 10px', fontSize: 11 }}
+                onClick={() => {
+                  try {
+                    ytPlayerRef.current?.unMute?.();
+                    ytPlayerRef.current?.setVolume?.(80);
+                    ytPlayerRef.current?.playVideo?.();
+                    setYtAudioBlocked(false);
+                  } catch {}
+                }}
+              >
+                Tap to Sync Music
+              </button>
+            )}
           </div>
         )}
 
@@ -3858,13 +3985,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
      MAIN RENDER
   ══════════════════════════════════════ */
   return (
+    <>
+      {persistentYtElement}
+      {isOpen && isMinimized && (
+        <FloatingMinimizedBubble
+          isLive={rjIsLive && canManageRJ}
+          pubIsLive={!!myActiveBroadcast}
+          onExpand={() => setIsMinimized(false)}
+          onClose={() => { setIsMinimized(false); onClose(); }}
+        />
+      )}
+      {isOpen && !isMinimized && (
     <div className="bp-overlay" onClick={onClose}>
       <div className="bp-panel" onClick={e => e.stopPropagation()}>
-
-        {/* Hidden YouTube player container */}
-        <div className="bp-yt-hidden-player">
-          <div ref={ytContainerRef} id="bp-yt-player" />
-        </div>
 
         {/* Header */}
         <div className="bp-header">
@@ -3986,6 +4119,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
       </div>
     </div>
+      )}
+    </>
   );
 };
 

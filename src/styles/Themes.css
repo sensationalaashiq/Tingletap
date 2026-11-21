@@ -535,7 +535,7 @@ html.dark-theme-variant .message-form textarea::placeholder,
 html.dark-theme-variant .message-form input::placeholder { color: var(--input-placeholder) !important; }
 html.dark-theme-variant .message-form button,
 html.dark-theme-variant .message-form .icon-btn { color: var(--icon-color) !important; }
-html.dark-theme-variant .message-form button svg,
+html.dark-theme-variant .message-form button:not(.hp-composer-send):not(.hp-composer-attach) svg,
 html.dark-theme-variant .message-form .icon-btn svg { stroke: var(--icon-color) !important; fill: none !important; }
 
 /* Luxury input */
@@ -583,11 +583,11 @@ html.dark-theme-variant .whisper-chip-close {
   color: var(--text-primary) !important;
 }
 html.dark-theme-variant .whisper-chip {
-  background: var(--button-secondary-bg) !important;
-  border-color: var(--border-accent) !important;
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 55%, #881337 100%) !important;
+  border-color: rgba(216, 180, 254, 0.45) !important;
 }
-html.dark-theme-variant .whisper-chip-to   { color: var(--accent-color) !important; }
-html.dark-theme-variant .whisper-chip-name { color: var(--text-primary) !important; }
+html.dark-theme-variant .whisper-chip-to   { color: #e9d5ff !important; }
+html.dark-theme-variant .whisper-chip-name { color: #ffffff !important; }
 html.dark-theme-variant .whisper-message .message-body p { color: var(--text-secondary) !important; }
 
 /* ── Sidebar (sb-*) ── */
@@ -667,10 +667,11 @@ html.dark-theme-variant .settings-close-btn {
 }
 html.dark-theme-variant .settings-close-btn:hover { color: #ef4444 !important; background: rgba(239,68,68,0.12) !important; }
 html.dark-theme-variant .settings-tabs { background: var(--input-bg) !important; border-right-color: var(--border-color) !important; }
-html.dark-theme-variant .settings-tab { color: var(--text-muted) !important; background: transparent !important; border-left-color: transparent !important; }
+html.dark-theme-variant .settings-tab { color: var(--text-secondary) !important; background: transparent !important; border-left-color: transparent !important; }
 html.dark-theme-variant .settings-tab:hover { color: var(--username-color) !important; background: var(--sidebar-hover) !important; border-left-color: var(--border-accent) !important; }
-html.dark-theme-variant .settings-tab.active { color: var(--accent-color) !important; background: var(--badge-bg) !important; border-left-color: var(--accent-color) !important; }
-html.dark-theme-variant .settings-tab svg { stroke: currentColor !important; fill: none !important; }
+html.dark-theme-variant .settings-tab.active { color: #ffffff !important; background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%) !important; border-left-color: #c4b5fd !important; }
+html.dark-theme-variant .settings-tab.active span { color: #ffffff !important; }
+html.dark-theme-variant .settings-tab svg { opacity: 1 !important; }
 html.dark-theme-variant .settings-body { background: transparent !important; }
 html.dark-theme-variant .settings-content { background: var(--sidebar-bg) !important; }
 html.dark-theme-variant .settings-tab-content h3 { color: var(--accent-hover) !important; }

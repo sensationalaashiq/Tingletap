@@ -197,7 +197,7 @@ const logSpamViolation = async (uid, violationType, messageText) => {
   }
 };
 
-export const checkSpam = async (uid, messageText, roomId) => {
+export const checkSpamSync = (uid, messageText, roomId) => {
   if (!uid || !messageText) return { isSpam: false };
 
   const data = initUserSpamData(uid);
@@ -242,12 +242,11 @@ export const checkSpam = async (uid, messageText, roomId) => {
 
     if (data.violations >= SPAM_CONFIG.VIOLATIONS_BEFORE_MUTE) {
       const muteDuration = SPAM_CONFIG.AUTO_MUTE_DURATION_MS * Math.pow(2, data.violations - SPAM_CONFIG.VIOLATIONS_BEFORE_MUTE);
-      // Combined into a single write — logSpamViolation's entry is folded into
-      // the same updateDoc as the mute, instead of two sequential writes.
-      await applyAutoMute(uid, muteDuration, 'Automatic mute: sending messages too fast', {
+      // Fire-and-forget DB write so UI stays 0ms responsive
+      applyAutoMute(uid, muteDuration, 'Automatic mute: sending messages too fast', {
         violationType: 'RATE_LIMIT',
         messageText: text
-      });
+      }).catch(() => {});
       data.violations = 0;
       return {
         isSpam: true,
@@ -256,7 +255,7 @@ export const checkSpam = async (uid, messageText, roomId) => {
       };
     }
 
-    await logSpamViolation(uid, 'RATE_LIMIT', text);
+    logSpamViolation(uid, 'RATE_LIMIT', text).catch(() => {});
     return {
       isSpam: true,
       type: 'rate_limit',
@@ -267,11 +266,11 @@ export const checkSpam = async (uid, messageText, roomId) => {
   const emojiMatches = text.match(EMOJI_REGEX) || [];
   if (emojiMatches.length >= SPAM_CONFIG.EMOJI_FLOOD_THRESHOLD) {
     data.violations++;
-    await logSpamViolation(uid, 'EMOJI_FLOOD', text);
+    logSpamViolation(uid, 'EMOJI_FLOOD', text).catch(() => {});
     return {
       isSpam: true,
       type: 'emoji_flood',
-      message: `Please don't flood the chat with emojis! 🚫`
+      message: `Please don't flood the chat with emojis!`
     };
   }
 
@@ -280,7 +279,7 @@ export const checkSpam = async (uid, messageText, roomId) => {
     const capsRatio = (letters.match(/[A-Z]/g) || []).length / letters.length;
     if (capsRatio >= SPAM_CONFIG.CAPS_PERCENTAGE_THRESHOLD) {
       data.violations++;
-      await logSpamViolation(uid, 'EXCESSIVE_CAPS', text);
+      logSpamViolation(uid, 'EXCESSIVE_CAPS', text).catch(() => {});
       return {
         isSpam: true,
         type: 'excessive_caps',
@@ -296,7 +295,7 @@ export const checkSpam = async (uid, messageText, roomId) => {
     if (repeatCount >= SPAM_CONFIG.REPEAT_MESSAGE_COUNT - 1) {
       data.violations++;
       data.cooldownUntil = now + SPAM_CONFIG.COOLDOWN_DURATION_MS;
-      await logSpamViolation(uid, 'REPEAT_MESSAGE', text);
+      logSpamViolation(uid, 'REPEAT_MESSAGE', text).catch(() => {});
       return {
         isSpam: true,
         type: 'repeat_message',
@@ -311,6 +310,8 @@ export const checkSpam = async (uid, messageText, roomId) => {
 
   return { isSpam: false };
 };
+
+export const checkSpam = async (uid, messageText, roomId) => checkSpamSync(uid, messageText, roomId);
 
 export const clearSpamData = (uid) => {
   messageHistory.delete(uid);

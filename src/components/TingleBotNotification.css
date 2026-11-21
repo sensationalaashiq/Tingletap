@@ -1,35 +1,14 @@
-/* TingleBot Premium Notification Strip */
+/* TingleBot Compact Notification Strip */
 
 @keyframes tinglebot-slide-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scaleY(0.92);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0);
   }
-}
-
-@keyframes tinglebot-fade-out {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(4px); }
-}
-
-@keyframes tinglebot-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-@keyframes tinglebot-pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.55; transform: scale(0.78); }
-}
-
-@keyframes tinglebot-icon-bounce {
-  0%, 100% { transform: translateY(0); }
-  40%       { transform: translateY(-3px); }
-  70%       { transform: translateY(-1px); }
 }
 
 /* ── Wrapper that sits between messages ── */
@@ -37,7 +16,7 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  padding: 6px 40px 6px 12px;
+  padding: 2px 10px;
   pointer-events: none;
   user-select: none;
 }
@@ -48,330 +27,317 @@
   user-select: none;
 }
 
-/* ── Core strip ── */
+/* ── Core strip (~22px ultra-compact jewel badge, wraps cleanly if long) ── */
 .tinglebot-strip {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 7px 14px 7px 10px;
-  border-radius: 18px;
-  border: 1px solid rgba(167, 139, 250, 0.22);
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 7px;
+  min-height: 22px;
+  border-radius: 9px;
+  border: 1px solid rgba(124, 58, 237, 0.22);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.10) 0%,
-    rgba(167, 139, 250, 0.08) 50%,
-    rgba(99, 102, 241, 0.06) 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(245, 243, 255, 0.88) 55%,
+    rgba(238, 242, 255, 0.85) 100%
   );
-  backdrop-filter: blur(12px) saturate(1.4);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
-  box-shadow:
-    0 2px 12px rgba(99, 102, 241, 0.10),
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  animation: tinglebot-slide-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: tinglebot-slide-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
   max-width: 100%;
   position: relative;
-  overflow: hidden;
-}
-
-/* Subtle shimmer overlay */
-.tinglebot-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.07) 50%,
-    transparent 70%
-  );
-  background-size: 200% 100%;
-  animation: tinglebot-shimmer 3.5s linear infinite;
-  pointer-events: none;
 }
 
 /* ── Icon container ── */
 .tinglebot-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  background: rgba(124, 58, 237, 0.1);
   flex-shrink: 0;
-  animation: tinglebot-icon-bounce 2.2s ease-in-out infinite;
 }
 
 .tinglebot-icon svg {
   display: block;
+  width: 12px;
+  height: 12px;
 }
 
 /* ── Brand label ── */
 .tinglebot-brand {
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: linear-gradient(135deg, #a78bfa 0%, #818cf8 60%, #c084fc 100%);
+  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 60%, #9333ea 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   white-space: nowrap;
+  line-height: 1.2;
   flex-shrink: 0;
 }
 
-/* ── Separator dot ── */
+/* ── Separator hairline ── */
 .tinglebot-sep {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(167, 139, 250, 0.55);
+  width: 1px;
+  height: 10px;
+  background: rgba(124, 58, 237, 0.28);
   flex-shrink: 0;
-  animation: tinglebot-pulse-dot 2s ease-in-out infinite;
 }
 
-/* ── Event text ── */
+/* ── Event text (zero cutoff, wraps cleanly on narrow screens) ── */
 .tinglebot-text {
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 500;
-  color: rgba(100, 80, 140, 0.92);
-  line-height: 1.4;
+  color: #3b2764;
+  line-height: 1.3;
   white-space: normal;
   word-break: break-word;
   overflow-wrap: break-word;
   flex: 1;
   min-width: 0;
-  padding-top: 1px;
+  padding-top: 0;
 }
 
 /* Highlight actor name inside text */
 .tinglebot-text strong {
   font-weight: 700;
-  color: rgba(109, 40, 217, 0.88);
+  color: #5b21b6;
 }
 
 /* ── Owner delete button ── */
 .tinglebot-delete-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 17px;
+  height: 17px;
   border: none;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.10);
-  color: rgba(239, 68, 68, 0.65);
+  background: rgba(239, 68, 68, 0.12);
+  color: rgba(220, 38, 38, 0.85);
   cursor: pointer;
   padding: 0;
   margin-left: 2px;
   transition: background 0.15s, color 0.15s, opacity 0.15s;
-  opacity: 0;
+  opacity: 0.8;
   pointer-events: auto;
   z-index: 1;
   position: relative;
 }
 
-.tinglebot-strip:hover .tinglebot-delete-btn {
+.tinglebot-strip:hover .tinglebot-delete-btn,
+.tinglebot-delete-btn:focus-visible {
   opacity: 1;
 }
 
 .tinglebot-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.22);
-  color: rgba(239, 68, 68, 0.90);
+  background: rgba(239, 68, 68, 0.24);
+  color: #dc2626;
 }
 
 .tinglebot-delete-btn svg {
   display: block;
+  width: 10px;
+  height: 10px;
 }
 
-/* ── Rule variant (slightly different tint) ── */
+/* ── Rule variant ── */
 .tinglebot-strip.tinglebot-rule {
-  border-color: rgba(99, 102, 241, 0.20);
+  border-color: rgba(99, 102, 241, 0.22);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.09) 0%,
-    rgba(99, 102, 241, 0.07) 50%,
-    rgba(59, 130, 246, 0.05) 100%
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(224, 231, 255, 0.55) 100%
   );
 }
 
 .tinglebot-strip.tinglebot-rule .tinglebot-brand {
-  background: linear-gradient(135deg, #818cf8 0%, #6366f1 60%, #60a5fa 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 60%, #3b82f6 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
 
 .tinglebot-strip.tinglebot-rule .tinglebot-text {
   font-style: italic;
-  color: rgba(67, 56, 120, 0.85);
+  color: rgba(55, 48, 107, 0.9);
 }
 
 /* ── Announcement variant ── */
 .tinglebot-strip.tinglebot-announcement {
-  border-color: rgba(251, 191, 36, 0.30);
+  border-color: rgba(245, 158, 11, 0.34);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.10) 0%,
-    rgba(251, 191, 36, 0.07) 50%,
-    rgba(245, 158, 11, 0.05) 100%
+    rgba(255, 251, 235, 0.85) 0%,
+    rgba(254, 243, 199, 0.55) 100%
   );
-  box-shadow:
-    0 2px 12px rgba(251, 191, 36, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 1px 5px rgba(245, 158, 11, 0.12);
 }
 
 .tinglebot-strip.tinglebot-announcement .tinglebot-brand {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #fb923c 100%);
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 60%, #ea580c 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
 
 .tinglebot-strip.tinglebot-announcement .tinglebot-text {
   font-weight: 600;
-  color: rgba(120, 80, 20, 0.90);
-}
-
-/* ── Dark mode ── */
-.dark-mode .tinglebot-strip,
-[data-theme="dark"] .tinglebot-strip,
-.theme-dark .tinglebot-strip {
-  border-color: rgba(167, 139, 250, 0.28);
-  background: linear-gradient(
-    135deg,
-    rgba(30, 20, 60, 0.55) 0%,
-    rgba(99, 102, 241, 0.12) 50%,
-    rgba(167, 139, 250, 0.08) 100%
-  );
-  box-shadow:
-    0 2px 14px rgba(99, 102, 241, 0.18),
-    0 1px 4px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.dark-mode .tinglebot-text,
-[data-theme="dark"] .tinglebot-text,
-.theme-dark .tinglebot-text,
-.theme-dark .tinglebot-text {
-  color: rgba(196, 181, 253, 0.85);
-}
-
-.dark-mode .tinglebot-text strong,
-[data-theme="dark"] .tinglebot-text strong,
-.theme-dark .tinglebot-text strong {
-  color: rgba(216, 180, 254, 0.95);
-}
-
-/* Dark rule variant */
-.dark-mode .tinglebot-strip.tinglebot-rule,
-.theme-dark .tinglebot-strip.tinglebot-rule {
-  background: linear-gradient(
-    135deg,
-    rgba(20, 20, 50, 0.60) 0%,
-    rgba(67, 56, 202, 0.12) 50%,
-    rgba(59, 130, 246, 0.07) 100%
-  );
-}
-
-.dark-mode .tinglebot-strip.tinglebot-rule .tinglebot-text,
-.theme-dark .tinglebot-strip.tinglebot-rule .tinglebot-text {
-  color: rgba(165, 180, 252, 0.80);
+  color: rgba(120, 53, 15, 0.92);
 }
 
 /* ── Broadcast Live variant ── */
 .tinglebot-strip.tinglebot-broadcast {
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.32);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.10) 0%,
-    rgba(167, 139, 250, 0.09) 40%,
-    rgba(239, 68, 68, 0.07) 100%
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(254, 226, 226, 0.52) 100%
   );
-  box-shadow:
-    0 2px 14px rgba(239, 68, 68, 0.14),
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  box-shadow: 0 1px 5px rgba(239, 68, 68, 0.12);
 }
 
 .tinglebot-strip.tinglebot-broadcast .tinglebot-brand {
-  background: linear-gradient(135deg, #a78bfa 0%, #ef4444 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #ef4444 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
 
 .tinglebot-strip.tinglebot-broadcast .tinglebot-text {
   font-weight: 600;
-  color: rgba(140, 40, 40, 0.90);
+  color: rgba(153, 27, 27, 0.92);
 }
 
 /* ── Broadcast Ended variant ── */
 .tinglebot-strip.tinglebot-broadcast-ended {
-  border-color: rgba(148, 163, 184, 0.25);
+  border-color: rgba(148, 163, 184, 0.28);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(148, 163, 184, 0.06) 100%
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(241, 245, 249, 0.6) 100%
   );
 }
 
 .tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text {
-  color: rgba(100, 116, 139, 0.85);
+  color: rgba(71, 85, 105, 0.9);
 }
 
-/* Dark mode broadcast */
+/* ── Dark mode ── */
+.dark-mode .tinglebot-strip,
+[data-theme="dark"] .tinglebot-strip,
+.theme-dark .tinglebot-strip,
+html.dark-theme-variant .tinglebot-strip {
+  border-color: rgba(167, 139, 250, 0.26);
+  background: linear-gradient(
+    135deg,
+    rgba(28, 20, 56, 0.78) 0%,
+    rgba(99, 102, 241, 0.14) 55%,
+    rgba(167, 139, 250, 0.1) 100%
+  );
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+
+.dark-mode .tinglebot-text,
+[data-theme="dark"] .tinglebot-text,
+.theme-dark .tinglebot-text,
+html.dark-theme-variant .tinglebot-text {
+  color: rgba(221, 214, 254, 0.9);
+}
+
+.dark-mode .tinglebot-text strong,
+[data-theme="dark"] .tinglebot-text strong,
+.theme-dark .tinglebot-text strong,
+html.dark-theme-variant .tinglebot-text strong {
+  color: #f3e8ff;
+}
+
+.dark-mode .tinglebot-strip.tinglebot-rule,
+.theme-dark .tinglebot-strip.tinglebot-rule,
+html.dark-theme-variant .tinglebot-strip.tinglebot-rule {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 20, 50, 0.78) 0%,
+    rgba(67, 56, 202, 0.16) 100%
+  );
+}
+
+.dark-mode .tinglebot-strip.tinglebot-rule .tinglebot-text,
+.theme-dark .tinglebot-strip.tinglebot-rule .tinglebot-text,
+html.dark-theme-variant .tinglebot-strip.tinglebot-rule .tinglebot-text {
+  color: rgba(199, 210, 254, 0.88);
+}
+
+.dark-mode .tinglebot-strip.tinglebot-announcement,
+html.dark-theme-variant .tinglebot-strip.tinglebot-announcement {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(45, 30, 12, 0.72) 0%,
+    rgba(245, 158, 11, 0.14) 100%
+  );
+}
+
+.dark-mode .tinglebot-strip.tinglebot-announcement .tinglebot-text,
+html.dark-theme-variant .tinglebot-strip.tinglebot-announcement .tinglebot-text {
+  color: #fde68a;
+}
+
 .dark-mode .tinglebot-strip.tinglebot-broadcast,
 html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast {
   background: linear-gradient(
     135deg,
-    rgba(60, 10, 30, 0.55) 0%,
-    rgba(120, 60, 200, 0.12) 40%,
-    rgba(239, 68, 68, 0.10) 100%
+    rgba(50, 14, 30, 0.75) 0%,
+    rgba(239, 68, 68, 0.14) 100%
   );
-  box-shadow:
-    0 2px 16px rgba(239, 68, 68, 0.20),
-    0 1px 4px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .dark-mode .tinglebot-strip.tinglebot-broadcast .tinglebot-text,
 html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast .tinglebot-text {
-  color: rgba(252, 165, 165, 0.90);
-  font-weight: 600;
+  color: #fecaca;
 }
 
 .dark-mode .tinglebot-strip.tinglebot-broadcast-ended,
 html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast-ended {
   background: linear-gradient(
     135deg,
-    rgba(20, 20, 30, 0.50) 0%,
-    rgba(71, 85, 105, 0.10) 100%
+    rgba(24, 24, 38, 0.72) 0%,
+    rgba(71, 85, 105, 0.14) 100%
   );
 }
 
 .dark-mode .tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text,
 html.dark-theme-variant .tinglebot-strip.tinglebot-broadcast-ended .tinglebot-text {
-  color: rgba(148, 163, 184, 0.75);
+  color: #cbd5e1;
 }
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .tinglebot-strip-wrapper {
-    padding: 5px 24px 5px 8px;
+    padding: 2px 8px;
   }
   .tinglebot-strip {
     max-width: 100%;
-    padding: 6px 10px 6px 9px;
-    gap: 6px;
+    padding: 3px 8px 3px 6px;
+    gap: 5px;
+    border-radius: 7px;
   }
   .tinglebot-text {
-    font-size: 11.5px;
+    font-size: 10.5px;
+    line-height: 1.25;
   }
   .tinglebot-brand {
-    font-size: 9.5px;
+    font-size: 9px;
   }
   .tinglebot-icon {
-    width: 18px;
-    height: 18px;
+    width: 13px;
+    height: 13px;
+  }
+  .tinglebot-icon svg {
+    width: 13px;
+    height: 13px;
   }
 }

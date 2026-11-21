@@ -86,6 +86,9 @@ export const getYouTubeEmbedUrl = (input, options = {}) => {
   const loop = options.loop ? 1 : 0;
 
   let query = `autoplay=${autoplay}&controls=${controls}&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    query += `&origin=${encodeURIComponent(window.location.origin)}`;
+  }
   if (loop) {
     query += `&loop=1&playlist=${videoId}`;
   }

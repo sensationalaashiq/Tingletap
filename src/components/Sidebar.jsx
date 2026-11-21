@@ -197,23 +197,12 @@ const Sidebar = ({
   const { roomId } = useParams();
   const navigate   = useNavigate();
 
-  /* ── TingleBot strip — writes a system message to the current room chat ── */
+  /* ── TingleBot strip — writes a system message to the current room chat (auto-deleted ≤50s) ── */
   const sendTingleBotMessage = async (text, type = 'system') => {
     try {
       if (!roomId) return;
-      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
-        text,
-        uid: 'tinglebot_system_official_2024',
-        displayName: 'TingleBot',
-        isBot: true,
-        systemBot: true,
-        tinglebotType: type,
-        createdAt: serverTimestamp(),
-        noReply: true,
-        noReaction: true,
-        noReport: true,
-        noUnread: true,
-      });
+      const { postTingleBotRoomMessage } = await import('../utils/tinglebotAutoDelete');
+      await postTingleBotRoomMessage(roomId, { text, tinglebotType: type });
     } catch (err) {
       console.error('TingleBot message failed:', err);
     }

@@ -7,12 +7,13 @@ import { db, auth, rtdb } from '../firebase/config';
 import {
     collection, doc, getDoc, query, orderBy, onSnapshot, where, limit,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch,
-    arrayUnion, arrayRemove, deleteField
+    arrayUnion, arrayRemove, deleteField, runTransaction
 } from 'firebase/firestore';
 import { runFullExpiryCheck, autoCheckUnban, autoCheckUnkick, isKickExpired, parseDurationMs } from '../utils/modExpiryService';
-import { checkSpam } from '../utils/antiSpamSystem';
+import { checkSpam, checkSpamSync } from '../utils/antiSpamSystem';
 import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
 import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
+import { postTingleBotRoomMessage, scheduleTingleBotDeletion, TINGLEBOT_TTL_MS } from '../utils/tinglebotAutoDelete';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
 import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
@@ -224,17 +225,17 @@ const ChatMessageTranslatedBody = React.memo(function ChatMessageTranslatedBody(
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
     };
-    const viewerName = auth.currentUser?.displayName || (typeof window !== 'undefined' && window.loggedInUserProfile?.displayName);
+    const viewerName = (typeof window !== 'undefined' && window.loggedInUserProfile?.displayName) || auth.currentUser?.displayName;
     const mentionedHtml = text.replace(/@([^\s@,]+)/g, (match, name) => {
-        // Tagged person (receiver) sees solid radiant violet-pink pill
+        // Tagged person (receiver) sees vivid Royal Blue pill with crisp white text
         if (viewerName && name.toLowerCase() === viewerName.toLowerCase()) {
             return `<span class="tag-mention-pill tag-self-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
         }
-        // Sender sees crisp royal indigo-violet pill
+        // Sender sees rich Burgundy pill with crisp white text
         if (isMyMessage) {
             return `<span class="tag-mention-pill tag-sender-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
         }
-        // All other room viewers see royal violet pill
+        // All other viewers see rich Burgundy pill with crisp white text
         return `<span class="tag-mention-pill tag-other-mention"><span class="tag-at-symbol">@</span>${name}</span>`;
     });
     const renderedHtml = DOMPurify.sanitize(mentionedHtml, {
@@ -464,8 +465,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         onLoad={(e) => { e.target.style.opacity = '1'; }}
                         style={{ 
                             cursor: isBot ? 'default' : (isMyMessage ? 'default' : 'pointer'),
-                            opacity: '0',
-                            transition: 'opacity 0.05s ease-out'
+                            opacity: '1',
+                            transition: 'opacity 0.08s ease-out'
                         }}
                     />
                     {/* GenderBadge removed — gender shown via border colour only */}
@@ -803,7 +804,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 <div className="youtube-embed-container">
                                     <div className="youtube-embed">
                                         <iframe 
-                                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&playsinline=1`}
+                                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://tingletap.com')}`}
                                             frameBorder="0" 
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                             referrerPolicy="strict-origin-when-cross-origin"
@@ -956,42 +957,96 @@ const getGenderBorderClass = (userOrGender) => {
 // every HomePage render (e.g. while the user is typing in the chat input).
 // ── C2: Lightweight optimistic message bubble for instant chat ─────────────
 // Rendered in place of ChatMessage for local-only sends not yet confirmed by Firestore.
-const PendingChatMessage = React.memo(function PendingChatMessage({ message, onRetry }) {
-    const { text, displayName, photoURL, fontSize, fontColor, fontFamily,
-            isBold, isItalic, _isFailed, _clientId } = message;
+const PendingChatMessage = React.memo(function PendingChatMessage({ message, isEven = true, onRetry }) {
+    const {
+        text, uid, displayName, photoURL, gender, badge, role,
+        whisperTo, isWhisper, whisperToName, _isFailed, _clientId
+    } = message;
+    const avatarGender = gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male');
+    const isRealUpload = !!photoURL && !photoURL.includes('randomuser.me');
+    const avatarUrl = isRealUpload ? photoURL : getDefaultAvatarUrl(uid, avatarGender);
+    const borderClass = avatarGender === 'female'
+        ? 'female-border'
+        : (avatarGender === 'other' ? 'transgender-border' : 'male-border');
+    const cssRole = badge ? 'badge-holder' : (role === 'user' || !role) ? 'general' : role;
+    const timestampStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     return (
-        <div style={{ opacity: 1, padding: '2px 10px 4px 8px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                <img
-                    src={photoURL || ''}
-                    alt=""
-                    width={24}
-                    height={24}
-                    style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 2 }}
-                    onError={e => { e.target.style.display = 'none'; }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: fontColor || 'inherit' }}>
-                            {displayName}
-                        </span>
-                        {_isFailed && (
-                            <span style={{ fontSize: 9, color: '#ef4444' }}>✗ Failed</span>
-                        )}
+        <div
+            className={`message-row-wrapper ${isEven ? 'row-even' : 'row-odd'}${isWhisper ? ' whisper-message' : ''}`}
+            data-message-id={message.id}
+            data-user-id={uid}
+            data-message-uid={uid}
+            data-sender-role={cssRole}
+            data-sender-badge={badge ? 'true' : 'false'}
+            data-sender-gender={avatarGender}
+            data-sender-is-bot="false"
+            style={{ opacity: _isFailed ? 0.92 : 0.98 }}
+        >
+            <div className={`message-row ${isEven ? 'row-even' : 'row-odd'}`} data-role={cssRole} data-gender={gender || 'male'}>
+                <div className={`avatar-wrapper ${borderClass}`} style={{ position: 'relative' }}>
+                    <img
+                        src={avatarUrl}
+                        alt="avatar"
+                        className={`message-avatar avatar-gender-${avatarGender}${!isRealUpload ? ' default-avatar-animated' : ''}`}
+                        style={{ cursor: 'default', opacity: 1 }}
+                    />
+                </div>
+                <div className="message-content-container" style={{ cursor: 'default' }}>
+                    <div className="message-header-row">
+                        <div className="user-info" style={{ position: 'relative' }}>
+                            <span
+                                className="message-displayname"
+                                data-user-id={uid}
+                                data-user-uid={uid}
+                                data-profile-uid={uid}
+                                data-role={cssRole}
+                                data-badge={badge ? 'true' : 'false'}
+                                data-is-bot="false"
+                                data-gender={gender || 'male'}
+                                data-username={displayName}
+                                style={{ cursor: 'default' }}
+                            >
+                                {isWhisper ? (
+                                    <span style={{ color: '#0891b2', fontStyle: 'italic' }}>
+                                        [Whisper] {displayName} » {whisperToName || 'Unknown'}
+                                    </span>
+                                ) : (
+                                    displayName
+                                )}
+                            </span>
+                            {renderUserBadge(message, 16)}
+                        </div>
+                        <div className="msg-ts-row">
+                            {_isFailed ? (
+                                <button
+                                    type="button"
+                                    onClick={() => onRetry && onRetry(_clientId)}
+                                    style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        color: '#ef4444',
+                                        background: 'rgba(239,68,68,0.1)',
+                                        border: '1px solid rgba(239,68,68,0.4)',
+                                        borderRadius: 6,
+                                        padding: '1px 7px',
+                                        cursor: 'pointer',
+                                        marginRight: 4,
+                                    }}
+                                >
+                                    ↻ Retry
+                                </button>
+                            ) : (
+                                <span style={{ fontSize: 9.5, fontWeight: 600, opacity: 0.58, marginRight: 4 }}>
+                                    Sending…
+                                </span>
+                            )}
+                            <span className="message-timestamp">{timestampStr}</span>
+                        </div>
                     </div>
-                    <ChatMessageTranslatedBody text={text} uid={message.uid} isMyMessage={true} />
-                    {_isFailed && onRetry && (
-                        <button
-                            onClick={() => onRetry(_clientId)}
-                            style={{
-                                marginTop: 3, fontSize: 10, color: '#ef4444',
-                                background: 'none', border: '1px solid #ef4444',
-                                borderRadius: 4, padding: '1px 8px', cursor: 'pointer',
-                            }}
-                        >
-                            ↻ Retry
-                        </button>
-                    )}
+                    <div className="message-body" style={{ position: 'relative' }}>
+                        {text && <ChatMessageTranslatedBody text={text} uid={uid} isMyMessage={true} />}
+                    </div>
                 </div>
             </div>
         </div>
@@ -1029,13 +1084,18 @@ const MessageList = React.memo(({
     // visibly re-stripe every row + cause scrollbar jumps).
     const msgParityRef = React.useRef(new Map()); // Map<msgId, boolean>
 
+    const nowSnapshotMs = Date.now();
     const filteredMessages = messages.filter(msg => {
         if (!msg.uid) return true;
-        // TingleBot messages are ALWAYS visible — check before any block list.
+        // TingleBot messages are ALWAYS visible until they expire (< 60s), checked before any block list.
         // Also check tinglebotType for join/leave messages written by regular users
         // (those use the real uid but must still render as TingleBot strips).
         const isTinglebotMsg = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.type?.includes('tinglebot') || msg.tinglebotType;
         if (isTinglebotMsg) {
+            // Never keep old stale TingleBot strips in UI beyond 65 seconds
+            if (!msg._localEphemeral && msg.createdAt?.toMillis) {
+                if (nowSnapshotMs - msg.createdAt.toMillis() > 65 * 1000) return false;
+            }
             // targetUid messages are private — only show to the intended recipient.
             // join/leave and broadcast notices have no targetUid and show to everyone.
             if (msg.targetUid && msg.targetUid !== loggedInUserProfile?.uid) return false;
@@ -1077,10 +1137,12 @@ const MessageList = React.memo(({
 
     return (
         <main className="chat-feed" ref={chatFeedRef} style={{marginBottom: 0, paddingBottom: 0}}>
-            {filteredMessages.map((msg) => {
+            {filteredMessages.map((msg, idx) => {
                 // C2: Render optimistic pending/failed bubbles before any other checks.
                 if (msg._isPending || msg._isFailed) {
-                    return <PendingChatMessage key={msg.id || msg._clientId} message={msg} onRetry={onRetryPending} />;
+                    const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
+                    const prevEven = prevMsg ? (msgParityRef.current.get(prevMsg.id) ?? true) : false;
+                    return <PendingChatMessage key={msg.id || msg._clientId} message={msg} isEven={!prevEven} onRetry={onRetryPending} />;
                 }
                 // TingleBot messages render as premium notification strips.
                 // Also check tinglebotType for join/leave messages (written by real users).
@@ -1131,6 +1193,19 @@ const MessageList = React.memo(({
     );
 });
 
+// Module-level deduplication maps for TingleBot room join/leave strips (survive React.StrictMode remounts)
+const _tbPendingLeaveTimers = new Map();
+const _tbRecentJoinAt = new Map();
+let _sharedNotifAudioCtx = null;
+const _getSharedAudioCtx = () => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!_sharedNotifAudioCtx || _sharedNotifAudioCtx.state === 'closed') {
+        _sharedNotifAudioCtx = new AC();
+    }
+    return _sharedNotifAudioCtx;
+};
+
 const HomePage = ({ user, roomIdOverride }) => {
     const { roomId: roomIdParam } = useParams();
     const roomId = roomIdOverride || roomIdParam;
@@ -1147,7 +1222,6 @@ const HomePage = ({ user, roomIdOverride }) => {
     // notice arrives shortly after the instant local one.
     const selfNoticeGuardRef = useRef({});
     const [newMessage, setNewMessage] = useState('');
-    const [textareaRows, setTextareaRows] = useState(1);
     const [roomName, setRoomName] = useState('');
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [loggedInUserProfile, setLoggedInUserProfile] = useState(() => {
@@ -1572,35 +1646,32 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         let authUnsub = null;
         let effectCleaned = false;
+        let activeKey = null;
 
         const doJoin = (firebaseUid) => {
-            if (effectCleaned) return; // effect was cleaned up before auth resolved
+            if (effectCleaned) return;
             joinedFirebaseUidRef.current = firebaseUid;
+            activeKey = `${roomId}_${firebaseUid}`;
 
-            // ── Reload detection ──────────────────────────────────────────────
+            // Cancel any pending leave timer from a StrictMode unmount-remount cycle
+            if (_tbPendingLeaveTimers.has(activeKey)) {
+                clearTimeout(_tbPendingLeaveTimers.get(activeKey));
+                _tbPendingLeaveTimers.delete(activeKey);
+            }
+
+            // Dedup: skip duplicate joins on page reload OR within 15s window (prevents 3x join spam)
             const joinKey = `tbt_joined_${roomId}_${firebaseUid}`;
-            if (!sessionStorage.getItem(joinKey)) {
+            const lastJoinedMs = _tbRecentJoinAt.get(activeKey) || 0;
+            if (!sessionStorage.getItem(joinKey) && (Date.now() - lastJoinedMs > 15000)) {
                 sessionStorage.setItem(joinKey, '1');
-                // Broadcast join message globally.
-                // NOTE: uid must be the real Firebase auth UID so Firestore rules
-                // accept the write. isBot/systemBot flags are omitted — those require
-                // staff auth. tinglebotType is enough for the UI to render as TingleBot.
-                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                _tbRecentJoinAt.set(activeKey, Date.now());
+                // uid must match Firebase auth UID per Firestore rules; auto-deleted in 50s
+                postTingleBotRoomMessage(roomId, {
                     text: `${name} (${roleLabel}) joined the room.`,
                     uid: firebaseUid,
-                    displayName: 'TingleBot',
                     tinglebotType: 'join',
-                    createdAt: serverTimestamp(),
-                    noReply: true,
-                    noReaction: true,
-                    noReport: true,
-                    noUnread: true,
-                }).then(ref => {
-                    if (ref?.id) {
-                        scheduledTinglebotDeletionsRef.current.add(ref.id);
-                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
-                    }
-                }).catch(e => console.error('TingleBot join error', e));
+                    omitBotFlags: true,
+                }, TINGLEBOT_TTL_MS);
             }
 
             window._tingleBotRoomId = roomId;
@@ -1610,13 +1681,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (firebaseUid) {
             doJoin(firebaseUid);
         } else {
-            // Firebase anonymous auth session not yet restored — subscribe once
-            // and send the join message as soon as the uid becomes available.
-            authUnsub = onAuthStateChanged(auth, (user) => {
-                if (user?.uid) {
+            authUnsub = onAuthStateChanged(auth, (u) => {
+                if (u?.uid) {
                     authUnsub?.();
                     authUnsub = null;
-                    doJoin(user.uid);
+                    doJoin(u.uid);
                 }
             });
         }
@@ -1626,69 +1695,45 @@ const HomePage = ({ user, roomIdOverride }) => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
             if (authUnsub) { authUnsub(); authUnsub = null; }
 
-            // Skip leave on page reload / tab close — onDisconnect handles
-            // the RTDB offline state; the chat message is just noise.
             if (window._tbPageUnloading) {
                 window._tbPageUnloading = false;
-                return; // ← no leave message on reload
+                return;
             }
 
-            // Genuine navigation away or room switch — send leave + clear key.
-            // Use the uid that was actually used for join (stored in ref); fall
-            // back to auth.currentUser?.uid if ref hasn't been set yet (edge case
-            // where auth resolved but doJoin hasn't run — leave is a no-op then).
             const usedUid = joinedFirebaseUidRef.current || auth.currentUser?.uid;
             if (!usedUid) return;
+            const cleanupKey = `${roomId}_${usedUid}`;
 
-            sessionStorage.removeItem(`tbt_joined_${roomId}_${usedUid}`);
-            addDoc(collection(db, 'rooms', roomId, 'messages'), {
-                text: `${name} (${roleLabel}) left the room.`,
-                uid: usedUid,
-                displayName: 'TingleBot',
-                tinglebotType: 'leave',
-                createdAt: serverTimestamp(),
-                noReply: true,
-                noReaction: true,
-                noReport: true,
-                noUnread: true,
-            }).then(ref => {
-                if (ref?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
-                }
-            }).catch(e => console.error('TingleBot leave error', e));
+            // Delay leave notice slightly (450ms) so React.StrictMode remount cancels it cleanly
+            const timer = setTimeout(() => {
+                _tbPendingLeaveTimers.delete(cleanupKey);
+                _tbRecentJoinAt.delete(cleanupKey);
+                sessionStorage.removeItem(`tbt_joined_${roomId}_${usedUid}`);
+                postTingleBotRoomMessage(roomId, {
+                    text: `${name} (${roleLabel}) left the room.`,
+                    uid: usedUid,
+                    tinglebotType: 'leave',
+                    omitBotFlags: true,
+                }, TINGLEBOT_TTL_MS);
+            }, 450);
+            _tbPendingLeaveTimers.set(cleanupKey, timer);
         };
     }, [roomId, loggedInUserProfile?.uid]);
 
-    // Expose global function for SettingsSidebar to send TingleBot announcements
+    // Expose global function for SettingsSidebar to send TingleBot announcements (auto-deleted ≤50s)
     useEffect(() => {
         window.handleTingleBotAnnouncement = async (text) => {
             const rid = window._tingleBotRoomId;
             if (!rid || !text?.trim()) return;
-            try {
-                const ref = await addDoc(collection(db, 'rooms', rid, 'messages'), {
-                    text: text.trim(),
-                    uid: 'tinglebot_system_official_2024',
-                    displayName: 'TingleBot',
-                    isBot: true,
-                    systemBot: true,
-                    tinglebotType: 'announcement',
-                    createdAt: serverTimestamp(),
-                    noReply: true,
-                    noReaction: true,
-                    noReport: true,
-                    noUnread: true,
-                });
-                if (ref?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(ref.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', rid, 'messages', ref.id)).catch(() => {}), 1 * 60 * 1000);
-                }
-            } catch (e) { console.error('TingleBot announcement error', e); }
+            await postTingleBotRoomMessage(rid, {
+                text: text.trim(),
+                tinglebotType: 'announcement',
+            }, TINGLEBOT_TTL_MS);
         };
         return () => { delete window.handleTingleBotAnnouncement; };
     }, []);
 
-    // Expose global function for SettingsSidebar to send TingleBot announcements to ALL rooms
+    // Expose global function for SettingsSidebar to send TingleBot announcements to ALL rooms (auto-deleted ≤50s)
     useEffect(() => {
         window.handleTingleBotAnnouncementAllRooms = async (text) => {
             if (!text?.trim()) return;
@@ -1697,19 +1742,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const promises = [];
                 roomsSnapshot.forEach((roomDoc) => {
                     promises.push(
-                        addDoc(collection(db, 'rooms', roomDoc.id, 'messages'), {
+                        postTingleBotRoomMessage(roomDoc.id, {
                             text: text.trim(),
-                            uid: 'tinglebot_system_official_2024',
-                            displayName: 'TingleBot',
-                            isBot: true,
-                            systemBot: true,
                             tinglebotType: 'announcement',
-                            createdAt: serverTimestamp(),
-                            noReply: true,
-                            noReaction: true,
-                            noReport: true,
-                            noUnread: true,
-                        })
+                        }, TINGLEBOT_TTL_MS)
                     );
                 });
                 await Promise.all(promises);
@@ -1733,7 +1769,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Holds latest profile data so presence effect can read it WITHOUT being in its dep array
     const loggedInUserProfileRef = useRef(null);
 
-    // Update last activity whenever messages change
+    // Update last activity whenever messages change & deterministically reconcile optimistic bubbles
     useEffect(() => {
         if (messages.length > 0) {
             const last = messages[messages.length - 1];
@@ -1742,6 +1778,30 @@ const HomePage = ({ user, roomIdOverride }) => {
                 lastChatActivityRef.current = Date.now();
             }
         }
+        setPendingMessages(prev => {
+            if (!prev.length) return prev;
+            const confirmedIds = new Set(messages.map(m => m.id));
+            const remaining = prev.filter(p => {
+                if (p._isFailed) return true;
+                if (p._firestoreId && confirmedIds.has(p._firestoreId)) {
+                    pendingMsgRef.current.delete(p._clientId);
+                    return false;
+                }
+                // Handle snapshots that arrive before addDoc promise resolves (matched by uid + text + recent send)
+                const matched = messages.some(m =>
+                    !m.isBot &&
+                    m.uid === p.uid &&
+                    m.text === p.text &&
+                    Math.abs((m.createdAt?.toMillis?.() || Date.now()) - p._sentAt) < 15000
+                );
+                if (matched) {
+                    pendingMsgRef.current.delete(p._clientId);
+                    return false;
+                }
+                return true;
+            });
+            return remaining.length === prev.length ? prev : remaining;
+        });
     }, [messages]);
 
     // Community rules auto-posting effect — smart scheduling (once per room via Firestore lock)
@@ -1770,17 +1830,19 @@ const HomePage = ({ user, roomIdOverride }) => {
             const idleMs = Date.now() - lastChatActivityRef.current;
             if (idleMs < IDLE_MIN_MS || idleMs > IDLE_MAX_MS) return;
 
-            // ── Smart scheduling: Firestore coordination lock ──
-            // Only ONE client instance posts the rule every 15 min per room.
+            // ── Smart scheduling: Atomic Firestore transaction lock ──
+            // Only ONE client instance across all connected staff posts the rule every 15 min per room.
             try {
                 const roomDocRef = doc(db, 'rooms', roomId);
-                const roomSnap = await getDoc(roomDocRef);
-                const roomData = roomSnap.data() || {};
-                const lastRuleAt = roomData.lastRulePostedAt?.toMillis?.() || 0;
-                // Another client already posted within the last 15 minutes — skip
-                if (Date.now() - lastRuleAt < INTERVAL_MS) return;
-                // Claim the slot by writing timestamp first (soft lock)
-                await updateDoc(roomDocRef, { lastRulePostedAt: serverTimestamp() });
+                const wonLock = await runTransaction(db, async (tx) => {
+                    const roomSnap = await tx.get(roomDocRef);
+                    const roomData = roomSnap.data() || {};
+                    const lastRuleAt = roomData.lastRulePostedAt?.toMillis?.() || 0;
+                    if (Date.now() - lastRuleAt < INTERVAL_MS) return false;
+                    tx.update(roomDocRef, { lastRulePostedAt: serverTimestamp() });
+                    return true;
+                });
+                if (!wonLock) return;
             } catch (_) { return; }
 
             // Pick next rule (no consecutive repeat)
@@ -1791,26 +1853,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             lastRuleIndexRef.current = nextIdx;
 
             try {
-                const ruleDocRef = await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                await postTingleBotRoomMessage(roomId, {
                     text: COMMUNITY_RULES[nextIdx],
-                    uid: 'tinglebot_system_official_2024',
-                    displayName: 'TingleBot',
-                    isBot: true,
-                    systemBot: true,
                     tinglebotType: 'rule',
-                    createdAt: serverTimestamp(),
-                    noReply: true,
-                    noReaction: true,
-                    noReport: true,
-                    noUnread: true,
-                });
-                // Schedule auto-deletion after 1 minute
-                if (ruleDocRef?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(ruleDocRef.id);
-                    setTimeout(() => {
-                        deleteDoc(doc(db, 'rooms', roomId, 'messages', ruleDocRef.id)).catch(() => {});
-                    }, 1 * 60 * 1000);
-                }
+                }, TINGLEBOT_TTL_MS);
             } catch (_) {}
         };
 
@@ -1963,25 +2009,39 @@ const HomePage = ({ user, roomIdOverride }) => {
     
 
 
+    // Unlock shared AudioContext on first user gesture so sound effects never silently fail
+    useEffect(() => {
+        const unlock = () => {
+            try {
+                const ctx = _getSharedAudioCtx();
+                if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+            } catch (_) {}
+        };
+        window.addEventListener('pointerdown', unlock, { passive: true });
+        window.addEventListener('keydown', unlock, { passive: true });
+        return () => {
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('keydown', unlock);
+        };
+    }, []);
+
     // ── Notification Sound Engine ─────────────────────────────────────────────
-    // Each event type has a unique multi-note signature so users can identify
-    // events by ear. Volume obeys the notificationVolume slider (0–100).
+    // Each event type has a unique multi-note signature. Uses a single shared
+    // unlocked AudioContext so rapid notifications never hit context limits.
     const playNotificationSound = async (soundType) => {
         try {
             const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
             if (!soundEnabled) return;
 
             const vol = Math.min(1, Math.max(0,
-                parseInt(localStorage.getItem('notificationVolume') || '70') / 100
+                parseInt(localStorage.getItem('notificationVolume') || '70', 10) / 100
             ));
             const check = (key) => localStorage.getItem(key) !== 'false';
 
-            // notes: [{f: frequency, t: startOffset, d: duration, w: waveform}]
             let notes;
             switch (soundType) {
                 case 'message':
                     if (!check('messageNotifications')) return;
-                    // Light two-note ascending "pop"
                     notes = [
                         { f: 523, t: 0,    d: 0.12, w: 'sine' },
                         { f: 659, t: 0.10, d: 0.14, w: 'sine' },
@@ -1989,7 +2049,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     break;
                 case 'whisper':
                     if (!check('whisperNotifications')) return;
-                    // Soft three-note rising chime — mysterious
                     notes = [
                         { f: 880,  t: 0,    d: 0.09, w: 'sine' },
                         { f: 1047, t: 0.08, d: 0.09, w: 'sine' },
@@ -1998,7 +2057,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     break;
                 case 'privateMessage':
                     if (!check('privateMessageNotifications')) return;
-                    // Warm two-note "bubble" — triangle wave for depth
                     notes = [
                         { f: 698, t: 0,    d: 0.13, w: 'triangle' },
                         { f: 880, t: 0.11, d: 0.15, w: 'triangle' },
@@ -2006,7 +2064,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     break;
                 case 'friendRequest':
                     if (!check('friendRequestNotifications')) return;
-                    // Uplifting three-note ascending fanfare
                     notes = [
                         { f: 523, t: 0,    d: 0.11, w: 'sine' },
                         { f: 659, t: 0.09, d: 0.11, w: 'sine' },
@@ -2015,7 +2072,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     break;
                 case 'mention':
                     if (!check('mentionNotifications')) return;
-                    // Attention-grabbing ping-pong double chime
                     notes = [
                         { f: 1047, t: 0,    d: 0.13, w: 'sine' },
                         { f: 1319, t: 0.11, d: 0.13, w: 'sine' },
@@ -2023,20 +2079,28 @@ const HomePage = ({ user, roomIdOverride }) => {
                     ];
                     break;
                 case 'roomEnter':
-                    // Welcome chime — always plays regardless of individual toggles
                     notes = [
                         { f: 440, t: 0,    d: 0.14, w: 'sine' },
                         { f: 554, t: 0.12, d: 0.14, w: 'sine' },
                         { f: 659, t: 0.24, d: 0.22, w: 'sine' },
                     ];
                     break;
+                case 'adminAction':
+                    notes = [
+                        { f: 587, t: 0,    d: 0.10, w: 'triangle' },
+                        { f: 440, t: 0.09, d: 0.15, w: 'triangle' },
+                    ];
+                    break;
                 default:
                     return;
             }
 
-            if (!window.AudioContext && !window.webkitAudioContext) return;
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            if (ctx.state === 'suspended') await ctx.resume();
+            const ctx = _getSharedAudioCtx();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') {
+                await ctx.resume().catch(() => {});
+            }
+            if (ctx.state !== 'running') return;
 
             notes.forEach(({ f, t, d, w }) => {
                 const osc  = ctx.createOscillator();
@@ -2047,26 +2111,19 @@ const HomePage = ({ user, roomIdOverride }) => {
                 osc.frequency.value = f;
                 const s = ctx.currentTime + t;
                 gain.gain.setValueAtTime(0, s);
-                gain.gain.linearRampToValueAtTime(vol * 0.18, s + 0.01);
+                gain.gain.linearRampToValueAtTime(Math.max(0.002, vol * 0.18), s + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.001, s + d);
                 osc.start(s);
                 osc.stop(s + d + 0.01);
             });
-
-            setTimeout(() => { try { ctx.close(); } catch (_) {} }, 900);
         } catch (_) {}
     };
-    // Expose globally so SettingsSidebar preview button can trigger a test sound
     window.playNotificationSound = playNotificationSound;
 
     
 
 
-    useEffect(() => {
-        // Count newlines to determine rows needed (no DOM measurement needed)
-        const lines = (newMessage.match(/\n/g) || []).length + 1;
-        setTextareaRows(Math.min(Math.max(1, lines), 5));
-    }, [newMessage]);
+    // Textarea height stays managed inline in onChange + reset in handleSendMessage (zero extra re-renders)
 
     // Load friends for the profile being viewed (independent from logged-in user's friends)
     useEffect(() => {
@@ -3479,28 +3536,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                     }
                 }
 
-                // ── Auto-delete TingleBot messages (owner only, creation-time timers handle other clients) ──
-                // Only the owner client cleans up messages that slipped past the creation-time timer.
-                // We never schedule deletion with <30s remaining to avoid premature disappearance for others.
-                if (loggedInUserProfile?.role === 'owner') {
-                    newMessages.forEach(msg => {
-                        // Include join/leave messages that now use real uids (detected via tinglebotType)
-                        const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.tinglebotType;
-                        if (!isBot || !msg.id) return;
-                        if (scheduledTinglebotDeletionsRef.current.has(msg.id)) return;
-                        scheduledTinglebotDeletionsRef.current.add(msg.id);
-                        const createdMs = msg.createdAt?.toMillis?.() || Date.now();
-                        const ageMs = Date.now() - createdMs;
-                        const remainingMs = 1 * 60 * 1000 - ageMs;
-                        if (remainingMs <= 0) {
-                            deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
-                        } else if (remainingMs > 30 * 1000) {
-                            setTimeout(() => {
-                                deleteDoc(doc(db, 'rooms', roomId, 'messages', msg.id)).catch(() => {});
-                            }, remainingMs);
-                        }
-                    });
-                }
+                // ── Auto-delete ALL TingleBot messages within 50s (never bloat DB) ──
+                // Any staff member OR the message's creator schedules cleanup, eliminating any dead zone.
+                const canCleanBotMsgs = ['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role);
+                newMessages.forEach(msg => {
+                    const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.tinglebotType;
+                    if (!isBot || !msg.id) return;
+                    if (!canCleanBotMsgs && msg.uid !== myUid) return;
+                    const createdMs = msg.createdAt?.toMillis?.() || Date.now();
+                    const ageMs = Date.now() - createdMs;
+                    const remainingMs = Math.max(0, TINGLEBOT_TTL_MS - ageMs);
+                    scheduleTingleBotDeletion(roomId, msg.id, remainingMs);
+                });
 
                 // ── Keep only latest 25 user messages (delete extras from Firestore) ──
                 // Only the sender of the most-recent message prunes — avoids N-client write storms.
@@ -4396,69 +4443,67 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
-            // ── Anti-Spam & Abuse Detection ──────────────────────────────
-            // Owners are never automatically moderated.
+            const rawMessageText = newMessage;
+            const trimmedText = rawMessageText.trim();
+
+            // ── Instant 0ms Synchronous Anti-Spam & Abuse Guard ──────────
+            // Owners bypass auto-mod; spam checks run in <1ms in memory without blocking UI.
             if (!isGuest && uid && (role || userProfile?.role || 'guest') !== 'owner') {
-                // Spam check
-                const spamResult = await checkSpam(uid, newMessage.trim(), roomId);
+                const spamResult = checkSpamSync(uid, trimmedText, roomId);
                 if (spamResult.isSpam) {
-                    setNewMessage(''); // Always clear input even on spam block
-                    // Note: TingleBot warning notice is posted by processAutoMod
-                    // (running on all snapshot listeners) via the server-side
-                    // post-automod-notice Netlify function. No direct client write here
-                    // to avoid the < 1 s optimistic-flash / Firestore rollback.
-                    return;
-                }
-
-                // Abuse / toxicity check
-                const abuseResult = detectAbuse(newMessage.trim(), role || userProfile?.role || 'guest', { roomName });
-                if (abuseResult.isAbusive) {
-                    // Send the message first so we have the doc ref, then delete it
-                    const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
                     setNewMessage('');
-                    await handleAbuseViolation(uid, newMessage.trim(), msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
-                    // Notice is posted by processAutoMod via server-side Netlify function —
-                    // no direct postNotice() call here to avoid client auth rule violations.
-                    setTimeout(() => scrollToBottom(true), 100);
                     return;
                 }
 
-                // Reward clean message with a tiny trust bump (throttled inside trustSystem)
-                updateTrustScore(uid, 'MESSAGE_SENT');
-            }
-            // ────────────────────────────────────────────────────────────
+                const abuseResult = detectAbuse(trimmedText, role || userProfile?.role || 'guest', { roomName });
+                if (abuseResult.isAbusive) {
+                    setNewMessage('');
+                    if (textareaRef.current) textareaRef.current.style.height = '';
+                    const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
+                    await handleAbuseViolation(uid, trimmedText, msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
+                    setTimeout(() => scrollToBottom(true), 60);
+                    return;
+                }
 
-            // Instant 0ms input reset — user never waits for network to type next message
+                // Reward clean message asynchronously
+                Promise.resolve().then(() => updateTrustScore(uid, 'MESSAGE_SENT')).catch(() => {});
+            }
+
+            // Instant 0ms input reset + optimistic bubble before any Firestore write
             setNewMessage('');
-            setTextareaRows(1);
             if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto';
+                textareaRef.current.style.height = '';
                 textareaRef.current.focus();
             }
             setShowTagPicker(false);
             setActiveTagQuery(null);
 
-            // C2: Inject optimistic bubble — sender sees their message instantly with 100% normal appearance
-            _pendingMsgClientId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            const sentAt = Date.now();
+            _pendingMsgClientId = `pending_${sentAt}_${Math.random().toString(36).slice(2, 7)}`;
             pendingMsgRef.current.set(_pendingMsgClientId, { messageData: { ...messageData }, roomId });
             setPendingMessages(prev => [...prev, {
                 ...messageData,
                 id: _pendingMsgClientId,
                 _clientId: _pendingMsgClientId,
                 _isPending: true,
-                createdAt: { toMillis: () => Date.now() },
+                _sentAt: sentAt,
+                createdAt: { toMillis: () => sentAt },
             }]);
 
-            // Force immediate auto-scroll to show the latest message
             scrollToBottom(true);
 
-            await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
-
-            // Remove pending bubble after snapshot has had time to arrive
+            const docRef = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
+            const resolvedId = docRef?.id;
+            const targetClientId = _pendingMsgClientId;
+            if (resolvedId) {
+                setPendingMessages(prev => prev.map(m =>
+                    m._clientId === targetClientId ? { ...m, _firestoreId: resolvedId } : m
+                ));
+            }
             setTimeout(() => {
-                setPendingMessages(prev => prev.filter(m => m._clientId !== _pendingMsgClientId));
-                pendingMsgRef.current.delete(_pendingMsgClientId);
-            }, 1200);
+                setPendingMessages(prev => prev.filter(m => m._clientId !== targetClientId || m._isFailed));
+                pendingMsgRef.current.delete(targetClientId);
+            }, 20000);
 
             // ── Achievement check (fire-and-forget, registered users only) ──
             if (!isGuest && uid && loggedInUserProfile && !loggedInUserProfile.isGuest) {
@@ -4756,19 +4801,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             remove(ref(rtdb, `status/${target.uid}/currentRoomId`));
             playNotificationSound('adminAction');
             const botMsg = `${target.displayName} has been kicked from ${targetRooms.length === 1 ? (roomName || 'this room') : `${targetRooms.length} rooms`}${actionData.reason ? ` — ${actionData.reason}` : ''}.`;
-            addDoc(collection(db, 'rooms', roomId, 'messages'), {
-                text: botMsg,
-                uid: 'tinglebot_system_official_2024',
-                displayName: 'TingleBot',
-                isBot: true, systemBot: true, tinglebotType: 'kicked',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).then(r => {
-                if (r?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(r.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
-                }
-            }).catch(() => {});
+            postTingleBotRoomMessage(roomId, { text: botMsg, tinglebotType: 'kicked' }, TINGLEBOT_TTL_MS);
             setHomePageKickModal({ visible: false, user: null });
         } catch (error) {
             setHomePageKickModal({ visible: false, user: null });
@@ -4780,21 +4813,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             await deleteDoc(doc(db, 'rooms', roomId, 'kickedUsers', targetUid));
             await updateDoc(doc(db, 'users', targetUid), { kickedFrom: null }).catch(() => {});
             playNotificationSound('adminAction');
-            addDoc(collection(db, 'rooms', roomId, 'messages'), {
+            postTingleBotRoomMessage(roomId, {
                 text: `${targetDisplayName} has been unkicked and can rejoin the room.`,
-                uid: 'tinglebot_system_official_2024',
-                displayName: 'TingleBot',
-                isBot: true,
-                systemBot: true,
                 tinglebotType: 'system',
-                createdAt: serverTimestamp(),
-                noReply: true, noReaction: true, noReport: true, noUnread: true,
-            }).then(r => {
-                if (r?.id) {
-                    scheduledTinglebotDeletionsRef.current.add(r.id);
-                    setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
-                }
-            }).catch(() => {});
+            }, TINGLEBOT_TTL_MS);
         } catch (err) {
             pt.error('Unkick failed. Please try again.');
         }
@@ -4809,21 +4831,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                     "mutedInfo.isMuted": true,
                     "mutedInfo.mutedByRole": loggedInUserProfile.role
                 });
-                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                postTingleBotRoomMessage(roomId, {
                     text: `${userToMute.displayName} has been muted.`,
-                    uid: 'tinglebot_system_official_2024',
-                    displayName: 'TingleBot',
-                    isBot: true,
-                    systemBot: true,
                     tinglebotType: 'muted',
-                    createdAt: serverTimestamp(),
-                    noReply: true, noReaction: true, noReport: true, noUnread: true,
-                }).then(r => {
-                    if (r?.id) {
-                        scheduledTinglebotDeletionsRef.current.add(r.id);
-                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
-                    }
-                }).catch(() => {});
+                }, TINGLEBOT_TTL_MS);
             } catch (error) {
                 pt.error("Could not mute user. Check permissions.");
             }
@@ -4845,21 +4856,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             try {
                 await updateDoc(userToBanRef, { isBanned: true });
                 remove(ref(rtdb, `status/${userToBan.uid}`));
-                addDoc(collection(db, 'rooms', roomId, 'messages'), {
+                postTingleBotRoomMessage(roomId, {
                     text: `${userToBan.displayName} has been banned.`,
-                    uid: 'tinglebot_system_official_2024',
-                    displayName: 'TingleBot',
-                    isBot: true,
-                    systemBot: true,
                     tinglebotType: 'banned',
-                    createdAt: serverTimestamp(),
-                    noReply: true, noReaction: true, noReport: true, noUnread: true,
-                }).then(r => {
-                    if (r?.id) {
-                        scheduledTinglebotDeletionsRef.current.add(r.id);
-                        setTimeout(() => deleteDoc(doc(db, 'rooms', roomId, 'messages', r.id)).catch(() => {}), 1 * 60 * 1000);
-                    }
-                }).catch(() => {});
+                }, TINGLEBOT_TTL_MS);
             } catch (error) {
                 pt.error("Could not ban user. Check permissions.");
             }
@@ -7387,14 +7387,20 @@ const HomePage = ({ user, roomIdOverride }) => {
             m._clientId === clientId ? { ...m, _isPending: true, _isFailed: false } : m
         ));
         try {
-            await addDoc(collection(db, 'rooms', storedRoomId, 'messages'), {
+            const docRef = await addDoc(collection(db, 'rooms', storedRoomId, 'messages'), {
                 ...messageData,
                 createdAt: serverTimestamp(),
             });
+            const resolvedId = docRef?.id;
+            if (resolvedId) {
+                setPendingMessages(prev => prev.map(m =>
+                    m._clientId === clientId ? { ...m, _firestoreId: resolvedId } : m
+                ));
+            }
             setTimeout(() => {
-                setPendingMessages(prev => prev.filter(m => m._clientId !== clientId));
+                setPendingMessages(prev => prev.filter(m => m._clientId !== clientId || m._isFailed));
                 pendingMsgRef.current.delete(clientId);
-            }, 1200);
+            }, 20000);
         } catch {
             setPendingMessages(prev => prev.map(m =>
                 m._clientId === clientId ? { ...m, _isPending: false, _isFailed: true } : m
@@ -7659,8 +7665,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
                                   )
                                 : base;
-                            // C2: Append pending/failed optimistic bubbles after all confirmed messages.
-                            return pendingMessages.length ? [...sorted, ...pendingMessages] : sorted;
+                            // C2: Append only unconfirmed pending/failed optimistic bubbles.
+                            if (!pendingMessages.length) return sorted;
+                            const confirmedIds = new Set(sorted.map(m => m.id));
+                            const unconfirmed = pendingMessages.filter(p =>
+                                p._isFailed || !(p._firestoreId && confirmedIds.has(p._firestoreId))
+                            );
+                            return unconfirmed.length ? [...sorted, ...unconfirmed] : sorted;
                         })()}
                         blockedUsers={blockedUsers}
                         usersWhoBlockedMe={usersWhoBlockedMe}
@@ -9016,12 +9027,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                     </button>
                     {/* Whisper Chip */}
                     {whisperTarget && (
-                        <div className="whisper-chip" title={`Whispering to ${whisperTarget.displayName}`}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
-                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                        <div className="whisper-chip" title={`Whispering privately to ${whisperTarget.displayName}`}>
+                            <span className="whisper-chip-badge" aria-hidden="true">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
+                                    <rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" strokeWidth="2.2"/>
+                                    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                                </svg>
+                            </span>
                             <span className="whisper-chip-label">
-                                <span className="whisper-chip-to">To</span>
+                                <span className="whisper-chip-to">Whisper</span>
                                 <span className="whisper-chip-name">{whisperTarget.displayName}</span>
                             </span>
                             <button
@@ -9031,8 +9045,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 title="Cancel whisper"
                                 aria-label="Cancel whisper"
                             >
-                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                                    <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round"/>
+                                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                                 </svg>
                             </button>
                         </div>
@@ -9137,7 +9151,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <textarea
                             ref={textareaRef}
                             className="premium-input-field premium-textarea"
-                            rows={textareaRows}
+                            rows={1}
                             maxLength={MAX_CHAT_CHARS}
                             placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Message this room...')}
                             value={newMessage}

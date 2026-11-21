@@ -4,6 +4,8 @@
 
 .rl-root {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #f0ecff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1e1b4b;
@@ -86,8 +88,10 @@
 ══════════════════════════════════════════════════════ */
 .rl-main {
   position: relative; z-index: 2;
+  width: 100%;
+  flex: 1 0 auto;
   max-width: 680px; margin: 0 auto;
-  padding: 40px 18px 110px;
+  padding: 40px 18px 36px;
   display: flex; flex-direction: column; gap: 28px;
 }
 
@@ -309,7 +313,7 @@
    RESPONSIVE
 ══════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .rl-main { padding: 28px 14px 120px; gap: 22px; }
+  .rl-main { padding: 28px 14px 32px; gap: 22px; }
   .rl-brand-logo { width: 72px; height: 72px; border-radius: 22px; }
   .rl-brand-name { font-size: 36px; }
   .rl-admin-float { width: 42px; height: 42px; }

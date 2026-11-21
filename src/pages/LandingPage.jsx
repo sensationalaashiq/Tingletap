@@ -429,7 +429,7 @@ const LandingPage = () => {
           <div className="lp-hero-btns lp-anim-up lp-d3">
             <button className="lp-cta-main" onClick={() => navigate('/rooms')}>
               <span>Start Chatting Now</span>
-              <LuxuryWhiteGem size={18} />
+              <LuxuryWhiteGem size={17} />
               <span className="lp-shimmer" aria-hidden="true" />
             </button>
             <button className="lp-cta-outline" onClick={() => navigate('/signup')}>
@@ -444,7 +444,7 @@ const LandingPage = () => {
         <div className="lp-container">
           <div className="lp-sec-head lp-anim-up">
             <div className="lp-badge">
-              <LuxuryBolt size={14} />
+              <LuxuryBolt size={13} />
               <span>Features</span>
             </div>
             <h2 className="lp-sec-h2">Everything You Need to <span className="lp-grad">Chat Like a Pro</span></h2>
@@ -452,17 +452,24 @@ const LandingPage = () => {
           </div>
           <div className="lp-features-grid">
             {features.map(({ Icon, title, desc, tags, bg, color }, i) => (
-              <div key={i} className="lp-feat-card lp-anim-up" style={{ animationDelay: `${i * 0.07}s` }}>
-                <div className="lp-feat-icon-wrap" style={{ background: bg }}>
-                  <Icon size={30} />
+              <div key={i} className="lp-feat-card lp-anim-up" style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}>
+                <div className="lp-feat-top">
+                  <div className="lp-feat-icon-wrap" style={{ background: bg }}>
+                    <Icon size={24} />
+                  </div>
+                  <div className="lp-feat-head-meta">
+                    <h3 className="lp-feat-title">{title}</h3>
+                    <div className="lp-feat-tags" style={{ color }}>
+                      {tags.map((t, j) => (
+                        <React.Fragment key={j}>
+                          {j > 0 && <span className="lp-tag-dot" aria-hidden="true">·</span>}
+                          <span className="lp-tag-text">{t}</span>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <h3 className="lp-feat-title">{title}</h3>
                 <p className="lp-feat-desc">{desc}</p>
-                <div className="lp-feat-tags">
-                  {tags.map((t, j) => (
-                    <span key={j} className="lp-tag" style={{ color, background: `${color}14`, borderColor: `${color}38` }}>{t}</span>
-                  ))}
-                </div>
               </div>
             ))}
           </div>
@@ -474,7 +481,7 @@ const LandingPage = () => {
         <div className="lp-container">
           <div className="lp-sec-head lp-anim-up">
             <div className="lp-badge">
-              <GoldTrophy size={14} />
+              <GoldTrophy size={13} />
               <span>Plans</span>
             </div>
             <h2 className="lp-sec-h2">Choose Your <span className="lp-grad">Experience Level</span></h2>
@@ -485,11 +492,11 @@ const LandingPage = () => {
               <div
                 key={i}
                 className={`lp-tier${t.featured ? ' lp-tier-featured' : ''} lp-anim-up`}
-                style={{ '--tb': t.border, '--tg': t.glow, animationDelay: `${i * 0.1}s` }}
+                style={{ '--tb': t.border, '--tg': t.glow, animationDelay: `${i * 0.08}s` }}
               >
                 {t.featured && (
                   <div className="lp-tier-badge">
-                    <StarBadge size={13} />
+                    <StarBadge size={12} />
                     <span>Most Popular</span>
                   </div>
                 )}
@@ -503,14 +510,14 @@ const LandingPage = () => {
                   {t.items.map(([label, ok], j) => (
                     <li key={j} className={`lp-tier-item${ok ? '' : ' lp-no'}`}>
                       <span className="lp-tier-ic" style={{ color: ok ? t.color : '#94a3b8', background: ok ? `${t.color}14` : 'rgba(148,163,184,0.1)' }}>
-                        {ok ? <CheckMark size={13} /> : <CrossMark size={11} />}
+                        {ok ? <CheckMark size={12} /> : <CrossMark size={10} />}
                       </span>
                       <span>{label}</span>
                     </li>
                   ))}
                 </ul>
                 <button
-                  className="lp-tier-btn"
+                  className={`lp-tier-btn${t.featured ? ' lp-tier-btn--featured' : ''}`}
                   style={t.btnStyle}
                   onClick={() => {
                     if (t.name === 'Staff Access') { setShowStaffModal(true); return; }
@@ -530,7 +537,7 @@ const LandingPage = () => {
         <div className="lp-container">
           <div className="lp-cta-inner lp-anim-up">
             <div className="lp-cta-icon-wrap">
-              <IconCTAHeart size={48} />
+              <IconCTAHeart size={40} />
             </div>
             <h2 className="lp-cta-h2">
               Ready to Join India's Best<br />
@@ -539,10 +546,10 @@ const LandingPage = () => {
             <p className="lp-cta-p">
               Our community is growing every day. Join free today.
             </p>
-            <div className="lp-hero-btns" style={{ maxWidth: 460, margin: '0 auto' }}>
+            <div className="lp-hero-btns" style={{ maxWidth: 480, margin: '0 auto' }}>
               <button className="lp-cta-main" onClick={() => navigate('/rooms')}>
                 <span>Start Chatting Now</span>
-                <LuxuryWhiteGem size={18} />
+                <LuxuryWhiteGem size={17} />
                 <span className="lp-shimmer" aria-hidden="true" />
               </button>
               <button className="lp-cta-outline" onClick={() => navigate('/login')}>

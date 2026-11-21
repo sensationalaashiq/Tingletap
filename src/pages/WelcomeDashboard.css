@@ -4,7 +4,7 @@
 .wd-root *, .wd-root *::before, .wd-root *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
 /* ── Root ── */
-.wd-root { min-height: 100vh; background: #f0ecff; font-family: 'Inter', sans-serif; color: #1e1b4b; position: relative; overflow-x: hidden; }
+.wd-root { min-height: 100vh; display: flex; flex-direction: column; background: #f0ecff; font-family: 'Inter', sans-serif; color: #1e1b4b; position: relative; overflow-x: hidden; }
 
 /* ── Ambient ── */
 .wd-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -113,8 +113,8 @@
 /* ══════════════════════════════════════════════════════
    HERO MAIN
 ══════════════════════════════════════════════════════ */
-.wd-main { position:relative; z-index:1; max-width:640px; margin:0 auto; padding:112px 24px 24px; display:flex; flex-direction:column; gap:26px; min-height:100vh; }
-.wd-copyright-spacer { height:60px; flex-shrink:0; }
+.wd-main { position:relative; z-index:1; width:100%; flex:1 0 auto; max-width:640px; margin:0 auto; padding:112px 24px 20px; display:flex; flex-direction:column; gap:26px; }
+.wd-copyright-spacer { height:12px; flex-shrink:0; }
 
 .wd-version-pill { display:inline-flex; align-items:center; gap:7px; padding:6px 16px; border-radius:999px; background:rgba(255,255,255,.75); border:1.5px solid rgba(99,102,241,.18); font-size:11.5px; font-weight:700; color:#4f46e5; letter-spacing:.06em; text-transform:uppercase; width:fit-content; animation:wdFadeUp .6s ease both; }
 

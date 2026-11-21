@@ -1454,10 +1454,13 @@ html.dark-theme-variant .bp-password-modal {
 ══════════════════════════════════════════ */
 .bp-yt-hidden-player {
   position: fixed;
-  left: -9999px; top: -9999px;
+  right: 0; bottom: 0;
   width: 1px; height: 1px;
-  visibility: hidden;
+  opacity: 0.01;
+  visibility: visible;
+  overflow: hidden;
   pointer-events: none;
+  z-index: -1;
 }
 
 /* ══════════════════════════════════════════

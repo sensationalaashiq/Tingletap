@@ -238,7 +238,7 @@ html.dark-mode .message-form textarea::placeholder,
 html.dark-mode .message-form input::placeholder { color: #4a5268 !important; }
 html.dark-mode .message-form button,
 html.dark-mode .message-form .icon-btn { color: var(--icon-color) !important; }
-html.dark-mode .message-form button svg,
+html.dark-mode .message-form button:not(.hp-composer-send):not(.hp-composer-attach) svg,
 html.dark-mode .message-form .icon-btn svg { stroke: var(--icon-color) !important; fill: none !important; }
 
 /* Luxury input container */
@@ -315,17 +315,17 @@ html.dark-mode .whisper-chip-close {
   color: #e9d5ff !important;
 }
 
-/* New-style whisper chip (input bar bottom) */
+/* Whisper chip (input bar) */
 html.dark-mode .whisper-chip {
-  background: rgba(91,33,182,0.25) !important;
-  border-color: rgba(139,92,246,0.5) !important;
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 55%, #881337 100%) !important;
+  border-color: rgba(216, 180, 254, 0.45) !important;
 }
-html.dark-mode .whisper-chip-to   { color: #a78bfa !important; }
-html.dark-mode .whisper-chip-name { color: #e9d5ff !important; }
+html.dark-mode .whisper-chip-to   { color: #e9d5ff !important; }
+html.dark-mode .whisper-chip-name { color: #ffffff !important; }
 html.dark-mode .whisper-chip .whisper-chip-close {
-  background: rgba(109,40,217,0.25) !important;
-  border-color: rgba(139,92,246,0.4) !important;
-  color: #c4b5fd !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
 }
 
 /* whisper message bubble */
@@ -408,10 +408,11 @@ html.dark-mode .settings-close-btn {
 }
 html.dark-mode .settings-close-btn:hover { color: #ef4444 !important; background: rgba(239,68,68,0.12) !important; }
 html.dark-mode .settings-tabs { background: #0d0d1e !important; border-right-color: #2d2d4a !important; }
-html.dark-mode .settings-tab { color: #5f6880 !important; background: transparent !important; border-left-color: transparent !important; }
-html.dark-mode .settings-tab:hover { color: #c4b5fd !important; background: rgba(99,102,241,0.1) !important; border-left-color: rgba(99,102,241,0.35) !important; }
-html.dark-mode .settings-tab.active { color: #a78bfa !important; background: rgba(99,102,241,0.15) !important; border-left-color: #7c3aed !important; }
-html.dark-mode .settings-tab svg { stroke: currentColor !important; fill: none !important; }
+html.dark-mode .settings-tab { color: #8c96b2 !important; background: transparent !important; border-left-color: transparent !important; }
+html.dark-mode .settings-tab:hover { color: #e9d5ff !important; background: rgba(99,102,241,0.14) !important; border-left-color: rgba(139,92,246,0.45) !important; }
+html.dark-mode .settings-tab.active { color: #ffffff !important; background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%) !important; border-left-color: #c4b5fd !important; }
+html.dark-mode .settings-tab.active span { color: #ffffff !important; }
+html.dark-mode .settings-tab svg { opacity: 1 !important; }
 html.dark-mode .settings-body { background: transparent !important; }
 html.dark-mode .settings-content { background: #0f0f1a !important; }
 html.dark-mode .settings-tab-content h3 { color: #818cf8 !important; }

@@ -173,6 +173,40 @@ const RadioPlayer = ({ isOpen, onClose }) => {
     }
   }, [volume]);
 
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (isPlaying && currentStation) {
+      try {
+        navigator.mediaSession.metadata = new window.MediaMetadata({
+          title: currentStation.name || 'TingleTap Live Radio',
+          artist: currentStation.genre || 'Live Radio Stream',
+          album: 'TingleTap FM',
+        });
+        navigator.mediaSession.playbackState = 'playing';
+        navigator.mediaSession.setActionHandler('play', () => {
+          audioRef.current?.play?.().catch(() => {});
+          setIsPlaying(true);
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          audioRef.current?.pause?.();
+          setIsPlaying(false);
+        });
+        navigator.mediaSession.setActionHandler('stop', () => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          setIsPlaying(false);
+          setCurrentStation(null);
+        });
+      } catch {}
+    } else if (!isPlaying && currentStation) {
+      try {
+        navigator.mediaSession.playbackState = 'paused';
+      } catch {}
+    }
+  }, [isPlaying, currentStation]);
+
   const playStation = async (station) => {
     if (audioRef.current && currentStation?.id === station.id && isPlaying) {
       audioRef.current.pause();

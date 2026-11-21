@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import useDraggable from '../hooks/useDraggable';
+import { pt } from '../utils/premiumToast';
 import './PrivateAudioMiniPopup.css';
 
 const PrivateAudioMiniPopup = React.memo(({
@@ -39,8 +40,6 @@ const PrivateAudioMiniPopup = React.memo(({
         },
         handle: '.mini-audio-popup'
     });
-
-    if (!isOpen) return null;
 
     // Handle click outside to close popup
     useEffect(() => {
@@ -118,12 +117,12 @@ const PrivateAudioMiniPopup = React.memo(({
         if (!file) return;
 
         if (file.size > 10 * 1024 * 1024) {
-            alert("Audio size must be less than 10MB!");
+            pt.error("Audio size must be less than 10MB!");
             return;
         }
 
         if (!file.type.startsWith('audio/')) {
-            alert("Please select a valid audio file!");
+            pt.error("Please select a valid audio file!");
             return;
         }
 
@@ -223,13 +222,13 @@ const PrivateAudioMiniPopup = React.memo(({
                     console.log("✅ Recording completed successfully");
                 } catch (error) {
                     console.error("❌ Error processing recording:", error);
-                    alert("Error processing audio recording. Please try again.");
+                    pt.error("Error processing audio recording. Please try again.");
                 }
             };
 
             recorder.onerror = (e) => {
                 console.error("❌ MediaRecorder error:", e.error);
-                alert("Recording error: " + (e.error?.message || "Unknown error occurred. Please try again."));
+                pt.error("Recording error: " + (e.error?.message || "Unknown error occurred. Please try again."));
                 
                 // Enhanced cleanup on error
                 try {
@@ -286,15 +285,15 @@ const PrivateAudioMiniPopup = React.memo(({
                     setAudioStream(basicStream);
                     // Continue with basic recording setup...
                 } catch (fallbackError) {
-                    errorMessage = "❌ Could not access microphone with any settings. Please check your device.";
-                    alert(errorMessage);
+                    errorMessage = "Could not access microphone with any settings. Please check your device.";
+                    pt.error(errorMessage);
                     return;
                 }
             } else {
                 errorMessage += "Please check your microphone settings and try again.";
             }
             
-            alert(errorMessage);
+            pt.error(errorMessage);
             
             // Ensure state is properly reset on error
             setIsRecording(false);
@@ -323,10 +322,10 @@ const PrivateAudioMiniPopup = React.memo(({
                 handleClose();
             } catch (error) {
                 console.error("Error sending audio:", error);
-                alert("Failed to send audio. Please try again.");
+                pt.error("Failed to send audio. Please try again.");
             }
         } else {
-            alert("No audio to send. Please record or select an audio file.");
+            pt.warn("No audio to send. Please record or select an audio file.");
         }
     };
 
@@ -526,9 +525,9 @@ const PrivateAudioMiniPopup = React.memo(({
                 setIsPlaying(false);
                 
                 if (error.name === 'NotAllowedError') {
-                    alert("Audio playback was blocked. Please try again after interacting with the page.");
+                    pt.warn("Audio playback was blocked. Please tap again after interacting with the page.");
                 } else {
-                    alert("Error playing audio. Please try recording again.");
+                    pt.error("Error playing audio. Please try recording again.");
                 }
             }
         };
@@ -558,7 +557,7 @@ const PrivateAudioMiniPopup = React.memo(({
         const handleError = (e) => {
             console.error("Audio playback error:", e);
             setIsPlaying(false);
-            alert("Audio playback error. Please try again.");
+            pt.error("Audio playback error. Please try again.");
         };
 
         const formatTime = (time) => {
@@ -609,6 +608,8 @@ const PrivateAudioMiniPopup = React.memo(({
             </div>
         );
     };
+
+    if (!isOpen) return null;
 
     return (
         <div

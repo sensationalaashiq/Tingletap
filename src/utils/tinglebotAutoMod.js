@@ -819,20 +819,13 @@ export const processAutoMod = async (msg, roomId, currentUid = null, isStaff = f
     // Firestore real-time listener delivers it to the violator almost instantly.
     // targetUid ensures the client-side filter shows it only to the violator.
     if (_noticeText) {
-        addDoc(collection(db, 'rooms', roomId, 'messages'), {
-            text:          _noticeText,
-            uid:           'tinglebot_system_official_2024',
-            displayName:   'TingleBot',
-            isBot:         true,
-            systemBot:     true,
-            tinglebotType: _noticeTinglebotType,
-            targetUid:     uid,
-            createdAt:     serverTimestamp(),
-            noReply:       true,
-            noReaction:    true,
-            noReport:      true,
-            noUnread:      true,
-        }).catch(() => {});
+        import('./tinglebotAutoDelete').then(({ postTingleBotRoomMessage }) =>
+            postTingleBotRoomMessage(roomId, {
+                text: _noticeText,
+                tinglebotType: _noticeTinglebotType,
+                targetUid: uid,
+            })
+        ).catch(() => {});
     }
 
     if (shouldDelete) await removeMessage(roomId, msg.id);
