@@ -489,11 +489,11 @@ const Sidebar = ({
       return true;
     }).sort((a, b) => {
       const roleRank = (u) => {
-        const role = u.role?.toLowerCase();
-        if (role === 'owner')     return 5;
-        if (role === 'admin')     return 4;
-        if (role === 'moderator') return 3;
-        if (role === 'guest')     return 0;
+        const role = (u.role || '').toLowerCase().trim();
+        if (role === 'owner' || role === 'superowner' || role === 'godfather') return 5;
+        if (role === 'admin' || role === 'high_council' || role === 'high council') return 4;
+        if (role === 'moderator' || role === 'mod' || role === 'guardian') return 3;
+        if (role === 'guest' || u.isGuest) return 0;
         // registered user — badge holders above regular members
         return (u.badge && u.badge !== '') ? 2 : 1;
       };
@@ -505,31 +505,36 @@ const Sidebar = ({
   }, [liveUsers, searchQuery, genderFilter]);
 
   /* -- role-based mod permissions (for viewer) -- */
-  const viewerRole = loggedInUserProfile?.role?.toLowerCase();
-  const isStaff = ['owner', 'admin', 'moderator'].includes(viewerRole);
+  const viewerRole = (loggedInUserProfile?.role || '').toLowerCase().trim();
+  const isStaff = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(viewerRole);
 
   const canModerate = (targetUser) => {
     if (!isStaff) return false;
-    const targetRole = targetUser.role?.toLowerCase();
-    const hierarchy = { owner: 4, admin: 3, moderator: 2, user: 1, guest: 0 };
+    const targetRole = (targetUser.role || '').toLowerCase().trim();
+    const hierarchy = {
+      owner: 4, superowner: 4, godfather: 4,
+      admin: 3, high_council: 3, 'high council': 3,
+      moderator: 2, mod: 2, guardian: 2,
+      user: 1, guest: 0,
+    };
     const vLevel = hierarchy[viewerRole] || 0;
-    const tLevel = hierarchy[targetRole] || 1;
+    const tLevel = hierarchy[targetRole] ?? (targetUser.isGuest ? 0 : 1);
     return vLevel > tLevel;
   };
 
   const canDoMute = (targetUser) => {
     if (!canModerate(targetUser)) return false;
-    return ['owner', 'admin', 'moderator'].includes(viewerRole);
+    return isStaff;
   };
 
   const canDoKick = (targetUser) => {
     if (!canModerate(targetUser)) return false;
-    return ['owner', 'admin', 'moderator'].includes(viewerRole);
+    return isStaff;
   };
 
   const canDoBan = (targetUser) => {
     if (!canModerate(targetUser)) return false;
-    return ['owner', 'admin'].includes(viewerRole);
+    return ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council'].includes(viewerRole);
   };
 
   /* ──────────────────────────────────────────────────────────────────────── */
@@ -661,10 +666,10 @@ const Sidebar = ({
                     </button>
                   )}
                   {(() => {
-                    const uRole = loggedInUserProfile.role?.toLowerCase();
+                    const uRole = (loggedInUserProfile.role || '').toLowerCase().trim();
                     const hasBadge = loggedInUserProfile.badge && loggedInUserProfile.badge !== '';
                     const isGuest = auth.currentUser?.isAnonymous || uRole === 'guest';
-                    if (!isGuest && (hasBadge || ['admin','owner','moderator'].includes(uRole))) return (
+                    if (!isGuest && (hasBadge || ['admin','owner','moderator','superowner','godfather','high_council','high council','guardian','mod'].includes(uRole))) return (
                       <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); setDropdownUser(null); }}>
                         <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                         Change Status

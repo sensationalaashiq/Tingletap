@@ -15,11 +15,12 @@ import { db } from '../firebase/config';
 // NEVER include: email, lastIP, lastIPUpdate, lastDeviceId, lastDeviceInfo,
 // lastUserAgent, fcmToken, pushToken, autoModHistory, trustData, blockedUsers,
 // friends, fontPreferences, messageFontPreferences, usernameFontPreferences,
-// notificationPreferences, banReason, bannedBy, bannedAt, mutedInfo, autoModStats.
+// friends array is intentionally mirrored to publicProfiles so any viewer
+// can see accurate friend counts & lists on profile modals without reading private users/{uid}.
 const PUBLIC_FIELDS = [
   'uid', 'displayName', 'username', 'photoURL', 'avatar', 'role', 'badge', 'badges',
   'gender', 'bio', 'profession', 'age', 'country', 'relationship', 'achievements',
-  'isOnline', 'lastSeenAt', 'createdAt', 'isGuest', 'isBanned', 'trustScore', 'trustRank',
+  'friends', 'isOnline', 'lastSeenAt', 'createdAt', 'isGuest', 'isBanned', 'trustScore', 'trustRank',
   'isVerified', 'selectedTheme', 'status', 'statusMessage', 'statusColor', 'statusStyle',
   'statusStyles', 'darkMode', 'coverPhotoURL', 'coverPhotoKey', 'coverVideoURL', 'coverVideoType',
   'spotifyTrackURL', 'spotifyTrackData',

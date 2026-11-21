@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
-    collection, doc, getDoc, query, orderBy, onSnapshot, where, limit,
+    collection, doc, getDoc, query, orderBy, onSnapshot, where, limit, documentId,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch,
     arrayUnion, arrayRemove, deleteField, runTransaction
 } from 'firebase/firestore';
@@ -61,6 +61,7 @@ import LiveAvatarImg from '../components/LiveAvatar';
 import { PremiumReactionBar, PremiumReactionPicker } from '../components/chat/PremiumReactions';
 import { renderUserBadge } from '../utils/badgeRenderHelper';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils';
+import { syncPublicProfile } from '../utils/syncPublicProfile';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -1264,6 +1265,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const fontPopupRef = useRef(null);
     const [liveUsers, setLiveUsers] = useState([]);
     const [onlineUserIds, setOnlineUserIds] = useState([]);
+    const [presenceMetaKey, setPresenceMetaKey] = useState('');
     const [isActionsOpen, setActionsOpen] = useState(false);
     const [isAttachmentDropdownOpen, setIsAttachmentDropdownOpen] = useState(false);
     const [isYoutubePopupOpen, setYoutubePopupOpen] = useState(false);
@@ -1567,10 +1569,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         const syncHeight = () => {
             const h = footerEl.offsetHeight;
             if (!h) return;
+            const hdrH = document.querySelector('.homepage-container .chat-header')?.offsetHeight || 50;
+            feedEl.style.setProperty('top', `${hdrH}px`, 'important');
             feedEl.style.setProperty('bottom', `${h}px`, 'important');
-            feedEl.style.setProperty('height', `calc(100dvh - 55px - ${h}px)`, 'important');
-            feedEl.style.setProperty('min-height', `calc(100dvh - 55px - ${h}px)`, 'important');
-            feedEl.style.setProperty('max-height', `calc(100dvh - 55px - ${h}px)`, 'important');
+            feedEl.style.setProperty('height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
+            feedEl.style.setProperty('min-height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
+            feedEl.style.setProperty('max-height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
             feedEl.style.setProperty('padding-bottom', '0px', 'important');
             feedEl.style.setProperty('margin-bottom', '0px', 'important');
         };
@@ -2128,79 +2132,127 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Load friends for the profile being viewed (independent from logged-in user's friends)
     useEffect(() => {
         if (!profileUser?.uid) { setProfileFriends([]); return; }
-        const friendIds = (profileUser.friends || []).filter(Boolean);
+        const friendIds = [...new Set((profileUser.friends || []).filter(Boolean))];
         if (!friendIds.length) { setProfileFriends([]); return; }
+        let cancelled = false;
         setLoadingProfileFriends(true);
         const fetchProfileFriends = async () => {
             try {
-                const profiles = [];
+                const profilesMap = new Map();
                 for (let i = 0; i < friendIds.length; i += 10) {
                     const batch = friendIds.slice(i, i + 10);
-                    const snap = await getDocs(query(collection(db, 'publicProfiles'), where('uid', 'in', batch)));
-                    snap.forEach(d => { if (d.exists()) profiles.push({ uid: d.id, ...d.data() }); });
+                    const snap = await getDocs(query(collection(db, 'publicProfiles'), where(documentId(), 'in', batch)));
+                    snap.forEach(d => { if (d.exists()) profilesMap.set(d.id, { ...d.data(), uid: d.id }); });
                 }
-                setProfileFriends(profiles);
-            } catch { setProfileFriends([]); }
-            finally { setLoadingProfileFriends(false); }
+                const missingIds = friendIds.filter(id => !profilesMap.has(id));
+                if (missingIds.length > 0 && auth.currentUser) {
+                    await Promise.all(missingIds.map(async (fid) => {
+                        try {
+                            const uSnap = await getDoc(doc(db, 'users', fid));
+                            if (uSnap.exists()) {
+                                const uData = uSnap.data();
+                                profilesMap.set(fid, { ...uData, uid: fid });
+                            }
+                        } catch (_) {}
+                    }));
+                }
+                if (!cancelled) {
+                    setProfileFriends(friendIds.map(id => profilesMap.get(id)).filter(Boolean));
+                }
+            } catch {
+                if (!cancelled) setProfileFriends([]);
+            } finally {
+                if (!cancelled) setLoadingProfileFriends(false);
+            }
         };
         fetchProfileFriends();
+        return () => { cancelled = true; };
     }, [profileUser?.uid, JSON.stringify(profileUser?.friends)]);
 
-    // Real-time profile user updates
+    // Real-time profile user updates (+ initial authoritative merge from users/{uid})
     useEffect(() => {
         if (!profileUser?.uid) return;
-        // Skip when viewing our own profile — the main loggedInUserProfile
-        // listener already keeps this data fresh, so a second onSnapshot
-        // here would be a redundant duplicate listener (extra reads +
-        // redundant re-renders) for no benefit.
-        if (auth.currentUser?.uid && profileUser.uid === auth.currentUser.uid) return;
+        const targetUid = profileUser.uid;
+        // Skip when viewing our own profile — keep it in sync with loggedInUserProfile
+        if (auth.currentUser?.uid && targetUid === auth.currentUser.uid) {
+            if (loggedInUserProfile?.uid === targetUid) {
+                setProfileUser(prev => prev?.uid === targetUid ? { ...prev, ...loggedInUserProfile } : prev);
+            }
+            return;
+        }
 
-        const userDocRef = doc(db, 'publicProfiles', profileUser.uid);
+        let cancelled = false;
+        if (auth.currentUser) {
+            getDoc(doc(db, 'users', targetUid)).then(uSnap => {
+                if (cancelled || !uSnap.exists()) return;
+                const uData = uSnap.data();
+                setProfileUser(prev => {
+                    if (!prev || prev.uid !== targetUid) return prev;
+                    return {
+                        ...prev,
+                        friends: Array.isArray(uData.friends) ? uData.friends : prev.friends,
+                        role: uData.role || prev.role,
+                        badge: uData.badge !== undefined ? uData.badge : prev.badge,
+                        createdAt: uData.createdAt || prev.createdAt,
+                        coverVideoURL: uData.coverVideoURL !== undefined ? uData.coverVideoURL : prev.coverVideoURL,
+                        coverPhotoURL: uData.coverPhotoURL !== undefined ? uData.coverPhotoURL : prev.coverPhotoURL,
+                        spotifyTrackURL: uData.spotifyTrackURL !== undefined ? uData.spotifyTrackURL : prev.spotifyTrackURL,
+                        spotifyTrackData: uData.spotifyTrackData !== undefined ? uData.spotifyTrackData : prev.spotifyTrackData,
+                    };
+                });
+            }).catch(() => {});
+        }
+
+        const userDocRef = doc(db, 'publicProfiles', targetUid);
         const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                const updatedUserData = { ...docSnap.data(), uid: profileUser.uid };
-                setProfileUser(updatedUserData);
-                
-                // Update user friends list if this user is in the friends
-                setUserFriends(prev => prev.map(friend => 
-                    friend.uid === profileUser.uid ? updatedUserData : friend
-                ));
+                const pubData = docSnap.data();
+                setProfileUser(prev => {
+                    const updatedUserData = {
+                        ...(prev?.uid === targetUid ? prev : {}),
+                        ...pubData,
+                        uid: targetUid,
+                        friends: Array.isArray(pubData.friends) ? pubData.friends : prev?.friends,
+                    };
 
-                // Update avatars in real-time for this specific user
-                const newAvatarUrl = (updatedUserData.photoURL && !updatedUserData.photoURL.includes('randomuser.me'))
-                    ? updatedUserData.photoURL
-                    : getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender);
+                    setUserFriends(uf => uf.map(friend =>
+                        friend.uid === targetUid ? updatedUserData : friend
+                    ));
 
-                // Update all avatars for this user in chat messages
-                const messageAvatars = document.querySelectorAll(`[data-message-uid="${updatedUserData.uid}"] .message-avatar`);
-                messageAvatars.forEach(avatar => {
-                    if (avatar.src !== newAvatarUrl) {
-                        avatar.src = newAvatarUrl;
-                    }
-                });
+                    const newAvatarUrl = (updatedUserData.photoURL && !updatedUserData.photoURL.includes('randomuser.me'))
+                        ? updatedUserData.photoURL
+                        : getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender);
 
-                // Update avatars in dropdowns
-                const dropdownAvatars = document.querySelectorAll(`[data-user-uid="${updatedUserData.uid}"] .dropdown-avatar, [data-profile-uid="${updatedUserData.uid}"] .dropdown-avatar`);
-                dropdownAvatars.forEach(avatar => {
-                    if (avatar.src !== newAvatarUrl) {
-                        avatar.src = newAvatarUrl;
-                    }
-                });
+                    const messageAvatars = document.querySelectorAll(`[data-message-uid="${updatedUserData.uid}"] .message-avatar`);
+                    messageAvatars.forEach(avatar => {
+                        if (avatar.src !== newAvatarUrl) {
+                            avatar.src = newAvatarUrl;
+                        }
+                    });
 
-                // Update private message avatars
-                const pmAvatars = document.querySelectorAll(`[data-pm-user-uid="${updatedUserData.uid}"] .pm-avatar, .pm-messages [data-sender-id="${updatedUserData.uid}"] .pm-message-avatar`);
-                pmAvatars.forEach(avatar => {
-                    if (avatar.src !== newAvatarUrl) {
-                        avatar.src = newAvatarUrl;
-                    }
+                    const dropdownAvatars = document.querySelectorAll(`[data-user-uid="${updatedUserData.uid}"] .dropdown-avatar, [data-profile-uid="${updatedUserData.uid}"] .dropdown-avatar`);
+                    dropdownAvatars.forEach(avatar => {
+                        if (avatar.src !== newAvatarUrl) {
+                            avatar.src = newAvatarUrl;
+                        }
+                    });
+
+                    const pmAvatars = document.querySelectorAll(`[data-pm-user-uid="${updatedUserData.uid}"] .pm-avatar, .pm-messages [data-sender-id="${updatedUserData.uid}"] .pm-message-avatar`);
+                    pmAvatars.forEach(avatar => {
+                        if (avatar.src !== newAvatarUrl) {
+                            avatar.src = newAvatarUrl;
+                        }
+                    });
+
+                    return updatedUserData;
                 });
             }
         }, (error) => {
             if (error?.code !== 'permission-denied') console.warn('profileUser listener error:', error);
         });
 
-        return () => unsubscribe();
-    }, [profileUser?.uid]);
+        return () => { cancelled = true; unsubscribe(); };
+    }, [profileUser?.uid, loggedInUserProfile]);
 
     useEffect(() => {
         // Initialize theme on component load from user profile.
@@ -2874,9 +2926,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         const isGuest = localStorage.getItem('isGuest') === 'true';
 
         let currentUid = user?.uid;
-        let displayName = user?.displayName || 'User';
-        let gender = 'male';
-        let role = 'user';
+        const cachedAppProfile = (window._appUserProfile && window._appUserProfile.uid === currentUid)
+            ? window._appUserProfile
+            : (loggedInUserProfileRef.current?.uid === currentUid ? loggedInUserProfileRef.current : null);
+        let displayName = cachedAppProfile?.displayName || user?.displayName || 'User';
+        let gender = cachedAppProfile?.gender || 'male';
+        let role = cachedAppProfile?.role || 'user';
+        let badge = cachedAppProfile?.badge || null;
+        let photoURL = cachedAppProfile?.photoURL || null;
 
         if (isGuest) {
             try {
@@ -2885,6 +2942,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 displayName = g.username || g.displayName || 'Guest';
                 gender = g.gender || getStoredGuestGender() || 'male';
                 role = 'guest';
+                badge = null;
             } catch {}
         }
 
@@ -2897,9 +2955,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             uid: currentUid,
             displayName,
             role,
+            badge,
             isGuest: isGuest || false,
             gender,
-            photoURL: getDefaultAvatarUrl(currentUid, gender),
+            photoURL: photoURL || getDefaultAvatarUrl(currentUid, gender),
         };
         const userStatusRef = ref(rtdb, `status/${currentUid}`);
         set(userStatusRef, minimalStatus).catch(() => {});
@@ -3022,22 +3081,20 @@ const HomePage = ({ user, roomIdOverride }) => {
             onDisconnect(roomCountRef).remove();
         }
 
-        // FIX-PERF-2: Heartbeat extended from 120 s → 300 s (5 min).
-        // 120 s meant 30 writes/hour per user; 300 s = 12 writes/hour — a 60 % reduction.
-        // The stale-presence threshold in the listener is already 5 min so this is safe.
+        // Heartbeat every 180s (3 min) keeps room presence fresh well within STALE_MS (15 min)
         const heartbeatInterval = setInterval(() => {
             const cached = window._currentStatusData;
             if (!cached) return;
             const fresh = { ...cached, last_changed: Date.now() };
             window._currentStatusData = fresh;
-            set(userStatusRef, fresh).catch(() => {});
+            update(userStatusRef, fresh).catch(() => {});
             // Also refresh the room-scoped node
             if (roomPresenceRef) set(roomPresenceRef, fresh).catch(() => {});
-        }, 300000); // FIX-PERF-2: was 120 000 (2 min)
+        }, 180000);
 
         return () => {
             clearInterval(heartbeatInterval);
-            set(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+            update(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
             // Remove this user from the room-scoped presence node on clean exit
             if (roomPresenceRef) remove(roomPresenceRef).catch(() => {});
             // Remove from roomCounts on clean exit
@@ -3103,29 +3160,40 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         setLoadingFriends(true);
         try {
-            const friendsIds = loggedInUserProfile.friends;
+            const friendsIds = [...new Set((loggedInUserProfile.friends || []).filter(Boolean))];
             setFriends(friendsIds);
 
             if (friendsIds.length > 0) {
-                // Load friends profiles in batches to avoid Firestore limitations
                 const batchSize = 10;
-                const friendProfiles = [];
-                
+                const friendMap = new Map();
+
                 for (let i = 0; i < friendsIds.length; i += batchSize) {
                     const batch = friendsIds.slice(i, i + batchSize);
                     const friendsQuery = query(
                         collection(db, 'users'),
-                        where('uid', 'in', batch)
+                        where(documentId(), 'in', batch)
                     );
-                    
                     const querySnapshot = await getDocs(friendsQuery);
-                    querySnapshot.forEach((doc) => {
-                        friendProfiles.push({ id: doc.id, ...doc.data() });
+                    querySnapshot.forEach((docSnap) => {
+                        friendMap.set(docSnap.id, { id: docSnap.id, uid: docSnap.id, ...docSnap.data() });
                     });
                 }
 
-                setFriendsProfiles(friendProfiles);
-                window.friendsProfiles = friendProfiles;
+                const missingIds = friendsIds.filter(fid => !friendMap.has(fid));
+                if (missingIds.length > 0) {
+                    await Promise.all(missingIds.map(async (fid) => {
+                        try {
+                            const pubSnap = await getDoc(doc(db, 'publicProfiles', fid));
+                            if (pubSnap.exists()) {
+                                friendMap.set(fid, { id: pubSnap.id, uid: pubSnap.id, ...pubSnap.data() });
+                            }
+                        } catch (_) {}
+                    }));
+                }
+
+                const orderedProfiles = friendsIds.map(id => friendMap.get(id)).filter(Boolean);
+                setFriendsProfiles(orderedProfiles);
+                window.friendsProfiles = orderedProfiles;
             } else {
                 setFriendsProfiles([]);
                 window.friendsProfiles = [];
@@ -3227,7 +3295,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (loggedInUserProfile) {
             loadFriends();
         }
-    }, [loggedInUserProfile?.friends]);
+    }, [loggedInUserProfile?.uid, JSON.stringify(loggedInUserProfile?.friends)]);
 
     useEffect(() => {
         // Support both authenticated users and guests
@@ -3341,8 +3409,28 @@ const HomePage = ({ user, roomIdOverride }) => {
                     prevPmUnreadTotal = newUnreadTotal;
                     pmIsInitialLoad = false;
 
-                    setConversations(Array.from(conversationsMap.values()));
+                    const list = Array.from(conversationsMap.values());
+                    setConversations(list);
                     setUnreadCounts(unreadCountsMap);
+
+                    // Enrich any conversations whose otherUser isn't cached yet
+                    const missingUids = list
+                        .filter(c => c.otherUserId && !window.userProfilesCache?.has(c.otherUserId))
+                        .map(c => c.otherUserId);
+                    if (missingUids.length > 0 && typeof window.fetchUserProfile === 'function') {
+                        Promise.all(missingUids.map(uid => window.fetchUserProfile(uid))).then((profiles) => {
+                            setConversations(prev => prev.map(conv => {
+                                const prof = profiles.find(p => p && p.uid === conv.otherUserId);
+                                if (!prof) return conv;
+                                return {
+                                    ...conv,
+                                    otherUserName: prof.displayName || conv.otherUserName,
+                                    otherUserPhoto: getPrivateMessageAvatarUrl(prof) || conv.otherUserPhoto,
+                                    otherUser: prof,
+                                };
+                            }));
+                        }).catch(() => {});
+                    }
                 } catch (error) {
                     console.error('Error processing conversations:', error);
                     setConversations([]);
@@ -3366,7 +3454,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 console.error('Error unsubscribing:', error);
             }
         };
-    }, [auth.currentUser, getPrivateMessageAvatarUrl]);
+    }, [auth.currentUser?.uid, user?.uid]);
 
     useEffect(() => {
         if (roomId) {
@@ -3935,7 +4023,8 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         // ── STEP 2: Augment registered users with full Firestore profiles ──
         // Runs async; batched to stay within Firestore's 10-item 'in' limit.
-        // When done, merges richer data (badges, styling, friends, etc.)
+        // Queries by documentId() with fallback to users/{uid} so users lacking
+        // a publicProfiles mirror or internal uid field still get full badges/roles.
         const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
         if (registeredUids.length === 0) return;
 
@@ -3945,33 +4034,57 @@ const HomePage = ({ user, roomIdOverride }) => {
             batches.push(registeredUids.slice(i, i + 10));
         }
 
+        const STAFF_ROLE_SET = new Set([
+            'owner', 'superowner', 'godfather',
+            'admin', 'high_council', 'high council',
+            'moderator', 'mod', 'guardian',
+        ]);
+
         Promise.all(
             batches.map(batch =>
-                getDocs(query(collection(db, 'publicProfiles'), where('uid', 'in', batch)))
+                getDocs(query(collection(db, 'publicProfiles'), where(documentId(), 'in', batch)))
             )
-        ).then(snapshots => {
+        ).then(async (snapshots) => {
             if (cancelled) return;
             const firestoreMap = {};
             snapshots.forEach(snap => {
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    firestoreMap[d.uid || docSnap.id] = d;
+                    firestoreMap[docSnap.id] = { ...d, uid: docSnap.id };
                 });
             });
+
+            // Fallback to users/{uid} for any uid absent from publicProfiles
+            const missingUids = registeredUids.filter(uid => !firestoreMap[uid]);
+            if (missingUids.length > 0 && auth.currentUser) {
+                await Promise.all(missingUids.map(async (uid) => {
+                    try {
+                        const uSnap = await getDoc(doc(db, 'users', uid));
+                        if (uSnap.exists()) {
+                            firestoreMap[uid] = { ...uSnap.data(), uid };
+                        }
+                    } catch (_) {}
+                }));
+            }
+            if (cancelled) return;
+
             setLiveUsers(prev => prev.map(p => {
                 const fs = firestoreMap[p.uid];
                 if (!fs) return p;
+                const pRole = (p.role || '').toLowerCase().trim();
+                const fsRole = (fs.role || '').toLowerCase().trim();
+                const resolvedRole = STAFF_ROLE_SET.has(fsRole)
+                    ? fs.role
+                    : (STAFF_ROLE_SET.has(pRole) ? p.role : (fs.role || p.role));
                 return {
                     ...p,
                     displayName: fs.displayName || p.displayName,
                     photoURL: fs.photoURL || p.photoURL,
-                    badge: fs.badge || p.badge,
+                    badge: fs.badge !== undefined ? fs.badge : p.badge,
                     gender: fs.gender || p.gender,
-                    // Preserve staff role from RTDB (fresh, written on login) — publicProfiles
-                    // can be stale if role was changed server-side without a re-login.
-                    role: (['owner','admin','moderator'].includes(p.role) ? p.role : (fs.role || p.role)),
+                    role: resolvedRole,
                     country: fs.country || p.country,
-                    friends: fs.friends,
+                    friends: Array.isArray(fs.friends) ? fs.friends : p.friends,
                     status: fs.status || '',
                     statusStyles: fs.statusStyles || null,
                     statusMessage: fs.statusMessage,
@@ -3992,18 +4105,16 @@ const HomePage = ({ user, roomIdOverride }) => {
         });
 
         return () => { cancelled = true; };
-    }, [onlineUserIds]); // userOnlineStatuses is now a ref — only re-run when the user list changes
+    }, [onlineUserIds, presenceMetaKey]);
 
     // ── Real-time moderation state sync (TingleBot automod + staff actions) ──
-    // This SEPARATE effect keeps isBanned / mutedInfo / kickedFrom live in liveUsers
-    // so Sidebar buttons update instantly without waiting for a user join/leave event.
     useEffect(() => {
         const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
         if (registeredUids.length === 0) return;
         const batches = [];
         for (let i = 0; i < registeredUids.length; i += 10) batches.push(registeredUids.slice(i, i + 10));
         const unsubs = batches.map(batch => {
-            const q = query(collection(db, 'publicProfiles'), where('uid', 'in', batch));
+            const q = query(collection(db, 'publicProfiles'), where(documentId(), 'in', batch));
             return onSnapshot(q, snap => {
                 const updates = {};
                 snap.forEach(d => { updates[d.id] = { ...d.data(), uid: d.id }; });
@@ -4028,59 +4139,63 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!roomId) {
             setOnlineUserIds([]);
             setOnlineUsers(new Set());
+            setPresenceMetaKey('');
             userOnlineStatusesRef.current = {};
             window.userOnlineStatuses = {};
             window.onlineUsers = new Set();
             return;
         }
-        
-        // FIX-PERF-1: Scope presence listener to this room only instead of downloading
-        // the entire platform-wide `status/` tree. This eliminates the O(N²) bandwidth
-        // problem where every user received every other user's heartbeat on every tick.
-        // Each user now only downloads presence data for people in their current room.
+
         const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
         const unsubscribe = onValue(roomPresenceListenRef, (snapshot) => {
             const presences = snapshot.val() || {};
-            const STALE_MS = 5 * 60 * 1000; // 5 minutes — entries older than this are ghost
+            // 15 minutes window + clock-skew tolerance so live users never drop out prematurely
+            const STALE_MS = 15 * 60 * 1000;
             const now = Date.now();
-            
-            // All entries in this node are already for this room — no roomId filter needed
+
             const currentUidsInRoom = Object.keys(presences)
                 .filter(uid => {
                     const p = presences[uid];
-                    const fresh = !p.last_changed || (now - p.last_changed) < STALE_MS;
-                    return p && p.state === 'online' && fresh;
+                    if (!p || p.state !== 'online') return false;
+                    const ts = typeof p.last_changed === 'number' ? p.last_changed : 0;
+                    const fresh = !ts || ts > now || (now - ts) < STALE_MS;
+                    return fresh;
                 });
-            
-            // Store statuses in ref (not state) — avoids a re-render + setLiveUsers
-            // cascade on every heartbeat tick when no user actually joined/left.
+
             userOnlineStatusesRef.current = presences;
             window.userOnlineStatuses = presences;
 
-            // Only trigger a state update (and thus a re-render) when the set of
-            // users in the room actually changes. Pure heartbeat ticks are skipped.
+            const nextMetaKey = currentUidsInRoom
+                .slice()
+                .sort()
+                .map(uid => {
+                    const p = presences[uid] || {};
+                    return `${uid}:${p.displayName || ''}:${p.role || ''}:${p.badge || ''}:${p.photoURL || ''}:${p.gender || ''}:${p.isGuest ? 1 : 0}:${p.showOnlineStatus === false ? 0 : 1}`;
+                })
+                .join('|');
+            setPresenceMetaKey(prev => (prev === nextMetaKey ? prev : nextMetaKey));
+
             setOnlineUserIds(prev => {
                 if (prev.length === currentUidsInRoom.length &&
                     currentUidsInRoom.every(u => prev.includes(u)) &&
                     prev.every(u => currentUidsInRoom.includes(u))) {
-                    return prev; // same set → same reference → no re-render
+                    return prev;
                 }
                 return currentUidsInRoom;
             });
 
-            // onlineUsers Set: room-scoped (people visible in this room's sidebar)
             const onlineUsersSet = new Set(currentUidsInRoom);
             setOnlineUsers(prev => {
                 if (prev.size === onlineUsersSet.size && [...onlineUsersSet].every(u => prev.has(u))) {
-                    return prev; // no change → no re-render
+                    return prev;
                 }
                 return onlineUsersSet;
             });
             window.onlineUsers = onlineUsersSet;
         });
-        
+
         return () => unsubscribe();
-    }, [roomId]); // Removed onlineUserIds dependency to prevent loops
+    }, [roomId]);
 
     
 
@@ -4472,7 +4587,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Instant 0ms input reset + optimistic bubble before any Firestore write
             setNewMessage('');
             if (textareaRef.current) {
-                textareaRef.current.style.height = '';
+                textareaRef.current.style.height = '36px';
                 textareaRef.current.focus();
             }
             setShowTagPicker(false);
@@ -5305,36 +5420,47 @@ const HomePage = ({ user, roomIdOverride }) => {
             const senderUserData = senderUserDoc.data();
             const senderFriends = senderUserData?.friends || [];
             
+            const nextCurrentFriends = currentFriends.includes(request.senderId)
+                ? currentFriends
+                : [...currentFriends, request.senderId];
+            const nextSenderFriends = senderFriends.includes(auth.currentUser.uid)
+                ? senderFriends
+                : [...senderFriends, auth.currentUser.uid];
+
             // Add to current user's friends list if not already there
             if (!currentFriends.includes(request.senderId)) {
                 batch.update(currentUserRef, {
-                    friends: [...currentFriends, request.senderId]
+                    friends: nextCurrentFriends
                 });
             }
-            
+
             // Add to sender's friends list if not already there
             if (!senderFriends.includes(auth.currentUser.uid)) {
                 batch.update(senderUserRef, {
-                    friends: [...senderFriends, auth.currentUser.uid]
+                    friends: nextSenderFriends
                 });
             }
-            
+
             // Commit all operations
             await batch.commit();
-            
+
+            // Mirror updated friends arrays to publicProfiles so profile views stay accurate
+            syncPublicProfile(auth.currentUser.uid, { friends: nextCurrentFriends });
+            syncPublicProfile(request.senderId, { friends: nextSenderFriends });
+
             pt.friend(`You are now friends with ${request.senderName}!`);
-            
+
             // Update logged in user profile to reflect new friend
             if (loggedInUserProfile) {
                 setLoggedInUserProfile(prev => ({
                     ...prev,
-                    friends: [...(prev.friends || []), request.senderId]
+                    friends: nextCurrentFriends
                 }));
-                
+
                 // Reload friends after accepting request
                 setTimeout(() => {
                     loadFriends();
-                }, 500);
+                }, 300);
             }
             
         } catch (error) {
@@ -5478,106 +5604,107 @@ const HomePage = ({ user, roomIdOverride }) => {
         setPmHeaderBoxOpen(false); // Close header box when opening private message
         setOpenDropdownId(null); // Close any open dropdowns
         
-        // Load existing private messages for this conversation
-        if (auth.currentUser) {
+        // Load existing private messages for this conversation (auth or guest)
+        const isGuestSession = localStorage.getItem('isGuest') === 'true';
+        const guestSessionData = localStorage.getItem('guestUser');
+        const currentUserId = auth.currentUser?.uid || (isGuestSession && guestSessionData ? (() => { try { return JSON.parse(guestSessionData).uid; } catch { return null; } })() : null);
+
+        if (currentUserId && user?.uid) {
+            const conversationId = [currentUserId, user.uid].sort().join('_');
+
+            if (pmListenerRef.current) {
+                pmListenerRef.current();
+                pmListenerRef.current = null;
+            }
+
+            let cancelled = false;
+            let activeUnsub = () => {};
+
+            const handlePmSnapshot = async (snapshot, sortClientSide = false) => {
+                if (cancelled) return;
+                let msgs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (sortClientSide) {
+                    msgs.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+                }
+                setPrivateMessages(msgs);
+
+                try {
+                    const unreadQuery = query(
+                        collection(db, 'privateMessages'),
+                        where('conversationId', '==', conversationId),
+                        where('receiverId', '==', currentUserId),
+                        where('isRead', '==', false)
+                    );
+                    const unreadSnapshot = await getDocs(unreadQuery);
+                    if (!unreadSnapshot.empty) {
+                        const batch = writeBatch(db);
+                        unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
+                        await batch.commit();
+                    }
+                } catch (_) {}
+
+                const scrollPmBottom = () => {
+                    const messagesContainer = document.querySelector('.pm-messages');
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                };
+                const updatePMMessageAvatars = () => {
+                    const pmMessageAvatars = document.querySelectorAll('.pm-messages .pm-message-avatar');
+                    pmMessageAvatars.forEach(avatar => {
+                        const senderId = avatar.getAttribute('data-sender-id') || avatar.getAttribute('data-pm-sender');
+                        if (senderId && window.userProfilesCache?.has(senderId)) {
+                            const cachedUser = window.userProfilesCache.get(senderId);
+                            const newAvatarUrl = getPrivateMessageAvatarUrl(cachedUser);
+                            if (avatar.src !== newAvatarUrl) {
+                                avatar.src = newAvatarUrl;
+                                avatar.setAttribute('data-pm-cache-updated', Date.now().toString());
+                            }
+                        }
+                    });
+                };
+
+                setTimeout(scrollPmBottom, 50);
+                setTimeout(scrollPmBottom, 150);
+                setTimeout(scrollPmBottom, 300);
+                setTimeout(updatePMMessageAvatars, 100);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(scrollPmBottom);
+                    requestAnimationFrame(updatePMMessageAvatars);
+                });
+            };
+
             try {
-                const conversationId = [auth.currentUser.uid, user.uid].sort().join('_');
                 const messagesQuery = query(
                     collection(db, 'privateMessages'),
                     where('conversationId', '==', conversationId),
                     orderBy('createdAt'),
-                    limitToLast(30)
+                    limitToLast(200)
                 );
-                
-                // Cancel any existing PM listener before creating a new one
-                if (pmListenerRef.current) {
-                    pmListenerRef.current();
-                    pmListenerRef.current = null;
-                }
 
-                // FIX C-01: Cancellation flag prevents a stale async listener
-                // from calling setPrivateMessages after this effect has been
-                // superseded by a newer target (rapid conversation switching).
-                let cancelled = false;
-                
-                const unsubscribe = onSnapshot(messagesQuery, 
-                    async (snapshot) => {
+                activeUnsub = onSnapshot(
+                    messagesQuery,
+                    (snapshot) => handlePmSnapshot(snapshot, false),
+                    () => {
                         if (cancelled) return;
-                        // FIX M-05: limitToLast(30) + orderBy('createdAt') already returns
-                        // the 30 most-recent messages in ascending order — no client sort needed.
-                        const messages = snapshot.docs
-                            .map(doc => ({ id: doc.id, ...doc.data() }));
-                        
-                        setPrivateMessages(messages);
-                        
-                        // Mark messages as read
-                        try {
-                            const unreadQuery = query(
-                                collection(db, 'privateMessages'),
-                                where('conversationId', '==', conversationId),
-                                where('receiverId', '==', auth.currentUser.uid),
-                                where('isRead', '==', false)
-                            );
-                            
-                            const unreadSnapshot = await getDocs(unreadQuery);
-                            if (!unreadSnapshot.empty) {
-                                const batch = writeBatch(db);
-                                unreadSnapshot.docs.forEach(doc => {
-                                    batch.update(doc.ref, { isRead: true });
-                                });
-                                await batch.commit();
-                            }
-                        } catch (error) {
-                        }
-                        
-                        // Auto-scroll to bottom with multiple attempts
-                        const scrollToBottom = () => {
-                            const messagesContainer = document.querySelector('.pm-messages');
-                            if (messagesContainer) {
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                            }
-                        };
-                        
-                        // Update private message avatars with cache busting
-                        const updatePMMessageAvatars = () => {
-                            const pmMessageAvatars = document.querySelectorAll('.pm-messages .pm-message-avatar');
-                            pmMessageAvatars.forEach(avatar => {
-                                const senderId = avatar.getAttribute('data-sender-id') || avatar.getAttribute('data-pm-sender');
-                                if (senderId && window.userProfilesCache?.has(senderId)) {
-                                    const cachedUser = window.userProfilesCache.get(senderId);
-                                    const newAvatarUrl = getPrivateMessageAvatarUrl(cachedUser);
-                                    if (avatar.src !== newAvatarUrl) {
-                                        avatar.src = newAvatarUrl;
-                                        avatar.setAttribute('data-pm-cache-updated', Date.now().toString());
-                                    }
-                                }
-                            });
-                        };
-                        
-                        // Multiple scroll attempts to ensure it works
-                        setTimeout(scrollToBottom, 50);
-                        setTimeout(scrollToBottom, 150);
-                        setTimeout(scrollToBottom, 300);
-                        
-                        // Update PM avatars after messages load
-                        setTimeout(updatePMMessageAvatars, 100);
-                        setTimeout(updatePMMessageAvatars, 300);
-                        
-                        // Use requestAnimationFrame for smooth scrolling
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(scrollToBottom);
-                            requestAnimationFrame(updatePMMessageAvatars);
-                        });
-                    },
-                    (error) => {
-                        setPrivateMessages([]);
+                        // Fallback without composite index so full history always loads
+                        const fallbackQuery = query(
+                            collection(db, 'privateMessages'),
+                            where('conversationId', '==', conversationId),
+                            limit(200)
+                        );
+                        activeUnsub = onSnapshot(
+                            fallbackQuery,
+                            (fbSnap) => handlePmSnapshot(fbSnap, true),
+                            () => { if (!cancelled) setPrivateMessages([]); }
+                        );
                     }
                 );
-                
-                // Store unsubscribe + cancellation flag together so the next
-                // listener setup both stops Firebase delivery AND prevents the
-                // stale callback from writing to state.
-                const cancelAndUnsub = () => { cancelled = true; unsubscribe(); };
+
+                const cancelAndUnsub = () => {
+                    cancelled = true;
+                    try { activeUnsub(); } catch (_) {}
+                };
                 pmListenerRef.current = cancelAndUnsub;
                 return cancelAndUnsub;
             } catch (error) {
@@ -5975,13 +6102,16 @@ const HomePage = ({ user, roomIdOverride }) => {
         // DM permission check — always fetch fresh target profile from Firestore
         // (privateMessageTarget may only have { uid, displayName } when opened from header box)
         try {
-            const targetDocSnap = await getDoc(doc(db, 'publicProfiles', privateMessageTarget.uid));
+            let targetDocSnap = await getDoc(doc(db, 'publicProfiles', privateMessageTarget.uid));
+            if (!targetDocSnap.exists()) {
+                targetDocSnap = await getDoc(doc(db, 'users', privateMessageTarget.uid));
+            }
             const freshTarget = targetDocSnap.exists()
                 ? { ...targetDocSnap.data(), uid: privateMessageTarget.uid }
                 : privateMessageTarget;
 
             if (!canSendPrivateMessage(loggedInUserProfile, freshTarget)) {
-                const allowLevel = freshTarget?.settings?.allowPrivateMessagesLevel || 'none';
+                const allowLevel = freshTarget?.settings?.allowPrivateMessagesLevel || 'all';
                 let noticeText;
                 if (allowLevel === 'friends') {
                     noticeText = `${freshTarget?.displayName || 'This user'} only accepts messages from friends`;
@@ -5995,14 +6125,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         } catch (_) { /* network error — allow send to proceed */ }
 
         try {
-            // Create a unique conversation ID based on user IDs
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
-            
-            // Add message to privateMessages collection
+
             await addDoc(collection(db, 'privateMessages'), {
                 text: privateMessage,
                 senderId: auth.currentUser.uid,
-                senderName: auth.currentUser.displayName || 'Anonymous',
+                senderName: auth.currentUser.displayName || loggedInUserProfile?.displayName || 'Anonymous',
                 receiverId: privateMessageTarget.uid,
                 receiverName: privateMessageTarget.displayName,
                 conversationId: conversationId,
@@ -6012,18 +6140,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                 isRead: false,
                 roomId: roomId
             });
-            
+
             setPrivateMessage('');
-            
-            // Auto-scroll to bottom after sending message
+
             setTimeout(() => {
                 const messagesContainer = document.querySelector('.pm-messages');
                 if (messagesContainer) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
             }, 100);
-            
-            
         } catch (error) {
             pt.error("Failed to send message. Please try again.");
         }
@@ -6039,63 +6164,72 @@ const HomePage = ({ user, roomIdOverride }) => {
         setPrivateMessage(conversation.draftMessage || '');
         setPrivateMessageOpen(true);
         setPmHeaderBoxOpen(false);
-        
-        // Load conversation messages - support both authenticated users and guests
+
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
-        const currentUserId = auth.currentUser?.uid || (isGuest && guestData ? JSON.parse(guestData).uid : null);
-        
+        const currentUserId = auth.currentUser?.uid || (isGuest && guestData ? (() => { try { return JSON.parse(guestData).uid; } catch { return null; } })() : null);
+
         if (currentUserId) {
             try {
-                const messagesQuery = query(
-                    collection(db, 'privateMessages'),
-                    where('conversationId', '==', conversation.conversationId),
-                    orderBy('createdAt'),
-                    limitToLast(30)
-                );
-                
                 if (pmListenerRef.current) {
                     pmListenerRef.current();
                     pmListenerRef.current = null;
                 }
 
-                // FIX C-01: Cancellation flag prevents stale callbacks from a
-                // previous conversation's listener from writing to state after
-                // handleOpenConversation is called for a new conversation.
                 let cancelledConv = false;
-                
-                const unsubscribe = onSnapshot(messagesQuery, async (snapshot) => {
+                let activeConvUnsub = () => {};
+
+                const handleConvSnap = (snapshot, sortClientSide = false) => {
                     if (cancelledConv) return;
-                    // FIX M-05: limitToLast(30) + orderBy('createdAt') returns the
-                    // 30 most-recent messages in ascending order — no client sort needed.
-                    const messages = snapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }));
-                    setPrivateMessages(messages);
-                    
-                    // Auto-scroll to bottom with multiple attempts
-                    const scrollToBottom = () => {
+                    let msgs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (sortClientSide) {
+                        msgs.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+                    }
+                    setPrivateMessages(msgs);
+
+                    const scrollPmBottom = () => {
                         const messagesContainer = document.querySelector('.pm-messages');
                         if (messagesContainer) {
                             messagesContainer.scrollTop = messagesContainer.scrollHeight;
                         }
                     };
-                    
-                    // Multiple scroll attempts to ensure it works
-                    setTimeout(scrollToBottom, 50);
-                    setTimeout(scrollToBottom, 150);
-                    setTimeout(scrollToBottom, 300);
-                    
-                    // Use requestAnimationFrame for smooth scrolling
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(scrollToBottom);
-                    });
-                }, (error) => {
-                    setPrivateMessages([]);
-                });
-                const cancelAndUnsubConv = () => { cancelledConv = true; unsubscribe(); };
+                    setTimeout(scrollPmBottom, 50);
+                    setTimeout(scrollPmBottom, 150);
+                    setTimeout(scrollPmBottom, 300);
+                    requestAnimationFrame(() => requestAnimationFrame(scrollPmBottom));
+                };
+
+                const messagesQuery = query(
+                    collection(db, 'privateMessages'),
+                    where('conversationId', '==', conversation.conversationId),
+                    orderBy('createdAt'),
+                    limitToLast(200)
+                );
+
+                activeConvUnsub = onSnapshot(
+                    messagesQuery,
+                    (snapshot) => handleConvSnap(snapshot, false),
+                    () => {
+                        if (cancelledConv) return;
+                        const fallbackQuery = query(
+                            collection(db, 'privateMessages'),
+                            where('conversationId', '==', conversation.conversationId),
+                            limit(200)
+                        );
+                        activeConvUnsub = onSnapshot(
+                            fallbackQuery,
+                            (fbSnap) => handleConvSnap(fbSnap, true),
+                            () => { if (!cancelledConv) setPrivateMessages([]); }
+                        );
+                    }
+                );
+
+                const cancelAndUnsubConv = () => {
+                    cancelledConv = true;
+                    try { activeConvUnsub(); } catch (_) {}
+                };
                 pmListenerRef.current = cancelAndUnsubConv;
-                
-                // Mark messages as read
+
                 try {
                     const unreadQuery = query(
                         collection(db, 'privateMessages'),
@@ -6103,19 +6237,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                         where('receiverId', '==', currentUserId),
                         where('isRead', '==', false)
                     );
-                    
                     const unreadSnapshot = await getDocs(unreadQuery);
                     if (!unreadSnapshot.empty) {
                         const batch = writeBatch(db);
-                        unreadSnapshot.docs.forEach(doc => {
-                            batch.update(doc.ref, { isRead: true });
-                        });
+                        unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
                         await batch.commit();
                     }
                 } catch (error) {
                     console.error('Error marking messages as read:', error);
                 }
-                
             } catch (error) {
                 console.error('Error loading conversation messages:', error);
                 setPrivateMessages([]);
@@ -8123,7 +8253,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                             {(() => {
                                 const convertSpotify = (url) => {
                                     if (!url) return null;
-                                    const m = url.match(/track\/([a-zA-Z0-9]+)/);
+                                    const m = url.match(/track[:/]([a-zA-Z0-9]+)/i);
                                     return m ? `https://open.spotify.com/embed/track/${m[1]}?utm_source=generator&theme=0` : null;
                                 };
                                 const convertYouTube = (url) => {
@@ -8386,7 +8516,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="#2563eb"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93-2.67-1.14-5-4.43-5-7.93V7.18L12 5z"/></svg>
                                                 </div>
                                                 <div className="vpm-ic-label">Role</div>
-                                                <div className="vpm-ic-value" style={{textTransform:'capitalize'}}>{profileUser.role || 'User'}</div>
+                                                <div className="vpm-ic-value">{getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge })}</div>
                                             </div>
                                             <div className="vpm-info-card">
                                                 <div className="vpm-ic-icon" style={{background:'#d1fae5'}}>
@@ -8533,7 +8663,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                         </div>
                                                         <div className="vpm-friend-info">
                                                             <span className="vpm-friend-name">{fr.displayName}</span>
-                                                            <span className="vpm-friend-role">{fr.role || 'User'}</span>
+                                                            <span className="vpm-friend-role">{getRoleDisplayLabel({ role: fr.role, gender: fr.gender, isGuest: fr.isGuest, badge: fr.badge })}</span>
                                                         </div>
                                                         {/* Friends-list msg button — only shown when viewing own profile */}
                                                         {profileUser?.uid === loggedInUserProfile?.uid && (
@@ -8735,6 +8865,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     isOpen={isSettingsSidebarOpen}
                     onClose={() => setIsSettingsSidebarOpen(false)}
                     loggedInUserProfile={loggedInUserProfile}
+                    setLoggedInUserProfile={setLoggedInUserProfile}
                     blockedUsers={blockedUsers}
                     onUnblockUser={handleUnblockUser}
                     friendRequests={friendRequests}
@@ -9137,8 +9268,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                                         }}>
                                                             @{u.displayName}
                                                         </div>
-                                                        <div style={{ fontSize: '9px', color: isDarkMode ? '#94a3b8' : '#6b7280', textTransform: 'capitalize' }}>
-                                                            {u.role || (u.isGuest ? 'Guest' : 'Member')}
+                                                        <div style={{ fontSize: '9px', color: isDarkMode ? '#94a3b8' : '#6b7280' }}>
+                                                            {getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge })}
                                                         </div>
                                                     </div>
                                                 </button>
@@ -9161,8 +9292,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     setNewMessage(val);
                                     checkTagTrigger(val, e.target.selectionStart);
                                 }
-                                e.target.style.height = 'auto';
-                                e.target.style.height = `${Math.min(e.target.scrollHeight, 116)}px`;
+                                e.target.style.height = '36px';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`;
                             }}
                             onKeyUp={(e) => {
                                 checkTagTrigger(e.target.value, e.target.selectionStart);

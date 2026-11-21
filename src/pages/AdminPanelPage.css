@@ -935,8 +935,7 @@
     0 0 0 2px rgba(232,226,255,0.9),
     0 0 0 4px rgba(168,85,247,0.18),
     0 4px 14px rgba(124,58,237,0.38);
-  animation: lavBadgePop .3s cubic-bezier(.34,1.56,.64,1) both,
-             lavBadgePulse 2.4s ease-in-out 0.3s infinite;
+  animation: none !important;
   flex-shrink: 0;
 }
 .lav-notif-badge--active {
@@ -945,28 +944,7 @@
     0 0 0 2px rgba(255,255,255,0.5),
     0 0 0 4px rgba(255,255,255,0.15),
     0 4px 14px rgba(0,0,0,0.12);
-  animation: lavBadgePop .3s cubic-bezier(.34,1.56,.64,1) both;
-}
-
-@keyframes lavBadgePop {
-  0%   { transform: scale(0); opacity: 0; }
-  80%  { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
-}
-@keyframes lavBadgePulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 2px rgba(232,226,255,0.9),
-      0 0 0 4px rgba(168,85,247,0.18),
-      0 4px 14px rgba(124,58,237,0.38);
-  }
-  50% {
-    box-shadow:
-      0 0 0 2px rgba(232,226,255,0.95),
-      0 0 0 7px rgba(168,85,247,0.12),
-      0 4px 22px rgba(124,58,237,0.52),
-      0 0 30px rgba(192,132,252,0.25);
-  }
+  animation: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════

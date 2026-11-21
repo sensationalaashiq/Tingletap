@@ -2271,32 +2271,24 @@ textarea.message-input:focus {
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25), 0 4px 16px rgba(168, 85, 247, 0.15) !important;
 }
 
-/* VIP Jewel Badges */
+/* VIP Jewel Badges (static — no animations) */
 .role-badge,
 .user-role-badge,
-.staff-badge {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  transition: transform 0.2s ease !important;
-}
-.role-badge:hover,
-.user-role-badge:hover,
-.staff-badge:hover {
-  transform: scale(1.06) !important;
-}
-
-/* Subtle Shimmer for High Council & Owner Badges */
-@keyframes royalGlowPulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 30px rgba(236, 72, 153, 0.35);
-  }
-}
+.staff-badge,
+.inline-badge,
 .role-owner-badge,
 .badge-the_olympian,
 .badge-godfather {
-  animation: royalGlowPulse 3s ease-in-out infinite alternate !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+.role-badge:hover,
+.user-role-badge:hover,
+.staff-badge:hover,
+.inline-badge:hover {
+  transform: none !important;
 }
 
 /* Sleek Modal Transitions */

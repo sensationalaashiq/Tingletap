@@ -111,9 +111,15 @@ service cloud.firestore {
                         !isBanned(request.auth.uid)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                              .hasAny(['role', 'isBanned', 'bannedBy', 'bannedAt', 'mutedInfo'])
-                        && !(request.resource.data.get('badge', null) in ['the_olympian', 'titans', 'spartans'])
+                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['badge'])
+                            || !(request.resource.data.get('badge', null) in ['the_olympian', 'titans', 'spartans']))
                       )
                     );
+
+      // Mutual friend list update when accepting or removing a friendship
+      allow update: if request.auth != null
+                    && notBanned()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends']);
 
       // Staff updating target user
       allow update: if isStaff()
@@ -129,7 +135,12 @@ service cloud.firestore {
     match /publicProfiles/{userId} {
       allow read: if true;
       allow create, update: if request.auth != null
-                            && (request.auth.uid == userId || isStaff());
+                            && (
+                              request.auth.uid == userId
+                              || isStaff()
+                              || (!isBanned(request.auth.uid)
+                                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends', '_syncedAt']))
+                            );
       allow delete: if isOwner();
     }
 

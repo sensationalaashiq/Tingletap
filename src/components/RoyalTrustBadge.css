@@ -22,12 +22,13 @@
   align-items: center;
   justify-content: center;
   filter: drop-shadow(0 0 6px var(--rank-glow, rgba(150,150,150,0.4)));
-  transition: filter 0.3s ease, transform 0.3s ease;
+  animation: none !important;
+  transition: none !important;
 }
 
 .royal-trust-badge:hover .rtb-badge-icon {
-  filter: drop-shadow(0 0 12px var(--rank-glow, rgba(150,150,150,0.6)));
-  transform: scale(1.1);
+  filter: drop-shadow(0 0 6px var(--rank-glow, rgba(150,150,150,0.4)));
+  transform: none !important;
 }
 
 .badge-svg {
@@ -35,27 +36,10 @@
   flex-shrink: 0;
 }
 
-/* Animated ranks */
-.rtb-animated .rtb-badge-icon {
-  animation: rtb-pulse 2.5s ease-in-out infinite;
-}
-
-@keyframes rtb-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px var(--rank-glow)); }
-  50% { filter: drop-shadow(0 0 16px var(--rank-glow)) drop-shadow(0 0 4px rgba(255,255,255,0.4)); }
-}
-
-/* Eternal Crown special animation */
+.rtb-animated .rtb-badge-icon,
 .rtb-rank-eternal_crown .rtb-badge-icon {
-  animation: rtb-eternal 3s ease-in-out infinite;
-}
-
-@keyframes rtb-eternal {
-  0% { filter: drop-shadow(0 0 8px rgba(0,212,255,0.8)); transform: rotate(0deg); }
-  25% { filter: drop-shadow(0 0 14px rgba(123,47,190,0.9)); }
-  50% { filter: drop-shadow(0 0 18px rgba(255,107,107,0.8)); transform: rotate(5deg); }
-  75% { filter: drop-shadow(0 0 14px rgba(255,215,0,0.9)); }
-  100% { filter: drop-shadow(0 0 8px rgba(0,212,255,0.8)); transform: rotate(0deg); }
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Badge label */
@@ -98,16 +82,10 @@
 }
 .rtb-rank-eternal_crown .rtb-rank-name {
   background: linear-gradient(90deg, #00D4FF, #7B2FBE, #FF6B6B, #FFD700);
-  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: rtb-rainbow 3s linear infinite;
-}
-
-@keyframes rtb-rainbow {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  animation: none !important;
 }
 
 /* ===== TOOLTIP ===== */
@@ -238,11 +216,12 @@
   vertical-align: middle;
   cursor: default;
   margin-left: 4px;
-  transition: transform 0.2s ease;
+  animation: none !important;
+  transition: none !important;
 }
 
 .trust-badge-inline:hover {
-  transform: scale(1.15);
+  transform: none !important;
 }
 
 .tbi-icon {

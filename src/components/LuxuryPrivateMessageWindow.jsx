@@ -531,7 +531,7 @@ const LuxuryPrivateMessageWindow = ({
       recorder.start();
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      alert('Error accessing microphone. Please check permissions.');
+      pt.error('Error accessing microphone. Please check permissions.');
     }
   };
 

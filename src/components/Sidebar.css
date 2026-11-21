@@ -840,3 +840,14 @@ html.dark-mode .sb-user-role {
 html.dark-mode .sb-empty {
   color: #94a3b8 !important;
 }
+
+/* Keep all sidebar badges completely static */
+.inline-badge,
+.sb-user-role-pill,
+.sb-role-pill,
+.birthday-badge-glow,
+.sb-ach-chip {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}

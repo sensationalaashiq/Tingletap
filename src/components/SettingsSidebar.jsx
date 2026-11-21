@@ -59,6 +59,7 @@ const SettingsSidebar = ({
     isOpen, 
     onClose, 
     loggedInUserProfile, 
+    setLoggedInUserProfile,
     blockedUsers, 
     onUnblockUser,
     onOpenProfile,
@@ -429,46 +430,51 @@ const SettingsSidebar = ({
         return stopAll;
     }, [loggedInUserProfile?.uid, loggedInUserProfile?.role]);
 
-    // Load friends profiles
+    // Load friends profiles reactively whenever friend list changes
     useEffect(() => {
+        let cancelled = false;
         const loadFriendsProfiles = async () => {
             if (!auth.currentUser) return;
 
             try {
                 const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    const friendsList = userData.friends || [];
+                const userData = userDoc.exists() ? userDoc.data() : loggedInUserProfile;
+                const friendsList = [...new Set((userData?.friends || []).filter(Boolean))];
 
-                    if (friendsList.length > 0) {
-                        const friendProfiles = await Promise.all(
-                            friendsList.map(async (friendId) => {
-                                try {
-                                    // B1: Read display data from publicProfiles.
-                                    const friendDoc = await getDoc(doc(db, 'publicProfiles', friendId));
-                                    if (friendDoc.exists()) {
-                                        return { id: friendDoc.id, ...friendDoc.data() };
-                                    }
-                                    return null;
-                                } catch (error) {
-                                    console.error(`Error loading friend profile ${friendId}:`, error);
-                                    return null;
+                if (friendsList.length > 0) {
+                    const friendProfiles = await Promise.all(
+                        friendsList.map(async (friendId) => {
+                            try {
+                                const pubSnap = await getDoc(doc(db, 'publicProfiles', friendId));
+                                if (pubSnap.exists()) {
+                                    return { id: pubSnap.id, uid: pubSnap.id, ...pubSnap.data() };
                                 }
-                            })
-                        );
+                                const userSnap = await getDoc(doc(db, 'users', friendId));
+                                if (userSnap.exists()) {
+                                    return { id: userSnap.id, uid: userSnap.id, ...userSnap.data() };
+                                }
+                                return null;
+                            } catch (error) {
+                                console.error(`Error loading friend profile ${friendId}:`, error);
+                                return null;
+                            }
+                        })
+                    );
+                    if (!cancelled) {
                         setFriendsProfiles(friendProfiles.filter(profile => profile !== null));
-                    } else {
-                        setFriendsProfiles([]);
                     }
+                } else if (!cancelled) {
+                    setFriendsProfiles([]);
                 }
             } catch (error) {
                 console.error("Error loading friends profiles:", error);
-                setFriendsProfiles([]);
+                if (!cancelled) setFriendsProfiles([]);
             }
         };
 
         loadFriendsProfiles();
-    }, []);
+        return () => { cancelled = true; };
+    }, [loggedInUserProfile?.uid, JSON.stringify(loggedInUserProfile?.friends)]);
 
     const handleSettingChange = async (key, value) => {
         try {
@@ -791,9 +797,14 @@ const SettingsSidebar = ({
 
             await updateDoc(currentUserRef, { friends: updatedCurrentFriends });
             await updateDoc(friendUserRef, { friends: updatedFriendFriends });
+            syncPublicProfile(auth.currentUser.uid, { friends: updatedCurrentFriends });
+            syncPublicProfile(friend.id, { friends: updatedFriendFriends });
 
             setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
             setConfirmDeleteFriend(null);
+            if (typeof setLoggedInUserProfile === 'function') {
+                setLoggedInUserProfile(prev => prev ? { ...prev, friends: updatedCurrentFriends } : prev);
+            }
 
             pt.friend(`${friend.displayName} removed from friends`);
         } catch (error) {
@@ -837,9 +848,14 @@ const SettingsSidebar = ({
                 await updateDoc(friendUserRef, {
                     friends: updatedFriendFriends
                 });
+                syncPublicProfile(auth.currentUser.uid, { friends: updatedCurrentFriends });
+                syncPublicProfile(friend.id, { friends: updatedFriendFriends });
 
                 // Update local state
                 setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
+                if (typeof setLoggedInUserProfile === 'function') {
+                    setLoggedInUserProfile(prev => prev ? { ...prev, friends: updatedCurrentFriends, blockedUsers: updatedCurrentBlocked } : prev);
+                }
 
                 toast(
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -924,10 +940,10 @@ const SettingsSidebar = ({
                             </div>
 
                             {(() => {
-                                const _role = loggedInUserProfile?.role?.toLowerCase();
+                                const _role = (loggedInUserProfile?.role || '').toLowerCase().trim();
                                 const _isGuest = _role === 'guest' || loggedInUserProfile?.isGuest === true || auth.currentUser?.isAnonymous === true;
                                 const _hasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
-                                const _isPrivileged = _hasBadge || ['owner', 'admin', 'moderator'].includes(_role);
+                                const _isPrivileged = _hasBadge || ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes(_role);
 
                                 const themeAccess = (v) => {
                                     if (_isPrivileged) return true;
@@ -1921,7 +1937,7 @@ const SettingsSidebar = ({
                                                 />
                                                 <div className="sf-friend-info" style={{ flex: 1 }}>
                                                     <div className="sf-friend-name" data-user-id={friend.id} data-user-uid={friend.id}><LiveUserName uid={friend.id} fallback={friend.displayName} /></div>
-                                                    <div className="sf-friend-role">{friend.role || 'Member'}</div>
+                                                    <div className="sf-friend-role">{getRoleDisplayLabel({ role: friend.role, gender: friend.gender, isGuest: friend.isGuest, badge: friend.badge })}</div>
                                                 </div>
                                                 <div className="sf-friend-btns">
                                                     <button className="sf-btn sf-btn-msg" title="Message"
@@ -3057,23 +3073,21 @@ const SettingsSidebar = ({
                                                             return;
                                                         }
 
-                                                        // Extract Spotify track ID with improved regex
-                                                        const spotifyRegex = /(?:https?:\/\/)?(?:open\.)?spotify\.com\/track\/([a-zA-Z0-9]{22})/;
+                                                        // Extract Spotify track ID from standard, intl-*, or spotify:track: URIs
+                                                        const spotifyRegex = /(?:spotify\.com\/(?:intl-[a-z-]+\/)?track\/|spotify:track:)([a-zA-Z0-9]{22})/i;
                                                         const match = spotifyUrl.match(spotifyRegex);
 
                                                         if (!match) {
-                                                            pt.error('Invalid Spotify URL. Please enter a valid Spotify track URL.');
+                                                            pt.error('Invalid Spotify URL. Please enter a valid Spotify track URL or URI.');
                                                             return;
                                                         }
 
                                                         const trackId = match[1];
-                                                        // Generate Spotify embed URL with compact theme
                                                         const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&view=coverart&show-cover=0`;
 
                                                         try {
                                                             pt.audio('Setting Spotify cover song...');
 
-                                                            // Prepare Spotify track data
                                                             const spotifyTrackData = {
                                                                 id: trackId,
                                                                 url: spotifyUrl,
@@ -3081,24 +3095,28 @@ const SettingsSidebar = ({
                                                                 setAt: new Date().toISOString()
                                                             };
 
-                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                                                            const spotifyUpdateData = {
                                                                 spotifyTrackURL: embedUrl,
                                                                 spotifyTrackData: spotifyTrackData,
-                                                                coverPhotoURL: null, // Remove photo when setting Spotify
-                                                                coverVideoURL: null, // Remove YouTube when setting Spotify
+                                                                coverPhotoURL: null,
+                                                                coverPhotoKey: null,
+                                                                coverVideoURL: null,
                                                                 coverVideoType: null,
                                                                 updatedAt: new Date().toISOString()
-                                                            });
+                                                            };
+
+                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), spotifyUpdateData);
+                                                            syncPublicProfile(auth.currentUser.uid, spotifyUpdateData);
+
+                                                            if (typeof setLoggedInUserProfile === 'function') {
+                                                                setLoggedInUserProfile(prev => ({
+                                                                    ...(prev || {}),
+                                                                    ...spotifyUpdateData
+                                                                }));
+                                                            }
 
                                                             input.value = '';
-
                                                             pt.audio('Spotify cover song set successfully!');
-
-                                                            // Force immediate refresh
-                                                            setTimeout(() => {
-                                                                window.location.reload();
-                                                            }, 1000);
-
                                                         } catch (error) {
                                                             console.error('Error setting Spotify cover song:', error);
                                                             pt.error('Failed to set Spotify cover song. Please try again.');
@@ -3279,13 +3297,7 @@ const SettingsSidebar = ({
 
                                                         pt.success('Cover media removed successfully!');
 
-                                                        // Close settings modal
                                                         onClose();
-
-                                                        // Force immediate page reload to reflect changes
-                                                        setTimeout(() => {
-                                                            window.location.reload();
-                                                        }, 500);
 
                                                     } catch (error) {
                                                         console.error('Error removing cover media:', error);

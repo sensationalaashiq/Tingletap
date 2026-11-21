@@ -26,7 +26,11 @@ const TIER3_BADGES = new Set([
 ]);
 const TIER2_BADGES = new Set(['platinum_lord', 'emerald_empress']);
 const TIER1_BADGES = new Set(['gold_knight', 'ruby_queen']);
-const STAFF_ROLES  = new Set(['owner', 'admin', 'moderator']);
+const STAFF_ROLES  = new Set([
+  'owner', 'superowner', 'godfather',
+  'admin', 'high_council', 'high council',
+  'moderator', 'mod', 'guardian',
+]);
 
 /**
  * Returns the user's access tier string.
@@ -37,7 +41,7 @@ const STAFF_ROLES  = new Set(['owner', 'admin', 'moderator']);
  */
 export const getBadgeTier = (badge, role, isGuest) => {
   if (isGuest) return 'guest';
-  const r = (role || '').toLowerCase();
+  const r = (role || '').toLowerCase().trim();
   if (STAFF_ROLES.has(r)) return 'staff';
   if (!badge || badge === '') return 'member';
   if (TIER3_BADGES.has(badge)) return 'tier3';

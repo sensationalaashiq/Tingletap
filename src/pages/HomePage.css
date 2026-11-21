@@ -7172,11 +7172,7 @@ html.dark-mode .reject-btn:hover,
 }
 .dark-mode .vpm-online-dot { border-color: #1e1333; }
 
-/* Gender badge – top-left of avatar */
-@keyframes vpmBadgePulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.45); }
-    50%      { box-shadow: 0 0 0 4px rgba(167,139,250,0); }
-}
+/* Gender badge – top-left of avatar (static) */
 .vpm-gender-badge {
     position: absolute;
     top: 0;
@@ -7191,7 +7187,7 @@ html.dark-mode .reject-btn:hover,
     justify-content: center;
     z-index: 2;
     box-shadow: 0 2px 6px rgba(139,92,246,0.15);
-    animation: vpmBadgePulse 2.5s ease-in-out infinite;
+    animation: none !important;
 }
 .dark-mode .vpm-gender-badge { background: linear-gradient(135deg, #2d1b5e, #3b1f8c); border-color: rgba(139,92,246,0.5); }
 
@@ -8888,7 +8884,7 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
   fill: #10b981 !important;
 }
 
-/* ── Broadcast live badge ── */
+/* ── Broadcast live badge (static) ── */
 .homepage-container .bp-live-badge {
   position: absolute !important;
   top: -5px !important;
@@ -8904,14 +8900,10 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
   line-height: 17px !important;
   text-align: center !important;
   box-shadow: 0 2px 6px rgba(239,68,68,0.6) !important;
-  animation: bp-badge-pulse 1.8s ease-in-out infinite !important;
+  animation: none !important;
   pointer-events: none !important;
   z-index: 10 !important;
   letter-spacing: 0 !important;
-}
-@keyframes bp-badge-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 2px 6px rgba(239,68,68,0.6); }
-  50% { transform: scale(1.12); box-shadow: 0 3px 10px rgba(239,68,68,0.85); }
 }
 
 .homepage-container .radio-header-btn {
@@ -11214,13 +11206,33 @@ body .homepage-container .send-btn svg {
 .dark-mode .vpm-rel-option:hover { background: rgba(139,92,246,0.15); }
 .dark-mode .vpm-rel-remove { color: #fca5a5; border-top-color: rgba(255,255,255,0.08); }
 
+/* Keep all badges completely static across HomePage & profile modals */
+.inline-badge,
+.vpm-badge-wrap,
+.vpm-role-pill-badge,
+.birthday-badge-glow,
+.badge-pill,
+.gender-badge,
+.trust-badge-inline {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
-   PREMIUM FROSTED CHAT COMPOSER (.hp-composer-*) — Light, Dark & Mobile Safe
+   PREMIUM FROSTED PILL CHAT COMPOSER (.hp-composer-*) — Light, Dark & Mobile Safe
    ══════════════════════════════════════════════════════════════════════ */
 
 body .homepage-container .chat-feed {
-  bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
-  padding-bottom: 6px !important;
+  top: 50px !important;
+  bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: 0px !important;
+  margin-bottom: 0px !important;
+}
+
+body .homepage-container .chat-feed .message-row-wrapper:last-child {
+  margin-bottom: 0px !important;
+  padding-bottom: 0px !important;
 }
 
 body .homepage-container .message-body p {
@@ -11236,15 +11248,16 @@ body .homepage-container .chat-footer.hp-composer-footer {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
-  min-height: 54px !important;
-  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+  min-height: 46px !important;
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+  margin: 0 !important;
   background: #ffffff !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border: none !important;
-  border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.16) !important;
   border-radius: 0 !important;
-  box-shadow: 0 -4px 18px rgba(109, 40, 217, 0.08) !important;
+  box-shadow: 0 -2px 12px rgba(109, 40, 217, 0.06) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -11255,12 +11268,11 @@ body .homepage-container .chat-footer.hp-composer-footer {
 body.dark-mode .homepage-container .chat-footer.hp-composer-footer,
 .dark-mode .homepage-container .chat-footer.hp-composer-footer {
   background: #0e0a20 !important;
-  border-top: 1px solid rgba(139, 92, 246, 0.28) !important;
-  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.48) !important;
+  border-top: 1px solid rgba(139, 92, 246, 0.24) !important;
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.44) !important;
 }
 
-/* Reset all legacy fixed/translateZ/max-height rules inherited from .message-form
-   so Blink mobile IME & caret positioning stay strictly locked inside the dock */
+/* Full-width rounded pill dock; reset legacy fixed/translateZ rules */
 body .homepage-container .message-form.hp-composer-dock,
 html.dark-mode .homepage-container .message-form.hp-composer-dock,
 html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
@@ -11276,17 +11288,17 @@ html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
-  min-height: 44px !important;
+  min-height: 42px !important;
   max-height: none !important;
   margin: 0 !important;
-  padding: 3px 4px !important;
+  padding: 3px 5px !important;
   gap: 6px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  background: rgba(248, 246, 255, 0.96) !important;
+  background: rgba(246, 243, 255, 0.96) !important;
   border: 1px solid rgba(139, 92, 246, 0.24) !important;
-  border-radius: 20px !important;
+  border-radius: 9999px !important;
   box-shadow: inset 0 1px 2px rgba(109, 40, 217, 0.04) !important;
   overflow: visible !important;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
@@ -11295,22 +11307,22 @@ html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
 
 body .homepage-container .message-form.hp-composer-dock:focus-within {
   background: #ffffff !important;
-  border-color: rgba(124, 58, 237, 0.55) !important;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14), 0 4px 16px rgba(109, 40, 217, 0.1) !important;
+  border-color: rgba(124, 58, 237, 0.52) !important;
+  box-shadow: 0 0 0 2.5px rgba(124, 58, 237, 0.12), 0 4px 14px rgba(109, 40, 217, 0.08) !important;
 }
 
 body.dark-mode .homepage-container .message-form.hp-composer-dock,
 .dark-mode .homepage-container .message-form.hp-composer-dock {
   background: rgba(24, 17, 52, 0.94) !important;
-  border: 1px solid rgba(167, 139, 250, 0.28) !important;
+  border: 1px solid rgba(167, 139, 250, 0.26) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
 }
 
 body.dark-mode .homepage-container .message-form.hp-composer-dock:focus-within,
 .dark-mode .homepage-container .message-form.hp-composer-dock:focus-within {
   background: rgba(30, 21, 64, 0.98) !important;
-  border-color: rgba(167, 139, 250, 0.58) !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22), 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(167, 139, 250, 0.54) !important;
+  box-shadow: 0 0 0 2.5px rgba(139, 92, 246, 0.2), 0 6px 18px rgba(0, 0, 0, 0.34) !important;
 }
 
 .hp-composer-input-wrap {
@@ -11322,16 +11334,19 @@ body.dark-mode .homepage-container .message-form.hp-composer-dock:focus-within,
   overflow: visible !important;
 }
 
+/* Remove `contain: layout style` and forced `height: 36px !important` so Android Chrome
+   IME caret stays strictly clipped/sized inside the textarea line box */
 body .homepage-container .hp-composer-dock .premium-input-field.premium-textarea,
 body .homepage-container .hp-composer-dock .premium-textarea,
 html.dark-mode .homepage-container .hp-composer-dock .premium-textarea,
 html.dark-theme-variant .homepage-container .hp-composer-dock .premium-textarea {
   position: relative !important;
+  display: block !important;
   width: 100% !important;
-  height: 36px !important;
+  height: auto;
   min-height: 36px !important;
   max-height: 112px !important;
-  padding: 7px 6px !important;
+  padding: 7px 8px !important;
   margin: 0 !important;
   font-size: 15px !important;
   font-weight: 450 !important;
@@ -11350,12 +11365,11 @@ html.dark-theme-variant .homepage-container .hp-composer-dock .premium-textarea 
   -webkit-transform: none !important;
   box-sizing: border-box !important;
   -webkit-overflow-scrolling: touch !important;
-  contain: layout style !important;
 }
 
 body .homepage-container .hp-composer-dock .premium-textarea:focus,
 body .homepage-container .hp-composer-dock .premium-input-field:focus {
-  padding: 7px 6px !important;
+  padding: 7px 8px !important;
 }
 
 body .homepage-container .hp-composer-dock .premium-textarea::placeholder {
@@ -11375,28 +11389,28 @@ body.dark-mode .homepage-container .hp-composer-dock .premium-textarea::placehol
   color: rgba(196, 181, 253, 0.5) !important;
 }
 
-/* Attach button */
+/* Subtle circular Attach button */
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  max-width: 38px !important;
-  border-radius: 13px !important;
-  background: rgba(124, 58, 237, 0.1) !important;
-  border: 1px solid rgba(124, 58, 237, 0.12) !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  border-radius: 50% !important;
+  background: rgba(124, 58, 237, 0.06) !important;
+  border: 1px solid rgba(124, 58, 237, 0.1) !important;
+  box-shadow: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
   align-self: center !important;
   cursor: pointer !important;
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease !important;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled) {
-  background: rgba(124, 58, 237, 0.18) !important;
-  border-color: rgba(124, 58, 237, 0.28) !important;
-  transform: translateY(-1px) !important;
+  background: rgba(124, 58, 237, 0.14) !important;
+  border-color: rgba(124, 58, 237, 0.22) !important;
   opacity: 1 !important;
 }
 
@@ -11406,33 +11420,33 @@ body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:a
 
 body.dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach,
 .dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
-  background: rgba(167, 139, 250, 0.14) !important;
-  border-color: rgba(167, 139, 250, 0.22) !important;
+  background: rgba(167, 139, 250, 0.1) !important;
+  border-color: rgba(167, 139, 250, 0.16) !important;
 }
 
 body.dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled),
 .dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled) {
-  background: rgba(167, 139, 250, 0.24) !important;
-  border-color: rgba(167, 139, 250, 0.36) !important;
+  background: rgba(167, 139, 250, 0.2) !important;
+  border-color: rgba(167, 139, 250, 0.28) !important;
 }
 
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 19px !important;
+  height: 19px !important;
 }
 
-/* Send button */
+/* Circular Send button */
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
 html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
 html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  max-width: 38px !important;
-  border-radius: 13px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  border-radius: 50% !important;
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
   border: 1px solid rgba(124, 58, 237, 0.35) !important;
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.34) !important;
+  box-shadow: 0 3px 10px rgba(109, 40, 217, 0.3) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -11445,8 +11459,8 @@ html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-comp
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:hover:not(:disabled) {
   background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%) !important;
-  box-shadow: 0 6px 18px rgba(109, 40, 217, 0.48) !important;
-  transform: translateY(-1px) scale(1.03) !important;
+  box-shadow: 0 5px 15px rgba(109, 40, 217, 0.44) !important;
+  transform: scale(1.03) !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:active:not(:disabled) {
@@ -11454,8 +11468,8 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:active:no
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
   stroke: none !important;
   transition: transform 0.15s ease !important;
 }
@@ -11473,10 +11487,10 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:not(:disa
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
 html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
 html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
-  background: rgba(124, 58, 237, 0.14) !important;
-  border-color: rgba(124, 58, 237, 0.18) !important;
+  background: rgba(124, 58, 237, 0.12) !important;
+  border-color: rgba(124, 58, 237, 0.16) !important;
   box-shadow: none !important;
-  opacity: 0.7 !important;
+  opacity: 0.72 !important;
   transform: none !important;
   cursor: default !important;
 }
@@ -11493,8 +11507,8 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled 
 
 body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
 .dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
-  background: rgba(167, 139, 250, 0.14) !important;
-  border-color: rgba(167, 139, 250, 0.22) !important;
+  background: rgba(167, 139, 250, 0.12) !important;
+  border-color: rgba(167, 139, 250, 0.2) !important;
 }
 
 body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"],
@@ -11504,28 +11518,29 @@ body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send
 
 @media (max-width: 480px) {
   body .homepage-container .chat-feed {
-    bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: 0px !important;
   }
   body .homepage-container .chat-footer.hp-composer-footer {
-    min-height: 52px !important;
-    padding: 5px 8px calc(5px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 46px !important;
+    padding: 4px 5px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
   }
   body .homepage-container .message-form.hp-composer-dock {
     min-height: 40px !important;
     padding: 3px 4px !important;
-    border-radius: 18px !important;
+    border-radius: 9999px !important;
   }
   body .homepage-container .hp-composer-dock .premium-textarea {
     min-height: 34px !important;
-    padding: 6px 5px !important;
+    padding: 6px 8px !important;
     font-size: 15px !important;
   }
   body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach,
   body .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    max-width: 36px !important;
-    border-radius: 11px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    border-radius: 50% !important;
   }
 }

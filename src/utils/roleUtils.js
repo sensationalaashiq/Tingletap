@@ -70,8 +70,8 @@ export const dicebearSex = (gender) => {
 };
 
 export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
-  const r = (role || '').toLowerCase();
-  const g = (gender || '').toLowerCase();
+  const r = (role || '').toLowerCase().trim();
+  const g = (gender || '').toLowerCase().trim();
 
   if (isGuest || r === 'guest') {
     if (g === 'female') return 'Female';
@@ -83,9 +83,10 @@ export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
     return Badges[badge].name;
   }
 
-  if (r === 'owner' || r === 'superowner') return 'Godfather';
-  if (r === 'admin') return 'High Council';
-  if (r === 'moderator') return 'Guardian';
+  if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'Godfather';
+  if (r === 'admin' || r === 'high_council' || r === 'high council') return 'High Council';
+  if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'Guardian';
+  if (r === 'rj' || r === 'radio_jockey') return 'RJ';
 
   return 'Member';
 };

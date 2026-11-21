@@ -204,17 +204,12 @@
   transform: translateX(-50%) translateY(0);
 }
 
-/* ── Birthday badge glow animation ───────────────────────────────────────── */
+/* ── Birthday badge (static) ─────────────────────────────────────────────── */
 .birthday-badge-glow {
   filter: drop-shadow(0 0 3.5px rgba(236, 72, 153, 0.62));
-  animation: bdGlowPulse 2.2s ease-in-out infinite;
+  animation: none !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-}
-
-@keyframes bdGlowPulse {
-  0%,  100% { filter: drop-shadow(0 0 3px rgba(236, 72, 153, 0.50)); }
-  50%        { filter: drop-shadow(0 0 7px rgba(236, 72, 153, 0.90)); }
 }

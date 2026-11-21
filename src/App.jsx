@@ -428,13 +428,13 @@ function App() {
           setLoading(false);
         });
 
-        // Setup online presence
+        // Setup online presence (use update so HomePage's room presence fields aren't wiped)
         const userStatusRef = ref(rtdb, `/status/${currentUser.uid}`);
         const unsubscribeConnected = onValue(ref(rtdb, '.info/connected'), (snapshot) => {
             if (snapshot.val() === false) return;
             const onlineData = { state: 'online', last_changed: serverTimestamp() };
-            onDisconnect(userStatusRef).set({ state: 'offline', last_changed: serverTimestamp() })
-                .then(() => set(userStatusRef, onlineData));
+            onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: serverTimestamp() })
+                .then(() => update(userStatusRef, onlineData));
         });
 
         // Store unsubscribe functions globally for cleanup

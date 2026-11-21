@@ -8,7 +8,8 @@
   background: #ffffff;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
+  animation: none !important;
+  transition: none !important;
   z-index: 25;
   overflow: visible;
 }
@@ -52,10 +53,10 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
-/* Hover effects */
+/* Hover effects disabled — keep badges static */
 .gender-badge:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive adjustments */
@@ -102,32 +103,8 @@
   z-index: 15;
 }
 
-/* Animation on mount */
-.gender-badge {
-  animation: genderBadgeAppear 0.5s ease-out;
-}
-
-@keyframes genderBadgeAppear {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Pulse effect for online users */
+/* Static badges (no mount or pulse animations) */
+.gender-badge,
 .gender-badge.online {
-  animation: genderBadgeAppear 0.5s ease-out, onlinePulse 2s ease-in-out infinite;
-}
-
-@keyframes onlinePulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  50% {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(34, 197, 94, 0.3);
-  }
+  animation: none !important;
 }
