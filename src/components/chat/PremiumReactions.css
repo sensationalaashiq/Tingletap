@@ -238,15 +238,18 @@
 .prem-rxn-picker-card {
   position: fixed;
   z-index: 99999;
-  width: 310px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.95);
+  width: min(268px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
   border: 1px solid rgba(139, 92, 246, 0.25);
-  box-shadow: 0 20px 50px rgba(15, 10, 35, 0.25), 0 0 30px rgba(139, 92, 246, 0.15), inset 0 1px 0 #ffffff;
-  padding: 14px;
-  animation: premPickPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: 0 18px 42px rgba(15, 10, 35, 0.24), 0 0 24px rgba(139, 92, 246, 0.14), inset 0 1px 0 #ffffff;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: premPickPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes premPickPop {
@@ -264,29 +267,30 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
+  margin-bottom: 7px;
+  padding-bottom: 5px;
   border-bottom: 1px solid rgba(139, 92, 246, 0.12);
 }
 
 .prem-rxn-picker-title {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #1e1b4b;
   letter-spacing: -0.01em;
 }
 
 .prem-rxn-picker-sub {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 600;
   color: #7c3aed;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .prem-rxn-picker-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  width: 100%;
 }
 
 .prem-rxn-btn {
@@ -295,45 +299,50 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: 14px;
-  background: rgba(245, 243, 255, 0.6);
+  min-width: 0;
+  width: 100%;
+  gap: 3px;
+  padding: 5px 2px;
+  border-radius: 10px;
+  background: rgba(245, 243, 255, 0.65);
   border: 1px solid rgba(139, 92, 246, 0.12);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .prem-rxn-btn:hover {
   background: #ffffff;
-  border-color: rgba(168, 85, 247, 0.4);
-  transform: translateY(-3px) scale(1.12);
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+  border-color: rgba(168, 85, 247, 0.45);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 5px 14px rgba(139, 92, 246, 0.2);
 }
 
 .prem-rxn-btn--active {
   background: linear-gradient(135deg, rgba(243, 232, 255, 0.95), rgba(254, 226, 226, 0.95));
   border-color: #a855f7;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.28);
 }
 
 .prem-rxn-btn-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
+  transition: transform 0.18s ease;
 }
 
 .prem-rxn-btn:hover .prem-rxn-btn-icon {
-  transform: scale(1.2);
+  transform: scale(1.08);
 }
 
 .prem-rxn-btn-label {
-  font-size: 9.5px;
+  font-size: 7.5px;
+  line-height: 1.1;
   font-weight: 700;
   color: #4b5563;
   text-align: center;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

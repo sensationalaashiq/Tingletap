@@ -16,7 +16,7 @@ import {
   getPublicMediaUrl,
 } from './shared/r2Client.js';
 import { verifyToken, decodeJwt } from './shared/firestoreAdmin.js';
-import { verifyFileSignature } from './shared/fileSignature.js';
+import { verifyFileSignature, normalizeMediaContentType } from './shared/fileSignature.js';
 import { randomUUID } from 'crypto';
 
 const CORS = {
@@ -28,7 +28,19 @@ const CORS = {
 
 // ── Extension maps ─────────────────────────────────────────────────────────────
 const EXT_IMAGE = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif' };
-const EXT_AUDIO = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav' };
+const EXT_AUDIO = {
+  'audio/webm': 'webm',
+  'audio/ogg': 'ogg',
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/x-m4a': 'm4a',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/aac': 'aac',
+  'audio/flac': 'flac',
+  'audio/opus': 'opus',
+};
 
 // ── Upload type configuration ──────────────────────────────────────────────────
 //   bucket: 'public' | 'private'
@@ -124,7 +136,7 @@ export const handler = async (event) => {
 
   const { uploadType, data: base64Data, roomId: rawRoomId } = body;
   const rawCT      = body.contentType || '';
-  const contentType = rawCT.split(';')[0].trim().toLowerCase();
+  const contentType = normalizeMediaContentType(rawCT);
 
   // ── Validate uploadType ──────────────────────────────────────────────────────
   const config = UPLOAD_CONFIG[uploadType];
@@ -154,7 +166,7 @@ export const handler = async (event) => {
   if (!user.ok) {
     // New-user race: profile upload happens before Firestore doc is created.
     const isNewUserRace = user.err && /Firestore error 4/.test(user.err);
-    if (uploadType === 'profile' && isNewUserRace) {
+    if ((uploadType === 'profile' || uploadType === 'homepage-audio' || uploadType === 'private-chat-audio') && isNewUserRace) {
       const payload = decodeJwt(token);
       resolvedUid = payload?.user_id || payload?.sub;
       if (!resolvedUid) return resp({ error: 'Authentication failed' }, 401);
@@ -162,7 +174,8 @@ export const handler = async (event) => {
       return resp({ error: user.err }, 401);
     }
   } else {
-    if (user.role === 'guest') return resp({ error: 'Registered accounts only' }, 403);
+    const guestAllowed = uploadType === 'homepage-audio' || uploadType === 'private-chat-audio';
+    if (user.role === 'guest' && !guestAllowed) return resp({ error: 'Registered accounts only' }, 403);
     resolvedUid = user.uid;
   }
 

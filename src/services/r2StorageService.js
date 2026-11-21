@@ -143,20 +143,99 @@ const PUBLIC_UPLOAD_TYPES  = new Set(['profile', 'cover', 'chat-image', 'homepag
 const PRIVATE_UPLOAD_TYPES = new Set(['private-chat-image', 'private-chat-audio']);
 const PRESIGNED_THRESHOLD_BYTES = 3 * 1024 * 1024; // 3 MB
 
-export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Not authenticated');
-  const token = await user.getIdToken();
+const AUDIO_MIME_ALIASES = {
+  'audio/mp3': 'audio/mpeg',
+  'audio/x-mpeg': 'audio/mpeg',
+  'audio/x-wav': 'audio/wav',
+  'audio/wave': 'audio/wav',
+  'audio/x-m4a': 'audio/mp4',
+  'audio/m4a': 'audio/mp4',
+  'audio/x-aac': 'audio/aac',
+  'audio/x-flac': 'audio/flac',
+  'audio/opus': 'audio/ogg',
+  'image/jpg': 'image/jpeg',
+};
 
-  const rawType     = blob.type || 'application/octet-stream';
-  const contentType = rawType.split(';')[0].trim().toLowerCase();
+function normalizeClientMime(rawType) {
+  const base = String(rawType || 'application/octet-stream').split(';')[0].trim().toLowerCase();
+  return AUDIO_MIME_ALIASES[base] || base;
+}
 
-  // M-14 / Task #3: for public media types > 3 MB, upload directly to R2 via presigned PUT.
+async function _blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Failed to encode file'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function _uploadViaFreeHost(blob, contentType, token, onProgress) {
+  if (blob.size > 4.1 * 1024 * 1024) {
+    throw new Error('File exceeds 4 MB free upload limit');
+  }
+  if (onProgress) onProgress(30);
+  const base64Data = await blobToBase64(blob);
+  if (onProgress) onProgress(55);
+
+  const res = await fetch(`${BASE}/freeMediaUpload`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      contentType,
+      data: base64Data,
+      filename: blob.name || undefined,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Free upload failed (HTTP ${res.status})`);
+  }
+
+  const result = await res.json();
+  if (!result?.url) throw new Error('Free host returned empty URL');
+  if (onProgress) onProgress(100);
+  return { key: null, url: result.url };
+}
+
+async function _buildCompactDataUrlFallback(blob, contentType) {
+  if (contentType.startsWith('image/')) {
+    const presets = [
+      { maxDim: 800, quality: 0.72 },
+      { maxDim: 640, quality: 0.58 },
+      { maxDim: 480, quality: 0.45 },
+    ];
+    for (const preset of presets) {
+      try {
+        const compressed = await compressImageToWebP(blob, preset);
+        if (compressed.size <= 580 * 1024) {
+          return { key: null, url: await _blobToDataUrl(compressed) };
+        }
+      } catch {
+        break;
+      }
+    }
+    if (blob.size <= 580 * 1024) {
+      return { key: null, url: await _blobToDataUrl(blob) };
+    }
+    throw new Error('Image is too large for fallback encoding');
+  }
+
+  if (contentType.startsWith('audio/') && blob.size <= 680 * 1024) {
+    return { key: null, url: await _blobToDataUrl(blob) };
+  }
+
+  throw new Error('Audio exceeds 680 KB offline fallback limit');
+}
+
+async function _tryR2Upload(blob, uploadType, contentType, token, opts, onProgress) {
   if (PUBLIC_UPLOAD_TYPES.has(uploadType) && blob.size > PRESIGNED_THRESHOLD_BYTES) {
     return _uploadPublicMediaDirect(blob, uploadType, contentType, token, onProgress);
   }
-
-  // Task #3: for private-chat types > 3 MB, also use presigned PUT directly to private bucket.
   if (PRIVATE_UPLOAD_TYPES.has(uploadType) && blob.size > PRESIGNED_THRESHOLD_BYTES) {
     return _uploadPrivateMediaDirect(blob, uploadType, contentType, token, opts, onProgress);
   }
@@ -165,7 +244,6 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   const base64Data = await blobToBase64(blob);
   if (onProgress) onProgress(20);
 
-  // One retry on network failure
   let res;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -180,7 +258,7 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
       break;
     } catch (networkErr) {
       if (attempt === 1) throw new Error('Network error — upload failed after retry');
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 800));
     }
   }
 
@@ -193,7 +271,35 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
 
   const result = await res.json();
   if (onProgress) onProgress(100);
-  return result; // { key, url }
+  return result;
+}
+
+export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  const token = await user.getIdToken();
+
+  const contentType = normalizeClientMime(blob.type);
+
+  // 1. Primary: Cloudflare R2 via Netlify Functions
+  try {
+    return await _tryR2Upload(blob, uploadType, contentType, token, opts, onProgress);
+  } catch (r2Err) {
+    console.warn('[uploadMediaFile] R2 unavailable, trying free media host:', r2Err.message);
+  }
+
+  // 2. Secondary: Unlimited free temporary media host (uguu.se proxy)
+  try {
+    return await _uploadViaFreeHost(blob, contentType, token, onProgress);
+  } catch (freeErr) {
+    console.warn('[uploadMediaFile] Free media host unavailable, trying compact inline fallback:', freeErr.message);
+  }
+
+  // 3. Tertiary: Compact WebP / audio DataURL fallback (always works within Firestore limits)
+  if (onProgress) onProgress(85);
+  const fallbackResult = await _buildCompactDataUrlFallback(blob, contentType);
+  if (onProgress) onProgress(100);
+  return fallbackResult;
 }
 
 /**

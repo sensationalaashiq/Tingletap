@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { extractYouTubeVideoId } from '../utils/youtubeUtils';
 import './YouTubeSearchModal.css';
 
 const IconYouTube = () => (
@@ -79,12 +80,6 @@ const IconMusicUrl = () => (
     </svg>
 );
 
-const extractVideoId = (url) => {
-    const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|music\.youtube\.com\/watch\?v=)([^"&?/\s]{11})/;
-    const m = url.match(regex);
-    return m ? m[1] : null;
-};
-
 const YouTubeSearchModal = React.memo(({ isOpen, onClose, onVideoSelect }) => {
     const [tab, setTab]         = useState('video');
     const [videoUrl, setVideoUrl] = useState('');
@@ -97,19 +92,21 @@ const YouTubeSearchModal = React.memo(({ isOpen, onClose, onVideoSelect }) => {
 
     const handleVideoUrl = (e) => {
         e.preventDefault();
-        if (!videoUrl.trim()) { setError('Please paste a YouTube video URL.'); return; }
-        const id = extractVideoId(videoUrl.trim());
-        if (!id) { setError("That doesn't look like a valid YouTube URL."); return; }
-        onVideoSelect(videoUrl.trim(), { title: 'YouTube Video', channelTitle: 'YouTube', thumbnails: { default: { url: `https://i.ytimg.com/vi/${id}/default.jpg` } } });
+        const cleaned = videoUrl.trim();
+        if (!cleaned) { setError('Please paste a YouTube video URL.'); return; }
+        const id = extractYouTubeVideoId(cleaned);
+        if (!id) { setError("That doesn't look like a valid YouTube URL or Video ID."); return; }
+        onVideoSelect(`https://www.youtube.com/watch?v=${id}`, { title: 'YouTube Video', channelTitle: 'YouTube', thumbnails: { default: { url: `https://i.ytimg.com/vi/${id}/default.jpg` } } });
         setVideoUrl('');
         onClose();
     };
 
     const handleMusicUrl = (e) => {
         e.preventDefault();
-        if (!musicUrl.trim()) { setError('Please paste a YouTube Music URL.'); return; }
-        const id = extractVideoId(musicUrl.trim());
-        if (!id) { setError("That doesn't look like a valid YouTube Music URL."); return; }
+        const cleaned = musicUrl.trim();
+        if (!cleaned) { setError('Please paste a YouTube Music URL.'); return; }
+        const id = extractYouTubeVideoId(cleaned);
+        if (!id) { setError("That doesn't look like a valid YouTube Music URL or Video ID."); return; }
         onVideoSelect(`https://www.youtube.com/watch?v=${id}`, { title: '', channelTitle: 'YouTube Music', isAudioOnly: true, thumbnails: { default: { url: `https://i.ytimg.com/vi/${id}/default.jpg` } } });
         setMusicUrl('');
         onClose();
@@ -177,8 +174,8 @@ const YouTubeSearchModal = React.memo(({ isOpen, onClose, onVideoSelect }) => {
                                 </span>
                                 <input
                                     className="ytm-input"
-                                    type="url"
-                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    type="text"
+                                    placeholder="https://www.youtube.com/watch?v=... or youtu.be/..."
                                     value={videoUrl}
                                     onChange={e => { setVideoUrl(e.target.value); clearError(); }}
                                     autoFocus
@@ -215,8 +212,8 @@ const YouTubeSearchModal = React.memo(({ isOpen, onClose, onVideoSelect }) => {
                                 </span>
                                 <input
                                     className="ytm-input ytm-input--purple"
-                                    type="url"
-                                    placeholder="https://music.youtube.com/watch?v=..."
+                                    type="text"
+                                    placeholder="https://music.youtube.com/watch?v=... or youtu.be/..."
                                     value={musicUrl}
                                     onChange={e => { setMusicUrl(e.target.value); clearError(); }}
                                     autoFocus

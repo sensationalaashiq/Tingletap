@@ -321,10 +321,10 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
         const anchor = reactBtnRef.current || msgBodyRef.current;
         const rect = anchor?.getBoundingClientRect();
         if (!rect) return;
-        const pickerW = 310;
-        const pickerH = 260;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
+        const pickerW = Math.min(268, vw - 16);
+        const pickerH = 225;
         // Place above anchor by default; flip below if not enough room
         let y = rect.top - pickerH - 8;
         if (y < 8) y = rect.bottom + 8;
@@ -805,9 +805,9 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 <div className="youtube-embed-container">
                                     <div className="youtube-embed">
                                         <iframe 
-                                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://tingletap.com')}`}
+                                            src={getYouTubeEmbedUrl(youtubeVideoId) || `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&controls=1&modestbranding=1&rel=0&playsinline=1`}
                                             frameBorder="0" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                             referrerPolicy="strict-origin-when-cross-origin"
                                             allowFullScreen 
                                             title="Embedded youtube"
@@ -1259,6 +1259,13 @@ const HomePage = ({ user, roomIdOverride }) => {
         } catch { return null; }
     });
     const uid = loggedInUserProfile?.uid || null;
+    const [firebaseAuthUid, setFirebaseAuthUid] = useState(() => auth.currentUser?.uid || null);
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (fbUser) => {
+            setFirebaseAuthUid(fbUser?.uid || null);
+        });
+        return () => unsub();
+    }, []);
     const chatFeedRef = useRef(null);
     const footerRef = useRef(null);
     const textareaRef = useRef(null);
@@ -2917,15 +2924,20 @@ const HomePage = ({ user, roomIdOverride }) => {
         loggedInUserProfileRef.current = loggedInUserProfile;
     }, [loggedInUserProfile]);
 
-    // ── PRESENCE PART 0: Instant write — no loggedInUserProfile wait ────────────
-    // Writes a minimal presence entry as soon as auth uid + roomId are known so
-    // the online count and sidebar update immediately on room entry / page reload.
-    // Part 1 (below) overwrites with the full profile once it arrives.
+    // ── PRESENCE PART 0: Instant write — waits for confirmed Firebase Auth UID ─
     useEffect(() => {
         if (!roomId) return;
         const isGuest = localStorage.getItem('isGuest') === 'true';
 
-        let currentUid = user?.uid;
+        let localGuestProfile = null;
+        if (isGuest) {
+            try { localGuestProfile = JSON.parse(localStorage.getItem('guestUser') || '{}'); } catch {}
+        }
+
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        let currentUid = authUid || user?.uid || localGuestProfile?.uid;
+        if (!currentUid) return;
+
         const cachedAppProfile = (window._appUserProfile && window._appUserProfile.uid === currentUid)
             ? window._appUserProfile
             : (loggedInUserProfileRef.current?.uid === currentUid ? loggedInUserProfileRef.current : null);
@@ -2935,18 +2947,13 @@ const HomePage = ({ user, roomIdOverride }) => {
         let badge = cachedAppProfile?.badge || null;
         let photoURL = cachedAppProfile?.photoURL || null;
 
-        if (isGuest) {
-            try {
-                const g = JSON.parse(localStorage.getItem('guestUser') || '{}');
-                currentUid = g.uid;
-                displayName = g.username || g.displayName || 'Guest';
-                gender = g.gender || getStoredGuestGender() || 'male';
-                role = 'guest';
-                badge = null;
-            } catch {}
+        if (isGuest && localGuestProfile) {
+            displayName = localGuestProfile.username || localGuestProfile.displayName || displayName || 'Guest';
+            gender = localGuestProfile.gender || getStoredGuestGender() || 'male';
+            role = 'guest';
+            badge = null;
+            photoURL = localGuestProfile.photoURL || photoURL;
         }
-
-        if (!currentUid) return;
 
         const minimalStatus = {
             state: 'online',
@@ -2960,20 +2967,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             gender,
             photoURL: photoURL || getDefaultAvatarUrl(currentUid, gender),
         };
-        const userStatusRef = ref(rtdb, `status/${currentUid}`);
-        set(userStatusRef, minimalStatus).catch(() => {});
-        // Also write to room-scoped node immediately so user appears in sidebar/count right away
-        const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
-        set(roomPresenceRef, minimalStatus).catch(() => {});
-        // Write lightweight entry to roomCounts so RoomListPage/Sidebar can show per-room counts
-        set(ref(rtdb, `roomCounts/${roomId}/${currentUid}`), true).catch(() => {});
 
-        // ── INSTANT SELF-INJECT ──────────────────────────────────────────────
-        // RTDB writes are async — the onValue listener fires with the previous
-        // (empty) snapshot BEFORE the write completes, so the user sees count=0
-        // and doesn't appear in the sidebar for ~200-500 ms. Fix: immediately
-        // populate the presence ref + state with our own entry so the UI is
-        // correct from frame 1, without waiting for the RTDB round-trip.
+        // ── INSTANT SELF-INJECT (local frame 1) ─────────────────────────────
         userOnlineStatusesRef.current = {
             ...userOnlineStatusesRef.current,
             [currentUid]: minimalStatus,
@@ -2985,27 +2980,27 @@ const HomePage = ({ user, roomIdOverride }) => {
         const selfSet = new Set([...(window.onlineUsers || []), currentUid]);
         setOnlineUsers(selfSet);
         window.onlineUsers = selfSet;
-        // No cleanup here — Part 2 (stable effect) owns the offline transition
-    }, [roomId, user?.uid]);
 
-    // ── PRESENCE PART 1: Write online status whenever profile or room is ready ─
-    // loggedInUserProfile IS in deps here — safe because RTDB writes don't trigger
-    // Firestore listeners, so there is zero write→listen→re-run loop risk.
-    // storeDeviceInfo is in a separate effect below to keep this clean.
+        // Only perform RTDB writes once Firebase Auth UID is confirmed (prevents PERMISSION_DENIED)
+        if (!authUid) return;
+
+        const userStatusRef = ref(rtdb, `status/${authUid}`);
+        set(userStatusRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] status PART 0 write failed:', err?.message));
+        const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
+        set(roomPresenceRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] room_presence PART 0 write failed:', err?.message));
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), true).catch(() => {});
+    }, [roomId, user?.uid, firebaseAuthUid]);
+
+    // ── PRESENCE PART 1: Write full online status whenever profile + auth ready ─
     useEffect(() => {
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
-        if ((!user && !(isGuest && guestData)) || !roomId || !loggedInUserProfile) return;
+        if (!authUid || (!user && !(isGuest && guestData)) || !roomId || !loggedInUserProfile) return;
 
-        const currentUid = user?.uid || (() => {
-            try { return JSON.parse(guestData).uid; } catch { return null; }
-        })();
-        if (!currentUid) return;
-
-        // Display name
         let displayNameForStatus = loggedInUserProfile.displayName || 'Guest';
         if (isGuest && guestData) {
-            try { const g = JSON.parse(guestData); displayNameForStatus = g.username || g.displayName || 'Guest'; } catch {}
+            try { const g = JSON.parse(guestData); displayNameForStatus = g.username || g.displayName || displayNameForStatus || 'Guest'; } catch {}
         }
 
         const ua = navigator.userAgent || 'Unknown';
@@ -3019,30 +3014,20 @@ const HomePage = ({ user, roomIdOverride }) => {
             gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
             role: loggedInUserProfile.role || 'guest',
             isGuest: isGuest || false,
-            photoURL: loggedInUserProfile.photoURL || getDefaultAvatarUrl(currentUid, loggedInUserProfile.gender),
+            photoURL: loggedInUserProfile.photoURL || getDefaultAvatarUrl(authUid, loggedInUserProfile.gender),
             badge: loggedInUserProfile.badge || null,
-            uid: currentUid,
+            uid: authUid,
             showOnlineStatus: loggedInUserProfile.settings?.showOnlineStatus !== false,
         };
         window._currentStatusData = { ...statusData };
 
-        const userStatusRef = ref(rtdb, `status/${currentUid}`);
-        set(userStatusRef, statusData).catch(() => {});
+        const userStatusRef = ref(rtdb, `status/${authUid}`);
+        set(userStatusRef, statusData).catch(err => console.warn('[Presence] status PART 1 write failed:', err?.message));
 
-        // FIX-PERF-1: Also write to the room-scoped presence node so the
-        // per-room listener (below) only downloads this room's users instead
-        // of the entire platform-wide status tree.
-        if (roomId) {
-            const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${currentUid}`);
-            set(roomPresenceRef, statusData).catch(() => {});
-            // Lightweight roomCounts entry so RoomListPage/Sidebar can count per-room online users
-            set(ref(rtdb, `roomCounts/${roomId}/${currentUid}`), true).catch(() => {});
-        }
-        // No cleanup — offline transition is handled by the stable effect below
-        // Narrow deps to only the fields that go into statusData — prevents re-writing
-        // RTDB presence (and triggering liveUsers re-renders on all clients) on every
-        // font-pref save, theme change, or other profile field update.
-    }, [roomId, user?.uid,
+        const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
+        set(roomPresenceRef, statusData).catch(err => console.warn('[Presence] room_presence PART 1 write failed:', err?.message));
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), true).catch(() => {});
+    }, [roomId, user?.uid, firebaseAuthUid,
         loggedInUserProfile?.displayName,
         loggedInUserProfile?.role,
         loggedInUserProfile?.gender,
@@ -3053,54 +3038,37 @@ const HomePage = ({ user, roomIdOverride }) => {
     ]);
 
     // ── PRESENCE PART 2: Stable setup — onDisconnect + heartbeat ─────────────
-    // Narrow deps [roomId, user?.uid] so cleanup (offline) ONLY fires on room
-    // change or logout — NOT on every font-pref save / profile field update.
-    // Heartbeat uses the ref so it always sends fresh data without re-running.
     useEffect(() => {
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
         const isGuest = localStorage.getItem('isGuest') === 'true';
         const guestData = localStorage.getItem('guestUser');
-        if ((!user && !(isGuest && guestData)) || !roomId) return;
+        if (!authUid || (!user && !(isGuest && guestData)) || !roomId) return;
 
-        const currentUid = user?.uid || (() => {
-            try { return JSON.parse(guestData).uid; } catch { return null; }
-        })();
-        if (!currentUid) return;
-
-        const userStatusRef = ref(rtdb, `status/${currentUid}`);
+        const userStatusRef = ref(rtdb, `status/${authUid}`);
         onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: Date.now() });
 
-        // FIX-PERF-1: onDisconnect for the room-scoped node too so it's cleared if the
-        // browser tab closes without a clean logout.
-        const roomPresenceRef = roomId ? ref(rtdb, `room_presence/${roomId}/${currentUid}`) : null;
-        if (roomPresenceRef) {
-            onDisconnect(roomPresenceRef).remove();
-        }
-        // roomCounts onDisconnect — cleared when browser closes without a clean logout
-        const roomCountRef = roomId ? ref(rtdb, `roomCounts/${roomId}/${currentUid}`) : null;
-        if (roomCountRef) {
-            onDisconnect(roomCountRef).remove();
-        }
+        const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
+        onDisconnect(roomPresenceRef).remove();
 
-        // Heartbeat every 180s (3 min) keeps room presence fresh well within STALE_MS (15 min)
+        const roomCountRef = ref(rtdb, `roomCounts/${roomId}/${authUid}`);
+        onDisconnect(roomCountRef).remove();
+
         const heartbeatInterval = setInterval(() => {
             const cached = window._currentStatusData;
             if (!cached) return;
-            const fresh = { ...cached, last_changed: Date.now() };
+            const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: Date.now() };
             window._currentStatusData = fresh;
             update(userStatusRef, fresh).catch(() => {});
-            // Also refresh the room-scoped node
-            if (roomPresenceRef) set(roomPresenceRef, fresh).catch(() => {});
-        }, 180000);
+            set(roomPresenceRef, fresh).catch(() => {});
+        }, 120000);
 
         return () => {
             clearInterval(heartbeatInterval);
             update(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
-            // Remove this user from the room-scoped presence node on clean exit
-            if (roomPresenceRef) remove(roomPresenceRef).catch(() => {});
-            // Remove from roomCounts on clean exit
-            if (roomCountRef) remove(roomCountRef).catch(() => {});
+            remove(roomPresenceRef).catch(() => {});
+            remove(roomCountRef).catch(() => {});
         };
-    }, [roomId, user?.uid]);
+    }, [roomId, user?.uid, firebaseAuthUid]);
 
     // ── PRESENCE PART 3: Store device info in Firestore once per login ────────
     // Isolated so its Firestore write never triggers loggedInUserProfile listener
@@ -4146,30 +4114,54 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
-        const unsubscribe = onValue(roomPresenceListenRef, (snapshot) => {
-            const presences = snapshot.val() || {};
-            // 15 minutes window + clock-skew tolerance so live users never drop out prematurely
-            const STALE_MS = 15 * 60 * 1000;
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        if (!authUid) {
+            // Defer attaching RTDB listeners until Firebase Auth settles so listeners never die on PERMISSION_DENIED
+            return;
+        }
+
+        const STALE_MS = 15 * 60 * 1000;
+        let roomPresRaw = {};
+        let globalStatusRaw = {};
+
+        const isFreshOnline = (p, now) => {
+            if (!p || p.state !== 'online') return false;
+            const ts = typeof p.last_changed === 'number' ? p.last_changed : 0;
+            return !ts || ts > now || (now - ts) < STALE_MS;
+        };
+
+        const reconcilePresences = () => {
             const now = Date.now();
+            const merged = {};
 
-            const currentUidsInRoom = Object.keys(presences)
-                .filter(uid => {
-                    const p = presences[uid];
-                    if (!p || p.state !== 'online') return false;
-                    const ts = typeof p.last_changed === 'number' ? p.last_changed : 0;
-                    const fresh = !ts || ts > now || (now - ts) < STALE_MS;
-                    return fresh;
-                });
+            // 1. Collect users in this room from global status/ (resilient even if room_presence node lags or rules differ)
+            Object.entries(globalStatusRaw || {}).forEach(([uid, p]) => {
+                if (p && p.currentRoomId === roomId && isFreshOnline(p, now)) {
+                    merged[uid] = p;
+                }
+            });
 
-            userOnlineStatusesRef.current = presences;
-            window.userOnlineStatuses = presences;
+            // 2. Merge per-room room_presence/${roomId}/ (authoritative for room entry)
+            Object.entries(roomPresRaw || {}).forEach(([uid, p]) => {
+                if (isFreshOnline(p, now)) {
+                    merged[uid] = { ...(merged[uid] || {}), ...p };
+                }
+            });
+
+            // 3. Keep self entry if initial write hasn't echoed back yet
+            if (!merged[authUid] && userOnlineStatusesRef.current?.[authUid]?.state === 'online') {
+                merged[authUid] = userOnlineStatusesRef.current[authUid];
+            }
+
+            const currentUidsInRoom = Object.keys(merged);
+            userOnlineStatusesRef.current = merged;
+            window.userOnlineStatuses = merged;
 
             const nextMetaKey = currentUidsInRoom
                 .slice()
                 .sort()
                 .map(uid => {
-                    const p = presences[uid] || {};
+                    const p = merged[uid] || {};
                     return `${uid}:${p.displayName || ''}:${p.role || ''}:${p.badge || ''}:${p.photoURL || ''}:${p.gender || ''}:${p.isGuest ? 1 : 0}:${p.showOnlineStatus === false ? 0 : 1}`;
                 })
                 .join('|');
@@ -4192,10 +4184,38 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return onlineUsersSet;
             });
             window.onlineUsers = onlineUsersSet;
-        });
+        };
 
-        return () => unsubscribe();
-    }, [roomId]);
+        const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
+        const statusListenRef = ref(rtdb, 'status');
+
+        const unsubRoom = onValue(
+            roomPresenceListenRef,
+            (snapshot) => {
+                roomPresRaw = snapshot.val() || {};
+                reconcilePresences();
+            },
+            (err) => {
+                console.warn('[Presence] room_presence listener error:', err?.message || err);
+            }
+        );
+
+        const unsubStatus = onValue(
+            statusListenRef,
+            (snapshot) => {
+                globalStatusRaw = snapshot.val() || {};
+                reconcilePresences();
+            },
+            (err) => {
+                console.warn('[Presence] status listener error:', err?.message || err);
+            }
+        );
+
+        return () => {
+            unsubRoom();
+            unsubStatus();
+        };
+    }, [roomId, firebaseAuthUid, user?.uid]);
 
     
 
@@ -4518,8 +4538,15 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         let _pendingMsgClientId = null; // C2: tracks the local pending bubble for this send attempt
         try {
+            const rawMessageText = newMessage;
+            const trimmedText = rawMessageText.trim();
+            const pastedYtId = (!whisperTarget && /(?:youtube\.com\/|youtu\.be\/)/i.test(trimmedText))
+                ? extractYouTubeVideoId(trimmedText)
+                : null;
+
             const messageData = {
                 text: newMessage,
+                ...(pastedYtId ? { youtubeVideoId: pastedYtId } : {}),
                 fontSize: fontSize,
                 fontColor: fontColor,
                 fontFamily: fontFamily,
@@ -4557,9 +4584,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperTo = whisperTarget.uid;
                 messageData.whisperToName = whisperTarget.displayName;
             }
-
-            const rawMessageText = newMessage;
-            const trimmedText = rawMessageText.trim();
 
             // ── Instant 0ms Synchronous Anti-Spam & Abuse Guard ──────────
             // Owners bypass auto-mod; spam checks run in <1ms in memory without blocking UI.
@@ -4726,6 +4750,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         setIsYouTubeSearchModalOpen(false);
+        startSendProgress();
 
         try {
             await addDoc(collection(db, 'rooms', roomId, 'messages'), {
@@ -4746,6 +4771,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
                 role: userProfile.role || 'user',
+                isGuest: userProfile.isGuest || false,
                 photoURL: userProfile.photoURL || null
             });
             setNewMessage('');
@@ -4756,6 +4782,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             pt.youtube("YouTube video shared successfully!");
         } catch (error) {
+            completeSendProgress();
             if (error.code === 'permission-denied') {
                 pt.error("Permission denied. Please check your account status.");
             } else if (error.code === 'unavailable') {
@@ -5835,6 +5862,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 privateFileInputRef.current.value = '';
             }
         } catch (error) {
+            pt.error(`Failed to send private image: ${error?.message || 'Please try again.'}`);
         }
     };
 
@@ -5869,6 +5897,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             setPrivateImagePopupOpen(false);
             
         } catch (error) {
+            pt.error(`Failed to upload private image: ${error?.message || 'Please try again.'}`);
         }
     };
 
@@ -5925,7 +5954,9 @@ const HomePage = ({ user, roomIdOverride }) => {
     const startPrivateRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+            const preferredMimes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+            const supportedMime = preferredMimes.find(m => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m));
+            const recorder = supportedMime ? new MediaRecorder(stream, { mimeType: supportedMime }) : new MediaRecorder(stream);
             const chunks = [];
 
             recorder.ondataavailable = (e) => {
@@ -5935,7 +5966,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/wav' });
+                const actualType = (recorder.mimeType || supportedMime || 'audio/webm').split(';')[0];
+                const blob = new Blob(chunks, { type: actualType });
                 setPrivateRecordedBlob(blob);
                 const audioUrl = URL.createObjectURL(blob);
                 setPrivateAudioPreview(audioUrl);
@@ -6952,6 +6984,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             setTimeout(() => scrollToBottom(true), 100);
             
         } catch (error) {
+            completeSendProgress();
+            pt.error(`Image upload failed: ${error?.message || 'Please try again.'}`);
         }
     };
 
@@ -7047,6 +7081,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             setTimeout(() => scrollToBottom(true), 100);
             
         } catch (error) {
+            completeSendProgress();
+            pt.error(`Failed to send image URL: ${error?.message || 'Please try again.'}`);
         }
     };
 
@@ -7083,7 +7119,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        if (!file.type.startsWith('audio/')) {
+        const isAudioExt = /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name || '');
+        if (!file.type.startsWith('audio/') && !isAudioExt) {
             pt.error("Please select a valid audio file!");
             return;
         }
@@ -7096,9 +7133,9 @@ const HomePage = ({ user, roomIdOverride }) => {
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus'
-            });
+            const preferredMimes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+            const supportedMime = preferredMimes.find(m => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m));
+            const recorder = supportedMime ? new MediaRecorder(stream, { mimeType: supportedMime }) : new MediaRecorder(stream);
             const chunks = [];
 
             recorder.ondataavailable = (e) => {
@@ -7108,7 +7145,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const actualType = (recorder.mimeType || supportedMime || 'audio/webm').split(';')[0];
+                const blob = new Blob(chunks, { type: actualType });
                 setRecordedBlob(blob);
                 const audioUrl = URL.createObjectURL(blob);
                 setAudioPreview(audioUrl);
@@ -7191,10 +7229,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         setAudioPreview(null);
 
         try {
-            const filename = (audioData && audioData.name) || (selectedAudio && selectedAudio.name) || `voice-note-${Date.now()}.wav`;
-            
+            const isDirectUrl = audioToUpload && typeof audioToUpload === 'object' && audioToUpload.isUrl && typeof audioToUpload.url === 'string';
+            const filename = isDirectUrl
+                ? 'Audio Link'
+                : (audioData && audioData.name) || (selectedAudio && selectedAudio.name) || `voice-note-${Date.now()}.webm`;
 
-            const { key: audioKey, url: audioUrl } = await uploadMediaFile(audioToUpload, 'homepage-audio', {});
+            const { key: audioKey, url: audioUrl } = isDirectUrl
+                ? { key: null, url: audioToUpload.url.trim() }
+                : await uploadMediaFile(audioToUpload, 'homepage-audio', {});
 
             const messageData = {
                 text: newMessage || '',
@@ -7233,6 +7275,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </div>
                     );
                     setWhisperTarget(null);
+                    completeSendProgress();
                     return;
                 }
                 messageData.isWhisper = true;
@@ -7250,6 +7293,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             pt.audio("Audio sent successfully!");
         } catch (error) {
+            completeSendProgress();
             pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
         }
     };
@@ -8266,7 +8310,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     <div className="vpm-cover-section vpm-cover-spotify">
                                         <iframe src={spotifyEmbed} width="100%" height="80" frameBorder="0"
                                             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                            allowFullScreen title="Spotify" style={{display:'block',borderRadius:'0'}}/>
+                                            referrerPolicy="strict-origin-when-cross-origin"
+                                            allowFullScreen title="Spotify" style={{display:'block',borderRadius:'0',border:'none'}}/>
                                         <div className="vpm-cover-badge-inline vpm-cb-spotify">
                                             Spotify · Now Playing
                                             <svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/></svg>
@@ -8886,8 +8931,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     setIsAttachmentDropdownOpen(false);
                 };
                 const LockBadge = () => (
-                    <span style={{position:'absolute',bottom:'-3px',right:'-3px',width:'17px',height:'17px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid white',zIndex:2}}>
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                    <span style={{position:'absolute',bottom:'-2px',right:'-2px',width:'12px',height:'12px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid white',zIndex:2}}>
+                        <svg width="7" height="7" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                     </span>
                 );
                 // Access flags
@@ -8897,51 +8942,51 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const canStyle   = _tier !== 'guest';                        // member+
                 return (
                 <div className="hp-attach-popup" style={{
-                    position: 'fixed', bottom: '52px', left: '8px', right: '8px',
-                    zIndex: 2100,
-                    background: isDarkMode ? 'rgba(14,7,35,0.97)' : 'rgba(250,248,255,0.98)',
-                    border: isDarkMode ? '1px solid rgba(139,92,246,0.25)' : '1px solid rgba(196,181,253,0.5)',
-                    borderRadius: '18px',
+                    position: 'fixed', bottom: '58px', left: '10px', right: '10px',
+                    maxWidth: '390px', margin: '0 auto', zIndex: 2100,
+                    background: isDarkMode ? 'rgba(18, 10, 42, 0.96)' : 'rgba(255, 255, 255, 0.97)',
+                    border: isDarkMode ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(196,181,253,0.6)',
+                    borderRadius: '9999px',
                     boxShadow: isDarkMode
-                        ? '0 -6px 32px rgba(109,40,217,0.28), 0 2px 12px rgba(0,0,0,0.4)'
-                        : '0 -6px 32px rgba(109,40,217,0.16), 0 2px 12px rgba(139,92,246,0.08)',
-                    display: 'flex', flexDirection: 'row', gap: '10px',
-                    padding: '12px 16px', backdropFilter: 'blur(24px)',
-                    alignItems: 'stretch',
+                        ? '0 10px 30px rgba(0,0,0,0.45), 0 0 20px rgba(109,40,217,0.22)'
+                        : '0 10px 28px rgba(109,40,217,0.18), 0 2px 10px rgba(139,92,246,0.08)',
+                    display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                    gap: '2px', padding: '7px 12px', backdropFilter: 'blur(20px)',
+                    alignItems: 'center', boxSizing: 'border-box',
                 }}>
-                    {/* ── 1. Audio — always available (guest can record; file upload gated inside modal) ── */}
+                    {/* ── 1. Audio ── */}
                     <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#f093fb,#f5576c)'}}>
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span className="hp-attach-icon-wrap">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </span>
                         <span className="hp-attach-label">Audio</span>
                     </button>
 
-                    {/* ── 2. Photo — tier1+ (locked for guest & member) ── */}
+                    {/* ── 2. Photo ── */}
                     {!canPhoto ? (
                         <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock photo sharing!')}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#667eea,#764ba2)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="white" strokeWidth="1.6"/><circle cx="8.5" cy="8.5" r="1.8" fill="white"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                 <LockBadge />
                             </span>
                             <span className="hp-attach-label" style={{color:'#ef4444'}}>Photo</span>
                         </button>
                     ) : (
                         <button className="hp-attach-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#667eea,#764ba2)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="white" strokeWidth="1.6"/><circle cx="8.5" cy="8.5" r="1.8" fill="white"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </span>
                             <span className="hp-attach-label">Photo</span>
                         </button>
                     )}
 
-                    {/* ── 3. YouTube — tier2+ (locked for guest, member, tier1) ── */}
+                    {/* ── 3. YouTube ── */}
                     {!canYouTube ? (
                         <button className="hp-attach-btn" onClick={() => lockToast('Upgrade to Platinum Lord or higher to share YouTube videos!')}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="white" strokeWidth="1.6" fill="none"/>
-                                    <path d="M9.5 8.5l6 3.5-6 3.5V8.5z" fill="white"/>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
+                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
                                 </svg>
                                 <LockBadge />
                             </span>
@@ -8949,47 +8994,47 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </button>
                     ) : (
                         <button className="hp-attach-btn" title="Share YouTube Video" onClick={() => { setIsYouTubeSearchModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#ff4e42,#c4162a)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="4" width="20" height="16" rx="3" stroke="white" strokeWidth="1.6" fill="none"/>
-                                    <path d="M9.5 8.5l6 3.5-6 3.5V8.5z" fill="white"/>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
+                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
                                 </svg>
                             </span>
                             <span className="hp-attach-label">YouTube</span>
                         </button>
                     )}
 
-                    {/* ── 4. Style/Font — member+ (guest locked; inside modal access is tier-based) ── */}
+                    {/* ── 4. Style/Font ── */}
                     {!canStyle ? (
                         <button className="hp-attach-btn" onClick={() => lockToast('Register to use text styles!')}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                 <LockBadge />
                             </span>
                             <span className="hp-attach-label" style={{color:'#ef4444'}}>Style</span>
                         </button>
                     ) : (
                         <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#fa709a,#fee140)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </span>
                             <span className="hp-attach-label">Style</span>
                         </button>
                     )}
 
-                    {/* ── 5. GIF — tier1+ (locked for guest & member) ── */}
+                    {/* ── 5. GIF ── */}
                     {!canGif ? (
                         <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock GIF sharing!')}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)',opacity:0.55,position:'relative'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
                                 <LockBadge />
                             </span>
                             <span className="hp-attach-label" style={{color:'#ef4444'}}>GIF</span>
                         </button>
                     ) : (
                         <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#4facfe,#00f2fe)'}}>
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4" stroke="white" strokeWidth="1.6"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
                             </span>
                             <span className="hp-attach-label">GIF</span>
                         </button>
@@ -9001,9 +9046,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         setShowTagPicker(true);
                         textareaRef.current?.focus();
                     }}>
-                        <span className="hp-attach-icon-wrap" style={{background:'linear-gradient(135deg,#a855f7,#6366f1)'}}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="white"/>
+                        <span className="hp-attach-icon-wrap">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="#8b5cf6"/>
                             </svg>
                         </span>
                         <span className="hp-attach-label">Tag</span>

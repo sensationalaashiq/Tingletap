@@ -2883,8 +2883,9 @@ const SettingsSidebar = ({
                                                         height="80"
                                                         frameBorder="0"
                                                         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                                        referrerPolicy="strict-origin-when-cross-origin"
                                                         title="Spotify Preview"
-                                                        style={{ display: 'block' }}
+                                                        style={{ display: 'block', border: 'none' }}
                                                     />
                                                 )}
                                             </div>
@@ -2970,8 +2971,8 @@ const SettingsSidebar = ({
                                                         </svg>
                                                     </span>
                                                     <input
-                                                        type="url"
-                                                        placeholder="https://www.youtube.com/watch?v=..."
+                                                        type="text"
+                                                        placeholder="https://www.youtube.com/watch?v=... or youtu.be/..."
                                                         className="youtube-url-input"
                                                     />
                                                 </div>
@@ -2979,8 +2980,8 @@ const SettingsSidebar = ({
                                                 <button
                                                     className="youtube-set-button"
                                                     onClick={async (e) => {
-                                                        const input = e.target.closest('.youtube-input-container').querySelector('input[type="url"]');
-                                                        const youtubeUrl = input.value.trim();
+                                                        const input = e.target.closest('.youtube-input-container')?.querySelector('.youtube-url-input');
+                                                        const youtubeUrl = input?.value?.trim() || '';
 
                                                         if (!youtubeUrl) {
                                                             pt.error('Please enter a YouTube URL');
@@ -3057,16 +3058,16 @@ const SettingsSidebar = ({
 
                                             <div className="spotify-input-container">
                                                 <input
-                                                    type="url"
-                                                    placeholder="https://open.spotify.com/track/..."
+                                                    type="text"
+                                                    placeholder="https://open.spotify.com/track/... or spotify:track:..."
                                                     className="spotify-url-input"
                                                 />
 
                                                 <button
                                                     className="spotify-set-button"
                                                     onClick={async (e) => {
-                                                        const input = e.target.closest('.spotify-input-container').querySelector('input[type="url"]');
-                                                        const spotifyUrl = input.value.trim();
+                                                        const input = e.target.closest('.spotify-input-container')?.querySelector('.spotify-url-input');
+                                                        const spotifyUrl = input?.value?.trim() || '';
 
                                                         if (!spotifyUrl) {
                                                             pt.error('Please enter a Spotify URL');

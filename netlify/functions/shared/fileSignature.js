@@ -31,6 +31,8 @@ const CHECKS = {
   'audio/ogg':  (buf) => matchesAscii(buf, 'OggS'),
   'audio/wav':  (buf) => matchesAscii(buf, 'RIFF') && matchesAscii(buf, 'WAVE', 8),
   'audio/mp4':  (buf) => matchesAscii(buf, 'ftyp', 4), // ISO base media container (m4a)
+  'audio/aac':  (buf) => hasPrefix(buf, [0xFF, 0xF1]) || hasPrefix(buf, [0xFF, 0xF9]) || matchesAscii(buf, 'ADIF') || matchesAscii(buf, 'ftyp', 4),
+  'audio/flac': (buf) => matchesAscii(buf, 'fLaC'),
   'audio/mpeg': (buf) =>
     matchesAscii(buf, 'ID3') ||
     hasPrefix(buf, [0xFF, 0xFB]) || hasPrefix(buf, [0xFF, 0xF3]) ||
@@ -43,13 +45,32 @@ const CHECKS = {
   'video/quicktime': (buf) => ['ftyp', 'moov', 'free', 'mdat', 'wide', 'skip'].some(box => matchesAscii(buf, box, 4)),
 };
 
+const MIME_ALIASES = {
+  'audio/mp3': 'audio/mpeg',
+  'audio/x-mpeg': 'audio/mpeg',
+  'audio/x-wav': 'audio/wav',
+  'audio/wave': 'audio/wav',
+  'audio/x-m4a': 'audio/mp4',
+  'audio/m4a': 'audio/mp4',
+  'audio/x-aac': 'audio/aac',
+  'audio/x-flac': 'audio/flac',
+  'audio/opus': 'audio/ogg',
+  'image/jpg': 'image/jpeg',
+};
+
+export function normalizeMediaContentType(contentType) {
+  const base = String(contentType || '').split(';')[0].trim().toLowerCase();
+  return MIME_ALIASES[base] || base;
+}
+
 /**
  * Returns true if `buffer`'s actual content matches the claimed `contentType`.
  * Unknown content types (not in CHECKS) are allowed through — this only
  * hardens the types we explicitly accept elsewhere via MIME allow-lists.
  */
 export function verifyFileSignature(buffer, contentType) {
-  const check = CHECKS[contentType];
+  const normalized = normalizeMediaContentType(contentType);
+  const check = CHECKS[normalized];
   if (!check) return true; // no signature defined — allow-list elsewhere already gates the type
   try {
     return check(buffer);

@@ -33,6 +33,7 @@ const StylishImageUploadModal = React.memo(({
 }) => {
     const [imageTab, setImageTab] = useState('upload');
     const [imageCaption, setImageCaption] = useState('');
+    const [uploadError, setUploadError] = useState('');
 
     if (!isOpen) return null;
 
@@ -66,13 +67,14 @@ const StylishImageUploadModal = React.memo(({
     // C15: Client-side file-size guard + magic-byte MIME validation.
     const handleFileUpload = async () => {
         if (selectedImage && onImageUpload) {
+            setUploadError('');
             if (selectedImage.size && selectedImage.size > MAX_FILE_BYTES) {
-                alert(`Image must be less than ${MAX_FILE_MB} MB. Please choose a smaller file.`);
+                setUploadError(`Image must be less than ${MAX_FILE_MB} MB. Please choose a smaller file.`);
                 return;
             }
             const isValidImage = await checkImageMagicBytes(selectedImage);
             if (!isValidImage) {
-                alert('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
+                setUploadError('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
                 return;
             }
             onImageUpload(selectedImage, imageCaption);
@@ -81,10 +83,11 @@ const StylishImageUploadModal = React.memo(({
     };
 
     const handleUrlUpload = () => {
-        if (imageUrl.trim() && onImageUrlUpload) { onImageUrlUpload(imageUrl.trim(), imageCaption); resetModal(); }
+        if (imageUrl.trim() && onImageUrlUpload) { setUploadError(''); onImageUrlUpload(imageUrl.trim(), imageCaption); resetModal(); }
     };
 
     const resetModal = () => {
+        setUploadError('');
         if (setImageUrl) setImageUrl('');
         setImageCaption('');
         setImageTab('upload');
@@ -126,7 +129,7 @@ const StylishImageUploadModal = React.memo(({
                 {/* Tabs */}
                 <div className="sim-tabs">
                     <button className={`sim-tab${imageTab === 'upload' ? ' active' : ''}`}
-                        onClick={() => { setImageTab('upload'); if (setImageUrl) setImageUrl(''); }}
+                        onClick={() => { setImageTab('upload'); setUploadError(''); if (setImageUrl) setImageUrl(''); }}
                         style={imageTab === 'upload' ? activeTabStyle : normalTabStyle}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M3 13V16a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v9M7 6l3-3 3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
@@ -135,7 +138,7 @@ const StylishImageUploadModal = React.memo(({
                     </button>
 
                     <button className={`sim-tab${imageTab === 'url' ? ' active' : ''}`}
-                        onClick={() => { setImageTab('url'); if (fileInputRef?.current) fileInputRef.current.value = ''; }}
+                        onClick={() => { setImageTab('url'); setUploadError(''); if (fileInputRef?.current) fileInputRef.current.value = ''; }}
                         style={imageTab === 'url' ? activeTabStyle : (canUseUrl ? normalTabStyle : lockedTabStyle)}>
                         <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                             <path d="M7.5 10a2.5 2.5 0 003.536 3.536l2.5-2.5a2.5 2.5 0 00-3.536-3.536l-1.25 1.25" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
@@ -150,7 +153,23 @@ const StylishImageUploadModal = React.memo(({
                     </button>
                 </div>
 
-                <input ref={fileInputRef} type="file" onChange={handleImageSelect} accept="image/*" style={{ display: 'none' }}/>
+                {uploadError && (
+                    <div style={{
+                        margin: '0 0 10px',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.35)',
+                        color: '#dc2626',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        textAlign: 'center',
+                    }}>
+                        {uploadError}
+                    </div>
+                )}
+
+                <input ref={fileInputRef} type="file" onChange={(e) => { setUploadError(''); handleImageSelect(e); }} accept="image/*" style={{ display: 'none' }}/>
 
                 {/* Content */}
                 <div className="sim-content">
@@ -158,7 +177,7 @@ const StylishImageUploadModal = React.memo(({
                         imagePreview ? (
                             <div className="sim-preview-wrap">
                                 <img src={imagePreview} alt="Preview" className="sim-preview-img"/>
-                                <button className="sim-remove-preview" onClick={() => { if (fileInputRef?.current) fileInputRef.current.value = ''; }}>
+                                <button className="sim-remove-preview" onClick={() => { setUploadError(''); if (fileInputRef?.current) fileInputRef.current.value = ''; }}>
                                     <svg viewBox="0 0 20 20" width="14" height="14" fill="none">
                                         <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                                     </svg>
@@ -182,7 +201,7 @@ const StylishImageUploadModal = React.memo(({
                             <LockedTabCard message="Upgrade to Diamond King, Sapphire Goddess or RJ badge to share images by URL." />
                         ) : (
                             <div className="sim-url-section">
-                                <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+                                <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
                                     placeholder="https://example.com/image.jpg" className="sim-url-input"/>
                                 <p className="sim-url-hint">Paste a direct link to an image</p>
                                 {imageUrl && (

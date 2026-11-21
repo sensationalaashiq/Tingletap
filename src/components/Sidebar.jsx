@@ -9,7 +9,7 @@ import { collection, doc, query, orderBy, onSnapshot, updateDoc, setDoc, deleteD
 import { db, auth, rtdb } from '../firebase/config';
 import { ref, onValue, set, remove } from 'firebase/database';
 import useRoomsListener from '../hooks/useRoomsListener';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Sidebar.css';
@@ -283,17 +283,46 @@ const Sidebar = ({
     };
   }, []);
 
-  /* -- roomCounts RTDB listener — real-time per-room online user count -- */
+  /* -- roomCounts RTDB listener — real-time per-room online user count (auth-gated) -- */
   useEffect(() => {
-    const unsub = onValue(ref(rtdb, 'roomCounts'), (snap) => {
-      const data = snap.val() || {};
-      const counts = {};
-      Object.entries(data).forEach(([rid, members]) => {
-        if (members && typeof members === 'object') counts[rid] = Object.keys(members).length;
-      });
-      setRoomCounts(counts);
+    let unsubCounts = null;
+    const attachListener = () => {
+      if (unsubCounts) {
+        unsubCounts();
+        unsubCounts = null;
+      }
+      if (!auth.currentUser) return;
+      unsubCounts = onValue(
+        ref(rtdb, 'roomCounts'),
+        (snap) => {
+          const data = snap.val() || {};
+          const counts = {};
+          Object.entries(data).forEach(([rid, members]) => {
+            if (members && typeof members === 'object') counts[rid] = Object.keys(members).length;
+          });
+          setRoomCounts(counts);
+        },
+        (err) => {
+          console.warn('[Sidebar] roomCounts listener error:', err?.message || err);
+        }
+      );
+    };
+
+    if (auth.currentUser) attachListener();
+    const unsubAuth = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        attachListener();
+      } else {
+        if (unsubCounts) {
+          unsubCounts();
+          unsubCounts = null;
+        }
+      }
     });
-    return () => unsub();
+    return () => {
+      unsubAuth();
+      if (unsubCounts) unsubCounts();
+    };
   }, []);
 
   /* -- periodic username styling + load styles for all visible sidebar users -- */

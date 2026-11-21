@@ -571,7 +571,7 @@ export const PremiumReactionPicker = ({
                 title={item.label}
               >
                 <div className="prem-rxn-btn-icon">
-                  {item.render(24)}
+                  {item.render(17)}
                 </div>
                 <span className="prem-rxn-btn-label">{item.label}</span>
               </button>

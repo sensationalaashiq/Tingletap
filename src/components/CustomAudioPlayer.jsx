@@ -267,13 +267,14 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
         />
       </div>
 
-      {/* Hidden audio/iframe (kept in-bounds at 1px so Chromium does not throttle YouTube playback) */}
+      {/* Hidden audio/iframe (kept in-bounds at 2px so Chromium does not throttle YouTube playback) */}
       {isYouTubeMusic ? (
         <iframe
           ref={youtubePlayerRef}
-          src={`https://www.youtube.com/embed/${youtubeVideoId}?enablejsapi=1&autoplay=0&controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&cc_load_policy=0&loop=1&playlist=${youtubeVideoId}&origin=${encodeURIComponent(window.location.origin)}`}
-          style={{ width:'1px', height:'1px', position:'absolute', bottom:'0', right:'0', opacity:0.01, pointerEvents:'none' }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          src={`https://www.youtube.com/embed/${youtubeVideoId}?enablejsapi=1&autoplay=0&controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&cc_load_policy=0&loop=1&playlist=${youtubeVideoId}${typeof window !== 'undefined' && window.location?.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''}`}
+          style={{ width:'2px', height:'2px', position:'absolute', bottom:'0', right:'0', opacity:0.01, pointerEvents:'none', border:'none' }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
           title="YouTube Music Player"
           onLoad={() => { setIsLoading(false); setDuration(180); }}
         />
