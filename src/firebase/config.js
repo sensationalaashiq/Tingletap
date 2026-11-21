@@ -14,7 +14,7 @@ import { getDatabase } from 'firebase/database';
 
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA00000000000000000000000000000000",
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "unconfigured-firebase-api-key",
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "tingletap-app.firebaseapp.com",
     databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://tingletap-app-default-rtdb.firebaseio.com",
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "tingletap-app",

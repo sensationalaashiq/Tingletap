@@ -3,9 +3,9 @@
 // Never exposes credentials. No direct browser→R2 connection (avoids CORS).
 //
 // TWO-BUCKET ARCHITECTURE:
-//   PUBLIC  bucket (R2_Public_Bucket):  profile, cover, homepage images/audio
+//   PUBLIC  bucket:  profile, cover, homepage images/audio
 //     → returns permanent public URL stored directly in Firestore
-//   PRIVATE bucket (R2_Private_Bucket): badge/RJ verifications, private-chat media
+//   PRIVATE bucket:  badge/RJ verifications, private-chat media
 //     → returns /.netlify/functions/serveMedia?key=... proxy URL
 //     → keys stored in Firestore (never presigned URLs)
 
@@ -57,7 +57,7 @@ export function extractR2Key(url) {
     // e.g. https://pub-xxxx.r2.dev/profile/uid/profile.webp → "profile/uid/profile.webp"
     // These never expire so callers should not need to "refresh" them, but we can
     // still extract the key in case the component needs it.
-    if (url.includes('.r2.dev/') || url.includes('R2_PUBLIC_BUCKET_URL')) {
+    if (url.includes('.r2.dev/')) {
       const u     = new URL(url);
       const key   = u.pathname.replace(/^\//, '');
       return key || null;

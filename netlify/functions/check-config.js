@@ -54,9 +54,9 @@ export const handler = async (event) => {
     R2_ACCOUNT_ID:        r2AccountId     ? 'SET ✅'                          : 'MISSING ❌',
     R2_ACCESS_KEY_ID:     r2AccessKey     ? 'SET ✅'                          : 'MISSING ❌',
     R2_SECRET_ACCESS_KEY: r2SecretKey     ? 'SET ✅'                          : 'MISSING ❌',
-    R2_PUBLIC_BUCKET:     r2PublicBucket  ? `SET ✅ → "${r2PublicBucket}"`    : 'MISSING ❌  (set R2_PUBLIC_BUCKET in Netlify)',
-    R2_PRIVATE_BUCKET:    r2PrivateBucket ? `SET ✅ → "${r2PrivateBucket}"`   : 'MISSING ❌  (set R2_PRIVATE_BUCKET in Netlify)',
-    R2_PUBLIC_BUCKET_URL: r2PublicUrl     ? `SET ✅ → "${r2PublicUrl}"`       : 'MISSING ❌  (profile/cover/chat images will proxy through serveMedia instead)',
+    R2_PUBLIC_BUCKET:     r2PublicBucket  ? 'SET ✅'                          : 'MISSING ❌  (set R2_PUBLIC_BUCKET in Netlify)',
+    R2_PRIVATE_BUCKET:    r2PrivateBucket ? 'SET ✅'                          : 'MISSING ❌  (set R2_PRIVATE_BUCKET in Netlify)',
+    R2_PUBLIC_BUCKET_URL: r2PublicUrl     ? 'SET ✅'                          : 'MISSING ❌  (profile/cover/chat images will proxy through serveMedia instead)',
   };
 
   // ── 2. R2 connectivity test (PutObject + DeleteObject — HeadBucket is unreliable on R2) ──
@@ -92,13 +92,13 @@ export const handler = async (event) => {
           return `WRITE OK ✅`;
         } catch (e) {
           const msg = e?.message || String(e);
-          errors.push(`R2 ${label} bucket "${bucket}" write failed: ${msg}`);
+          errors.push(`R2 ${label} bucket write failed: ${msg}`);
           return `WRITE FAILED ❌: ${msg}`;
         }
       }
 
-      bucketTests[`public_bucket (${r2PublicBucket || 'NOT SET'})`]  = await testBucket('public',  r2PublicBucket);
-      bucketTests[`private_bucket (${r2PrivateBucket || 'NOT SET'})`] = await testBucket('private', r2PrivateBucket);
+      bucketTests['public_bucket']  = await testBucket('public',  r2PublicBucket);
+      bucketTests['private_bucket'] = await testBucket('private', r2PrivateBucket);
 
       results.r2_buckets = bucketTests;
     } catch (e) {
@@ -250,8 +250,8 @@ export const handler = async (event) => {
             sender:      { name: process.env.BREVO_SENDER_NAME || '', email: process.env.BREVO_SENDER_EMAIL || '' },
             to:          [{ email: testEmail }],
             subject:     '[${APP_NAME}] Email Config Test',
-            htmlContent: `<h2 style="color:#7c3aed">${APP_NAME} Email Working!</h2><p>If you see this, Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.</p>`,
-            textContent: `${APP_NAME} Email Working! Brevo + ${process.env.BREVO_SENDER_EMAIL || 'sender'} is configured correctly.`,
+            htmlContent: `<h2 style="color:#7c3aed">${APP_NAME} Email Working!</h2><p>If you see this, Brevo + configured sender is working correctly.</p>`,
+            textContent: `${APP_NAME} Email Working! Brevo + configured sender is working correctly.`,
           }),
         });
         if (res.ok) {
