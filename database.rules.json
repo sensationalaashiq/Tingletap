@@ -9,7 +9,7 @@
       ".read": "auth != null",
       ".indexOn": ["currentRoomId", "state", "last_changed"],
       "$uid": {
-        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'owner' || root.child('roles').child(auth.uid).val() === 'superowner' || root.child('roles').child(auth.uid).val() === 'godfather' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'high_council' || root.child('roles').child(auth.uid).val() === 'moderator' || root.child('roles').child(auth.uid).val() === 'guardian' || root.child('staff').child(auth.uid).val() === true)"
+        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'owner' || root.child('roles').child(auth.uid).val() === 'superowner' || root.child('roles').child(auth.uid).val() === 'godfather' || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'high_council' || root.child('roles').child(auth.uid).val() === 'moderator' || root.child('roles').child(auth.uid).val() === 'mod' || root.child('roles').child(auth.uid).val() === 'guardian' || root.child('staff').child(auth.uid).val() === true)"
       }
     },
 

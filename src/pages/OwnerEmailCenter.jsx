@@ -759,19 +759,22 @@ const OwnerEmailCenter = () => {
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const verify = async () => {
-      const user = auth.currentUser;
-      if (!user) { navigate('/login'); return; }
+    let active = true;
+    const unsub = auth.onAuthStateChanged(async (user) => {
+      if (!active) return;
+      if (!user) { setAuthLoading(false); navigate('/login'); return; }
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         const data = snap.data() || {};
-        if (!isOwnerRole(data.role)) { navigate('/welcome'); return; }
+        if (!isOwnerRole(data)) { setAuthLoading(false); navigate('/welcome'); return; }
         setOwnerName(data.displayName || user.displayName || '');
         setIsOwner(true);
-      } catch { navigate('/welcome'); }
-      setAuthLoading(false);
-    };
-    verify();
+      } catch {
+        navigate('/welcome');
+      }
+      if (active) setAuthLoading(false);
+    });
+    return () => { active = false; unsub(); };
   }, [navigate]);
 
   // ── Email list listener ────────────────────────────────────────────────────

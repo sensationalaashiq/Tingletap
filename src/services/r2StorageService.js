@@ -157,8 +157,34 @@ const AUDIO_MIME_ALIASES = {
   'image/jpg': 'image/jpeg',
 };
 
-function normalizeClientMime(rawType) {
-  const base = String(rawType || 'application/octet-stream').split(';')[0].trim().toLowerCase();
+const EXT_TO_MIME = {
+  mp3: 'audio/mpeg',
+  mpeg: 'audio/mpeg',
+  mpga: 'audio/mpeg',
+  wav: 'audio/wav',
+  wave: 'audio/wav',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  m4a: 'audio/mp4',
+  mp4: 'audio/mp4',
+  aac: 'audio/aac',
+  flac: 'audio/flac',
+  webm: 'audio/webm',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+};
+
+function normalizeClientMime(rawType, fileName = '') {
+  let base = String(rawType || '').split(';')[0].trim().toLowerCase();
+  if (!base || base === 'application/octet-stream' || base === 'audio/unknown') {
+    const ext = String(fileName || '').split('.').pop()?.toLowerCase() || '';
+    if (EXT_TO_MIME[ext]) base = EXT_TO_MIME[ext];
+  }
+  if (!base) base = 'application/octet-stream';
   return AUDIO_MIME_ALIASES[base] || base;
 }
 
@@ -209,33 +235,53 @@ async function _uploadDirectFreeCorsHost(blob, contentType, onProgress) {
   }
   if (onProgress) onProgress(35);
 
-  const form = new FormData();
   const subtype = contentType.split('/')[1] || 'bin';
   const ext = subtype === 'mpeg' ? 'mp3' : subtype === 'mp4' ? 'm4a' : subtype;
   const filename = blob.name || `tingletap-media-${Date.now()}.${ext}`;
-  form.append('file', blob, filename);
 
-  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
-    method: 'POST',
-    body: form,
-  });
+  // Host 1: tmpfiles.org (supports up to 100 MB, CORS enabled)
+  try {
+    const form = new FormData();
+    form.append('file', blob, filename);
+    const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+      method: 'POST',
+      body: form,
+    });
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const rawUrl = data?.data?.url;
+      if (rawUrl && typeof rawUrl === 'string') {
+        const directUrl = rawUrl
+          .replace(/^http:\/\//i, 'https://')
+          .replace(/tmpfiles\.org\/(?!dl\/)/i, 'tmpfiles.org/dl/');
+        if (onProgress) onProgress(100);
+        return { key: null, url: directUrl };
+      }
+    }
+  } catch {}
 
-  if (!res.ok) {
-    throw new Error(`Free CDN upload failed (HTTP ${res.status})`);
-  }
+  if (onProgress) onProgress(60);
 
-  const data = await res.json().catch(() => ({}));
-  const rawUrl = data?.data?.url;
-  if (!rawUrl || typeof rawUrl !== 'string') {
-    throw new Error('Free CDN did not return a download URL');
-  }
+  // Host 2: litterbox.catbox.moe (72h free audio/media host up to 1 GB)
+  try {
+    const lbForm = new FormData();
+    lbForm.append('reqtype', 'fileupload');
+    lbForm.append('time', '72h');
+    lbForm.append('fileToUpload', blob, filename);
+    const lbRes = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+      method: 'POST',
+      body: lbForm,
+    });
+    if (lbRes.ok) {
+      const txt = (await lbRes.text()).trim();
+      if (txt.startsWith('https://')) {
+        if (onProgress) onProgress(100);
+        return { key: null, url: txt };
+      }
+    }
+  } catch {}
 
-  const directUrl = rawUrl
-    .replace(/^http:\/\//i, 'https://')
-    .replace(/tmpfiles\.org\/(?!dl\/)/i, 'tmpfiles.org/dl/');
-
-  if (onProgress) onProgress(100);
-  return { key: null, url: directUrl };
+  throw new Error('Free CDN hosts unavailable for this file. Please try again.');
 }
 
 async function _buildCompactDataUrlFallback(blob, contentType) {
@@ -315,7 +361,7 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
   if (!user) throw new Error('Not authenticated');
   const token = await user.getIdToken();
 
-  const contentType = normalizeClientMime(blob.type);
+  const contentType = normalizeClientMime(blob.type, blob.name);
   if (contentType.startsWith('audio/') && blob.size > MAX_AUDIO_UPLOAD_BYTES) {
     throw new Error('Audio size must be less than 15MB!');
   }

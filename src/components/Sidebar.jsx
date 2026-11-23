@@ -537,7 +537,7 @@ const Sidebar = ({
     }).sort((a, b) => {
       const roleRank = (u) => {
         if (isGuestUser(u)) return 0;
-        const norm = normalizeRole(u.role);
+        const norm = normalizeRole(u);
         if (norm === 'owner') return 5;
         if (norm === 'admin') return 4;
         if (norm === 'moderator') return 3;
@@ -551,12 +551,12 @@ const Sidebar = ({
   }, [liveUsers, searchQuery, genderFilter]);
 
   /* -- role-based mod permissions (for viewer) -- */
-  const viewerNormRole = normalizeRole(loggedInUserProfile?.role);
-  const isStaff = isStaffRole(loggedInUserProfile?.role);
+  const viewerNormRole = normalizeRole(loggedInUserProfile);
+  const isStaff = isStaffRole(loggedInUserProfile);
 
   const canModerate = (targetUser) => {
     if (!isStaff) return false;
-    const targetNorm = isGuestUser(targetUser) ? 'guest' : normalizeRole(targetUser.role);
+    const targetNorm = isGuestUser(targetUser) ? 'guest' : normalizeRole(targetUser);
     const hierarchy = { owner: 4, admin: 3, moderator: 2, rj: 1, user: 1, guest: 0 };
     const vLevel = hierarchy[viewerNormRole] || 0;
     const tLevel = hierarchy[targetNorm] ?? (isGuestUser(targetUser) ? 0 : 1);
@@ -565,7 +565,7 @@ const Sidebar = ({
 
   const canDoMute = (targetUser) => canModerate(targetUser) && isStaff;
   const canDoKick = (targetUser) => canModerate(targetUser) && isStaff;
-  const canDoBan  = (targetUser) => canModerate(targetUser) && isAdminRole(loggedInUserProfile?.role);
+  const canDoBan  = (targetUser) => canModerate(targetUser) && isAdminRole(loggedInUserProfile);
 
   /* ──────────────────────────────────────────────────────────────────────── */
   return (
@@ -622,7 +622,7 @@ const Sidebar = ({
                     className="sb-profile-name"
                     data-user-uid={user.uid}
                     data-profile-uid={user.uid}
-                    data-role={loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user')}
+                    data-role={isStaffRole(loggedInUserProfile) ? normalizeRole(loggedInUserProfile) : (loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user'))}
                     data-badge={loggedInUserProfile.badge ? 'true' : 'false'}
                     data-gender={loggedInUserProfile.gender || 'male'}
                     data-is-bot="false"
@@ -677,7 +677,7 @@ const Sidebar = ({
                     <div>
                       <div className="sb-apd-name"
                         data-user-uid={user.uid} data-user-id={user.uid}
-                        data-role={loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user')}
+                        data-role={isStaffRole(loggedInUserProfile) ? normalizeRole(loggedInUserProfile) : (loggedInUserProfile.badge ? 'badge_holder' : (loggedInUserProfile.role || 'user'))}
                         data-badge={loggedInUserProfile.badge ? 'true' : 'false'}
                         data-gender={loggedInUserProfile.gender || 'male'}
                       >{loggedInUserProfile.displayName}</div>
@@ -698,7 +698,7 @@ const Sidebar = ({
                   {(() => {
                     const hasBadge = !!resolveBadgeKey(loggedInUserProfile.badge);
                     const isGuest = auth.currentUser?.isAnonymous || isGuestUser(loggedInUserProfile);
-                    if (!isGuest && (hasBadge || isStaffRole(loggedInUserProfile.role))) return (
+                    if (!isGuest && (hasBadge || isStaffRole(loggedInUserProfile))) return (
                       <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); setShowStatusModal(true); setDropdownUser(null); }}>
                         <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
                         Change Status
@@ -819,7 +819,7 @@ const Sidebar = ({
               {rooms.map(room => {
                 const isStaffRoom  = room.name.toLowerCase().includes('staff') || room.name.toLowerCase().includes('olympian');
                 const isAdultRoom  = room.name.toLowerCase().includes('adult') || room.name.toLowerCase().includes('18+') || room.type === 'adult';
-                const hasStaffAccess = loggedInUserProfile && isStaffRole(loggedInUserProfile.role);
+                const hasStaffAccess = loggedInUserProfile && isStaffRole(loggedInUserProfile);
                 const locked       = isStaffRoom && !hasStaffAccess;
                 const hasPassword  = room.password && room.password.trim() !== '';
                 const isLocked     = locked || hasPassword;
@@ -911,7 +911,7 @@ const Sidebar = ({
                 const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
                 const isGuest   = !hasRealAuth && (loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous);
                 const tIsGuest  = isGuestUser(userItem);
-                const tIsStaff  = isStaffRole(userItem.role);
+                const tIsStaff  = isStaffRole(userItem);
                 const limited   = isGuest || tIsGuest;
                 const pill      = getRolePill(userItem.role, userItem.badge, tIsGuest, userItem.gender);
                 const showMod   = !isSelf && canModerate(userItem);
@@ -965,7 +965,7 @@ const Sidebar = ({
                         <span
                           className="sb-list-username"
                           data-user-uid={userItem.uid}
-                          data-role={userItem.badge ? 'badge_holder' : (userItem.role || 'user')}
+                          data-role={isStaffRole(userItem) ? normalizeRole(userItem) : (userItem.badge ? 'badge_holder' : (userItem.role || 'user'))}
                           data-badge={userItem.badge ? 'true' : 'false'}
                           data-gender={userItem.gender || 'male'}
                           data-is-bot="false"
@@ -1024,7 +1024,7 @@ const Sidebar = ({
                                   "mutedInfo.unmutedAt": serverTimestamp(),
                                   "mutedInfo.unmutedBy": loggedInUserProfile?.displayName || 'admin'
                                 }).then(() => sendTingleBotMessage(`${userItem.displayName} has been unmuted and can speak again.`, 'system'))
-                                  .catch(() => toast.error('Unmute failed.'));
+                                  .catch(() => pt.error('Unmute failed.'));
                               } else {
                                 setAdminModalUser(userItem);
                                 setAdminModalType('mute');
@@ -1083,7 +1083,7 @@ const Sidebar = ({
                                   unbannedAt: serverTimestamp(),
                                   unbannedBy: loggedInUserProfile?.displayName || 'admin'
                                 }).then(() => sendTingleBotMessage(`${userItem.displayName} has been unbanned and can rejoin.`, 'system'))
-                                  .catch(() => toast.error('Unban failed.'));
+                                  .catch(() => pt.error('Unban failed.'));
                               } else {
                                 setAdminModalUser(userItem);
                                 setAdminModalType('ban');
@@ -1121,7 +1121,7 @@ const Sidebar = ({
                             <div>
                               <div className="sb-apd-name"
                                 data-user-uid={userItem.uid} data-user-id={userItem.uid}
-                                data-role={userItem.badge ? 'badge_holder' : (userItem.role || 'user')}
+                                data-role={isStaffRole(userItem) ? normalizeRole(userItem) : (userItem.badge ? 'badge_holder' : (userItem.role || 'user'))}
                                 data-badge={userItem.badge ? 'true' : 'false'}
                                 data-gender={userItem.gender || 'male'}
                               ><SidebarLiveName uid={userItem.uid} fallback={userItem.displayName} /></div>
@@ -1137,7 +1137,7 @@ const Sidebar = ({
 
 
                           {!limited ? (
-                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleAddFriendFromSidebar) window.handleAddFriendFromSidebar(userItem); else toast.info(`Adding ${userItem.displayName} as friend`); setDropdownUser(null); }}>
+                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleAddFriendFromSidebar) window.handleAddFriendFromSidebar(userItem); setDropdownUser(null); }}>
                               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#10b981" d="M15 14c-2.67 0-8 1.33-8 4v2h16v-2c0-2.67-5.33-4-8-4m0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 10H2v2h3v3h2v-3h3v-2H7V7H5v3z"/></svg>
                               Add Friend
                             </button>
@@ -1149,14 +1149,14 @@ const Sidebar = ({
                           ) : null}
                           {/* Guests cannot PM non-guests — hide button to avoid a confusing error toast */}
                           {(!isGuest || tIsGuest) && (
-                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); else toast.info(`Opening PM with ${userItem.displayName}`); setDropdownUser(null); }}>
+                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handlePrivateMessageFromSidebar) window.handlePrivateMessageFromSidebar(userItem); setDropdownUser(null); }}>
                               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#3b82f6" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                               Send Message
                             </button>
                           )}
 
                           {!limited && (
-                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem); else toast.info(`Whispering to ${userItem.displayName}`); setDropdownUser(null); }}>
+                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem); setDropdownUser(null); }}>
                               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M13 11h-2V9h2v2m0 4h-2v-2h2v2z"/></svg>
                               Whisper
                             </button>
@@ -1165,7 +1165,7 @@ const Sidebar = ({
                           {!tIsStaff && (
                             <>
                               <div className="sb-apd-divider"/>
-                              <button className="sb-apd-btn sb-apd-danger" onClick={(e) => { e.stopPropagation(); if (window.handleBlockUserFromSidebar) window.handleBlockUserFromSidebar(userItem); else toast.info(`Blocking ${userItem.displayName}`); setDropdownUser(null); }}>
+                              <button className="sb-apd-btn sb-apd-danger" onClick={(e) => { e.stopPropagation(); if (window.handleBlockUserFromSidebar) window.handleBlockUserFromSidebar(userItem); setDropdownUser(null); }}>
                                 <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 2c2.01 0 3.86.64 5.3 1.7L5.7 17.3A7.93 7.93 0 0 1 4 12c0-4.42 3.58-8 8-8m0 16c-2.01 0-3.86-.64-5.3-1.7L18.3 6.7A7.93 7.93 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg>
                                 Block User
                               </button>
@@ -1185,7 +1185,7 @@ const Sidebar = ({
                                   e.stopPropagation();
                                   if (userItem.mutedInfo?.isMuted) {
                                     updateDoc(doc(db, 'users', userItem.uid), { "mutedInfo.isMuted": false, "mutedInfo.reason": "", "mutedInfo.unmutedAt": serverTimestamp(), "mutedInfo.unmutedBy": loggedInUserProfile?.displayName || 'admin' })
-                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unmuted and can speak again.`, 'system')).catch(() => toast.error('Failed'));
+                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unmuted and can speak again.`, 'system')).catch(() => pt.error('Unmute failed'));
                                   } else {
                                     setAdminModalUser(userItem); setAdminModalType('mute'); setAdminModalVisible(true);
                                   }
@@ -1226,7 +1226,7 @@ const Sidebar = ({
                                   e.stopPropagation();
                                   if (userItem.isBanned) {
                                     updateDoc(doc(db, 'users', userItem.uid), { isBanned: false, banInfo: null, banReason: null, bannedAt: null, unbannedAt: serverTimestamp(), unbannedBy: loggedInUserProfile?.displayName || 'admin' })
-                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unbanned and can rejoin.`, 'system')).catch(() => toast.error('Failed'));
+                                      .then(() => sendTingleBotMessage(`${userItem.displayName} has been unbanned and can rejoin.`, 'system')).catch(() => pt.error('Unban failed'));
                                   } else {
                                     setAdminModalUser(userItem); setAdminModalType('ban'); setAdminModalVisible(true);
                                   }
@@ -1263,7 +1263,7 @@ const Sidebar = ({
         currentUserProfile={loggedInUserProfile}
         currentRoomId={roomId}
         currentRoomName={rooms.find(r => r.id === roomId)?.name || ''}
-        hideBanTab={normalizeRole(loggedInUserProfile?.role) === 'moderator'}
+        hideBanTab={normalizeRole(loggedInUserProfile) === 'moderator'}
       />
 
       {showEditProfileModal && (
@@ -1297,7 +1297,7 @@ const Sidebar = ({
             }
             try {
               const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
-              if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+              if (kickSnap.exists()) { pt.kick(`You've been kicked from ${room.name}.`); navigate('/'); onClose(); return; }
             } catch {}
             navigate(`/room/${room.id}`); onClose();
           }}
@@ -1334,7 +1334,7 @@ const Sidebar = ({
                         const room = pwRoom; setPwRoom(null);
                         try {
                           const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
-                          if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+                          if (kickSnap.exists()) { pt.kick(`You've been kicked from ${room.name}.`); navigate('/'); onClose(); return; }
                         } catch {}
                         navigate(`/room/${room.id}`); onClose();
                       } else { setPwError('Incorrect password. Please try again.'); }
@@ -1357,7 +1357,7 @@ const Sidebar = ({
                       const room = pwRoom; setPwRoom(null);
                       try {
                         const kickSnap = await getDoc(doc(db, 'rooms', room.id, 'kickedUsers', user.uid));
-                        if (kickSnap.exists()) { toast.error(`You've been kicked from ${room.name}.`, { icon: TI.kick }); navigate('/'); onClose(); return; }
+                        if (kickSnap.exists()) { pt.kick(`You've been kicked from ${room.name}.`); navigate('/'); onClose(); return; }
                       } catch {}
                       navigate(`/room/${room.id}`); onClose();
                     } else { setPwError('Incorrect password. Please try again.'); }

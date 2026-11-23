@@ -78,7 +78,34 @@ const BADGE_ALIASES = {
   guardian: 'spartans',
 };
 
-export const normalizeRole = (role) => {
+const ROLE_RANK = {
+  guest: 0,
+  user: 1,
+  rj: 2,
+  moderator: 3,
+  admin: 4,
+  owner: 5,
+};
+
+const BADGE_TO_ROLE = {
+  the_olympian: 'owner',
+  godfather: 'owner',
+  titans: 'admin',
+  high_council: 'admin',
+  'high council': 'admin',
+  spartans: 'moderator',
+  guardian: 'moderator',
+  rj: 'rj',
+  verified_rj: 'rj',
+  radio_jockey: 'rj',
+};
+
+export const resolveRoleFromBadge = (badge) => {
+  const b = String(badge || '').toLowerCase().trim();
+  return BADGE_TO_ROLE[b] || null;
+};
+
+const normalizeRawRole = (role) => {
   const r = String(role || '').toLowerCase().trim();
   if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
   if (r === 'admin' || r === 'high_council' || r === 'high council') return 'admin';
@@ -88,10 +115,32 @@ export const normalizeRole = (role) => {
   return 'user';
 };
 
-export const isOwnerRole = (role) => normalizeRole(role) === 'owner';
-export const isAdminRole = (role) => ['owner', 'admin'].includes(normalizeRole(role));
-export const isModRole   = (role) => ['owner', 'admin', 'moderator'].includes(normalizeRole(role));
-export const isStaffRole = (role) => ['owner', 'admin', 'moderator'].includes(normalizeRole(role));
+export const normalizeRole = (roleOrUser, badgeArg) => {
+  if (roleOrUser && typeof roleOrUser === 'object') {
+    const isGuestFlag = roleOrUser.isGuest === true || String(roleOrUser.isGuest) === 'true';
+    const roleNorm = normalizeRawRole(roleOrUser.role);
+    if (isGuestFlag) return 'guest';
+    const badgeRole = resolveRoleFromBadge(roleOrUser.badge);
+    if (roleNorm === 'guest' && !badgeRole) return 'guest';
+    if (badgeRole && (ROLE_RANK[badgeRole] || 0) > (ROLE_RANK[roleNorm] || 0)) {
+      return badgeRole;
+    }
+    return roleNorm;
+  }
+
+  const roleNorm = normalizeRawRole(roleOrUser);
+  const badgeRole = resolveRoleFromBadge(badgeArg);
+  if (roleNorm === 'guest' && !badgeRole) return 'guest';
+  if (badgeRole && (ROLE_RANK[badgeRole] || 0) > (ROLE_RANK[roleNorm] || 0)) {
+    return badgeRole;
+  }
+  return roleNorm;
+};
+
+export const isOwnerRole = (roleOrUser, badge) => normalizeRole(roleOrUser, badge) === 'owner';
+export const isAdminRole = (roleOrUser, badge) => ['owner', 'admin'].includes(normalizeRole(roleOrUser, badge));
+export const isModRole   = (roleOrUser, badge) => ['owner', 'admin', 'moderator'].includes(normalizeRole(roleOrUser, badge));
+export const isStaffRole = (roleOrUser, badge) => ['owner', 'admin', 'moderator'].includes(normalizeRole(roleOrUser, badge));
 
 export const resolveBadgeKey = (badge) => {
   if (!badge) return null;
@@ -105,15 +154,17 @@ export const resolveBadgeKey = (badge) => {
   return matched || null;
 };
 
-export const isRjRole = (role, badge) =>
-  normalizeRole(role) === 'rj' || resolveBadgeKey(badge) === 'rj';
+export const isRjRole = (roleOrUser, badge) => {
+  const b = (roleOrUser && typeof roleOrUser === 'object') ? roleOrUser.badge : badge;
+  return normalizeRole(roleOrUser, badge) === 'rj' || resolveBadgeKey(b) === 'rj';
+};
 
 export const isGuestUser = (userOrProps) => {
   if (!userOrProps) return false;
   return (
     userOrProps.isGuest === true ||
     String(userOrProps.isGuest) === 'true' ||
-    normalizeRole(userOrProps.role) === 'guest'
+    normalizeRole(userOrProps) === 'guest'
   );
 };
 
@@ -126,13 +177,14 @@ export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
     return 'Male';
   }
 
+  const norm = normalizeRole(role, badge);
+  if (norm === 'owner') return 'Godfather';
+
   const badgeKey = resolveBadgeKey(badge);
   if (badgeKey && Badges[badgeKey]?.name) {
     return Badges[badgeKey].name;
   }
 
-  const norm = normalizeRole(role);
-  if (norm === 'owner') return 'Godfather';
   if (norm === 'admin') return 'High Council';
   if (norm === 'moderator') return 'Guardian';
   if (norm === 'rj') return 'RJ';

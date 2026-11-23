@@ -21,13 +21,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 6px var(--rank-glow, rgba(150,150,150,0.4)));
+  filter: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
   animation: none !important;
   transition: none !important;
 }
 
 .royal-trust-badge:hover .rtb-badge-icon {
-  filter: drop-shadow(0 0 6px var(--rank-glow, rgba(150,150,150,0.4)));
+  filter: none !important;
   transform: none !important;
 }
 
@@ -228,7 +230,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 4px var(--rank-glow, rgba(150,150,150,0.3)));
+  filter: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .tbi-icon .badge-svg {

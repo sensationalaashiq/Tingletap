@@ -33,7 +33,7 @@ const UPLOAD_CONFIGS = {
   'profile':         { prefix: 'profile',         maxMB: 5,  allowedTypes: ['image/jpeg','image/png','image/webp','image/gif'] },
   'cover':           { prefix: 'cover',           maxMB: 5,  allowedTypes: ['image/jpeg','image/png','image/webp'] },
   'chat-image':      { prefix: 'chat-images',     maxMB: 10, allowedTypes: ['image/jpeg','image/png','image/webp','image/gif'] },
-  'homepage-audio':  { prefix: 'homepage/audio',  maxMB: 20, allowedTypes: ['audio/mpeg','audio/mp3','audio/ogg','audio/wav','audio/mp4'] },
+  'homepage-audio':  { prefix: 'homepage/audio',  maxMB: 20, allowedTypes: ['audio/mpeg','audio/mp3','audio/ogg','audio/wav','audio/x-wav','audio/wave','audio/mp4','audio/m4a','audio/x-m4a','audio/aac','audio/flac','audio/opus','audio/webm'] },
 };
 
 function resp(data, status = 200) {
@@ -88,8 +88,12 @@ export const handler = async (event) => {
              : contentType.includes('gif')  ? 'gif'
              : contentType.includes('webp') ? 'webp'
              : contentType.includes('mp3') || contentType.includes('mpeg') ? 'mp3'
-             : contentType.includes('ogg')  ? 'ogg'
+             : contentType.includes('ogg') || contentType.includes('opus') ? 'ogg'
              : contentType.includes('wav')  ? 'wav'
+             : contentType.includes('mp4') || contentType.includes('m4a') ? 'm4a'
+             : contentType.includes('aac')  ? 'aac'
+             : contentType.includes('flac') ? 'flac'
+             : contentType.includes('webm') ? 'webm'
              : contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg'
              : 'bin';
 

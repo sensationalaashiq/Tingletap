@@ -2183,22 +2183,27 @@ html.dark-mode .settings-tabs {
     border-right: 1px solid rgba(139, 92, 246, 0.25) !important;
 }
 
+.dark-mode .settings-tab,
+html.dark-mode .settings-tab,
 .dark-mode .settings-tab-btn,
 html.dark-mode .settings-tab-btn {
     color: #94a3b8 !important;
 }
 
+.dark-mode .settings-tab:hover,
+html.dark-mode .settings-tab:hover,
 .dark-mode .settings-tab-btn:hover,
 html.dark-mode .settings-tab-btn:hover {
     background: rgba(139, 92, 246, 0.18) !important;
     color: #e9d5ff !important;
 }
 
+.dark-mode .settings-tab.active,
+html.dark-mode .settings-tab.active,
 .dark-mode .settings-tab-btn.active,
 html.dark-mode .settings-tab-btn.active {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(124, 58, 237, 0.2)) !important;
-    color: #c084fc !important;
-    border-left: 3px solid #a855f7 !important;
+    background: linear-gradient(135deg, #6d28d9, #7c3aed) !important;
+    color: #ffffff !important;
 }
 
 .dark-mode .settings-body,

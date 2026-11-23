@@ -81,7 +81,7 @@ async function callModerationAction(payload) {
 
 const BanKickMutePanel = () => {
   const navigate = useNavigate();
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
   const [isRoleReady, setIsRoleReady] = useState(false);
 
@@ -114,14 +114,18 @@ const BanKickMutePanel = () => {
 
   // Access control: Owner + Admin only
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      navigate('/');
+      return;
+    }
     const userRef = doc(db, 'users', user.uid);
     const unsub = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         const userData = snap.data();
-        const role = normalizeRole(userData.role);
+        const role = normalizeRole(userData);
         setCurrentUserProfile({ ...userData, role, uid: user.uid });
-        if (!isAdminRole(role)) {
+        if (!isAdminRole(userData)) {
           pt.error('Access denied. Owner/Admin privileges required.');
           navigate('/');
         } else {
@@ -132,7 +136,7 @@ const BanKickMutePanel = () => {
       }
     }, () => navigate('/'));
     return () => unsub();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Single lightweight users listener (reused pattern from AdminPanelPage — capped, no duplicate collections)
   useEffect(() => {
@@ -141,7 +145,7 @@ const BanKickMutePanel = () => {
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
       const usersData = snapshot.docs
         .map(d => ({ id: d.id, uid: d.id, ...d.data() }))
-        .filter(u => !isOwnerRole(u.role));
+        .filter(u => !isOwnerRole(u));
       setUsers(usersData);
       setLoading(false);
     }, () => setLoading(false));
@@ -647,7 +651,7 @@ const BanKickMutePanel = () => {
                           )}
                         </div>
                         <div className="luxury-role-section">
-                          <span className={`luxury-role-badge role-${u.isGuest ? 'user' : normalizeRole(u.role)}`}>
+                          <span className={`luxury-role-badge role-${u.isGuest ? 'user' : normalizeRole(u)}`}>
                             {typeLabel.toUpperCase()}
                           </span>
                         </div>

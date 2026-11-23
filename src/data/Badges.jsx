@@ -7,7 +7,7 @@ export const Badges = {
     name: "High Council",
     svg: `<svg
   viewBox="0 0 340 340"
-  {...props}
+  xmlns="http://www.w3.org/2000/svg"
 >
   <path d="m180.411 184.935-15.311-153.903a18.344 18.344 0 0 1 2.118-10.542l6.249-11.553 23.918 174.427z" fill="#e4efff" />
   <path d="m180.411 184.935 1.447 14.544 20.922-2.079-16.757-168.45a18.347 18.347 0 0 0 -4.154-9.917l-8.4-10.1 16.426 164.517a6.366 6.366 0 0 1 -2.285 5.55z" fill="#7f91bf" />
@@ -60,9 +60,9 @@ export const Badges = {
   spartans: {
     name: "Guardian",
     svg: `<svg
-  enableBackground="new 0 0 512 512"
+  enable-background="new 0 0 512 512"
   viewBox="0 0 512 512"
-  {...props}
+  xmlns="http://www.w3.org/2000/svg"
 >
   <g>
     <path d="m361.726 106.869c25.813 10.666 69.518 16.408 89.837 36.727l56.948-56.948c-27.248-27.248-59.796-49.19-95.953-64.184z" fill="#a70017" />

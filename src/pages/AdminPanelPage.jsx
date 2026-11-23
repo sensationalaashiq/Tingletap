@@ -80,7 +80,7 @@ const extractDeviceBrand = (model) => {
 
 const AdminPanelPage = () => {
   const navigate = useNavigate();
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -259,26 +259,22 @@ const AdminPanelPage = () => {
     }
   };
 
-  // Check admin permissions + auto-fix legacy superowner role
+  // Check admin permissions
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/');
       return;
     }
-    
+
     const userRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userRef, async (docSnap) => {
       if (docSnap.exists()) {
-        let userData = docSnap.data();
-        // Legacy 'superowner' values are normalized to 'owner' for local display only.
-        // We intentionally do NOT write this back from the client — Firestore rules
-        // correctly reject client self-writes to the `role` field (and 'superowner'
-        // isn't recognized as staff), so persisting this migration must go through a
-        // server-verified path (see moderationAction.js), not a client updateDoc.
-        const normalizedRole = normalizeRole(userData.role);
-        userData = { ...userData, role: normalizedRole };
+        const rawData = docSnap.data();
+        const normalizedRole = normalizeRole(rawData);
+        const userData = { ...rawData, role: normalizedRole };
         setCurrentUserProfile(userData);
-        if (!isOwnerRole(normalizedRole)) {
+        if (!isOwnerRole(userData)) {
           pt.error('Access denied. Owner privileges required.');
           navigate('/');
         } else {
@@ -288,9 +284,9 @@ const AdminPanelPage = () => {
         navigate('/');
       }
     }, () => navigate('/'));
-    
+
     return () => unsubscribe();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Real-time users data
   useEffect(() => {
@@ -1022,15 +1018,15 @@ const AdminPanelPage = () => {
   const ROLE_RANK = { owner: 4, admin: 3, moderator: 2, rj: 1, user: 1, guest: 0 };
 
   const handleOpenRoleModal = (targetUser) => {
-    const myRole = normalizeRole(currentUserProfile?.role);
-    const targetRole = normalizeRole(targetUser.role);
+    const myRole = normalizeRole(currentUserProfile);
+    const targetRole = normalizeRole(targetUser);
     if (!isAdminRole(myRole)) {
       pt.error('Only Owner and Admin can change roles.'); return;
     }
     if (targetUser.uid === currentUserProfile?.uid) {
       pt.error("You cannot change your own role."); return;
     }
-    if (isOwnerRole(targetRole)) {
+    if (isOwnerRole(targetUser)) {
       pt.error("The Owner's role cannot be changed."); return;
     }
     if (myRole === 'admin' && targetRole === 'admin') {
@@ -1042,9 +1038,9 @@ const AdminPanelPage = () => {
 
   const confirmChangeRole = async (newRole) => {
     const normNewRole = normalizeRole(newRole);
-    const normTargetRole = normalizeRole(roleTarget?.role);
+    const normTargetRole = normalizeRole(roleTarget);
     if (!roleTarget || !newRole || normNewRole === normTargetRole) return;
-    const myRole = normalizeRole(currentUserProfile?.role);
+    const myRole = normalizeRole(currentUserProfile);
     /* FIX 23: defense-in-depth guard — re-validate permissions here even though
        handleOpenRoleModal already checks, in case this is ever invoked directly.
        Blocks self-escalation, non-privileged callers, and assigning 'owner'. */
@@ -1054,7 +1050,7 @@ const AdminPanelPage = () => {
     if (roleTarget.uid === currentUserProfile?.uid) {
       pt.error('You cannot change your own role.'); return;
     }
-    if (isOwnerRole(normTargetRole)) {
+    if (isOwnerRole(roleTarget)) {
       pt.error("The Owner's role cannot be changed."); return;
     }
     if (isOwnerRole(normNewRole)) {
@@ -1119,12 +1115,12 @@ const AdminPanelPage = () => {
   };
 
   const handleAssignBadge = (targetUser) => {
-    const myRole = normalizeRole(currentUserProfile?.role);
+    const myRole = normalizeRole(currentUserProfile);
     if (!isAdminRole(myRole)) {
       pt.error('Only Owner and Admin can assign badges.');
       return;
     }
-    if (myRole === 'admin' && isOwnerRole(targetUser.role)) {
+    if (myRole === 'admin' && isOwnerRole(targetUser)) {
       pt.error("Admins cannot modify the Owner's profile.");
       return;
     }
@@ -1623,7 +1619,7 @@ const AdminPanelPage = () => {
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
         
-      const matchesRole = filterRole === 'all' || normalizeRole(user.role) === filterRole;
+      const matchesRole = filterRole === 'all' || normalizeRole(user) === filterRole;
       
       const matchesStatus = filterStatus === 'all' || 
         (filterStatus === 'online' && isEffectivelyOnline(onlineStatuses[user.uid])) ||
@@ -1744,7 +1740,7 @@ const AdminPanelPage = () => {
     };
   };
 
-  if (!currentUserProfile || !isAdminRole(currentUserProfile.role)) {
+  if (!currentUserProfile || !isAdminRole(currentUserProfile)) {
     return (
       <div className="luxury-admin-container">
         <div className="luxury-access-denied">
@@ -1785,7 +1781,7 @@ const AdminPanelPage = () => {
             <div className="luxury-admin-info">
               <div className="luxury-admin-badge">
                 {(() => {
-                  const myNormRole = normalizeRole(currentUserProfile?.role);
+                  const myNormRole = normalizeRole(currentUserProfile);
                   return (
                     <>
                       <svg viewBox="0 0 24 24" fill="none">
@@ -2048,7 +2044,7 @@ const AdminPanelPage = () => {
               );
             })}
             {/* Email Center — owner only */}
-            {isOwnerRole(currentUserProfile?.role) && (
+            {isOwnerRole(currentUserProfile) && (
               <button
                 className="luxury-nav-tab"
                 onClick={() => navigate('/owner/email-center')}
@@ -2239,7 +2235,7 @@ const AdminPanelPage = () => {
                               
                               <div className="luxury-role-section">
                                 {(() => {
-                                  const uNormRole = normalizeRole(user.role);
+                                  const uNormRole = normalizeRole(user);
                                   const uRoleLabel = getRoleDisplayLabel({ role: user.role, gender: user.gender, isGuest: user.isGuest, badge: user.badge }).toUpperCase();
                                   return (
                                     <span className={`luxury-role-badge role-${user.isGuest ? 'user' : uNormRole}`}>
@@ -2464,8 +2460,8 @@ const AdminPanelPage = () => {
                                   </button>
                                 )}
                                 
-                                {isAdminRole(currentUserProfile?.role) &&
-                                  !(normalizeRole(currentUserProfile?.role) === 'admin' && isOwnerRole(user.role)) && (
+                                {isAdminRole(currentUserProfile) &&
+                                  !(normalizeRole(currentUserProfile) === 'admin' && isOwnerRole(user)) && (
                                   <>
                                     <button
                                       className="luxury-action-btn"
@@ -2478,8 +2474,8 @@ const AdminPanelPage = () => {
                                       </svg>
                                       <span>Badge</span>
                                     </button>
-                                    {!isOwnerRole(user.role) &&
-                                      !(normalizeRole(currentUserProfile?.role) === 'admin' && normalizeRole(user.role) === 'admin') && (
+                                    {!isOwnerRole(user) &&
+                                      !(normalizeRole(currentUserProfile) === 'admin' && normalizeRole(user) === 'admin') && (
                                       <button
                                         className="luxury-action-btn"
                                         style={{ background: 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}
@@ -2495,7 +2491,7 @@ const AdminPanelPage = () => {
                                   </>
                                 )}
 
-                                {isOwnerRole(currentUserProfile?.role) && (
+                                {isOwnerRole(currentUserProfile) && (
                                   <>
                                     <button
                                       className="luxury-action-btn"
@@ -3683,7 +3679,7 @@ const AdminPanelPage = () => {
                                   <span style={{ fontSize:11, color:'#7c3aed', fontWeight:700 }}>@{u.username}</span>
                                 )}
                                 {(() => {
-                                  const uNorm = normalizeRole(u.role);
+                                  const uNorm = normalizeRole(u);
                                   if (uNorm === 'user' && !u.isGuest) return null;
                                   const rLabel = getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge });
                                   return (
@@ -5157,10 +5153,10 @@ const AdminPanelPage = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {ROLE_DEFS.filter(rd => {
-                  if (!isOwnerRole(currentUserProfile?.role) && rd.ownerOnly) return false;
+                  if (!isOwnerRole(currentUserProfile) && rd.ownerOnly) return false;
                   return true;
                 }).map((rd) => {
-                  const isCurrent = normalizeRole(roleTarget.role) === rd.key;
+                  const isCurrent = normalizeRole(roleTarget) === rd.key;
                   const isLocked = changingRole;
                   return (
                     <button
@@ -5230,7 +5226,7 @@ const AdminPanelPage = () => {
                 })}
               </div>
 
-              {!isOwnerRole(currentUserProfile?.role) && (
+              {!isOwnerRole(currentUserProfile) && (
                 <div style={{ marginTop: 12, padding: '10px 13px', borderRadius: 11, background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>

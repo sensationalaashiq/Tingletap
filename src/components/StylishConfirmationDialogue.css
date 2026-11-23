@@ -203,3 +203,22 @@
     min-width: 40px;
   }
 }
+
+html.dark-mode .premium-confirmation-modal,
+.dark-mode .premium-confirmation-modal,
+html.dark-theme-variant .premium-confirmation-modal {
+  background: var(--bg-card, linear-gradient(145deg, #1b1634 0%, #130f26 100%));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(139, 92, 246, 0.25);
+}
+
+html.dark-mode .premium-title,
+.dark-mode .premium-title,
+html.dark-theme-variant .premium-title {
+  color: var(--text-primary, #f1f5f9);
+}
+
+html.dark-mode .premium-message,
+.dark-mode .premium-message,
+html.dark-theme-variant .premium-message {
+  color: var(--text-secondary, #cbd5e1);
+}

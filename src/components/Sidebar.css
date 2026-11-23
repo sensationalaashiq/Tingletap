@@ -700,7 +700,10 @@
   width: 14px;
   height: 14px;
   overflow: visible; /* never clip the SVG artwork */
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+  filter: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 .sb-list-username .inline-badge svg,
 .sb-profile-name .inline-badge svg,
@@ -841,8 +844,9 @@ html.dark-mode .sb-empty {
   color: #94a3b8 !important;
 }
 
-/* Keep all sidebar badges completely static */
+/* Keep all sidebar badges completely static with zero shadows */
 .inline-badge,
+.inline-badge svg,
 .sb-user-role-pill,
 .sb-role-pill,
 .birthday-badge-glow,
@@ -850,4 +854,5 @@ html.dark-mode .sb-empty {
   animation: none !important;
   transition: none !important;
   transform: none !important;
+  filter: none !important;
 }

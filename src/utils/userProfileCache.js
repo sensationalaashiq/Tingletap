@@ -46,15 +46,15 @@ export async function getCachedUserProfile(uid, options = {}) {
       let data = snap.exists() ? snap.data() : null;
       const needsAuthoritative =
         !data ||
-        (!isStaffRole(data.role) && !isRjRole(data.role, data.badge) && !resolveBadgeKey(data.badge));
+        (!isStaffRole(data) && !isRjRole(data) && !resolveBadgeKey(data.badge));
       if (needsAuthoritative && auth.currentUser) {
         try {
           const uSnap = await getDoc(doc(db, 'users', uid));
           if (uSnap.exists()) {
             const uData = uSnap.data();
-            const mergedRole = isStaffRole(uData.role)
+            const mergedRole = isStaffRole(uData)
               ? uData.role
-              : (isStaffRole(data?.role) ? data.role : (uData.role || data?.role));
+              : (isStaffRole(data) ? data.role : (uData.role || data?.role));
             const mergedBadge = resolveBadgeKey(uData.badge)
               ? uData.badge
               : (uData.badge !== undefined && uData.badge !== null ? uData.badge : data?.badge);

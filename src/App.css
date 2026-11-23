@@ -2269,23 +2269,27 @@ textarea.message-input:focus {
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25), 0 4px 16px rgba(168, 85, 247, 0.15) !important;
 }
 
-/* VIP Jewel Badges (static — no animations, transparent SVG background) */
+/* VIP Jewel Badges (static — no animations, transparent SVG background, zero drop-shadow) */
 .role-badge,
 .user-role-badge,
 .staff-badge,
 .role-owner-badge {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  box-shadow: none !important;
+  filter: none !important;
   animation: none !important;
   transition: none !important;
   transform: none !important;
 }
 .inline-badge,
+.inline-badge svg,
 .inline-badge[class*="badge-"],
+.inline-badge[class*="badge-"] svg,
 .badge-the_olympian,
 .badge-godfather {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
+  filter: none !important;
   animation: none !important;
   transition: none !important;
   transform: none !important;
@@ -2295,6 +2299,7 @@ textarea.message-input:focus {
 .staff-badge:hover,
 .inline-badge:hover {
   transform: none !important;
+  filter: none !important;
 }
 
 /* Sleek Modal Transitions */

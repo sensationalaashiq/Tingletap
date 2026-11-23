@@ -1422,12 +1422,20 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
+  filter: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 
 .inline-badge svg {
   width: 14px !important;
   height: 14px !important;
   flex-shrink: 0;
+  filter: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 
 /* Emerald Empress / Sapphire Goddess artwork has more internal whitespace —
@@ -5945,47 +5953,56 @@ html.dark-mode .reject-btn:hover,
 
 
 /* Force ALL SVG elements in YouTube music player controls to be WHITE */
+.youtube-music-message .youtube-music-player svg,
 .youtube-music-message .compact-audio-player svg {
     color: var(--landing-text-color, #ffffff);
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg *,
 .youtube-music-message .compact-audio-player svg * {
     color: var(--landing-text-color, #ffffff);
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg path,
 .youtube-music-message .compact-audio-player svg path {
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg g,
 .youtube-music-message .compact-audio-player svg g {
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg circle,
 .youtube-music-message .compact-audio-player svg circle {
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg polygon,
 .youtube-music-message .compact-audio-player svg polygon {
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg rect,
 .youtube-music-message .compact-audio-player svg rect {
     fill: #ffffff !important;
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg line,
 .youtube-music-message .compact-audio-player svg line {
     stroke: #ffffff !important;
 }
 
+.youtube-music-message .youtube-music-player svg polyline,
 .youtube-music-message .compact-audio-player svg polyline {
     stroke: #ffffff !important;
     fill: none !important;

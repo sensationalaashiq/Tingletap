@@ -23,11 +23,33 @@ service cloud.firestore {
            : 'user';
     }
 
+    function normalizeBadgeRole(raw) {
+      let bl = (raw is string) ? raw.lower() : '';
+      return bl in ['the_olympian', 'godfather'] ? 'owner'
+           : bl in ['titans', 'high_council', 'high council'] ? 'admin'
+           : bl in ['spartans', 'guardian'] ? 'moderator'
+           : bl in ['rj', 'verified_rj', 'radio_jockey'] ? 'rj'
+           : '';
+    }
+
+    function roleRank(r) {
+      return r == 'owner' ? 5
+           : r == 'admin' ? 4
+           : r == 'moderator' ? 3
+           : r == 'rj' ? 2
+           : r == 'user' ? 1
+           : 0;
+    }
+
     function getRole(uid) {
-      let raw = exists(/databases/$(database)/documents/users/$(uid))
-        ? get(/databases/$(database)/documents/users/$(uid)).data.get('role', 'user')
-        : 'user';
-      return normalizeRoleStr(raw);
+      let data = exists(/databases/$(database)/documents/users/$(uid))
+        ? get(/databases/$(database)/documents/users/$(uid)).data
+        : {};
+      let roleNorm = normalizeRoleStr(data.get('role', 'user'));
+      let badgeNorm = normalizeBadgeRole(data.get('badge', ''));
+      return (badgeNorm != '' && roleRank(badgeNorm) > roleRank(roleNorm))
+        ? badgeNorm
+        : roleNorm;
     }
 
     function isReservedBadge(b) {

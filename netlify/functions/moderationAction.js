@@ -87,7 +87,16 @@ export const handler = async (event) => {
   // Staff can never moderate another staff member's account through this path.
   const target = await getDoc(`users/${targetUid}`, token).catch(() => null);
   if (!target) return resp({ error: 'Target user not found' }, 404);
-  const targetRole = target.role === 'superowner' ? 'owner' : target.role;
+  const tRawRole = String(target.role || '').toLowerCase().trim();
+  const tRawBadge = String(target.badge || '').toLowerCase().trim();
+  const targetRole =
+    ['owner', 'superowner', 'godfather'].includes(tRawRole) || ['the_olympian', 'godfather'].includes(tRawBadge)
+      ? 'owner'
+      : ['admin', 'high_council', 'high council'].includes(tRawRole) || ['titans', 'high_council', 'high council'].includes(tRawBadge)
+      ? 'admin'
+      : ['moderator', 'mod', 'guardian'].includes(tRawRole) || ['spartans', 'guardian'].includes(tRawBadge)
+      ? 'moderator'
+      : tRawRole;
   if (STAFF_ROLES.includes(targetRole) && staff.role !== 'owner') {
     return resp({ error: 'Only the owner can moderate a staff account' }, 403);
   }

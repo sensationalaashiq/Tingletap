@@ -682,10 +682,27 @@ function App() {
   useEffect(() => {
     // Set up global functions for font preferences
     window.setFontPreference = (key, value) => {
-      console.log(`🎨 Setting font preference ${key}:`, value);
+      const keyMap = {
+        chatFontSize: 'fontSize',
+        fontSize: 'fontSize',
+        chatFontColor: 'fontColor',
+        fontColor: 'fontColor',
+        chatFontFamily: 'fontFamily',
+        fontFamily: 'fontFamily',
+        chatIsBold: 'isBold',
+        isBold: 'isBold',
+        chatIsItalic: 'isItalic',
+        isItalic: 'isItalic',
+        chatIsUnderline: 'isUnderline',
+        isUnderline: 'isUnderline',
+        chatIsStrikethrough: 'isStrikethrough',
+        isStrikethrough: 'isStrikethrough',
+      };
+      const normalizedKey = keyMap[key] || key;
+      const normalizedVal = normalizedKey.startsWith('is') ? Boolean(value) : value;
 
       const currentPrefs = window.chatFontPreferences || fontPreferences;
-      const newPreferences = { ...currentPrefs, [key]: value };
+      const newPreferences = { ...currentPrefs, [normalizedKey]: normalizedVal };
       setFontPreferences(newPreferences);
       window.chatFontPreferences = newPreferences;
 
@@ -695,7 +712,6 @@ function App() {
           updateDoc(doc(db, 'users', auth.currentUser.uid), {
             fontPreferences: newPreferences
           });
-          console.log('✅ Font preferences saved to Firebase');
         } catch (error) {
           console.error('❌ Error saving font preferences to Firebase:', error);
         }

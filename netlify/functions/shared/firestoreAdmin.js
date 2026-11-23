@@ -75,9 +75,30 @@ export async function verifyToken(token, requiredRoles = null) {
   if (!res.ok)
     return { ok: false, err: `Firestore error ${res.status}` };
 
-  const data = await res.json();
-  const f    = data.fields || {};
-  const role = f.role?.stringValue || 'user';
+  const data  = await res.json();
+  const f     = data.fields || {};
+  const rawRole  = String(f.role?.stringValue || 'user').toLowerCase().trim();
+  const rawBadge = String(f.badge?.stringValue || '').toLowerCase().trim();
+
+  const ROLE_RANK = { guest: 0, user: 1, rj: 2, moderator: 3, admin: 4, owner: 5 };
+  const mapRole = (r) => {
+    if (r === 'owner' || r === 'superowner' || r === 'godfather') return 'owner';
+    if (r === 'admin' || r === 'high_council' || r === 'high council') return 'admin';
+    if (r === 'moderator' || r === 'mod' || r === 'guardian') return 'moderator';
+    if (r === 'rj' || r === 'verified_rj' || r === 'radio_jockey') return 'rj';
+    if (r === 'guest') return 'guest';
+    return 'user';
+  };
+  const mapBadge = (b) => {
+    if (b === 'the_olympian' || b === 'godfather') return 'owner';
+    if (b === 'titans' || b === 'high_council' || b === 'high council') return 'admin';
+    if (b === 'spartans' || b === 'guardian') return 'moderator';
+    if (b === 'rj' || b === 'verified_rj' || b === 'radio_jockey') return 'rj';
+    return null;
+  };
+  const rNorm = mapRole(rawRole);
+  const bNorm = mapBadge(rawBadge);
+  const role  = (bNorm && (ROLE_RANK[bNorm] || 0) > (ROLE_RANK[rNorm] || 0)) ? bNorm : rNorm;
 
   if (requiredRoles && !requiredRoles.includes(role))
     return { ok: false, err: 'Access denied' };
@@ -86,6 +107,7 @@ export async function verifyToken(token, requiredRoles = null) {
     ok: true,
     uid,
     role,
+    badge:       f.badge?.stringValue       || null,
     displayName: f.displayName?.stringValue || '',
     email:       f.email?.stringValue       || p.email || '',
     gender:      f.gender?.stringValue      || 'male',

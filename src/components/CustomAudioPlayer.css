@@ -807,13 +807,29 @@ html.dark-theme-variant .chat-feed .compact-audio-player .time-info span {
   color: var(--username-color) !important;
 }
 
-/* ── ALL COLOUR THEMES: YouTube red player (keep white) ─────────────────
-   The red bg stays the same in colour themes; text stays white.           */
+/* ── ALL COLOUR THEMES & DARK MODE: YouTube red player (always white) ──
+   The red bg stays vivid in dark mode & colour themes; title + counter timer stay crisp white. */
+html.dark-mode .youtube-music-player .player-song-title,
+html.dark-mode .youtube-music-player .player-song-title *,
+html.dark-mode .youtube-music-player .time-info,
+html.dark-mode .youtube-music-player .time-info span,
+html.dark-mode .youtube-music-player .time-info *,
+.dark-mode .youtube-music-player .player-song-title,
+.dark-mode .youtube-music-player .player-song-title *,
+.dark-mode .youtube-music-player .time-info,
+.dark-mode .youtube-music-player .time-info span,
+.dark-mode .youtube-music-player .time-info *,
+html.dark-mode .message-row-wrapper .youtube-music-player .player-song-title,
+html.dark-mode .message-row-wrapper .youtube-music-player .time-info,
+html.dark-mode .message-row-wrapper .youtube-music-player .time-info span,
 html.dark-theme-variant .youtube-music-player .player-song-title,
+html.dark-theme-variant .youtube-music-player .player-song-title *,
 html.dark-theme-variant .youtube-music-player .time-info,
 html.dark-theme-variant .youtube-music-player .time-info span,
+html.dark-theme-variant .youtube-music-player .time-info *,
 html.dark-theme-variant .message-row-wrapper .youtube-music-player .player-song-title,
 html.dark-theme-variant .message-row-wrapper .youtube-music-player .time-info,
 html.dark-theme-variant .message-row-wrapper .youtube-music-player .time-info span {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }

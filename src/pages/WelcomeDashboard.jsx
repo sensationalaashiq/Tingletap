@@ -614,7 +614,7 @@ const WelcomeDashboard = () => {
   /* ── Role chip config ── */
   const getRoleConfig = () => {
     const isGuestSession = checkIsGuestUser({ isGuest: userRole === 'guest', role: userRole });
-    const normalizedRole = normalizeRole(userRole);
+    const normalizedRole = normalizeRole(userRole, userBadge);
     const resolvedBadgeKey = resolveBadgeKey(userBadge);
     const staffRoles = ['owner', 'admin', 'moderator'];
     const effectiveRole = isGuestSession
@@ -957,7 +957,7 @@ const WelcomeDashboard = () => {
                 <span>RJ Earnings</span>
               </button>
             )}
-            {isOwnerRole(userRole) && (
+            {isOwnerRole(userRole, userBadge) && (
               <button className="wd-coin-btn wd-coin-btn--owner-email" onClick={() => navigate('/owner/email-center')}
                       title="Owner Email Center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -992,7 +992,7 @@ const WelcomeDashboard = () => {
                 return '—';
               })()}</span>
             </div>
-            <div className={`wd-ms-badge wd-ms-badge--${resolveBadgeKey(userBadge) ? 'badge' : (normalizeRole(userRole) === 'user' ? 'registered' : normalizeRole(userRole))}`}>
+            <div className={`wd-ms-badge wd-ms-badge--${normalizeRole(userRole, userBadge) === 'owner' ? 'owner' : (resolveBadgeKey(userBadge) ? 'badge' : (normalizeRole(userRole, userBadge) === 'user' ? 'registered' : normalizeRole(userRole, userBadge)))}`}>
               <span className="wd-ms-badge-icon">{roleConfig.icon}</span>
               <span>{roleConfig.label}</span>
             </div>

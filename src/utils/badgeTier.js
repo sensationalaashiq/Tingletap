@@ -22,7 +22,7 @@ export const TIER_WEIGHTS = {
 const TIER3_BADGES = new Set([
   'diamond_king', 'sapphire_goddess',
   // RJ / verified creator variants
-  'rj', 'verified_rj', 'streamers', 'content_creator',
+  'rj', 'verified_rj', 'radio_jockey', 'streamers', 'content_creator',
 ]);
 const TIER2_BADGES = new Set(['platinum_lord', 'emerald_empress']);
 const TIER1_BADGES = new Set(['gold_knight', 'ruby_queen']);
@@ -30,6 +30,11 @@ const STAFF_ROLES  = new Set([
   'owner', 'superowner', 'godfather',
   'admin', 'high_council', 'high council',
   'moderator', 'mod', 'guardian',
+]);
+const STAFF_BADGES = new Set([
+  'the_olympian', 'godfather',
+  'titans', 'high_council', 'high council',
+  'spartans', 'guardian',
 ]);
 
 /**
@@ -42,8 +47,8 @@ const STAFF_ROLES  = new Set([
 export const getBadgeTier = (badge, role, isGuest) => {
   if (isGuest) return 'guest';
   const r = (role || '').toLowerCase().trim();
-  if (STAFF_ROLES.has(r)) return 'staff';
   const b = String(badge || '').trim().toLowerCase();
+  if (STAFF_ROLES.has(r) || STAFF_BADGES.has(b)) return 'staff';
   if (!b) return 'member';
   if (TIER3_BADGES.has(b)) return 'tier3';
   if (TIER2_BADGES.has(b)) return 'tier2';

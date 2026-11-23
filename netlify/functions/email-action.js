@@ -107,7 +107,12 @@ async function verifyOwner(token) {
 
     const userDoc = await admin.firestore().collection('users').doc(uid).get();
     const data = userDoc.data() || {};
-    if (data.role !== 'owner') return { ok: false, err: 'Access denied — owners only' };
+    const normRole = String(data.role || '').toLowerCase().trim();
+    const normBadge = String(data.badge || '').toLowerCase().trim();
+    const isOwner =
+      ['owner', 'superowner', 'godfather'].includes(normRole) ||
+      ['the_olympian', 'godfather'].includes(normBadge);
+    if (!isOwner) return { ok: false, err: 'Access denied — owners only' };
     return { ok: true, uid, displayName: data.displayName || '', role: data.role };
   } catch (err) {
     return { ok: false, err: 'Auth verification failed' };

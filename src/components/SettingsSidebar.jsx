@@ -7,6 +7,7 @@ import {
   isAdminRole,
   isStaffRole,
   isRjRole,
+  isGuestUser,
   resolveBadgeKey,
   getRoleDisplayLabel,
   getStoredGuestGender,
@@ -18,7 +19,6 @@ import { ref as rtdbRef, set as rtdbSet, remove as rtdbRemove } from 'firebase/d
 import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import StatusModal from './StatusModal';
 import EditProfileModal from './EditProfileModal';
 import ChangeUsernameModal from './ChangeUsernameModal';
@@ -27,6 +27,7 @@ import WarningAnnouncementManager from './WarningAnnouncementManager';
 import FeedbackPage from './FeedbackPage';
 import BadgeApplicationTab from './badge/BadgeApplicationTab';
 import RJApplicationTab from './rj/RJApplicationTab';
+import StylishConfirmationDialogue from './StylishConfirmationDialogue';
 import './SettingsSidebar.css';
 import renderTextWithLinks from '../utils/linkifyText';
 import { useLiveDisplayName } from '../utils/liveUsernames';
@@ -85,6 +86,7 @@ const SettingsSidebar = ({
     const [showChangeUsernameModal, setShowChangeUsernameModal] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [showWarningManager, setShowWarningManager] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
     const [teamMembers, setTeamMembers] = useState([]);
     const teamUnsubRef = useRef(null);
 
@@ -411,7 +413,7 @@ const SettingsSidebar = ({
 
         // Also query authoritative `users` collection so admins/owners/app-team created before
         // publicProfiles mirror existed always appear, and backfill publicProfiles if current user is staff.
-        const amStaff = isStaffRole(loggedInUserProfile?.role);
+        const amStaff = isStaffRole(loggedInUserProfile);
 
         Promise.all([
             getDocs(query(collection(db, 'users'), where('role', 'in', ROLE_GROUP_A))).catch(() => ({ docs: [] })),
@@ -665,75 +667,78 @@ const SettingsSidebar = ({
     };
 
     const handleClearAllData = () => {
-        const confirmClear = window.confirm(
-            'Are you sure you want to clear all your local data? This will reset all your preferences.'
-        );
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Reset All Settings',
+            message: 'Are you sure you want to clear all your local data and reset preferences to defaults?',
+            confirmText: 'Reset All',
+            cancelText: 'Cancel',
+            type: 'warning',
+            onCancel: () => setConfirmDialog({ isOpen: false }),
+            onConfirm: () => {
+                setConfirmDialog({ isOpen: false });
+                const settingsKeys = [
+                    'autoScrollChat', 'showTimestamps', 'compactMode', 'darkMode', 'selectedTheme',
+                    'soundEnabled', 'messageNotifications', 'whisperNotifications',
+                    'privateMessageNotifications', 'incomingCallNotifications', 'friendRequestNotifications',
+                    'roomEntryNotifications', 'mentionNotifications', 'notificationVolume',
+                    'showOnlineStatus', 'allowPrivateMessages', 'allowWhisperMessages', 'micVolume',
+                    'speakerVolume', 'echoCancellation', 'noiseSuppression',
+                    'usernameFontSize', 'usernameFontColor', 'usernameFontFamily', 'usernameIsBold', 'usernameIsItalic',
+                    'usernameIsUnderline', 'usernameTextShadow', 'usernameGradientEnabled', 'usernameGradientStart',
+                    'usernameGradientEnd', 'usernameGradientDirection'
+                ];
 
-        if (confirmClear) {
-            // Clear all localStorage items related to settings
-            const settingsKeys = [
-                'autoScrollChat', 'showTimestamps', 'compactMode', 'darkMode', 'selectedTheme',
-                'soundEnabled', 'messageNotifications', 'whisperNotifications', 
-                'privateMessageNotifications', 'incomingCallNotifications', 'friendRequestNotifications',
-                'roomEntryNotifications', 'mentionNotifications', 'notificationVolume',
-                'showOnlineStatus', 'allowPrivateMessages', 'allowWhisperMessages', 'micVolume', 
-                'speakerVolume', 'echoCancellation', 'noiseSuppression',
-                'usernameFontSize', 'usernameFontColor', 'usernameFontFamily', 'usernameIsBold', 'usernameIsItalic',
-                'usernameIsUnderline', 'usernameTextShadow', 'usernameGradientEnabled', 'usernameGradientStart',
-                'usernameGradientEnd', 'usernameGradientDirection'
-            ];
+                settingsKeys.forEach(key => localStorage.removeItem(key));
 
-            settingsKeys.forEach(key => localStorage.removeItem(key));
+                setSettings({
+                    autoScrollChat: true,
+                    showTimestamps: true,
+                    compactMode: false,
+                    darkMode: false,
+                    selectedTheme: 'light',
+                    soundEnabled: true,
+                    messageNotifications: true,
+                    whisperNotifications: true,
+                    privateMessageNotifications: true,
+                    incomingCallNotifications: true,
+                    friendRequestNotifications: true,
+                    roomEntryNotifications: true,
+                    mentionNotifications: true,
+                    notificationVolume: 70,
+                    showOnlineStatus: true,
+                    allowPrivateMessages: true,
+                    allowWhisperMessages: true,
+                    micVolume: 80,
+                    speakerVolume: 80,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    usernameFontSize: '12px',
+                    usernameFontColor: '#333333',
+                    usernameFontFamily: 'inherit',
+                    usernameIsBold: false,
+                    usernameIsItalic: false,
+                    usernameIsUnderline: false,
+                    usernameTextShadow: 'none',
+                    usernameGradientEnabled: false,
+                    usernameGradientStart: '#ff0000',
+                    usernameGradientEnd: '#0000ff',
+                    usernameGradientDirection: 'linear'
+                });
 
-            // Reset state to defaults
-            setSettings({
-                autoScrollChat: true,
-                showTimestamps: true,
-                compactMode: false,
-                darkMode: false,
-                selectedTheme: 'light',
-                soundEnabled: true,
-                messageNotifications: true,
-                whisperNotifications: true,
-                privateMessageNotifications: true,
-                incomingCallNotifications: true,
-                friendRequestNotifications: true,
-                roomEntryNotifications: true,
-                mentionNotifications: true,
-                notificationVolume: 70,
-                showOnlineStatus: true,
-                allowPrivateMessages: true,
-                allowWhisperMessages: true,
-                micVolume: 80,
-                speakerVolume: 80,
-                echoCancellation: true,
-                noiseSuppression: true,
-                usernameFontSize: '12px',
-                usernameFontColor: '#333333',
-                usernameFontFamily: 'inherit',
-                usernameIsBold: false,
-                usernameIsItalic: false,
-                usernameIsUnderline: false,
-                usernameTextShadow: 'none',
-                usernameGradientEnabled: false,
-                usernameGradientStart: '#ff0000',
-                usernameGradientEnd: '#0000ff',
-                usernameGradientDirection: 'linear'
-            });
+                if (window.setFontPreference) {
+                    window.setFontPreference('chatFontSize', '11px');
+                    window.setFontPreference('chatFontColor', '#333333');
+                    window.setFontPreference('chatFontFamily', 'inherit');
+                    window.setFontPreference('chatIsBold', false);
+                    window.setFontPreference('chatIsItalic', false);
+                    window.setFontPreference('chatIsUnderline', false);
+                    window.setFontPreference('chatIsStrikethrough', false);
+                }
 
-            // Also reset font preferences to 12px default
-            if (window.setFontPreference) {
-                window.setFontPreference('fontSize', '12px');
-                window.setFontPreference('fontColor', '#333333');
-                window.setFontPreference('fontFamily', 'inherit');
-                window.setFontPreference('isBold', false);
-                window.setFontPreference('isItalic', false);
-                window.setFontPreference('isUnderline', false);
-                window.setFontPreference('isStrikethrough', false);
+                pt.success('All settings have been reset to defaults!');
             }
-
-            pt.success('All settings have been reset to defaults!');
-        }
+        });
     };
 
     const handleLogout = async () => {
@@ -822,86 +827,73 @@ const SettingsSidebar = ({
         }
     };
 
-    const handleBlockFriend = async (friend) => {
-        const confirmBlock = window.confirm(`Are you sure you want to block ${friend.displayName}? This will also remove them from your friends list.`);
+    const handleBlockFriend = (friend) => {
+        if (!friend?.id || !auth.currentUser) return;
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Block User',
+            message: `Block ${friend.displayName}? This will also remove them from your friends list.`,
+            confirmText: 'Block',
+            cancelText: 'Cancel',
+            type: 'danger',
+            onCancel: () => setConfirmDialog({ isOpen: false }),
+            onConfirm: async () => {
+                setConfirmDialog({ isOpen: false });
+                try {
+                    const currentUserRef = doc(db, 'users', auth.currentUser.uid);
+                    const friendUserRef = doc(db, 'users', friend.id);
 
-        if (confirmBlock) {
-            try {
-                const currentUserRef = doc(db, 'users', auth.currentUser.uid);
-                const friendUserRef = doc(db, 'users', friend.id);
+                    const currentUserDoc = await getDoc(currentUserRef);
+                    const currentUserData = currentUserDoc.data() || {};
+                    const currentFriends = currentUserData.friends || [];
+                    const currentBlocked = currentUserData.blockedUsers || [];
+                    const existingMap = currentUserData.blockedUsersMap || {};
 
-                // Get current user's data
-                const currentUserDoc = await getDoc(currentUserRef);
-                const currentUserData = currentUserDoc.data();
-                const currentFriends = currentUserData.friends || [];
-                const currentBlocked = currentUserData.blockedUsers || [];
+                    const friendUserDoc = await getDoc(friendUserRef);
+                    const friendUserData = friendUserDoc.data() || {};
+                    const friendFriends = friendUserData.friends || [];
 
-                // Get friend's data
-                const friendUserDoc = await getDoc(friendUserRef);
-                const friendUserData = friendUserDoc.data();
-                const friendFriends = friendUserData.friends || [];
+                    const updatedCurrentFriends = currentFriends.filter(id => id !== friend.id);
+                    const updatedCurrentBlocked = currentBlocked.includes(friend.id)
+                        ? currentBlocked
+                        : [...currentBlocked, friend.id];
+                    const updatedMap = {
+                        ...existingMap,
+                        [friend.id]: {
+                            uid: friend.id,
+                            displayName: friend.displayName || 'Unknown User',
+                            photoURL: friend.photoURL || null,
+                            role: friend.role || 'user',
+                            gender: friend.gender || null,
+                        }
+                    };
 
-                // Remove friend from friends list and add to blocked list
-                const updatedCurrentFriends = currentFriends.filter(id => id !== friend.id);
-                const updatedCurrentBlocked = [...currentBlocked, friend.id];
+                    const updatedFriendFriends = friendFriends.filter(id => id !== auth.currentUser.uid);
 
-                // Remove current user from friend's friends list
-                const updatedFriendFriends = friendFriends.filter(id => id !== auth.currentUser.uid);
+                    await updateDoc(currentUserRef, {
+                        friends: updatedCurrentFriends,
+                        blockedUsers: updatedCurrentBlocked,
+                        blockedUsersMap: updatedMap
+                    });
 
-                // Update both users
-                await updateDoc(currentUserRef, {
-                    friends: updatedCurrentFriends,
-                    blockedUsers: updatedCurrentBlocked
-                });
+                    try {
+                        await updateDoc(friendUserRef, { friends: updatedFriendFriends });
+                    } catch (_) {}
+                    syncPublicProfile(auth.currentUser.uid, { friends: updatedCurrentFriends });
+                    syncPublicProfile(friend.id, { friends: updatedFriendFriends });
 
-                await updateDoc(friendUserRef, {
-                    friends: updatedFriendFriends
-                });
-                syncPublicProfile(auth.currentUser.uid, { friends: updatedCurrentFriends });
-                syncPublicProfile(friend.id, { friends: updatedFriendFriends });
-
-                // Update local state
-                setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
-                if (typeof setLoggedInUserProfile === 'function') {
-                    setLoggedInUserProfile(prev => prev ? { ...prev, friends: updatedCurrentFriends, blockedUsers: updatedCurrentBlocked } : prev);
-                }
-
-                toast(
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: '36px', height: '36px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,.4)'
-                        }}>
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
-                                <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e1b4b', letterSpacing: '.2px' }}>User Blocked</div>
-                            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                                <span style={{ fontWeight: 700, color: '#b91c1c' }}>{friend.displayName}</span> has been blocked
-                            </div>
-                        </div>
-                    </div>,
-                    {
-                        style: {
-                            background: 'linear-gradient(135deg, #fff5f5, #fee2e2)',
-                            border: '1.5px solid rgba(239,68,68,.3)',
-                            borderRadius: '14px',
-                            boxShadow: '0 8px 32px rgba(239,68,68,.15)',
-                            padding: '10px 14px',
-                        },
-                        icon: false,
-                        autoClose: 4000,
+                    setFriendsProfiles(prev => prev.filter(f => f.id !== friend.id));
+                    if (typeof setLoggedInUserProfile === 'function') {
+                        setLoggedInUserProfile(prev => prev ? { ...prev, friends: updatedCurrentFriends, blockedUsers: updatedCurrentBlocked, blockedUsersMap: updatedMap } : prev);
                     }
-                );
-            } catch (error) {
-                console.error('Error blocking friend:', error);
-                pt.error('Failed to block user. Please try again.');
+
+                    pt.block(`${friend.displayName} has been blocked`);
+                } catch (error) {
+                    console.error('Error blocking friend:', error);
+                    pt.error('Failed to block user. Please try again.');
+                }
             }
-        }
+        });
     };
 
     const renderTabContent = () => {
@@ -2118,10 +2110,10 @@ const SettingsSidebar = ({
                 );
             }
 
-            case 'username-font':
+            case 'username-font': {
                 // Check access permissions
                 const hasBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
-                const hasAccess = hasBadge || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
+                const hasAccess = hasBadge || isStaffRole(loggedInUserProfile) || isRjRole(loggedInUserProfile);
 
                 if (!hasAccess) {
                     return (
@@ -2529,6 +2521,7 @@ const SettingsSidebar = ({
 
                     </div>
                 );
+            }
 
             case 'team': {
                 const TEAM_BADGE_IDS = new Set(['rj', 'verified_rj', 'the_olympian', 'titans', 'spartans', 'streamers', 'content_creator']);
@@ -2769,15 +2762,24 @@ const SettingsSidebar = ({
                                         {loggedInUserProfile?.status && (
                                             <button
                                                 className="modern-nav-btn warning"
-                                                onClick={async () => {
-                                                    const confirmClear = window.confirm('Are you sure you want to clear your status?');
-                                                    if (confirmClear) {
-                                                        try {
-                                                            await updateDoc(doc(db, 'users', auth.currentUser.uid), { status: '', updatedAt: new Date().toISOString() });
-                                                        } catch (error) {
-                                                            pt.error('Failed to clear status.');
+                                                onClick={() => {
+                                                    setConfirmDialog({
+                                                        isOpen: true,
+                                                        title: 'Clear Status',
+                                                        message: 'Are you sure you want to clear your status?',
+                                                        confirmText: 'Clear',
+                                                        cancelText: 'Cancel',
+                                                        type: 'warning',
+                                                        onCancel: () => setConfirmDialog({ isOpen: false }),
+                                                        onConfirm: async () => {
+                                                            setConfirmDialog({ isOpen: false });
+                                                            try {
+                                                                await updateDoc(doc(db, 'users', auth.currentUser.uid), { status: '', updatedAt: new Date().toISOString() });
+                                                            } catch (error) {
+                                                                pt.error('Failed to clear status.');
+                                                            }
                                                         }
-                                                    }
+                                                    });
                                                 }}
                                                 title="Clear Status"
                                             >
@@ -3053,7 +3055,7 @@ const SettingsSidebar = ({
                                             <label className="spotify-cover-label">
                                                 <svg viewBox="0 0 24 24" width="24" height="24" className="spotify-icon">
                                                     <circle cx="12" cy="12" r="12" fill="#1DB954"/>
-                                                    <path fill="#FFFFFF" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55-1 .65-1.95-.45-4.2-.45-6.15 0z"/>
+                                                    <path fill="#FFFFFF" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.05 9.4-.85 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zm1.1-2.8c-.25-.45-.85-.6-1.3-.35-3.8-2.25-9.55-2.9-14.1-1.6-.55.15-1.1-.25-1.25-.8-.15-.55.25-1.1.8-1.25 5.2-1.5 11.7-.8 16.15 1.85.45.25.6.85.35 1.3-.25.45-.85.6-1.3.35zm-13.35 3.95c-.45.1-.9-.2-1-.65-.1-.45.2-.9.65-1 2.3-.55 4.75-.55 7.05 0 .45.1.75.55.65 1-.1.45-.55.75-1 .65-1.95-.45-4.2-.45-6.15 0z"/>
                                                 </svg>
                                                 Spotify Song Cover
                                             </label>
@@ -3500,7 +3502,7 @@ const SettingsSidebar = ({
                         </div>
 
                         {/* Warning & Announcement Section (for staff and above) */}
-                        {isStaffRole(loggedInUserProfile?.role) && (
+                        {isStaffRole(loggedInUserProfile) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3548,7 +3550,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* Admin Section (if applicable) */}
-                        {isAdminRole(loggedInUserProfile?.role) && (
+                        {isAdminRole(loggedInUserProfile) && (
                             <div className="modern-setting-group">
                                 <h4 className="modern-section-title admin-title">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3557,7 +3559,7 @@ const SettingsSidebar = ({
                                     ADMIN CONTROLS
                                 </h4>
                                 <div className="modern-admin-buttons">
-                                    {isOwnerRole(loggedInUserProfile?.role) && (
+                                    {isOwnerRole(loggedInUserProfile) && (
                                         <button 
                                             className="modern-admin-btn admin"
                                             onClick={() => {
@@ -3574,8 +3576,8 @@ const SettingsSidebar = ({
                                         </button>
                                     )}
 
-                                    {isAdminRole(loggedInUserProfile?.role) && (
-                                        <button
+                                    {isAdminRole(loggedInUserProfile) && (
+                                        <button 
                                             className="modern-admin-btn admin"
                                             onClick={() => {
                                                 navigate('/mod-panel');
@@ -3595,11 +3597,24 @@ const SettingsSidebar = ({
                                     <button 
                                         className="modern-admin-btn danger"
                                         onClick={() => {
-                                            const confirmed = window.confirm('⚠️ Are you sure you want to clear the entire chat? This action cannot be undone!');
-                                            if (confirmed) {
-                                                pt.success('Chat clearing initiated...');
-                                                onClose();
-                                            }
+                                            setConfirmDialog({
+                                                isOpen: true,
+                                                title: 'Clear Room Chat',
+                                                message: 'Are you sure you want to clear all messages in this chat room? This cannot be undone.',
+                                                confirmText: 'Clear Chat',
+                                                cancelText: 'Cancel',
+                                                type: 'danger',
+                                                onCancel: () => setConfirmDialog({ isOpen: false }),
+                                                onConfirm: async () => {
+                                                    setConfirmDialog({ isOpen: false });
+                                                    if (typeof window.handleClearChatFromSettings === 'function') {
+                                                        await window.handleClearChatFromSettings();
+                                                    } else {
+                                                        pt.error('Open a chat room to clear messages.');
+                                                    }
+                                                    onClose();
+                                                }
+                                            });
                                         }}
                                     >
                                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3734,9 +3749,9 @@ const SettingsSidebar = ({
                 );
 
             case 'badge-apply': {
-                const isGuest = !loggedInUserProfile || loggedInUserProfile.role === 'guest' || auth.currentUser?.isAnonymous;
-                const hasVerifiedBadge = !!loggedInUserProfile?.badge && loggedInUserProfile.badge !== 'none';
-                if (isGuest || hasVerifiedBadge) return null;
+                const isGuest = !loggedInUserProfile || isGuestUser(loggedInUserProfile) || auth.currentUser?.isAnonymous;
+                const hasVerifiedBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
+                if (isGuest || hasVerifiedBadge || normalizeRole(loggedInUserProfile) !== 'user') return null;
                 return (
                     <div className="settings-tab-content">
                         <BadgeApplicationTab loggedInUserProfile={loggedInUserProfile} />
@@ -3746,9 +3761,9 @@ const SettingsSidebar = ({
 
             case 'rj-apply': {
                 // Visible only to authenticated normal users; hidden for guests, owner, admin, moderator.
-                const isGuestRJ = !loggedInUserProfile || loggedInUserProfile.role === 'guest' || auth.currentUser?.isAnonymous;
-                const isNormalUser = loggedInUserProfile?.role?.toLowerCase() === 'user';
-                const isRJVerified = loggedInUserProfile?.badge === 'rj';
+                const isGuestRJ = !loggedInUserProfile || isGuestUser(loggedInUserProfile) || auth.currentUser?.isAnonymous;
+                const isNormalUser = normalizeRole(loggedInUserProfile) === 'user';
+                const isRJVerified = isRjRole(loggedInUserProfile);
                 if (isGuestRJ || !isNormalUser || isRJVerified) return null;
                 return (
                     <div className="settings-tab-content">
@@ -4448,7 +4463,7 @@ const SettingsSidebar = ({
 
                         {(() => {
                             const hasBadgeForFriends = !!resolveBadgeKey(loggedInUserProfile?.badge);
-                            const hasFriendsAccess = hasBadgeForFriends || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
+                            const hasFriendsAccess = hasBadgeForFriends || isStaffRole(loggedInUserProfile) || isRjRole(loggedInUserProfile);
                             return (
                                 <button 
                                     className={`settings-tab ${activeTab === 'friends' ? 'active' : ''}`}
@@ -4470,7 +4485,7 @@ const SettingsSidebar = ({
 
                         {(() => {
                             const hasBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
-                            const hasAccess = hasBadge || isStaffRole(loggedInUserProfile?.role) || isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge);
+                            const hasAccess = hasBadge || isStaffRole(loggedInUserProfile) || isRjRole(loggedInUserProfile);
 
                             return (
                                 <button 
@@ -4548,7 +4563,7 @@ const SettingsSidebar = ({
                         </button>
 
                         {/* Badge Apply tab — visible ONLY to registered members with role=user AND no badge at all; hidden for staff, badge-holders, guests */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !resolveBadgeKey(loggedInUserProfile?.badge) && normalizeRole(loggedInUserProfile?.role) === 'user' && (
+                        {loggedInUserProfile && !isGuestUser(loggedInUserProfile) && !auth.currentUser?.isAnonymous && !resolveBadgeKey(loggedInUserProfile?.badge) && normalizeRole(loggedInUserProfile) === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'badge-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('badge-apply')}
@@ -4569,7 +4584,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* RJ Apply tab — visible ONLY to registered members with role=user AND not already RJ-badged; hidden for staff, guests */}
-                        {loggedInUserProfile && !loggedInUserProfile?.isAnonymous && !auth.currentUser?.isAnonymous && !isRjRole(loggedInUserProfile?.role, loggedInUserProfile?.badge) && normalizeRole(loggedInUserProfile?.role) === 'user' && (
+                        {loggedInUserProfile && !isGuestUser(loggedInUserProfile) && !auth.currentUser?.isAnonymous && !isRjRole(loggedInUserProfile) && normalizeRole(loggedInUserProfile) === 'user' && (
                             <button
                                 className={`settings-tab ${activeTab === 'rj-apply' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('rj-apply')}
@@ -4591,7 +4606,7 @@ const SettingsSidebar = ({
                         )}
 
                         {/* TingleBot tab — owner only */}
-                        {isOwnerRole(loggedInUserProfile?.role) && (
+                        {isOwnerRole(loggedInUserProfile) && (
                             <button
                                 className={`settings-tab ${activeTab === 'tinglebot' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('tinglebot')}
@@ -4667,6 +4682,17 @@ const SettingsSidebar = ({
                     currentUserProfile={loggedInUserProfile}
                 />
             )}
+
+            <StylishConfirmationDialogue
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title || 'Confirm'}
+                message={confirmDialog.message || ''}
+                confirmText={confirmDialog.confirmText || 'Confirm'}
+                cancelText={confirmDialog.cancelText || 'Cancel'}
+                type={confirmDialog.type || 'warning'}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={confirmDialog.onCancel || (() => setConfirmDialog({ isOpen: false }))}
+            />
         </>
     );
 };

@@ -827,10 +827,7 @@
 }
 
 /* Disable transitions during dragging for maximum speed */
-.ultra-luxury-pm-window * {
-  transition: none !important;
-}
-
+.ultra-luxury-pm-window.dragging,
 .ultra-luxury-pm-window.dragging * {
   transition: none !important;
 }

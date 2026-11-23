@@ -20,6 +20,7 @@ const useDraggable = ({
   const basePosRef = useRef(initialPosition);
   const currentDeltaRef = useRef({ x: 0, y: 0 });
   const elSizeRef = useRef({ width: 280, height: 260 });
+  const activeCleanupRef = useRef(null);
 
   useEffect(() => {
     positionRef.current = position;
@@ -95,7 +96,14 @@ const useDraggable = ({
     el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
   }, []);
 
-  const handleMouseDown = useCallback((e) => {
+  const detachGlobalListeners = useCallback(() => {
+    if (activeCleanupRef.current) {
+      activeCleanupRef.current();
+      activeCleanupRef.current = null;
+    }
+  }, []);
+
+  const handleDragStart = useCallback((e) => {
     if (isDraggingRef.current || disabled) return;
     if (e.button !== undefined && e.button !== 0 && !e.type?.startsWith('touch')) return;
 
@@ -106,128 +114,117 @@ const useDraggable = ({
     e.stopPropagation();
 
     const coords = getClientCoords(e);
-    const rect = elementRef.current.getBoundingClientRect();
+    const el = elementRef.current;
+    const rect = el.getBoundingClientRect();
     elSizeRef.current = { width: rect.width, height: rect.height };
     basePosRef.current = { x: rect.left, y: rect.top };
     dragStartCoordsRef.current = coords;
     currentDeltaRef.current = { x: 0, y: 0 };
 
     isDraggingRef.current = true;
-    setIsDragging(true);
-
+    // Update cursor/class synchronously without waiting for a React render cycle
     document.body.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
 
-    const el = elementRef.current;
     el.style.willChange = 'transform';
     el.style.transition = 'none';
     el.style.left = `${rect.left}px`;
     el.style.top = `${rect.top}px`;
     el.style.transform = 'translate3d(0px, 0px, 0)';
+    el.style.zIndex = '10001';
+    el.style.cursor = 'grabbing';
+    setIsDragging(true);
+
+    const onMove = (moveEvt) => {
+      if (!isDraggingRef.current || !elementRef.current) return;
+      if (moveEvt.cancelable) moveEvt.preventDefault();
+      moveEvt.stopPropagation();
+
+      const mc = getClientCoords(moveEvt);
+      const rawTarget = {
+        x: basePosRef.current.x + (mc.x - dragStartCoordsRef.current.x),
+        y: basePosRef.current.y + (mc.y - dragStartCoordsRef.current.y)
+      };
+      const clamped = constrainPosition(rawTarget, elSizeRef.current);
+      currentDeltaRef.current = {
+        x: clamped.x - basePosRef.current.x,
+        y: clamped.y - basePosRef.current.y
+      };
+
+      if (!animationFrameRef.current) {
+        animationFrameRef.current = requestAnimationFrame(applyGpuTransform);
+      }
+    };
+
+    const onEnd = (endEvt) => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      detachGlobalListeners();
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      const finalPosition = constrainPosition(
+        {
+          x: basePosRef.current.x + currentDeltaRef.current.x,
+          y: basePosRef.current.y + currentDeltaRef.current.y
+        },
+        elSizeRef.current
+      );
+
+      positionRef.current = finalPosition;
+      currentDeltaRef.current = { x: 0, y: 0 };
+
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+
+      if (elementRef.current) {
+        elementRef.current.style.willChange = 'auto';
+        elementRef.current.style.left = `${finalPosition.x}px`;
+        elementRef.current.style.top = `${finalPosition.y}px`;
+        elementRef.current.style.transform = 'translate3d(0px, 0px, 0)';
+        elementRef.current.style.zIndex = '10000';
+        elementRef.current.style.cursor = 'grab';
+      }
+
+      setIsDragging(false);
+      setPosition(finalPosition);
+
+      if (onDragEnd) {
+        onDragEnd({ position: finalPosition, event: endEvt });
+      }
+    };
+
+    const preventSelect = (selEvt) => selEvt.preventDefault();
+
+    window.addEventListener('mousemove', onMove, { passive: false, capture: true });
+    window.addEventListener('mouseup', onEnd, { passive: false, capture: true });
+    window.addEventListener('touchmove', onMove, { passive: false, capture: true });
+    window.addEventListener('touchend', onEnd, { passive: false, capture: true });
+    window.addEventListener('touchcancel', onEnd, { passive: false, capture: true });
+    document.addEventListener('selectstart', preventSelect, { passive: false });
+
+    activeCleanupRef.current = () => {
+      window.removeEventListener('mousemove', onMove, { capture: true });
+      window.removeEventListener('mouseup', onEnd, { capture: true });
+      window.removeEventListener('touchmove', onMove, { capture: true });
+      window.removeEventListener('touchend', onEnd, { capture: true });
+      window.removeEventListener('touchcancel', onEnd, { capture: true });
+      document.removeEventListener('selectstart', preventSelect);
+    };
 
     if (onDragStart) {
       onDragStart({ position: basePosRef.current, event: e });
     }
-  }, [disabled, isValidDragTarget, getClientCoords, onDragStart]);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isDraggingRef.current || !elementRef.current) return;
-
-    if (e.cancelable) e.preventDefault();
-    e.stopPropagation();
-
-    const coords = getClientCoords(e);
-    const rawTarget = {
-      x: basePosRef.current.x + (coords.x - dragStartCoordsRef.current.x),
-      y: basePosRef.current.y + (coords.y - dragStartCoordsRef.current.y)
-    };
-    const clamped = constrainPosition(rawTarget, elSizeRef.current);
-    currentDeltaRef.current = {
-      x: clamped.x - basePosRef.current.x,
-      y: clamped.y - basePosRef.current.y
-    };
-
-    if (!animationFrameRef.current) {
-      animationFrameRef.current = requestAnimationFrame(applyGpuTransform);
-    }
-  }, [getClientCoords, constrainPosition, applyGpuTransform]);
-
-  const handleMouseUp = useCallback((e) => {
-    if (!isDraggingRef.current) return;
-
-    isDraggingRef.current = false;
-    setIsDragging(false);
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    const finalPosition = constrainPosition(
-      {
-        x: basePosRef.current.x + currentDeltaRef.current.x,
-        y: basePosRef.current.y + currentDeltaRef.current.y
-      },
-      elSizeRef.current
-    );
-
-    positionRef.current = finalPosition;
-    currentDeltaRef.current = { x: 0, y: 0 };
-    setPosition(finalPosition);
-
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    document.body.style.webkitUserSelect = '';
-
-    if (elementRef.current) {
-      elementRef.current.style.willChange = 'auto';
-      elementRef.current.style.left = `${finalPosition.x}px`;
-      elementRef.current.style.top = `${finalPosition.y}px`;
-      elementRef.current.style.transform = 'translate3d(0px, 0px, 0)';
-    }
-
-    if (onDragEnd) {
-      onDragEnd({ position: finalPosition, event: e });
-    }
-  }, [constrainPosition, onDragEnd]);
-
-  const handleTouchStart = useCallback((e) => {
-    handleMouseDown(e);
-  }, [handleMouseDown]);
-
-  const handleTouchMove = useCallback((e) => {
-    handleMouseMove(e);
-  }, [handleMouseMove]);
-
-  const handleTouchEnd = useCallback((e) => {
-    handleMouseUp(e);
-  }, [handleMouseUp]);
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const preventSelect = (e) => e.preventDefault();
-
-    document.addEventListener('mousemove', handleMouseMove, { passive: false, capture: true });
-    document.addEventListener('mouseup', handleMouseUp, { passive: false, capture: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
-    document.addEventListener('touchend', handleTouchEnd, { passive: false, capture: true });
-    document.addEventListener('touchcancel', handleTouchEnd, { passive: false, capture: true });
-    document.addEventListener('selectstart', preventSelect, { passive: false });
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove, { capture: true });
-      document.removeEventListener('mouseup', handleMouseUp, { capture: true });
-      document.removeEventListener('touchmove', handleTouchMove, { capture: true });
-      document.removeEventListener('touchend', handleTouchEnd, { capture: true });
-      document.removeEventListener('touchcancel', handleTouchEnd, { capture: true });
-      document.removeEventListener('selectstart', preventSelect);
-    };
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [disabled, isValidDragTarget, getClientCoords, constrainPosition, applyGpuTransform, detachGlobalListeners, onDragStart, onDragEnd]);
 
   useEffect(() => {
     return () => {
+      detachGlobalListeners();
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
@@ -236,7 +233,7 @@ const useDraggable = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [detachGlobalListeners]);
 
   const setPositionProgrammatically = useCallback((newPosition) => {
     const constrainedPosition = constrainPosition(newPosition);
@@ -252,8 +249,8 @@ const useDraggable = ({
     ref: elementRef,
     position,
     isDragging,
-    onMouseDown: handleMouseDown,
-    onTouchStart: handleTouchStart,
+    onMouseDown: handleDragStart,
+    onTouchStart: handleDragStart,
     setPosition: setPositionProgrammatically,
     resetPosition,
     style: {
@@ -276,4 +273,3 @@ const useDraggable = ({
 };
 
 export default useDraggable;
-

@@ -344,54 +344,59 @@ const RoomListPage = () => {
     return { os, browser };
   };
 
+  const [userBadge, setUserBadge] = useState(null);
+
   useEffect(() => {
-    const cu = auth.currentUser;
-    if (!cu) return;
-    getDoc(doc(db, 'users', cu.uid)).then(snap => {
-      if (snap.exists()) {
-        const rawRole = snap.data().role || 'user';
-        const role = normalizeRole(rawRole);
-        setUserRole(role);
-        setIsOwner(isOwnerRole(rawRole));
-      }
-    });
-
-    // Save device fingerprint with proper OS detection (not navigator.platform)
-    const ua = navigator.userAgent;
-    const { os: detectedOS, browser: detectedBrowser } = detectOSAndBrowser(ua);
-    Promise.all([
-      DeviceFingerprint.generateFingerprint(),
-      DeviceFingerprint.getDeviceModelAsync(),
-    ]).then(([deviceId, deviceModel]) => {
-      if (!deviceId) return;
-      const deviceInfo = {
-        browser: detectedBrowser,
-        os: detectedOS,
-        userAgent: ua,
-        deviceModel: deviceModel || DeviceFingerprint._parseDeviceModel(ua),
-        deviceType: /iPad|Tablet/i.test(ua) ? 'Tablet' : /Mobile|Android|iPhone/i.test(ua) ? 'Mobile' : 'Desktop',
-        lastSeen: new Date().toISOString()
-      };
-      updateDoc(doc(db, 'users', cu.uid), {
-        lastDeviceId: deviceId,
-        lastDeviceInfo: deviceInfo
-      }).catch(() => {});
-    }).catch(() => {});
-
-    // Fetch real IP + geolocation and store for Admin Panel
-    fetchGeoWithCache()
-      .then(geo => {
-        if (geo && geo.success && geo.ip) {
-          updateDoc(doc(db, 'users', cu.uid), {
-            lastIP: geo.ip,
-            lastLat: geo.latitude ?? null,
-            lastLon: geo.longitude ?? null,
-            lastCity: geo.city || '',
-            lastCountry: geo.country || '',
-            lastLocation: [geo.city, geo.country].filter(Boolean).join(', ') || 'Unknown'
-          }).catch(() => {});
+    const unsub = auth.onAuthStateChanged((cu) => {
+      if (!cu) return;
+      getDoc(doc(db, 'users', cu.uid)).then(snap => {
+        if (snap.exists()) {
+          const d = snap.data();
+          const role = normalizeRole(d);
+          setUserRole(role);
+          setUserBadge(d.badge || null);
+          setIsOwner(isOwnerRole(d));
         }
       }).catch(() => {});
+
+      // Save device fingerprint with proper OS detection (not navigator.platform)
+      const ua = navigator.userAgent;
+      const { os: detectedOS, browser: detectedBrowser } = detectOSAndBrowser(ua);
+      Promise.all([
+        DeviceFingerprint.generateFingerprint(),
+        DeviceFingerprint.getDeviceModelAsync(),
+      ]).then(([deviceId, deviceModel]) => {
+        if (!deviceId) return;
+        const deviceInfo = {
+          browser: detectedBrowser,
+          os: detectedOS,
+          userAgent: ua,
+          deviceModel: deviceModel || DeviceFingerprint._parseDeviceModel(ua),
+          deviceType: /iPad|Tablet/i.test(ua) ? 'Tablet' : /Mobile|Android|iPhone/i.test(ua) ? 'Mobile' : 'Desktop',
+          lastSeen: new Date().toISOString()
+        };
+        updateDoc(doc(db, 'users', cu.uid), {
+          lastDeviceId: deviceId,
+          lastDeviceInfo: deviceInfo
+        }).catch(() => {});
+      }).catch(() => {});
+
+      // Fetch real IP + geolocation and store for Admin Panel
+      fetchGeoWithCache()
+        .then(geo => {
+          if (geo && geo.success && geo.ip) {
+            updateDoc(doc(db, 'users', cu.uid), {
+              lastIP: geo.ip,
+              lastLat: geo.latitude ?? null,
+              lastLon: geo.longitude ?? null,
+              lastCity: geo.city || '',
+              lastCountry: geo.country || '',
+              lastLocation: [geo.city, geo.country].filter(Boolean).join(', ') || 'Unknown'
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+    });
+    return () => unsub();
   }, []);
 
   // Save IP + location + device info for GUEST users → guestSessions collection
@@ -554,8 +559,8 @@ const RoomListPage = () => {
     } catch {}
 
     const name = room.name.toLowerCase();
-    if (name.includes('staff') || name.includes('admin')) {
-      if (!isStaffRole(role)) {
+    if (name.includes('staff') || name.includes('admin') || name.includes('olympian')) {
+      if (!isStaffRole({ role, badge: userBadge })) {
         return;
       }
     }

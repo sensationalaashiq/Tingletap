@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
-import { TI } from '../utils/toastIcons';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
@@ -65,7 +64,6 @@ import {
     resolveBadgeKey
 } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
-import { toast } from 'react-toastify';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName, useLivePhotoURL } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
@@ -369,11 +367,10 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const liveSender = isMyMessage
         ? loggedInUserProfile
         : (allUsersMap?.[uid] || (typeof window !== 'undefined' && window.userProfilesCache?.get?.(uid)) || null);
-    const STAFF_ROLE_LIST = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'];
-    const liveSenderRole = (liveSender?.role || '').toLowerCase().trim();
-    const msgRoleNorm = (role || '').toLowerCase().trim();
-    const resolvedRole = (liveSenderRole && (!['user', 'guest', 'member', ''].includes(liveSenderRole) || !msgRoleNorm || ['user', 'guest', ''].includes(msgRoleNorm)))
-        ? liveSender.role
+    const liveSenderNorm = liveSender ? normalizeRole(liveSender) : '';
+    const msgRoleNorm = normalizeRole(role, badge);
+    const resolvedRole = (liveSender && (isStaffRole(liveSender) || !['user', 'guest'].includes(liveSenderNorm) || ['user', 'guest'].includes(msgRoleNorm)))
+        ? (liveSender.role || role || 'user')
         : (role || liveSender?.role || 'user');
     const resolvedBadge = (liveSender && liveSender.badge !== undefined && liveSender.badge !== null && liveSender.badge !== '')
         ? liveSender.badge
@@ -391,7 +388,8 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
             ? message.photoURL
             : getDefaultAvatar(uid, avatarGender);
     const hasCustomAvatar = _isRealUpload(_livePhoto) || _isRealUpload(message.photoURL);
-    const viewerRole = (loggedInUserProfile?.role || 'user').toLowerCase().trim();
+    const viewerNormRole = normalizeRole(loggedInUserProfile);
+    const resolvedNormRole = normalizeRole(resolvedRole, resolvedBadge);
     
     // Get the actual display name - prioritize message.displayName for guests
     // as a fallback, but resolve the LIVE current name for this uid so a
@@ -399,19 +397,21 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const staleDisplayName = message.displayName || displayName || 'Guest';
     const actualDisplayName = useLiveDisplayName(uid, staleDisplayName);
     
-    const canDelete = STAFF_ROLE_LIST.includes(viewerRole) || isMyMessage;
+    const canDelete = isStaffRole(loggedInUserProfile) || isMyMessage;
     // Owner can never be kicked, by anyone (including other owners) — enforced regardless of viewer role.
     const kickRoleHierarchy = {
-        owner: 4, superowner: 4, godfather: 4,
-        admin: 3, high_council: 3, 'high council': 3,
-        moderator: 2, mod: 2, guardian: 2,
-        user: 1, member: 1, guest: 0
+        owner: 4,
+        admin: 3,
+        moderator: 2,
+        rj: 1,
+        user: 1,
+        guest: 0
     };
-    const targetKickLevel = kickRoleHierarchy[(resolvedRole || 'user').toLowerCase().trim()] ?? 1;
-    const viewerKickLevel = kickRoleHierarchy[viewerRole] ?? 0;
+    const targetKickLevel = kickRoleHierarchy[resolvedNormRole] ?? 1;
+    const viewerKickLevel = kickRoleHierarchy[viewerNormRole] ?? 0;
     const canKick = !isMyMessage &&
-        !['owner', 'superowner', 'godfather'].includes((resolvedRole || '').toLowerCase().trim()) &&
-        STAFF_ROLE_LIST.includes(viewerRole) &&
+        resolvedNormRole !== 'owner' &&
+        isStaffRole(loggedInUserProfile) &&
         viewerKickLevel > targetKickLevel;
 
     // Check if this whisper message should be visible to current user
@@ -432,9 +432,9 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     // Map Firestore role values to CSS-compatible hyphenated values expected by
     // DarkMode.css / Themes.css selectors. Firestore stores 'user' for regular
     // members but the CSS uses 'general'; badge holders are 'badge-holder' (hyphen).
-    const cssRole = resolvedBadge ? 'badge-holder'
-        : (!resolvedRole || resolvedRole.toLowerCase() === 'user') ? 'general'
-        : resolvedRole;
+    const cssRole = resolveBadgeKey(resolvedBadge) ? 'badge-holder'
+        : (!resolvedNormRole || resolvedNormRole === 'user') ? 'general'
+        : resolvedNormRole;
 
     return (<>
         <div className={`message-row-wrapper ${isEven ? 'row-even' : 'row-odd'}${isWhisper ? ' whisper-message' : ''}`}
@@ -506,17 +506,13 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                     {!isBot && !isMyMessage && isDropdownOpen && createPortal(
                         (() => {
                             const isOnlineNow = window.onlineUsers?.has(uid);
-                            const targetRole = (resolvedRole || '').toLowerCase().trim();
-                            const isTargetGuest = (message.isGuest === true && !STAFF_ROLE_LIST.includes(targetRole)) || message.isAnonymous === true || targetRole === 'guest' || (!message.uid && !uid);
-                            const isTargetStaff = STAFF_ROLE_LIST.includes(targetRole);
-                            const vRoleLower = (loggedInUserProfile?.role || '').toLowerCase().trim();
+                            const isTargetStaff = isStaffRole(resolvedRole, resolvedBadge);
+                            const isTargetGuest = ((message.isGuest === true || message.isAnonymous === true || isGuestUser(resolvedRole)) && !isTargetStaff) || (!message.uid && !uid);
                             const viewerIsRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
                             // Robust guest detection — never treat a signed-in registered user as guest via stale localStorage
                             const isViewerGuest = !viewerIsRealAuth && (
                                 !loggedInUserProfile ||
-                                loggedInUserProfile?.isGuest === true ||
-                                loggedInUserProfile?.isGuest === 'true' ||
-                                vRoleLower === 'guest' ||
+                                isGuestUser(loggedInUserProfile) ||
                                 localStorage.getItem('isGuest') === 'true' ||
                                 auth.currentUser?.isAnonymous === true
                             );
@@ -531,7 +527,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                 : true;
 
                             const getRoleLabel = () => getRoleDisplayLabel({
-                                role: targetRole,
+                                role: resolvedRole,
                                 gender: resolvedGender,
                                 isGuest: isTargetGuest,
                                 badge: resolvedBadge
@@ -713,16 +709,16 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                             {(() => {
                                                 // Block user option should only be visible for badge holders, users, and guests
                                                 // Should NOT be visible for owners, admins, or moderators
-                                                const currentUserRole = (loggedInUserProfile?.role || 'user').toLowerCase().trim();
-                                                const targetUserRole = (resolvedRole || 'user').toLowerCase().trim();
-                                                const currentUserHasBadge = loggedInUserProfile?.badge && loggedInUserProfile.badge !== '';
+                                                const currentUserNorm = normalizeRole(loggedInUserProfile);
+                                                const currentUserHasBadge = !!resolveBadgeKey(loggedInUserProfile?.badge);
                                                 
-                                                // Current user must be badge holder, user, or guest (not owner, admin, or moderator)
-                                                const canShowBlockOption = currentUserHasBadge || 
-                                                    ['user', 'guest'].includes(currentUserRole);
+                                                // Current user must be non-staff badge holder, user, or guest (not owner, admin, or moderator)
+                                                const canShowBlockOption = !isStaffRole(loggedInUserProfile) && (
+                                                    currentUserHasBadge || ['user', 'guest', 'rj'].includes(currentUserNorm)
+                                                );
                                                 
                                                 // Cannot block owners, admins, or moderators
-                                                const canBlockTarget = !STAFF_ROLE_LIST.includes(targetUserRole);
+                                                const canBlockTarget = !isStaffRole(resolvedRole, resolvedBadge);
                                                 
                                                 return (canShowBlockOption && canBlockTarget) ? (
                                                     <button onClick={(e) => { e.stopPropagation(); onBlock(message); setShowUserDropdown(false); }}>
@@ -771,7 +767,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                                 : <button onClick={(e) => { e.stopPropagation(); onKick(uid, displayName) }} className="message-action-btn" title="Kick User"><KickIconSVG /></button>
                                             )}
                                             <button onClick={(e) => { e.stopPropagation(); onReport(message) }} className="message-action-btn" title="Report"><ReportIconSVG /></button>
-                                            {viewerRole !== 'guest' && !currentUser?.isAnonymous && (
+                                            {viewerNormRole !== 'guest' && !currentUser?.isAnonymous && (
                                                 <button onClick={(e) => { e.stopPropagation(); onWhisper(message) }} className="message-action-btn" title="Whisper"><WhisperIconSVG /></button>
                                             )}
                                         </>
@@ -965,36 +961,6 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     return true; // all relevant props unchanged → skip re-render
 });
 
-const ConfirmationToast = ({ message, onConfirm, onCancel }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#f59e0b,#ef4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,0.28)' }}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="none"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-            </div>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '12.5px', color: 'currentColor', lineHeight: 1.4 }}>{message}</p>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '7px' }}>
-            <button
-                onClick={onCancel}
-                style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid rgba(156,163,175,0.4)', background: 'rgba(156,163,175,0.1)', color: 'inherit', fontWeight: 600, fontSize: '11.5px', cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8 }}
-            >
-                Cancel
-            </button>
-            <button
-                onClick={onConfirm}
-                style={{ padding: '5px 12px', borderRadius: '7px', border: 'none', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', fontWeight: 700, fontSize: '11.5px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 2px 8px rgba(239,68,68,0.3)' }}
-            >
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="white"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                Confirm
-            </button>
-        </div>
-    </div>
-);
-
 const getGenderBorderClass = (userOrGender) => {
     const g = (typeof userOrGender === 'string' ? userOrGender : userOrGender?.gender || '').toLowerCase();
     if (g === 'female') return 'female-border';
@@ -1018,7 +984,8 @@ const PendingChatMessage = React.memo(function PendingChatMessage({ message, isE
     const borderClass = avatarGender === 'female'
         ? 'female-border'
         : (avatarGender === 'other' ? 'transgender-border' : 'male-border');
-    const cssRole = badge ? 'badge-holder' : (role === 'user' || !role) ? 'general' : role;
+    const normPendingRole = normalizeRole(role, badge);
+    const cssRole = resolveBadgeKey(badge) ? 'badge-holder' : (!normPendingRole || normPendingRole === 'user') ? 'general' : normPendingRole;
     const timestampStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     return (
@@ -1207,7 +1174,7 @@ const MessageList = React.memo(({
                             key={msg.id}
                             message={msg}
                             onDelete={onDelete}
-                            isOwner={['owner', 'superowner', 'godfather'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
+                            isOwner={isOwnerRole(loggedInUserProfile)}
                         />
                     );
                 }
@@ -1339,6 +1306,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     
     // Confirmation dialog states
     const [clearChatConfirm, setClearChatConfirm] = useState({ isOpen: false });
+    const [clearConversationsConfirm, setClearConversationsConfirm] = useState({ isOpen: false });
     const [deleteMessageConfirm, setDeleteMessageConfirm] = useState({ isOpen: false });
     const [kickUserConfirm, setKickUserConfirm] = useState({ isOpen: false });
     const [homePageKickModal, setHomePageKickModal] = useState({ visible: false, user: null });
@@ -1430,12 +1398,6 @@ const HomePage = ({ user, roomIdOverride }) => {
     
     
     const [privateAudioMiniPosition, setPrivateAudioMiniPosition] = useState({ x: 0, y: 0 });
-    const [pmPopupPosition, setPmPopupPosition] = useState({ 
-        x: window.innerWidth / 2 - 130, // Center horizontally (260px width / 2 = 130)
-        y: window.innerHeight / 2 - 130  // Center vertically (260px height / 2 = 130)
-    });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     // Kept as a ref (not state) so RTDB heartbeats never cause a render cascade.
     // The setLiveUsers effect only depends on onlineUserIds (join/leave events),
     // not on every heartbeat tick.
@@ -1594,9 +1556,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                 map[incoming.uid] = incoming;
                 return;
             }
-            const nextRole = isStaffRole(prev.role)
+            const nextRole = isStaffRole(prev)
                 ? prev.role
-                : (isStaffRole(incoming.role) ? incoming.role : (incoming.role || prev.role));
+                : (isStaffRole(incoming) ? incoming.role : (incoming.role || prev.role));
             const nextBadge = resolveBadgeKey(prev.badge)
                 ? (resolveBadgeKey(incoming.badge) ? incoming.badge : prev.badge)
                 : (incoming.badge || prev.badge);
@@ -2277,8 +2239,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const pubData = docSnap.data();
                 setProfileUser(prev => {
                     const prevObj = prev?.uid === targetUid ? prev : {};
-                    const keepPrevRole = (isStaffRole(prevObj.role) && !isStaffRole(pubData.role))
-                        || (isRjRole(prevObj.role, prevObj.badge) && normalizeRole(pubData.role) === 'user');
+                    const keepPrevRole = (isStaffRole(prevObj) && !isStaffRole(pubData))
+                        || (isRjRole(prevObj) && normalizeRole(pubData) === 'user');
                     const resolvedRole = keepPrevRole ? prevObj.role : (pubData.role || prevObj.role);
                     const resolvedBadge = resolveBadgeKey(pubData.badge)
                         ? pubData.badge
@@ -2719,7 +2681,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Used to show Unkick button on message hover for already-kicked users.
     useEffect(() => {
         if (!roomId) { setRoomKickedUserIds(new Set()); return; }
-        const isStaffUser = ['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim());
+        const isStaffUser = isStaffRole(loggedInUserProfile);
         if (!isStaffUser) { setRoomKickedUserIds(new Set()); return; }
         const unsub = onSnapshot(collection(db, 'rooms', roomId, 'kickedUsers'), (snap) => {
             setRoomKickedUserIds(new Set(snap.docs.map(d => d.id)));
@@ -2727,7 +2689,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             if (error?.code !== 'permission-denied') console.warn('kickedUsers snapshot error:', error);
         });
         return () => unsub();
-    }, [roomId, loggedInUserProfile?.role]);
+    }, [roomId, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
 
     // ── Kick listener: auto-navigate user out when kicked from this room ──
     // Also auto-unkicks if the timed kick has already expired.
@@ -3541,8 +3503,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     
                     // Check if this is the staff room and user has access
                     if ((roomData.name === 'The Olympians(Staff Room)' || roomData.isStaffOnly) && loggedInUserProfile) {
-                        const userRole = loggedInUserProfile.role || 'guest';
-                        if (!['owner', 'admin', 'moderator'].includes(userRole)) {
+                        if (!isStaffRole(loggedInUserProfile)) {
                             pt.error("Access denied. This room is for staff only.");
                             navigate('/rooms', { replace: true });
                             return;
@@ -3605,9 +3566,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     // ── TingleBot AutoMod: scan ALL newly-arrived messages ──
                     // Staff clients (owner/admin/moderator) run full enforcement;
                     // non-staff clients run detection only (local tracking, no Firestore writes).
-                    const _autoModIsStaff = ['owner', 'admin', 'moderator'].includes(
-                        loggedInUserProfile?.role
-                    );
+                    const _autoModIsStaff = isStaffRole(loggedInUserProfile);
                     newMessages.forEach(m => {
                         // Skip system/TingleBot messages — including join/leave which now use real uids
                         if (!m.isBot && !m.systemBot && !m.tinglebotType && m.uid !== 'tinglebot_system_official_2024') {
@@ -3687,7 +3646,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                 // ── Auto-delete ALL TingleBot messages within 50s (never bloat DB) ──
                 // Any staff member OR the message's creator schedules cleanup, eliminating any dead zone.
-                const canCleanBotMsgs = ['owner', 'admin', 'moderator'].includes(loggedInUserProfile?.role);
+                const canCleanBotMsgs = isStaffRole(loggedInUserProfile);
                 newMessages.forEach(msg => {
                     const isBot = msg.isBot || msg.systemBot || msg.uid === 'tinglebot_system_official_2024' || msg.tinglebotType;
                     if (!isBot || !msg.id) return;
@@ -3748,7 +3707,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             };
         }
-    }, [roomId, loggedInUserProfile?.uid, loggedInUserProfile?.role, navigate]);
+    }, [roomId, loggedInUserProfile?.uid, loggedInUserProfile?.role, loggedInUserProfile?.badge, navigate]);
 
 
     // Real-time friends list updates — FIX 5:
@@ -4095,12 +4054,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             batches.push(registeredUids.slice(i, i + 10));
         }
 
-        const STAFF_ROLE_SET = new Set([
-            'owner', 'superowner', 'godfather',
-            'admin', 'high_council', 'high council',
-            'moderator', 'mod', 'guardian',
-        ]);
-
         Promise.all(
             batches.map(batch =>
                 getDocs(query(collection(db, 'publicProfiles'), where(documentId(), 'in', batch)))
@@ -4129,9 +4082,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         if (uSnap.exists()) {
                             const ud = uSnap.data();
                             const existing = firestoreMap[uid] || {};
-                            const uRole = (ud.role || '').toLowerCase().trim();
-                            const exRole = (existing.role || '').toLowerCase().trim();
-                            const mergedRole = STAFF_ROLE_SET.has(uRole) ? ud.role : (STAFF_ROLE_SET.has(exRole) ? existing.role : (ud.role || existing.role));
+                            const mergedRole = isStaffRole(ud) ? ud.role : (isStaffRole(existing) ? existing.role : (ud.role || existing.role));
                             firestoreMap[uid] = { ...existing, ...ud, role: mergedRole, uid };
                         }
                     } catch (_) {}
@@ -4142,11 +4093,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             setLiveUsers(prev => prev.map(p => {
                 const fs = firestoreMap[p.uid];
                 if (!fs) return p;
-                const pRole = (p.role || '').toLowerCase().trim();
-                const fsRole = (fs.role || '').toLowerCase().trim();
-                const resolvedRole = STAFF_ROLE_SET.has(fsRole)
+                const resolvedRole = isStaffRole(fs)
                     ? fs.role
-                    : (STAFF_ROLE_SET.has(pRole) ? p.role : (fs.role || p.role));
+                    : (isStaffRole(p) ? p.role : (fs.role || p.role));
                 return {
                     ...p,
                     displayName: fs.displayName || p.displayName,
@@ -4182,7 +4131,6 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         const registeredUids = onlineUserIds.filter(uid => !userOnlineStatusesRef.current[uid]?.isGuest);
         if (registeredUids.length === 0) return;
-        const STAFF_SET = new Set(['owner', 'superowner', 'godfather', 'admin', 'high_council', 'high council', 'moderator', 'mod', 'guardian']);
         const batches = [];
         for (let i = 0; i < registeredUids.length; i += 10) batches.push(registeredUids.slice(i, i + 10));
         const unsubs = batches.map(batch => {
@@ -4193,9 +4141,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 setLiveUsers(prev => prev.map(u => {
                     const fs = updates[u.uid];
                     if (!fs) return u;
-                    const uRole = (u.role || '').toLowerCase().trim();
-                    const fsRole = (fs.role || '').toLowerCase().trim();
-                    const nextRole = STAFF_SET.has(fsRole) ? fs.role : (STAFF_SET.has(uRole) ? u.role : (fs.role || u.role));
+                    const nextRole = isStaffRole(fs) ? fs.role : (isStaffRole(u) ? u.role : (fs.role || u.role));
                     return {
                         ...u,
                         displayName: fs.displayName || u.displayName,
@@ -4697,7 +4643,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // ── Instant 0ms Synchronous Anti-Spam & Abuse Guard ──────────
             // Owners bypass auto-mod; spam checks run in <1ms in memory without blocking UI.
-            if (!isGuest && uid && !['owner', 'superowner', 'godfather'].includes((role || userProfile?.role || 'guest').toLowerCase().trim())) {
+            if (!isGuest && uid && !isOwnerRole({ role: role || userProfile?.role, badge: userProfile?.badge })) {
                 const spamResult = checkSpamSync(uid, trimmedText, roomId);
                 if (spamResult.isSpam) {
                     setNewMessage('');
@@ -4766,25 +4712,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         newOnes.forEach(id => {
                             const title = ACHIEVEMENT_TITLES.find(a => a.id === id);
                             if (!title) return;
-                            toast(
-                                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(title.svg, { USE_PROFILES: { svg: true, svgFilters: true } }) }}
-                                         style={{ width:30, height:30, flexShrink:0 }}/>
-                                    <div>
-                                        <div style={{ fontWeight:700, fontSize:12.5, color:'#1f2937' }}>Achievement Unlocked!</div>
-                                        <div style={{ fontSize:11.5, color:'#7c3aed', marginTop:1 }}>{title.name}</div>
-                                    </div>
-                                </div>,
-                                {
-                                    autoClose: 5000,
-                                    style: {
-                                        background: '#faf5ff',
-                                        border: '1.5px solid rgba(139,92,246,0.28)',
-                                        borderRadius: 12,
-                                        boxShadow: '0 8px 24px rgba(109,40,217,0.15)',
-                                    },
-                                }
-                            );
+                            pt.gift(`Achievement Unlocked: ${title.name}`);
                         });
                     })
                     .catch(() => {});
@@ -4965,6 +4893,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 gender: userProfile.gender || 'male',
                 badge: userProfile.badge || null,
                 role: userProfile.role || 'user',
+                isGuest: userProfile.isGuest || false,
                 photoURL: userProfile.photoURL || null
             });
             setYoutubeUrl('');
@@ -5000,17 +4929,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                 try {
                     await deleteDoc(doc(db, 'rooms', roomId, 'messages', messageId));
                     setDeleteMessageConfirm({ isOpen: false });
-                    toast(
-                        <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                          <div style={{width:'34px',height:'34px',borderRadius:'50%',background:'linear-gradient(135deg,#f97316,#ef4444)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(239,68,68,.35)'}}>
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                          </div>
-                          <div><div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b',letterSpacing:'.2px'}}>Message Deleted</div><div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>Message removed successfully</div></div>
-                        </div>,
-                        {style:{background:'linear-gradient(135deg,#fff7ed,#ffedd5)',border:'1.5px solid rgba(249,115,22,.28)',borderRadius:'14px',boxShadow:'0 8px 28px rgba(249,115,22,.14)',padding:'10px 14px'},icon:false,autoClose:3000}
-                    );
+                    pt.delete('Message deleted');
                 } catch (error) {
                     setDeleteMessageConfirm({ isOpen: false });
+                    pt.error('Failed to delete message');
                 }
             },
             onCancel: () => setDeleteMessageConfirm({ isOpen: false })
@@ -5239,9 +5161,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             window.userProfilesCache?.get?.(uid)
         )) || null;
         if (cached) {
-            const mergedRole = isStaffRole(cached.role)
+            const mergedRole = isStaffRole(cached)
                 ? cached.role
-                : (isStaffRole(targetUser.role) ? targetUser.role : (cached.role || targetUser.role));
+                : (isStaffRole(targetUser) ? targetUser.role : (cached.role || targetUser.role));
             const mergedBadge = resolveBadgeKey(cached.badge)
                 ? cached.badge
                 : (resolveBadgeKey(targetUser.badge) ? targetUser.badge : (cached.badge || targetUser.badge));
@@ -5258,9 +5180,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const RELATIONSHIP_TYPES = FULL_RELATIONSHIP_CONFIG;
 
     // Shared guest-detection helper (handles boolean true, string 'true', and any role casing)
-    const _isGuestProfile = (profile) =>
-        profile?.isGuest === true || String(profile?.isGuest) === 'true' ||
-        (profile?.role || '').toLowerCase() === 'guest';
+    const _isGuestProfile = (profile) => isGuestUser(profile);
 
     const handleSetRelationship = async (targetUid, relType) => {
         const currentUid = auth.currentUser?.uid;
@@ -5339,18 +5259,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
         if (loggedInUserProfile?.friends?.includes(user.uid)) {
-            toast(
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                    <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#8b5cf6,#7c3aed)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(139,92,246,.35)'}}>
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M16 11C17.66 11 18.99 9.66 18.99 8S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0C9.66 11 10.99 9.66 10.99 8S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                    </div>
-                    <div>
-                        <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Already Friends</div>
-                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>You and <span style={{fontWeight:700,color:'#7c3aed'}}>{user.displayName}</span> are already friends</div>
-                    </div>
-                </div>,
-                {style:{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',border:'1.5px solid rgba(139,92,246,.25)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(139,92,246,.12)',padding:'10px 14px'},icon:false,autoClose:3500}
-            );
+            pt.info(`You and ${user.displayName} are already friends`);
             return;
         }
         // All quick checks passed — open the confirmation modal
@@ -5393,18 +5302,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 if (targetDoc.exists()) {
                     const targetSettings = targetDoc.data()?.settings || {};
                     if (targetSettings.allowFriendRequests === false) {
-                        toast(
-                            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                                <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 3px 10px rgba(245,158,11,.35)'}}>
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12M5,10H2V12H5V15H7V12H10V10H7V7H5V10Z"/></svg>
-                                </div>
-                                <div>
-                                    <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>Friend Requests Off</div>
-                                    <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}><span style={{fontWeight:700,color:'#d97706'}}>{user.displayName}</span> is not accepting friend requests right now</div>
-                                </div>
-                            </div>,
-                            {style:{background:'linear-gradient(135deg,#fffbeb,#fef3c7)',border:'1.5px solid rgba(245,158,11,.3)',borderRadius:'14px',boxShadow:'0 8px 32px rgba(245,158,11,.15)',padding:'10px 14px'},icon:false,autoClose:4000}
-                        );
+                        pt.warn(`${user.displayName} is not accepting friend requests right now`);
                         return;
                     }
                 }
@@ -5421,19 +5319,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
             });
 
-            // Premium success toast
-            toast(
-                <div style={{display:'flex',alignItems:'center',gap:'11px'}}>
-                    <div style={{width:'40px',height:'40px',borderRadius:'50%',background:'linear-gradient(135deg,#10b981,#059669)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:'0 4px 14px rgba(16,185,129,.4)'}}>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                    </div>
-                    <div>
-                        <div style={{fontWeight:800,fontSize:'13px',color:'#0f172a',letterSpacing:'.1px'}}>Friend Request Sent!</div>
-                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'3px'}}>Waiting for <span style={{fontWeight:700,color:'#059669'}}>{user.displayName || 'Anonymous'}</span> to accept</div>
-                    </div>
-                </div>,
-                {style:{background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',border:'1.5px solid rgba(16,185,129,.28)',borderRadius:'16px',boxShadow:'0 10px 36px rgba(16,185,129,.18)',padding:'12px 16px'},icon:false,autoClose:4500}
-            );
+            pt.friend(`Friend request sent to ${user.displayName || 'Anonymous'}`);
 
         } catch (err) {
             pt.error("Failed to send friend request. Please try again.");
@@ -5700,44 +5586,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Check if the target user allows private messages from current user
         if (!canSendPrivateMessage(loggedInUserProfile, user)) {
             const userSetting = user.settings?.allowPrivateMessagesLevel || 'all';
-            const toastBody = (icon, title, subtitle, grad, border) => toast(
-                <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                    <div style={{width:'36px',height:'36px',borderRadius:'50%',background:grad,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:`0 3px 10px ${border}40`}}>
-                        {icon}
-                    </div>
-                    <div>
-                        <div style={{fontWeight:800,fontSize:'13px',color:'#1e1b4b'}}>{title}</div>
-                        <div style={{fontSize:'11px',color:'#6b7280',marginTop:'2px'}}>
-                            <span style={{fontWeight:700,color:border}}>{user.displayName}</span> {subtitle}
-                        </div>
-                    </div>
-                </div>,
-                { style:{background:'linear-gradient(135deg,#fef2f2,#fee2e2)',border:`1.5px solid ${border}50`,borderRadius:'14px',boxShadow:`0 8px 32px ${border}25`,padding:'10px 14px'},icon:false,autoClose:4000 }
-            );
             if (userSetting === 'none') {
-                toastBody(
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>,
-                    'Messages Disabled',
-                    'has turned off private messages',
-                    'linear-gradient(135deg,#ef4444,#dc2626)',
-                    '#dc2626'
-                );
+                pt.whisperOff(`${user.displayName} has turned off private messages`);
             } else if (userSetting === 'friends') {
-                toastBody(
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z"/></svg>,
-                    'Friends Only',
-                    'only accepts messages from friends',
-                    'linear-gradient(135deg,#f59e0b,#d97706)',
-                    '#d97706'
-                );
+                pt.warn(`${user.displayName} only accepts messages from friends`);
             } else {
-                toastBody(
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M13,11H11V9H13V11M13,15H11V13H13V15Z"/></svg>,
-                    'Cannot Send Message',
-                    'cannot receive private messages right now',
-                    'linear-gradient(135deg,#ef4444,#dc2626)',
-                    '#dc2626'
-                );
+                pt.error(`${user.displayName} cannot receive private messages right now`);
             }
             return;
         }
@@ -6416,37 +6270,35 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleClearAllConversations = () => {
-        const toastId = `clear-conversations-confirm`;
-        const performClear = async () => {
-            toast.dismiss(toastId);
-            try {
-                if (!auth.currentUser) return;
-                
-                const conversationsQuery = query(
-                    collection(db, 'privateMessages'),
-                    where('participants', 'array-contains', auth.currentUser.uid)
-                );
-                
-                const querySnapshot = await getDocs(conversationsQuery);
-                const batch = writeBatch(db);
-                
-                querySnapshot.docs.forEach((doc) => {
-                    batch.delete(doc.ref);
-                });
-                
-                await batch.commit();
-                setConversations([]);
-                setUnreadCounts({});
-                pt.success("All conversations cleared!");
-            } catch (error) {
-                pt.error("Failed to clear conversations.");
-            }
-        };
-        const handleCancel = () => toast.dismiss(toastId);
-        toast.warn(
-            <ConfirmationToast message="Are you sure you want to clear all private conversations?" onConfirm={performClear} onCancel={handleCancel} />,
-            { toastId, closeOnClick: false, closeButton: true, style: { background: 'linear-gradient(135deg,#b45309,#d97706)', color: '#fff', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' } }
-        );
+        setClearConversationsConfirm({
+            isOpen: true,
+            onConfirm: async () => {
+                setClearConversationsConfirm({ isOpen: false });
+                try {
+                    const myUid = auth.currentUser?.uid;
+                    if (!myUid) return;
+                    const conversationsQuery = query(
+                        collection(db, 'privateMessages'),
+                        where('participants', 'array-contains', myUid)
+                    );
+                    const querySnapshot = await getDocs(conversationsQuery);
+                    const docs = querySnapshot.docs;
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const batch = writeBatch(db);
+                        docs.slice(i, i + 450).forEach((docSnap) => {
+                            batch.update(docSnap.ref, { deletedFor: arrayUnion(myUid) });
+                        });
+                        await batch.commit();
+                    }
+                    setConversations([]);
+                    setUnreadCounts({});
+                    pt.delete("All conversations cleared");
+                } catch (error) {
+                    pt.error("Failed to clear conversations.");
+                }
+            },
+            onCancel: () => setClearConversationsConfirm({ isOpen: false })
+        });
     };
 
     const handleDeleteConversation = async (e, conversation) => {
@@ -6484,27 +6336,45 @@ const HomePage = ({ user, roomIdOverride }) => {
     // Function to update font preferences from settings sidebar
     const updateFontPreferenceFromSettings = async (key, value) => {
         try {
+            const keyMap = {
+                'chatFontSize': 'fontSize',
+                'fontSize': 'fontSize',
+                'chatFontColor': 'fontColor',
+                'fontColor': 'fontColor',
+                'chatFontFamily': 'fontFamily',
+                'fontFamily': 'fontFamily',
+                'chatIsBold': 'isBold',
+                'isBold': 'isBold',
+                'chatIsItalic': 'isItalic',
+                'isItalic': 'isItalic',
+                'chatIsUnderline': 'isUnderline',
+                'isUnderline': 'isUnderline',
+                'chatIsStrikethrough': 'isStrikethrough',
+                'isStrikethrough': 'isStrikethrough',
+            };
+            const fontPrefKey = keyMap[key];
+
             // Update state immediately
-            switch (key) {
-                case 'chatFontSize':
+            switch (fontPrefKey) {
+                case 'fontSize':
                     setFontSize(value);
                     break;
-                case 'chatFontColor':
+                case 'fontColor':
                     setFontColor(value);
                     break;
-                case 'chatFontFamily':
+                case 'fontFamily':
                     setFontFamily(value);
                     break;
-                case 'chatIsBold':
+                case 'isBold':
                     setIsBold(Boolean(value));
                     break;
-                case 'chatIsItalic':
+                case 'isItalic':
                     setIsItalic(Boolean(value));
                     break;
-                case 'chatIsUnderline':
+                case 'isUnderline':
                     setIsUnderline(Boolean(value));
                     break;
-                case 'chatIsStrikethrough':
+                case 'isStrikethrough':
                     setIsStrikethrough(Boolean(value));
                     break;
                 default:
@@ -6514,6 +6384,10 @@ const HomePage = ({ user, roomIdOverride }) => {
             // Update localStorage immediately for instant persistence with user change marker
             try {
                 localStorage.setItem(key, value.toString());
+                if (fontPrefKey) {
+                    const storageAlias = 'chat' + fontPrefKey.charAt(0).toUpperCase() + fontPrefKey.slice(1);
+                    localStorage.setItem(storageAlias, value.toString());
+                }
                 localStorage.setItem('fontPrefsSource', 'user');
                 localStorage.setItem('fontPrefsLastUpdate', Date.now().toString());
             } catch (localError) {
@@ -6524,19 +6398,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                 window.chatFontPreferences = {};
             }
             
-            const keyMap = {
-                'chatFontSize': 'fontSize',
-                'chatFontColor': 'fontColor',
-                'chatFontFamily': 'fontFamily',
-                'chatIsBold': 'isBold',
-                'chatIsItalic': 'isItalic',
-                'chatIsUnderline': 'isUnderline',
-                'chatIsStrikethrough': 'isStrikethrough'
-            };
-            
-            const fontPrefKey = keyMap[key];
             if (fontPrefKey) {
-                window.chatFontPreferences[fontPrefKey] = key.includes('Bold') || key.includes('Italic') || key.includes('Underline') || key.includes('Strikethrough') ? Boolean(value) : value;
+                const isBoolField = fontPrefKey.startsWith('is');
+                window.chatFontPreferences[fontPrefKey] = isBoolField ? Boolean(value) : value;
                 
                 // Update sessionStorage backup
                 try {
@@ -6554,17 +6418,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                 try {
                     // Get current font preferences from React state as source of truth
                     const currentPrefs = {
-                        fontSize: key === 'chatFontSize' ? value : fontSize,
-                        fontColor: key === 'chatFontColor' ? value : fontColor,
-                        fontFamily: key === 'chatFontFamily' ? value : fontFamily,
-                        isBold: key === 'chatIsBold' ? Boolean(value) : isBold,
-                        isItalic: key === 'chatIsItalic' ? Boolean(value) : isItalic,
-                        isUnderline: key === 'chatIsUnderline' ? Boolean(value) : isUnderline,
-                        isStrikethrough: key === 'chatIsStrikethrough' ? Boolean(value) : isStrikethrough
+                        fontSize: fontPrefKey === 'fontSize' ? value : fontSize,
+                        fontColor: fontPrefKey === 'fontColor' ? value : fontColor,
+                        fontFamily: fontPrefKey === 'fontFamily' ? value : fontFamily,
+                        isBold: fontPrefKey === 'isBold' ? Boolean(value) : isBold,
+                        isItalic: fontPrefKey === 'isItalic' ? Boolean(value) : isItalic,
+                        isUnderline: fontPrefKey === 'isUnderline' ? Boolean(value) : isUnderline,
+                        isStrikethrough: fontPrefKey === 'isStrikethrough' ? Boolean(value) : isStrikethrough
                     };
                     
                     // Save current preferences to Firebase
-                    if (auth.currentUser) {
+                    if (auth.currentUser && !auth.currentUser.isAnonymous) {
                         await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                             fontPreferences: currentPrefs
                         });
@@ -6578,6 +6442,26 @@ const HomePage = ({ user, roomIdOverride }) => {
         } catch (error) {
         }
     };
+
+    const executeClearRoomChat = useCallback(async () => {
+        if (!roomId) return;
+        try {
+            const messagesRef = collection(db, 'rooms', roomId, 'messages');
+            const querySnapshot = await getDocs(query(messagesRef));
+            const docs = querySnapshot.docs;
+            for (let i = 0; i < docs.length; i += 450) {
+                const batch = writeBatch(db);
+                docs.slice(i, i + 450).forEach((docSnap) => {
+                    batch.delete(docSnap.ref);
+                });
+                await batch.commit();
+            }
+            pt.delete('Chat room cleared');
+        } catch (error) {
+            pt.error('Failed to clear chat messages.');
+            throw error;
+        }
+    }, [roomId]);
 
 
     // Keep window.newMessage synced independently so other globals don't rebind per keystroke
@@ -6616,6 +6500,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         window.loadFriends = loadFriends;
         window.getUserStatus = getUserStatus;
         window.setFontPreference = updateFontPreferenceFromSettings;
+        window.handleClearChatFromSettings = executeClearRoomChat;
         window.setOpenDropdownId = handleSetOpenDropdownId;
         window.closeAllDropdowns = closeAllDropdowns;
         
@@ -6676,117 +6561,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             delete window.loadFriends;
             delete window.getUserStatus;
             delete window.setFontPreference;
+            delete window.handleClearChatFromSettings;
             delete window.applyFontStylesToMessages;
             delete window.setOpenDropdownId;
             delete window.closeAllDropdowns;
         };
-    }, [friendRequests.length, friendsProfiles, fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);
-
-    // ULTRA FAST DRAGGING - Optimized with hardware acceleration
-    const dragRefreshRate = useRef(null);
-    const lastDragTime = useRef(0);
-    const popupElementRef = useRef(null);
-
-    const handleMouseDown = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-        const popup = e.currentTarget.closest('.private-message-popup');
-        popupElementRef.current = popup;
-        const rect = popup.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
-        // Enable hardware acceleration immediately
-        if (popup) {
-            popup.style.willChange = 'transform';
-            popup.style.transform = popup.style.transform || 'translate3d(0, 0, 0)';
-        }
-        
-        setDragOffset({
-            x: clientX - rect.left,
-            y: clientY - rect.top
-        });
-    };
-
-    const handleMouseMove = (e) => {
-        if (!isDragging || !popupElementRef.current) return;
-        e.preventDefault();
-        
-        // ULTRA PERFORMANCE: Throttle at 60 FPS max
-        const now = performance.now();
-        if (now - lastDragTime.current < 16) return; // ~60fps throttling
-        lastDragTime.current = now;
-        
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
-        const newX = clientX - dragOffset.x;
-        const newY = clientY - dragOffset.y;
-        
-        // Pre-calculate bounds once for performance - updated for compact size
-        const popupWidth = 220;
-        const popupHeight = 320;
-        const maxX = window.innerWidth - popupWidth - 10;
-        const minX = 10;
-        const maxY = window.innerHeight - popupHeight - 10;
-        const minY = 10;
-        
-        const constrainedX = Math.max(minX, Math.min(newX, maxX));
-        const constrainedY = Math.max(minY, Math.min(newY, maxY));
-        
-        // SUPER SMOOTH: Use transform instead of position state for hardware acceleration
-        if (dragRefreshRate.current) {
-            cancelAnimationFrame(dragRefreshRate.current);
-        }
-        
-        dragRefreshRate.current = requestAnimationFrame(() => {
-            if (popupElementRef.current) {
-                // Direct transform manipulation for ULTRA speed
-                popupElementRef.current.style.transform = `translate3d(${constrainedX}px, ${constrainedY}px, 0)`;
-            }
-            // Update state less frequently for better performance
-            setPmPopupPosition({
-                x: constrainedX,
-                y: constrainedY
-            });
-        });
-    };
-
-    const handleMouseUp = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        
-        // Clean up hardware acceleration hints
-        if (popupElementRef.current) {
-            setTimeout(() => {
-                if (popupElementRef.current) {
-                    popupElementRef.current.style.willChange = 'auto';
-                }
-            }, 100);
-        }
-        
-        if (dragRefreshRate.current) {
-            cancelAnimationFrame(dragRefreshRate.current);
-            dragRefreshRate.current = null;
-        }
-        
-        popupElementRef.current = null;
-    };
-
-    React.useEffect(() => {
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            document.addEventListener('touchmove', handleMouseMove, { passive: false });
-            document.addEventListener('touchend', handleMouseUp, { passive: false });
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-                document.removeEventListener('touchmove', handleMouseMove);
-                document.removeEventListener('touchend', handleMouseUp);
-            };
-        }
-    }, [isDragging, dragOffset]);
+    }, [friendRequests.length, friendsProfiles, fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough, executeClearRoomChat]);
 
     const handleBlockUser = (user) => {
         if (!user || !auth.currentUser) return;
@@ -6855,37 +6635,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // Permission denied for target's doc is expected — block still applied on our side
             }
 
-            toast(
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, boxShadow: '0 2px 8px rgba(239,68,68,.4)'
-                    }}>
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
-                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.35 19.12,16.5 17.65,18.12L5.88,6.35C7.5,4.88 9.65,4 12,4M12,20A8,8 0 0,1 4,12C4,9.65 4.88,7.5 6.35,5.88L18.12,17.65C16.5,19.12 14.35,20 12,20Z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e1b4b', letterSpacing: '.2px' }}>User Blocked</div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                            <span style={{ fontWeight: 700, color: '#b91c1c' }}>{user.displayName}</span> has been blocked
-                        </div>
-                    </div>
-                </div>,
-                {
-                    style: {
-                        background: 'linear-gradient(135deg, #fff5f5, #fee2e2)',
-                        border: '1.5px solid rgba(239,68,68,.3)',
-                        borderRadius: '14px',
-                        boxShadow: '0 8px 32px rgba(239,68,68,.15)',
-                        padding: '10px 14px',
-                    },
-                    icon: false,
-                    autoClose: 4000,
-                }
-            );
+            pt.block(`${user.displayName} has been blocked`);
         } catch (error) {
             pt.error("Failed to block user");
         }
@@ -7430,18 +7180,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             message: "Are you sure you want to clear all chat messages? This action cannot be undone.",
             onConfirm: async () => {
                 try {
-                    const messagesRef = collection(db, 'rooms', roomId, 'messages');
-                    const q = query(messagesRef);
-                    const querySnapshot = await getDocs(q);
-                    
-                    const batch = writeBatch(db);
-                    querySnapshot.docs.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
-                    
-                    await batch.commit();
-                    setClearChatConfirm({ isOpen: false });
-                } catch (error) {
+                    await executeClearRoomChat();
+                } catch (_) {
+                } finally {
                     setClearChatConfirm({ isOpen: false });
                 }
             },
@@ -7738,6 +7479,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onCancel={clearChatConfirm.onCancel}
                 />
 
+                <StylishConfirmationDialogue
+                    isOpen={clearConversationsConfirm.isOpen}
+                    title="Clear Conversations"
+                    message="Are you sure you want to clear all private conversations from your list?"
+                    confirmText="Yes, Clear"
+                    cancelText="Cancel"
+                    type="danger"
+                    onConfirm={clearConversationsConfirm.onConfirm}
+                    onCancel={clearConversationsConfirm.onCancel}
+                />
+
                 <ChatActionModal
                     isOpen={deleteMessageConfirm.isOpen}
                     type="delete"
@@ -7754,7 +7506,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     currentUserProfile={loggedInUserProfile}
                     currentRoomId={roomId}
                     currentRoomName={roomName || ''}
-                    hideBanTab={['moderator', 'mod', 'guardian'].includes((loggedInUserProfile?.role || '').toLowerCase().trim())}
+                    hideBanTab={normalizeRole(loggedInUserProfile) === 'moderator'}
                 />
                 
                 <StylishConfirmationDialogue 
@@ -8555,7 +8307,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 {/* Compact badges row: role + online + trust */}
                                 <div className="vpm-badges-row">
                                     {(() => {
-                                        const rl = isGuestUser(profileUser) ? 'guest' : normalizeRole(profileUser.role);
+                                        const rl = isGuestUser(profileUser) ? 'guest' : normalizeRole(profileUser);
                                         const roleLabel = getRoleDisplayLabel({ role: profileUser.role, gender: profileUser.gender, isGuest: profileUser.isGuest, badge: profileUser.badge });
                                         return (
                                             <div className={`vpm-role-pill-badge vpm-role-pill--${rl}`}>
@@ -9042,7 +8794,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
             {isAttachmentDropdownOpen && (() => {
-                const _isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
+                const _isGuest = isGuestUser(loggedInUserProfile);
                 const _tier = getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, _isGuest);
                 const lockToast = (msg) => {
                     pt.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000 });

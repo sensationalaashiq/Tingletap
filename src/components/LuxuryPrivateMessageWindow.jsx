@@ -285,25 +285,15 @@ const PMMessageRow = React.memo(function PMMessageRow({
   // Bot notification — different rendering path
   if (msg.isBot || msg.isBotNotification || msg.senderId === 'tinglebot_system_official_2024') {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 4 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-        style={{ padding: '4px 2px' }}
-      >
+      <div style={{ padding: '4px 2px' }}>
         <UltraPMBotNotice msg={msg} />
-      </motion.div>
+      </div>
     );
   }
 
   const isSent = msg.senderId === currentUid;
   return (
-    <motion.div
-      className={`ultra-pm-message ${isSent ? 'sent' : 'received'}`}
-      initial={{ opacity: 0, x: isSent ? 20 : -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 400, delay: 0 }}
-    >
+    <div className={`ultra-pm-message ${isSent ? 'sent' : 'received'}`}>
       <div className="ultra-pm-msg-avatar">
         <LiveAvatarImg
           uid={msg.senderId}
@@ -361,34 +351,25 @@ const PMMessageRow = React.memo(function PMMessageRow({
         </div>
         {msg.text && <PMTranslatedText msg={msg} currentUid={currentUid} />}
         {msg.imageUrl && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 24 }}
-          >
+          <div>
             <PremiumImageMessage
               imageUrl={msg.imageUrl}
               imageFileName={msg.imageFileName}
               compact={true}
             />
-          </motion.div>
+          </div>
         )}
         {msg.audioUrl && (
-          <motion.div
-            className="ultra-pm-audio-wrapper"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div className="ultra-pm-audio-wrapper">
             <CustomAudioPlayer
               audioUrl={msg.audioUrl}
               audioFileName={msg.audioFileName}
               className="compact-audio-player"
             />
-          </motion.div>
+          </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 });
 
@@ -446,7 +427,6 @@ const LuxuryPrivateMessageWindow = ({
       // the other participant's conversation too).
       const uid = auth.currentUser?.uid;
       await updateDoc(doc(db, 'privateMessages', messageId), { deletedFor: arrayUnion(uid) });
-      pt.success('Message deleted.');
     } catch (e) {
       pt.error('Could not delete message: ' + e.message);
     } finally {
