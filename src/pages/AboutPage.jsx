@@ -197,11 +197,7 @@ const AboutPage = () => {
             India's premium real-time chat platform — built to connect people through genuine conversations,
             live voice, music, and shared experiences. Not just a chat app. A community.
           </p>
-          <div style={{
-            display:'inline-flex', alignItems:'center', gap:8, marginTop:12,
-            background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)',
-            borderRadius:10, padding:'8px 16px', fontSize:12.5, color:'#4f46e5', fontWeight:600,
-          }}>
+          <div className="lp-trust-banner">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
               <circle cx="8" cy="8" r="6.5" stroke="#4f46e5" strokeWidth="1.3"/>
               <path d="M5 8.5l2 2L11 6" stroke="#4f46e5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -211,7 +207,7 @@ const AboutPage = () => {
         </div>
 
         {/* Stats bar */}
-        <div className="lp-card" style={{padding: '0 8px', marginBottom: 0}}>
+        <div className="lp-card" style={{padding: '4px 10px', marginBottom: 26}}>
           <div style={{display:'flex', flexWrap:'wrap', justifyContent:'space-around', gap: 0}}>
             {[
               { num: '15+', label: 'Chat Rooms' },
@@ -224,7 +220,7 @@ const AboutPage = () => {
                 ...statStyle,
                 borderRight: i < arr.length - 1 ? '1px solid rgba(99,102,241,0.1)' : 'none',
               }}>
-                <span style={statNumStyle}>{s.num}</span>
+                <span style={{...statNumStyle, fontVariantNumeric: 'tabular-nums'}}>{s.num}</span>
                 <span style={statLabelStyle}>{s.label}</span>
               </div>
             ))}

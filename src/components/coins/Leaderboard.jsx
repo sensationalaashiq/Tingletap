@@ -9,6 +9,7 @@ import { formatCoins } from '../../utils/coinSystem';
 import { getCachedUserProfile } from '../../utils/userProfileCache';
 import { useLiveDisplayName } from '../../utils/liveUsernames';
 import LiveAvatarImg from '../LiveAvatar';
+import PremiumCopyright from '../PremiumCopyright';
 import './Leaderboard.css';
 
 /* ── Icons ── */
@@ -406,6 +407,7 @@ export default function Leaderboard() {
           </div>
         )}
       </div>
+      <PremiumCopyright />
     </div>
   );
 }

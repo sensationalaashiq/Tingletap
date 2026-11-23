@@ -18,6 +18,43 @@ const CORS = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
 };
 
+async function fetchRestRoomCount() {
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  if (!projectId) return null;
+  try {
+    const aggRes = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runAggregationQuery`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          structuredAggregationQuery: {
+            aggregations: [{ alias: 'total', count: {} }],
+            structuredQuery: { from: [{ collectionId: 'rooms' }] },
+          },
+        }),
+        signal: AbortSignal.timeout(6000),
+      }
+    );
+    if (aggRes.ok) {
+      const rows = await aggRes.json();
+      const val = rows?.[0]?.result?.aggregateFields?.total?.integerValue;
+      if (val !== undefined) return Number(val);
+    }
+    const listRes = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/rooms?pageSize=200`,
+      { signal: AbortSignal.timeout(6000) }
+    );
+    if (listRes.ok) {
+      const data = await listRes.json();
+      return Array.isArray(data?.documents) ? data.documents.length : 0;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
@@ -26,11 +63,11 @@ export const handler = async (event) => {
   try {
     const db = getAdminDb();
     if (!db) {
-      // Firebase Admin not configured (e.g. local dev without credentials) — return 0 gracefully.
+      const restCount = await fetchRestRoomCount();
       return {
         statusCode: 200,
         headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' },
-        body: JSON.stringify({ count: 0, source: 'fallback' }),
+        body: JSON.stringify({ count: typeof restCount === 'number' ? restCount : 0, source: typeof restCount === 'number' ? 'rest' : 'fallback' }),
       };
     }
 
@@ -50,11 +87,11 @@ export const handler = async (event) => {
     };
   } catch (err) {
     console.error('[getPublicRoomCount] Error:', err.message);
-    // Return 200 with count:0 so the UI shows '—' rather than crashing.
+    const restCount = await fetchRestRoomCount();
     return {
       statusCode: 200,
       headers: { ...CORS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count: 0, error: 'fetch_failed' }),
+      body: JSON.stringify({ count: typeof restCount === 'number' ? restCount : 0, error: typeof restCount === 'number' ? undefined : 'fetch_failed' }),
     };
   }
 };

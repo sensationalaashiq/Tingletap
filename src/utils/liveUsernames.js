@@ -13,14 +13,22 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import { db } from '../firebase/config';
 
-// uid -> { name, role, photoURL, listeners: Set<fn>, unsub: fn }
+// uid -> { name, role, photoURL, isGuest, gender, listeners: Set<fn>, unsub: fn }
 const registry = new Map();
 
 function ensureEntry(uid) {
   let entry = registry.get(uid);
   if (entry) return entry;
 
-  entry = { name: undefined, role: undefined, photoURL: undefined, listeners: new Set(), unsub: null };
+  entry = {
+    name: undefined,
+    role: undefined,
+    photoURL: undefined,
+    isGuest: undefined,
+    gender: undefined,
+    listeners: new Set(),
+    unsub: null,
+  };
   registry.set(uid, entry);
 
   entry.unsub = onSnapshot(doc(db, 'users', uid), (snap) => {
@@ -28,6 +36,8 @@ function ensureEntry(uid) {
     entry.name = data?.displayName || null;
     entry.role = data?.role || null;
     entry.photoURL = data?.photoURL || null;
+    entry.isGuest = data ? Boolean(data.isGuest || data.isAnonymous || data.role === 'guest') : undefined;
+    entry.gender = data?.gender || null;
     entry.listeners.forEach((cb) => cb(entry));
   }, () => {
     // Ignore permission/offline errors — consumers keep their fallback name.
@@ -40,7 +50,7 @@ function ensureEntry(uid) {
  * Subscribe to live changes of a user's profile (name/role/photoURL).
  * Shares one Firestore listener per uid across all subscribers.
  * @param {string} uid
- * @param {(entry: {name:string|null, role:string|null, photoURL:string|null}) => void} cb
+ * @param {(entry: {name:string|null, role:string|null, photoURL:string|null, isGuest:boolean|undefined, gender:string|null}) => void} cb
  * @returns {() => void} unsubscribe
  */
 export function subscribeToLiveUser(uid, cb) {
@@ -81,6 +91,33 @@ export function useLivePhotoURL(uid) {
   }, [uid]);
 
   return photoURL;
+}
+
+/**
+ * React hook: resolves live `{ isGuest, gender }` for a uid from Firestore,
+ * falling back to provided props until loaded or when no user doc exists.
+ */
+export function useLiveAvatarMeta(uid, fallbackIsGuest = false, fallbackGender = null) {
+  const [meta, setMeta] = useState({
+    isGuest: Boolean(fallbackIsGuest),
+    gender: fallbackGender || null,
+  });
+
+  useEffect(() => {
+    if (!uid) {
+      setMeta({ isGuest: Boolean(fallbackIsGuest), gender: fallbackGender || null });
+      return;
+    }
+    const unsub = subscribeToLiveUser(uid, (entry) => {
+      setMeta({
+        isGuest: entry.isGuest !== undefined ? entry.isGuest : Boolean(fallbackIsGuest),
+        gender: entry.gender || fallbackGender || null,
+      });
+    });
+    return unsub;
+  }, [uid, fallbackIsGuest, fallbackGender]);
+
+  return meta;
 }
 
 /**

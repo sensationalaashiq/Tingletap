@@ -19,6 +19,7 @@ import { IPBanSystem } from '../utils/ipBanSystem';
 import { pt } from '../utils/premiumToast';
 import { isEffectivelyOnline } from '../utils/presenceStatus';
 import { postTingleBotRoomMessage } from '../utils/tinglebotAutoDelete';
+import PremiumCopyright from '../components/PremiumCopyright';
 import './AdminPanelPage.css';
 import './BanKickMutePanel.css';
 
@@ -622,6 +623,7 @@ const BanKickMutePanel = () => {
                           <LiveAvatarImg
                             uid={u.uid}
                             gender={u.gender}
+                            isGuest={Boolean(u.isGuest || u.role === 'guest')}
                             fallbackPhotoURL={u.photoURL}
                             alt={u.displayName}
                             className="luxury-user-avatar"
@@ -1043,6 +1045,7 @@ const BanKickMutePanel = () => {
         pauseOnHover
         theme="light"
       />
+      <PremiumCopyright />
     </div>
   );
 };

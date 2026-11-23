@@ -179,6 +179,18 @@ export const applyGlobalMessageStyles = (userId, userName, userSettings) => {
     .message-container[data-user-id="${userId}"] .user-name {
       /* USERNAME STYLING IS HANDLED BY SEPARATE USERNAME UTILITIES */
     }
+
+    /* PROTECTION: Ensure YouTube Music player title & timer stay crisp white */
+    [data-user-id="${userId}"] .youtube-music-player,
+    [data-user-id="${userId}"] .youtube-music-player *,
+    [data-user-id="${userId}"] .youtube-music-player .player-song-title,
+    [data-user-id="${userId}"] .youtube-music-player .player-song-title *,
+    [data-user-id="${userId}"] .youtube-music-player .time-info,
+    [data-user-id="${userId}"] .youtube-music-player .time-info span,
+    [data-user-id="${userId}"] .youtube-music-player .time-info * {
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
   `;
 
   const styleElement = document.createElement('style');
@@ -225,6 +237,16 @@ export const applyMessageTextStyles = () => {
     styleElement.textContent = `
       .message-content, .message-text, .chat-message-text, .user-message-text {
         ${messageStyles}
+      }
+      .youtube-music-player,
+      .youtube-music-player *,
+      .youtube-music-player .player-song-title,
+      .youtube-music-player .player-song-title *,
+      .youtube-music-player .time-info,
+      .youtube-music-player .time-info span,
+      .youtube-music-player .time-info * {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
       }
     `;
     document.head.appendChild(styleElement);

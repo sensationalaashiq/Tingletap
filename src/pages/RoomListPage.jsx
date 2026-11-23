@@ -294,26 +294,23 @@ const RoomListPage = () => {
     setLoading(false);
   }, [sharedRooms]);
 
-  // ── Room occupancy counts — scoped to roomCounts/{roomId}/{uid} entries ──
-  // Each online user writes a lightweight true entry under their room.
-  // This avoids downloading the full status/ tree (which contains all user data)
-  // just to count room members.
+  // ── Room occupancy counts — strict server-time freshness (zero ghost/legacy counts) ──
   useEffect(() => {
-    const STALE_COUNT_MS = 15 * 60 * 1000;
-    return onValue(ref(rtdb, 'roomCounts'), (snap) => {
-      const data = snap.val() || {};
-      const now = Date.now();
+    const STALE_COUNT_MS = 3 * 60 * 1000;
+    let serverOffset = 0;
+    let latestData = {};
+
+    const recompute = () => {
+      const serverNow = Date.now() + serverOffset;
       const counts = {};
-      Object.entries(data).forEach(([roomId, members]) => {
+      Object.entries(latestData || {}).forEach(([roomId, members]) => {
         if (members && typeof members === 'object') {
           let active = 0;
           Object.values(members).forEach((v) => {
-            if (!v) return;
-            if (typeof v === 'object') {
-              if (v.online === false) return;
-              if (v.last_changed && (now - v.last_changed) >= STALE_COUNT_MS) return;
-              active += 1;
-            } else if (v === true) {
+            if (!v || typeof v !== 'object') return;
+            if (v.online === false) return;
+            if (typeof v.last_changed !== 'number' || v.last_changed <= 0) return;
+            if ((serverNow - v.last_changed) < STALE_COUNT_MS) {
               active += 1;
             }
           });
@@ -321,7 +318,28 @@ const RoomListPage = () => {
         }
       });
       setRoomCounts(counts);
+    };
+
+    const unsubOffset = onValue(ref(rtdb, '.info/serverTimeOffset'), (snap) => {
+      const val = snap.val();
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        serverOffset = val;
+        recompute();
+      }
     });
+
+    const unsubCounts = onValue(ref(rtdb, 'roomCounts'), (snap) => {
+      latestData = snap.val() || {};
+      recompute();
+    });
+
+    const evictInterval = setInterval(recompute, 30000);
+
+    return () => {
+      clearInterval(evictInterval);
+      unsubOffset();
+      unsubCounts();
+    };
   }, []);
 
   // Helper: detect OS and browser from userAgent

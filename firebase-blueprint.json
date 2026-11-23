@@ -1,0 +1,119 @@
+{
+  "project": "Tingletap",
+  "description": "Firebase Firestore and Realtime Database data architecture for Tingletap real-time social chat, mood atmospheres, interactive mini-games/polls, staff silent watch, broadcast schedules, and sync watch-parties.",
+  "entities": {
+    "UserProfile": {
+      "collection": "users/{uid}",
+      "description": "Authoritative user profile, role, verified badge, moderation state, and settings.",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": true },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "role": { "type": "string", "enum": ["owner", "admin", "moderator", "rj", "user", "guest"] },
+        "badge": { "type": "string", "nullable": true },
+        "isGuest": { "type": "boolean" },
+        "isBanned": { "type": "boolean" },
+        "mutedInfo": { "type": "map" }
+      }
+    },
+    "RoomMood": {
+      "collection": "rooms/{roomId}/mood/{moodDocId}",
+      "canonicalDocId": "current",
+      "description": "Live atmosphere and mood state synced across all room members.",
+      "fields": {
+        "preset": {
+          "type": "string",
+          "enum": ["midnight-velvet", "navrang-aura", "neon-lounge", "warm-mehfil"],
+          "required": true
+        },
+        "locked": { "type": "boolean", "required": true },
+        "updatedBy": { "type": "string", "required": true },
+        "updatedByName": { "type": "string" },
+        "updatedAt": { "type": "timestamp", "required": true }
+      }
+    },
+    "RoomActivity": {
+      "collection": "rooms/{roomId}/activities/{activityId}",
+      "description": "Inline interactive mini-game or poll card in chat (poll, trivia, or spin wheel).",
+      "fields": {
+        "id": { "type": "string" },
+        "roomId": { "type": "string", "required": true },
+        "type": { "type": "string", "enum": ["poll", "trivia", "wheel"], "required": true },
+        "title": { "type": "string", "maxLength": 140, "required": true },
+        "creatorUid": { "type": "string", "required": true },
+        "creatorName": { "type": "string" },
+        "creatorIdentity": { "type": "string", "enum": ["purush", "stree", "navrang"] },
+        "status": { "type": "string", "enum": ["active", "ended", "spinning"] },
+        "options": { "type": "array", "description": "Poll options [{id, label, count}] or Trivia options [string]" },
+        "totalVotes": { "type": "number" },
+        "correctIndex": { "type": "number" },
+        "durationSec": { "type": "number" },
+        "endsAtMs": { "type": "number", "nullable": true },
+        "firstCorrectUid": { "type": "string", "nullable": true },
+        "firstCorrectName": { "type": "string", "nullable": true },
+        "firstCorrectIdentity": { "type": "string", "nullable": true },
+        "firstCorrectAtMs": { "type": "number", "nullable": true },
+        "winnerLocked": { "type": "boolean" },
+        "attemptCount": { "type": "number" },
+        "entries": { "type": "array", "description": "Spin wheel slices (2-12 strings)" },
+        "spinSeq": { "type": "number" },
+        "winnerIndex": { "type": "number", "nullable": true },
+        "winnerLabel": { "type": "string", "nullable": true },
+        "spinStartedAtMs": { "type": "number", "nullable": true },
+        "targetAngle": { "type": "number" },
+        "createdAt": { "type": "timestamp", "required": true },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "ActivityVote": {
+      "collection": "rooms/{roomId}/activities/{activityId}/votes/{uid}",
+      "description": "Per-user atomic vote or trivia buzzer lock document preventing concurrent double-votes.",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "displayName": { "type": "string" },
+        "identity": { "type": "string", "enum": ["purush", "stree", "navrang"] },
+        "optionIndex": { "type": "number", "required": true },
+        "isCorrect": { "type": "boolean" },
+        "respondedAtMs": { "type": "number" },
+        "createdAt": { "type": "timestamp", "required": true }
+      }
+    },
+    "SilentWatchSession": {
+      "collection": "rooms/{roomId}/silentWatch/{uid}",
+      "description": "Strict staff-only stealth state preventing non-staff reads or spoofing.",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "active": { "type": "boolean", "required": true },
+        "roomId": { "type": "string", "required": true },
+        "updatedAt": { "type": "timestamp", "required": true }
+      }
+    },
+    "DailySchedule": {
+      "collection": "schedules/{scheduleId}",
+      "canonicalDocId": "dailyLineup",
+      "description": "Single lightweight document storing today's scheduled broadcasts and RJ hosts.",
+      "fields": {
+        "shows": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "id": "string",
+            "title": "string",
+            "hostName": "string",
+            "hostUid": "string",
+            "hostIdentity": "purush|stree|navrang",
+            "roomId": "string",
+            "roomName": "string",
+            "startTime": "string (HH:MM)",
+            "startMinutes": "number (0-1439)",
+            "durationMinutes": "number (15-480)",
+            "statusOverride": "auto|live|ended",
+            "order": "number"
+          }
+        },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    }
+  }
+}

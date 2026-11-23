@@ -14,6 +14,7 @@ import { validateSignupEmail } from '../utils/emailValidator';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
+import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 
 const EyeOpenSVG = () => (
@@ -254,9 +255,7 @@ const SignupPage = () => {
           profilePicKey = key || null;
         } catch (imgError) { console.warn('Failed to upload profile picture, using default'); }
       }
-      const defaultAvatar = formData.gender === 'female'
-        ? `${getDefaultAvatarUrl(user.uid, 'female')}`
-        : `${getDefaultAvatarUrl(user.uid, 'male')}`;
+      const defaultAvatar = getDefaultAvatarUrl(user.uid, formData.gender || 'male', false);
       const userProfileData = {
         uid: user.uid, email: formData.email, displayName: formData.fullName,
         username: formData.username.toLowerCase(),
@@ -315,12 +314,15 @@ const SignupPage = () => {
       width: '100vw',
       background: 'linear-gradient(145deg, #f8f0ff 0%, #ede4fb 25%, #f3e8ff 50%, #e8d8fa 75%, #f0e6ff 100%)',
       display: 'flex',
-      justifyContent: 'center',
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      overflow: 'hidden',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       position: 'fixed',
-      top: 0, left: 0,
+      inset: 0,
+      padding: '18px 12px 4px',
       boxSizing: 'border-box'
     }}>
       <SEO
@@ -782,6 +784,7 @@ const SignupPage = () => {
       <div style={{position:'absolute',width:'220px',height:'220px',borderRadius:'50%',background:'radial-gradient(circle,rgba(168,85,247,.18) 0%,transparent 70%)',top:'40%',right:'-80px',animation:'sFloatOrb3 18s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
       <div style={{position:'absolute',width:'170px',height:'170px',borderRadius:'50%',background:'radial-gradient(circle,rgba(233,213,255,.28) 0%,transparent 70%)',bottom:'12%',left:'-55px',animation:'sFloatOrb1 10s ease-in-out infinite reverse',pointerEvents:'none',zIndex:0}}/>
 
+      <div style={{ margin: 'auto 0', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px', position: 'relative', zIndex: 1 }}>
       <div className="su-card" style={{position:'relative',zIndex:1}}>
         {/* Logo */}
         <div className="su-logo">
@@ -1319,6 +1322,8 @@ const SignupPage = () => {
           />
         )}
       </div>
+      </div>
+      <PremiumCopyright />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import {
   subscribeWallet, subscribeUserTransactions, formatCoins, coinsToRupees
 } from '../../utils/coinSystem';
+import PremiumCopyright from '../PremiumCopyright';
 import './CoinWalletPage.css';
 
 /* ── Icons ── */
@@ -247,6 +248,7 @@ export default function CoinWalletPage() {
           )}
         </div>
       </div>
+      <PremiumCopyright />
     </div>
   );
 }

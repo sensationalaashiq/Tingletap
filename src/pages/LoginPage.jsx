@@ -19,6 +19,7 @@ import BanKickModal from '../components/BanKickModal';
 import IPBanModal from '../components/IPBanModal';
 import { IPBanSystem } from '../utils/ipBanSystem';
 import { DeviceBanSystem } from '../utils/deviceBanSystem';
+import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';
 
 const EyeOpenSVG = () => (
@@ -549,7 +550,7 @@ const LoginPage = () => {
 
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
-      const avatarUrl = getDefaultAvatarUrl(user.uid, guestFormData.gender);
+      const avatarUrl = getDefaultAvatarUrl(user.uid, guestFormData.gender, true);
       const nowIso = new Date().toISOString();
 
       const guestUserData = {
@@ -676,13 +677,15 @@ const LoginPage = () => {
       width: '100vw',
       background: 'linear-gradient(145deg, #f8f0ff 0%, #ede4fb 25%, #f3e8ff 50%, #e8d8fa 75%, #f0e6ff 100%)',
       display: 'flex',
-      justifyContent: 'center',
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      overflow: 'hidden',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       position: 'fixed',
-      top: 0,
-      left: 0,
+      inset: 0,
+      padding: '18px 12px 4px',
       boxSizing: 'border-box'
     }}>
       <SEO
@@ -1291,6 +1294,7 @@ const LoginPage = () => {
         />
       )}
 
+      <div style={{ margin: 'auto 0', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px', position: 'relative', zIndex: 1 }}>
       <div className="lv-card" style={{position:'relative',zIndex:1}}>
         {/* Logo */}
         <div className="lv-logo-wrap">
@@ -1619,6 +1623,8 @@ const LoginPage = () => {
           </div>
         </div>
       )}
+      </div>
+      <PremiumCopyright />
     </div>
   );
 };

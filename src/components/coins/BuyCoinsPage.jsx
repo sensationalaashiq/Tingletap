@@ -9,6 +9,7 @@ import {
   markOrderSubmitted, formatCoins
 } from '../../utils/coinSystem';
 import { pt } from '../../utils/premiumToast';
+import PremiumCopyright from '../PremiumCopyright';
 import './BuyCoinsPage.css';
 
 /* ── SVG Icons ── */
@@ -408,6 +409,7 @@ export default function BuyCoinsPage() {
           </div>
         )}
       </div>
+      <PremiumCopyright />
     </div>
   );
 }

@@ -169,7 +169,10 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
     : (audioFileName || 'Audio Track');
 
   return (
-    <div className={isYouTubeMusic ? 'youtube-music-player' : 'compact-audio-player'}>
+    <div
+      className={isYouTubeMusic ? 'youtube-music-player' : 'compact-audio-player'}
+      style={isYouTubeMusic ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}
+    >
 
       {/* ── Top Header ── */}
       <div className="player-header-row">
@@ -197,7 +200,7 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
         <span
           className="player-song-title"
           title={displayTitle}
-          style={isYouTubeMusic ? { color: '#ffffff' } : undefined}
+          style={isYouTubeMusic ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}
         >
           {displayTitle}
         </span>
@@ -253,10 +256,13 @@ const CustomAudioPlayer = ({ audioUrl, audioFileName, isYouTubeMusic = false, yo
           </svg>
         </button>
 
-        <div className="time-info" style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>
-          <span style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>{formatTime(currentTime)}</span>
-          <span className="time-sep" style={isYouTubeMusic ? { color: 'rgba(255,255,255,0.8)' } : undefined}>/</span>
-          <span style={isYouTubeMusic ? { color: '#ffffff' } : undefined}>{formatTime(duration)}</span>
+        <div
+          className="time-info"
+          style={isYouTubeMusic ? { color: '#ffffff', WebkitTextFillColor: '#ffffff', fontVariantNumeric: 'tabular-nums' } : { fontVariantNumeric: 'tabular-nums' }}
+        >
+          <span style={isYouTubeMusic ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>{formatTime(currentTime)}</span>
+          <span className="time-sep" style={isYouTubeMusic ? { color: 'rgba(255,255,255,0.88)', WebkitTextFillColor: 'rgba(255,255,255,0.88)' } : undefined}>/</span>
+          <span style={isYouTubeMusic ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>{formatTime(duration)}</span>
         </div>
       </div>
 

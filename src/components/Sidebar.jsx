@@ -24,7 +24,8 @@ import {
   resolveBadgeKey,
   getRoleDisplayLabel,
   getStoredGuestGender,
-  getDefaultAvatarUrl
+  getDefaultAvatarUrl,
+  isRealAvatarUpload
 } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
@@ -171,6 +172,7 @@ const Sidebar = ({
   onClose,
   liveUsers,
   loggedInUserProfile,
+  currentRoomId,
   onKick,
   onMute,
   onBan,
@@ -201,7 +203,8 @@ const Sidebar = ({
   const [pwError, setPwError]                 = useState('');
   const [kickedUserIds, setKickedUserIds]     = useState(new Set());
   const dropdownRef = useRef(null);
-  const { roomId } = useParams();
+  const { roomId: paramRoomId } = useParams();
+  const roomId = currentRoomId || paramRoomId;
   const navigate   = useNavigate();
 
   /* ── TingleBot strip — writes a system message to the current room chat (auto-deleted ≤50s) ── */
@@ -290,40 +293,58 @@ const Sidebar = ({
     };
   }, []);
 
-  /* -- roomCounts RTDB listener — real-time per-room online user count (auth-gated) -- */
+  /* -- roomCounts RTDB listener — strict server-time freshness (zero stale/legacy ghosts) -- */
   useEffect(() => {
     let unsubCounts = null;
+    let unsubOffset = null;
+    let evictInterval = null;
+    let serverOffset = 0;
+    let latestData = {};
+
+    const recomputeCounts = () => {
+      const serverNow = Date.now() + serverOffset;
+      const STALE_COUNT_MS = 3 * 60 * 1000;
+      const counts = {};
+      Object.entries(latestData || {}).forEach(([rid, members]) => {
+        if (members && typeof members === 'object') {
+          counts[rid] = Object.values(members).filter(v => {
+            if (!v || typeof v !== 'object') return false;
+            if (v.online === false) return false;
+            if (typeof v.last_changed !== 'number' || v.last_changed <= 0) return false;
+            return (serverNow - v.last_changed) < STALE_COUNT_MS;
+          }).length;
+        }
+      });
+      setRoomCounts(counts);
+    };
+
+    const detach = () => {
+      if (unsubCounts) { unsubCounts(); unsubCounts = null; }
+      if (unsubOffset) { unsubOffset(); unsubOffset = null; }
+      if (evictInterval) { clearInterval(evictInterval); evictInterval = null; }
+    };
+
     const attachListener = () => {
-      if (unsubCounts) {
-        unsubCounts();
-        unsubCounts = null;
-      }
+      detach();
       if (!auth.currentUser) return;
+      unsubOffset = onValue(ref(rtdb, '.info/serverTimeOffset'), (snap) => {
+        const val = snap.val();
+        if (typeof val === 'number' && Number.isFinite(val)) {
+          serverOffset = val;
+          recomputeCounts();
+        }
+      });
       unsubCounts = onValue(
         ref(rtdb, 'roomCounts'),
         (snap) => {
-          const data = snap.val() || {};
-          const now = Date.now();
-          const STALE_COUNT_MS = 15 * 60 * 1000;
-          const counts = {};
-          Object.entries(data).forEach(([rid, members]) => {
-            if (members && typeof members === 'object') {
-              counts[rid] = Object.values(members).filter(v => {
-                if (v && typeof v === 'object') {
-                  if (v.online === false) return false;
-                  const ts = typeof v.last_changed === 'number' ? v.last_changed : 0;
-                  return !ts || ts > now || (now - ts) < STALE_COUNT_MS;
-                }
-                return Boolean(v);
-              }).length;
-            }
-          });
-          setRoomCounts(counts);
+          latestData = snap.val() || {};
+          recomputeCounts();
         },
         (err) => {
           console.warn('[Sidebar] roomCounts listener error:', err?.message || err);
         }
       );
+      evictInterval = setInterval(recomputeCounts, 30000);
     };
 
     if (auth.currentUser) attachListener();
@@ -331,15 +352,12 @@ const Sidebar = ({
       if (fbUser) {
         attachListener();
       } else {
-        if (unsubCounts) {
-          unsubCounts();
-          unsubCounts = null;
-        }
+        detach();
       }
     });
     return () => {
       unsubAuth();
-      if (unsubCounts) unsubCounts();
+      detach();
     };
   }, []);
 
@@ -388,7 +406,8 @@ const Sidebar = ({
   }, []);
 
   /* -- helpers -- */
-  const getAvatarUrl = (uid, gender, photoURL) => photoURL || getDefaultAvatarUrl(uid, gender);
+  const getAvatarUrl = (uid, gender, photoURL, isGuest = false) =>
+    isRealAvatarUpload(photoURL) ? photoURL : getDefaultAvatarUrl(uid, gender, isGuest);
 
   const getBorderClass = (u) => {
     if (!u) return 'male-border';
@@ -604,6 +623,7 @@ const Sidebar = ({
                 <LiveAvatarImg
                   uid={user.uid}
                   gender={loggedInUserProfile.gender}
+                  isGuest={isGuestUser(loggedInUserProfile)}
                   fallbackPhotoURL={loggedInUserProfile.photoURL}
                   className="sb-big-avatar"
                   alt="avatar"
@@ -940,6 +960,7 @@ const Sidebar = ({
                       <LiveAvatarImg
                         uid={userItem.uid}
                         gender={userItem.gender}
+                        isGuest={isGuestUser(userItem)}
                         fallbackPhotoURL={userItem.photoURL}
                         className="sb-list-avatar"
                         alt="avatar"
@@ -1115,7 +1136,7 @@ const Sidebar = ({
                           style={{ top: dropdownPosition.top, left: dropdownPosition.left }}>
                           <div className="sb-apd-header">
                             <div className="sb-apd-avatar-wrap">
-                              <LiveAvatarImg uid={userItem.uid} gender={userItem.gender} fallbackPhotoURL={userItem.photoURL} className="sb-apd-avatar" alt="" />
+                              <LiveAvatarImg uid={userItem.uid} gender={userItem.gender} isGuest={tIsGuest} fallbackPhotoURL={userItem.photoURL} className="sb-apd-avatar" alt="" />
                               <span className={`sb-apd-dot ${isOnline ? 'online' : ''}`}/>
                             </div>
                             <div>

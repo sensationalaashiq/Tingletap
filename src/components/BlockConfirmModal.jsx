@@ -1,5 +1,6 @@
 import React from 'react';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { getDefaultAvatarUrl, isRealAvatarUpload, isGuestUser } from '../utils/roleUtils';
+import LiveAvatarImg from './LiveAvatar';
 import './BlockConfirmModal.css';
 
 const BlockConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) => {
@@ -32,8 +33,11 @@ const BlockConfirmModal = React.memo(({ targetUser, onConfirm, onCancel }) => {
 
                 <div className="bcm-user-preview">
                     <div className="bcm-avatar-wrap">
-                        <img
-                            src={`${getDefaultAvatarUrl(targetUser.uid, targetUser.gender)}`}
+                        <LiveAvatarImg
+                            uid={targetUser.uid}
+                            gender={targetUser.gender}
+                            isGuest={isGuestUser(targetUser)}
+                            fallbackPhotoURL={isRealAvatarUpload(targetUser.photoURL) ? targetUser.photoURL : getDefaultAvatarUrl(targetUser.uid, targetUser.gender, isGuestUser(targetUser))}
                             alt="avatar"
                             className="bcm-avatar"
                         />

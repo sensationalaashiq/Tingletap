@@ -362,11 +362,7 @@ const FAQPage = () => {
             Everything you need to know about TingleTap — features, safety, accounts, coins, and technical help.
             Detailed answers, plain language. {faqData.length} questions answered.
           </p>
-          <div style={{
-            display:'inline-flex', alignItems:'center', gap:8, marginTop:12,
-            background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)',
-            borderRadius:10, padding:'8px 16px', fontSize:12.5, color:'#4f46e5', fontWeight:600,
-          }}>
+          <div className="lp-trust-banner">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
               <circle cx="8" cy="8" r="6.5" stroke="#4f46e5" strokeWidth="1.3"/>
               <path d="M5.5 8.5l2 2L11 6" stroke="#4f46e5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -377,37 +373,39 @@ const FAQPage = () => {
 
         {/* Category filter */}
         <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center',
-          marginBottom: 8,
+          display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center',
+          marginBottom: 22,
         }}>
           {categories.map(c => (
             <button
               key={c.key}
               onClick={() => { setActiveCat(c.key); setActive(null); }}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '7px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 600, transition: 'all 0.18s ease',
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '9px 15px', borderRadius: 12,
+                border: activeCat === c.key ? '1px solid transparent' : '1px solid rgba(124,58,237,0.18)',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                fontSize: 13, fontWeight: 700, transition: 'all 0.2s ease',
                 background: activeCat === c.key
-                  ? 'linear-gradient(135deg,#4f46e5,#7c3aed)'
-                  : 'rgba(255,255,255,0.85)',
-                color: activeCat === c.key ? '#fff' : '#4f46e5',
+                  ? 'linear-gradient(135deg,#4338ca,#6d28d9)'
+                  : 'rgba(255,255,255,0.92)',
+                color: activeCat === c.key ? '#fff' : '#2e1f6e',
                 boxShadow: activeCat === c.key
-                  ? '0 4px 16px rgba(79,70,229,0.28)'
-                  : '0 2px 8px rgba(0,0,0,0.08)',
+                  ? '0 6px 18px rgba(79,70,229,0.28)'
+                  : '0 3px 10px rgba(49,46,129,0.05)',
               }}
             >
               {c.key !== 'all' && (
-                <span style={{color: activeCat === c.key ? '#fff' : '#7c3aed'}}>
+                <span style={{color: activeCat === c.key ? '#fff' : '#6d28d9'}}>
                   {CAT_ICONS[c.key]}
                 </span>
               )}
               {c.label}
               <span style={{
-                marginLeft: 2, fontSize: 11, fontWeight: 700,
-                background: activeCat === c.key ? 'rgba(255,255,255,0.25)' : 'rgba(99,102,241,0.12)',
+                marginLeft: 2, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                background: activeCat === c.key ? 'rgba(255,255,255,0.22)' : 'rgba(124,58,237,0.1)',
                 borderRadius: 6, padding: '1px 6px', lineHeight: '16px',
-                color: activeCat === c.key ? '#fff' : '#6366f1',
+                color: activeCat === c.key ? '#fff' : '#5b21b6',
               }}>
                 {c.key === 'all' ? faqData.length : faqData.filter(f => f.cat === c.key).length}
               </span>
@@ -466,20 +464,21 @@ const FAQPage = () => {
         </div>
 
         {/* Still need help card */}
-        <div className="lp-card" style={{textAlign:'center', padding: '32px 24px'}}>
+        <div className="lp-card" style={{textAlign:'center', padding: '38px 28px'}}>
           <div style={{
-            width: 52, height: 52, borderRadius: 15, margin: '0 auto 16px',
-            background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
+            width: 56, height: 56, borderRadius: 16, margin: '0 auto 18px',
+            background: 'linear-gradient(135deg,#4338ca,#6d28d9)',
+            boxShadow: '0 10px 26px rgba(79,70,229,0.28)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" fill="white" opacity=".9"/>
             </svg>
           </div>
-          <h3 style={{fontSize: 20, fontWeight: 700, color: '#1e1b4b', marginBottom: 8}}>
+          <h3 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize: 26, fontWeight: 700, fontStyle: 'italic', color: '#17123a', marginBottom: 10}}>
             Still have a question?
           </h3>
-          <p style={{fontSize: 14.5, color: '#6b7280', lineHeight: 1.7, maxWidth: 420, margin: '0 auto 20px'}}>
+          <p style={{fontSize: 14.5, color: '#312566', opacity: 0.8, lineHeight: 1.72, maxWidth: 450, margin: '0 auto 22px'}}>
             Our support team responds to all queries within 24 hours. For urgent safety issues,
             use the in-app report button for priority triage.
           </p>

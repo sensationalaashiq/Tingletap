@@ -11,6 +11,7 @@ import {
     disableNetwork 
 } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { getDefaultAvatarUrl, isRealAvatarUpload } from '../utils/roleUtils';
 
 
 const firebaseConfig = {
@@ -228,16 +229,8 @@ export const createUserProfile = async (userData) => {
 
 export default app;
 
-// Helper function to generate avatar URL with proper gender
-export const generateAvatarUrl = (uid, gender = 'male', photoURL = null) => {
-  if (photoURL) return photoURL;
-  // Deterministic index from uid
-  let h = 5381;
-  const s = uid || 'default';
-  for (let i = 0; i < s.length; i++) { h = ((h << 5) + h) ^ s.charCodeAt(i); h = h >>> 0; }
-  const n = h % 100;
-  const g = (gender || '').toLowerCase();
-  if (g === 'female') return `https://randomuser.me/api/portraits/women/${n}.jpg`;
-  if (g === 'transgender' || g === 'other') return `https://randomuser.me/api/portraits/women/${(n + 37) % 100}.jpg`;
-  return `https://randomuser.me/api/portraits/men/${n}.jpg`;
+// Helper function to generate avatar URL with proper gender & guest/registered distinction
+export const generateAvatarUrl = (uid, gender = 'male', photoURL = null, isGuest = false) => {
+  if (isRealAvatarUpload(photoURL)) return photoURL;
+  return getDefaultAvatarUrl(uid, gender, isGuest);
 };

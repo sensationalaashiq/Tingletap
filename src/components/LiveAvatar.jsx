@@ -1,12 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useLivePhotoURL } from '../utils/liveUsernames';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { useLivePhotoURL, useLiveAvatarMeta } from '../utils/liveUsernames';
+import { getDefaultAvatarUrl, isRealAvatarUpload } from '../utils/roleUtils';
 import { extractR2Key } from '../services/r2StorageService';
-
-// randomuser.me URLs are our own generated defaults, never a real upload —
-// treat them the same as "no photo" so a stale denormalized copy of one
-// never wins over a genuinely uploaded photo.
-const isRealUpload = (url) => !!url && !url.includes('randomuser.me');
 
 /**
  * LiveAvatarImg — the single source of truth for "what avatar do we show
@@ -18,9 +13,9 @@ const isRealUpload = (url) => !!url && !url.includes('randomuser.me');
  *      via useLivePhotoURL — always current, never a stale denormalized copy).
  *   2. A fallback photoURL passed in by the caller (e.g. a value already on
  *      hand from a message/report doc) — only if it looks like a real upload.
- *   3. The same deterministic generated avatar every time for this uid, so
- *      un-uploaded users still look consistent across the whole app instead
- *      of "random" per surface.
+ *   3. The same deterministic default avatar every time for this uid:
+ *      - Guests     -> stylized Male / Female / Transgender vector icon DP
+ *      - Registered -> deterministic Cartoon / Anime Male or Female DP
  *
  * Signed-URL expiry recovery:
  *   All R2 media is served via 7-day signed URLs. If a URL expires, onError
@@ -34,6 +29,7 @@ const isRealUpload = (url) => !!url && !url.includes('randomuser.me');
 export default function LiveAvatarImg({
   uid,
   gender,
+  isGuest = false,
   fallbackPhotoURL,
   photoKey,
   className,
@@ -41,11 +37,15 @@ export default function LiveAvatarImg({
   ...rest
 }) {
   const livePhoto = useLivePhotoURL(uid);
-  const baseSrc = isRealUpload(livePhoto)
+  const liveMeta = useLiveAvatarMeta(uid, isGuest, gender);
+  const resolvedIsGuest = Boolean(isGuest || liveMeta.isGuest);
+  const resolvedGender = gender || liveMeta.gender;
+
+  const baseSrc = isRealAvatarUpload(livePhoto)
     ? livePhoto
-    : isRealUpload(fallbackPhotoURL)
+    : isRealAvatarUpload(fallbackPhotoURL)
       ? fallbackPhotoURL
-      : getDefaultAvatarUrl(uid, gender);
+      : getDefaultAvatarUrl(uid, resolvedGender, resolvedIsGuest);
 
   const [displaySrc, setDisplaySrc] = useState(baseSrc);
   const retried = useRef(false);

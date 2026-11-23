@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import LiveAvatarImg from './LiveAvatar';
+import { getDefaultAvatarUrl, isRealAvatarUpload } from '../utils/roleUtils';
 import { db, rtdb, auth } from '../firebase/config';
 import { translateText as _ttBP, getTranslationSettings as _tsBP, getLanguageName as _glnBP } from '../utils/translationService';
 import {
@@ -2963,11 +2964,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="url(#annStrip)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               </svg>
             </div>
-            <img
+            <LiveAvatarImg
               className="bp-ann-strip-avatar"
-              src={ann.rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`}
+              uid={ann.rjUid}
+              fallbackPhotoURL={isRealAvatarUpload(ann.rjAvatar) ? ann.rjAvatar : getDefaultAvatarUrl(ann.rjUid, 'male', false)}
               alt={ann.rjName}
-              onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`; }}
             />
             <div className="bp-ann-strip-body">
               <div className="bp-ann-strip-meta">
@@ -3016,11 +3017,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         <MusicVisual isPlaying={ytPlayerState === 'playing'} />
 
         <div className="bp-rj-avatar-wrap">
-          <img
+          <LiveAvatarImg
             className="bp-rj-avatar"
-            src={rjBroadcast.rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${rjBroadcast.rjUid}`}
+            uid={rjBroadcast.rjUid}
+            fallbackPhotoURL={isRealAvatarUpload(rjBroadcast.rjAvatar) ? rjBroadcast.rjAvatar : getDefaultAvatarUrl(rjBroadcast.rjUid, 'male', false)}
             alt={rjBroadcast.rjName}
-            onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${rjBroadcast.rjUid}`; }}
           />
           <div className="bp-rj-live-ring" />
           <div className="bp-rj-badge-wrap">RJ</div>
@@ -3728,11 +3729,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                       <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke={`url(#annCard${ann.id})`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                     </svg>
                   </div>
-                  <img
+                  <LiveAvatarImg
                     className="bp-ann-card-avatar"
-                    src={ann.rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`}
+                    uid={ann.rjUid}
+                    fallbackPhotoURL={isRealAvatarUpload(ann.rjAvatar) ? ann.rjAvatar : getDefaultAvatarUrl(ann.rjUid, 'male', false)}
                     alt={ann.rjName}
-                    onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${ann.rjUid}`; }}
                   />
                   <div className="bp-ann-card-meta">
                     <span className="bp-ann-card-name">{ann.rjName}</span>
@@ -3890,11 +3891,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               {others.map(bc => (
                 <div key={bc.id} className="bp-broadcast-item">
                   <div className="bp-bc-avatar-wrap">
-                    <img
+                    <LiveAvatarImg
                       className="bp-bc-avatar"
-                      src={bc.hostAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${bc.hostUid}`}
+                      uid={bc.hostUid}
+                      fallbackPhotoURL={isRealAvatarUpload(bc.hostAvatar) ? bc.hostAvatar : getDefaultAvatarUrl(bc.hostUid, 'male', false)}
                       alt={bc.hostName}
-                      onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${bc.hostUid}`; }}
                     />
                     <span className="bp-bc-live-dot" />
                   </div>

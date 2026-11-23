@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { confirmPasswordReset } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import PremiumCopyright from '../components/PremiumCopyright';
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 const IcShield = () => (
@@ -199,10 +200,14 @@ const ResetPasswordPage = () => {
           inset: 0;
           background: linear-gradient(148deg, #f8f0ff 0%, #ede4fb 25%, #f3e8ff 50%, #e8d8fa 75%, #f0e6ff 100%);
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 18px 12px 4px;
+          box-sizing: border-box;
         }
 
         /* Floating orbs */
@@ -541,6 +546,7 @@ const ResetPasswordPage = () => {
         <div className="rp-orb rp-orb2" />
         <div className="rp-orb rp-orb3" />
 
+        <div style={{ margin: 'auto 0', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px', position: 'relative', zIndex: 2 }}>
         <div className="rp-card">
           {/* Logo */}
           <div className="rp-logo-wrap">
@@ -698,6 +704,8 @@ const ResetPasswordPage = () => {
             </>
           )}
         </div>
+        </div>
+        <PremiumCopyright />
       </div>
     </>
   );

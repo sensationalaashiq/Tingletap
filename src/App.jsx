@@ -41,6 +41,7 @@ import AuthRoute from './components/AuthRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import VPNBlockModal from './components/VPNBlockModal';
 import LuxuryPageLoader from './components/LuxuryPageLoader';
+import ClickBurstOverlay from './components/ClickBurstOverlay';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -67,6 +68,16 @@ function RouteTracker() {
     updateVisitorPage(location.pathname);
   }, [location.pathname, location.search]);
   return null;
+}
+
+// Mount luxury click-burst particle effect on all pages EXCEPT HomePage (/room/*, /r/*)
+function ConditionalClickBurst() {
+  const location = useLocation();
+  const p = location.pathname || '';
+  if (p.startsWith('/room/') || p.startsWith('/r/')) {
+    return null;
+  }
+  return <ClickBurstOverlay />;
 }
 
 function App() {
@@ -846,6 +857,7 @@ function App() {
     <WarningsProvider>
     <BrowserRouter>
       <RouteTracker />
+      <ConditionalClickBurst />
       <Routes>
         <Route path="/signup" element={<AuthRoute user={user}><SignupPage /></AuthRoute>} />
         <Route path="/login" element={<AuthRoute user={user}><LoginPage /></AuthRoute>} />

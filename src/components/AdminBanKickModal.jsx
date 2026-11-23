@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDefaultAvatarUrl, getRoleDisplayLabel } from '../utils/roleUtils';
+import { getDefaultAvatarUrl, getRoleDisplayLabel, isGuestUser, isRealAvatarUpload } from '../utils/roleUtils';
 import { db } from '../firebase/config';
 import { collection, query, onSnapshot, orderBy, getDoc, doc } from 'firebase/firestore';
 import './AdminBanKickModal.css';
@@ -429,7 +429,7 @@ const AdminBanKickModal = React.memo(({
         {/* ── User Identity Strip ── */}
         <div className="luxmod-user-strip">
           <div className="luxmod-user-avatar-wrap">
-            {(!livePhotoFailed && livePhotoUrl) ? (
+            {(!livePhotoFailed && isRealAvatarUpload(livePhotoUrl)) ? (
             <img
               src={livePhotoUrl}
               alt=""
@@ -438,7 +438,7 @@ const AdminBanKickModal = React.memo(({
             />
           ) : (
             <img
-              src={getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender)}
+              src={getDefaultAvatarUrl(selectedUser.uid, selectedUser.gender, isGuestUser(selectedUser))}
               alt=""
               className="luxmod-user-avatar"
             />

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getDefaultAvatarUrl } from '../utils/roleUtils';
+import { getDefaultAvatarUrl, isRealAvatarUpload, isGuestUser } from '../utils/roleUtils';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { auth, db } from '../firebase/config';
@@ -108,15 +108,12 @@ const EditProfile = ({ onClose, onSuccess }) => {
             relationship: data.relationship || '',
             languages: data.languages || ''
           });
-          const defaultAvatar = data.gender === 'female' 
-            ? `${getDefaultAvatarUrl(user.uid, 'female')}`
-            : data.gender === 'male'
-            ? `${getDefaultAvatarUrl(user.uid, 'male')}`
-            : `${getDefaultAvatarUrl(user.uid, 'male')}`;
-          setProfilePicPreview(data.photoURL || defaultAvatar);
+          const resolvedGuest = isGuestUser({ isGuest: data.isGuest || user.isAnonymous, role: data.role });
+          const defaultAvatar = getDefaultAvatarUrl(user.uid, data.gender || 'male', resolvedGuest);
+          setProfilePicPreview(isRealAvatarUpload(data.photoURL) ? data.photoURL : defaultAvatar);
         } else {
           setFormData(prev => ({ ...prev, displayName: user.displayName || '' }));
-          setProfilePicPreview(`${getDefaultAvatarUrl(user.uid, 'male')}`);
+          setProfilePicPreview(getDefaultAvatarUrl(user.uid, 'male', Boolean(user.isAnonymous)));
         }
         setLoading(false);
       });
@@ -448,9 +445,13 @@ const EditProfile = ({ onClose, onSuccess }) => {
       const userDocRef = doc(db, 'users', user.uid);
       const currentUserDoc = await getDoc(userDocRef);
       const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
+      const resolvedGuest = isGuestUser({ isGuest: currentUserData.isGuest || user.isAnonymous, role: currentUserData.role });
+      const fallbackDefault = getDefaultAvatarUrl(user.uid, formData.gender || currentUserData.gender || 'male', resolvedGuest);
       const finalPhotoURL = profilePic
         ? photoURL
-        : (currentUserData.photoURL || profilePicPreview || getDefaultAvatarUrl(user.uid, formData.gender || 'male'));
+        : (isRealAvatarUpload(currentUserData.photoURL)
+            ? currentUserData.photoURL
+            : (isRealAvatarUpload(profilePicPreview) ? profilePicPreview : fallbackDefault));
       const finalPhotoKey = profilePic ? photoKey : (currentUserData.photoKey || null);
 
       const getCurrentFontPreferences = () => {

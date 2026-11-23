@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, getCountFromServer, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import './LandingPage.css';
 import PremiumCopyright from '../components/PremiumCopyright';
 import SEO from '../seo/SEO';
@@ -58,20 +60,25 @@ const CrossMark = ({ size = 12 }) => (
 );
 
 /* Feature card icons — jewel / glass style */
-const IconChatRooms = ({ size = 30 }) => (
-  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="4" width="28" height="18" rx="6" fill="url(#ic1a)"/>
-    <rect x="2" y="4" width="28" height="18" rx="6" fill="url(#ic1b)" opacity="0.3"/>
-    <circle cx="10" cy="13" r="2.4" fill="white"/>
-    <circle cx="16" cy="13" r="2.4" fill="white"/>
-    <circle cx="22" cy="13" r="2.4" fill="white"/>
-    <path d="M7 22L10 19H24" stroke="url(#ic1a)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <defs>
-      <linearGradient id="ic1a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient>
-      <linearGradient id="ic1b" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
-    </defs>
-  </svg>
-);
+const IconChatRooms = ({ size = 30 }) => {
+  const uid = useId().replace(/:/g, '');
+  const gA = `ic1a-${uid}`;
+  const gB = `ic1b-${uid}`;
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="4" width="28" height="18" rx="6" fill={`url(#${gA})`}/>
+      <rect x="2" y="4" width="28" height="18" rx="6" fill={`url(#${gB})`} opacity="0.3"/>
+      <circle cx="10" cy="13" r="2.4" fill="white"/>
+      <circle cx="16" cy="13" r="2.4" fill="white"/>
+      <circle cx="22" cy="13" r="2.4" fill="white"/>
+      <path d="M7 22L10 19H24" stroke={`url(#${gA})`} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <defs>
+        <linearGradient id={gA} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient>
+        <linearGradient id={gB} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="white"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+      </defs>
+    </svg>
+  );
+};
 
 const TrendUpIcon = ({ size = 18 }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -111,19 +118,25 @@ const IconPrivate = ({ size = 30 }) => (
   </svg>
 );
 
-const IconTools = ({ size = 30 }) => (
-  <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="16" r="8" fill="url(#ic4a)" opacity="0.9"/>
-    <circle cx="22" cy="16" r="8" fill="url(#ic4b)" opacity="0.9"/>
-    <circle cx="16" cy="16" r="5" fill="url(#ic4c)"/>
-    <path d="M10 12V20M22 12V20M8 16H12M20 16H24" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-    <defs>
-      <linearGradient id="ic4a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
-      <linearGradient id="ic4b" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#a855f7"/></linearGradient>
-      <linearGradient id="ic4c" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#c084fc"/></linearGradient>
-    </defs>
-  </svg>
-);
+const IconTools = ({ size = 30 }) => {
+  const uid = useId().replace(/:/g, '');
+  const gA = `ic4a-${uid}`;
+  const gB = `ic4b-${uid}`;
+  const gC = `ic4c-${uid}`;
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="16" r="8" fill={`url(#${gA})`} opacity="0.9"/>
+      <circle cx="22" cy="16" r="8" fill={`url(#${gB})`} opacity="0.9"/>
+      <circle cx="16" cy="16" r="5" fill={`url(#${gC})`}/>
+      <path d="M10 12V20M22 12V20M8 16H12M20 16H24" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+      <defs>
+        <linearGradient id={gA} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient>
+        <linearGradient id={gB} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#a855f7"/></linearGradient>
+        <linearGradient id={gC} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#c084fc"/></linearGradient>
+      </defs>
+    </svg>
+  );
+};
 
 const IconPremium = ({ size = 30 }) => (
   <svg viewBox="0 0 32 32" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -263,28 +276,83 @@ const StarBadge = ({ size = 13 }) => (
 ═══════════════════════════════════════════════════════ */
 const LandingPage = () => {
   const navigate = useNavigate();
+  const rootRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [totalRooms, setTotalRooms] = useState(null);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', fn);
+    window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  // Real room count via public Netlify function — no Firestore auth needed on the landing page.
-  // Fix L-13: rooms collection is now auth-gated; this endpoint provides count-only public access.
+  // Scroll-reveal observer for luxury staggered card & section entrances
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const nodes = root.querySelectorAll('.lp-reveal');
+    if (!('IntersectionObserver' in window)) {
+      nodes.forEach((n) => n.classList.add('lp-in-view'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('lp-in-view');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, []);
+
+  const handleCardSpotlight = (e) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+    el.style.setProperty('--my', `${e.clientY - rect.top}px`);
+  };
+
+  // Real room count: try public Netlify endpoint first, then fallback directly to public Firestore `rooms` collection
   useEffect(() => {
     let cancelled = false;
     const fetchRoomCount = async () => {
+      let resolvedCount = null;
       try {
         const res = await fetch('/.netlify/functions/getPublicRoomCount');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { count } = await res.json();
-        if (!cancelled && typeof count === 'number') setTotalRooms(count);
-      } catch (err) {
-        console.warn('Room count fetch failed:', err?.message);
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (typeof data?.count === 'number' && data.count > 0) {
+            resolvedCount = data.count;
+          }
+        }
+      } catch {
+        // Ignore and fall back to direct Firestore public read
+      }
+
+      if (resolvedCount === null) {
+        try {
+          const agg = await getCountFromServer(collection(db, 'rooms'));
+          const c = agg.data().count;
+          if (typeof c === 'number' && c >= 0) resolvedCount = c;
+        } catch {
+          try {
+            const snap = await getDocs(collection(db, 'rooms'));
+            resolvedCount = snap.size;
+          } catch (err) {
+            console.warn('Room count fetch failed:', err?.message);
+          }
+        }
+      }
+
+      if (!cancelled && typeof resolvedCount === 'number') {
+        setTotalRooms(resolvedCount);
       }
     };
     fetchRoomCount();
@@ -349,7 +417,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="lp-root">
+    <div className="lp-root" ref={rootRef}>
       <SEO
         title={PAGES.landing.title}
         description={PAGES.landing.description}
@@ -442,7 +510,7 @@ const LandingPage = () => {
       {/* ══ FEATURES ══ */}
       <section className="lp-section lp-features-section">
         <div className="lp-container">
-          <div className="lp-sec-head lp-anim-up">
+          <div className="lp-sec-head lp-reveal">
             <div className="lp-badge">
               <LuxuryBolt size={13} />
               <span>Features</span>
@@ -452,7 +520,13 @@ const LandingPage = () => {
           </div>
           <div className="lp-features-grid">
             {features.map(({ Icon, title, desc, tags, bg, color }, i) => (
-              <div key={i} className="lp-feat-card lp-anim-up" style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}>
+              <div
+                key={i}
+                className="lp-feat-card lp-reveal"
+                onMouseMove={handleCardSpotlight}
+                style={{ '--stagger': `${Math.min(i, 6) * 55}ms` }}
+              >
+                <span className="lp-feat-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
                 <div className="lp-feat-top">
                   <div className="lp-feat-icon-wrap" style={{ background: bg }}>
                     <Icon size={24} />
@@ -479,7 +553,7 @@ const LandingPage = () => {
       {/* ══ PLANS ══ */}
       <section className="lp-section lp-tiers-section">
         <div className="lp-container">
-          <div className="lp-sec-head lp-anim-up">
+          <div className="lp-sec-head lp-reveal">
             <div className="lp-badge">
               <GoldTrophy size={13} />
               <span>Plans</span>
@@ -491,8 +565,9 @@ const LandingPage = () => {
             {tiers.map((t, i) => (
               <div
                 key={i}
-                className={`lp-tier${t.featured ? ' lp-tier-featured' : ''} lp-anim-up`}
-                style={{ '--tb': t.border, '--tg': t.glow, animationDelay: `${i * 0.08}s` }}
+                className={`lp-tier${t.featured ? ' lp-tier-featured' : ''} lp-reveal`}
+                onMouseMove={handleCardSpotlight}
+                style={{ '--tb': t.border, '--tg': t.glow, '--stagger': `${i * 80}ms` }}
               >
                 {t.featured && (
                   <div className="lp-tier-badge">
@@ -535,7 +610,7 @@ const LandingPage = () => {
       {/* ══ CTA BANNER ══ */}
       <section className="lp-cta-section">
         <div className="lp-container">
-          <div className="lp-cta-inner lp-anim-up">
+          <div className="lp-cta-inner lp-reveal" onMouseMove={handleCardSpotlight}>
             <div className="lp-cta-icon-wrap">
               <IconCTAHeart size={40} />
             </div>
@@ -606,61 +681,109 @@ const LandingPage = () => {
                 <div className="lp-footer-social-row">
 
                   {/* Instagram */}
-                  <a href="https://www.instagram.com/tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-instagram" aria-label="TingleTap on Instagram">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
+                  <a href="https://www.instagram.com/tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-instagram" aria-label="TingleTap on Instagram">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">Instagram</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                   {/* Facebook */}
-                  <a href="https://www.facebook.com/share/18uwA1Ybpd/" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-facebook" aria-label="TingleTap on Facebook">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
+                  <a href="https://www.facebook.com/share/18uwA1Ybpd/" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-facebook" aria-label="TingleTap on Facebook">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">Facebook</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                   {/* X / Twitter */}
-                  <a href="https://x.com/tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-x" aria-label="TingleTap on X">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.26 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
+                  <a href="https://x.com/tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-x" aria-label="TingleTap on X">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.26 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">X</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                   {/* YouTube */}
-                  <a href="https://youtube.com/@tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-youtube" aria-label="TingleTap on YouTube">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
+                  <a href="https://youtube.com/@tingletaps" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-youtube" aria-label="TingleTap on YouTube">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">YouTube</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                   {/* LinkedIn */}
-                  <a href="https://www.linkedin.com/in/tingle-tap-b8aa38253" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-linkedin" aria-label="TingleTap on LinkedIn">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                    </svg>
+                  <a href="https://www.linkedin.com/in/tingle-tap-b8aa38253" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-linkedin" aria-label="TingleTap on LinkedIn">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">LinkedIn</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                   {/* Threads */}
-                  <a href="https://www.threads.com/@tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-btn lp-social-threads" aria-label="TingleTap on Threads">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.01v-.017c0-3.578.85-6.43 2.495-8.483C5.845 1.208 8.6.026 12.18.001h.014c2.746.018 5.143.908 6.951 2.572 1.881 1.729 2.917 4.1 3.099 7.02l.012.217h-3.035l-.019-.207c-.174-1.95-.928-3.499-2.24-4.604-1.253-1.058-2.858-1.589-4.773-1.589h-.016c-3.084.022-5.318.973-6.644 2.831C4.2 7.611 3.605 9.605 3.605 12c0 2.393.595 4.388 1.834 6.096 1.327 1.858 3.568 2.809 6.66 2.831h.016c2.484-.018 4.42-.619 5.757-1.789 1.306-1.143 2.04-2.784 2.178-4.865l.017-.254h3.023l-.011.262c-.216 2.9-1.268 5.208-3.129 6.858C17.735 22.976 15.188 24 12.186 24zM13.69 5.76c1.49.098 2.827.613 3.774 1.536.956.919 1.498 2.25 1.614 3.96l.03.432h-1.92l-.018-.237c-.111-1.46-.603-2.491-1.462-3.063-.81-.539-1.877-.792-3.165-.772-.78.012-1.553.176-2.298.49-.722.304-1.329.76-1.803 1.354-.54.674-.851 1.474-1.002 2.34H5.62c.147-.998.451-1.906.913-2.72.518-.912 1.232-1.65 2.121-2.196.87-.534 1.85-.841 2.897-.919a8.37 8.37 0 0 1 2.139.013zm-.014 7.354c-.34 0-.676.03-.998.09-.562.105-1.046.347-1.437.72-.388.371-.65.87-.78 1.481-.1.47-.115.954-.044 1.438.07.484.236.921.492 1.302.32.472.765.82 1.323 1.034.505.192 1.07.284 1.678.274 1.198-.019 2.112-.417 2.716-1.183.55-.696.839-1.683.852-2.936v-.02l-.003-.2h-3.8z"/>
-                    </svg>
+                  <a href="https://www.threads.com/@tingletap" target="_blank" rel="noopener noreferrer" className="lp-social-chip lp-social-threads" aria-label="TingleTap on Threads">
+                    <span className="lp-social-icon-box">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                        <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.01v-.017c0-3.578.85-6.43 2.495-8.483C5.845 1.208 8.6.026 12.18.001h.014c2.746.018 5.143.908 6.951 2.572 1.881 1.729 2.917 4.1 3.099 7.02l.012.217h-3.035l-.019-.207c-.174-1.95-.928-3.499-2.24-4.604-1.253-1.058-2.858-1.589-4.773-1.589h-.016c-3.084.022-5.318.973-6.644 2.831C4.2 7.611 3.605 9.605 3.605 12c0 2.393.595 4.388 1.834 6.096 1.327 1.858 3.568 2.809 6.66 2.831h.016c2.484-.018 4.42-.619 5.757-1.789 1.306-1.143 2.04-2.784 2.178-4.865l.017-.254h3.023l-.011.262c-.216 2.9-1.268 5.208-3.129 6.858C17.735 22.976 15.188 24 12.186 24zM13.69 5.76c1.49.098 2.827.613 3.774 1.536.956.919 1.498 2.25 1.614 3.96l.03.432h-1.92l-.018-.237c-.111-1.46-.603-2.491-1.462-3.063-.81-.539-1.877-.792-3.165-.772-.78.012-1.553.176-2.298.49-.722.304-1.329.76-1.803 1.354-.54.674-.851 1.474-1.002 2.34H5.62c.147-.998.451-1.906.913-2.72.518-.912 1.232-1.65 2.121-2.196.87-.534 1.85-.841 2.897-.919a8.37 8.37 0 0 1 2.139.013zm-.014 7.354c-.34 0-.676.03-.998.09-.562.105-1.046.347-1.437.72-.388.371-.65.87-.78 1.481-.1.47-.115.954-.044 1.438.07.484.236.921.492 1.302.32.472.765.82 1.323 1.034.505.192 1.07.284 1.678.274 1.198-.019 2.112-.417 2.716-1.183.55-.696.839-1.683.852-2.936v-.02l-.003-.2h-3.8z"/>
+                      </svg>
+                    </span>
+                    <span className="lp-social-label">Threads</span>
+                    <span className="lp-chip-arrow" aria-hidden="true">↗</span>
                   </a>
 
                 </div>
               </div>
 
               {/* ── Support & Legal ── */}
-              <div className="lp-footer-col" style={{marginTop: 28}}>
-                <h4 className="lp-footer-col-title">Support & Legal</h4>
-                <ul>
-                  <li><button onClick={() => navigate('/about')}>About TingleTap</button></li>
-                  <li><button onClick={() => navigate('/contact')}>Contact Support</button></li>
-                  <li><button onClick={() => navigate('/faq')}>FAQ & Help</button></li>
-                  <li><button onClick={() => navigate('/privacy')}>Privacy Policy</button></li>
-                  <li><button onClick={() => navigate('/terms')}>Terms of Service</button></li>
-                  <li><button onClick={() => navigate('/disclaimer')}>Disclaimer</button></li>
-                </ul>
+              <div className="lp-footer-col lp-footer-legal-col">
+                <h4 className="lp-footer-col-title">Support &amp; Legal</h4>
+                <div className="lp-footer-legal-chips">
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/about')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.5"/><path d="M8 7.5v3.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="5.2" r="0.85" fill="currentColor"/></svg></span>
+                    <span className="lp-legal-label">About TingleTap</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/contact')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><rect x="1.8" y="3.5" width="12.4" height="9" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M2.4 5.2L8 8.8l5.6-3.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span>
+                    <span className="lp-legal-label">Contact Support</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/faq')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.5"/><path d="M6.2 6.4a1.9 1.9 0 0 1 3.7.4c0 1.2-1.9 1.6-1.9 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11.8" r="0.85" fill="currentColor"/></svg></span>
+                    <span className="lp-legal-label">FAQ &amp; Help</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/privacy')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M8 1.8L2.6 4.2v3.6c0 3.4 2.3 5.8 5.4 6.5 3.1-.7 5.4-3.1 5.4-6.5V4.2L8 1.8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M5.7 8.1l1.5 1.5 3.1-3.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                    <span className="lp-legal-label">Privacy Policy</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/terms')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.8" stroke="currentColor" strokeWidth="1.5"/><path d="M5.5 5.6h5M5.5 8.2h5M5.5 10.8h3.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg></span>
+                    <span className="lp-legal-label">Terms of Service</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="lp-legal-chip" onClick={() => navigate('/disclaimer')}>
+                    <span className="lp-legal-icon-box"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M8 2.2L1.8 13.4h12.4L8 2.2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8 6.4v3.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11.5" r="0.8" fill="currentColor"/></svg></span>
+                    <span className="lp-legal-label">Disclaimer</span>
+                    <span className="lp-legal-chevron" aria-hidden="true">›</span>
+                  </button>
+                </div>
               </div>
             </div>
 

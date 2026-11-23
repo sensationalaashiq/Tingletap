@@ -1,0 +1,314 @@
+/* Live Show / Broadcast Schedules & Host Lineup inside Settings Sidebar */
+.tl-lineup-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tl-lineup-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tl-lineup-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(79, 70, 229, 0.1));
+  color: #6d28d9;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.dark-mode .tl-lineup-manage-btn {
+  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+.tl-lineup-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(109, 40, 217, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+}
+
+.dark-mode .tl-lineup-tabs {
+  background: rgba(15, 12, 32, 0.72);
+  border-color: rgba(167, 139, 250, 0.22);
+}
+
+.tl-lineup-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #5b21b6;
+  font-size: 9.2px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.dark-mode .tl-lineup-tab {
+  color: #cbd5e1;
+}
+
+.tl-lineup-tab.is-active {
+  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.34);
+}
+
+.tl-lineup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tl-show-card {
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 2px 10px rgba(109, 40, 217, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dark-mode .tl-show-card {
+  background: rgba(17, 14, 34, 0.88);
+  border-color: rgba(167, 139, 250, 0.26);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.tl-show-card.is-live {
+  border-color: rgba(244, 63, 94, 0.48);
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.16), 0 4px 14px rgba(244, 63, 94, 0.12);
+}
+
+.tl-show-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tl-show-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e1b4b;
+  line-height: 1.3;
+}
+
+.dark-mode .tl-show-title {
+  color: #f8fafc;
+}
+
+.tl-show-slot {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6d28d9;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.dark-mode .tl-show-slot {
+  color: #c4b5fd;
+}
+
+.tl-show-host-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tl-show-host-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.dark-mode .tl-show-host-chip {
+  color: #e2e8f0;
+}
+
+.tl-show-room-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.24);
+  color: #5b21b6;
+}
+
+.dark-mode .tl-show-room-tag {
+  background: rgba(139, 92, 246, 0.2);
+  color: #ddd6fe;
+}
+
+.tl-show-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.tl-show-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #e11d48;
+}
+
+.tl-show-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tl-show-remind-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.1);
+  color: #5b21b6;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dark-mode .tl-show-remind-btn {
+  color: #e9d5ff;
+  background: rgba(139, 92, 246, 0.18);
+}
+
+.tl-show-remind-btn.is-reminded {
+  border-color: rgba(251, 191, 36, 0.65);
+  background: rgba(251, 191, 36, 0.16);
+  color: #b45309;
+}
+
+.dark-mode .tl-show-remind-btn.is-reminded {
+  color: #fde68a;
+}
+
+.tl-lineup-empty {
+  padding: 16px 10px;
+  text-align: center;
+  border-radius: 10px;
+  border: 1px dashed rgba(139, 92, 246, 0.28);
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.dark-mode .tl-lineup-empty {
+  color: #94a3b8;
+}
+
+@keyframes tlSignalPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scale(1.09);
+  }
+}
+
+.tl-svg-signal-pulse {
+  animation: tlSignalPulse 1.8s ease-in-out infinite;
+}
+
+/* Lineup Admin/RJ Modal */
+.tl-sched-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99995;
+  background: rgba(6, 5, 16, 0.76);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.tl-sched-modal {
+  width: min(460px, 95vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #120f24 0%, #1c1638 100%);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  color: #f8fafc;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+.tl-sched-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 6px;
+}
+
+.tl-sched-mini-btn {
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -71,6 +71,22 @@ const RadioPlayer = ({ isOpen, onClose }) => {
     },
     {
       id: 2,
+      name: "Delhi FM",
+      url: "https://air.pc.cdn.bitgravity.com/air/live/pbaudio083/playlist.m3u8",
+      genre: "Delhi Radio & Bollywood",
+      country: "India",
+      flag: "IN",
+      color: ["#6366f1", "#4f46e5"],
+      glow: "rgba(99,102,241,0.45)",
+      description: "All India Radio Delhi — Live Hits & Shows",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 3,
       name: "Radio Mirchi Dubai",
       url: "https://eu8.fastcast4u.com/proxy/clyedupq?mp=/1",
       genre: "Bollywood & Entertainment",
@@ -86,7 +102,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       )
     },
     {
-      id: 3,
+      id: 4,
       name: "Big FM Dubai",
       url: "https://funasia.streamguys1.com/live4",
       genre: "Bollywood & Popular Music",
@@ -102,7 +118,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       )
     },
     {
-      id: 4,
+      id: 5,
       name: "Hindi Gold Radio",
       url: "https://azuracast.vibesounds.in:8010/radio.mp3",
       genre: "Hindi Hits & Golden Era",
@@ -118,7 +134,23 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       )
     },
     {
-      id: 5,
+      id: 6,
+      name: "Sadabahar",
+      url: "http://s5.voscast.com:8216/stream",
+      genre: "Classic & Evergreen Retro",
+      country: "India",
+      flag: "IN",
+      color: ["#d97706", "#b45309"],
+      glow: "rgba(217,119,6,0.45)",
+      description: "Sadabahar — Timeless Old Hindi Classics",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A9,9 0 0,0 21,12A9,9 0 0,0 12,3M12,16.5A4.5,4.5 0 0,1 7.5,12A4.5,4.5 0 0,1 12,7.5A4.5,4.5 0 0,1 16.5,12A4.5,4.5 0 0,1 12,16.5M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 7,
       name: "Fever FM",
       url: "https://radio.canstream.co.uk:8115/live.mp3",
       genre: "Asian Music",
@@ -134,7 +166,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       )
     },
     {
-      id: 6,
+      id: 8,
       name: "Hits of Bollywood",
       url: "https://stream-171.zeno.fm/8ty8szwpwfeuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI4dHk4c3p3cHdmZXV2IiwiaG9zdCI6InN0cmVhbS0xNzEuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im9FTWdMVnJTVHRpVWxGRzFTZHBYSmciLCJpYXQiOjE3NTI0MTcwODMsImV4cCI6MTc1MjQxNzE0M30.I_ALFdeucggXjaJpUyXc2AzrMRatOveFoIj7tPx_pCw",
       genre: "Bollywood Hits",
@@ -150,18 +182,114 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       )
     },
     {
-      id: 7,
-      name: "98.7 FM",
-      url: "https://28323.live.streamtheworld.com/987FM.mp3",
-      genre: "Top 40 Hits",
-      country: "Singapore",
-      flag: "SG",
+      id: 9,
+      name: "Radio High",
+      url: "https://stream-177.surfernetwork.com/89zztr1dec9uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI4OXp6dHIxZGVjOXV2IiwiaG9zdCI6InN0cmVhbS0xNzcuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJoZzhEMXBDdFRvLXJaZVlFVUhwcXNRIiwiaWF0IjoxNzk1NDczMDQ5LCJleHAiOjE3OTU0NzMxMDl9.DFO2R3IMq8tXMvgHMAfCpca83trGG39czfJIT64oZio",
+      genre: "Non-Stop Desi Beats",
+      country: "India",
+      flag: "IN",
       color: ["#14b8a6", "#0d9488"],
       glow: "rgba(20,184,166,0.45)",
-      description: "98.7 FM Singapore — Your Hit Music",
+      description: "Radio High — High Energy Music 24/7",
       icon: (
         <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
-          <path d="M20,6C20.58,6 21.05,6.2 21.42,6.59C21.8,7 22,7.45 22,8V16C22,16.55 21.8,17 21.42,17.41C21.05,17.8 20.58,18 20,18H4C3.42,18 2.95,17.8 2.58,17.41C2.2,17 2,16.55 2,16V8C2,7.45 2.2,7 2.58,6.59C2.95,6.2 3.42,6 4,6H7.5L9.5,4L10.5,5.5L9.5,6.5H20M4,8V16H20V8H4M8,10A2,2 0 0,1 10,12A2,2 0 0,1 8,14A2,2 0 0,1 6,12A2,2 0 0,1 8,10M8,11A1,1 0 0,0 7,12A1,1 0 0,0 8,13A1,1 0 0,0 9,12A1,1 0 0,0 8,11Z"/>
+          <path d="M12,2L14.5,9H21L15.8,13.2L17.8,20L12,15.8L6.2,20L8.2,13.2L3,9H9.5L12,2Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 10,
+      name: "BBD FM",
+      url: "https://streamasiacdn.atc-labs.com/bbdradioone.aac",
+      genre: "Campus & Youth Hits",
+      country: "India",
+      flag: "IN",
+      color: ["#10b981", "#059669"],
+      glow: "rgba(16,185,129,0.45)",
+      description: "BBD Radio — Fresh Vibes & Trending Beats",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,1A9,9 0 0,0 3,10V17A3,3 0 0,0 6,20H9V12H5V10A7,7 0 0,1 12,3A7,7 0 0,1 19,10V12H15V20H18A3,3 0 0,0 21,17V10A9,9 0 0,0 12,1Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 11,
+      name: "Radio Rang",
+      url: "https://stream-177.surfernetwork.com/n58tt09cqchvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJuNTh0dDA5Y3FjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzcuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI5elRCNE9mWVNjNm1yZUVSTHhkNjZBIiwiaWF0IjoxNzk1NDczMjQ1LCJleHAiOjE3OTU0NzMzMDV9.osW8fuvfrfGYgk6btJqOfswj5amkygQ_ZD_bz4VPMEk",
+      genre: "Colourful Hindi & Indie",
+      country: "India",
+      flag: "IN",
+      color: ["#f43f5e", "#e11d48"],
+      glow: "rgba(244,63,94,0.45)",
+      description: "Radio Rang — Vibrant Melodies All Day",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,3A9,9 0 0,1 21,12C21,14.5 19.8,16 18,16H16.5C15.7,16 15,16.7 15,17.5C15,17.9 15.1,18.2 15.4,18.5C15.6,18.8 15.8,19.1 15.8,19.5C15.8,20.3 15.1,21 14.3,21H12A9,9 0 0,1 3,12A9,9 0 0,1 12,3Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 12,
+      name: "Bhojpuri FM",
+      url: "https://stream-179.surfernetwork.com/6xzp10d9bkhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI2eHpwMTBkOWJraHZ2IiwiaG9zdCI6InN0cmVhbS0xNzkuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJ6ejhzc0QtTlNTeW1EeW05eWZiQ0hRIiwiaWF0IjoxNzk1NDczNTI2LCJleHAiOjE3OTU0NzM1ODZ9.KmTe1RCHv5NzLeT0hEQCZ8OJ2DgfbluIvbxtIOYQV2A",
+      genre: "Bhojpuri Hits & Folk",
+      country: "India",
+      flag: "IN",
+      color: ["#eab308", "#ca8a04"],
+      glow: "rgba(234,179,8,0.45)",
+      description: "Bhojpuri FM — Top Bhojpuri Tracks Live",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M21,3V15.5A3.5,3.5 0 0,1 17.5,19A3.5,3.5 0 0,1 14,15.5A3.5,3.5 0 0,1 17.5,12C18.04,12 18.55,12.12 19,12.34V6.47L9,8.6V17.5A3.5,3.5 0 0,1 5.5,21A3.5,3.5 0 0,1 2,17.5A3.5,3.5 0 0,1 5.5,14C6.04,14 6.55,14.12 7,14.34V6L21,3Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 13,
+      name: "Tamil FM",
+      url: "https://centova71.instainternet.com/proxy/tamilrockyfm?mp=/stream",
+      genre: "Tamil & Kollywood Hits",
+      country: "India",
+      flag: "IN",
+      color: ["#06b6d4", "#0891b2"],
+      glow: "rgba(6,182,212,0.45)",
+      description: "Tamil FM — Non-Stop Kollywood Chartbusters",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5V7.5L16,12L10,16.5Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 14,
+      name: "Bengali FM",
+      url: "https://stream-287.surfernetwork.com/9bze9t1pvs8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI5YnplOXQxcHZzOHV2IiwiaG9zdCI6InN0cmVhbS0yODcuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI4NUZzTXJQRFJHeWIyTHZER0MxMld3IiwiaWF0IjoxNzk1NDc0MDg1LCJleHAiOjE3OTU0NzQxNDV9.2SGAB8N60Fu-BHwhfuNFF__mO_rX0dalgMK0qOdVW2Y",
+      genre: "Bengali & Tollywood Hits",
+      country: "India",
+      flag: "IN",
+      color: ["#a855f7", "#9333ea"],
+      glow: "rgba(168,85,247,0.45)",
+      description: "Bengali FM — Bangla Classics & New Hits",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 15,
+      name: "Telugu FM",
+      url: "https://stream-281.surfernetwork.com/hynsx46sgy8uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJoeW5zeDQ2c2d5OHV2IiwiaG9zdCI6InN0cmVhbS0yODEuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJCbWthQUhRcFR4aVZrNTM5cXpyRllnIiwiaWF0IjoxNzk1NDc0MTQ5LCJleHAiOjE3OTU0NzQyMDl9.FjAbTBAq_DrJu6lr1Te4DALa3lfCtBXvbOf4NNB55dI",
+      genre: "Telugu & Tollywood Beats",
+      country: "India",
+      flag: "IN",
+      color: ["#0ea5e9", "#0284c7"],
+      glow: "rgba(14,165,233,0.45)",
+      description: "Telugu FM — Live Telugu Hits 24/7",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
         </svg>
       )
     }
@@ -220,12 +348,12 @@ const RadioPlayer = ({ isOpen, onClose }) => {
     try {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.removeAttribute('crossorigin');
         audioRef.current.src = station.url;
-        audioRef.current.crossOrigin = "anonymous";
         audioRef.current.load();
 
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Loading timeout')), 10000)
+          setTimeout(() => reject(new Error('Loading timeout')), 12000)
         );
 
         const playPromise = audioRef.current.play();

@@ -19,7 +19,7 @@ import { pt } from '../../utils/premiumToast';
 import { db } from '../../firebase/config';
 import { doc, addDoc, collection, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Badges } from '../../data/Badges';
-import { getDefaultAvatarUrl } from '../../utils/roleUtils';
+import { getDefaultAvatarUrl, isRealAvatarUpload } from '../../utils/roleUtils';
 import { useLivePhotoURL, useLiveDisplayName } from '../../utils/liveUsernames';
 import './BadgeVerificationPanel.css';
 
@@ -63,7 +63,7 @@ function Avatar({ uid, gender, size = 36 }) {
   // user's actual uploaded account avatar (users/{uid}.photoURL), resolved
   // live. Only fall back to a generated avatar when nothing was uploaded.
   const livePhotoURL = useLivePhotoURL(uid);
-  const src = (!broken && livePhotoURL) ? livePhotoURL : (uid ? getDefaultAvatarUrl(uid, gender) : '');
+  const src = (!broken && isRealAvatarUpload(livePhotoURL)) ? livePhotoURL : (uid ? getDefaultAvatarUrl(uid, gender, false) : '');
   if (!src || broken) {
     return (
       <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

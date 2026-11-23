@@ -6,6 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { fetchRJWithdrawalInfo, saveRJWithdrawalInfo } from '../../utils/coinSystem';
 import { toast } from 'react-toastify';
 import { pt } from '../../utils/premiumToast';
+import PremiumCopyright from '../PremiumCopyright';
 import './RJWithdrawal.css';
 
 /* ── Icons ── */
@@ -210,6 +211,7 @@ export default function RJWithdrawal() {
           </div>
         )}
       </div>
+      <PremiumCopyright />
     </div>
   );
 }

@@ -326,14 +326,14 @@ svg:hover {
 /* Apply theme color to plain icon buttons only.
    Exclude .bp-* broadcast panel buttons — they use
    inline gradient SVGs that must not be overridden. */
-button:not([class*="bp-"]) svg,
+button:not([class*="bp-"]):not([class*="lp-"]):not([class*="pco-"]) svg,
 .action-btn svg,
 .send-btn svg,
 .actions-btn svg {
     color: var(--icon-color) !important;
 }
 
-button:not([class*="bp-"]):hover svg,
+button:not([class*="bp-"]):not([class*="lp-"]):not([class*="pco-"]):hover svg,
 .action-btn:hover svg,
 .send-btn:hover svg,
 .actions-btn:hover svg {
@@ -938,9 +938,9 @@ html body .theme-light .user-font-styled {
 }
 
 .inline-badge svg {
-  width: 18px;
-  height: 18px;
-  vertical-align: -3px;
+  display: block;
+  width: 15px;
+  height: 15px;
 }
 
 .message-actions {
@@ -1043,18 +1043,28 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 .youtube-embed {
   position: relative;
   width: 100%;
-  max-width: 320px;
+  max-width: 380px;
   aspect-ratio: 16 / 9;
-  margin: 4px 0;
+  margin: 0;
   overflow: hidden;
-  border-radius: 12px;
-  border: 2.5px solid #a78bfa;
+  border-radius: 16px;
+  border: 1.5px solid rgba(167, 139, 250, 0.58);
   box-shadow:
-    0 0 0 1px rgba(167,139,250,0.3),
-    0 6px 24px rgba(109,40,217,0.28),
-    0 2px 8px rgba(109,40,217,0.18);
-  background: #000;
+    0 0 0 1px rgba(251, 191, 36, 0.22),
+    0 14px 34px rgba(49, 46, 129, 0.28),
+    0 4px 14px rgba(109, 40, 217, 0.2);
+  background: #070512;
   padding: 0 !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.youtube-embed:hover {
+  transform: translateY(-1px);
+  border-color: rgba(251, 191, 36, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.35),
+    0 18px 40px rgba(49, 46, 129, 0.34),
+    0 6px 18px rgba(124, 58, 237, 0.26);
 }
 
 .youtube-embed iframe {
@@ -1068,6 +1078,8 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  margin: 0 !important;
+  background: #000 !important;
   aspect-ratio: unset !important;
 }
 

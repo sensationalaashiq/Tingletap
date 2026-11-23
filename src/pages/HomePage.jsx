@@ -14,7 +14,7 @@ import { detectAbuse, handleAbuseViolation } from '../utils/abuseDetection';
 import { processAutoMod, resetAutoModState } from '../utils/tinglebotAutoMod';
 import { postTingleBotRoomMessage, scheduleTingleBotDeletion, TINGLEBOT_TTL_MS } from '../utils/tinglebotAutoDelete';
 import { updateTrustScore, applyAccountAgeTrustBonus, initializeUserTrust, getRankFromScore } from '../utils/trustSystem';
-import { ref, set, update, remove, onValue, onDisconnect, get } from 'firebase/database';
+import { ref, set, update, remove, onValue, onDisconnect, get, serverTimestamp as rtdbServerTimestamp } from 'firebase/database';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
 import StylishConfirmationDialogue from '../components/StylishConfirmationDialogue';
@@ -54,13 +54,13 @@ import { Badges as badges } from '../data/Badges';
 import {
     getRoleDisplayLabel,
     getStoredGuestGender,
-    dicebearSex,
     getDefaultAvatarUrl,
     normalizeRole,
     isOwnerRole,
     isStaffRole,
     isRjRole,
     isGuestUser,
+    isRealAvatarUpload,
     resolveBadgeKey
 } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
@@ -71,6 +71,16 @@ import { PremiumReactionBar, PremiumReactionPicker } from '../components/chat/Pr
 import { renderUserBadge } from '../utils/badgeRenderHelper';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils';
 import { syncPublicProfile } from '../utils/syncPublicProfile';
+import ChatActivityCard from '../components/chat/ChatActivityCard';
+import FloatingActivityLauncher from '../components/chat/FloatingActivityLauncher';
+import WatchPartyStage from '../components/room/WatchPartyStage';
+import { ShroudedEyeIcon } from '../components/icons/LuxuryModuleIcons';
+import {
+    VALID_MOOD_IDS,
+    SILENT_WATCH_STORAGE_KEY,
+    SHOW_REMINDERS_STORAGE_KEY,
+    classifyShowStatus,
+} from '../utils/roomModulesConfig';
 import 'react-toastify/dist/ReactToastify.css';
 import './HomePage.css';
 
@@ -289,7 +299,7 @@ function useStableCallback(fn) {
     return useCallback((...args) => fnRef.current(...args), []);
 }
 
-const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, onTag, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId, allUsersMap }) => {
+const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, onReport, onWhisper, onTag, loggedInUserProfile, onViewProfile, onAddFriend, onPrivateMessage, onBlock, closeAllDropdowns, toggleDropdown, openDropdownId, setOpenDropdownId, kickedUserIds, roomId, allUsersMap, activityData }) => {
     const { text, uid, displayName, gender, id, badge, youtubeVideoId, role, whisperTo, isWhisper, isBot } = message;
     
     if (isBot || uid === 'tinglebot_system_official_2024' || message.systemBot || message.type?.includes('tinglebot')) {
@@ -378,16 +388,16 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     const resolvedGender = liveSender?.gender || gender || 'male';
 
     const avatarGender = isBot ? 'male' : (resolvedGender?.toLowerCase() === 'female' ? 'female' : (resolvedGender?.toLowerCase() === 'other' ? 'other' : 'male'));
-    const getDefaultAvatar = (uid, gen) => getDefaultAvatarUrl(uid, gen);
+    const msgIsGuest = isGuestUser({ isGuest: liveSender?.isGuest ?? message.isGuest, role: resolvedRole });
+    const getDefaultAvatar = (uid, gen) => getDefaultAvatarUrl(uid, gen, msgIsGuest);
     // Live photo — shared refcounted Firestore listener; null while loading
     const _livePhoto = useLivePhotoURL(isBot ? null : uid);
-    const _isRealUpload = (url) => !!url && !url.includes('randomuser.me');
-    const avatarUrl = _isRealUpload(_livePhoto)
+    const avatarUrl = isRealAvatarUpload(_livePhoto)
         ? _livePhoto
-        : _isRealUpload(message.photoURL)
+        : isRealAvatarUpload(message.photoURL)
             ? message.photoURL
             : getDefaultAvatar(uid, avatarGender);
-    const hasCustomAvatar = _isRealUpload(_livePhoto) || _isRealUpload(message.photoURL);
+    const hasCustomAvatar = isRealAvatarUpload(_livePhoto) || isRealAvatarUpload(message.photoURL);
     const viewerNormRole = normalizeRole(loggedInUserProfile);
     const resolvedNormRole = normalizeRole(resolvedRole, resolvedBadge);
     
@@ -662,7 +672,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                                     actualDisplayName
                                 )}
                             </span>
-                            {renderUserBadge({ ...message, role: resolvedRole, badge: resolvedBadge, gender: resolvedGender }, 16)}
+                            {renderUserBadge({ ...message, role: resolvedRole, badge: resolvedBadge, gender: resolvedGender }, 15)}
                             
                             {showUserDropdown && !isBot && isMyMessage && (
                                 <div className="user-dropdown">
@@ -845,6 +855,15 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                             )
                         )}
 
+                        {message.activityId && (
+                            <ChatActivityCard
+                                roomId={roomId}
+                                activityId={message.activityId}
+                                initialSnapshot={activityData}
+                                loggedInUserProfile={loggedInUserProfile}
+                            />
+                        )}
+
                         {/* Premium SVG Reactions Bar */}
                         {Object.keys(reactions).length > 0 && (
                             <PremiumReactionBar
@@ -958,6 +977,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     }
     if (prevProps.roomId !== nextProps.roomId) return false;
     if (prevProps.isEven !== nextProps.isEven) return false;
+    if (prevProps.activityData !== nextProps.activityData) return false;
     return true; // all relevant props unchanged → skip re-render
 });
 
@@ -979,8 +999,8 @@ const PendingChatMessage = React.memo(function PendingChatMessage({ message, isE
         whisperTo, isWhisper, whisperToName, _isFailed, _clientId
     } = message;
     const avatarGender = gender?.toLowerCase() === 'female' ? 'female' : (gender?.toLowerCase() === 'other' ? 'other' : 'male');
-    const isRealUpload = !!photoURL && !photoURL.includes('randomuser.me');
-    const avatarUrl = isRealUpload ? photoURL : getDefaultAvatarUrl(uid, avatarGender);
+    const pendingIsGuest = isGuestUser({ isGuest: message.isGuest, role });
+    const avatarUrl = isRealAvatarUpload(photoURL) ? photoURL : getDefaultAvatarUrl(uid, avatarGender, pendingIsGuest);
     const borderClass = avatarGender === 'female'
         ? 'female-border'
         : (avatarGender === 'other' ? 'transgender-border' : 'male-border');
@@ -1032,7 +1052,7 @@ const PendingChatMessage = React.memo(function PendingChatMessage({ message, isE
                                     displayName
                                 )}
                             </span>
-                            {renderUserBadge(message, 16)}
+                            {renderUserBadge(message, 15)}
                         </div>
                         <div className="msg-ts-row">
                             {_isFailed ? (
@@ -1094,6 +1114,7 @@ const MessageList = React.memo(({
     setOpenDropdownId,
     onRetryPending,
     allUsersMap,
+    activitiesMap,
 }) => {
     // FLICKER-FIX: stable parity map — once a non-bot message is assigned
     // isEven=true/false it NEVER changes, even when limitToLast(60) drops the
@@ -1203,6 +1224,7 @@ const MessageList = React.memo(({
                     kickedUserIds={roomKickedUserIds}
                     roomId={roomId}
                     allUsersMap={allUsersMap}
+                    activityData={msg.activityId ? activitiesMap?.[msg.activityId] : null}
                 />
                 );
             })}
@@ -1250,9 +1272,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             const raw = localStorage.getItem('guestUser');
             if (!raw) return null;
             const g = JSON.parse(raw);
-            const correctPhotoURL = getDefaultAvatarUrl(g.uid, g.gender);
+            const correctPhotoURL = getDefaultAvatarUrl(g.uid, g.gender, true);
             const storedPhoto = g.photoURL;
-            const photoURL = storedPhoto && !storedPhoto.includes('randomuser.me')
+            const photoURL = isRealAvatarUpload(storedPhoto)
                 ? storedPhoto
                 : correctPhotoURL;
             return {
@@ -1326,6 +1348,27 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [isStrikethrough, setIsStrikethrough] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [isSettingsSidebarOpen, setIsSettingsSidebarOpen] = useState(false);
+    // ── Module 1: Live Room Mood ──
+    const [roomMood, setRoomMood] = useState({ preset: 'midnight-velvet', locked: false });
+    // ── Module 2: Inline Interactive Activities Map ──
+    const [activitiesMap, setActivitiesMap] = useState({});
+    // ── Module 3: Staff-only Silent Watch Mode ──
+    const [silentWatchActive, setSilentWatchActive] = useState(() => {
+        try {
+            const curUid = auth.currentUser?.uid;
+            if (!curUid) return false;
+            return localStorage.getItem(SILENT_WATCH_STORAGE_KEY(curUid)) === 'true';
+        } catch {
+            return false;
+        }
+    });
+    const silentWatchRef = useRef(silentWatchActive);
+    // ── Module 5: Integrated Sync Watch-Party Theater ──
+    const [watchPartyOpen, setWatchPartyOpen] = useState(false);
+    const [watchPartyExpanded, setWatchPartyExpanded] = useState(false);
+    const [watchPartyMobileChatCollapsed, setWatchPartyMobileChatCollapsed] = useState(false);
+    const watchSplitRef = useRef(null);
+    const silentBannerRef = useRef(null);
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [usersWhoBlockedMe, setUsersWhoBlockedMe] = useState([]);
     const [blockConfirmTarget, setBlockConfirmTarget] = useState(null);
@@ -1402,6 +1445,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     // The setLiveUsers effect only depends on onlineUserIds (join/leave events),
     // not on every heartbeat tick.
     const userOnlineStatusesRef = useRef({});
+    const serverTimeOffsetRef = useRef(0);
     const [onlineUsers, setOnlineUsers] = useState(new Set());
     const [friendRequests, setFriendRequests] = useState([]);
     const [showFriendRequestNotification, setShowFriendRequestNotification] = useState(false);
@@ -1588,23 +1632,39 @@ const HomePage = ({ user, roomIdOverride }) => {
         return map;
     }, [loggedInUserProfile, liveUsers, friendsProfiles, messages]);
 
-    // Keep chat-feed's bottom offset perfectly synced to the footer's real
-    // rendered height (no gap, no overlap) — footer height changes as the
-    // multiline composer grows/shrinks, so this is measured live.
+    // Keep chat-feed (or watch-party split container) perfectly synced between
+    // header (+ optional Silent Watch banner) and composer footer height.
     useEffect(() => {
-        const feedEl = chatFeedRef.current;
         const footerEl = footerRef.current;
-        if (!feedEl || !footerEl) return;
+        if (!footerEl) return;
 
         const syncHeight = () => {
-            const h = footerEl.offsetHeight;
-            if (!h) return;
+            const h = footerEl.offsetHeight || 50;
             const hdrH = document.querySelector('.homepage-container .chat-header')?.offsetHeight || 50;
-            feedEl.style.setProperty('top', `${hdrH}px`, 'important');
+            const bannerH = silentBannerRef.current?.offsetHeight || 0;
+            const topOffset = hdrH + bannerH;
+
+            if (watchPartyOpen && watchSplitRef.current) {
+                watchSplitRef.current.style.setProperty('top', `${topOffset}px`);
+                watchSplitRef.current.style.setProperty('bottom', `${h}px`);
+                watchSplitRef.current.style.setProperty('height', `calc(100dvh - ${topOffset}px - ${h}px)`);
+                if (chatFeedRef.current) {
+                    chatFeedRef.current.style.removeProperty('top');
+                    chatFeedRef.current.style.removeProperty('bottom');
+                    chatFeedRef.current.style.removeProperty('height');
+                    chatFeedRef.current.style.removeProperty('min-height');
+                    chatFeedRef.current.style.removeProperty('max-height');
+                }
+                return;
+            }
+
+            const feedEl = chatFeedRef.current;
+            if (!feedEl) return;
+            feedEl.style.setProperty('top', `${topOffset}px`, 'important');
             feedEl.style.setProperty('bottom', `${h}px`, 'important');
-            feedEl.style.setProperty('height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
-            feedEl.style.setProperty('min-height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
-            feedEl.style.setProperty('max-height', `calc(100dvh - ${hdrH}px - ${h}px)`, 'important');
+            feedEl.style.setProperty('height', `calc(100dvh - ${topOffset}px - ${h}px)`, 'important');
+            feedEl.style.setProperty('min-height', `calc(100dvh - ${topOffset}px - ${h}px)`, 'important');
+            feedEl.style.setProperty('max-height', `calc(100dvh - ${topOffset}px - ${h}px)`, 'important');
             feedEl.style.setProperty('padding-bottom', '0px', 'important');
             feedEl.style.setProperty('margin-bottom', '0px', 'important');
         };
@@ -1612,12 +1672,226 @@ const HomePage = ({ user, roomIdOverride }) => {
         syncHeight();
         const ro = new ResizeObserver(syncHeight);
         ro.observe(footerEl);
+        if (silentBannerRef.current) ro.observe(silentBannerRef.current);
         window.addEventListener('resize', syncHeight);
         return () => {
             ro.disconnect();
             window.removeEventListener('resize', syncHeight);
         };
+    }, [watchPartyOpen, silentWatchActive]);
+
+    // ── Module 1, 2, 3 & 4 Real-Time Subscriptions ──────────────────────────
+    useEffect(() => {
+        if (!roomId) return;
+        const moodRef = doc(db, 'rooms', roomId, 'mood', 'current');
+        const unsubMood = onSnapshot(
+            moodRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const preset = VALID_MOOD_IDS.includes(data.preset) ? data.preset : 'midnight-velvet';
+                    setRoomMood({ preset, locked: Boolean(data.locked) });
+                } else {
+                    setRoomMood({ preset: 'midnight-velvet', locked: false });
+                }
+            },
+            () => {}
+        );
+
+        const actsQuery = query(collection(db, 'rooms', roomId, 'activities'), orderBy('createdAt', 'desc'), limit(25));
+        const unsubActs = onSnapshot(
+            actsQuery,
+            (snap) => {
+                const nextMap = {};
+                snap.docs.forEach((d) => {
+                    nextMap[d.id] = { ...d.data(), id: d.id };
+                });
+                setActivitiesMap(nextMap);
+            },
+            () => {}
+        );
+
+        return () => {
+            unsubMood();
+            unsubActs();
+        };
+    }, [roomId]);
+
+    // Staff-only Silent Watch Firestore sync (non-staff always forced off)
+    useEffect(() => {
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        const staffOk = isStaffRole(loggedInUserProfile);
+        if (!staffOk || !authUid || !roomId) {
+            silentWatchRef.current = false;
+            setSilentWatchActive(false);
+            return;
+        }
+        try {
+            if (localStorage.getItem(SILENT_WATCH_STORAGE_KEY(authUid)) === 'true') {
+                silentWatchRef.current = true;
+                setSilentWatchActive(true);
+            }
+        } catch {}
+
+        const swRef = doc(db, 'rooms', roomId, 'silentWatch', authUid);
+        const unsubSw = onSnapshot(
+            swRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const active = Boolean(snap.data()?.active);
+                    silentWatchRef.current = active;
+                    setSilentWatchActive(active);
+                    try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), active ? 'true' : 'false'); } catch {}
+                }
+            },
+            () => {}
+        );
+        return () => unsubSw();
+    }, [roomId, firebaseAuthUid, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
+
+    // Lightweight Show Reminder Alert Check (reads schedules doc only when reminders exist)
+    useEffect(() => {
+        const readReminders = () => {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(SHOW_REMINDERS_STORAGE_KEY) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        };
+        let firedToday = new Set();
+        let cachedShows = null;
+
+        const checkReminders = async () => {
+            const ids = readReminders();
+            if (!ids.length) return;
+            if (!cachedShows) {
+                try {
+                    const snap = await getDoc(doc(db, 'schedules', 'dailyLineup'));
+                    cachedShows = snap.exists() && Array.isArray(snap.data()?.shows) ? snap.data().shows : [];
+                } catch {
+                    cachedShows = [];
+                }
+            }
+            const now = new Date();
+            const dayKey = now.toDateString();
+            cachedShows.forEach((s) => {
+                if (!ids.includes(s.id)) return;
+                const dedupKey = `${dayKey}:${s.id}`;
+                if (firedToday.has(dedupKey)) return;
+                if (classifyShowStatus(s, now) === 'live') {
+                    firedToday.add(dedupKey);
+                    pt.info(`On Air Now: ${s.title} with ${s.hostName}`);
+                }
+            });
+        };
+
+        const onUpdated = () => {
+            cachedShows = null;
+            checkReminders();
+        };
+        window.addEventListener('tlRemindersUpdated', onUpdated);
+        checkReminders();
+        const interval = setInterval(checkReminders, 30000);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('tlRemindersUpdated', onUpdated);
+        };
     }, []);
+
+    const handleUpdateRoomMood = useCallback(async (nextPreset, nextLocked) => {
+        if (!roomId || !VALID_MOOD_IDS.includes(nextPreset)) return;
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        if (!authUid) return;
+        const isStaffMember = isStaffRole(loggedInUserProfile);
+        if (roomMood?.locked && !isStaffMember) {
+            pt.info('Room mood is locked by moderators.');
+            return;
+        }
+        const resolvedLock = isStaffMember ? Boolean(nextLocked) : false;
+        setRoomMood({ preset: nextPreset, locked: resolvedLock });
+        try {
+            await setDoc(doc(db, 'rooms', roomId, 'mood', 'current'), {
+                preset: nextPreset,
+                locked: resolvedLock,
+                updatedBy: authUid,
+                updatedByName: loggedInUserProfile?.displayName || 'Member',
+                updatedAt: serverTimestamp(),
+            });
+        } catch (err) {
+            pt.error(err?.message || 'Unable to update room mood.');
+        }
+    }, [roomId, firebaseAuthUid, loggedInUserProfile, roomMood?.locked]);
+
+    const handleToggleSilentWatch = useCallback(async (nextActive) => {
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        if (!authUid || !roomId || !isStaffRole(loggedInUserProfile)) return;
+        const enable = Boolean(nextActive);
+        silentWatchRef.current = enable;
+        setSilentWatchActive(enable);
+        try {
+            localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), enable ? 'true' : 'false');
+        } catch {}
+
+        try {
+            await setDoc(doc(db, 'rooms', roomId, 'silentWatch', authUid), {
+                uid: authUid,
+                active: enable,
+                roomId,
+                updatedAt: serverTimestamp(),
+            });
+        } catch {}
+
+        if (enable) {
+            // Immediately remove RTDB presence so staff disappears cleanly with zero join/leave alerts
+            remove(ref(rtdb, `room_presence/${roomId}/${authUid}`)).catch(() => {});
+            remove(ref(rtdb, `roomCounts/${roomId}/${authUid}`)).catch(() => {});
+            update(ref(rtdb, `status/${authUid}`), {
+                state: 'offline',
+                currentRoomId: null,
+                last_changed: rtdbServerTimestamp(),
+            }).catch(() => {});
+
+            const nextStatuses = { ...userOnlineStatusesRef.current };
+            delete nextStatuses[authUid];
+            userOnlineStatusesRef.current = nextStatuses;
+            window.userOnlineStatuses = nextStatuses;
+            setOnlineUserIds((prev) => prev.filter((id) => id !== authUid));
+            setOnlineUsers((prev) => {
+                const next = new Set(prev);
+                next.delete(authUid);
+                window.onlineUsers = next;
+                return next;
+            });
+            setLiveUsers((prev) => prev.filter((u) => u?.uid !== authUid));
+        } else {
+            // Restore RTDB presence immediately upon exiting Silent Watch
+            const cached = window._currentStatusData;
+            const myGender = loggedInUserProfile?.gender || getStoredGuestGender() || 'male';
+            const restored = {
+                ...(cached || {}),
+                state: 'online',
+                currentRoomId: roomId,
+                last_changed: rtdbServerTimestamp(),
+                uid: authUid,
+                displayName: loggedInUserProfile?.displayName || 'Staff',
+                role: loggedInUserProfile?.role || 'moderator',
+                badge: loggedInUserProfile?.badge || null,
+                gender: myGender,
+                isGuest: false,
+                photoURL: isRealAvatarUpload(loggedInUserProfile?.photoURL)
+                    ? loggedInUserProfile.photoURL
+                    : getDefaultAvatarUrl(authUid, myGender, false),
+            };
+            window._currentStatusData = restored;
+            set(ref(rtdb, `status/${authUid}`), restored).catch(() => {});
+            set(ref(rtdb, `room_presence/${roomId}/${authUid}`), restored).catch(() => {});
+            set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), {
+                online: true,
+                last_changed: rtdbServerTimestamp(),
+            }).catch(() => {});
+        }
+    }, [roomId, firebaseAuthUid, loggedInUserProfile]);
 
     // Listen for user-initiated notification setting changes from SettingsSidebar
     useEffect(() => {
@@ -1687,6 +1961,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             joinedFirebaseUidRef.current = firebaseUid;
             activeKey = `${roomId}_${firebaseUid}`;
 
+            // Silent Watch Mode suppresses room join broadcasts for staff
+            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
+                window._tingleBotRoomId = roomId;
+                return;
+            }
+
             // Cancel any pending leave timer from a StrictMode unmount-remount cycle
             if (_tbPendingLeaveTimers.has(activeKey)) {
                 clearTimeout(_tbPendingLeaveTimers.get(activeKey));
@@ -1734,12 +2014,17 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return;
             }
 
+            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
+                return;
+            }
+
             const usedUid = joinedFirebaseUidRef.current || auth.currentUser?.uid;
             if (!usedUid) return;
             const cleanupKey = `${roomId}_${usedUid}`;
 
             // Delay leave notice slightly (450ms) so React.StrictMode remount cancels it cleanly
             const timer = setTimeout(() => {
+                if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) return;
                 _tbPendingLeaveTimers.delete(cleanupKey);
                 _tbRecentJoinAt.delete(cleanupKey);
                 sessionStorage.removeItem(`tbt_joined_${roomId}_${usedUid}`);
@@ -1900,19 +2185,18 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     // Helper function for private message avatar cache busting - DEFINE FIRST
     const getPrivateMessageAvatarUrl = useCallback((user) => {
-        if (!user) return getDefaultAvatarUrl('default', 'male');
-        // Use uploaded photo if available; skip randomuser.me URLs (those are auto-generated defaults)
-        if (user.photoURL && !user.photoURL.includes('randomuser.me')) {
+        if (!user) return getDefaultAvatarUrl('default', 'male', false);
+        if (isRealAvatarUpload(user.photoURL)) {
             return user.photoURL;
         }
-        return getDefaultAvatarUrl(user.uid, user.gender);
+        return getDefaultAvatarUrl(user.uid, user.gender, isGuestUser(user));
     }, []);
 
     // Helper function to update user avatars in real-time with comprehensive private message support
     const updateUserAvatarInHomePage = useCallback((userId, userData) => {
-        const newAvatarUrl = (userData.photoURL && !userData.photoURL.includes('randomuser.me'))
+        const newAvatarUrl = isRealAvatarUpload(userData.photoURL)
             ? userData.photoURL
-            : getDefaultAvatarUrl(userId, userData.gender);
+            : getDefaultAvatarUrl(userId, userData.gender, isGuestUser(userData));
 
         // Comprehensive avatar selectors including all private message locations
         const avatarSelectors = [
@@ -1979,7 +2263,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     
                     avatar.onerror = () => {
                         // Fallback to default avatar with cache busting
-                        const fallbackUrl = `${getDefaultAvatarUrl(userId, userData.gender)}`;
+                        const fallbackUrl = `${getDefaultAvatarUrl(userId, userData.gender, isGuestUser(userData))}`;
                         if (avatar.src !== fallbackUrl) {
                             avatar.src = fallbackUrl;
                         }
@@ -2258,9 +2542,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                         friend.uid === targetUid ? updatedUserData : friend
                     ));
 
-                    const newAvatarUrl = (updatedUserData.photoURL && !updatedUserData.photoURL.includes('randomuser.me'))
+                    const newAvatarUrl = isRealAvatarUpload(updatedUserData.photoURL)
                         ? updatedUserData.photoURL
-                        : getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender);
+                        : getDefaultAvatarUrl(updatedUserData.uid, updatedUserData.gender, isGuestUser(updatedUserData));
 
                     const messageAvatars = document.querySelectorAll(`[data-message-uid="${updatedUserData.uid}"] .message-avatar`);
                     messageAvatars.forEach(avatar => {
@@ -2362,9 +2646,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         const guestData = !hasRealAuth ? localStorage.getItem('guestUser') : null;
         
         const buildGuestProfile = (guestUser) => {
-            const correctPhotoURL = getDefaultAvatarUrl(guestUser.uid, guestUser.gender);
+            const correctPhotoURL = getDefaultAvatarUrl(guestUser.uid, guestUser.gender, true);
             const storedPhoto = guestUser.photoURL;
-            const photoURL = storedPhoto && !storedPhoto.includes('randomuser.me')
+            const photoURL = isRealAvatarUpload(storedPhoto)
                 ? storedPhoto
                 : correctPhotoURL;
             return {
@@ -2433,7 +2717,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                         displayName: user.displayName
                             || (user.isAnonymous ? (localStorage.getItem('guestUser') ? (JSON.parse(localStorage.getItem('guestUser')).displayName || 'Guest') : 'Guest') : 'Anonymous'),
                         email: user.email,
-                        photoURL: user.photoURL || `${getDefaultAvatarUrl(user.uid, user.gender)}`,
+                        photoURL: isRealAvatarUpload(user.photoURL) ? user.photoURL : getDefaultAvatarUrl(user.uid, user.gender, Boolean(user.isAnonymous)),
                         role: user.isAnonymous ? 'guest' : 'user',
                         gender: 'male',
                         country: 'Unknown',
@@ -2615,9 +2899,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                     window._applyMsgFontStyle(uid, userData);
 
                     // Avatar / display-name refresh
-                    const newAvatarUrl = userData.photoURL && !userData.photoURL.includes('randomuser.me')
+                    const newAvatarUrl = isRealAvatarUpload(userData.photoURL)
                         ? userData.photoURL
-                        : getDefaultAvatarUrl(uid, userData.gender);
+                        : getDefaultAvatarUrl(uid, userData.gender, isGuestUser(userData));
                     window.dispatchEvent(new CustomEvent('userProfileUpdated', {
                         detail: { userId: uid, userData, newAvatarUrl }
                     }));
@@ -2995,18 +3279,29 @@ const HomePage = ({ user, roomIdOverride }) => {
             photoURL = localGuestProfile.photoURL || photoURL;
         }
 
+        const serverNow = Date.now() + (serverTimeOffsetRef.current || 0);
         const minimalStatus = {
             state: 'online',
             currentRoomId: roomId,
-            last_changed: Date.now(),
+            last_changed: serverNow,
             uid: currentUid,
             displayName,
             role,
             badge,
             isGuest: isGuest || false,
             gender,
-            photoURL: photoURL || getDefaultAvatarUrl(currentUid, gender),
+            photoURL: isRealAvatarUpload(photoURL) ? photoURL : getDefaultAvatarUrl(currentUid, gender, Boolean(isGuest)),
         };
+
+        // Silent Watch Mode: skip self-inject and RTDB presence writes for stealth staff
+        if (silentWatchRef.current && isStaffRole(cachedAppProfile || loggedInUserProfileRef.current)) {
+            if (authUid) {
+                remove(ref(rtdb, `room_presence/${roomId}/${authUid}`)).catch(() => {});
+                remove(ref(rtdb, `roomCounts/${roomId}/${authUid}`)).catch(() => {});
+                update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
+            }
+            return;
+        }
 
         // ── INSTANT SELF-INJECT (local frame 1) ─────────────────────────────
         userOnlineStatusesRef.current = {
@@ -3024,11 +3319,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         // Only perform RTDB writes once Firebase Auth UID is confirmed (prevents PERMISSION_DENIED)
         if (!authUid) return;
 
+        const rtdbMinimal = { ...minimalStatus, uid: authUid, last_changed: rtdbServerTimestamp() };
         const userStatusRef = ref(rtdb, `status/${authUid}`);
-        set(userStatusRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] status PART 0 write failed:', err?.message));
+        set(userStatusRef, rtdbMinimal).catch(err => console.warn('[Presence] status PART 0 write failed:', err?.message));
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
-        set(roomPresenceRef, { ...minimalStatus, uid: authUid }).catch(err => console.warn('[Presence] room_presence PART 0 write failed:', err?.message));
-        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: Date.now() }).catch(() => {});
+        set(roomPresenceRef, rtdbMinimal).catch(err => console.warn('[Presence] room_presence PART 0 write failed:', err?.message));
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
     }, [roomId, user?.uid, firebaseAuthUid]);
 
     // ── PRESENCE PART 1: Write full online status whenever profile + auth ready ─
@@ -3048,26 +3344,33 @@ const HomePage = ({ user, roomIdOverride }) => {
         const statusData = {
             state: 'online',
             currentRoomId: roomId,
-            last_changed: Date.now(),
+            last_changed: rtdbServerTimestamp(),
             userAgent: ua,
             country: loggedInUserProfile.country || 'Unknown',
             displayName: displayNameForStatus,
             gender: loggedInUserProfile.gender || getStoredGuestGender() || 'male',
             role: loggedInUserProfile.role || (isGuest ? 'guest' : 'user'),
             isGuest: isGuest || false,
-            photoURL: loggedInUserProfile.photoURL || getDefaultAvatarUrl(authUid, loggedInUserProfile.gender),
+            photoURL: isRealAvatarUpload(loggedInUserProfile.photoURL) ? loggedInUserProfile.photoURL : getDefaultAvatarUrl(authUid, loggedInUserProfile.gender, Boolean(isGuest)),
             badge: loggedInUserProfile.badge || null,
             uid: authUid,
             showOnlineStatus: loggedInUserProfile.settings?.showOnlineStatus !== false,
         };
         window._currentStatusData = { ...statusData };
 
+        if (silentWatchRef.current && isStaffRole(loggedInUserProfile)) {
+            remove(ref(rtdb, `room_presence/${roomId}/${authUid}`)).catch(() => {});
+            remove(ref(rtdb, `roomCounts/${roomId}/${authUid}`)).catch(() => {});
+            update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
+            return;
+        }
+
         const userStatusRef = ref(rtdb, `status/${authUid}`);
         set(userStatusRef, statusData).catch(err => console.warn('[Presence] status PART 1 write failed:', err?.message));
 
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         set(roomPresenceRef, statusData).catch(err => console.warn('[Presence] room_presence PART 1 write failed:', err?.message));
-        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: Date.now() }).catch(() => {});
+        set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
     }, [roomId, user?.uid, firebaseAuthUid,
         loggedInUserProfile?.displayName,
         loggedInUserProfile?.role,
@@ -3078,7 +3381,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         loggedInUserProfile?.settings?.showOnlineStatus,
     ]);
 
-    // ── PRESENCE PART 2: Room-scoped onDisconnect + 60s heartbeat ───────────
+    // ── PRESENCE PART 2: Room-scoped onDisconnect + 45s server-time heartbeat ─
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
         const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
@@ -3087,7 +3390,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!authUid || (!user && !(isGuest && guestData)) || !roomId) return;
 
         const userStatusRef = ref(rtdb, `status/${authUid}`);
-        onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: Date.now() });
+        onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() });
 
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         onDisconnect(roomPresenceRef).remove();
@@ -3096,16 +3399,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         onDisconnect(roomCountRef).remove();
 
         const heartbeatInterval = setInterval(() => {
-            const now = Date.now();
+            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) return;
             const cached = window._currentStatusData;
             if (cached) {
-                const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: now };
+                const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() };
                 window._currentStatusData = fresh;
                 update(userStatusRef, fresh).catch(() => {});
                 set(roomPresenceRef, fresh).catch(() => {});
+            } else {
+                update(userStatusRef, { state: 'online', currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
+                update(roomPresenceRef, { state: 'online', currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
             }
-            set(roomCountRef, { online: true, last_changed: now }).catch(() => {});
-        }, 60000);
+            set(roomCountRef, { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
+        }, 45000);
 
         return () => {
             clearInterval(heartbeatInterval);
@@ -3120,7 +3426,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         return () => {
             const authUid = auth.currentUser?.uid || firebaseAuthUid;
             if (!authUid) return;
-            update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: Date.now() }).catch(() => {});
+            update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
         };
     }, [firebaseAuthUid]);
 
@@ -4033,7 +4339,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 role: s.role || (s.isGuest ? 'guest' : 'user'),
                 isGuest: !!s.isGuest,
                 isOnline: s.state === 'online',
-                photoURL: s.photoURL || getDefaultAvatarUrl(uid, gender),
+                photoURL: isRealAvatarUpload(s.photoURL) ? s.photoURL : getDefaultAvatarUrl(uid, gender, Boolean(s.isGuest)),
                 badge: s.badge || null,
                 country: s.country || '',
             };
@@ -4177,36 +4483,45 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        const STALE_MS = 15 * 60 * 1000;
+        const STALE_MS = 3 * 60 * 1000;
         let roomPresRaw = {};
         let globalStatusRaw = {};
 
-        const isFreshOnline = (p, now) => {
+        const getServerNow = () => Date.now() + (serverTimeOffsetRef.current || 0);
+
+        // Strict freshness: require valid numeric server timestamp within STALE_MS (rejects missing/zero/ghost entries)
+        const isFreshOnline = (p, serverNow) => {
             if (!p || p.state !== 'online') return false;
-            const ts = typeof p.last_changed === 'number' ? p.last_changed : 0;
-            return !ts || ts > now || (now - ts) < STALE_MS;
+            if (typeof p.last_changed !== 'number' || p.last_changed <= 0) return false;
+            return (serverNow - p.last_changed) < STALE_MS;
         };
 
         const reconcilePresences = () => {
-            const now = Date.now();
+            const serverNow = getServerNow();
             const merged = {};
 
-            // 1. Collect users in this room from global status/ (resilient even if room_presence node lags or rules differ)
+            // 1. Collect users actively in this room from global status/
             Object.entries(globalStatusRaw || {}).forEach(([uid, p]) => {
-                if (p && p.currentRoomId === roomId && isFreshOnline(p, now)) {
+                if (p && p.currentRoomId === roomId && isFreshOnline(p, serverNow)) {
                     merged[uid] = p;
                 }
             });
 
-            // 2. Merge per-room room_presence/${roomId}/ (authoritative for room entry)
+            // 2. Merge per-room room_presence/${roomId}/ unless global status explicitly moved/went offline later
             Object.entries(roomPresRaw || {}).forEach(([uid, p]) => {
-                if (isFreshOnline(p, now)) {
-                    merged[uid] = { ...(merged[uid] || {}), ...p };
+                if (!isFreshOnline(p, serverNow)) return;
+                const g = globalStatusRaw?.[uid];
+                if (g && (g.state === 'offline' || (g.currentRoomId && g.currentRoomId !== roomId))) {
+                    const gTs = typeof g.last_changed === 'number' ? g.last_changed : 0;
+                    if (gTs >= p.last_changed) return;
                 }
+                merged[uid] = { ...(merged[uid] || {}), ...p };
             });
 
-            // 3. Keep self entry if initial write hasn't echoed back yet
-            if (!merged[authUid] && userOnlineStatusesRef.current?.[authUid]?.state === 'online') {
+            // 3. Keep self entry only if confirmed locally online (and NOT in Silent Watch stealth)
+            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) {
+                delete merged[authUid];
+            } else if (!merged[authUid] && userOnlineStatusesRef.current?.[authUid]?.state === 'online') {
                 merged[authUid] = userOnlineStatusesRef.current[authUid];
             }
 
@@ -4243,6 +4558,15 @@ const HomePage = ({ user, roomIdOverride }) => {
             window.onlineUsers = onlineUsersSet;
         };
 
+        const offsetRef = ref(rtdb, '.info/serverTimeOffset');
+        const unsubOffset = onValue(offsetRef, (snap) => {
+            const val = snap.val();
+            if (typeof val === 'number' && Number.isFinite(val)) {
+                serverTimeOffsetRef.current = val;
+                reconcilePresences();
+            }
+        });
+
         const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
         const statusListenRef = ref(rtdb, 'status');
 
@@ -4268,7 +4592,12 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
         );
 
+        // Periodically evict stale users even when RTDB traffic is quiet
+        const evictInterval = setInterval(reconcilePresences, 30000);
+
         return () => {
+            clearInterval(evictInterval);
+            unsubOffset();
             unsubRoom();
             unsubStatus();
         };
@@ -4495,7 +4824,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 // Prioritize username over displayName for guests
                 displayName = guestUser.username || guestUser.displayName || 'Guest';
                 email = null;
-                photoURL = guestUser.photoURL || `${getDefaultAvatarUrl(uid, guestUser.gender)}`;
+                photoURL = isRealAvatarUpload(guestUser.photoURL) ? guestUser.photoURL : getDefaultAvatarUrl(uid, guestUser.gender, true);
                 gender = guestUser.gender || '';
                 role = 'guest';
                 
@@ -5312,7 +5641,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             await addDoc(collection(db, 'friendRequests'), {
                 senderId: auth.currentUser.uid,
                 senderName: loggedInUserProfile?.displayName || auth.currentUser.email?.split('@')[0] || 'Anonymous',
-                senderPhoto: getDefaultAvatarUrl(auth.currentUser.uid, loggedInUserProfile?.gender),
+                senderPhoto: isRealAvatarUpload(loggedInUserProfile?.photoURL) ? loggedInUserProfile.photoURL : getDefaultAvatarUrl(auth.currentUser.uid, loggedInUserProfile?.gender, false),
                 receiverId: user.uid,
                 receiverName: user.displayName || 'Anonymous',
                 status: 'pending',
@@ -7470,7 +7799,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     return (
         <>
-            <div className="homepage-container">
+            <div className="homepage-container" data-room-mood={roomMood?.preset || 'midnight-velvet'}>
                 {/* Confirmation Dialogs */}
                 <ChatActionModal
                     isOpen={clearChatConfirm.isOpen}
@@ -7548,6 +7877,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onClose={() => setSidebarOpen(false)}
                     liveUsers={liveUsers}
                     loggedInUserProfile={loggedInUserProfile}
+                    currentRoomId={roomId}
                     onKick={handleKickUser}
                     onMute={handleMuteUser}
                     onBan={handleBanUser}
@@ -7690,57 +8020,106 @@ const HomePage = ({ user, roomIdOverride }) => {
                           </div>
                       </header>
 
-                    <MessageList
-                        messages={(() => {
-                            // While a local self-notice is active (instant, 0ms feedback),
-                            // suppress the matching Firestore-persisted copy so the violator
-                            // doesn't see two identical notices. When the local notice expires
-                            // (60s timer in setLocalAutoModNotices cleanup), the Firestore
-                            // message shows naturally on the next render.
-                            const activeLocalTypes = localAutoModNotices.length > 0
-                                ? new Set(localAutoModNotices.map(n => n.tinglebotType).filter(Boolean))
-                                : null;
-                            const base = activeLocalTypes?.size > 0
-                                ? messages.filter(m =>
-                                    !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
-                                  )
-                                : messages;
-                            const sorted = localAutoModNotices.length
-                                ? [...base, ...localAutoModNotices].sort(
-                                    (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
-                                  )
-                                : base;
-                            // C2: Append only unconfirmed pending/failed optimistic bubbles.
-                            if (!pendingMessages.length) return sorted;
-                            const confirmedIds = new Set(sorted.map(m => m.id));
-                            const unconfirmed = pendingMessages.filter(p =>
-                                p._isFailed || !(p._firestoreId && confirmedIds.has(p._firestoreId))
+                    {/* Module 3: Local-Only Staff Silent Watch Status Bar */}
+                    {isStaffRole(loggedInUserProfile) && silentWatchActive && (
+                        <div className="tt-silent-watch-banner" ref={silentBannerRef} role="status">
+                            <span className="tt-silent-watch-banner-left">
+                                <ShroudedEyeIcon size={15} active={true} color="#a5b4fc" />
+                                <span>Silent Watch Active — Hidden from room roster</span>
+                            </span>
+                            <button
+                                type="button"
+                                className="tt-silent-watch-exit-btn"
+                                onClick={() => handleToggleSilentWatch(false)}
+                            >
+                                Go Visible
+                            </button>
+                        </div>
+                    )}
+
+                    {(() => {
+                        const messageListNode = (
+                            <MessageList
+                                messages={(() => {
+                                    // While a local self-notice is active (instant, 0ms feedback),
+                                    // suppress the matching Firestore-persisted copy so the violator
+                                    // doesn't see two identical notices.
+                                    const activeLocalTypes = localAutoModNotices.length > 0
+                                        ? new Set(localAutoModNotices.map(n => n.tinglebotType).filter(Boolean))
+                                        : null;
+                                    const base = activeLocalTypes?.size > 0
+                                        ? messages.filter(m =>
+                                            !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
+                                          )
+                                        : messages;
+                                    const sorted = localAutoModNotices.length
+                                        ? [...base, ...localAutoModNotices].sort(
+                                            (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
+                                          )
+                                        : base;
+                                    // C2: Append only unconfirmed pending/failed optimistic bubbles.
+                                    if (!pendingMessages.length) return sorted;
+                                    const confirmedIds = new Set(sorted.map(m => m.id));
+                                    const unconfirmed = pendingMessages.filter(p =>
+                                        p._isFailed || !(p._firestoreId && confirmedIds.has(p._firestoreId))
+                                    );
+                                    return unconfirmed.length ? [...sorted, ...unconfirmed] : sorted;
+                                })()}
+                                blockedUsers={blockedUsers}
+                                usersWhoBlockedMe={usersWhoBlockedMe}
+                                loggedInUserProfile={loggedInUserProfile}
+                                openDropdownId={openDropdownId}
+                                roomKickedUserIds={roomKickedUserIds}
+                                roomId={roomId}
+                                chatFeedRef={chatFeedRef}
+                                onDelete={stableHandleDeleteMessage}
+                                onKick={stableHandleKickUser}
+                                onUnkick={stableHandleUnkickUser}
+                                onReport={stableHandleReportUser}
+                                onWhisper={stableHandleWhisperUser}
+                                onTag={insertTag}
+                                onViewProfile={stableHandleViewProfile}
+                                onAddFriend={stableHandleAddFriend}
+                                onPrivateMessage={stableHandlePrivateMessage}
+                                onBlock={stableHandleBlockUser}
+                                closeAllDropdowns={stableCloseAllDropdowns}
+                                toggleDropdown={stableToggleDropdown}
+                                setOpenDropdownId={stableHandleSetOpenDropdownId}
+                                onRetryPending={retryPendingMessage}
+                                allUsersMap={userLookupMap}
+                                activitiesMap={activitiesMap}
+                            />
+                        );
+
+                        if (watchPartyOpen) {
+                            return (
+                                <div
+                                    ref={watchSplitRef}
+                                    className={`tt-watch-split-shell${watchPartyExpanded ? ' is-expanded' : ''}`}
+                                >
+                                    <WatchPartyStage
+                                        roomId={roomId}
+                                        roomName={roomName}
+                                        username={loggedInUserProfile?.displayName || 'Member'}
+                                        expanded={watchPartyExpanded}
+                                        onToggleExpand={() => setWatchPartyExpanded(prev => !prev)}
+                                        chatCollapsedMobile={watchPartyMobileChatCollapsed}
+                                        onToggleMobileChat={() => setWatchPartyMobileChatCollapsed(prev => !prev)}
+                                        onExit={() => {
+                                            setWatchPartyOpen(false);
+                                            setWatchPartyExpanded(false);
+                                            setWatchPartyMobileChatCollapsed(false);
+                                        }}
+                                    />
+                                    <div className={`tt-watch-chat-col${watchPartyMobileChatCollapsed ? ' is-mobile-collapsed' : ''}`}>
+                                        {messageListNode}
+                                    </div>
+                                </div>
                             );
-                            return unconfirmed.length ? [...sorted, ...unconfirmed] : sorted;
-                        })()}
-                        blockedUsers={blockedUsers}
-                        usersWhoBlockedMe={usersWhoBlockedMe}
-                        loggedInUserProfile={loggedInUserProfile}
-                        openDropdownId={openDropdownId}
-                        roomKickedUserIds={roomKickedUserIds}
-                        roomId={roomId}
-                        chatFeedRef={chatFeedRef}
-                        onDelete={stableHandleDeleteMessage}
-                        onKick={stableHandleKickUser}
-                        onUnkick={stableHandleUnkickUser}
-                        onReport={stableHandleReportUser}
-                        onWhisper={stableHandleWhisperUser}
-                        onTag={insertTag}
-                        onViewProfile={stableHandleViewProfile}
-                        onAddFriend={stableHandleAddFriend}
-                        onPrivateMessage={stableHandlePrivateMessage}
-                        onBlock={stableHandleBlockUser}
-                        closeAllDropdowns={stableCloseAllDropdowns}
-                        toggleDropdown={stableToggleDropdown}
-                        setOpenDropdownId={stableHandleSetOpenDropdownId}
-                        onRetryPending={retryPendingMessage}
-                        allUsersMap={userLookupMap}
-                    />
+                        }
+
+                        return messageListNode;
+                    })()}
                     
 
                 {/* StylishImageUploadModal */}
@@ -8272,8 +8651,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 {/* Avatar — centred at top */}
                                 <div className={`vpm-avatar-ring ${getGenderBorderClass(profileUser)}`}
                                     style={{ cursor: 'zoom-in' }}
-                                    onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: profileUser.photoURL || getDefaultAvatarUrl(profileUser.uid, profileUser.gender) }); }}>
-                                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} fallbackPhotoURL={profileUser.photoURL} photoKey={profileUser.photoKey} className="vpm-avatar" alt="Profile" />
+                                    onClick={(e) => { e.stopPropagation(); setVpmEnlarged({ type: 'avatar', url: isRealAvatarUpload(profileUser.photoURL) ? profileUser.photoURL : getDefaultAvatarUrl(profileUser.uid, profileUser.gender, isGuestUser(profileUser)) }); }}>
+                                    <LiveAvatarImg uid={profileUser.uid} gender={profileUser.gender} isGuest={isGuestUser(profileUser)} fallbackPhotoURL={profileUser.photoURL} photoKey={profileUser.photoKey} className="vpm-avatar" alt="Profile" />
                                     <span className={`vpm-online-dot ${onlineUsers.has(profileUser.uid) ? 'online' : ''}`} />
                                     <span style={{position:'absolute',bottom:2,right:2,width:20,height:20,borderRadius:'50%',background:'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(6px)',zIndex:3,pointerEvents:'none',boxShadow:'0 2px 8px rgba(245,158,11,0.7),0 1px 3px rgba(0,0,0,0.3)',border:'1.5px solid rgba(255,255,255,0.7)'}}>
                                         <svg viewBox="0 0 24 24" width="11" height="11" fill="none"><path d="M3 8V3h5v2H5v3H3zm13-5h5v5h-2V5h-3V3zM3 16h2v3h3v2H3v-5zm16 3h-3v2h5v-5h-2v3z" fill="white"/></svg>
@@ -8789,6 +9168,22 @@ const HomePage = ({ user, roomIdOverride }) => {
                         setIsProfileSidebarOpen(true);
                         setIsSettingsSidebarOpen(false);
                     }}
+                    currentRoomId={roomId}
+                    currentRoomName={roomName}
+                    roomMood={roomMood}
+                    onUpdateRoomMood={handleUpdateRoomMood}
+                    silentWatchActive={silentWatchActive}
+                    onToggleSilentWatch={handleToggleSilentWatch}
+                    watchPartyOpen={watchPartyOpen}
+                    onToggleWatchParty={() => {
+                        setWatchPartyOpen((prev) => {
+                            if (prev) {
+                                setWatchPartyExpanded(false);
+                                setWatchPartyMobileChatCollapsed(false);
+                            }
+                            return !prev;
+                        });
+                    }}
                 />
             </div>
 
@@ -9055,6 +9450,27 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </button>
             )}
 
+            {/* Module 2: Floating Interactive Mini-Games, Polls & Watch-Party Launcher above Composer */}
+            {!(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__') &&
+                !isAttachmentDropdownOpen &&
+                !(watchPartyOpen && watchPartyMobileChatCollapsed) && (
+                <FloatingActivityLauncher
+                    roomId={roomId}
+                    loggedInUserProfile={loggedInUserProfile}
+                    isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
+                    watchPartyOpen={watchPartyOpen}
+                    onToggleWatchParty={() => {
+                        setWatchPartyOpen((prev) => {
+                            if (prev) {
+                                setWatchPartyExpanded(false);
+                                setWatchPartyMobileChatCollapsed(false);
+                            }
+                            return !prev;
+                        });
+                    }}
+                />
+            )}
+
             <div
                 className="chat-footer hp-composer-footer"
                 ref={footerRef}
@@ -9151,7 +9567,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         <div style={{ padding: '8px', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>No users found</div>
                                     ) : (
                                         matchingTagUsers.map((u) => {
-                                            const uAvatar = u.photoURL || getDefaultAvatarUrl(u.uid, u.gender || 'male');
+                                            const uAvatar = isRealAvatarUpload(u.photoURL) ? u.photoURL : getDefaultAvatarUrl(u.uid, u.gender || 'male', isGuestUser(u));
                                             return (
                                                 <button
                                                     key={u.uid}

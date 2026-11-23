@@ -302,11 +302,7 @@ const TermsPage = () => {
             Please read these terms carefully. They govern your use of TingleTap and are legally binding under Indian law.
             These Terms comply with the Information Technology Act, 2000 and IT Rules, 2021.
           </p>
-          <div style={{
-            display:'inline-flex',alignItems:'center',gap:8,marginTop:12,
-            background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.2)',
-            borderRadius:10,padding:'8px 16px',fontSize:12.5,color:'#4f46e5',fontWeight:600,
-          }}>
+          <div className="lp-trust-banner">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
               <rect x="2" y="2" width="12" height="14" rx="2" stroke="#4f46e5" strokeWidth="1.3"/>
               <path d="M5 6h6M5 9h6M5 12h4" stroke="#4f46e5" strokeWidth="1.2" strokeLinecap="round"/>

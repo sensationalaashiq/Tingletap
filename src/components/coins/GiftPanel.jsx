@@ -8,6 +8,8 @@ import { subscribeWallet, deductCoinsForGift, formatCoins } from '../../utils/co
 import { GIFT_CATALOG, GIFT_TIERS, getGiftById } from '../../utils/giftSystem';
 import { toast } from 'react-toastify';
 import { pt } from '../../utils/premiumToast';
+import { getDefaultAvatarUrl, isRealAvatarUpload } from '../../utils/roleUtils';
+import LiveAvatarImg from '../LiveAvatar';
 import './GiftPanel.css';
 
 /* ── Inline SVG icons (no emoji) ── */
@@ -200,11 +202,11 @@ export default function GiftPanel({ rjUid, rjName, rjAvatar, loggedInUserProfile
 
       {/* RJ target */}
       <div className="gp-rj-target">
-        <img
-          src={rjAvatar || `https://api.dicebear.com/7.x/thumbs/svg?seed=${rjUid}`}
+        <LiveAvatarImg
+          uid={rjUid}
+          fallbackPhotoURL={isRealAvatarUpload(rjAvatar) ? rjAvatar : getDefaultAvatarUrl(rjUid, 'male', false)}
           alt={rjName}
           className="gp-rj-avatar"
-          onError={e => { e.target.src = `https://api.dicebear.com/7.x/thumbs/svg?seed=${rjUid}`; }}
         />
         <div className="gp-rj-info">
           <span className="gp-rj-name">{rjName}</span>

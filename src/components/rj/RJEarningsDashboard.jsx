@@ -7,6 +7,7 @@ import {
   subscribeRJEarnings, subscribeUserTransactions, fetchCoinConfig,
   formatCoins, coinsToRupees
 } from '../../utils/coinSystem';
+import PremiumCopyright from '../PremiumCopyright';
 import './RJEarningsDashboard.css';
 
 /* ── Icons ── */
@@ -200,6 +201,7 @@ export default function RJEarningsDashboard({ profileOverride }) {
           )}
         </div>
       </div>
+      <PremiumCopyright />
     </div>
   );
 }

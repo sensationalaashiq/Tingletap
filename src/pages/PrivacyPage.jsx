@@ -325,11 +325,7 @@ const PrivacyPage = () => {
             Your privacy is our highest commitment. We are fully transparent about every aspect of how we handle your data —
             compliant with the Information Technology Act, 2000 and IT Rules, 2021.
           </p>
-          <div style={{
-            display:'inline-flex', alignItems:'center', gap:8, marginTop:12,
-            background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)',
-            borderRadius:10, padding:'8px 16px', fontSize:12.5, color:'#4f46e5', fontWeight:600,
-          }}>
+          <div className="lp-trust-banner">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
               <path d="M8 1L1.5 4v4C1.5 11.5 4.3 14.6 8 15c3.7-.4 6.5-3.5 6.5-7V4L8 1z" fill="#4f46e5" opacity=".15" stroke="#4f46e5" strokeWidth="1.3"/>
               <path d="M5.5 8l2 2L11 6.5" stroke="#4f46e5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>

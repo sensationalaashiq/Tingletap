@@ -7,6 +7,8 @@ import {
   isAdminRole,
   resolveBadgeKey,
   getRoleDisplayLabel,
+  isGuestUser,
+  isRealAvatarUpload,
 } from '../utils/roleUtils';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from '../components/LiveAvatar';
@@ -36,6 +38,7 @@ import '../components/RoyalTrustBadge.css';
 import { isEffectivelyOnline } from '../utils/presenceStatus';
 import { postTingleBotRoomMessage } from '../utils/tinglebotAutoDelete';
 import { syncPublicProfile } from '../utils/syncPublicProfile';
+import PremiumCopyright from '../components/PremiumCopyright';
 import './AdminPanelPage.css';
 
 // Extract just the brand name from a device model string for admin panel display
@@ -3976,7 +3979,11 @@ const AdminPanelPage = () => {
                       const resolvedUsername = matchedUser?.displayName
                         || (vUsername && vUsername !== 'Unknown User' && vUsername !== 'Unknown' ? vUsername : null)
                         || (vUserId ? `UID:${vUserId.slice(0,10)}` : 'Unknown User');
-                      const avatarUrl = vPhotoURL || matchedUser?.photoURL || getDefaultAvatarUrl(vUserId, matchedUser?.gender || 'male');
+                      const avatarUrl = isRealAvatarUpload(vPhotoURL)
+                        ? vPhotoURL
+                        : isRealAvatarUpload(matchedUser?.photoURL)
+                          ? matchedUser.photoURL
+                          : getDefaultAvatarUrl(vUserId, matchedUser?.gender || 'male', matchedUser ? isGuestUser(matchedUser) : false);
                       return (
                         <div key={v.id} style={{
                           background: v.resolved ? '#f8fafc' : '#fff',
@@ -4298,7 +4305,11 @@ const AdminPanelPage = () => {
                   // Always show current username — look up user's latest data from loaded users list
                   const _currentUser = users.find(u => u.uid === item.uid || u.id === item.uid);
                   const _currentDisplayName = _currentUser?.username || _currentUser?.displayName || item.username || item.displayName || 'Unknown';
-                  const avatarUrl = _currentUser?.photoURL || item.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${item.uid || 'user'}`;
+                  const avatarUrl = isRealAvatarUpload(_currentUser?.photoURL)
+                    ? _currentUser.photoURL
+                    : isRealAvatarUpload(item.photoURL)
+                      ? item.photoURL
+                      : getDefaultAvatarUrl(item.uid || 'user', _currentUser?.gender || item.gender || 'male', _currentUser ? isGuestUser(_currentUser) : isGuestUser(item));
 
                   return (
                     <div key={item.id} style={{
@@ -5487,6 +5498,7 @@ const AdminPanelPage = () => {
       />
 
       {/* ToastContainer removed — using global premium container from App.jsx */}
+      <PremiumCopyright />
     </>
   );
 };

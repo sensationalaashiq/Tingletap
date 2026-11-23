@@ -271,11 +271,7 @@ const DisclaimerPage = () => {
             Important legal notices regarding TingleTap's role as an internet intermediary, user responsibilities,
             and the limits of our liability under Indian law.
           </p>
-          <div style={{
-            display:'inline-flex',alignItems:'center',gap:8,marginTop:12,
-            background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',
-            borderRadius:10,padding:'8px 16px',fontSize:12.5,color:'#92400e',fontWeight:600,
-          }}>
+          <div className="lp-trust-banner" style={{borderColor:'rgba(217,119,6,0.28)', color:'#92400e'}}>
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
               <path d="M8 1.5L1 14h14L8 1.5z" stroke="#92400e" strokeWidth="1.3" strokeLinejoin="round"/>
               <path d="M8 6v4" stroke="#92400e" strokeWidth="1.3" strokeLinecap="round"/>

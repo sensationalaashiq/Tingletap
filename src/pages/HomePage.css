@@ -948,10 +948,10 @@ iframe[src*="youtu.be"] {
   opacity: 1 !important;
   filter: none !important;
   -webkit-filter: none !important;
-  background: transparent !important;
-  border: 2px solid rgba(139, 92, 246, 0.35) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
+  background: #000 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* ── Username: 12px bold for EVERYONE — no role or badge size differentiation ── */
@@ -1414,10 +1414,11 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 .inline-badge {
   display: inline-flex;
   align-items: center;
-  width: 14px;
-  height: 14px;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
-  margin-left: 2px;
+  margin-left: 3px;
   overflow: visible; /* never clip SVG artwork */
   background: transparent !important;
   box-shadow: none !important;
@@ -1429,8 +1430,9 @@ html body.theme-dark .message-body p:not([style*="color"]) {
 }
 
 .inline-badge svg {
-  width: 14px !important;
-  height: 14px !important;
+  display: block;
+  width: 15px !important;
+  height: 15px !important;
   flex-shrink: 0;
   filter: none !important;
   animation: none !important;
@@ -2206,32 +2208,61 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   color: #9ca3af;
 }
 
+.youtube-embed-container {
+  width: min(380px, 100%);
+  max-width: 100%;
+  margin: 6px 0;
+  display: block;
+}
+
 .youtube-embed {
   position: relative;
   overflow: hidden;
-  border: 2.5px solid #a78bfa;
-  border-radius: 12px;
+  border: 1.5px solid rgba(167, 139, 250, 0.58);
+  border-radius: 16px;
   box-shadow:
-    0 0 0 1px rgba(167,139,250,0.3),
-    0 6px 24px rgba(109,40,217,0.28),
-    0 2px 8px rgba(109,40,217,0.18);
-  background: #000;
-  max-width: 320px;
+    0 0 0 1px rgba(251, 191, 36, 0.22),
+    0 14px 34px rgba(49, 46, 129, 0.28),
+    0 4px 14px rgba(109, 40, 217, 0.2);
+  background: #070512;
+  max-width: 380px;
   width: 100%;
   aspect-ratio: 16 / 9;
-  margin: 4px 0;
+  margin: 0;
   padding: 0 !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
-.youtube-embed iframe {
+.youtube-embed:hover {
+  transform: translateY(-1px);
+  border-color: rgba(251, 191, 36, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.35),
+    0 18px 40px rgba(49, 46, 129, 0.34),
+    0 6px 18px rgba(124, 58, 237, 0.26);
+}
+
+.youtube-embed iframe,
+.message-body .youtube-embed iframe,
+.message-content .youtube-embed iframe,
+.chat-feed .youtube-embed iframe {
   position: absolute !important;
   inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   display: block !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
   aspect-ratio: unset !important;
 }
 
@@ -5781,46 +5812,58 @@ html.dark-mode .reject-btn:hover,
     border-radius: 4px;
     height: 4px;
 }
-  /* YouTube Embed — Premium Lavender Border */
+  /* YouTube Embed — Luxury Amethyst & Gold Frame */
   .youtube-embed {
       width: 100%;
-      max-width: 320px;
+      max-width: 380px;
       aspect-ratio: 16 / 9;
-      margin: 4px 0;
-      border-radius: 12px;
+      margin: 0;
+      border-radius: 16px;
       overflow: hidden;
       box-shadow:
-        0 0 0 1px rgba(167,139,250,0.3),
-        0 6px 24px rgba(109,40,217,0.28),
-        0 2px 8px rgba(109,40,217,0.18);
+        0 0 0 1px rgba(251, 191, 36, 0.22),
+        0 14px 34px rgba(49, 46, 129, 0.28),
+        0 4px 14px rgba(109, 40, 217, 0.2);
       position: relative;
-      background: #000;
-      border: 2.5px solid #a78bfa;
+      background: #070512;
+      border: 1.5px solid rgba(167, 139, 250, 0.58);
       padding: 0 !important;
   }
 
-  .youtube-embed iframe {
+  .youtube-embed iframe,
+  .message-body .youtube-embed iframe,
+  .message-content .youtube-embed iframe,
+  .chat-feed .youtube-embed iframe {
       position: absolute !important;
       inset: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100% !important;
       height: 100% !important;
+      min-width: 100% !important;
+      min-height: 100% !important;
       aspect-ratio: unset !important;
       border: none !important;
       border-radius: 0 !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #000 !important;
       display: block !important;
       vertical-align: bottom;
 }
 
-/* YouTube Music Player Styling — Compact Wrapper, no extra space */
+/* YouTube Music Player Styling — Compact Wrapper, full player width */
 .youtube-music-message {
     background: transparent;
     border: none;
     border-radius: 0;
     padding: 0;
-    margin: 0;
-    max-width: 270px;
+    margin: 4px 0;
+    width: min(350px, 100%);
+    max-width: 100%;
     position: relative;
-    display: inline-block;
+    display: block;
 }
 
 .music-header {
@@ -5909,32 +5952,43 @@ html.dark-mode .reject-btn:hover,
     display: flex;
 }
 
-/* Base YouTube Embed Styling — Premium Vibrant Lavender */
+/* Base YouTube Embed Styling — Luxury Amethyst & Gold Frame */
 .youtube-embed {
-    max-width: 320px;
+    max-width: 380px;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border: 2.5px solid #a78bfa;
-    border-radius: 12px;
+    border: 1.5px solid rgba(167, 139, 250, 0.58);
+    border-radius: 16px;
     overflow: hidden;
-    margin: 4px 0;
+    margin: 0;
     box-shadow:
-      0 0 0 1px rgba(167,139,250,0.3),
-      0 6px 24px rgba(109,40,217,0.28),
-      0 2px 8px rgba(109,40,217,0.18);
-    background: #000;
+      0 0 0 1px rgba(251, 191, 36, 0.22),
+      0 14px 34px rgba(49, 46, 129, 0.28),
+      0 4px 14px rgba(109, 40, 217, 0.2);
+    background: #070512;
     position: relative;
     padding: 0 !important;
 }
 
-.youtube-embed iframe {
+.youtube-embed iframe,
+.message-body .youtube-embed iframe,
+.message-content .youtube-embed iframe,
+.chat-feed .youtube-embed iframe {
     position: absolute !important;
     inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
     aspect-ratio: unset !important;
     border-radius: 0 !important;
     border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
     display: block !important;
     vertical-align: bottom;
 }
@@ -9214,12 +9268,16 @@ html.dark-mode .vpm-ach-chip { border-color: rgba(255,255,255,0.25) !important; 
   transform: scale(1.08) !important;
 }
 
-/* --- Crisp Inline Badge Rendering (Transparent Background) --- */
-.homepage-container .inline-badge {
+/* --- Crisp Inline Badge Rendering (Transparent Background, Zero Filter) --- */
+.homepage-container .inline-badge,
+.homepage-container .inline-badge svg {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
-  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.16)) !important;
+  filter: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 
 /* --- Premium Dropdown Menus --- */
@@ -11569,3 +11627,198 @@ body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send
     border-radius: 50% !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODULE 1: LIVE ROOM ATMOSPHERE & MOOD PRESETS (SMOOTH TRANSITIONS)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.homepage-container {
+  transition: background 0.45s ease, box-shadow 0.45s ease, border-color 0.45s ease;
+}
+
+.homepage-container[data-room-mood="midnight-velvet"] {
+  --tt-mood-accent: #eab308;
+  --tt-mood-glow: rgba(234, 179, 8, 0.24);
+}
+.homepage-container[data-room-mood="navrang-aura"] {
+  --tt-mood-accent: #c084fc;
+  --tt-mood-glow: rgba(192, 132, 252, 0.28);
+}
+.homepage-container[data-room-mood="neon-lounge"] {
+  --tt-mood-accent: #22d3ee;
+  --tt-mood-glow: rgba(34, 211, 238, 0.3);
+}
+.homepage-container[data-room-mood="warm-mehfil"] {
+  --tt-mood-accent: #fb7185;
+  --tt-mood-glow: rgba(251, 113, 133, 0.28);
+}
+
+body.dark-mode .homepage-container[data-room-mood="midnight-velvet"] .chat-container,
+html.dark-mode .homepage-container[data-room-mood="midnight-velvet"] .chat-container {
+  background: radial-gradient(circle at 18% 12%, rgba(234, 179, 8, 0.11) 0%, transparent 45%),
+              linear-gradient(180deg, #0b0c15 0%, #141122 100%) !important;
+}
+
+body.dark-mode .homepage-container[data-room-mood="navrang-aura"] .chat-container,
+html.dark-mode .homepage-container[data-room-mood="navrang-aura"] .chat-container {
+  background: radial-gradient(circle at 15% 18%, rgba(236, 72, 153, 0.15) 0%, transparent 42%),
+              radial-gradient(circle at 86% 24%, rgba(6, 182, 212, 0.14) 0%, transparent 44%),
+              radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.16) 0%, transparent 48%),
+              linear-gradient(180deg, #0f0a1e 0%, #170e2e 100%) !important;
+}
+
+body.dark-mode .homepage-container[data-room-mood="neon-lounge"] .chat-container,
+html.dark-mode .homepage-container[data-room-mood="neon-lounge"] .chat-container {
+  background: radial-gradient(circle at 82% 14%, rgba(34, 211, 238, 0.14) 0%, transparent 44%),
+              radial-gradient(circle at 18% 82%, rgba(99, 102, 241, 0.16) 0%, transparent 46%),
+              linear-gradient(180deg, #060b1e 0%, #0e1334 100%) !important;
+}
+
+body.dark-mode .homepage-container[data-room-mood="warm-mehfil"] .chat-container,
+html.dark-mode .homepage-container[data-room-mood="warm-mehfil"] .chat-container {
+  background: radial-gradient(circle at 20% 15%, rgba(251, 113, 133, 0.14) 0%, transparent 44%),
+              radial-gradient(circle at 84% 78%, rgba(234, 88, 12, 0.12) 0%, transparent 46%),
+              linear-gradient(180deg, #130c10 0%, #241219 100%) !important;
+}
+
+.homepage-container[data-room-mood] .chat-feed {
+  box-shadow: inset 0 0 0 1px var(--tt-mood-glow, transparent);
+  transition: box-shadow 0.45s ease, background 0.45s ease;
+}
+
+.homepage-container[data-room-mood="navrang-aura"] .chat-feed {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, rgba(236, 72, 153, 0.04) 55%, rgba(6, 182, 212, 0.05) 100%);
+}
+.homepage-container[data-room-mood="neon-lounge"] .chat-feed {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.06) 0%, rgba(79, 70, 229, 0.04) 100%);
+}
+.homepage-container[data-room-mood="warm-mehfil"] .chat-feed {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.05) 0%, rgba(234, 88, 12, 0.04) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODULE 3: SILENT WATCH LOCAL STATUS BAR (STAFF ONLY, NEVER IN HEADER)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tt-silent-watch-banner {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 14px;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);
+  border-bottom: 1px solid rgba(165, 180, 252, 0.34);
+  color: #e0e7ff;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.tt-silent-watch-banner-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.tt-silent-watch-exit-btn {
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(165, 180, 252, 0.42);
+  background: rgba(99, 102, 241, 0.24);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODULE 5: WATCH-PARTY SPLIT THEATER LAYOUT (DESKTOP SPLIT / MOBILE 16:9)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tt-watch-split-shell {
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  z-index: 40;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tt-watch-split-shell .tt-watch-stage {
+  flex: 1.45;
+  height: 100%;
+}
+
+.tt-watch-split-shell.is-expanded .tt-watch-stage {
+  flex: 2.1;
+}
+
+.tt-watch-chat-col {
+  flex: 1;
+  min-width: 320px;
+  max-width: 470px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+body.dark-mode .tt-watch-chat-col,
+html.dark-mode .tt-watch-chat-col {
+  background: rgba(13, 10, 28, 0.72);
+  border-color: rgba(167, 139, 250, 0.28);
+}
+
+.tt-watch-chat-col .chat-feed {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  flex: 1 !important;
+}
+
+@media (max-width: 899px) {
+  .tt-watch-split-shell {
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+  }
+
+  .tt-watch-split-shell .tt-watch-stage {
+    flex: none;
+    height: auto;
+  }
+
+  .tt-watch-chat-col {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .tt-watch-chat-col.is-mobile-collapsed {
+    display: none;
+  }
+}
+

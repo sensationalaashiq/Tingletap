@@ -689,34 +689,42 @@
 }
 .sb-apd-mod-label svg { fill: #7c3aed; }
 
-/* ── inline-badge in sidebar — match chat-message badge size exactly (14px) */
+/* ── inline-badge in sidebar — match chat-message badge size & rendering identically (15px) */
 .sb-list-username .inline-badge,
 .sb-profile-name .inline-badge,
 .sb-apd-name .inline-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-left: 2px;
-  width: 14px;
-  height: 14px;
+  margin-left: 3px;
+  width: 15px;
+  height: 15px;
   overflow: visible; /* never clip the SVG artwork */
   filter: none !important;
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 .sb-list-username .inline-badge svg,
 .sb-profile-name .inline-badge svg,
 .sb-apd-name .inline-badge svg {
-  width: 14px !important;
-  height: 14px !important;
-  vertical-align: -2px;
+  display: block;
+  width: 15px !important;
+  height: 15px !important;
   flex-shrink: 0;
+  filter: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 
 /* Emerald Empress / Sapphire Goddess have more internal whitespace in their
    SVG artwork — size them at 16px (direct width/height, never scale()) so
-   they appear visually the same size as the 14px badges next to them. */
+   they appear visually the same size as the 15px badges next to them. */
 .sb-list-username .inline-badge.badge-emerald_empress,
 .sb-profile-name .inline-badge.badge-emerald_empress,
 .sb-apd-name .inline-badge.badge-emerald_empress,
@@ -734,7 +742,6 @@
 .sb-apd-name .inline-badge.badge-sapphire_goddess svg {
   width: 16px !important;
   height: 16px !important;
-  vertical-align: -3px;
 }
 
 /* Latest achievement chip — small icon next to DP/username */

@@ -4,6 +4,7 @@ import SEO from '../seo/SEO';
 import { PAGES } from '../seo/seoConfig';
 import { useNavigate, Link } from 'react-router-dom';
 import { pt } from '../utils/premiumToast';
+import PremiumCopyright from '../components/PremiumCopyright';
 
 const LockSVG = () => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
@@ -74,12 +75,15 @@ const ForgotPasswordPage = () => {
       width: '100vw',
       background: 'linear-gradient(145deg, #f8f0ff 0%, #ede4fb 25%, #f3e8ff 50%, #e8d8fa 75%, #f0e6ff 100%)',
       display: 'flex',
-      justifyContent: 'center',
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
       alignItems: 'center',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      overflow: 'hidden',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       position: 'fixed',
-      top: 0, left: 0,
+      inset: 0,
+      padding: '18px 12px 4px',
       boxSizing: 'border-box'
     }}>
       <SEO
@@ -364,6 +368,7 @@ const ForgotPasswordPage = () => {
       <div style={{position:'absolute',width:'220px',height:'220px',borderRadius:'50%',background:'radial-gradient(circle,rgba(168,85,247,.2) 0%,transparent 70%)',top:'40%',right:'-80px',animation:'fpOrb3 18s ease-in-out infinite',pointerEvents:'none',zIndex:0}}/>
       <div style={{position:'absolute',width:'170px',height:'170px',borderRadius:'50%',background:'radial-gradient(circle,rgba(233,213,255,.28) 0%,transparent 70%)',bottom:'12%',left:'-55px',animation:'fpOrb1 10s ease-in-out infinite reverse',pointerEvents:'none',zIndex:0}}/>
 
+      <div style={{ margin: 'auto 0', width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '10px', position: 'relative', zIndex: 1 }}>
       <div className="fp-card" style={{position:'relative',zIndex:1}}>
         {/* Logo */}
         <div className="fp-logo-wrap">
@@ -562,6 +567,8 @@ const ForgotPasswordPage = () => {
           </div>
         )}
       </div>
+      </div>
+      <PremiumCopyright />
     </div>
   );
 };

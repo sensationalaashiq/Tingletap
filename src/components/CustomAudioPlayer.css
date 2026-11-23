@@ -6,15 +6,8 @@
 ═══════════════════════════════════════════════════════════ */
 .compact-audio-player,
 .youtube-music-player {
-  width: 244px;
-  max-width: 244px;
-  min-width: 244px;
-  height: 90px;
-  min-height: 90px;
-  max-height: 90px;
   box-sizing: border-box;
   border-radius: 14px;
-  padding: 8px 11px 8px;
   margin: 4px 0;
   position: relative;
   overflow: hidden;
@@ -23,6 +16,16 @@
   justify-content: space-between;
   gap: 0;
   flex-shrink: 0;
+}
+
+.compact-audio-player {
+  width: 244px;
+  max-width: 244px;
+  min-width: 244px;
+  height: 90px;
+  min-height: 90px;
+  max-height: 90px;
+  padding: 8px 11px 8px;
 }
 
 /* ═══ LAVENDER PLAYER ═══ */
@@ -42,24 +45,36 @@
   border: 1.5px solid #a78bfa !important;
 }
 
-/* ═══ YOUTUBE RED PLAYER ═══ */
+/* ═══ YOUTUBE RED PLAYER — Wider & Shorter ═══ */
 .youtube-music-player {
+  width: 344px;
+  max-width: 100%;
+  min-width: 248px;
+  height: 74px;
+  min-height: 74px;
+  max-height: 74px;
+  padding: 5px 12px;
   background: linear-gradient(150deg, #b91c1c 0%, #dc2626 55%, #c41e1e 100%);
-  border: 1.5px solid rgba(252,165,165,0.5);
+  border: 1.5px solid rgba(252,165,165,0.55);
   box-shadow:
     0 4px 18px rgba(185,28,28,0.4),
     0 2px 6px rgba(185,28,28,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.14);
+    inset 0 1px 0 rgba(255,255,255,0.16);
 }
 
 /* YouTube player — force white on everything */
-.youtube-music-player { color: #fff !important; }
+.youtube-music-player {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
 .youtube-music-player .visualizer-bar {
   background: linear-gradient(to top,#fff,rgba(255,255,255,.65)) !important;
 }
 .youtube-music-player .compact-progress-bar {
   background: rgba(255,255,255,.2) !important;
   border-color: rgba(255,255,255,.12) !important;
+  height: 3px;
+  min-height: 3px;
 }
 .youtube-music-player .compact-progress-fill {
   background: linear-gradient(90deg,#fff,rgba(255,255,255,.88)) !important;
@@ -67,8 +82,9 @@
 }
 .youtube-music-player .time-info,
 .youtube-music-player .time-info span {
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.3) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
 }
 .youtube-music-player .vol-icon { fill: #fff !important; color: #fff !important; }
 .youtube-music-player .compact-volume-slider { background: rgba(255,255,255,.28) !important; }
@@ -92,6 +108,10 @@
 
 .youtube-music-player .player-header-row {
   border-bottom-color: rgba(255,255,255,0.2);
+  height: 15px;
+  min-height: 15px;
+  max-height: 15px;
+  padding-bottom: 1px;
 }
 
 .player-brand-icon {
@@ -121,9 +141,11 @@
 
 .youtube-music-player .player-song-title {
   color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  font-size: 9.5px;
-  letter-spacing: 0.3px;
+  -webkit-text-fill-color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.25px;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -140,6 +162,13 @@
   flex-shrink: 0;
 }
 
+.youtube-music-player .audio-visualizer {
+  height: 7px;
+  min-height: 7px;
+  max-height: 7px;
+  gap: 3px;
+}
+
 .compact-audio-player .visualizer-bar {
   width: 4px;
   background: linear-gradient(to top, #5b21b6 0%, #8b5cf6 100%);
@@ -149,7 +178,7 @@
 }
 
 .youtube-music-player .visualizer-bar {
-  width: 4px;
+  width: 5px;
   min-height: 2px;
   border-radius: 3px 3px 2px 2px;
   transition: height 0.12s ease;
@@ -196,6 +225,13 @@
   height: 26px;
   min-height: 26px;
   max-height: 26px;
+}
+
+.youtube-music-player .compact-controls {
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  gap: 6px;
 }
 
 /* ── Lavender buttons ── */
@@ -264,6 +300,8 @@
 /* ── Button sizes ── */
 .icon-btn { width: 21px; height: 21px; }
 .play-btn { width: 26px; height: 26px; }
+.youtube-music-player .icon-btn { width: 18px; height: 18px; }
+.youtube-music-player .play-btn { width: 22px; height: 22px; }
 
 /* ── Time display ── */
 .time-info {
@@ -276,6 +314,12 @@
   white-space: nowrap;
   flex-shrink: 0;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.youtube-music-player .time-info {
+  font-size: 9px;
+  margin-left: auto;
 }
 
 .compact-audio-player .time-info,
@@ -296,6 +340,12 @@
   min-height: 10px;
   max-height: 10px;
   overflow: visible;
+}
+
+.youtube-music-player .volume-row {
+  height: 9px;
+  min-height: 9px;
+  max-height: 9px;
 }
 
 .vol-icon { flex-shrink: 0; }
@@ -502,8 +552,7 @@
    RESPONSIVE — mobile
 ═══════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
-  .compact-audio-player,
-  .youtube-music-player {
+  .compact-audio-player {
     width: 210px;
     max-width: 210px;
     min-width: 210px;
@@ -512,8 +561,19 @@
     max-height: 90px;
     padding: 8px 9px 8px;
   }
+  .youtube-music-player {
+    width: min(304px, 100%);
+    max-width: 100%;
+    min-width: 220px;
+    height: 74px;
+    min-height: 74px;
+    max-height: 74px;
+    padding: 5px 10px;
+  }
   .play-btn { width: 24px; height: 24px; }
   .icon-btn { width: 19px; height: 19px; }
+  .youtube-music-player .play-btn { width: 21px; height: 21px; }
+  .youtube-music-player .icon-btn { width: 17px; height: 17px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -745,19 +805,35 @@ html.dark-mode .chat-feed .compact-audio-player,
 .youtube-music-player .player-song-title *,
 .chat-feed .youtube-music-player .player-song-title,
 .message-body .youtube-music-player .player-song-title,
-.message-row-wrapper .youtube-music-player .player-song-title {
+.message-content .youtube-music-player .player-song-title,
+.message-row-wrapper .youtube-music-player .player-song-title,
+.youtube-music-message .youtube-music-player .player-song-title {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0,0,0,0.45) !important;
 }
 .youtube-music-player .time-info,
 .youtube-music-player .time-info span,
 .youtube-music-player .time-info *,
 .chat-feed .youtube-music-player .time-info,
+.chat-feed .youtube-music-player .time-info span,
 .message-body .youtube-music-player .time-info,
+.message-body .youtube-music-player .time-info span,
+.message-content .youtube-music-player .time-info,
+.message-content .youtube-music-player .time-info span,
 .message-row-wrapper .youtube-music-player .time-info,
-.message-row-wrapper .youtube-music-player .time-info span {
+.message-row-wrapper .youtube-music-player .time-info span,
+.youtube-music-message .youtube-music-player .time-info,
+.youtube-music-message .youtube-music-player .time-info span {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0,0,0,0.35) !important;
+}
+.youtube-music-player .time-info .time-sep,
+.message-body .youtube-music-player .time-info .time-sep,
+.message-row-wrapper .youtube-music-player .time-info .time-sep {
+  color: rgba(255,255,255,0.88) !important;
+  -webkit-text-fill-color: rgba(255,255,255,0.88) !important;
 }
 
 /* ── DARK MODE: compact (lavender) player title + timer ─────────────────
