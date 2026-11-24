@@ -256,13 +256,13 @@ const StylishAudioUpload = ({
                             disabled={!canSend || (audioTab === 'upload' && !canUploadFile)}
                             onClick={handleUpload}
                             style={{
-                                opacity: (canSend && !(audioTab === 'upload' && !canUploadFile)) ? 1 : 0.45,
+                                opacity: (canSend && !(audioTab === 'upload' && !canUploadFile)) ? 1 : 0.62,
                                 cursor:  (canSend && !(audioTab === 'upload' && !canUploadFile)) ? 'pointer' : 'not-allowed',
                             }}>
                             <svg viewBox="0 0 20 20" width="15" height="15" fill="none">
-                                <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M18 2L9.5 10.5M18 2l-6 16-2.5-5.5L4 10l14-8z" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            <span style={{ color: '#fff', fontWeight: 700 }}>Send Audio</span>
+                            <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', fontWeight: 700 }}>Send Audio</span>
                         </button>
                     )}
                 </div>

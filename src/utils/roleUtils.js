@@ -88,7 +88,6 @@ export const getGuestIconAvatarUrl = (uid, gender) => {
   const accentPos = (hash >> 3) % 2;
 
   let palettes = MALE_ICON_PALETTES;
-  let glyphSvg = '';
   let iconBodySvg = '';
 
   if (g === 'female') {
@@ -118,10 +117,6 @@ export const getGuestIconAvatarUrl = (uid, gender) => {
         <circle cx="64" cy="88" r="3" fill="${accent}"/>
       `;
     }
-    glyphSvg = `
-      <circle cx="6.5" cy="6" r="4.2" fill="none" stroke="#ffffff" stroke-width="1.8"/>
-      <path d="M6.5 10.2 L6.5 14 M4.4 12.4 L8.6 12.4" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
-    `;
   } else if (g === 'transgender' || g === 'other') {
     palettes = TRANS_ICON_PALETTES;
     const [, , accent, ink] = palettes[hash % palettes.length];
@@ -146,12 +141,6 @@ export const getGuestIconAvatarUrl = (uid, gender) => {
         <path d="M30 112 C32 89 45 78 64 78 C83 78 96 89 98 112 Z" fill="${ink}"/>
       `;
     }
-    glyphSvg = `
-      <circle cx="6.5" cy="7.5" r="3.6" fill="none" stroke="#ffffff" stroke-width="1.6"/>
-      <path d="M9.1 4.9 L12.2 1.8 M9.7 1.8 L12.2 1.8 L12.2 4.3" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M3.9 4.9 L1.4 2.4 M1.4 4.4 L3.4 2.4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M6.5 11.1 L6.5 14 M4.8 12.8 L8.2 12.8" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-    `;
   } else {
     palettes = MALE_ICON_PALETTES;
     const [, , accent, ink] = palettes[hash % palettes.length];
@@ -177,16 +166,10 @@ export const getGuestIconAvatarUrl = (uid, gender) => {
         <rect x="57" y="80" width="14" height="4" rx="2" fill="${accent}"/>
       `;
     }
-    glyphSvg = `
-      <circle cx="5.2" cy="8.8" r="3.8" fill="none" stroke="#ffffff" stroke-width="1.8"/>
-      <path d="M8 6 L12.2 1.8 M8.8 1.8 L12.2 1.8 L12.2 5.2" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    `;
   }
 
   const [bgDark, bgMid, accent] = palettes[hash % palettes.length];
   const gradId = `gi_${hash.toString(36)}`;
-  const badgeX = accentPos === 0 ? 91 : 21;
-  const badgeY = 91;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
     <defs>
@@ -201,10 +184,6 @@ export const getGuestIconAvatarUrl = (uid, gender) => {
     <circle cx="${accentPos === 0 ? 28 : 100}" cy="28" r="3.2" fill="#ffffff" opacity="0.45"/>
     <circle cx="${accentPos === 0 ? 38 : 90}" cy="22" r="1.8" fill="#ffffff" opacity="0.35"/>
     ${iconBodySvg}
-    <g transform="translate(${badgeX}, ${badgeY})">
-      <circle cx="6.5" cy="7.5" r="11" fill="${bgDark}" stroke="rgba(255,255,255,0.55)" stroke-width="1.6"/>
-      ${glyphSvg}
-    </g>
   </svg>`;
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -387,3 +366,34 @@ export const getRoleDisplayLabel = ({ role, gender, isGuest, badge } = {}) => {
 
   return 'Member';
 };
+
+/**
+ * Normalizes a Firestore Timestamp, {seconds}, epoch ms, Date, or ISO string
+ * and returns the earliest valid Date between Firestore createdAt and Firebase
+ * Auth metadata.creationTime so transient doc overwrites can never shrink
+ * visible account age.
+ */
+export const resolveEarliestCreatedAt = (firestoreCreatedAt, authCreationTime) => {
+  const toValidDate = (val) => {
+    if (!val) return null;
+    try {
+      let d = null;
+      if (val instanceof Date) d = val;
+      else if (typeof val?.toDate === 'function') d = val.toDate();
+      else if (typeof val?.seconds === 'number') d = new Date(val.seconds * 1000);
+      else if (typeof val?._seconds === 'number') d = new Date(val._seconds * 1000);
+      else if (typeof val === 'number' || typeof val === 'string') d = new Date(val);
+      if (!d || Number.isNaN(d.getTime())) return null;
+      if (d.getFullYear() < 2020) return null;
+      return d;
+    } catch {
+      return null;
+    }
+  };
+
+  const fsDate = toValidDate(firestoreCreatedAt);
+  const authDate = toValidDate(authCreationTime);
+  if (fsDate && authDate) return authDate.getTime() < fsDate.getTime() ? authDate : fsDate;
+  return fsDate || authDate || null;
+};
+

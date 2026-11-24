@@ -223,31 +223,6 @@ export const JumpRoomIcon = ({ size = 14, color = 'currentColor' }) => (
   </svg>
 );
 
-export const WatchPartyStageIcon = ({ size = 18, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <rect x="2.5" y="4.5" width="19" height="13" rx="2.5" stroke={color} strokeWidth="1.6" />
-    <path d="M10.2 8.7L15.2 11l-5 2.3V8.7Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M8 20.5h8" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-export const TheaterExpandIcon = ({ expanded = false, size = 15, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    {expanded ? (
-      <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
-    ) : (
-      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
-    )}
-  </svg>
-);
-
-export const SyncReloadIcon = ({ size = 15, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M20 11a8 8 0 0 0-14.3-4.7M4 4.5v3.8h3.8" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M4 13a8 8 0 0 0 14.3 4.7M20 19.5v-3.8h-3.8" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 export const ExitWatchIcon = ({ size = 15, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M6 6l12 12M18 6L6 18" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />

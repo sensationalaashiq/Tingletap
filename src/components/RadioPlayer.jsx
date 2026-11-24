@@ -56,7 +56,7 @@ const RadioPlayer = ({ isOpen, onClose }) => {
     {
       id: 1,
       name: "AIR Vividh Bharati",
-      url: "https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8",
+      url: "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio026/hlspbaudio026_Auto.m3u8",
       genre: "Bollywood & Popular Music",
       country: "India",
       flag: "IN",
@@ -71,14 +71,14 @@ const RadioPlayer = ({ isOpen, onClose }) => {
     },
     {
       id: 2,
-      name: "Delhi FM",
-      url: "https://air.pc.cdn.bitgravity.com/air/live/pbaudio083/playlist.m3u8",
-      genre: "Delhi Radio & Bollywood",
+      name: "EverGreen Radio",
+      url: "https://stream-175.surfernetwork.com/kq9rhfrkzv7uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJrcTlyaGZya3p2N3V2IiwiaG9zdCI6InN0cmVhbS0xNzUuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJ0T0dTMmRRSVJGV05HOWV3OU96M21BIiwiaWF0IjoxNzk1NTM2NjMwLCJleHAiOjE3OTU1MzY2OTB9.BTyGLKpi13b2iFVX0yyJ0YDMPvZ_fJH4hW3Yt7p55S4",
+      genre: "Evergreen & Classic Melodies",
       country: "India",
       flag: "IN",
-      color: ["#6366f1", "#4f46e5"],
-      glow: "rgba(99,102,241,0.45)",
-      description: "All India Radio Delhi — Live Hits & Shows",
+      color: ["#10b981", "#059669"],
+      glow: "rgba(16,185,129,0.45)",
+      description: "EverGreen Radio — Timeless Classics & Melodies",
       icon: (
         <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
           <path d="M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z"/>
@@ -290,6 +290,102 @@ const RadioPlayer = ({ isOpen, onClose }) => {
       icon: (
         <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
           <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 16,
+      name: "EverGreen Gold",
+      url: "https://stream-289.surfernetwork.com/yz0ncx9gha0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5ejBuY3g5Z2hhMHV2IiwiaG9zdCI6InN0cmVhbS0yODkuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiItZ25BQ3QwalJXeXFSWnhob01uT3ZBIiwiaWF0IjoxNzk1NTM2NzIyLCJleHAiOjE3OTU1MzY3ODJ9.yDnOLpykLuYpxCg8VxxgRYQZXEoES1lDGqACDaS33Eg",
+      genre: "Golden Oldies & Classics",
+      country: "India",
+      flag: "IN",
+      color: ["#f59e0b", "#d97706"],
+      glow: "rgba(245,158,11,0.45)",
+      description: "EverGreen Gold — Pure Retro Gold 24/7",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 17,
+      name: "Marathi Radio",
+      url: "https://stream-179.surfernetwork.com/yxcrlrbgc4rtv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ5eGNybHJiZ2M0cnR2IiwiaG9zdCI6InN0cmVhbS0xNzkuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiJwZUtfdFFoNFJxZVVaQ3FaMXF1YTVRIiwiaWF0IjoxNzk1NTM2ODEzLCJleHAiOjE3OTU1MzY4NzN9.iNxaWRW-Q_ZAF7zoAC07QP9lv6XSypK6Xi8GeOTeQrM",
+      genre: "Marathi & Regional Hits",
+      country: "India",
+      flag: "IN",
+      color: ["#f97316", "#c2410c"],
+      glow: "rgba(249,115,22,0.45)",
+      description: "Marathi Radio — Non-Stop Marathi Hits",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,3V13.55C11.41,13.21 10.73,13 10,13A4,4 0 0,0 6,17A4,4 0 0,0 10,21A4,4 0 0,0 14,17V7H18V3H12Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 18,
+      name: "Radio Malayalam",
+      url: "https://strw3.openstream.co/668?aw_0_1st.collectionid%3D6761%26stationId%3D6761%26publisherId%3D692%26k%3D1795536886",
+      genre: "Malayalam & Mollywood Hits",
+      country: "India",
+      flag: "IN",
+      color: ["#10b981", "#047857"],
+      glow: "rgba(16,185,129,0.45)",
+      description: "Radio Malayalam — Classic & New Malayalam Tracks",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,1A9,9 0 0,0 3,10V17A3,3 0 0,0 6,20H9V12H5V10A7,7 0 0,1 12,3A7,7 0 0,1 19,10V12H15V20H18A3,3 0 0,0 21,17V10A9,9 0 0,0 12,1Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 19,
+      name: "Punjabi Radio",
+      url: "https://bolpunjabi-ekamsoftware.radioca.st/stream",
+      genre: "Punjabi Beats & Bhangra",
+      country: "India",
+      flag: "IN",
+      color: ["#ef4444", "#b91c1c"],
+      glow: "rgba(239,68,68,0.45)",
+      description: "Punjabi Radio — Top Bhangra & Punjabi Hits",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M21,3V15.5A3.5,3.5 0 0,1 17.5,19A3.5,3.5 0 0,1 14,15.5A3.5,3.5 0 0,1 17.5,12C18.04,12 18.55,12.12 19,12.34V6.47L9,8.6V17.5A3.5,3.5 0 0,1 5.5,21A3.5,3.5 0 0,1 2,17.5A3.5,3.5 0 0,1 5.5,14C6.04,14 6.55,14.12 7,14.34V6L21,3Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 20,
+      name: "HotMix Radio",
+      url: "https://streaming.hotmixradio.com/hotmix-2000-en-mp3",
+      genre: "2000s Pop & Dance Hits",
+      country: "Global",
+      flag: "STAR",
+      color: ["#ec4899", "#be185d"],
+      glow: "rgba(236,72,153,0.45)",
+      description: "HotMix Radio — Best 2000s Global Chart Hits",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5V7.5L16,12L10,16.5Z"/>
+        </svg>
+      )
+    },
+    {
+      id: 21,
+      name: "Radio Maithili",
+      url: "https://stream-175.surfernetwork.com/mtizdvyez4ctv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJtdGl6ZHZ5ZXo0Y3R2IiwiaG9zdCI6InN0cmVhbS0xNzUuc3VyZmVybmV0d29yay5jb20iLCJydHRsIjo1LCJqdGkiOiI2TW9tcUc3dVFVNkwwdzJyNWZvOUVRIiwiaWF0IjoxNzk1NTM3MTI0LCJleHAiOjE3OTU1MzcxODR9.ZG3PYY55BZHIqwlkawFtwuOLFVMh6WSiHAwUngcJrEo",
+      genre: "Maithili Folk & Melodies",
+      country: "India",
+      flag: "IN",
+      color: ["#6366f1", "#4338ca"],
+      glow: "rgba(99,102,241,0.45)",
+      description: "Radio Maithili — Soulful Maithili Songs 24/7",
+      icon: (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#ffffff">
+          <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
         </svg>
       )
     }

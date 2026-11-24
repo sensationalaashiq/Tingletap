@@ -42,7 +42,6 @@ import {
   MoodPresetIcon,
   LockPresetIcon,
   ShroudedEyeIcon,
-  WatchPartyStageIcon,
   ScheduleCalendarIcon,
 } from './icons/LuxuryModuleIcons';
 
@@ -90,8 +89,6 @@ const SettingsSidebar = ({
     onUpdateRoomMood,
     silentWatchActive = false,
     onToggleSilentWatch,
-    watchPartyOpen = false,
-    onToggleWatchParty,
 }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('general');
@@ -928,66 +925,71 @@ const SettingsSidebar = ({
                                     ROOM ATMOSPHERE &amp; MOOD
                                 </h4>
 
-                                <div className="tl-mood-grid">
-                                    {ROOM_MOOD_PRESETS.map((preset) => {
-                                        const isActive = (roomMood?.preset || 'midnight-velvet') === preset.id;
-                                        const isStaffMember = isStaffRole(loggedInUserProfile);
-                                        const isBlockedByLock = Boolean(roomMood?.locked) && !isStaffMember;
-                                        return (
-                                            <button
-                                                key={preset.id}
-                                                type="button"
-                                                disabled={isBlockedByLock}
-                                                onClick={() => {
-                                                    if (isBlockedByLock) {
-                                                        pt.info('Room mood is locked by room moderators.');
-                                                        return;
-                                                    }
-                                                    onUpdateRoomMood && onUpdateRoomMood(preset.id, roomMood?.locked || false);
-                                                }}
-                                                className={`tl-mood-swatch${isActive ? ' is-active' : ''}`}
-                                                style={{ background: preset.swatchGradient }}
-                                                title={isBlockedByLock ? 'Locked by room staff' : `Switch room mood to ${preset.label}`}
-                                            >
-                                                <div className="tl-mood-swatch-top">
-                                                    <MoodPresetIcon presetId={preset.id} size={17} />
-                                                    {isActive && (
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                                                            <polyline points="20 6 9 17 4 12" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <div className="tl-mood-swatch-title">{preset.label}</div>
-                                                <div className="tl-mood-swatch-sub">{preset.subtitle}</div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                {(() => {
+                                    const isStaffMember = isStaffRole(loggedInUserProfile);
+                                    return (
+                                        <>
+                                            <div className="tl-mood-grid">
+                                                {ROOM_MOOD_PRESETS.map((preset) => {
+                                                    const isActive = (roomMood?.preset || 'midnight-velvet') === preset.id;
+                                                    return (
+                                                        <button
+                                                            key={preset.id}
+                                                            type="button"
+                                                            disabled={!isStaffMember}
+                                                            aria-disabled={!isStaffMember}
+                                                            onClick={() => {
+                                                                if (!isStaffMember) return;
+                                                                onUpdateRoomMood && onUpdateRoomMood(preset.id, roomMood?.locked || false);
+                                                            }}
+                                                            className={`tl-mood-swatch${isActive ? ' is-active' : ''}`}
+                                                            style={{ background: preset.swatchGradient }}
+                                                            title={!isStaffMember ? 'Room mood is controlled by Owner, Admin & Moderator' : `Switch room mood to ${preset.label}`}
+                                                        >
+                                                            <div className="tl-mood-swatch-top">
+                                                                <MoodPresetIcon presetId={preset.id} size={17} />
+                                                                {isActive && (
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <polyline points="20 6 9 17 4 12" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <div className="tl-mood-swatch-title">{preset.label}</div>
+                                                            <div className="tl-mood-swatch-sub">{preset.subtitle}</div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
 
-                                <div className="tl-mood-lock-bar">
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                        <LockPresetIcon locked={Boolean(roomMood?.locked)} size={14} />
-                                        {roomMood?.locked ? 'Mood Locked for Room' : 'Room Mood Open to Members'}
-                                    </span>
-                                    {isStaffRole(loggedInUserProfile) && (
-                                        <label className="modern-toggle-switch" title="Lock or unlock room mood for non-staff">
-                                            <input
-                                                type="checkbox"
-                                                checked={Boolean(roomMood?.locked)}
-                                                onChange={(e) => {
-                                                    onUpdateRoomMood &&
-                                                        onUpdateRoomMood(roomMood?.preset || 'midnight-velvet', e.target.checked);
-                                                }}
-                                            />
-                                            <span className="modern-toggle-slider"></span>
-                                        </label>
-                                    )}
-                                </div>
+                                            <div className="tl-mood-lock-bar">
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                    <LockPresetIcon locked={!isStaffMember || Boolean(roomMood?.locked)} size={14} />
+                                                    {isStaffMember
+                                                        ? (roomMood?.locked ? 'Mood Locked to Staff-Only' : 'Staff Control Active')
+                                                        : 'Controlled by Owner, Admin & Moderator'}
+                                                </span>
+                                                {isStaffMember && (
+                                                    <label className="modern-toggle-switch" title="Room mood lock status">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={Boolean(roomMood?.locked)}
+                                                            onChange={(e) => {
+                                                                onUpdateRoomMood &&
+                                                                    onUpdateRoomMood(roomMood?.preset || 'midnight-velvet', e.target.checked);
+                                                            }}
+                                                        />
+                                                        <span className="modern-toggle-slider"></span>
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         )}
 
-                        {/* ── MODULE 3: MOD / ADMIN SILENT WATCH MODE ── */}
-                        {isStaffRole(loggedInUserProfile) && (
+                        {/* ── MODULE 3: OWNER / GODFATHER SILENT WATCH MODE ── */}
+                        {isOwnerRole(loggedInUserProfile) && (
                             <div className="setting-group" style={{ marginBottom: '12px' }}>
                                 <h4>
                                     <ShroudedEyeIcon size={16} active={silentWatchActive} color="currentColor" />
@@ -1003,7 +1005,7 @@ const SettingsSidebar = ({
                                                 {silentWatchActive ? 'Stealth Active' : 'Go Invisible in Room'}
                                             </div>
                                             <div style={{ fontSize: '10px', color: '#cbd5e1', lineHeight: 1.3 }}>
-                                                Hide from user roster &amp; silence join/leave alerts while keeping full mod controls
+                                                Owner stealth: hide from online roster &amp; join/leave alerts
                                             </div>
                                         </div>
                                     </div>
@@ -1016,39 +1018,6 @@ const SettingsSidebar = ({
                                         <span className="modern-toggle-slider"></span>
                                     </label>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* ── MODULE 5: SYNC WATCH-PARTY THEATER ── */}
-                        {currentRoomId && onToggleWatchParty && (
-                            <div className="setting-group" style={{ marginBottom: '12px' }}>
-                                <h4>
-                                    <WatchPartyStageIcon size={16} color="currentColor" />
-                                    CO-WATCH THEATER
-                                </h4>
-                                <button
-                                    type="button"
-                                    className={`tl-watch-sidebar-btn${watchPartyOpen ? ' is-active' : ''}`}
-                                    onClick={() => {
-                                        onToggleWatchParty();
-                                        onClose && onClose();
-                                    }}
-                                >
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
-                                        <WatchPartyStageIcon size={18} color="currentColor" />
-                                        <span style={{ textAlign: 'left' }}>
-                                            <strong style={{ display: 'block', fontSize: '11.5px' }}>
-                                                {watchPartyOpen ? 'Exit Watch-Party Mode' : 'Launch Sync Watch Party'}
-                                            </strong>
-                                            <small style={{ fontSize: '9.5px', opacity: 0.8 }}>
-                                                Split-screen Wotchly room synced to {currentRoomName || currentRoomId}
-                                            </small>
-                                        </span>
-                                    </span>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="9 18 15 12 9 6" />
-                                    </svg>
-                                </button>
                             </div>
                         )}
 

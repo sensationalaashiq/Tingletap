@@ -266,3 +266,133 @@
   color: #fdf4ff;
   text-align: center;
 }
+
+/* ── Light Mode Adaptation ── */
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-act-card,
+body.theme-light .tt-act-card {
+  background: linear-gradient(155deg, #ffffff 0%, #f5f3ff 100%);
+  border-color: rgba(124, 58, 237, 0.24);
+  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #1e1b4b;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-act-type-badge,
+body.theme-light .tt-act-type-badge {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.28);
+  color: #5b21b6;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-act-meta-right,
+body.theme-light .tt-act-meta-right {
+  color: #6b7280;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-act-title,
+body.theme-light .tt-act-title {
+  color: #1e1b4b;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-poll-opt,
+body.theme-light .tt-poll-opt {
+  background: #ffffff;
+  border-color: rgba(139, 92, 246, 0.24);
+  color: #1e1b4b;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-poll-opt-label,
+body.theme-light .tt-poll-opt-label {
+  color: #1e1b4b;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-poll-opt-pct,
+body.theme-light .tt-poll-opt-pct {
+  color: #6d28d9;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-act-foot,
+body.theme-light .tt-act-foot {
+  border-top-color: rgba(139, 92, 246, 0.14);
+  color: #6b7280;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-trivia-timer,
+body.theme-light .tt-trivia-timer {
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.35);
+  color: #0e7490;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-trivia-winner,
+body.theme-light .tt-trivia-winner {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #92400e;
+}
+
+body:not(.dark-mode):not(.theme-dark):not([class*="theme-"]) .tt-wheel-result,
+body.theme-light .tt-wheel-result {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #4c1d95;
+}
+
+/* ── All 5 Theme Variants (html.dark-theme-variant) ── */
+html.dark-theme-variant .tt-act-card {
+  background: linear-gradient(155deg, var(--bg-card) 0%, var(--bg-tertiary) 100%) !important;
+  border-color: var(--border-accent) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.36) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-act-type-badge {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--badge-text) !important;
+}
+
+html.dark-theme-variant .tt-act-meta-right {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .tt-act-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-poll-opt {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-poll-opt:hover:not(:disabled),
+html.dark-theme-variant .tt-poll-opt.is-selected {
+  border-color: var(--accent-color) !important;
+  background: var(--sidebar-hover) !important;
+}
+
+html.dark-theme-variant .tt-poll-opt-label {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-poll-opt-pct {
+  color: var(--accent-hover) !important;
+}
+
+html.dark-theme-variant .tt-act-foot {
+  border-top-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark-theme-variant .tt-wheel-spin-btn {
+  background: var(--button-primary-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--button-primary-text, #ffffff) !important;
+}
+
+html.dark-theme-variant .tt-wheel-result {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+

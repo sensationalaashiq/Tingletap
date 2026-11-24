@@ -303,7 +303,7 @@ const Sidebar = ({
 
     const recomputeCounts = () => {
       const serverNow = Date.now() + serverOffset;
-      const STALE_COUNT_MS = 3 * 60 * 1000;
+      const STALE_COUNT_MS = 70 * 1000;
       const counts = {};
       Object.entries(latestData || {}).forEach(([rid, members]) => {
         if (members && typeof members === 'object') {
@@ -344,7 +344,7 @@ const Sidebar = ({
           console.warn('[Sidebar] roomCounts listener error:', err?.message || err);
         }
       );
-      evictInterval = setInterval(recomputeCounts, 30000);
+      evictInterval = setInterval(recomputeCounts, 15000);
     };
 
     if (auth.currentUser) attachListener();

@@ -1,105 +1,41 @@
-/* Floating Mini-Games & Watch-Party Launcher above chat composer */
-.hp-activity-fab-wrap {
-  position: fixed;
-  right: 14px;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  z-index: 2050;
+/* Interactive Mini-Games & Polls Picker + Creator Modal (Theme-aware) */
+.hp-act-picker-list {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
   gap: 8px;
-}
-
-.hp-activity-fab {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-  border: 1.5px solid rgba(196, 181, 253, 0.55);
-  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 55%, #ec4899 100%);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  transition: transform 0.18s ease, box-shadow 0.2s ease;
-}
-
-.hp-activity-fab:hover {
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 10px 28px rgba(109, 40, 217, 0.52);
-}
-
-.hp-activity-fab:active {
-  transform: scale(0.96);
-}
-
-.hp-activity-popover {
-  width: 236px;
-  border-radius: 14px;
-  padding: 8px;
-  background: rgba(16, 13, 30, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(167, 139, 250, 0.34);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  animation: ttPopoverIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-@keyframes ttPopoverIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.hp-activity-pop-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: #a78bfa;
-  padding: 3px 8px 5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hp-activity-pop-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   width: 100%;
-  padding: 8px 9px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.03);
-  color: #f8fafc;
+  padding: 10px 11px;
+  border-radius: 11px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.06);
+  color: #1e1b4b;
   text-align: left;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease;
   font-family: inherit;
 }
 
 .hp-activity-pop-btn:hover {
-  background: rgba(139, 92, 246, 0.16);
-  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.45);
+  transform: translateY(-1px);
 }
 
 .hp-activity-pop-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(139, 92, 246, 0.18);
-  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(139, 92, 246, 0.26);
   flex-shrink: 0;
 }
 
@@ -107,28 +43,30 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 1px;
 }
 
 .hp-activity-pop-label strong {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.hp-activity-pop-label small {
-  font-size: 10px;
-  color: #94a3b8;
+  color: #1e1b4b;
   line-height: 1.25;
 }
 
-/* Composer Modal Overlay */
+.hp-activity-pop-label small {
+  font-size: 10.5px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+/* Composer & Picker Modal Overlay */
 .hp-act-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 99992;
-  background: rgba(5, 4, 14, 0.72);
+  background: rgba(5, 4, 14, 0.7);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,12 +76,28 @@
 .hp-act-modal {
   width: min(410px, 95vw);
   border-radius: 16px;
-  background: linear-gradient(160deg, #120f24 0%, #1a1533 100%);
-  border: 1px solid rgba(167, 139, 250, 0.36);
-  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.65);
-  color: #f8fafc;
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.26);
+  box-shadow: 0 20px 56px rgba(15, 10, 40, 0.24);
+  color: #1e1b4b;
   padding: 18px;
   font-family: inherit;
+  animation: ttModalIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hp-act-picker-modal {
+  width: min(360px, 94vw);
+}
+
+@keyframes ttModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .hp-act-modal-hdr {
@@ -152,7 +106,7 @@
   justify-content: space-between;
   margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16);
 }
 
 .hp-act-modal-hdr h4 {
@@ -162,16 +116,16 @@
   gap: 8px;
   font-size: 14.5px;
   font-weight: 800;
-  color: #ffffff;
+  color: #1e1b4b;
 }
 
 .hp-act-close-x {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.08);
+  color: #4c1d95;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,7 +140,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: #c4b5fd;
+  color: #6d28d9;
   margin-bottom: 5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -197,9 +151,9 @@
   width: 100%;
   box-sizing: border-box;
   border-radius: 9px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(9, 8, 20, 0.78);
-  color: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: #f8f7ff;
+  color: #1e1b4b;
   font-size: 12.5px;
   padding: 9px 10px;
   font-family: inherit;
@@ -208,7 +162,7 @@
 
 .hp-act-input:focus,
 .hp-act-textarea:focus {
-  border-color: #a78bfa;
+  border-color: #7c3aed;
 }
 
 .hp-act-opt-row {
@@ -221,9 +175,9 @@
 .hp-act-radio-correct {
   padding: 7px 9px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: rgba(139, 92, 246, 0.08);
+  color: #5b21b6;
   font-size: 10.5px;
   font-weight: 700;
   cursor: pointer;
@@ -231,9 +185,9 @@
 }
 
 .hp-act-radio-correct.active {
-  background: rgba(16, 185, 129, 0.22);
-  border-color: rgba(52, 211, 153, 0.75);
-  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.7);
+  color: #047857;
 }
 
 .hp-act-footer-btns {
@@ -246,9 +200,9 @@
 .hp-act-btn-secondary {
   padding: 8px 14px;
   border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  border: 1px solid rgba(139, 92, 246, 0.24);
+  background: rgba(139, 92, 246, 0.08);
+  color: #4c1d95;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -259,14 +213,184 @@
   border-radius: 9px;
   border: none;
   background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.42);
+  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.36);
 }
 
 .hp-act-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Dark Mode (.dark-mode) ── */
+html.dark-mode .hp-act-modal,
+body.dark-mode .hp-act-modal {
+  background: linear-gradient(160deg, #120f24 0%, #1a1533 100%);
+  border-color: rgba(167, 139, 250, 0.36);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.65);
+  color: #f8fafc;
+}
+
+html.dark-mode .hp-act-modal-hdr,
+body.dark-mode .hp-act-modal-hdr {
+  border-bottom-color: rgba(255, 255, 255, 0.09);
+}
+
+html.dark-mode .hp-act-modal-hdr h4,
+body.dark-mode .hp-act-modal-hdr h4 {
+  color: #ffffff;
+}
+
+html.dark-mode .hp-act-close-x,
+body.dark-mode .hp-act-close-x {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+html.dark-mode .hp-activity-pop-btn,
+body.dark-mode .hp-activity-pop-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(167, 139, 250, 0.24);
+  color: #f8fafc;
+}
+
+html.dark-mode .hp-activity-pop-btn:hover,
+body.dark-mode .hp-activity-pop-btn:hover {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(167, 139, 250, 0.42);
+}
+
+html.dark-mode .hp-activity-pop-icon,
+body.dark-mode .hp-activity-pop-icon {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
+html.dark-mode .hp-activity-pop-label strong,
+body.dark-mode .hp-activity-pop-label strong {
+  color: #ffffff;
+}
+
+html.dark-mode .hp-activity-pop-label small,
+body.dark-mode .hp-activity-pop-label small {
+  color: #94a3b8;
+}
+
+html.dark-mode .hp-act-field label,
+body.dark-mode .hp-act-field label {
+  color: #c4b5fd;
+}
+
+html.dark-mode .hp-act-input,
+html.dark-mode .hp-act-textarea,
+body.dark-mode .hp-act-input,
+body.dark-mode .hp-act-textarea {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(9, 8, 20, 0.78);
+  color: #ffffff;
+}
+
+html.dark-mode .hp-act-radio-correct,
+body.dark-mode .hp-act-radio-correct {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+html.dark-mode .hp-act-radio-correct.active,
+body.dark-mode .hp-act-radio-correct.active {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.75);
+  color: #6ee7b7;
+}
+
+html.dark-mode .hp-act-btn-secondary,
+body.dark-mode .hp-act-btn-secondary {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+/* ── All 5 Theme Variants (html.dark-theme-variant) ── */
+html.dark-theme-variant .hp-act-modal {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.68) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-act-modal-hdr {
+  border-bottom-color: var(--border-color) !important;
+}
+
+html.dark-theme-variant .hp-act-modal-hdr h4 {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-act-close-x {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-activity-pop-btn {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-activity-pop-btn:hover {
+  background: var(--sidebar-hover) !important;
+  border-color: var(--accent-color) !important;
+}
+
+html.dark-theme-variant .hp-activity-pop-icon {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+}
+
+html.dark-theme-variant .hp-activity-pop-label strong {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-activity-pop-label small {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .hp-act-field label {
+  color: var(--accent-hover) !important;
+}
+
+html.dark-theme-variant .hp-act-input,
+html.dark-theme-variant .hp-act-textarea {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
+}
+
+html.dark-theme-variant .hp-act-radio-correct {
+  background: var(--button-secondary-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .hp-act-radio-correct.active {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: #34d399 !important;
+  color: #6ee7b7 !important;
+}
+
+html.dark-theme-variant .hp-act-btn-secondary {
+  background: var(--button-secondary-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .hp-act-btn-primary {
+  background: var(--button-primary-bg) !important;
+  color: var(--button-primary-text, #ffffff) !important;
 }

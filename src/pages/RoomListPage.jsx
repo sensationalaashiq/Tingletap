@@ -296,7 +296,7 @@ const RoomListPage = () => {
 
   // ── Room occupancy counts — strict server-time freshness (zero ghost/legacy counts) ──
   useEffect(() => {
-    const STALE_COUNT_MS = 3 * 60 * 1000;
+    const STALE_COUNT_MS = 70 * 1000;
     let serverOffset = 0;
     let latestData = {};
 
@@ -333,7 +333,7 @@ const RoomListPage = () => {
       recompute();
     });
 
-    const evictInterval = setInterval(recompute, 30000);
+    const evictInterval = setInterval(recompute, 15000);
 
     return () => {
       clearInterval(evictInterval);

@@ -1,9 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-.pco-root {
+footer.pco-root {
   all: revert;
   position: relative;
   margin-top: auto;
+  align-self: stretch;
   width: 100%;
   max-width: 100%;
   flex-shrink: 0;
@@ -44,7 +45,7 @@
   50% { opacity: 0.95; transform: scale(1.18) rotate(45deg); }
 }
 
-.pco-aurora {
+footer.pco-root .pco-aurora {
   position: absolute;
   inset: -40% -20%;
   background:
@@ -54,32 +55,34 @@
   pointer-events: none;
 }
 
-.pco-sparkle {
+footer.pco-root .pco-sparkle {
   position: absolute;
   pointer-events: none;
   z-index: 2;
   filter: drop-shadow(0 0 6px rgba(253, 230, 138, 0.85));
 }
 
-.pco-sparkle--1 {
+footer.pco-root .pco-sparkle--1 {
   top: 7px;
   left: 12px;
   animation: pco-spark-twinkle 3.2s ease-in-out infinite;
 }
 
-.pco-sparkle--2 {
+footer.pco-root .pco-sparkle--2 {
   bottom: 7px;
   right: 13px;
   animation: pco-spark-twinkle 3.8s ease-in-out 1.4s infinite;
 }
 
-.pco-chip {
+footer.pco-root .pco-chip {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: auto;
   max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
   padding: 13px 28px;
   border-radius: 20px;
   background:
@@ -98,7 +101,7 @@
   transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
 }
 
-.pco-chip:hover {
+footer.pco-root .pco-chip:hover {
   transform: translateY(-2px);
   border-color: rgba(253, 224, 71, 0.68);
   box-shadow:
@@ -108,7 +111,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.pco-shimmer-line {
+footer.pco-root .pco-shimmer-line {
   position: absolute;
   top: 0;
   left: 0;
@@ -126,7 +129,7 @@
   pointer-events: none;
 }
 
-.pco-shimmer-line--bottom {
+footer.pco-root .pco-shimmer-line--bottom {
   top: auto;
   bottom: 0;
   height: 1px;
@@ -134,7 +137,7 @@
   animation-direction: reverse;
 }
 
-.pco-sheen {
+footer.pco-root .pco-sheen {
   position: absolute;
   inset: 0;
   background: linear-gradient(108deg, transparent 26%, rgba(255, 255, 255, 0.12) 50%, transparent 74%);
@@ -143,7 +146,7 @@
   pointer-events: none;
 }
 
-.pco-chip:hover .pco-sheen {
+footer.pco-root .pco-chip:hover .pco-sheen {
   transform: translateX(140%);
 }
 
@@ -152,7 +155,7 @@
   100% { background-position: -200% 0; }
 }
 
-.pco-inner {
+footer.pco-root .pco-inner {
   position: relative;
   z-index: 1;
   display: flex;
@@ -161,26 +164,32 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px 16px;
+  padding: 0;
+  margin: 0;
   min-width: 0;
   box-sizing: border-box;
 }
 
-.pco-seg {
+footer.pco-root .pco-seg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 7px;
+  padding: 0;
+  margin: 0;
   min-width: 0;
   box-sizing: border-box;
 }
 
-.pco-gem-wrap {
+footer.pco-root .pco-gem-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
+  padding: 0;
+  margin: 0;
   border-radius: 9px;
   background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(168, 85, 247, 0.26));
   border: 1px solid rgba(253, 224, 71, 0.42);
@@ -189,28 +198,30 @@
   animation: pco-gem-float 3.6s ease-in-out infinite;
 }
 
-.pco-icon {
+footer.pco-root .pco-icon {
   display: block;
   flex-shrink: 0;
 }
 
-.pco-flag {
+footer.pco-root .pco-flag {
   border-radius: 2px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-.pco-origin-pill {
+footer.pco-root .pco-origin-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
+  margin: 0;
   border-radius: 9px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(251, 191, 36, 0.08));
   border: 1px solid rgba(253, 224, 71, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-sizing: border-box;
 }
 
-.pco-year {
+footer.pco-root .pco-year {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   font-weight: 600;
@@ -220,7 +231,7 @@
   line-height: 1.2;
 }
 
-.pco-brand {
+footer.pco-root .pco-brand {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 19px;
   font-weight: 700;
@@ -235,14 +246,14 @@
   line-height: 1.1;
 }
 
-.pco-sep {
+footer.pco-root .pco-sep {
   font-size: 11px;
   color: rgba(253, 224, 71, 0.56);
   font-weight: 700;
   line-height: 1;
 }
 
-.pco-rights {
+footer.pco-root .pco-rights {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 10.5px;
   font-weight: 700;
@@ -252,14 +263,14 @@
   line-height: 1.2;
 }
 
-.pco-divider {
+footer.pco-root .pco-divider {
   width: 1px;
   height: 18px;
   background: linear-gradient(180deg, transparent, rgba(251, 191, 36, 0.62), transparent);
   flex-shrink: 0;
 }
 
-.pco-craft-text {
+footer.pco-root .pco-craft-text {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11.5px;
   font-weight: 500;
@@ -267,7 +278,7 @@
   line-height: 1.2;
 }
 
-.pco-adrashtra {
+footer.pco-root .pco-adrashtra {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 17px;
   font-weight: 700;
@@ -282,7 +293,7 @@
   line-height: 1.1;
 }
 
-.pco-india-text {
+footer.pco-root .pco-india-text {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11.5px;
   font-weight: 700;
@@ -296,66 +307,66 @@
   50% { transform: scale(1.18); }
 }
 
-.pco-heart-svg {
+footer.pco-root .pco-heart-svg {
   animation: pco-heartbeat 2s ease-in-out infinite;
 }
 
 @media (max-width: 760px) {
-  .pco-root {
+  footer.pco-root {
     padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px));
   }
-  .pco-chip {
+  footer.pco-root .pco-chip {
     padding: 11px 16px;
     border-radius: 14px;
     width: 100%;
     max-width: 480px;
   }
-  .pco-inner {
+  footer.pco-root .pco-inner {
     flex-direction: column;
     gap: 6px;
   }
-  .pco-divider {
+  footer.pco-root .pco-divider {
     display: none;
   }
-  .pco-brand {
+  footer.pco-root .pco-brand {
     font-size: 16.5px;
   }
-  .pco-adrashtra {
+  footer.pco-root .pco-adrashtra {
     font-size: 15px;
   }
-  .pco-year,
-  .pco-craft-text,
-  .pco-india-text {
+  footer.pco-root .pco-year,
+  footer.pco-root .pco-craft-text,
+  footer.pco-root .pco-india-text {
     font-size: 11px;
   }
-  .pco-rights {
+  footer.pco-root .pco-rights {
     font-size: 9.5px;
   }
 }
 
 @media (max-width: 380px) {
-  .pco-chip {
+  footer.pco-root .pco-chip {
     padding: 10px 12px;
   }
-  .pco-seg {
+  footer.pco-root .pco-seg {
     gap: 5px;
   }
-  .pco-year,
-  .pco-craft-text,
-  .pco-india-text {
+  footer.pco-root .pco-year,
+  footer.pco-root .pco-craft-text,
+  footer.pco-root .pco-india-text {
     font-size: 10.5px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pco-shimmer-line,
-  .pco-heart-svg,
-  .pco-aurora,
-  .pco-sheen,
-  .pco-gem-wrap,
-  .pco-brand,
-  .pco-adrashtra,
-  .pco-sparkle {
+  footer.pco-root .pco-shimmer-line,
+  footer.pco-root .pco-heart-svg,
+  footer.pco-root .pco-aurora,
+  footer.pco-root .pco-sheen,
+  footer.pco-root .pco-gem-wrap,
+  footer.pco-root .pco-brand,
+  footer.pco-root .pco-adrashtra,
+  footer.pco-root .pco-sparkle {
     animation: none;
   }
 }

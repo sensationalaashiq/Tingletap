@@ -9,7 +9,8 @@ import {
   resolveBadgeKey,
   getRoleDisplayLabel,
   getStoredGuestGender,
-  getDefaultAvatarUrl
+  getDefaultAvatarUrl,
+  resolveEarliestCreatedAt
 } from '../utils/roleUtils';
 import { auth, db, rtdb } from '../firebase/config';
 import { syncPublicProfile } from '../utils/syncPublicProfile';
@@ -552,12 +553,13 @@ const WelcomeDashboard = () => {
             if (banModalIntervalRef.current) clearInterval(banModalIntervalRef.current);
             banModalIntervalRef.current = setInterval(() => setShowBanModal(true), 1000);
           }
-          let dt = d.createdAt || cu.metadata.creationTime;
-          if (dt?.toDate) dt = dt.toDate();
-          else if (typeof dt === 'string') dt = new Date(dt);
-          setCurrentDate(!isNaN(new Date(dt)) ? new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+          const trueJoinDate = resolveEarliestCreatedAt(d.createdAt, cu?.metadata?.creationTime);
+          setCurrentDate(trueJoinDate ? trueJoinDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
           setUserRole(d.role || 'registered');
           setUserBadge(d.badge || null);
+        } else if (cu?.metadata?.creationTime) {
+          const authDate = resolveEarliestCreatedAt(null, cu.metadata.creationTime);
+          setCurrentDate(authDate ? authDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
         }
       } catch { setCurrentDate(''); }
     });
@@ -983,6 +985,10 @@ const WelcomeDashboard = () => {
               <span className="wd-ms-label">Member Since</span>
               <span className="wd-ms-date">{(() => {
                 if (currentDate) return currentDate;
+                const authJoinDate = (!isGuestUser && auth.currentUser?.metadata?.creationTime)
+                  ? resolveEarliestCreatedAt(null, auth.currentUser.metadata.creationTime)
+                  : null;
+                if (authJoinDate) return authJoinDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                 const src = guestUser || readGuestFromStorage();
                 if (src?.createdAt) {
                   const dt = new Date(src.createdAt);

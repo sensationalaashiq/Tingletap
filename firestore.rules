@@ -268,13 +268,10 @@ service cloud.firestore {
         allow read, write: if isStaff();
       }
 
-      // Live Room Mood & Visual Theme Switcher
+      // Live Room Mood & Visual Theme Switcher (Owner / Admin / Mod only)
       match /mood/{moodDocId} {
         allow read: if request.auth != null;
-        allow create, update: if request.auth != null
-                              && notBanned()
-                              && notMuted()
-                              && !isKickedFrom(request.auth.uid, roomId)
+        allow create, update: if isStaff()
                               && request.resource.data.keys().hasOnly([
                                 'preset', 'locked', 'updatedBy', 'updatedByName', 'updatedAt'
                               ])
@@ -282,17 +279,7 @@ service cloud.firestore {
                                 'midnight-velvet', 'navrang-aura', 'neon-lounge', 'warm-mehfil'
                               ]
                               && request.resource.data.locked is bool
-                              && request.resource.data.updatedBy == request.auth.uid
-                              && (
-                                isStaff()
-                                || (
-                                  request.resource.data.locked == false
-                                  && (
-                                    !exists(/databases/$(database)/documents/rooms/$(roomId)/mood/$(moodDocId))
-                                    || resource.data.get('locked', false) == false
-                                  )
-                                )
-                              );
+                              && request.resource.data.updatedBy == request.auth.uid;
         allow delete: if isStaff();
       }
 
@@ -371,17 +358,17 @@ service cloud.firestore {
         }
       }
 
-      // Mod / Admin Silent Watch Mode (strictly staff-isolated)
+      // Owner / Godfather Silent Watch Mode (strictly Owner-only)
       match /silentWatch/{watchUid} {
-        allow read: if isStaff() && (request.auth.uid == watchUid || isOwner());
-        allow create, update: if isStaff()
+        allow read: if isOwner() && request.auth.uid == watchUid;
+        allow create, update: if isOwner()
                               && request.auth.uid == watchUid
                               && request.resource.data.keys().hasOnly([
                                 'uid', 'active', 'roomId', 'updatedAt'
                               ])
                               && request.resource.data.uid == request.auth.uid
                               && request.resource.data.active is bool;
-        allow delete: if isStaff() && (request.auth.uid == watchUid || isOwner());
+        allow delete: if isOwner() && request.auth.uid == watchUid;
       }
     }
 
@@ -867,7 +854,7 @@ service cloud.firestore {
     // SILENT WATCH & DAILY BROADCAST LINEUP SCHEDULES
     // ================================================================
     match /silentWatch/{watchUid} {
-      allow read, write: if isStaff() && (request.auth.uid == watchUid || isOwner());
+      allow read, write: if isOwner() && request.auth.uid == watchUid;
     }
 
     match /schedules/{scheduleId} {

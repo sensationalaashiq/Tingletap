@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth, rtdb } from '../firebase/config';
 import {
-    collection, doc, getDoc, query, orderBy, onSnapshot, where, limit, documentId,
+    collection, doc, getDoc, getDocFromServer, query, orderBy, onSnapshot, where, limit, documentId,
     addDoc, deleteDoc, serverTimestamp, setDoc, limitToLast, updateDoc, getDocs, writeBatch,
     arrayUnion, arrayRemove, deleteField, runTransaction
 } from 'firebase/firestore';
@@ -61,7 +61,8 @@ import {
     isRjRole,
     isGuestUser,
     isRealAvatarUpload,
-    resolveBadgeKey
+    resolveBadgeKey,
+    resolveEarliestCreatedAt
 } from '../utils/roleUtils';
 import DeviceFingerprint from '../utils/deviceFingerprint';
 import { pt } from '../utils/premiumToast';
@@ -73,8 +74,7 @@ import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils
 import { syncPublicProfile } from '../utils/syncPublicProfile';
 import ChatActivityCard from '../components/chat/ChatActivityCard';
 import FloatingActivityLauncher from '../components/chat/FloatingActivityLauncher';
-import WatchPartyStage from '../components/room/WatchPartyStage';
-import { ShroudedEyeIcon } from '../components/icons/LuxuryModuleIcons';
+import { ShroudedEyeIcon, ActivitySparkIcon } from '../components/icons/LuxuryModuleIcons';
 import {
     VALID_MOOD_IDS,
     SILENT_WATCH_STORAGE_KEY,
@@ -466,7 +466,7 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
                         ref={avatarRef}
                         src={avatarUrl} 
                         alt="avatar"
-                        loading="lazy"
+                        decoding="async"
                         className={`message-avatar avatar-gender-${avatarGender}${!hasCustomAvatar ? ' default-avatar-animated' : ''}`}
                         onClick={(e) => {
                             if (!isBot && !isMyMessage) {
@@ -1025,7 +1025,7 @@ const PendingChatMessage = React.memo(function PendingChatMessage({ message, isE
                     <img
                         src={avatarUrl}
                         alt="avatar"
-                        className={`message-avatar avatar-gender-${avatarGender}${!isRealUpload ? ' default-avatar-animated' : ''}`}
+                        className={`message-avatar avatar-gender-${avatarGender}${!isRealAvatarUpload(photoURL) ? ' default-avatar-animated' : ''}`}
                         style={{ cursor: 'default', opacity: 1 }}
                     />
                 </div>
@@ -1363,11 +1363,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     });
     const silentWatchRef = useRef(silentWatchActive);
-    // ── Module 5: Integrated Sync Watch-Party Theater ──
-    const [watchPartyOpen, setWatchPartyOpen] = useState(false);
-    const [watchPartyExpanded, setWatchPartyExpanded] = useState(false);
-    const [watchPartyMobileChatCollapsed, setWatchPartyMobileChatCollapsed] = useState(false);
-    const watchSplitRef = useRef(null);
+    const [isGamesPickerOpen, setIsGamesPickerOpen] = useState(false);
     const silentBannerRef = useRef(null);
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [usersWhoBlockedMe, setUsersWhoBlockedMe] = useState([]);
@@ -1644,20 +1640,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             const bannerH = silentBannerRef.current?.offsetHeight || 0;
             const topOffset = hdrH + bannerH;
 
-            if (watchPartyOpen && watchSplitRef.current) {
-                watchSplitRef.current.style.setProperty('top', `${topOffset}px`);
-                watchSplitRef.current.style.setProperty('bottom', `${h}px`);
-                watchSplitRef.current.style.setProperty('height', `calc(100dvh - ${topOffset}px - ${h}px)`);
-                if (chatFeedRef.current) {
-                    chatFeedRef.current.style.removeProperty('top');
-                    chatFeedRef.current.style.removeProperty('bottom');
-                    chatFeedRef.current.style.removeProperty('height');
-                    chatFeedRef.current.style.removeProperty('min-height');
-                    chatFeedRef.current.style.removeProperty('max-height');
-                }
-                return;
-            }
-
             const feedEl = chatFeedRef.current;
             if (!feedEl) return;
             feedEl.style.setProperty('top', `${topOffset}px`, 'important');
@@ -1678,7 +1660,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             ro.disconnect();
             window.removeEventListener('resize', syncHeight);
         };
-    }, [watchPartyOpen, silentWatchActive]);
+    }, [silentWatchActive]);
 
     // ── Module 1, 2, 3 & 4 Real-Time Subscriptions ──────────────────────────
     useEffect(() => {
@@ -1717,11 +1699,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
     }, [roomId]);
 
-    // Staff-only Silent Watch Firestore sync (non-staff always forced off)
+    // Owner-only Silent Watch Firestore sync (all other roles strictly forced off)
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
-        const staffOk = isStaffRole(loggedInUserProfile);
-        if (!staffOk || !authUid || !roomId) {
+        const ownerOk = isOwnerRole(loggedInUserProfile);
+        if (!ownerOk || !authUid || !roomId) {
             silentWatchRef.current = false;
             setSilentWatchActive(false);
             return;
@@ -1803,12 +1785,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!roomId || !VALID_MOOD_IDS.includes(nextPreset)) return;
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
         if (!authUid) return;
-        const isStaffMember = isStaffRole(loggedInUserProfile);
-        if (roomMood?.locked && !isStaffMember) {
-            pt.info('Room mood is locked by moderators.');
+        if (!isStaffRole(loggedInUserProfile)) {
+            pt.error('Only Owner, Admin & Moderators can change room mood.');
             return;
         }
-        const resolvedLock = isStaffMember ? Boolean(nextLocked) : false;
+        const resolvedLock = Boolean(nextLocked);
         setRoomMood({ preset: nextPreset, locked: resolvedLock });
         try {
             await setDoc(doc(db, 'rooms', roomId, 'mood', 'current'), {
@@ -1821,11 +1802,11 @@ const HomePage = ({ user, roomIdOverride }) => {
         } catch (err) {
             pt.error(err?.message || 'Unable to update room mood.');
         }
-    }, [roomId, firebaseAuthUid, loggedInUserProfile, roomMood?.locked]);
+    }, [roomId, firebaseAuthUid, loggedInUserProfile]);
 
     const handleToggleSilentWatch = useCallback(async (nextActive) => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
-        if (!authUid || !roomId || !isStaffRole(loggedInUserProfile)) return;
+        if (!authUid || !roomId || !isOwnerRole(loggedInUserProfile)) return;
         const enable = Boolean(nextActive);
         silentWatchRef.current = enable;
         setSilentWatchActive(enable);
@@ -1961,8 +1942,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             joinedFirebaseUidRef.current = firebaseUid;
             activeKey = `${roomId}_${firebaseUid}`;
 
-            // Silent Watch Mode suppresses room join broadcasts for staff
-            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
+            // Silent Watch Mode suppresses room join broadcasts for Owner
+            if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
                 window._tingleBotRoomId = roomId;
                 return;
             }
@@ -2014,7 +1995,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return;
             }
 
-            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
+            if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current || loggedInUserProfile)) {
                 return;
             }
 
@@ -2024,7 +2005,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Delay leave notice slightly (450ms) so React.StrictMode remount cancels it cleanly
             const timer = setTimeout(() => {
-                if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) return;
+                if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current)) return;
                 _tbPendingLeaveTimers.delete(cleanupKey);
                 _tbRecentJoinAt.delete(cleanupKey);
                 sessionStorage.removeItem(`tbt_joined_${roomId}_${usedUid}`);
@@ -2709,30 +2690,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         
         if (user) {
             const userDocRef = doc(db, 'users', user.uid);
-
-            getDoc(userDocRef).then(async (docSnap) => {
-                if (!docSnap.exists()) {
-                    const defaultUserData = {
-                        uid: user.uid,
-                        displayName: user.displayName
-                            || (user.isAnonymous ? (localStorage.getItem('guestUser') ? (JSON.parse(localStorage.getItem('guestUser')).displayName || 'Guest') : 'Guest') : 'Anonymous'),
-                        email: user.email,
-                        photoURL: isRealAvatarUpload(user.photoURL) ? user.photoURL : getDefaultAvatarUrl(user.uid, user.gender, Boolean(user.isAnonymous)),
-                        role: user.isAnonymous ? 'guest' : 'user',
-                        gender: 'male',
-                        country: 'Unknown',
-                        status: "I'm new here!",
-                        bio: '',
-                        createdAt: serverTimestamp(),
-                        isOnline: true
-                    };
-
-                    try {
-                        await setDoc(userDocRef, defaultUserData);
-                    } catch (error) {
-                    }
-                }
-            });
+            // Registered profile creation & healing are owned exclusively by SignupPage / App.jsx.
+            // Never overwrite users/{uid} with default role/createdAt on transient cache misses.
 
             // FIX 5: Centralise to ONE Firestore listener (owned by App.jsx).
             // HomePage consumes profile updates via a window event dispatched by App.jsx,
@@ -2802,7 +2761,11 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Initial load (single getDoc — App.jsx owns the real-time onSnapshot)
             getDoc(userDocRef).then(docSnap => {
-                if (docSnap.exists()) handleLoggedInProfile(docSnap.data());
+                if (docSnap.exists()) {
+                    const raw = docSnap.data();
+                    const earliest = resolveEarliestCreatedAt(raw?.createdAt, !user.isAnonymous ? auth.currentUser?.metadata?.creationTime : null);
+                    handleLoggedInProfile(earliest ? { ...raw, createdAt: earliest } : raw);
+                }
             }).catch(() => {});
 
             // If App.jsx has already fetched the profile, use it immediately
@@ -3293,8 +3256,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             photoURL: isRealAvatarUpload(photoURL) ? photoURL : getDefaultAvatarUrl(currentUid, gender, Boolean(isGuest)),
         };
 
-        // Silent Watch Mode: skip self-inject and RTDB presence writes for stealth staff
-        if (silentWatchRef.current && isStaffRole(cachedAppProfile || loggedInUserProfileRef.current)) {
+        // Silent Watch Mode: skip self-inject and RTDB presence writes for Owner stealth
+        if (silentWatchRef.current && isOwnerRole(cachedAppProfile || loggedInUserProfileRef.current)) {
             if (authUid) {
                 remove(ref(rtdb, `room_presence/${roomId}/${authUid}`)).catch(() => {});
                 remove(ref(rtdb, `roomCounts/${roomId}/${authUid}`)).catch(() => {});
@@ -3358,7 +3321,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
         window._currentStatusData = { ...statusData };
 
-        if (silentWatchRef.current && isStaffRole(loggedInUserProfile)) {
+        if (silentWatchRef.current && isOwnerRole(loggedInUserProfile)) {
             remove(ref(rtdb, `room_presence/${roomId}/${authUid}`)).catch(() => {});
             remove(ref(rtdb, `roomCounts/${roomId}/${authUid}`)).catch(() => {});
             update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
@@ -3381,7 +3344,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         loggedInUserProfile?.settings?.showOnlineStatus,
     ]);
 
-    // ── PRESENCE PART 2: Room-scoped onDisconnect + 45s server-time heartbeat ─
+    // ── PRESENCE PART 2: Room-scoped onDisconnect + 20s heartbeat + unload cleanup ─
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
         const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
@@ -3399,7 +3362,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         onDisconnect(roomCountRef).remove();
 
         const heartbeatInterval = setInterval(() => {
-            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) return;
+            if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current)) return;
             const cached = window._currentStatusData;
             if (cached) {
                 const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() };
@@ -3411,10 +3374,20 @@ const HomePage = ({ user, roomIdOverride }) => {
                 update(roomPresenceRef, { state: 'online', currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
             }
             set(roomCountRef, { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
-        }, 45000);
+        }, 20000);
+
+        const handleUnloadCleanup = () => {
+            remove(roomPresenceRef).catch(() => {});
+            remove(roomCountRef).catch(() => {});
+            update(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
+        };
+        window.addEventListener('pagehide', handleUnloadCleanup);
+        window.addEventListener('beforeunload', handleUnloadCleanup);
 
         return () => {
             clearInterval(heartbeatInterval);
+            window.removeEventListener('pagehide', handleUnloadCleanup);
+            window.removeEventListener('beforeunload', handleUnloadCleanup);
             // Room-scoped cleanup ONLY: never clobber global status/{uid} to offline during room switches
             remove(roomPresenceRef).catch(() => {});
             remove(roomCountRef).catch(() => {});
@@ -4025,7 +3998,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
 
-    // Smart auto-scroll state
+    // Smart scroll state: auto-scroll ONCE upon room entry, then strictly manual
     const [hasUserScrolled, setHasUserScrolled] = useState(false);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
@@ -4034,29 +4007,27 @@ const HomePage = ({ user, roomIdOverride }) => {
     const userTouchWheelTimerRef = useRef(null);
     const isProgrammaticScrollRef = useRef(false);
     const programmaticScrollTimerRef = useRef(null);
+    const entryScrollDoneRef = useRef(false);
+    const userScrolledDuringLoadRef = useRef(false);
 
-    // Enhanced auto-scroll functionality with professional chat behavior
+    // Jump to latest message when explicitly requested or on entry
     const scrollToBottom = useCallback((force = false, smooth = false) => {
         if (!chatFeedRef.current) return;
         const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
         if (!force && !autoScrollEnabled) return;
-        
+
         const element = chatFeedRef.current;
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-        
-        // Auto-scroll conditions:
-        // 1. Force is true (room entry, user sent message, manual button click)
-        // 2. Haven't done initial scroll yet
-        // 3. User is sitting at the bottom and hasn't scrolled up to read history
-        if (force || !hasInitialScrolled || (isNearBottom && !hasUserScrolled)) {
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 95;
+
+        if (force || (isNearBottom && !hasUserScrolled)) {
             isProgrammaticScrollRef.current = true;
             if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
             programmaticScrollTimerRef.current = setTimeout(() => {
                 isProgrammaticScrollRef.current = false;
-            }, 180);
+            }, 160);
 
             if (smooth && hasInitialScrolled) {
                 element.scrollTo({
@@ -4066,7 +4037,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             } else {
                 element.scrollTop = scrollHeight;
             }
-            
+
             setIsAtBottom(true);
             setShowScrollToBottomBtn(false);
             if (force) {
@@ -4078,145 +4049,116 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [hasInitialScrolled, hasUserScrolled]);
 
-    // Track real user interaction (wheel, touch, pointer) so layout shifts don't fake a scroll
+    // Track real user interaction (wheel, touch, pointer) so manual scrolling is never interrupted
     const handleUserInteractionStart = useCallback(() => {
         userInitiatedScrollRef.current = true;
+        userScrolledDuringLoadRef.current = true;
         if (userTouchWheelTimerRef.current) clearTimeout(userTouchWheelTimerRef.current);
         userTouchWheelTimerRef.current = setTimeout(() => {
             userInitiatedScrollRef.current = false;
-        }, 1200);
+        }, 900);
     }, []);
 
-    // Handle scroll events to detect manual scrolling
+    // Detect manual scrolling cleanly
     const handleScroll = useCallback(() => {
-        if (!chatFeedRef.current) return;
-        // Ignore scroll events triggered by our own programmatic scrollToBottom calls
-        if (isProgrammaticScrollRef.current) {
-            return;
-        }
-        
+        if (!chatFeedRef.current || isProgrammaticScrollRef.current) return;
+
         const element = chatFeedRef.current;
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        
-        // Check if user is near bottom (within 90px)
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 90;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
         setIsAtBottom(isNearBottom);
-        
+
         if (isNearBottom) {
-            // User scrolled back to the very bottom — re-enable auto-scroll
             setHasUserScrolled(false);
             setShowScrollToBottomBtn(false);
-        } else if (userInitiatedScrollRef.current) {
-            // User scrolled UP manually via wheel/touch — respect their position and show quick button
-            setHasUserScrolled(true);
+        } else {
+            if (userInitiatedScrollRef.current) {
+                setHasUserScrolled(true);
+                entryScrollDoneRef.current = true;
+            }
             setShowScrollToBottomBtn(true);
         }
     }, []);
 
-    // Scroll to bottom manually (when button is clicked)
+    // Scroll to bottom manually (when "Latest" chip is clicked)
     const handleScrollToBottomClick = () => {
         if (!chatFeedRef.current) return;
+        entryScrollDoneRef.current = true;
         setHasUserScrolled(false);
         userInitiatedScrollRef.current = false;
         scrollToBottom(true, true);
     };
 
-    // Add scroll & user interaction event listeners to chat feed
+    // Attach passive scroll & interaction listeners
     useEffect(() => {
         const chatElement = chatFeedRef.current;
-        if (chatElement) {
-            chatElement.addEventListener('scroll', handleScroll, { passive: true });
-            chatElement.addEventListener('wheel', handleUserInteractionStart, { passive: true });
-            chatElement.addEventListener('touchmove', handleUserInteractionStart, { passive: true });
-            chatElement.addEventListener('pointerdown', handleUserInteractionStart, { passive: true });
-            return () => {
-                chatElement.removeEventListener('scroll', handleScroll);
-                chatElement.removeEventListener('wheel', handleUserInteractionStart);
-                chatElement.removeEventListener('touchmove', handleUserInteractionStart);
-                chatElement.removeEventListener('pointerdown', handleUserInteractionStart);
-            };
-        }
+        if (!chatElement) return;
+        chatElement.addEventListener('scroll', handleScroll, { passive: true });
+        chatElement.addEventListener('wheel', handleUserInteractionStart, { passive: true });
+        chatElement.addEventListener('touchmove', handleUserInteractionStart, { passive: true });
+        chatElement.addEventListener('pointerdown', handleUserInteractionStart, { passive: true });
+        return () => {
+            chatElement.removeEventListener('scroll', handleScroll);
+            chatElement.removeEventListener('wheel', handleUserInteractionStart);
+            chatElement.removeEventListener('touchmove', handleUserInteractionStart);
+            chatElement.removeEventListener('pointerdown', handleUserInteractionStart);
+        };
     }, [handleScroll, handleUserInteractionStart]);
 
-    // Keep view pinned to bottom as media/images/embeds load, unless user scrolled up
+    // Reset scroll state on room change
     useEffect(() => {
-        const el = chatFeedRef.current;
-        if (!el || typeof ResizeObserver === 'undefined') return;
-        const ro = new ResizeObserver(() => {
-            if (!hasUserScrolled) {
-                isProgrammaticScrollRef.current = true;
-                el.scrollTop = el.scrollHeight;
-                setIsAtBottom(true);
-                setShowScrollToBottomBtn(false);
-                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
-            }
-        });
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, [hasUserScrolled]);
-
-    // Reset scroll states and jump to bottom whenever switching rooms
-    useEffect(() => {
+        entryScrollDoneRef.current = false;
+        userScrolledDuringLoadRef.current = false;
         setHasInitialScrolled(false);
         setHasUserScrolled(false);
         setIsAtBottom(true);
         setShowScrollToBottomBtn(false);
         userInitiatedScrollRef.current = false;
-
-        const pin = () => {
-            if (chatFeedRef.current) {
-                isProgrammaticScrollRef.current = true;
-                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
-                setIsAtBottom(true);
-                setShowScrollToBottomBtn(false);
-                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
-            }
-        };
-
-        const delays = [0, 40, 100, 250, 500, 900, 1500];
-        const timers = delays.map(d => setTimeout(pin, d));
-        return () => timers.forEach(clearTimeout);
     }, [roomId]);
 
-    // Auto-scroll on new messages / room entry
+    // Single entry auto-scroll when room messages arrive; afterward strictly manual
     useEffect(() => {
-        if (!messages.length) return;
-        const isFirstLoad = !hasInitialScrolled;
+        if (!messages.length || !chatFeedRef.current) return;
 
-        const pin = () => {
-            if (chatFeedRef.current) {
+        if (!entryScrollDoneRef.current) {
+            if (userScrolledDuringLoadRef.current) {
+                entryScrollDoneRef.current = true;
+                setHasInitialScrolled(true);
+                return;
+            }
+
+            const pinToLatestOnce = () => {
+                const el = chatFeedRef.current;
+                if (!el || userScrolledDuringLoadRef.current) return;
                 isProgrammaticScrollRef.current = true;
-                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+                el.scrollTop = el.scrollHeight;
                 setIsAtBottom(true);
                 setShowScrollToBottomBtn(false);
-                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 80);
-            }
-        };
-
-        if (isFirstLoad) {
-            // Pinned instant jumps to bottom so entering a room never starts at top
-            const attempts = [0, 40, 100, 250, 500, 900, 1500];
-            const timers = attempts.map(delay => setTimeout(pin, delay));
-            const finishTimer = setTimeout(() => {
-                setHasInitialScrolled(true);
-                setHasUserScrolled(false);
-            }, 800);
-            return () => {
-                timers.forEach(clearTimeout);
-                clearTimeout(finishTimer);
+                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 100);
             };
+
+            const rafId = requestAnimationFrame(pinToLatestOnce);
+            const settleTimer = setTimeout(() => {
+                pinToLatestOnce();
+                entryScrollDoneRef.current = true;
+                setHasInitialScrolled(true);
+            }, 140);
+
+            return () => {
+                cancelAnimationFrame(rafId);
+                clearTimeout(settleTimer);
+            };
+        }
+
+        // After initial entry scroll: never hijack user scroll if they are reading history
+        const el = chatFeedRef.current;
+        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 90;
+        if (nearBottom && !hasUserScrolled) {
+            scrollToBottom(false, true);
         } else {
-            // When a new message arrives: only auto-scroll if user has not scrolled up to read history
-            if (!chatFeedRef.current) return;
-            const el = chatFeedRef.current;
-            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-            if (nearBottom || !hasUserScrolled) {
-                scrollToBottom(false, true);
-            } else {
-                setShowScrollToBottomBtn(true);
-            }
+            setShowScrollToBottomBtn(true);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages, roomId]);
@@ -4483,31 +4425,29 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        const STALE_MS = 3 * 60 * 1000;
+        const STALE_MS = 70 * 1000;
+        const INITIAL_STALE_MS = 10 * 60 * 1000;
+        let hasServerOffset = false;
         let roomPresRaw = {};
         let globalStatusRaw = {};
+        let disposed = false;
 
         const getServerNow = () => Date.now() + (serverTimeOffsetRef.current || 0);
 
-        // Strict freshness: require valid numeric server timestamp within STALE_MS (rejects missing/zero/ghost entries)
+        // Strict freshness using server time once offset arrives; wider window before offset settles prevents false drops on skewed clocks
         const isFreshOnline = (p, serverNow) => {
             if (!p || p.state !== 'online') return false;
             if (typeof p.last_changed !== 'number' || p.last_changed <= 0) return false;
-            return (serverNow - p.last_changed) < STALE_MS;
+            const cutoff = hasServerOffset ? STALE_MS : INITIAL_STALE_MS;
+            return (serverNow - p.last_changed) < cutoff;
         };
 
         const reconcilePresences = () => {
             const serverNow = getServerNow();
             const merged = {};
 
-            // 1. Collect users actively in this room from global status/
-            Object.entries(globalStatusRaw || {}).forEach(([uid, p]) => {
-                if (p && p.currentRoomId === roomId && isFreshOnline(p, serverNow)) {
-                    merged[uid] = p;
-                }
-            });
-
-            // 2. Merge per-room room_presence/${roomId}/ unless global status explicitly moved/went offline later
+            // 1. room_presence/${roomId} is authoritative for who is actively in this room
+            // (prevents departed/disconnected guests in global status/ from lingering as ghosts)
             Object.entries(roomPresRaw || {}).forEach(([uid, p]) => {
                 if (!isFreshOnline(p, serverNow)) return;
                 const g = globalStatusRaw?.[uid];
@@ -4515,11 +4455,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                     const gTs = typeof g.last_changed === 'number' ? g.last_changed : 0;
                     if (gTs >= p.last_changed) return;
                 }
-                merged[uid] = { ...(merged[uid] || {}), ...p };
+                const mergedGlobal = (g && g.state === 'online' && g.currentRoomId === roomId && isFreshOnline(g, serverNow)) ? g : null;
+                merged[uid] = mergedGlobal ? { ...mergedGlobal, ...p } : { ...p };
             });
 
-            // 3. Keep self entry only if confirmed locally online (and NOT in Silent Watch stealth)
-            if (silentWatchRef.current && isStaffRole(loggedInUserProfileRef.current)) {
+            // 2. Keep self entry only if confirmed locally online (and NOT in Owner Silent Watch stealth)
+            if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current)) {
                 delete merged[authUid];
             } else if (!merged[authUid] && userOnlineStatusesRef.current?.[authUid]?.state === 'online') {
                 merged[authUid] = userOnlineStatusesRef.current[authUid];
@@ -4563,6 +4504,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const val = snap.val();
             if (typeof val === 'number' && Number.isFinite(val)) {
                 serverTimeOffsetRef.current = val;
+                hasServerOffset = true;
                 reconcilePresences();
             }
         });
@@ -4570,33 +4512,60 @@ const HomePage = ({ user, roomIdOverride }) => {
         const roomPresenceListenRef = ref(rtdb, `room_presence/${roomId}`);
         const statusListenRef = ref(rtdb, 'status');
 
-        const unsubRoom = onValue(
-            roomPresenceListenRef,
-            (snapshot) => {
-                roomPresRaw = snapshot.val() || {};
-                reconcilePresences();
-            },
-            (err) => {
-                console.warn('[Presence] room_presence listener error:', err?.message || err);
-            }
-        );
+        let unsubRoom = () => {};
+        let unsubStatus = () => {};
+        let roomRetryTimer = null;
+        let statusRetryTimer = null;
 
-        const unsubStatus = onValue(
-            statusListenRef,
-            (snapshot) => {
-                globalStatusRaw = snapshot.val() || {};
-                reconcilePresences();
-            },
-            (err) => {
-                console.warn('[Presence] status listener error:', err?.message || err);
-            }
-        );
+        const subscribeRoomListener = (attempt = 0) => {
+            if (disposed) return;
+            unsubRoom();
+            unsubRoom = onValue(
+                roomPresenceListenRef,
+                (snapshot) => {
+                    roomPresRaw = snapshot.val() || {};
+                    reconcilePresences();
+                },
+                (err) => {
+                    console.warn('[Presence] room_presence listener error:', err?.message || err);
+                    if (!disposed && attempt < 6) {
+                        clearTimeout(roomRetryTimer);
+                        roomRetryTimer = setTimeout(() => subscribeRoomListener(attempt + 1), 1500);
+                    }
+                }
+            );
+        };
+
+        const subscribeStatusListener = (attempt = 0) => {
+            if (disposed) return;
+            unsubStatus();
+            unsubStatus = onValue(
+                statusListenRef,
+                (snapshot) => {
+                    globalStatusRaw = snapshot.val() || {};
+                    reconcilePresences();
+                },
+                (err) => {
+                    console.warn('[Presence] status listener error:', err?.message || err);
+                    if (!disposed && attempt < 6) {
+                        clearTimeout(statusRetryTimer);
+                        statusRetryTimer = setTimeout(() => subscribeStatusListener(attempt + 1), 1500);
+                    }
+                }
+            );
+        };
+
+        subscribeRoomListener(0);
+        subscribeStatusListener(0);
 
         // Periodically evict stale users even when RTDB traffic is quiet
-        const evictInterval = setInterval(reconcilePresences, 30000);
+        const evictInterval = setInterval(reconcilePresences, 15000);
 
         return () => {
+            disposed = true;
             clearInterval(evictInterval);
+            clearTimeout(roomRetryTimer);
+            clearTimeout(statusRetryTimer);
             unsubOffset();
             unsubRoom();
             unsubStatus();
@@ -4884,15 +4853,17 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile && !isGuest) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
                 console.error('Firestore profile error:', error);
@@ -5074,18 +5045,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -5166,18 +5138,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -6071,18 +6044,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -7100,22 +7074,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
-                        role: 'user', gender: 'male', country: 'Unknown', 
-                        status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -7203,22 +7174,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
-                        role: 'user', gender: 'male', country: 'Unknown', 
-                        status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -7400,22 +7368,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', 
-                        photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, 
-                        role: 'user', gender: 'male', country: 'Unknown', 
-                        status: "I'm new here!", bio: '', createdAt: serverTimestamp(), 
-                        isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -7542,18 +7507,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -7632,18 +7598,19 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!userProfile) {
             try {
                 const userDocRef = doc(db, 'users', uid);
-                const userSnap = await getDoc(userDocRef);
+                let userSnap = await getDoc(userDocRef);
                 if (!userSnap.exists()) {
-                    const defaultUserData = {
-                        uid: uid, displayName: displayName || 'Anonymous', email: email || '', photoURL: `${getDefaultAvatarUrl(uid, gender || 'male')}`, role: 'user', gender: 'male', country: 'Unknown', status: "I'm new here!", bio: '', createdAt: serverTimestamp(), isOnline: true
-                    };
-                    await setDoc(userDocRef, defaultUserData);
-                    userProfile = defaultUserData;
-                } else {
+                    userSnap = await getDocFromServer(userDocRef).catch(() => userSnap);
+                }
+                if (userSnap?.exists()) {
                     userProfile = userSnap.data();
+                } else if (window._appUserProfile?.uid === uid) {
+                    userProfile = window._appUserProfile;
+                } else {
+                    pt.error("Profile still loading — please try again.");
+                    return;
                 }
             } catch (error) {
-
                 pt.error("Error accessing user profile. Please try again.");
                 return;
             }
@@ -8020,8 +7987,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                           </div>
                       </header>
 
-                    {/* Module 3: Local-Only Staff Silent Watch Status Bar */}
-                    {isStaffRole(loggedInUserProfile) && silentWatchActive && (
+                    {/* Module 3: Local-Only Owner Silent Watch Status Bar */}
+                    {isOwnerRole(loggedInUserProfile) && silentWatchActive && (
                         <div className="tt-silent-watch-banner" ref={silentBannerRef} role="status">
                             <span className="tt-silent-watch-banner-left">
                                 <ShroudedEyeIcon size={15} active={true} color="#a5b4fc" />
@@ -8090,33 +8057,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 activitiesMap={activitiesMap}
                             />
                         );
-
-                        if (watchPartyOpen) {
-                            return (
-                                <div
-                                    ref={watchSplitRef}
-                                    className={`tt-watch-split-shell${watchPartyExpanded ? ' is-expanded' : ''}`}
-                                >
-                                    <WatchPartyStage
-                                        roomId={roomId}
-                                        roomName={roomName}
-                                        username={loggedInUserProfile?.displayName || 'Member'}
-                                        expanded={watchPartyExpanded}
-                                        onToggleExpand={() => setWatchPartyExpanded(prev => !prev)}
-                                        chatCollapsedMobile={watchPartyMobileChatCollapsed}
-                                        onToggleMobileChat={() => setWatchPartyMobileChatCollapsed(prev => !prev)}
-                                        onExit={() => {
-                                            setWatchPartyOpen(false);
-                                            setWatchPartyExpanded(false);
-                                            setWatchPartyMobileChatCollapsed(false);
-                                        }}
-                                    />
-                                    <div className={`tt-watch-chat-col${watchPartyMobileChatCollapsed ? ' is-mobile-collapsed' : ''}`}>
-                                        {messageListNode}
-                                    </div>
-                                </div>
-                            );
-                        }
 
                         return messageListNode;
                     })()}
@@ -8846,11 +8786,12 @@ const HomePage = ({ user, roomIdOverride }) => {
 
                                         {/* Extra details — account age & friends count */}
                                         {(() => {
-                                            const joinDate = profileUser.createdAt
-                                                ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt)
+                                            const authCreatedAt = (profileUser.uid === auth.currentUser?.uid && !auth.currentUser?.isAnonymous)
+                                                ? auth.currentUser?.metadata?.creationTime
                                                 : null;
+                                            const joinDate = resolveEarliestCreatedAt(profileUser.createdAt, authCreatedAt);
                                             const ageDays = joinDate
-                                                ? Math.floor((Date.now() - joinDate.getTime()) / 86400000)
+                                                ? Math.max(0, Math.floor((Date.now() - joinDate.getTime()) / 86400000))
                                                 : null;
                                             const ageLabel = ageDays !== null
                                                 ? ageDays >= 365
@@ -8994,7 +8935,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             <div>
                                                 <div className="vpm-act-label">Member Since</div>
                                                 <div className="vpm-act-value">
-                                                    {profileUser.createdAt ? new Date(profileUser.createdAt?.toDate?.() || profileUser.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : 'Unknown'}
+                                                    {(() => {
+                                                        const authCreatedAt = (profileUser.uid === auth.currentUser?.uid && !auth.currentUser?.isAnonymous)
+                                                            ? auth.currentUser?.metadata?.creationTime
+                                                            : null;
+                                                        const memberDate = resolveEarliestCreatedAt(profileUser.createdAt, authCreatedAt);
+                                                        return memberDate
+                                                            ? memberDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                                            : 'Unknown';
+                                                    })()}
                                                 </div>
                                             </div>
                                         </div>
@@ -9005,7 +8954,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             <div>
                                                 <div className="vpm-act-label">Status</div>
                                                 <div className="vpm-act-value" style={{color: onlineUsers.has(profileUser.uid) ? '#059669' : '#6b7280'}}>
-                                                    {onlineUsers.has(profileUser.uid) ? '🟢 Online Now' : '⚫ Offline'}
+                                                    {onlineUsers.has(profileUser.uid) ? 'Online Now' : 'Offline'}
                                                 </div>
                                             </div>
                                         </div>
@@ -9169,21 +9118,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                         setIsSettingsSidebarOpen(false);
                     }}
                     currentRoomId={roomId}
-                    currentRoomName={roomName}
                     roomMood={roomMood}
                     onUpdateRoomMood={handleUpdateRoomMood}
                     silentWatchActive={silentWatchActive}
                     onToggleSilentWatch={handleToggleSilentWatch}
-                    watchPartyOpen={watchPartyOpen}
-                    onToggleWatchParty={() => {
-                        setWatchPartyOpen((prev) => {
-                            if (prev) {
-                                setWatchPartyExpanded(false);
-                                setWatchPartyMobileChatCollapsed(false);
-                            }
-                            return !prev;
-                        });
-                    }}
                 />
             </div>
 
@@ -9206,19 +9144,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const canGif     = _tier !== 'guest' && _tier !== 'member';  // tier1+
                 const canStyle   = _tier !== 'guest';                        // member+
                 return (
-                <div className="hp-attach-popup" style={{
-                    position: 'fixed', bottom: '58px', left: '10px', right: '10px',
-                    maxWidth: '390px', margin: '0 auto', zIndex: 2100,
-                    background: isDarkMode ? 'rgba(18, 10, 42, 0.96)' : 'rgba(255, 255, 255, 0.97)',
-                    border: isDarkMode ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(196,181,253,0.6)',
-                    borderRadius: '9999px',
-                    boxShadow: isDarkMode
-                        ? '0 10px 30px rgba(0,0,0,0.45), 0 0 20px rgba(109,40,217,0.22)'
-                        : '0 10px 28px rgba(109,40,217,0.18), 0 2px 10px rgba(139,92,246,0.08)',
-                    display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
-                    gap: '2px', padding: '7px 12px', backdropFilter: 'blur(20px)',
-                    alignItems: 'center', boxSizing: 'border-box',
-                }}>
+                <div className="hp-attach-popup">
                     {/* ── 1. Audio ── */}
                     <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
                         <span className="hp-attach-icon-wrap">
@@ -9318,6 +9244,22 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </span>
                         <span className="hp-attach-label">Tag</span>
                     </button>
+
+                    {/* ── 7. Games & Polls ── */}
+                    <button
+                        type="button"
+                        className="hp-attach-btn"
+                        title="Mini-Games & Polls"
+                        onClick={() => {
+                            setIsAttachmentDropdownOpen(false);
+                            setIsGamesPickerOpen(true);
+                        }}
+                    >
+                        <span className="hp-attach-icon-wrap">
+                            <ActivitySparkIcon size={20} color="#ec4899" />
+                        </span>
+                        <span className="hp-attach-label">Games</span>
+                    </button>
                 </div>
                 );
             })()}
@@ -9379,7 +9321,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                         border: `1px solid ${isBot ? 'rgba(245,158,11,0.35)' : (isDarkMuteBanner ? 'rgba(167,139,250,0.3)' : 'rgba(109,40,217,0.18)')}`,
                                         whiteSpace: 'nowrap', letterSpacing: '0.01em',
                                     }}>
-                                        {isBot ? `🤖 Muted by ${roleLabel}` : `by ${roleLabel}`}
+                                        {isBot ? `Muted by ${roleLabel}` : `by ${roleLabel}`}
                                     </span>
                                 );
                             })()}
@@ -9450,26 +9392,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </button>
             )}
 
-            {/* Module 2: Floating Interactive Mini-Games, Polls & Watch-Party Launcher above Composer */}
-            {!(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__') &&
-                !isAttachmentDropdownOpen &&
-                !(watchPartyOpen && watchPartyMobileChatCollapsed) && (
-                <FloatingActivityLauncher
-                    roomId={roomId}
-                    loggedInUserProfile={loggedInUserProfile}
-                    isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
-                    watchPartyOpen={watchPartyOpen}
-                    onToggleWatchParty={() => {
-                        setWatchPartyOpen((prev) => {
-                            if (prev) {
-                                setWatchPartyExpanded(false);
-                                setWatchPartyMobileChatCollapsed(false);
-                            }
-                            return !prev;
-                        });
-                    }}
-                />
-            )}
+            {/* Module 2: Mini-Games & Polls Picker + Creator Modal (triggered from Attach Popup) */}
+            <FloatingActivityLauncher
+                roomId={roomId}
+                loggedInUserProfile={loggedInUserProfile}
+                isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
+                pickerOpen={isGamesPickerOpen}
+                onClosePicker={() => setIsGamesPickerOpen(false)}
+            />
 
             <div
                 className="chat-footer hp-composer-footer"

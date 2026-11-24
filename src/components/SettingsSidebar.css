@@ -2365,32 +2365,66 @@ body.dark-mode .tl-mood-lock-bar {
   flex-shrink: 0;
 }
 
-.tl-watch-sidebar-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 11px;
-  border: 1px solid rgba(139, 92, 246, 0.32);
-  background: linear-gradient(135deg, rgba(109, 40, 217, 0.14), rgba(236, 72, 153, 0.1));
-  color: #4c1d95;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.18s ease;
+/* ── Full Theme Variant Support inside Settings Sidebar ── */
+html.dark-theme-variant .tl-mood-lock-bar {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-secondary) !important;
 }
 
-html.dark-mode .tl-watch-sidebar-btn,
-body.dark-mode .tl-watch-sidebar-btn {
-  background: linear-gradient(135deg, rgba(109, 40, 217, 0.28), rgba(236, 72, 153, 0.16));
-  border-color: rgba(192, 132, 252, 0.42);
-  color: #f3e8ff;
+html.dark-theme-variant .tl-silent-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-tertiary) 100%) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
 }
 
-.tl-watch-sidebar-btn.is-active {
-  background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.35);
+html.dark-theme-variant .tl-silent-icon-box {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
 }
 
+html.dark-theme-variant .st3-header,
+html.dark-theme-variant .st3-preset,
+html.dark-theme-variant .st3-card,
+html.dark-theme-variant .username-preview-container {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .st3-label,
+html.dark-theme-variant .st3-preset-name {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .st3-chip,
+html.dark-theme-variant .st3-mode-btn,
+html.dark-theme-variant .st3-reset-btn,
+html.dark-theme-variant .st3-hex,
+html.dark-theme-variant .st3-color-hex {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .st3-chip.on,
+html.dark-theme-variant .st3-mode-btn.on {
+  background: var(--button-primary-bg) !important;
+  border-color: var(--accent-color) !important;
+  color: var(--button-primary-text, #ffffff) !important;
+}
+
+html.dark-theme-variant .st3-divider {
+  background: var(--border-color) !important;
+}
+
+html.dark-theme-variant .st3-sel {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
+}
+
+html.dark-theme-variant .st3-colour-grid {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+}

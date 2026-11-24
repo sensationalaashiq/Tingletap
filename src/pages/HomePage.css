@@ -1045,8 +1045,8 @@ body.theme-light .message-displayname:not([style*="color"]) {
   color: #111111 !important;
 }
 
-/* All custom themes (non-dark) */
-body[class*="theme-"]:not(.dark-mode):not(.theme-dark) .message-displayname:not([style*="color"]) {
+/* All custom light themes only (exclude dark-mode and all html.dark-theme-variant themes) */
+html:not(.dark-theme-variant):not(.dark-mode) body[class*="theme-"]:not(.dark-mode):not(.theme-dark):not(.theme-rose-pink):not(.theme-burgundy-wine):not(.theme-aurora):not(.theme-royal-purple):not(.theme-sunset-orange) .message-displayname:not([style*="color"]) {
   color: #111111 !important;
 }
 
@@ -1057,7 +1057,10 @@ body.theme-dark .message-displayname:not([style*="color"]) {
 }
 
 /* Dark theme variants — color from CSS variable set in Themes.css */
-/* (html.dark-theme-variant rule in Themes.css already handles this) */
+html.dark-theme-variant .homepage-container .message-displayname:not([style*="color"]),
+html.dark-theme-variant .message-displayname:not([style*="color"]) {
+  color: var(--username-color, var(--text-primary)) !important;
+}
 
 /* ── Message text theme colors (color only — font-size/weight set universally above) ── */
 /* Themes.css handles dark-theme-variant color via var(--text-primary). */
@@ -2208,38 +2211,77 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   color: #9ca3af;
 }
 
-.youtube-embed-container {
-  width: min(380px, 100%);
+.youtube-embed-container,
+html.dark-theme-variant .youtube-embed-container {
+  width: min(296px, 100%);
   max-width: 100%;
   margin: 6px 0;
+  padding: 5px;
   display: block;
+  overflow: visible !important;
+  background: transparent !important;
+  box-sizing: border-box;
+}
+
+@keyframes ytLavenderBurst {
+  0%, 100% {
+    border-color: #e9d5ff;
+    box-shadow:
+      0 0 0 0 rgba(233, 213, 255, 0.72),
+      0 0 0 2px rgba(221, 214, 254, 0.44),
+      0 6px 18px rgba(167, 139, 250, 0.28);
+  }
+  45% {
+    border-color: #f3e8ff;
+    box-shadow:
+      0 0 0 5px rgba(233, 213, 255, 0.34),
+      0 0 18px 4px rgba(196, 181, 253, 0.56),
+      0 8px 22px rgba(139, 92, 246, 0.34);
+  }
+  75% {
+    border-color: #ddd6fe;
+    box-shadow:
+      0 0 0 9px rgba(233, 213, 255, 0),
+      0 0 14px 2px rgba(221, 214, 254, 0.28),
+      0 6px 18px rgba(167, 139, 250, 0.25);
+  }
 }
 
 .youtube-embed {
   position: relative;
   overflow: hidden;
-  border: 1.5px solid rgba(167, 139, 250, 0.58);
-  border-radius: 16px;
-  box-shadow:
-    0 0 0 1px rgba(251, 191, 36, 0.22),
-    0 14px 34px rgba(49, 46, 129, 0.28),
-    0 4px 14px rgba(109, 40, 217, 0.2);
+  box-sizing: border-box;
+  border: 2px solid #e9d5ff;
+  border-radius: 14px;
   background: #070512;
-  max-width: 380px;
+  max-width: 296px;
   width: 100%;
   aspect-ratio: 16 / 9;
   margin: 0;
   padding: 0 !important;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  animation: ytLavenderBurst 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transition: transform 0.22s ease;
 }
 
 .youtube-embed:hover {
   transform: translateY(-1px);
-  border-color: rgba(251, 191, 36, 0.68);
+  border-color: #f3e8ff;
   box-shadow:
-    0 0 0 1px rgba(251, 191, 36, 0.35),
-    0 18px 40px rgba(49, 46, 129, 0.34),
-    0 6px 18px rgba(124, 58, 237, 0.26);
+    0 0 0 4px rgba(233, 213, 255, 0.45),
+    0 0 22px 5px rgba(196, 181, 253, 0.62),
+    0 10px 26px rgba(139, 92, 246, 0.36);
+}
+
+@media (max-width: 480px) {
+  .youtube-embed-container,
+  html.dark-theme-variant .youtube-embed-container {
+    width: min(252px, 100%);
+    padding: 4px;
+  }
+  .youtube-embed {
+    max-width: 252px;
+    border-radius: 12px;
+  }
 }
 
 .youtube-embed iframe,
@@ -2488,16 +2530,28 @@ html body.theme-dark .message-body p:not([style*="color"]) {
   }
 }
 
-/* Dark-mode variant */
+/* Dark-mode & Theme-variant */
 [data-theme="dark"] .scroll-to-bottom-chip,
 .dark-mode .scroll-to-bottom-chip {
-  background: rgba(30, 20, 60, 0.82);
-  border-color: rgba(167, 139, 250, 0.3);
-  color: #c4b5fd;
+  background: rgba(30, 20, 60, 0.86);
+  border-color: rgba(167, 139, 250, 0.34);
+  color: #e9d5ff;
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.4),
     0 1px 4px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255,255,255,0.06);
+}
+html.dark-theme-variant .scroll-to-bottom-chip {
+  background: var(--bg-elevated, rgba(30, 20, 60, 0.9));
+  border-color: var(--border-accent, rgba(255, 255, 255, 0.22));
+  color: var(--text-primary, #f8fafc);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+html.dark-theme-variant .scroll-to-bottom-chip-icon {
+  background: linear-gradient(135deg, var(--accent-color, #7c3aed) 0%, var(--accent-hover, #a855f7) 100%);
 }
 
 /* Legacy whisper active class for backward compatibility */
@@ -5812,21 +5866,19 @@ html.dark-mode .reject-btn:hover,
     border-radius: 4px;
     height: 4px;
 }
-  /* YouTube Embed — Luxury Amethyst & Gold Frame */
+  /* YouTube Embed — Compact View w/ Animated Light-Lavender Bursting Border */
   .youtube-embed {
       width: 100%;
-      max-width: 380px;
+      max-width: 296px;
       aspect-ratio: 16 / 9;
       margin: 0;
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(251, 191, 36, 0.22),
-        0 14px 34px rgba(49, 46, 129, 0.28),
-        0 4px 14px rgba(109, 40, 217, 0.2);
+      box-sizing: border-box;
       position: relative;
       background: #070512;
-      border: 1.5px solid rgba(167, 139, 250, 0.58);
+      border: 2px solid #e9d5ff;
+      animation: ytLavenderBurst 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
       padding: 0 !important;
   }
 
@@ -5853,14 +5905,14 @@ html.dark-mode .reject-btn:hover,
       vertical-align: bottom;
 }
 
-/* YouTube Music Player Styling — Compact Wrapper, full player width */
+/* YouTube Music Player Styling — Hugs unified compact player */
 .youtube-music-message {
     background: transparent;
     border: none;
     border-radius: 0;
     padding: 0;
     margin: 4px 0;
-    width: min(350px, 100%);
+    width: fit-content;
     max-width: 100%;
     position: relative;
     display: block;
@@ -5952,22 +6004,27 @@ html.dark-mode .reject-btn:hover,
     display: flex;
 }
 
-/* Base YouTube Embed Styling — Luxury Amethyst & Gold Frame */
+/* Base YouTube Embed Styling — Compact View w/ Animated Light-Lavender Bursting Border */
 .youtube-embed {
-    max-width: 380px;
+    max-width: 296px;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border: 1.5px solid rgba(167, 139, 250, 0.58);
-    border-radius: 16px;
+    border: 2px solid #e9d5ff;
+    border-radius: 14px;
     overflow: hidden;
+    box-sizing: border-box;
     margin: 0;
-    box-shadow:
-      0 0 0 1px rgba(251, 191, 36, 0.22),
-      0 14px 34px rgba(49, 46, 129, 0.28),
-      0 4px 14px rgba(109, 40, 217, 0.2);
     background: #070512;
     position: relative;
+    animation: ytLavenderBurst 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     padding: 0 !important;
+}
+
+@media (max-width: 480px) {
+  .youtube-embed {
+    max-width: 252px;
+    border-radius: 12px;
+  }
 }
 
 .youtube-embed iframe,
@@ -9405,15 +9462,24 @@ html.dark-mode .homepage-container .message-row.my-message.row-odd {
   border-left: 3px solid #8b5cf6 !important;
 }
 
-.dark-mode .homepage-container .message-displayname,
-html.dark-mode .homepage-container .message-displayname {
+.dark-mode .homepage-container .message-displayname:not([style*="color"]),
+html.dark-mode .homepage-container .message-displayname:not([style*="color"]) {
   color: #e9d5ff !important;
   font-weight: 700 !important;
 }
 
-.dark-mode .homepage-container .message-body p,
-html.dark-mode .homepage-container .message-body p {
+html.dark-theme-variant .homepage-container .message-displayname:not([style*="color"]) {
+  color: var(--username-color, var(--text-primary)) !important;
+  font-weight: 700 !important;
+}
+
+.dark-mode .homepage-container .message-body p:not([style*="color"]):not(.user-font-styled),
+html.dark-mode .homepage-container .message-body p:not([style*="color"]):not(.user-font-styled) {
   color: #f5f3ff !important;
+}
+
+html.dark-theme-variant .homepage-container .message-body p:not([style*="color"]):not(.user-font-styled) {
+  color: var(--text-primary) !important;
 }
 
 /* Live broadcast button pulse & vibrant gradient */
@@ -10293,9 +10359,9 @@ body:not(.dark-mode) .homepage-container .message-row-wrapper.row-even {
   box-shadow: 0 0 0 1px rgba(59,130,246,0.3) !important;
 }
 
-/* ── Whole chat page: subtle saturation boost ────────────────────── */
+/* Keep chat feed un-filtered so scrolling in Guest/Incognito stays GPU-smooth */
 .homepage-container .chat-feed {
-  filter: saturate(1.08) !important;
+  filter: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -10420,6 +10486,42 @@ body.dark-mode .homepage-container .clear-chat-btn svg path {
 }
 body.dark-mode .homepage-container .menu-trigger svg path {
   stroke: #e9d5ff !important;
+}
+
+/* All 5 dark-theme-variant themes — header follows theme CSS variables */
+html.dark-theme-variant body .homepage-container .chat-header {
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border, var(--border-color)) !important;
+}
+html.dark-theme-variant body .homepage-container .chat-header .header-title,
+html.dark-theme-variant body .homepage-container .header-title {
+  color: var(--header-text) !important;
+  -webkit-text-fill-color: var(--header-text) !important;
+  text-shadow: none !important;
+}
+html.dark-theme-variant body .homepage-container .chat-header .user-count,
+html.dark-theme-variant body .homepage-container .user-count {
+  color: var(--accent-hover, var(--header-text)) !important;
+  background: var(--badge-bg, rgba(255, 255, 255, 0.1)) !important;
+  border-color: var(--border-accent, rgba(255, 255, 255, 0.28)) !important;
+}
+html.dark-theme-variant body .homepage-container .header-action-btn,
+html.dark-theme-variant body .homepage-container .menu-trigger {
+  color: var(--icon-color, var(--header-text)) !important;
+}
+html.dark-theme-variant body .homepage-container .settings-btn svg,
+html.dark-theme-variant body .homepage-container .settings-btn svg path {
+  fill: var(--icon-color, var(--header-text)) !important;
+  color: var(--icon-color, var(--header-text)) !important;
+}
+html.dark-theme-variant body .homepage-container .menu-trigger svg path {
+  stroke: var(--icon-color, var(--header-text)) !important;
+}
+html.dark-theme-variant body .homepage-container .clear-chat-btn svg,
+html.dark-theme-variant body .homepage-container .clear-chat-btn svg path {
+  stroke: #fca5a5 !important;
+  color: #fca5a5 !important;
+  fill: none !important;
 }
 
 /* ── 2. FOOTER — transparent strip, no capsule, no background ──────── */
@@ -10620,22 +10722,42 @@ body .homepage-container::after {
 .homepage-container::after { height: 0 !important; min-height: 0 !important; }
 .homepage-container .chat-feed { bottom: 60px !important; padding-bottom: 0 !important; }
 
-/* Attachment dropdown floats cleanly above footer */
-body .homepage-container .attachment-dropdown {
-  position: fixed !important;
-  bottom: 62px !important;
-  left: 10px !important;
-  right: 10px !important;
-  z-index: 2100 !important;
-  background: rgba(255, 252, 255, 0.98) !important;
-  border: 1px solid rgba(196, 181, 253, 0.4) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 -4px 24px rgba(109, 40, 217, 0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  padding: 10px 14px !important;
-  backdrop-filter: blur(18px) !important;
+/* ── 7-Item Attachment Tray Popup (.hp-attach-popup) — Light, Dark & Theme-Aware ── */
+.hp-attach-popup {
+  position: fixed;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  left: 8px;
+  right: 8px;
+  max-width: min(440px, calc(100vw - 16px));
+  margin: 0 auto;
+  z-index: 2100;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid rgba(139, 92, 246, 0.24);
+  box-shadow: 0 -6px 26px rgba(109, 40, 217, 0.14), 0 6px 20px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-sizing: border-box;
+  animation: hp-attach-up 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+body.dark-mode .hp-attach-popup,
+html.dark-mode .hp-attach-popup,
+.dark-mode .hp-attach-popup {
+  background: rgba(20, 14, 46, 0.96);
+  border-color: rgba(167, 139, 250, 0.3);
+  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.48), 0 4px 16px rgba(109, 40, 217, 0.22);
+}
+
+html.dark-theme-variant .hp-attach-popup {
+  background: var(--modal-bg, var(--bg-secondary));
+  border-color: var(--border-accent, var(--border-color));
+  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.54), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ── Premium Attachment Buttons (Compact Pill, No Icon Background) ── */
@@ -10650,16 +10772,27 @@ body .homepage-container .attachment-dropdown {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 3px 2px;
+  padding: 4px 1px;
   border-radius: 9999px;
-  transition: transform 0.16s ease, opacity 0.15s;
+  transition: transform 0.16s ease, opacity 0.15s, background 0.15s ease;
 }
-.hp-attach-btn:hover { transform: translateY(-2px); opacity: 0.92; }
+.hp-attach-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+  background: rgba(124, 58, 237, 0.08);
+}
+body.dark-mode .hp-attach-btn:hover,
+html.dark-mode .hp-attach-btn:hover {
+  background: rgba(167, 139, 250, 0.14);
+}
+html.dark-theme-variant .hp-attach-btn:hover {
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.08));
+}
 .hp-attach-btn:active { transform: translateY(0) scale(0.95); }
 
 .hp-attach-icon-wrap {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 0;
   background: transparent !important;
   box-shadow: none !important;
@@ -10670,19 +10803,50 @@ body .homepage-container .attachment-dropdown {
   transition: transform 0.16s ease;
 }
 .hp-attach-btn:hover .hp-attach-icon-wrap {
-  transform: scale(1.12);
+  transform: scale(1.1);
   box-shadow: none !important;
 }
 
 .hp-attach-label {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   color: #5b21b6;
   letter-spacing: 0.01em;
   line-height: 1.1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
-.dark-mode .hp-attach-label { color: #c4b5fd; }
+.dark-mode .hp-attach-label,
+html.dark-mode .hp-attach-label {
+  color: #e9d5ff;
+}
+html.dark-theme-variant .hp-attach-label {
+  color: var(--text-primary, #f8fafc);
+}
+
+@media (max-width: 400px) {
+  .hp-attach-popup {
+    left: 6px;
+    right: 6px;
+    max-width: calc(100vw - 12px);
+    padding: 7px 6px;
+    gap: 1px;
+  }
+  .hp-attach-icon-wrap {
+    width: 19px;
+    height: 19px;
+  }
+  .hp-attach-icon-wrap svg {
+    width: 18px;
+    height: 18px;
+  }
+  .hp-attach-label {
+    font-size: 8.2px;
+    letter-spacing: 0;
+  }
+}
 
 @keyframes hp-attach-up {
   from { opacity: 0; transform: translateY(10px); }
@@ -10778,15 +10942,20 @@ body .homepage-container .attachment-dropdown {
 
 /* ===== USERNAME DEFAULT STYLING ===== */
 /* Single uniform rule — no role/badge variants; JS-injected styles override via !important */
-.message-row-wrapper .message-displayname {
+.message-row-wrapper .message-displayname:not([style*="color"]) {
   color: #1a1a1a;
   font-weight: bold;
   font-size: 12px;
 }
 
 /* Dark mode */
-.dark-mode .message-row-wrapper .message-displayname {
+.dark-mode .message-row-wrapper .message-displayname:not([style*="color"]) {
   color: #e2e2e2;
+}
+
+/* All 5 extra themes */
+html.dark-theme-variant .message-row-wrapper .message-displayname:not([style*="color"]) {
+  color: var(--username-color, var(--text-primary)) !important;
 }
 
 /* ===== TAG MENTION STYLES & PILLS ===== */
@@ -11355,10 +11524,16 @@ body.dark-mode .homepage-container .chat-footer.hp-composer-footer,
   box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.44) !important;
 }
 
+html.dark-theme-variant body .homepage-container .chat-footer.hp-composer-footer,
+html.dark-theme-variant .homepage-container .chat-footer.hp-composer-footer {
+  background: var(--bg-secondary) !important;
+  border-top: 1px solid var(--border-color) !important;
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.48) !important;
+}
+
 /* Full-width rounded pill dock; reset legacy fixed/translateZ rules */
 body .homepage-container .message-form.hp-composer-dock,
-html.dark-mode .homepage-container .message-form.hp-composer-dock,
-html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
+html.dark-mode .homepage-container .message-form.hp-composer-dock {
   position: relative !important;
   top: auto !important;
   bottom: auto !important;
@@ -11406,6 +11581,38 @@ body.dark-mode .homepage-container .message-form.hp-composer-dock:focus-within,
   background: rgba(30, 21, 64, 0.98) !important;
   border-color: rgba(167, 139, 250, 0.54) !important;
   box-shadow: 0 0 0 2.5px rgba(139, 92, 246, 0.2), 0 6px 18px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark-theme-variant body .homepage-container .message-form.hp-composer-dock,
+html.dark-theme-variant .homepage-container .message-form.hp-composer-dock {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 3px 5px !important;
+  gap: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  border-radius: 9999px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border-accent, var(--border-color)) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+html.dark-theme-variant body .homepage-container .message-form.hp-composer-dock:focus-within,
+html.dark-theme-variant .homepage-container .message-form.hp-composer-dock:focus-within {
+  background: var(--bg-elevated, var(--input-bg)) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2.5px var(--border-accent), 0 6px 18px rgba(0, 0, 0, 0.4) !important;
 }
 
 .hp-composer-input-wrap {
@@ -11472,6 +11679,16 @@ body.dark-mode .homepage-container .hp-composer-dock .premium-textarea::placehol
   color: rgba(196, 181, 253, 0.5) !important;
 }
 
+html.dark-theme-variant body .homepage-container .hp-composer-dock .premium-input-field.premium-textarea,
+html.dark-theme-variant .homepage-container .hp-composer-dock .premium-textarea {
+  color: var(--input-text, var(--text-primary)) !important;
+  caret-color: var(--accent-color) !important;
+}
+
+html.dark-theme-variant .homepage-container .hp-composer-dock .premium-textarea::placeholder {
+  color: var(--input-placeholder, var(--text-muted)) !important;
+}
+
 /* Subtle circular Attach button */
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
   width: 36px !important;
@@ -11513,6 +11730,26 @@ body.dark-mode .homepage-container .premium-footer-btn.attachment-btn.hp-compose
   border-color: rgba(167, 139, 250, 0.28) !important;
 }
 
+html.dark-theme-variant body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach,
+html.dark-theme-variant .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach {
+  background: var(--badge-bg, rgba(255, 255, 255, 0.08)) !important;
+  border-color: var(--border-accent, var(--border-color)) !important;
+  color: var(--icon-color) !important;
+}
+
+html.dark-theme-variant body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled),
+html.dark-theme-variant .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach:hover:not(:disabled) {
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.14)) !important;
+  border-color: var(--accent-color) !important;
+}
+
+html.dark-theme-variant body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg,
+html.dark-theme-variant .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg,
+html.dark-theme-variant .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg path {
+  stroke: var(--icon-color) !important;
+  color: var(--icon-color) !important;
+}
+
 body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach svg {
   width: 19px !important;
   height: 19px !important;
@@ -11520,8 +11757,7 @@ body .homepage-container .premium-footer-btn.attachment-btn.hp-composer-attach s
 
 /* Circular Send button */
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
-html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
-html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
+html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
   width: 36px !important;
   height: 36px !important;
   min-width: 36px !important;
@@ -11538,6 +11774,25 @@ html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-comp
   cursor: pointer !important;
   opacity: 1 !important;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease !important;
+}
+
+html.dark-theme-variant body .homepage-container .premium-footer-btn.send-btn.hp-composer-send,
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%) !important;
+  border: 1px solid var(--border-accent) !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  align-self: center !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:hover:not(:disabled) {
@@ -11568,10 +11823,19 @@ body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:not(:disa
 }
 
 body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
-html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
-html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
+html.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
   background: rgba(124, 58, 237, 0.12) !important;
   border-color: rgba(124, 58, 237, 0.16) !important;
+  box-shadow: none !important;
+  opacity: 0.72 !important;
+  transform: none !important;
+  cursor: default !important;
+}
+
+html.dark-theme-variant body .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled,
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled {
+  background: var(--badge-bg, rgba(255, 255, 255, 0.08)) !important;
+  border-color: var(--border-accent, var(--border-color)) !important;
   box-shadow: none !important;
   opacity: 0.72 !important;
   transform: none !important;
@@ -11595,8 +11859,12 @@ body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send
 }
 
 body.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"],
-.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"] {
-  fill: #c4b5fd !important;
+.dark-mode .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"],
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#020288"] {
+  fill: var(--icon-color, #c4b5fd) !important;
+}
+html.dark-theme-variant .homepage-container .premium-footer-btn.send-btn.hp-composer-send:disabled svg path[fill="#e2c4ff"] {
+  fill: var(--badge-bg, rgba(255, 255, 255, 0.24)) !important;
 }
 
 @media (max-width: 480px) {
@@ -11696,7 +11964,7 @@ html.dark-mode .homepage-container[data-room-mood="warm-mehfil"] .chat-container
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MODULE 3: SILENT WATCH LOCAL STATUS BAR (STAFF ONLY, NEVER IN HEADER)
+   MODULE 3: SILENT WATCH LOCAL STATUS BAR (OWNER ONLY, NEVER IN HEADER)
    ═══════════════════════════════════════════════════════════════════════════ */
 .tt-silent-watch-banner {
   position: fixed;
@@ -11715,6 +11983,12 @@ html.dark-mode .homepage-container[data-room-mood="warm-mehfil"] .chat-container
   font-size: 11px;
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+html.dark-theme-variant .tt-silent-watch-banner {
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
+  border-bottom-color: var(--border-accent);
+  color: var(--text-primary);
 }
 
 .tt-silent-watch-banner-left {
@@ -11736,89 +12010,9 @@ html.dark-mode .homepage-container[data-room-mood="warm-mehfil"] .chat-container
   flex-shrink: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODULE 5: WATCH-PARTY SPLIT THEATER LAYOUT (DESKTOP SPLIT / MOBILE 16:9)
-   ═══════════════════════════════════════════════════════════════════════════ */
-.tt-watch-split-shell {
-  position: fixed;
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  padding: 8px 10px;
-  box-sizing: border-box;
-  z-index: 40;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.tt-watch-split-shell .tt-watch-stage {
-  flex: 1.45;
-  height: 100%;
-}
-
-.tt-watch-split-shell.is-expanded .tt-watch-stage {
-  flex: 2.1;
-}
-
-.tt-watch-chat-col {
-  flex: 1;
-  min-width: 320px;
-  max-width: 470px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(167, 139, 250, 0.22);
-  background: rgba(255, 255, 255, 0.55);
-}
-
-body.dark-mode .tt-watch-chat-col,
-html.dark-mode .tt-watch-chat-col {
-  background: rgba(13, 10, 28, 0.72);
-  border-color: rgba(167, 139, 250, 0.28);
-}
-
-.tt-watch-chat-col .chat-feed {
-  position: relative !important;
-  top: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  right: auto !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: 100% !important;
-  flex: 1 !important;
-}
-
-@media (max-width: 899px) {
-  .tt-watch-split-shell {
-    flex-direction: column;
-    padding: 0;
-    gap: 0;
-  }
-
-  .tt-watch-split-shell .tt-watch-stage {
-    flex: none;
-    height: auto;
-  }
-
-  .tt-watch-chat-col {
-    flex: 1;
-    min-width: 0;
-    max-width: 100%;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-  }
-
-  .tt-watch-chat-col.is-mobile-collapsed {
-    display: none;
-  }
+html.dark-theme-variant .tt-silent-watch-exit-btn {
+  border-color: var(--border-accent);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text, #ffffff);
 }
 

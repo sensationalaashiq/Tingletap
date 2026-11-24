@@ -513,7 +513,12 @@ html.dark-theme-variant .ultra-pm-sender { color: var(--username-color) !importa
 
 /* ── Username colors: all roles → theme variable (no per-role overrides) ── */
 /* Custom user-set colors win via inline style / -webkit-text-fill-color.     */
-html.dark-theme-variant .message-displayname:not([style*="color"]) { color: var(--username-color) !important; }
+html.dark-theme-variant .message-displayname:not([style*="color"]),
+html.dark-theme-variant .homepage-container .message-displayname:not([style*="color"]),
+html.dark-theme-variant .homepage-container .message-row .message-displayname:not([style*="color"]),
+html.dark-theme-variant .message-row-wrapper .message-displayname:not([style*="color"]) {
+  color: var(--username-color, var(--text-primary)) !important;
+}
 html.dark-theme-variant .inline-badge { background: transparent !important; box-shadow: none !important; border: none !important; }
 
 /* ── Chat Input / Form ── */
@@ -1964,9 +1969,8 @@ html.dark-theme-variant .attachment-btn {
    These target specific known class+color combinations.
    Order: most specific first, catch-all last. ── */
 html.dark-theme-variant .sb-room-name,
-html.dark-theme-variant .message-displayname,
-html.dark-theme-variant .message-username,
-html.dark-theme-variant .displayname,
+html.dark-theme-variant .message-username:not([style*="color"]),
+html.dark-theme-variant .displayname:not([style*="color"]),
 html.dark-theme-variant .chat-header-title,
 html.dark-theme-variant .chat-title,
 html.dark-theme-variant .modal-title,
@@ -1974,6 +1978,7 @@ html.dark-theme-variant .panel-title,
 html.dark-theme-variant .popup-title-text,
 html.dark-theme-variant .setting-title,
 html.dark-theme-variant .section-title { color: var(--text-primary) !important; }
+html.dark-theme-variant .message-displayname:not([style*="color"]) { color: var(--username-color, var(--text-primary)) !important; }
 
 html.dark-theme-variant .message-text:not([style*="color"]),
 html.dark-theme-variant .message-content:not([style*="color"]),

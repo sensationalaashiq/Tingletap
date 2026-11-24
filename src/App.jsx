@@ -46,7 +46,7 @@ import ClickBurstOverlay from './components/ClickBurstOverlay';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { checkUserVPN } from './utils/vpnDetection';
-import { getStoredGuestGender } from './utils/roleUtils';
+import { getStoredGuestGender, resolveEarliestCreatedAt } from './utils/roleUtils';
 import { initGA, trackPageView } from './utils/analytics';
 import { initVisitorTracking, updateVisitorPage, updateVisitorIdentity } from './utils/visitorTracking';
 import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
@@ -356,6 +356,21 @@ function App() {
                 localStorage.removeItem('guestGender');
                 localStorage.removeItem('guestSessionId');
               }
+              const earliestJoinDate = !currentUser.isAnonymous
+                ? resolveEarliestCreatedAt(profile.createdAt, currentUser.metadata?.creationTime)
+                : null;
+              const firestoreJoinDate = !currentUser.isAnonymous
+                ? resolveEarliestCreatedAt(profile.createdAt, null)
+                : null;
+              const shouldHealCreatedAt = Boolean(
+                !currentUser.isAnonymous &&
+                earliestJoinDate &&
+                (!firestoreJoinDate || (firestoreJoinDate.getTime() - earliestJoinDate.getTime()) > 60 * 60 * 1000)
+              );
+              if (shouldHealCreatedAt) {
+                updateDoc(userDocRef, { createdAt: earliestJoinDate.toISOString() }).catch(() => {});
+              }
+
               const resolvedProfile = currentUser.isAnonymous
                 ? {
                     ...profile,
@@ -365,6 +380,7 @@ function App() {
                   }
                 : {
                     ...profile,
+                    ...(earliestJoinDate ? { createdAt: earliestJoinDate.toISOString() } : {}),
                     isGuest: false,
                   };
               setUserProfile(resolvedProfile);
@@ -452,11 +468,15 @@ function App() {
           setLoading(false);
         });
 
-        // Setup online presence (use update so HomePage's room presence fields aren't wiped)
+        // Setup online presence (use update so HomePage's room presence fields aren't wiped,
+        // and explicitly clear stale currentRoomId whenever user is outside a room route)
         const userStatusRef = ref(rtdb, `/status/${currentUser.uid}`);
         const unsubscribeConnected = onValue(ref(rtdb, '.info/connected'), (snapshot) => {
             if (snapshot.val() === false) return;
-            const onlineData = { state: 'online', last_changed: serverTimestamp() };
+            const inChatRoom = typeof window !== 'undefined' && /^\/(room|r)\//.test(window.location.pathname);
+            const onlineData = inChatRoom
+              ? { state: 'online', last_changed: serverTimestamp() }
+              : { state: 'online', currentRoomId: null, last_changed: serverTimestamp() };
             onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: serverTimestamp() })
                 .then(() => update(userStatusRef, onlineData));
         });

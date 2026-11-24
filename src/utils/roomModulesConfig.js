@@ -126,15 +126,5 @@ export const classifyShowStatus = (show, nowDate = new Date()) => {
   return 'later';
 };
 
-export const buildWotchlyUrl = (roomId, username) => {
-  const safeRoom = String(roomId || 'general')
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(0, 48) || 'general';
-  const safeUser = String(username || 'Guest')
-    .trim()
-    .slice(0, 32) || 'Guest';
-  return `https://wotchly.netlify.app/?room=${encodeURIComponent(`tingletap-${safeRoom}`)}&user=${encodeURIComponent(safeUser)}`;
-};
-
 export const SILENT_WATCH_STORAGE_KEY = (uid) => `tl_silent_watch_${uid || 'anon'}`;
 export const SHOW_REMINDERS_STORAGE_KEY = 'tl_show_reminders_v1';

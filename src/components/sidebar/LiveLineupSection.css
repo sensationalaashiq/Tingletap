@@ -312,3 +312,104 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ── Full Theme Variant Support (html.dark-theme-variant) ── */
+html.dark-theme-variant .tl-lineup-manage-btn {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--accent-hover) !important;
+}
+
+html.dark-theme-variant .tl-lineup-tabs {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+}
+
+html.dark-theme-variant .tl-lineup-tab {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .tl-lineup-tab.is-active {
+  background: var(--button-primary-bg) !important;
+  color: var(--button-primary-text, #ffffff) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark-theme-variant .tl-show-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark-theme-variant .tl-show-card.is-live {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 1px var(--border-accent), 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark-theme-variant .tl-show-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tl-show-slot {
+  color: var(--accent-hover) !important;
+}
+
+html.dark-theme-variant .tl-show-host-chip {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .tl-show-room-tag {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--badge-text) !important;
+}
+
+html.dark-theme-variant .tl-show-actions {
+  border-top-color: var(--border-color) !important;
+}
+
+html.dark-theme-variant .tl-show-status-label {
+  color: var(--accent-color) !important;
+}
+
+html.dark-theme-variant .tl-show-action-btn {
+  background: var(--button-primary-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--button-primary-text, #ffffff) !important;
+}
+
+html.dark-theme-variant .tl-show-remind-btn {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--accent-hover) !important;
+}
+
+html.dark-theme-variant .tl-show-remind-btn.is-reminded {
+  border-color: rgba(251, 191, 36, 0.65) !important;
+  background: rgba(251, 191, 36, 0.16) !important;
+  color: #fde68a !important;
+}
+
+html.dark-theme-variant .tl-lineup-empty {
+  border-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark-theme-variant .tl-sched-modal {
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tl-sched-row-card {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tl-sched-mini-btn {
+  background: var(--badge-bg) !important;
+  border-color: var(--border-accent) !important;
+  color: var(--text-primary) !important;
+}
+

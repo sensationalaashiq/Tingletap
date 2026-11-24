@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   addDoc,
@@ -16,7 +16,6 @@ import {
   PollBarsIcon,
   TriviaBuzzerIcon,
   SpinWheelIcon,
-  WatchPartyStageIcon,
   ExitWatchIcon,
 } from '../icons/LuxuryModuleIcons';
 import './FloatingActivityLauncher.css';
@@ -25,13 +24,11 @@ const FloatingActivityLauncher = ({
   roomId,
   loggedInUserProfile,
   isMuted = false,
-  watchPartyOpen = false,
-  onToggleWatchParty,
+  pickerOpen = false,
+  onClosePicker,
 }) => {
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const [activeCreator, setActiveCreator] = useState(null); // null | 'poll' | 'trivia' | 'wheel'
   const [submitting, setSubmitting] = useState(false);
-  const wrapRef = useRef(null);
 
   // Poll / Trivia state
   const [question, setQuestion] = useState('');
@@ -42,17 +39,6 @@ const FloatingActivityLauncher = ({
   // Wheel state
   const [wheelTitle, setWheelTitle] = useState('');
   const [wheelEntriesRaw, setWheelEntriesRaw] = useState('');
-
-  useEffect(() => {
-    if (!popoverOpen) return;
-    const onOutside = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setPopoverOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onOutside);
-    return () => document.removeEventListener('mousedown', onOutside);
-  }, [popoverOpen]);
 
   const resetCreator = () => {
     setActiveCreator(null);
@@ -65,14 +51,13 @@ const FloatingActivityLauncher = ({
   };
 
   const openCreator = (type) => {
+    if (onClosePicker) onClosePicker();
     if (isMuted) {
       pt.error('You are currently muted and cannot launch room activities.');
-      setPopoverOpen(false);
       return;
     }
     resetCreator();
     setActiveCreator(type);
-    setPopoverOpen(false);
   };
 
   const handleLaunch = async (e) => {
@@ -217,85 +202,78 @@ const FloatingActivityLauncher = ({
 
   return (
     <>
-      <div className="hp-activity-fab-wrap" ref={wrapRef}>
-        {popoverOpen && (
-          <div className="hp-activity-popover" role="menu" aria-label="Room Activities">
-            <div className="hp-activity-pop-title">Room Interactive</div>
-
-            <button
-              type="button"
-              className="hp-activity-pop-btn"
-              onClick={() => openCreator('poll')}
+      {pickerOpen &&
+        createPortal(
+          <div className="hp-act-modal-overlay" onClick={() => onClosePicker && onClosePicker()}>
+            <div
+              className="hp-act-modal hp-act-picker-modal"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Room Mini-Games and Polls"
             >
-              <span className="hp-activity-pop-icon">
-                <PollBarsIcon size={16} color="#c084fc" />
-              </span>
-              <span className="hp-activity-pop-label">
-                <strong>Live Quick Poll</strong>
-                <small>2 to 4 instant voting choices</small>
-              </span>
-            </button>
+              <div className="hp-act-modal-hdr">
+                <h4>
+                  <ActivitySparkIcon size={17} color="var(--accent-color, #8b5cf6)" />
+                  Mini-Games &amp; Polls
+                </h4>
+                <button
+                  type="button"
+                  className="hp-act-close-x"
+                  onClick={() => onClosePicker && onClosePicker()}
+                  aria-label="Close"
+                >
+                  <ExitWatchIcon size={14} />
+                </button>
+              </div>
 
-            <button
-              type="button"
-              className="hp-activity-pop-btn"
-              onClick={() => openCreator('trivia')}
-            >
-              <span className="hp-activity-pop-icon">
-                <TriviaBuzzerIcon size={16} color="#22d3ee" />
-              </span>
-              <span className="hp-activity-pop-label">
-                <strong>Rapid Trivia Buzzer</strong>
-                <small>Timed speed answer challenge</small>
-              </span>
-            </button>
+              <div className="hp-act-picker-list">
+                <button
+                  type="button"
+                  className="hp-activity-pop-btn"
+                  onClick={() => openCreator('poll')}
+                >
+                  <span className="hp-activity-pop-icon">
+                    <PollBarsIcon size={17} color="#c084fc" />
+                  </span>
+                  <span className="hp-activity-pop-label">
+                    <strong>Live Quick Poll</strong>
+                    <small>2 to 4 instant voting choices</small>
+                  </span>
+                </button>
 
-            <button
-              type="button"
-              className="hp-activity-pop-btn"
-              onClick={() => openCreator('wheel')}
-            >
-              <span className="hp-activity-pop-icon">
-                <SpinWheelIcon size={16} color="#f472b6" />
-              </span>
-              <span className="hp-activity-pop-label">
-                <strong>Spin the Wheel</strong>
-                <small>Live lucky pick or dare wheel</small>
-              </span>
-            </button>
+                <button
+                  type="button"
+                  className="hp-activity-pop-btn"
+                  onClick={() => openCreator('trivia')}
+                >
+                  <span className="hp-activity-pop-icon">
+                    <TriviaBuzzerIcon size={17} color="#22d3ee" />
+                  </span>
+                  <span className="hp-activity-pop-label">
+                    <strong>Rapid Trivia Buzzer</strong>
+                    <small>Timed speed answer challenge</small>
+                  </span>
+                </button>
 
-            {onToggleWatchParty && (
-              <button
-                type="button"
-                className="hp-activity-pop-btn"
-                onClick={() => {
-                  onToggleWatchParty();
-                  setPopoverOpen(false);
-                }}
-              >
-                <span className="hp-activity-pop-icon">
-                  <WatchPartyStageIcon size={16} color="#fbbf24" />
-                </span>
-                <span className="hp-activity-pop-label">
-                  <strong>{watchPartyOpen ? 'Exit Watch Party' : 'Sync Watch Party'}</strong>
-                  <small>Co-watch theater inside room</small>
-                </span>
-              </button>
-            )}
-          </div>
+                <button
+                  type="button"
+                  className="hp-activity-pop-btn"
+                  onClick={() => openCreator('wheel')}
+                >
+                  <span className="hp-activity-pop-icon">
+                    <SpinWheelIcon size={17} color="#f472b6" />
+                  </span>
+                  <span className="hp-activity-pop-label">
+                    <strong>Spin the Wheel</strong>
+                    <small>Live lucky pick or dare wheel</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
-
-        <button
-          type="button"
-          className="hp-activity-fab"
-          onClick={() => setPopoverOpen((prev) => !prev)}
-          title="Mini-Games, Polls & Watch Party"
-          aria-label="Open Mini-Games and Polls menu"
-          aria-expanded={popoverOpen}
-        >
-          <ActivitySparkIcon size={19} color="#ffffff" />
-        </button>
-      </div>
 
       {activeCreator &&
         createPortal(
@@ -353,7 +331,7 @@ const FloatingActivityLauncher = ({
                   <div className="hp-act-field">
                     <label>
                       Options ({options.length}/4)
-                      {activeCreator === 'trivia' ? ' — Mark Correct' : ''}
+                      {activeCreator === 'trivia' ? ' - Mark Correct' : ''}
                     </label>
                     {options.map((opt, idx) => (
                       <div key={idx} className="hp-act-opt-row">

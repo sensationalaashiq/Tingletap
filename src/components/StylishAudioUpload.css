@@ -115,15 +115,22 @@
 .sau-btn-cancel:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; }
 .sau-btn-send {
     flex: 1.5; padding: 9px; border-radius: 10px;
-    border: none; background: linear-gradient(135deg,#10b981,#0891b2);
+    border: none !important;
+    background: linear-gradient(135deg,#059669,#0891b2) !important;
     color: #fff !important; -webkit-text-fill-color: #fff !important;
     font-size: .9rem; font-weight: 700; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 7px;
     box-shadow: 0 4px 16px rgba(16,185,129,.38);
     transition: all .15s ease; font-family: inherit;
 }
-.sau-btn-send:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(16,185,129,.48); }
-.sau-btn-send:active { transform: translateY(0); }
+.sau-btn-send:disabled {
+    background: linear-gradient(135deg,#047857,#0e7490) !important;
+    color: #fff !important; -webkit-text-fill-color: #fff !important;
+    opacity: 0.62 !important;
+    cursor: not-allowed;
+}
+.sau-btn-send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(16,185,129,.48); }
+.sau-btn-send:active:not(:disabled) { transform: translateY(0); }
 
 .sau-tab.sau-tab-locked {
     position: relative;
@@ -169,10 +176,10 @@
     width: 100%;
     padding: 10px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #10b981, #0891b2);
-    border: none;
-    color: #fff;
-    -webkit-text-fill-color: #fff;
+    background: linear-gradient(135deg, #059669, #0891b2) !important;
+    border: none !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
     font-weight: 700;
     font-size: 13px;
     cursor: pointer;
@@ -182,8 +189,10 @@
     gap: 6px;
 }
 .sau-url-send:disabled {
-    background: #9ca3af;
-    opacity: 0.5;
+    background: linear-gradient(135deg, #047857, #0e7490) !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    opacity: 0.62 !important;
     cursor: not-allowed;
 }
 
@@ -269,5 +278,13 @@ html.dark-theme-variant .sau-url-input {
 html.dark-mode .sau-url-hint,
 html.dark-theme-variant .sau-url-hint {
     color: var(--text-secondary, #9aa3b8) !important;
+}
+html.dark-mode .sau-btn-send,
+html.dark-theme-variant .sau-btn-send,
+html.dark-mode .sau-url-send,
+html.dark-theme-variant .sau-url-send {
+    background: linear-gradient(135deg, #059669, #0891b2) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
 
