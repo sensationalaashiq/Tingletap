@@ -294,7 +294,7 @@ const AdminPanelPage = () => {
   // Real-time users data
   useEffect(() => {
     if (!isRoleReady) return;
-    const usersQuery = query(collection(db, 'users'), limit(100));
+    const usersQuery = query(collection(db, 'users'), limit(500));
     const unsubscribe = onSnapshot(usersQuery,
       (snapshot) => {
         const usersData = snapshot.docs

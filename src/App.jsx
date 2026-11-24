@@ -51,7 +51,7 @@ import { initGA, trackPageView } from './utils/analytics';
 import { initVisitorTracking, updateVisitorPage, updateVisitorIdentity } from './utils/visitorTracking';
 import { initializeUsernameStyles, clearAllUsernameStyles, syncAllUsersStyles } from './utils/usernamePreferences';
 import { initializeGlobalMessageStyles, clearAllMessageStyles, syncAllUsersMessageStyles } from './utils/messageTextPreferences';
-import { syncPublicProfile } from './utils/syncPublicProfile';
+import { syncPublicProfile, recoverUserProfileFromPublic } from './utils/syncPublicProfile';
 import BanKickModal from './components/BanKickModal';
 import { WarningsProvider } from './contexts/WarningsContext'; // FIX 6
 import './App.css';
@@ -99,6 +99,8 @@ function App() {
   const [banModalData, setBanModalData] = useState({}); // Added state for ban modal data
   const [showBanModal, setShowBanModal] = useState(false); // Added state for ban modal visibility
   const [error, setError] = useState(''); // Added state for error messages
+  const healedProfileUidRef = useRef(null);
+  const healingInProgressUidRef = useRef(null);
 
   // Initialize GA4 and visitor tracking once on mount
   useEffect(() => {
@@ -371,22 +373,48 @@ function App() {
                 updateDoc(userDocRef, { createdAt: earliestJoinDate.toISOString() }).catch(() => {});
               }
 
-              const resolvedProfile = currentUser.isAnonymous
+              const baseResolved = currentUser.isAnonymous
                 ? {
                     ...profile,
+                    uid: currentUser.uid,
                     isGuest: true,
                     role: 'guest',
                     gender: profile.gender || getStoredGuestGender(),
                   }
                 : {
                     ...profile,
+                    uid: currentUser.uid,
                     ...(earliestJoinDate ? { createdAt: earliestJoinDate.toISOString() } : {}),
                     isGuest: false,
                   };
-              setUserProfile(resolvedProfile);
+
+              let resolvedProfile = baseResolved;
               if (!currentUser.isAnonymous) {
-                syncPublicProfile(currentUser.uid, resolvedProfile).catch(() => {});
+                if (healedProfileUidRef.current !== currentUser.uid && healingInProgressUidRef.current !== currentUser.uid) {
+                  healingInProgressUidRef.current = currentUser.uid;
+                  try {
+                    const { healedProfile } = await recoverUserProfileFromPublic(
+                      currentUser.uid,
+                      baseResolved,
+                      currentUser,
+                      { docExists: true }
+                    );
+                    if (healedProfile) resolvedProfile = { ...healedProfile, uid: currentUser.uid, isGuest: false };
+                  } catch (healErr) {
+                    console.warn('Profile recovery skipped:', healErr?.message ?? healErr);
+                  } finally {
+                    healedProfileUidRef.current = currentUser.uid;
+                    if (healingInProgressUidRef.current === currentUser.uid) {
+                      healingInProgressUidRef.current = null;
+                    }
+                  }
+                }
+                if (healedProfileUidRef.current === currentUser.uid) {
+                  syncPublicProfile(currentUser.uid, resolvedProfile, { preserveExisting: true }).catch(() => {});
+                }
               }
+
+              setUserProfile(resolvedProfile);
               // Update visitor identity — map role to tracking type
               const _vRole = resolvedProfile.role || 'user';
               const _vType = _vRole === 'guest' ? 'guest' : 'registered';
@@ -457,6 +485,35 @@ function App() {
                 Object.entries(profile.settings).forEach(([key, value]) => {
                   if (!styleKeys.has(key)) localStorage.setItem(key, value.toString());
                 });
+              }
+            }
+          } else if (!currentUser.isAnonymous) {
+            if (healedProfileUidRef.current !== currentUser.uid && healingInProgressUidRef.current !== currentUser.uid) {
+              healingInProgressUidRef.current = currentUser.uid;
+              try {
+                const fallbackBase = {
+                  uid: currentUser.uid,
+                  displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                  email: currentUser.email || '',
+                  isGuest: false,
+                };
+                const { healedProfile } = await recoverUserProfileFromPublic(
+                  currentUser.uid,
+                  fallbackBase,
+                  currentUser,
+                  { docExists: false }
+                );
+                const resolvedFallback = { ...(healedProfile || fallbackBase), uid: currentUser.uid, isGuest: false };
+                healedProfileUidRef.current = currentUser.uid;
+                setUserProfile(resolvedFallback);
+                window._appUserProfile = resolvedFallback;
+                window.dispatchEvent(new CustomEvent('_appUserProfileChanged', { detail: resolvedFallback }));
+              } catch (recoverErr) {
+                console.warn('Missing doc profile recovery failed:', recoverErr?.message ?? recoverErr);
+              } finally {
+                if (healingInProgressUidRef.current === currentUser.uid) {
+                  healingInProgressUidRef.current = null;
+                }
               }
             }
           }
@@ -538,6 +595,9 @@ function App() {
         ].forEach(key => localStorage.removeItem(key));
         console.log('✅ All style data cleared on logout — next account will load its own styles');
 
+        healedProfileUidRef.current = null;
+        healingInProgressUidRef.current = null;
+        window._appUserProfile = null;
         setUser(null);
         setUserProfile(null);
         setLoading(false);

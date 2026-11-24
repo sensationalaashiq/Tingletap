@@ -173,6 +173,8 @@ const Sidebar = ({
   liveUsers,
   loggedInUserProfile,
   currentRoomId,
+  silentWatchActive = false,
+  onToggleSilentWatch,
   onKick,
   onMute,
   onBan,
@@ -705,7 +707,13 @@ const Sidebar = ({
                     </div>
                   </div>
                   <div className="sb-apd-divider" />
-                  <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); (window.handleViewProfile || setProfileUser)(loggedInUserProfile); setDropdownUser(null); }}>
+                  <button className="sb-apd-btn" onClick={(e) => {
+                    e.stopPropagation();
+                    const resolvedSelfUid = loggedInUserProfile?.uid || user?.uid || auth.currentUser?.uid;
+                    const selfTarget = resolvedSelfUid ? { ...loggedInUserProfile, uid: resolvedSelfUid } : loggedInUserProfile;
+                    (window.handleViewProfile || setProfileUser)(selfTarget);
+                    setDropdownUser(null);
+                  }}>
                     <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#6366f1" d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></svg>
                     View Profile
                   </button>
@@ -923,7 +931,90 @@ const Sidebar = ({
 
             /* USERS TAB */
             <ul className="sb-user-list">
-              {filteredUsers.map(userItem => {
+              {filteredUsers.length === 0 ? (
+                <li style={{
+                  listStyle: 'none',
+                  margin: '16px 8px',
+                  padding: '22px 14px',
+                  borderRadius: '14px',
+                  background: 'rgba(139, 92, 246, 0.08)',
+                  border: '1px solid rgba(139, 92, 246, 0.22)',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}>
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.72, color: 'var(--accent-color, #a78bfa)' }}>
+                    {silentWatchActive ? (
+                      <>
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </>
+                    )}
+                  </svg>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-primary, inherit)' }}>
+                    {silentWatchActive
+                      ? 'Stealth Mode Active'
+                      : (searchQuery.trim() || genderFilter !== 'all')
+                        ? 'No users match this filter'
+                        : 'No other users in this room'}
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.75, color: 'var(--text-secondary, inherit)', lineHeight: 1.4 }}>
+                    {silentWatchActive
+                      ? 'You are hidden from the room userlist.'
+                      : (searchQuery.trim() || genderFilter !== 'all')
+                        ? 'Clear search or gender filter to view everyone.'
+                        : 'Users who join this room will appear here live.'}
+                  </div>
+                  {silentWatchActive && typeof onToggleSilentWatch === 'function' && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleSilentWatch(false)}
+                      style={{
+                        marginTop: '4px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                        color: '#ffffff',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Go Visible
+                    </button>
+                  )}
+                  {!silentWatchActive && (searchQuery.trim() || genderFilter !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); setGenderFilter('all'); }}
+                      style={{
+                        marginTop: '4px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                        color: '#ffffff',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Show All Users
+                    </button>
+                  )}
+                </li>
+              ) : filteredUsers.map(userItem => {
                 const isSelf       = user?.uid === userItem.uid;
                 const statusEntry  = window.userOnlineStatuses?.[userItem.uid];
                 const isOnline     = (window.onlineUsers?.has(userItem.uid) || statusEntry?.state === 'online' || userItem.isOnline)

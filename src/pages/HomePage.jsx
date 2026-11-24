@@ -71,7 +71,7 @@ import LiveAvatarImg from '../components/LiveAvatar';
 import { PremiumReactionBar, PremiumReactionPicker } from '../components/chat/PremiumReactions';
 import { renderUserBadge } from '../utils/badgeRenderHelper';
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils';
-import { syncPublicProfile } from '../utils/syncPublicProfile';
+import { syncPublicProfile, recoverUserProfileFromPublic } from '../utils/syncPublicProfile';
 import ChatActivityCard from '../components/chat/ChatActivityCard';
 import FloatingActivityLauncher from '../components/chat/FloatingActivityLauncher';
 import { ShroudedEyeIcon, ActivitySparkIcon } from '../components/icons/LuxuryModuleIcons';
@@ -2468,12 +2468,32 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         if (!profileUser?.uid) return;
         const targetUid = profileUser.uid;
-        // Skip when viewing our own profile — keep it in sync with loggedInUserProfile
+        // Self-profile: sync with loggedInUserProfile and ensure publicProfiles backup is merged if users/{uid} lost fields
         if (auth.currentUser?.uid && targetUid === auth.currentUser.uid) {
+            const selfMerged = loggedInUserProfile?.uid === targetUid
+                ? { ...profileUser, ...loggedInUserProfile, uid: targetUid }
+                : { ...profileUser, uid: targetUid };
             if (loggedInUserProfile?.uid === targetUid) {
-                setProfileUser(prev => prev?.uid === targetUid ? { ...prev, ...loggedInUserProfile } : prev);
+                setProfileUser(prev => prev?.uid === targetUid ? { ...prev, ...loggedInUserProfile, uid: targetUid } : prev);
             }
-            return;
+            let cancelledSelf = false;
+            const needsSelfRecovery = !auth.currentUser.isAnonymous && (
+                !Array.isArray(selfMerged.friends) || selfMerged.friends.length === 0 ||
+                (!selfMerged.coverVideoURL && !selfMerged.coverPhotoURL && !selfMerged.spotifyTrackURL) ||
+                !selfMerged.bio
+            );
+            if (needsSelfRecovery) {
+                recoverUserProfileFromPublic(targetUid, selfMerged, auth.currentUser, { docExists: true })
+                    .then(({ healedProfile }) => {
+                        if (cancelledSelf || !healedProfile) return;
+                        const finalSelf = { ...healedProfile, uid: targetUid, isGuest: false };
+                        setProfileUser(prev => prev?.uid === targetUid ? { ...prev, ...finalSelf, uid: targetUid } : prev);
+                        setLoggedInUserProfile(prev => prev ? { ...prev, ...finalSelf, uid: targetUid } : finalSelf);
+                        window._appUserProfile = { ...(window._appUserProfile || {}), ...finalSelf, uid: targetUid };
+                    })
+                    .catch(() => {});
+            }
+            return () => { cancelledSelf = true; };
         }
 
         let cancelled = false;
@@ -2696,8 +2716,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             // FIX 5: Centralise to ONE Firestore listener (owned by App.jsx).
             // HomePage consumes profile updates via a window event dispatched by App.jsx,
             // plus a one-time getDoc for the initial load. No second onSnapshot is created.
-            const handleLoggedInProfile = (userData) => {
-                if (!userData) return;
+            const handleLoggedInProfile = (rawUserData) => {
+                if (!rawUserData) return;
+                const userData = { ...rawUserData, uid: rawUserData.uid || user.uid };
 
                 // Initialize trust score for existing users who don't have it yet
                 if (userData.trustScore === undefined) {
@@ -2761,10 +2782,14 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Initial load (single getDoc — App.jsx owns the real-time onSnapshot)
             getDoc(userDocRef).then(docSnap => {
+                if (window._appUserProfile?.uid === user.uid) {
+                    handleLoggedInProfile(window._appUserProfile);
+                    return;
+                }
                 if (docSnap.exists()) {
                     const raw = docSnap.data();
                     const earliest = resolveEarliestCreatedAt(raw?.createdAt, !user.isAnonymous ? auth.currentUser?.metadata?.creationTime : null);
-                    handleLoggedInProfile(earliest ? { ...raw, createdAt: earliest } : raw);
+                    handleLoggedInProfile(earliest ? { ...raw, uid: user.uid, createdAt: earliest } : { ...raw, uid: user.uid });
                 }
             }).catch(() => {});
 
@@ -3344,6 +3369,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         loggedInUserProfile?.settings?.showOnlineStatus,
     ]);
 
+    // Track latest roomId and authUid for StrictMode-safe cleanup
+    const activeRoomIdRef = useRef(roomId);
+    const firebaseAuthUidRef = useRef(firebaseAuthUid);
+    useEffect(() => {
+        activeRoomIdRef.current = roomId;
+        firebaseAuthUidRef.current = auth.currentUser?.uid || firebaseAuthUid;
+    }, [roomId, firebaseAuthUid]);
+
     // ── PRESENCE PART 2: Room-scoped onDisconnect + 20s heartbeat + unload cleanup ─
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
@@ -3388,20 +3421,35 @@ const HomePage = ({ user, roomIdOverride }) => {
             clearInterval(heartbeatInterval);
             window.removeEventListener('pagehide', handleUnloadCleanup);
             window.removeEventListener('beforeunload', handleUnloadCleanup);
-            // Room-scoped cleanup ONLY: never clobber global status/{uid} to offline during room switches
-            remove(roomPresenceRef).catch(() => {});
-            remove(roomCountRef).catch(() => {});
+            // Remove this room's presence only if actually switching to a different room
+            // (prevents auth state settling or React StrictMode remounts from erasing active presence)
+            setTimeout(() => {
+                if (activeRoomIdRef.current !== roomId && (window.__ttHomePageMounts || 0) > 0) {
+                    remove(roomPresenceRef).catch(() => {});
+                    remove(roomCountRef).catch(() => {});
+                }
+            }, 60);
         };
     }, [roomId, user?.uid, firebaseAuthUid]);
 
-    // Global offline cleanup runs ONLY when leaving HomePage completely (unmount) or signing out
+    // Global offline cleanup runs ONLY when actually leaving HomePage completely (StrictMode-safe)
     useEffect(() => {
+        window.__ttHomePageMounts = (window.__ttHomePageMounts || 0) + 1;
         return () => {
-            const authUid = auth.currentUser?.uid || firebaseAuthUid;
-            if (!authUid) return;
-            update(ref(rtdb, `status/${authUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
+            window.__ttHomePageMounts = Math.max(0, (window.__ttHomePageMounts || 1) - 1);
+            const leavingUid = auth.currentUser?.uid || firebaseAuthUidRef.current;
+            const leavingRoom = activeRoomIdRef.current;
+            setTimeout(() => {
+                if ((window.__ttHomePageMounts || 0) === 0 && leavingUid) {
+                    if (leavingRoom) {
+                        remove(ref(rtdb, `room_presence/${leavingRoom}/${leavingUid}`)).catch(() => {});
+                        remove(ref(rtdb, `roomCounts/${leavingRoom}/${leavingUid}`)).catch(() => {});
+                    }
+                    update(ref(rtdb, `status/${leavingUid}`), { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
+                }
+            }, 80);
         };
-    }, [firebaseAuthUid]);
+    }, []);
 
     // ── PRESENCE PART 3: Store device info in Firestore once per login ────────
     // Isolated so its Firestore write never triggers loggedInUserProfile listener
@@ -4453,7 +4501,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const g = globalStatusRaw?.[uid];
                 if (g && (g.state === 'offline' || (g.currentRoomId && g.currentRoomId !== roomId))) {
                     const gTs = typeof g.last_changed === 'number' ? g.last_changed : 0;
-                    if (gTs >= p.last_changed) return;
+                    if (gTs > p.last_changed) return;
                 }
                 const mergedGlobal = (g && g.state === 'online' && g.currentRoomId === roomId && isFreshOnline(g, serverNow)) ? g : null;
                 merged[uid] = mergedGlobal ? { ...mergedGlobal, ...p } : { ...p };
@@ -5454,10 +5502,14 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const handleViewProfile = (targetUser) => {
         if (!targetUser) return;
-        const uid = targetUser.uid || targetUser.id;
-        const isSelf = uid && (uid === auth.currentUser?.uid || uid === loggedInUserProfile?.uid);
+        const uid =
+            targetUser.uid ||
+            targetUser.id ||
+            (targetUser === loggedInUserProfile ? (loggedInUserProfile?.uid || auth.currentUser?.uid) : undefined);
+        const isSelf = Boolean(uid && (uid === auth.currentUser?.uid || uid === loggedInUserProfile?.uid));
+        const appSelf = isSelf && window._appUserProfile?.uid === uid ? window._appUserProfile : null;
         const cached = (uid && (
-            (isSelf ? loggedInUserProfile : null) ||
+            (isSelf ? (loggedInUserProfile?.uid === uid ? { ...appSelf, ...loggedInUserProfile } : appSelf) : null) ||
             userLookupMap?.[uid] ||
             liveUsers?.find(u => u?.uid === uid) ||
             window.userProfilesCache?.get?.(uid)
@@ -5469,7 +5521,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const mergedBadge = resolveBadgeKey(cached.badge)
                 ? cached.badge
                 : (resolveBadgeKey(targetUser.badge) ? targetUser.badge : (cached.badge || targetUser.badge));
-            setProfileUser({ ...targetUser, ...cached, uid, role: mergedRole, badge: mergedBadge });
+            setProfileUser({ ...targetUser, ...cached, ...(uid ? { uid } : {}), role: mergedRole, badge: mergedBadge });
         } else {
             setProfileUser({ ...targetUser, ...(uid ? { uid } : {}) });
         }
@@ -7845,6 +7897,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     liveUsers={liveUsers}
                     loggedInUserProfile={loggedInUserProfile}
                     currentRoomId={roomId}
+                    silentWatchActive={silentWatchActive}
+                    onToggleSilentWatch={handleToggleSilentWatch}
                     onKick={handleKickUser}
                     onMute={handleMuteUser}
                     onBan={handleBanUser}
@@ -7877,7 +7931,14 @@ const HomePage = ({ user, roomIdOverride }) => {
                           <div className="header-center">
                               <span className="header-title">
                                   {roomName || 'Indian Chat'} 
-                                  <span className="user-count">({onlineUserIds.length})</span>
+                                  <span
+                                      className="user-count"
+                                      onClick={() => setSidebarOpen(true)}
+                                      title="View room users"
+                                      style={{ cursor: 'pointer' }}
+                                  >
+                                      ({onlineUserIds.length})
+                                  </span>
                               </span>
                           </div>
 

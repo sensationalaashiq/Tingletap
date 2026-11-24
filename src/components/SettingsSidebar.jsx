@@ -3554,20 +3554,24 @@ const SettingsSidebar = ({
                                     className="modern-nav-btn rectangular feature"
                                     onClick={() => {
                                         try {
+                                            const resolvedUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
+                                            const selfTarget = resolvedUid
+                                                ? { ...(loggedInUserProfile || {}), uid: resolvedUid }
+                                                : loggedInUserProfile;
                                             if (window.handleViewProfile && typeof window.handleViewProfile === 'function') {
-                                                window.handleViewProfile(loggedInUserProfile);
+                                                window.handleViewProfile(selfTarget);
                                                 onClose();
                                                 pt.profile('Profile modal opened!');
                                                 return;
                                             }
                                             if (window.setProfileUser && typeof window.setProfileUser === 'function') {
-                                                window.setProfileUser(loggedInUserProfile);
+                                                window.setProfileUser(selfTarget);
                                                 onClose();
                                                 pt.profile('Profile modal opened!');
                                                 return;
                                             }
                                             if (onOpenProfile && typeof onOpenProfile === 'function') {
-                                                onOpenProfile(loggedInUserProfile);
+                                                onOpenProfile(selfTarget);
                                                 onClose();
                                                 pt.profile('Profile modal opened!');
                                                 return;
