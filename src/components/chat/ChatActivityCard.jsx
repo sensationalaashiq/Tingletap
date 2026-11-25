@@ -19,6 +19,9 @@ import {
   CrownRoyalIcon,
   SendPaperPlaneIcon,
   IdentityEmblem,
+  CheckTickIcon,
+  CrossXIcon,
+  ArrowChainIcon,
 } from '../icons/LuxuryModuleIcons';
 import './ChatActivityCard.css';
 
@@ -36,6 +39,8 @@ const WHEEL_SLICE_COLORS = [
   '#0d9488',
   '#6366f1',
 ];
+
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 const polarToCartesian = (cx, cy, r, angleDeg) => {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -79,14 +84,12 @@ const ChatActivityCard = ({
   const myName = loggedInUserProfile?.displayName || 'Member';
   const myIdentity = getIdentityKey(loggedInUserProfile);
 
-  // Keep synced with room-level listener snapshot
   useEffect(() => {
     if (initialSnapshot) {
       setActivity(initialSnapshot);
     }
   }, [initialSnapshot]);
 
-  // Listen to user's own single vote document for poll & trivia
   useEffect(() => {
     if (!roomId || !activityId || !myUid) return;
     if (activity?.type && activity.type !== 'poll' && activity.type !== 'trivia') return;
@@ -101,7 +104,6 @@ const ChatActivityCard = ({
     return () => unsub();
   }, [roomId, activityId, myUid, activity?.type]);
 
-  // Live countdown tick while timer or spin animation is active
   const needsTick = Boolean(
     activity &&
       ((activity.endsAtMs && nowMs < activity.endsAtMs + 1000) ||
@@ -116,7 +118,6 @@ const ChatActivityCard = ({
     return () => clearInterval(timer);
   }, [needsTick]);
 
-  // Atomic poll vote handler
   const handlePollVote = async (optionIdx) => {
     if (!roomId || !activityId || !myUid || busy) return;
     if (activity?.status === 'ended') return;
@@ -173,7 +174,6 @@ const ChatActivityCard = ({
     }
   };
 
-  // Atomic trivia buzzer handler
   const handleTriviaAnswer = async (optionIdx) => {
     if (!roomId || !activityId || !myUid || busy) return;
     if (myVote) return;
@@ -226,7 +226,6 @@ const ChatActivityCard = ({
     }
   };
 
-  // Atomic synchronized wheel spin handler
   const handleSpinWheel = async () => {
     if (!roomId || !activityId || !myUid || busy) return;
     const entries = Array.isArray(activity?.entries) ? activity.entries : [];
@@ -270,7 +269,6 @@ const ChatActivityCard = ({
     }
   };
 
-  // Atomic Atlas Place Chain submit handler
   const handleAtlasSubmit = async (e) => {
     e.preventDefault();
     if (!roomId || !activityId || !myUid || busy) return;
@@ -345,7 +343,6 @@ const ChatActivityCard = ({
     }
   };
 
-  // Atomic Word Challenge submit handler (Scramble or Word Chain)
   const handleWordSubmit = async (e) => {
     e.preventDefault();
     if (!roomId || !activityId || !myUid || busy) return;
@@ -401,7 +398,6 @@ const ChatActivityCard = ({
             updatedAt: serverTimestamp(),
           });
         } else {
-          // Scramble mode
           const guessUpper = raw.toUpperCase();
           const target = String(data.answerWord || '').toUpperCase();
           const nextAttempt = (typeof data.attemptCount === 'number' ? data.attemptCount : 0) + 1;
@@ -455,6 +451,7 @@ const ChatActivityCard = ({
   const secondsLeft = Math.ceil(remainingMs / 1000);
   const isTimeUp = Boolean(activity.endsAtMs && nowMs >= activity.endsAtMs);
   const timerPct = activity.endsAtMs ? Math.max(0, Math.min(100, (remainingMs / totalDurMs) * 100)) : 0;
+  const isUrgent = Boolean(activity.endsAtMs && !isTimeUp && secondsLeft <= 8);
 
   // ── 1. LIVE QUICK POLL ──────────────────────────────────────────────────
   if (activity.type === 'poll') {
@@ -462,24 +459,24 @@ const ChatActivityCard = ({
     const totalVotes = typeof activity.totalVotes === 'number'
       ? activity.totalVotes
       : options.reduce((acc, o) => acc + (o.count || 0), 0);
+    const closed = activity.status === 'ended' || isTimeUp;
 
     return (
       <div className="tt-act-card" data-activity-type="poll">
         <div className="tt-act-head">
-          <span className="tt-act-type-badge">
-            <PollBarsIcon size={13} color="#c084fc" />
-            Live Poll
+          <span className="tt-act-kicker tt-kicker--poll">
+            <PollBarsIcon size={13} color="currentColor" />
+            <span>Live Poll</span>
+            {!closed && <span className="tt-live-pulse-dot" />}
           </span>
-          <span className="tt-act-meta-right">
-            {activity.endsAtMs ? (
-              <span className={`tt-trivia-timer${isTimeUp ? ' is-ended' : ''}`}>
-                <TimerClockIcon size={11} color="currentColor" />
-                {isTimeUp ? 'Closed' : `${secondsLeft}s`}
-              </span>
-            ) : (
-              <span>{totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}</span>
-            )}
-          </span>
+          {activity.endsAtMs ? (
+            <span className={`tt-act-timer${isTimeUp ? ' is-ended' : isUrgent ? ' is-urgent' : ''}`}>
+              <TimerClockIcon size={11} color="currentColor" />
+              {isTimeUp ? 'Closed' : `${secondsLeft}s`}
+            </span>
+          ) : (
+            <span className="tt-act-meta-right">{totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}</span>
+          )}
         </div>
 
         {activity.endsAtMs && (
@@ -499,15 +496,20 @@ const ChatActivityCard = ({
               <button
                 key={opt.id || idx}
                 type="button"
-                disabled={busy || activity.status === 'ended' || isTimeUp}
+                disabled={busy || closed}
                 onClick={() => handlePollVote(idx)}
                 className={`tt-poll-opt${isSelected ? ' is-selected' : ''}`}
               >
                 <span className="tt-poll-bar" style={{ width: `${pct}%` }} />
                 <span className="tt-poll-opt-inner">
-                  <span className="tt-poll-opt-label">{opt.label}</span>
+                  <span className="tt-poll-opt-left">
+                    <span className={`tt-poll-radio${isSelected ? ' is-checked' : ''}`}>
+                      {isSelected && <CheckTickIcon size={10} color="#ffffff" />}
+                    </span>
+                    <span className="tt-poll-opt-label">{opt.label}</span>
+                  </span>
                   <span className="tt-poll-opt-pct">
-                    {pct}% ({count})
+                    {pct}%<span className="tt-poll-opt-cnt"> · {count}</span>
                   </span>
                 </span>
               </button>
@@ -516,11 +518,11 @@ const ChatActivityCard = ({
         </div>
 
         <div className="tt-act-foot">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span className="tt-foot-creator">
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-            By {activity.creatorName || 'Member'}
+            <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span>{totalVotes} votes · {myVote ? 'Recorded' : 'Tap to vote'}</span>
+          <span className="tt-foot-meta">{totalVotes} votes · {myVote ? 'Voted' : closed ? 'Closed' : 'Tap to vote'}</span>
         </div>
       </div>
     );
@@ -534,11 +536,12 @@ const ChatActivityCard = ({
     return (
       <div className="tt-act-card" data-activity-type="trivia">
         <div className="tt-act-head">
-          <span className="tt-act-type-badge">
-            <TriviaBuzzerIcon size={13} color="#22d3ee" />
-            Rapid Trivia
+          <span className="tt-act-kicker tt-kicker--trivia">
+            <TriviaBuzzerIcon size={13} color="currentColor" />
+            <span>Rapid Trivia</span>
+            {!isTimeUp && <span className="tt-live-pulse-dot" />}
           </span>
-          <span className={`tt-trivia-timer${isTimeUp ? ' is-ended' : ''}`}>
+          <span className={`tt-act-timer${isTimeUp ? ' is-ended' : isUrgent ? ' is-urgent' : ''}`}>
             <TimerClockIcon size={11} color="currentColor" />
             {isTimeUp ? 'Closed' : `${secondsLeft}s`}
           </span>
@@ -546,7 +549,7 @@ const ChatActivityCard = ({
 
         {activity.endsAtMs && (
           <div className="tt-timer-track">
-            <span className="tt-timer-fill" style={{ width: `${timerPct}%` }} />
+            <span className="tt-timer-fill tt-timer-fill--cyan" style={{ width: `${timerPct}%` }} />
           </div>
         )}
 
@@ -567,15 +570,24 @@ const ChatActivityCard = ({
                 type="button"
                 disabled={busy || Boolean(myVote) || isTimeUp}
                 onClick={() => handleTriviaAnswer(idx)}
-                className={`tt-poll-opt${stateClass}`}
+                className={`tt-poll-opt tt-trivia-opt${stateClass}`}
               >
                 <span className="tt-poll-opt-inner">
-                  <span className="tt-poll-opt-label">{optLabel}</span>
+                  <span className="tt-poll-opt-left">
+                    <span className="tt-opt-keycap">{OPTION_LETTERS[idx] || idx + 1}</span>
+                    <span className="tt-poll-opt-label">{optLabel}</span>
+                  </span>
                   {showReveal && isCorrectOpt && (
-                    <span className="tt-poll-opt-pct tt-pct-ok">Correct</span>
+                    <span className="tt-state-tag tt-state-ok">
+                      <CheckTickIcon size={11} color="currentColor" />
+                      <span>Correct</span>
+                    </span>
                   )}
                   {isSelected && !isCorrectOpt && (
-                    <span className="tt-poll-opt-pct tt-pct-bad">Locked</span>
+                    <span className="tt-state-tag tt-state-bad">
+                      <CrossXIcon size={10} color="currentColor" />
+                      <span>Wrong</span>
+                    </span>
                   )}
                 </span>
               </button>
@@ -584,20 +596,20 @@ const ChatActivityCard = ({
         </div>
 
         {activity.firstCorrectUid && (
-          <div className="tt-trivia-winner">
-            <CrownRoyalIcon size={15} color="#fbbf24" />
+          <div className="tt-winner-strip">
+            <CrownRoyalIcon size={14} color="#fbbf24" />
             <span>
-              Fastest: <strong>{activity.firstCorrectName}</strong> ({getIdentityLabel(activity.firstCorrectIdentity)})
+              Fastest: <strong>{activity.firstCorrectName}</strong> · {getIdentityLabel(activity.firstCorrectIdentity)}
             </span>
           </div>
         )}
 
         <div className="tt-act-foot">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span className="tt-foot-creator">
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-            By {activity.creatorName || 'Member'}
+            <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span>
+          <span className="tt-foot-meta">
             {typeof activity.attemptCount === 'number' ? activity.attemptCount : 0} responses
           </span>
         </div>
@@ -608,19 +620,21 @@ const ChatActivityCard = ({
   // ── 3. ATLAS PLACE CHAIN ────────────────────────────────────────────────
   if (activity.type === 'atlas') {
     const entries = Array.isArray(activity.entries) ? activity.entries : [];
+    const trail = entries.slice(-5);
     const scoreRows = Object.entries(activity.scores || {})
       .map(([uid, info]) => ({ uid, ...(info || {}) }))
       .sort((a, b) => (b.pts || 0) - (a.pts || 0))
-      .slice(0, 4);
+      .slice(0, 3);
 
     return (
       <div className="tt-act-card" data-activity-type="atlas">
         <div className="tt-act-head">
-          <span className="tt-act-type-badge">
-            <AtlasGlobeIcon size={13} color="#34d399" />
-            Atlas Chain
+          <span className="tt-act-kicker tt-kicker--atlas">
+            <AtlasGlobeIcon size={13} color="currentColor" />
+            <span>Atlas Chain</span>
+            {!isTimeUp && <span className="tt-live-pulse-dot" />}
           </span>
-          <span className={`tt-trivia-timer${isTimeUp ? ' is-ended' : ''}`}>
+          <span className={`tt-act-timer${isTimeUp ? ' is-ended' : isUrgent ? ' is-urgent' : ''}`}>
             <TimerClockIcon size={11} color="currentColor" />
             {isTimeUp ? 'Time Up' : `${secondsLeft}s`}
           </span>
@@ -634,33 +648,41 @@ const ChatActivityCard = ({
 
         <h5 className="tt-act-title">{activity.title}</h5>
 
-        <div className="tt-chain-banner">
+        <div className="tt-chain-arena">
           <div className="tt-chain-current">
-            <small>Current Place</small>
-            <strong>{activity.currentPlace || activity.seedPlace}</strong>
+            <span className="tt-arena-label">Current Place</span>
+            <strong className="tt-arena-word">{activity.currentPlace || activity.seedPlace}</strong>
           </div>
-          <div className="tt-chain-letter">
-            <small>Next Starts With</small>
-            <span className="tt-letter-pill">{activity.requiredLetter || 'A'}</span>
+          <div className="tt-chain-next">
+            <span className="tt-arena-label">Next Starts</span>
+            <span className="tt-keycap-letter">{activity.requiredLetter || 'A'}</span>
           </div>
         </div>
 
-        <div className="tt-chain-history">
-          {entries.slice(-7).map((item, idx) => (
-            <span key={`${item.word}-${idx}`} className="tt-chain-chip">
-              {item.word}
-            </span>
-          ))}
-        </div>
+        {trail.length > 0 && (
+          <div className="tt-trail-row" aria-label="Recent places">
+            {trail.map((item, idx) => (
+              <React.Fragment key={`${item.word}-${idx}`}>
+                {idx > 0 && <ArrowChainIcon size={10} color="currentColor" />}
+                <span className="tt-trail-word">{item.word}</span>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
 
         {scoreRows.length > 0 && (
-          <div className="tt-score-strip">
-            {scoreRows.map((row) => (
-              <span key={row.uid} className="tt-score-pill">
-                <TrophyCrestIcon size={11} color="#fbbf24" />
-                {row.name}: {row.pts}
-              </span>
-            ))}
+          <div className="tt-board-row">
+            <TrophyCrestIcon size={12} color="#fbbf24" />
+            <div className="tt-board-entries">
+              {scoreRows.map((row, idx) => (
+                <React.Fragment key={row.uid}>
+                  {idx > 0 && <span className="tt-board-sep">·</span>}
+                  <span className="tt-board-entry">
+                    #{idx + 1} {row.name} <strong>{row.pts}</strong>
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         )}
 
@@ -670,23 +692,23 @@ const ChatActivityCard = ({
               type="text"
               className="tt-inline-input"
               maxLength={36}
-              placeholder={`Place starting with "${activity.requiredLetter || 'A'}"...`}
+              placeholder={`Place starting with ${activity.requiredLetter || 'A'}...`}
               value={entryInput}
               onChange={(e) => setEntryInput(e.target.value)}
               disabled={busy}
             />
-            <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()}>
+            <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()} aria-label="Submit place">
               <SendPaperPlaneIcon size={13} color="#ffffff" />
             </button>
           </form>
         )}
 
         <div className="tt-act-foot">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span className="tt-foot-creator">
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-            By {activity.creatorName || 'Member'}
+            <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span>{entries.length} places chained</span>
+          <span className="tt-foot-meta">{entries.length} chained</span>
         </div>
       </div>
     );
@@ -697,19 +719,21 @@ const ChatActivityCard = ({
     const isChain = activity.mode === 'chain';
     if (isChain) {
       const entries = Array.isArray(activity.entries) ? activity.entries : [];
+      const trail = entries.slice(-5);
       const scoreRows = Object.entries(activity.scores || {})
         .map(([uid, info]) => ({ uid, ...(info || {}) }))
         .sort((a, b) => (b.pts || 0) - (a.pts || 0))
-        .slice(0, 4);
+        .slice(0, 3);
 
       return (
         <div className="tt-act-card" data-activity-type="word">
           <div className="tt-act-head">
-            <span className="tt-act-type-badge">
-              <WordTilesIcon size={13} color="#fbbf24" />
-              Word Chain
+            <span className="tt-act-kicker tt-kicker--word">
+              <WordTilesIcon size={13} color="currentColor" />
+              <span>Word Chain</span>
+              {!isTimeUp && <span className="tt-live-pulse-dot" />}
             </span>
-            <span className={`tt-trivia-timer${isTimeUp ? ' is-ended' : ''}`}>
+            <span className={`tt-act-timer${isTimeUp ? ' is-ended' : isUrgent ? ' is-urgent' : ''}`}>
               <TimerClockIcon size={11} color="currentColor" />
               {isTimeUp ? 'Time Up' : `${secondsLeft}s`}
             </span>
@@ -723,33 +747,41 @@ const ChatActivityCard = ({
 
           <h5 className="tt-act-title">{activity.title}</h5>
 
-          <div className="tt-chain-banner">
+          <div className="tt-chain-arena">
             <div className="tt-chain-current">
-              <small>Last Word</small>
-              <strong>{activity.currentWord}</strong>
+              <span className="tt-arena-label">Last Word</span>
+              <strong className="tt-arena-word">{activity.currentWord}</strong>
             </div>
-            <div className="tt-chain-letter">
-              <small>Starts With</small>
-              <span className="tt-letter-pill tt-letter-pill--amber">{activity.requiredLetter}</span>
+            <div className="tt-chain-next">
+              <span className="tt-arena-label">Starts With</span>
+              <span className="tt-keycap-letter tt-keycap-letter--amber">{activity.requiredLetter}</span>
             </div>
           </div>
 
-          <div className="tt-chain-history">
-            {entries.slice(-7).map((item, idx) => (
-              <span key={`${item.word}-${idx}`} className="tt-chain-chip">
-                {item.word}
-              </span>
-            ))}
-          </div>
+          {trail.length > 0 && (
+            <div className="tt-trail-row" aria-label="Recent words">
+              {trail.map((item, idx) => (
+                <React.Fragment key={`${item.word}-${idx}`}>
+                  {idx > 0 && <ArrowChainIcon size={10} color="currentColor" />}
+                  <span className="tt-trail-word">{item.word}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
 
           {scoreRows.length > 0 && (
-            <div className="tt-score-strip">
-              {scoreRows.map((row) => (
-                <span key={row.uid} className="tt-score-pill">
-                  <TrophyCrestIcon size={11} color="#fbbf24" />
-                  {row.name}: {row.pts}
-                </span>
-              ))}
+            <div className="tt-board-row">
+              <TrophyCrestIcon size={12} color="#fbbf24" />
+              <div className="tt-board-entries">
+                {scoreRows.map((row, idx) => (
+                  <React.Fragment key={row.uid}>
+                    {idx > 0 && <span className="tt-board-sep">·</span>}
+                    <span className="tt-board-entry">
+                      #{idx + 1} {row.name} <strong>{row.pts}</strong>
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           )}
 
@@ -759,29 +791,28 @@ const ChatActivityCard = ({
                 type="text"
                 className="tt-inline-input"
                 maxLength={22}
-                placeholder={`Word starting with "${activity.requiredLetter}"...`}
+                placeholder={`Word starting with ${activity.requiredLetter}...`}
                 value={entryInput}
                 onChange={(e) => setEntryInput(e.target.value)}
                 disabled={busy}
               />
-              <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()}>
+              <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()} aria-label="Submit word">
                 <SendPaperPlaneIcon size={13} color="#ffffff" />
               </button>
             </form>
           )}
 
           <div className="tt-act-foot">
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span className="tt-foot-creator">
               <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-              By {activity.creatorName || 'Member'}
+              <span>{activity.creatorName || 'Member'}</span>
             </span>
-            <span>{entries.length} words linked</span>
+            <span className="tt-foot-meta">{entries.length} linked</span>
           </div>
         </div>
       );
     }
 
-    // Word Scramble mode
     const tiles = Array.isArray(activity.scrambledLetters) ? activity.scrambledLetters : [];
     const solvedBy = Array.isArray(activity.solvedBy) ? activity.solvedBy : [];
     const iSolved = Boolean(myUid && solvedBy.some((s) => s.uid === myUid));
@@ -789,11 +820,12 @@ const ChatActivityCard = ({
     return (
       <div className="tt-act-card" data-activity-type="word">
         <div className="tt-act-head">
-          <span className="tt-act-type-badge">
-            <WordTilesIcon size={13} color="#fbbf24" />
-            Word Scramble
+          <span className="tt-act-kicker tt-kicker--word">
+            <WordTilesIcon size={13} color="currentColor" />
+            <span>Word Scramble</span>
+            {!isTimeUp && <span className="tt-live-pulse-dot" />}
           </span>
-          <span className={`tt-trivia-timer${isTimeUp ? ' is-ended' : ''}`}>
+          <span className={`tt-act-timer${isTimeUp ? ' is-ended' : isUrgent ? ' is-urgent' : ''}`}>
             <TimerClockIcon size={11} color="currentColor" />
             {isTimeUp ? 'Closed' : `${secondsLeft}s`}
           </span>
@@ -816,21 +848,21 @@ const ChatActivityCard = ({
         </div>
 
         {activity.hint && (
-          <div className="tt-word-hint">Hint: {activity.hint}</div>
+          <div className="tt-word-hint">Hint · {activity.hint}</div>
         )}
 
         {(isTimeUp || iSolved) && activity.answerWord && (
-          <div className="tt-trivia-winner">
+          <div className="tt-winner-strip">
             <CrownRoyalIcon size={14} color="#fbbf24" />
             <span>Word: <strong>{activity.answerWord}</strong></span>
           </div>
         )}
 
         {activity.firstCorrectUid && (
-          <div className="tt-trivia-winner" style={{ marginTop: 6 }}>
+          <div className="tt-winner-strip" style={{ marginTop: 5 }}>
             <TrophyCrestIcon size={14} color="#fbbf24" />
             <span>
-              Fastest Solver: <strong>{activity.firstCorrectName}</strong> ({solvedBy.length} solved)
+              Fastest: <strong>{activity.firstCorrectName}</strong> · {solvedBy.length} solved
             </span>
           </div>
         )}
@@ -841,7 +873,7 @@ const ChatActivityCard = ({
               type="text"
               className="tt-inline-input"
               maxLength={22}
-              placeholder={`Type ${activity.wordLength || tiles.length}-letter guess...`}
+              placeholder={`Unscramble ${activity.wordLength || tiles.length}-letter word...`}
               value={entryInput}
               onChange={(e) => {
                 setEntryInput(e.target.value);
@@ -849,7 +881,7 @@ const ChatActivityCard = ({
               }}
               disabled={busy}
             />
-            <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()}>
+            <button type="submit" className="tt-inline-submit" disabled={busy || !entryInput.trim()} aria-label="Submit guess">
               <SendPaperPlaneIcon size={13} color="#ffffff" />
             </button>
           </form>
@@ -858,11 +890,11 @@ const ChatActivityCard = ({
         {wordStatusMsg && <div className="tt-word-feedback">{wordStatusMsg}</div>}
 
         <div className="tt-act-foot">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span className="tt-foot-creator">
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-            By {activity.creatorName || 'Member'}
+            <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span>{activity.attemptCount || 0} attempts</span>
+          <span className="tt-foot-meta">{activity.attemptCount || 0} attempts</span>
         </div>
       </div>
     );
@@ -879,13 +911,12 @@ const ChatActivityCard = ({
   return (
     <div className="tt-act-card" data-activity-type="wheel">
       <div className="tt-act-head">
-        <span className="tt-act-type-badge">
-          <SpinWheelIcon size={13} color="#f472b6" />
-          Lucky Wheel
+        <span className="tt-act-kicker tt-kicker--wheel">
+          <SpinWheelIcon size={13} color="currentColor" />
+          <span>Lucky Wheel</span>
+          {isSpinning && <span className="tt-live-pulse-dot" />}
         </span>
-        <span className="tt-act-meta-right">
-          {wheelEntries.length} slices
-        </span>
+        <span className="tt-act-meta-right">{wheelEntries.length} slices</span>
       </div>
 
       <h5 className="tt-act-title">{activity.title}</h5>
@@ -894,13 +925,14 @@ const ChatActivityCard = ({
         <div className="tt-wheel-wrap">
           <svg
             className="tt-wheel-needle"
-            width="24"
-            height="24"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden="true"
           >
-            <path d="M12 21L5.5 5.5h13L12 21Z" fill="#fde68a" stroke="#1e1b4b" strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M12 22L5.5 5h13L12 22Z" fill="#fde68a" stroke="#1e1b4b" strokeWidth="1.9" strokeLinejoin="round" />
+            <circle cx="12" cy="7.5" r="1.6" fill="#1e1b4b" />
           </svg>
 
           <svg
@@ -909,27 +941,28 @@ const ChatActivityCard = ({
             style={{ transform: `rotate(${activity.targetAngle || 0}deg)` }}
             aria-label="Spin the wheel"
           >
-            <circle cx="100" cy="100" r="98" fill="none" stroke="rgba(253,230,138,0.55)" strokeWidth="2.5" />
+            <circle cx="100" cy="100" r="97.5" fill="#0f172a" stroke="rgba(253,230,138,0.65)" strokeWidth="2.5" />
             {wheelEntries.map((entry, idx) => {
               const startA = idx * sliceAngle;
               const endA = startA + sliceAngle;
               const midA = startA + sliceAngle / 2;
               const textPos = polarToCartesian(100, 100, 62, midA);
               const fill = WHEEL_SLICE_COLORS[idx % WHEEL_SLICE_COLORS.length];
-              const cleanText = String(entry).slice(0, 11);
+              const cleanText = String(entry).slice(0, 10);
+              const pegPos = polarToCartesian(100, 100, 94.5, startA);
               return (
                 <g key={`${entry}-${idx}`}>
                   <path
-                    d={describeSlicePath(100, 100, 95, startA, endA)}
+                    d={describeSlicePath(100, 100, 93, startA, endA)}
                     fill={fill}
-                    stroke="rgba(255,255,255,0.3)"
-                    strokeWidth="1.2"
+                    stroke="rgba(255,255,255,0.28)"
+                    strokeWidth="1.1"
                   />
                   <text
                     x={textPos.x}
                     y={textPos.y}
                     fill="#ffffff"
-                    fontSize={sliceCount > 8 ? '8.2' : '9.8'}
+                    fontSize={sliceCount > 8 ? '8' : '9.5'}
                     fontWeight="700"
                     textAnchor="middle"
                     dominantBaseline="middle"
@@ -937,11 +970,12 @@ const ChatActivityCard = ({
                   >
                     {cleanText}
                   </text>
+                  <circle cx={pegPos.x} cy={pegPos.y} r="1.7" fill="#fef3c7" opacity="0.9" />
                 </g>
               );
             })}
-            <circle cx="100" cy="100" r="16" fill="#0f172a" stroke="#fde68a" strokeWidth="2.4" />
-            <circle cx="100" cy="100" r="5" fill="#fde68a" />
+            <circle cx="100" cy="100" r="15" fill="#0f172a" stroke="#fde68a" strokeWidth="2.4" />
+            <circle cx="100" cy="100" r="4.5" fill="#fde68a" />
           </svg>
         </div>
 
@@ -952,23 +986,23 @@ const ChatActivityCard = ({
           onClick={handleSpinWheel}
         >
           <SpinWheelIcon size={14} color="#ffffff" />
-          {isSpinning ? 'Spinning...' : activity.spinSeq > 0 ? 'Spin Again' : 'Spin Wheel'}
+          <span>{isSpinning ? 'Spinning...' : activity.spinSeq > 0 ? 'Spin Again' : 'Spin Wheel'}</span>
         </button>
 
         {showWinner && (
           <div className="tt-wheel-result">
-            <CrownRoyalIcon size={15} color="#fde68a" />
-            <span>Picked: {activity.winnerLabel}</span>
+            <CrownRoyalIcon size={14} color="#fbbf24" />
+            <span>Picked: <strong>{activity.winnerLabel}</strong></span>
           </div>
         )}
       </div>
 
       <div className="tt-act-foot">
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        <span className="tt-foot-creator">
           <IdentityEmblem identity={activity.creatorIdentity} size={13} />
-          By {activity.creatorName || 'Member'}
+          <span>{activity.creatorName || 'Member'}</span>
         </span>
-        <span>Spin #{activity.spinSeq || 0}</span>
+        <span className="tt-foot-meta">Spin #{activity.spinSeq || 0}</span>
       </div>
     </div>
   );

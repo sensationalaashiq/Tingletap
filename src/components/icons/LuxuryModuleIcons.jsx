@@ -301,3 +301,16 @@ export const SendPaperPlaneIcon = ({ size = 15, color = 'currentColor' }) => (
   </svg>
 );
 
+export const CrossXIcon = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const ArrowChainIcon = ({ size = 11, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 12h13M13 6.5L18.5 12 13 17.5" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+
