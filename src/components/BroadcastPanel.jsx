@@ -320,7 +320,7 @@ const extractYtId = (url) => {
   const patterns = [
     /[?&]v=([A-Za-z0-9_-]{11})/,                                  // watch?v=ID  (standard, music., m., nocookie.)
     /youtu\.be\/([A-Za-z0-9_-]{11})/,                             // youtu.be/ID (short link)
-    /\/(?:embed|v|shorts|live|e)\/([A-Za-z0-9_-]{11})/,           // /embed/ /v/ /shorts/ /live/ /e/
+    /\/(?:embed|v|shorts|live|e|watch)\/([A-Za-z0-9_-]{11})/,     // /embed/ /v/ /shorts/ /live/ /e/ /watch/ID
     /[?&]vi=([A-Za-z0-9_-]{11})/,                                 // vi= param variant
     /youtube\.com\/attribution_link.*v%3D([A-Za-z0-9_-]{11})/,    // attribution_link format
     /^([A-Za-z0-9_-]{11})$/,                                       // bare 11-char ID pasted directly
@@ -329,8 +329,7 @@ const extractYtId = (url) => {
     const m = str.match(p);
     if (m) return m[1];
   }
-  /* Last resort: search for any 11-char alphanumeric sequence after known markers */
-  const fallback = str.match(/(?:v=|vi=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);
+  const fallback = str.match(/(?:v=|vi=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/|\/watch\/)([A-Za-z0-9_-]{11})/);
   if (fallback) return fallback[1];
   return null;
 };
@@ -427,6 +426,20 @@ const SkipPrevIcon = () => (
   </svg>
 );
 
+const ReplayIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+  </svg>
+);
+
+const YouTubeRedBadge = () => (
+  <span className="bp-mp-yt-badge" aria-hidden="true">
+    <svg viewBox="0 0 10 10" width="8" height="8">
+      <path d="M2 1.5l7 3.5-7 3.5z" fill="#ffffff"/>
+    </svg>
+  </span>
+);
+
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
     <defs><linearGradient id="lkG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#d97706"/></linearGradient></defs>
@@ -504,8 +517,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [rjIsLive, setRjIsLive] = useState(false);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [ytUrl, setYtUrl] = useState('');
-  const [ytPlayerState, setYtPlayerState] = useState('stopped');
+  const [ytPlayerState, setYtPlayerState] = useState('stopped'); /* stopped | loading | ready | playing | paused */
+  const [ytRemoteState, setYtRemoteState] = useState('stopped');
   const [ytCurrentSongName, setYtCurrentSongName] = useState('');
+  const [ytEmbedVideoId, setYtEmbedVideoId] = useState(null);
+  const [ytDuration, setYtDuration] = useState(0);
+  const [ytCurrentTime, setYtCurrentTime] = useState(0);
+  const [ytVizBars, setYtVizBars] = useState(() => new Array(14).fill(18));
   const [micMuted, setMicMuted] = useState(false);
   const [listenerCount, setListenerCount] = useState(0);
   const [speakerMap, setSpeakerMap] = useState({});
@@ -664,16 +682,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const pubMicLevelCtxRef = useRef(null);
   const pubMicLevelTimerRef = useRef(null);
 
-  /* ── YouTube player refs (imperative dock + inline slot — zero React reconciliation conflicts) ── */
-  const ytPlayerRef = useRef(null);
-  const ytDockRef = useRef(null);
-  const ytHostRef = useRef(null);
-  const ytSlotRef = useRef(null);
-  const bpContentRef = useRef(null);
+  /* ── YouTube music-only iframe refs (direct postMessage API — matches main chat player) ── */
+  const ytIframeRef = useRef(null);
+  const ytIframeLoadedRef = useRef(false);
   const ytVerifyTimerRef = useRef(null);
-  const ytInitialized = useRef(false);
+  const ytHandshakeTimersRef = useRef([]);
   const currentYtVideoIdRef = useRef(null);
   const ytIntendedStateRef = useRef('stopped');
+  const ytRealPlayingRef = useRef(false);
+  const ytIsMutedRef = useRef(false);
+  const ytAudioBlockedRef = useRef(false);
+  const ytCurrentTimeRef = useRef(0);
+  const ytDurationRef = useRef(0);
+  const ytPendingSeekRef = useRef(null);
+  const ytRemoteDataRef = useRef(null);
+  const ytListenerUserPausedRef = useRef(false);
   const rjIsLiveRef = useRef(false);
   const speakerMapRef = useRef({});
   const rjIsListeningRef = useRef(false);
@@ -687,6 +710,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   useEffect(() => { rjConnectingRef.current = rjConnecting; }, [rjConnecting]);
   useEffect(() => { listeningToRef.current = listeningTo; }, [listeningTo]);
   useEffect(() => { activePubCallRef.current = activePubCall; }, [activePubCall]);
+  useEffect(() => { ytAudioBlockedRef.current = ytAudioBlocked; }, [ytAudioBlocked]);
 
   /* Sync RJ voice volume & Music volume in real time */
   useEffect(() => {
@@ -711,24 +735,24 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     musicVolumeRef.current = musicVolume;
     if (musicVolume > 0) prevMusicVolRef.current = musicVolume;
     try { localStorage.setItem('tl_bp_music_vol', String(musicVolume)); } catch {}
-    const player = ytPlayerRef.current;
-    if (player) {
+    const win = ytIframeRef.current?.contentWindow;
+    if (win) {
       try {
         if (musicVolume === 0) {
-          player.mute?.();
+          win.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: '' }), '*');
+          ytIsMutedRef.current = true;
         } else {
-          player.unMute?.();
-          player.setVolume?.(musicVolume);
-          if (ytIntendedStateRef.current === 'playing' && player.getPlayerState?.() !== 1) {
-            player.playVideo?.();
+          win.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
+          win.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [musicVolume] }), '*');
+          ytIsMutedRef.current = false;
+          if (ytIntendedStateRef.current === 'playing' && !ytRealPlayingRef.current && !ytListenerUserPausedRef.current) {
+            win.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
           }
           setTimeout(() => {
-            try {
-              if (player.getPlayerState?.() === 1 && !player.isMuted?.()) {
-                setYtAudioBlocked(false);
-              }
-            } catch {}
-          }, 180);
+            if (ytRealPlayingRef.current && !ytIsMutedRef.current) {
+              setYtAudioBlocked(false);
+            }
+          }, 220);
         }
       } catch {}
     }
@@ -773,290 +797,311 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const myPhoto = loggedInUserProfile?.photoURL || '';
 
   /* ══════════════════════════════════════
-     YOUTUBE PLAYER HELPERS
-     (declared before Firebase effects so they can be safely listed in dep arrays)
+     YOUTUBE MUSIC-ONLY PLAYER HELPERS
+     (Uses direct iframe + postMessage command API — identical to main chat CustomAudioPlayer)
   ══════════════════════════════════════ */
 
-  const ensureYtApiLoaded = useCallback(() => {
-    return new Promise((resolve) => {
-      if (window.YT && window.YT.Player) { resolve(); return; }
-      const existing = document.getElementById('yt-iframe-api-script');
-      if (!existing) {
-        const tag = document.createElement('script');
-        tag.id = 'yt-iframe-api-script';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      }
-      const checkReady = setInterval(() => {
-        if (window.YT && window.YT.Player) { clearInterval(checkReady); resolve(); }
-      }, 60);
-    });
+  const sendYtCommand = useCallback((func, args = '') => {
+    const win = ytIframeRef.current?.contentWindow;
+    if (!win) return false;
+    try {
+      win.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+      return true;
+    } catch {
+      return false;
+    }
   }, []);
 
-  /* Preload YT API once so clicking Load starts synchronously inside user click gesture */
-  useEffect(() => {
-    ensureYtApiLoaded();
-  }, [ensureYtApiLoaded]);
-
-  const applyYtVolume = useCallback((player) => {
-    if (!player) return;
+  const sendYtListeningHandshake = useCallback(() => {
+    const win = ytIframeRef.current?.contentWindow;
+    if (!win) return;
     try {
-      if (musicVolumeRef.current === 0) {
-        player.mute?.();
-      } else {
-        player.unMute?.();
-        player.setVolume?.(musicVolumeRef.current);
-      }
+      win.postMessage(JSON.stringify({ event: 'listening', id: 'bp-yt-music', channel: 'widget' }), '*');
     } catch {}
   }, []);
 
-  const applyYtIframeAttrs = useCallback((player) => {
-    try {
-      const iframe = player?.getIframe?.() || ytHostRef.current?.querySelector('iframe');
-      if (iframe) {
-        iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-        iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.border = '0';
-        iframe.style.display = 'block';
-      }
-    } catch {}
-  }, []);
+  const applyYtVolume = useCallback(() => {
+    if (musicVolumeRef.current === 0) {
+      sendYtCommand('mute', '');
+      ytIsMutedRef.current = true;
+    } else {
+      sendYtCommand('unMute', '');
+      sendYtCommand('setVolume', [musicVolumeRef.current]);
+      ytIsMutedRef.current = false;
+    }
+  }, [sendYtCommand]);
 
-  const verifyYtAudible = useCallback((player, delayMs = 1100) => {
+  const verifyYtAudible = useCallback((delayMs = 1400) => {
     if (ytVerifyTimerRef.current) {
       clearTimeout(ytVerifyTimerRef.current);
       ytVerifyTimerRef.current = null;
     }
     ytVerifyTimerRef.current = setTimeout(() => {
-      const activePlayer = player || ytPlayerRef.current;
-      if (!activePlayer || ytIntendedStateRef.current !== 'playing') return;
-      try {
-        const st = activePlayer.getPlayerState?.();
-        const isMuted = Boolean(activePlayer.isMuted?.());
-        if (st === 1) {
-          if (musicVolumeRef.current > 0 && isMuted) {
-            activePlayer.unMute?.();
-            activePlayer.setVolume?.(musicVolumeRef.current);
-            setTimeout(() => {
-              try {
-                if (activePlayer.isMuted?.() && musicVolumeRef.current > 0) {
-                  setYtAudioBlocked(true);
-                } else {
-                  setYtAudioBlocked(false);
-                }
-              } catch {}
-            }, 250);
-          } else {
-            setYtAudioBlocked(false);
-          }
-          setYtPlayerState('playing');
-        } else if (st !== 3) {
-          setYtAudioBlocked(true);
-          if (st === 2) setYtPlayerState('paused');
-        }
-      } catch {}
+      if (ytIntendedStateRef.current !== 'playing' || ytListenerUserPausedRef.current) return;
+      if (!ytRealPlayingRef.current || (musicVolumeRef.current > 0 && ytIsMutedRef.current)) {
+        setYtAudioBlocked(true);
+        setYtPlayerState(prev => (prev === 'playing' ? 'ready' : prev));
+      } else {
+        setYtAudioBlocked(false);
+        setYtPlayerState('playing');
+      }
     }, delayMs);
   }, []);
 
-  const initYtPlayer = useCallback((videoId, startSeconds = 0) => {
-    if (!videoId) return;
-    currentYtVideoIdRef.current = videoId;
+  const handleYtIframeLoad = useCallback(() => {
+    ytIframeLoadedRef.current = true;
+    ytHandshakeTimersRef.current.forEach(t => clearTimeout(t));
+    ytHandshakeTimersRef.current = [];
 
-    const createPlayer = () => {
-      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-        try {
-          applyYtIframeAttrs(ytPlayerRef.current);
-          ytPlayerRef.current.loadVideoById({ videoId, startSeconds: Math.floor(startSeconds) });
-          applyYtVolume(ytPlayerRef.current);
-          if (ytIntendedStateRef.current === 'playing') {
-            ytPlayerRef.current.playVideo?.();
-            verifyYtAudible(ytPlayerRef.current, 1100);
-          }
-        } catch {}
+    sendYtListeningHandshake();
+    ytHandshakeTimersRef.current.push(
+      setTimeout(() => sendYtListeningHandshake(), 250),
+      setTimeout(() => sendYtListeningHandshake(), 750)
+    );
+
+    applyYtVolume();
+
+    if (ytPendingSeekRef.current != null && ytPendingSeekRef.current > 0.5) {
+      sendYtCommand('seekTo', [ytPendingSeekRef.current, true]);
+    }
+
+    if (ytIntendedStateRef.current === 'playing' && !ytListenerUserPausedRef.current) {
+      sendYtCommand('playVideo', '');
+      verifyYtAudible(1400);
+    } else {
+      setYtPlayerState(prev => (prev === 'loading' ? 'ready' : prev));
+    }
+  }, [sendYtListeningHandshake, applyYtVolume, sendYtCommand, verifyYtAudible]);
+
+  /* Listen for YouTube embed postMessage events (onReady, infoDelivery, onError) */
+  useEffect(() => {
+    const onYtMessage = (event) => {
+      if (!ytIframeRef.current || event.source !== ytIframeRef.current.contentWindow) return;
+      let payload = event.data;
+      if (typeof payload === 'string') {
+        if (!payload.startsWith('{')) return;
+        try { payload = JSON.parse(payload); } catch { return; }
+      }
+      if (!payload || typeof payload !== 'object') return;
+
+      if (payload.event === 'onReady') {
+        ytIframeLoadedRef.current = true;
+        applyYtVolume();
+        if (ytPendingSeekRef.current != null && ytPendingSeekRef.current > 0.5) {
+          sendYtCommand('seekTo', [ytPendingSeekRef.current, true]);
+          ytPendingSeekRef.current = null;
+        }
+        if (ytIntendedStateRef.current === 'playing' && !ytListenerUserPausedRef.current) {
+          sendYtCommand('playVideo', '');
+          verifyYtAudible(1200);
+        } else {
+          setYtPlayerState(prev => (prev === 'loading' ? 'ready' : prev));
+        }
         return;
       }
-      if (!ytHostRef.current || !window.YT?.Player) return;
-      /* Imperatively mount inside a child node React never reconciles */
-      try {
-        if (ytPlayerRef.current?.destroy) ytPlayerRef.current.destroy();
-      } catch {}
-      ytHostRef.current.innerHTML = '';
-      const mountNode = document.createElement('div');
-      mountNode.id = 'bp-yt-mount';
-      mountNode.style.width = '100%';
-      mountNode.style.height = '100%';
-      ytHostRef.current.appendChild(mountNode);
 
-      ytInitialized.current = true;
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const player = new window.YT.Player(mountNode, {
-        host: 'https://www.youtube.com',
-        height: '100%',
-        width: '100%',
-        videoId,
-        playerVars: {
-          autoplay: ytIntendedStateRef.current === 'playing' ? 1 : 0,
-          controls: 1,
-          modestbranding: 1,
-          playsinline: 1,
-          enablejsapi: 1,
-          rel: 0,
-          fs: 0,
-          origin,
-          start: Math.floor(startSeconds),
-        },
-        events: {
-          onReady: (e) => {
-            applyYtIframeAttrs(e.target);
-            applyYtVolume(e.target);
-            try {
-              if (startSeconds > 0) e.target.seekTo?.(startSeconds, true);
-              if (ytIntendedStateRef.current === 'playing') {
-                e.target.playVideo?.();
-                verifyYtAudible(e.target, 1200);
-              }
-            } catch {}
-          },
-          onStateChange: (e) => {
-            const YT_ENDED = 0;
-            const YT_PLAYING = 1;
-            const YT_PAUSED = 2;
-            const YT_BUFFERING = 3;
-            if (e.data === YT_PLAYING) {
-              setYtPlayerState('playing');
-              applyYtVolume(e.target);
+      if (payload.event === 'onError') {
+        ytRealPlayingRef.current = false;
+        setYtAudioBlocked(false);
+        setYtPlayerState('paused');
+        bpToast.warning('This YouTube track blocks embedded playback. Try another YouTube / YT Music link.');
+        return;
+      }
+
+      if (payload.event === 'infoDelivery' && payload.info) {
+        const info = payload.info;
+        if (typeof info.duration === 'number' && isFinite(info.duration) && info.duration > 0) {
+          ytDurationRef.current = info.duration;
+          setYtDuration(info.duration);
+        }
+        if (typeof info.currentTime === 'number' && isFinite(info.currentTime) && info.currentTime >= 0) {
+          ytCurrentTimeRef.current = info.currentTime;
+          setYtCurrentTime(info.currentTime);
+        }
+        if (typeof info.muted === 'boolean') {
+          ytIsMutedRef.current = info.muted;
+        }
+        if (typeof info.playerState === 'number') {
+          const st = info.playerState;
+          if (st === 1) {
+            ytRealPlayingRef.current = true;
+            if (musicVolumeRef.current > 0 && info.muted === true) {
+              sendYtCommand('unMute', '');
+              sendYtCommand('setVolume', [musicVolumeRef.current]);
               setTimeout(() => {
-                try {
-                  const stillMuted = Boolean(e.target.isMuted?.());
-                  if (musicVolumeRef.current > 0 && stillMuted) {
-                    e.target.unMute?.();
-                    e.target.setVolume?.(musicVolumeRef.current);
-                    setTimeout(() => {
-                      try {
-                        setYtAudioBlocked(Boolean(e.target.isMuted?.()) && musicVolumeRef.current > 0);
-                      } catch {}
-                    }, 220);
-                  } else {
-                    setYtAudioBlocked(false);
-                  }
-                } catch {}
-              }, 200);
-            } else if (e.data === YT_BUFFERING) {
+                if (ytIsMutedRef.current && musicVolumeRef.current > 0) {
+                  setYtAudioBlocked(true);
+                  setYtPlayerState('ready');
+                } else {
+                  setYtAudioBlocked(false);
+                  setYtPlayerState('playing');
+                }
+              }, 260);
+            } else {
               setYtAudioBlocked(false);
-            } else if (e.data === YT_PAUSED) {
-              if (ytIntendedStateRef.current === 'playing') {
-                setTimeout(() => {
-                  try {
-                    if (ytIntendedStateRef.current === 'playing' && e.target.getPlayerState?.() === YT_PAUSED) {
-                      applyYtVolume(e.target);
-                      e.target.playVideo?.();
-                      verifyYtAudible(e.target, 900);
-                    }
-                  } catch {}
-                }, 320);
-              } else {
-                setYtPlayerState('paused');
-              }
-            } else if (e.data === YT_ENDED) {
-              ytIntendedStateRef.current = 'stopped';
-              setYtPlayerState('stopped');
+              setYtPlayerState('playing');
+            }
+          } else if (st === 2) {
+            ytRealPlayingRef.current = false;
+            if (ytIntendedStateRef.current === 'playing' && !ytListenerUserPausedRef.current) {
+              setYtPlayerState('ready');
+            } else {
+              setYtPlayerState('paused');
               setYtAudioBlocked(false);
             }
-          },
-          onError: () => {
+          } else if (st === 3) {
             setYtAudioBlocked(false);
-            setYtPlayerState('paused');
-            bpToast.warning('This YouTube video blocks embedded playback. Try another YouTube / YT Music track.');
+          } else if (st === 0) {
+            ytRealPlayingRef.current = false;
+            ytIntendedStateRef.current = 'stopped';
+            ytCurrentTimeRef.current = 0;
+            setYtCurrentTime(0);
+            setYtPlayerState('stopped');
+            setYtAudioBlocked(false);
+          } else if (st === 5 || st === -1) {
+            ytRealPlayingRef.current = false;
+            setYtPlayerState(prev => (prev === 'playing' ? 'ready' : prev));
           }
         }
-      });
-      ytPlayerRef.current = player;
-      applyYtIframeAttrs(player);
+      }
     };
+    window.addEventListener('message', onYtMessage);
+    return () => window.removeEventListener('message', onYtMessage);
+  }, [applyYtVolume, sendYtCommand, verifyYtAudible]);
 
-    if (window.YT && window.YT.Player) {
-      createPlayer();
-    } else {
-      ensureYtApiLoaded().then(createPlayer);
+  /* Animate visualizer bars + keep progress counter smooth while actively playing */
+  useEffect(() => {
+    if (ytPlayerState !== 'playing') {
+      setYtVizBars(new Array(14).fill(18));
+      return;
     }
-  }, [ensureYtApiLoaded, applyYtIframeAttrs, applyYtVolume, verifyYtAudible]);
+    const vizTimer = setInterval(() => {
+      setYtVizBars(prev => prev.map(() => Math.round(20 + Math.random() * 78)));
+    }, 140);
+    const secTimer = setInterval(() => {
+      setYtCurrentTime(prev => {
+        const dur = ytDurationRef.current;
+        const next = dur ? Math.min(prev + 1, dur) : prev + 1;
+        ytCurrentTimeRef.current = next;
+        return next;
+      });
+    }, 1000);
+    return () => {
+      clearInterval(vizTimer);
+      clearInterval(secTimer);
+    };
+  }, [ytPlayerState]);
+
+  const initYtPlayer = useCallback((videoId, startSeconds = 0) => {
+    if (!videoId) return;
+    const seekSec = Math.max(0, Math.floor(startSeconds || 0));
+    if (currentYtVideoIdRef.current === videoId && ytIframeLoadedRef.current && ytIframeRef.current?.contentWindow) {
+      ytPendingSeekRef.current = null;
+      sendYtListeningHandshake();
+      applyYtVolume();
+      sendYtCommand('seekTo', [seekSec, true]);
+      ytCurrentTimeRef.current = seekSec;
+      setYtCurrentTime(seekSec);
+      if (ytIntendedStateRef.current === 'playing' && !ytListenerUserPausedRef.current) {
+        sendYtCommand('playVideo', '');
+        verifyYtAudible(1100);
+      }
+      return;
+    }
+    currentYtVideoIdRef.current = videoId;
+    ytIframeLoadedRef.current = false;
+    ytRealPlayingRef.current = false;
+    ytIsMutedRef.current = false;
+    ytPendingSeekRef.current = seekSec;
+    ytCurrentTimeRef.current = seekSec;
+    setYtCurrentTime(seekSec);
+    setYtDuration(0);
+    ytDurationRef.current = 0;
+    setYtAudioBlocked(false);
+    setYtPlayerState('loading');
+    setYtEmbedVideoId(videoId);
+  }, [sendYtListeningHandshake, applyYtVolume, sendYtCommand, verifyYtAudible]);
 
   const syncYouTubePlayer = useCallback((ytData) => {
     if (!ytData) return;
+    ytRemoteDataRef.current = ytData;
     const { state, videoId, seekTo, updatedAt } = ytData;
     const nextState = state || 'stopped';
+    const prevRemote = ytIntendedStateRef.current;
     ytIntendedStateRef.current = nextState;
-    setYtPlayerState(nextState);
+    setYtRemoteState(nextState);
 
-    /* Calculate time drift since RJ wrote the update */
-    const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
-    const adjustedSeek = nextState === 'playing' ? (seekTo || 0) + driftSecs : (seekTo || 0);
+    if (prevRemote !== nextState && nextState === 'playing') {
+      ytListenerUserPausedRef.current = false;
+    }
 
-    if (!ytPlayerRef.current || !ytPlayerRef.current.loadVideoById) {
-      if (videoId) initYtPlayer(videoId, adjustedSeek);
+    if (!videoId) {
+      currentYtVideoIdRef.current = null;
+      ytRealPlayingRef.current = false;
+      setYtEmbedVideoId(null);
+      setYtPlayerState('stopped');
+      setYtAudioBlocked(false);
       return;
     }
 
-    const player = ytPlayerRef.current;
-    applyYtIframeAttrs(player);
+    const driftSecs = updatedAt ? Math.max(0, (Date.now() - updatedAt) / 1000) : 0;
+    const adjustedSeek = nextState === 'playing' ? (seekTo || 0) + driftSecs : (seekTo || 0);
 
-    if (videoId && currentYtVideoIdRef.current !== videoId) {
-      currentYtVideoIdRef.current = videoId;
-      player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
-      applyYtVolume(player);
-      if (nextState === 'playing') {
-        try { player.playVideo?.(); } catch {}
-        verifyYtAudible(player, 1200);
-      } else {
-        setTimeout(() => {
-          try {
-            if (nextState === 'paused') player.pauseVideo?.();
-            else if (nextState === 'stopped') player.stopVideo?.();
-          } catch {}
-        }, 250);
-      }
+    if (currentYtVideoIdRef.current !== videoId || !ytIframeRef.current?.contentWindow) {
+      initYtPlayer(videoId, adjustedSeek);
+      return;
+    }
+
+    if (!ytIframeLoadedRef.current) {
+      ytPendingSeekRef.current = adjustedSeek;
       return;
     }
 
     if (nextState === 'playing') {
-      const curTime = player.getCurrentTime?.() || 0;
-      if (Math.abs(curTime - adjustedSeek) > 2.5) {
-        player.seekTo?.(adjustedSeek, true);
+      if (ytListenerUserPausedRef.current) return;
+      const curTime = ytCurrentTimeRef.current || 0;
+      if (Math.abs(curTime - adjustedSeek) > 3.5) {
+        sendYtCommand('seekTo', [adjustedSeek, true]);
+        ytCurrentTimeRef.current = adjustedSeek;
+        setYtCurrentTime(adjustedSeek);
       }
-      applyYtVolume(player);
-      const curState = player.getPlayerState?.();
-      if (curState !== 1) {
-        try { player.playVideo?.(); } catch {}
-        verifyYtAudible(player, 1100);
-      } else if (musicVolumeRef.current > 0 && player.isMuted?.()) {
+      applyYtVolume();
+      if (!ytRealPlayingRef.current) {
+        sendYtListeningHandshake();
+        sendYtCommand('playVideo', '');
+        verifyYtAudible(1200);
+      } else if (musicVolumeRef.current > 0 && ytIsMutedRef.current) {
         setYtAudioBlocked(true);
       } else {
         setYtAudioBlocked(false);
       }
     } else if (nextState === 'paused') {
-      player.seekTo?.(seekTo || 0, true);
-      player.pauseVideo?.();
+      sendYtCommand('seekTo', [seekTo || 0, true]);
+      sendYtCommand('pauseVideo', '');
+      ytRealPlayingRef.current = false;
+      ytCurrentTimeRef.current = seekTo || 0;
+      setYtCurrentTime(seekTo || 0);
+      setYtPlayerState('paused');
       setYtAudioBlocked(false);
     } else if (nextState === 'stopped') {
-      player.stopVideo?.();
+      sendYtCommand('stopVideo', '');
+      ytRealPlayingRef.current = false;
+      ytCurrentTimeRef.current = 0;
+      setYtCurrentTime(0);
+      setYtPlayerState('stopped');
       setYtAudioBlocked(false);
     }
-  }, [initYtPlayer, applyYtIframeAttrs, applyYtVolume, verifyYtAudible]);
+  }, [initYtPlayer, sendYtCommand, sendYtListeningHandshake, applyYtVolume, verifyYtAudible]);
 
   /* ══════════════════════════════════════
      FIREBASE LISTENERS
   ══════════════════════════════════════ */
 
-  /* ── RJ Broadcast RTDB listener — always-on (no isOpen guard) ──
-     Must be always connected so rjIsLive / rjIsLiveRef stay accurate even
-     when the broadcast panel is closed or minimized.                        */
+  /* ── RJ Broadcast RTDB listener — always-on (no isOpen guard) ── */
   useEffect(() => {
     const bcRef = ref(rtdb, 'broadcasts/rj');
     const unsub = onValue(bcRef, (snap) => {
       const data = snap.val();
-      // RJ Broadcast Stale Protection: if startedAt is > 8 hours ago, treat as stale/ended
       const isTooOldRJ = data?.startedAt && (Date.now() - data.startedAt > 8 * 3600 * 1000);
       if (isTooOldRJ) {
         remove(ref(rtdb, 'broadcasts/rj')).catch(() => {});
@@ -1066,8 +1111,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         setListenerCount(0);
         setSpeakerMap({});
         setIAmSpeaker(false);
+        setYtRemoteState('stopped');
         setYtPlayerState('stopped');
         setYtCurrentSongName('');
+        setYtEmbedVideoId(null);
+        currentYtVideoIdRef.current = null;
         return;
       }
 
@@ -1078,16 +1126,25 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (data) {
         setListenerCount(data.listenerCount || 0);
         setSpeakerMap(data.speakers || {});
-        const ytState = data.youtube?.state || 'stopped';
-        setYtPlayerState(ytState);
+        const ytRemote = data.youtube?.state || 'stopped';
+        setYtRemoteState(ytRemote);
         setYtCurrentSongName(data.youtube?.songName || '');
+        ytRemoteDataRef.current = data.youtube || null;
+        if (data.youtube?.videoId && !ytEmbedVideoId && currentYtVideoIdRef.current !== data.youtube.videoId) {
+          ytIntendedStateRef.current = ytRemote;
+          initYtPlayer(data.youtube.videoId, data.youtube.seekTo || 0);
+        } else if (!data.youtube?.videoId && currentYtVideoIdRef.current) {
+          currentYtVideoIdRef.current = null;
+          ytRealPlayingRef.current = false;
+          setYtEmbedVideoId(null);
+          setYtPlayerState('stopped');
+        }
         if (myUid && data.speakers && data.speakers[myUid]) {
           setIAmSpeaker(true);
         } else {
           setIAmSpeaker(false);
         }
       } else {
-        /* RJ went offline — clean up listener side silently */
         if (rjIsListeningRef.current) {
           _rjCleanupListenerSide(false);
           setRjIsListening(false);
@@ -1095,13 +1152,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         setListenerCount(0);
         setSpeakerMap({});
         setIAmSpeaker(false);
+        setYtRemoteState('stopped');
         setYtPlayerState('stopped');
         setYtCurrentSongName('');
         setYtAudioBlocked(false);
+        setYtEmbedVideoId(null);
+        currentYtVideoIdRef.current = null;
+        ytRealPlayingRef.current = false;
       }
     });
     return () => unsub();
-  }, [myUid]);
+  }, [myUid, ytEmbedVideoId, initYtPlayer]);
 
   /* ── Join requests RTDB listener ── */
   useEffect(() => {
@@ -1127,10 +1188,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const unsub = onChildAdded(lisRef, (snap) => {
       const data = snap.val();
       if (!data || !data.name) return;
-      // Skip listeners who were already present before we opened
       if (data.joinedAt && data.joinedAt < rjJoinWatchStartRef.current - 3000) return;
       const uid = snap.key;
-      if (uid === myUid) return; // don't flash own join
+      if (uid === myUid) return;
       const flashId = `rj_${uid}_${Date.now()}`;
       setRjJoinFlashes(prev => [...prev.slice(-2), { id: flashId, name: data.name, uid }]);
       const timer = setTimeout(() => {
@@ -1193,58 +1253,44 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── YouTube player sync for listeners (always-on — keeps music playing even when panel is closed) ── */
   useEffect(() => {
-    if (canManageRJ) return; // only listeners need this; broadcaster controls directly
+    if (canManageRJ) return;
     const ytRef = ref(rtdb, 'broadcasts/rj/youtube');
     const unsub = onValue(ytRef, (snap) => {
       const yt = snap.val();
       if (!yt) return;
-      /* Track listener's intended state so visibilitychange can resume correctly */
-      ytIntendedStateRef.current = yt.state || 'stopped';
       syncYouTubePlayer(yt);
     });
     return () => unsub();
   }, [canManageRJ, syncYouTubePlayer]);
 
-  /* ── visibilitychange for YouTube + voice: handled by the unified effect below ── */
-
-  /* ── Broadcaster: periodic seek position push every 5 s so listeners stay tightly synced ── */
+  /* ── Broadcaster: periodic seek position push every 5 s ONLY when genuinely playing ── */
   useEffect(() => {
     if (!canManageRJ || !rjIsLive) return;
     const interval = setInterval(() => {
-      const player = ytPlayerRef.current;
-      if (!player || ytIntendedStateRef.current !== 'playing') return;
-      try {
-        const cur = player.getCurrentTime?.();
-        if (cur == null) return;
-        update(ref(rtdb, 'broadcasts/rj/youtube'), {
-          state: 'playing',
-          seekTo: cur,
-          updatedAt: Date.now(),
-        }).catch(() => {});
-      } catch {}
+      if (ytIntendedStateRef.current !== 'playing' || !ytRealPlayingRef.current) return;
+      const cur = ytCurrentTimeRef.current || 0;
+      update(ref(rtdb, 'broadcasts/rj/youtube'), {
+        state: 'playing',
+        seekTo: cur,
+        updatedAt: Date.now(),
+      }).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, [canManageRJ, rjIsLive]);
 
-  /* ── YouTube playback watchdog — always-on, uses ref so no stale-closure ──
-     Runs every 3 s. Covers: minimize, tab-switch, mobile background, iframe suspension.
-     Applies to both RJ (broadcaster) and listeners.                                    */
+  /* ── YouTube playback keepalive — nudges gently when suspended in background, respects blocked/manual pause ── */
   useEffect(() => {
     const interval = setInterval(() => {
       if (!rjIsLiveRef.current) return;
       if (ytIntendedStateRef.current !== 'playing') return;
-      const player = ytPlayerRef.current;
-      if (!player) return;
-      try {
-        const YT_PLAYING = 1;
-        const state = player.getPlayerState?.();
-        if (state !== YT_PLAYING) {
-          player.playVideo?.();
-        }
-      } catch {}
-    }, 3000);
+      if (ytAudioBlockedRef.current || ytListenerUserPausedRef.current) return;
+      if (!ytIframeLoadedRef.current || !ytIframeRef.current?.contentWindow) return;
+      if (!ytRealPlayingRef.current) {
+        sendYtCommand('playVideo', '');
+      }
+    }, 3500);
     return () => clearInterval(interval);
-  }, []);
+  }, [sendYtCommand]);
 
   /* ── AudioContext keepalive + user-gesture resume for RJ voice + stage audio ── */
   useEffect(() => {
@@ -1255,13 +1301,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
       if (rjAudioEl.current && rjIsListeningRef.current && rjAudioEl.current.paused) {
         rjAudioEl.current.play().catch(() => {});
-      }
-      if (ytIntendedStateRef.current === 'playing' && ytPlayerRef.current) {
-        try {
-          if (ytPlayerRef.current.getPlayerState?.() !== 1) {
-            ytPlayerRef.current.playVideo?.();
-          }
-        } catch {}
       }
     };
     const iv = setInterval(ensureActive, 3000);
@@ -1274,9 +1313,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     };
   }, [rjIsLive]);
 
-  /* ── MediaSession API — tells OS / browser this is active audio media ──
-     Prevents mobile browsers from killing background audio.
-     Updated whenever RJ voice or YouTube is playing.                      */
+  /* ── MediaSession API — tells OS / browser this is active audio media ── */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
     const isLive = rjIsLiveRef.current || rjIsLive;
@@ -1289,7 +1326,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         });
         navigator.mediaSession.playbackState = 'playing';
         navigator.mediaSession.setActionHandler('play', () => {
-          ytPlayerRef.current?.playVideo?.();
+          sendYtCommand('playVideo', '');
           rjAudioEl.current?.play?.().catch(() => {});
           if (rjAudioCtx.current?.state === 'suspended') {
             rjAudioCtx.current.resume().catch(() => {});
@@ -1303,29 +1340,23 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         navigator.mediaSession.playbackState = 'none';
       } catch {}
     }
-  }, [rjIsLive, ytCurrentSongName, rjBroadcast?.rjName]);
+  }, [rjIsLive, ytCurrentSongName, rjBroadcast?.rjName, sendYtCommand]);
 
   /* ── Visibility / Focus / PageShow: uninterrupted background audio & quick resume ── */
   useEffect(() => {
     const handleResume = async () => {
       if (!rjIsLiveRef.current) return;
 
-      /* Keep AudioContext awake both on hide and on return */
       if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
         rjAudioCtx.current.resume().catch(() => {});
       }
 
-      /* Keep YouTube music alive */
-      const player = ytPlayerRef.current;
-      if (player && ytIntendedStateRef.current === 'playing') {
-        try {
-          if (player.getPlayerState?.() !== 1) {
-            player.playVideo?.();
-          }
-        } catch {}
+      if (ytIframeLoadedRef.current && ytIntendedStateRef.current === 'playing' && !ytAudioBlockedRef.current && !ytListenerUserPausedRef.current) {
+        if (!ytRealPlayingRef.current) {
+          sendYtCommand('playVideo', '');
+        }
       }
 
-      /* Keep RJ voice element playing for listeners */
       const audio = rjAudioEl.current;
       if (audio && !canManageRJ && rjIsListeningRef.current) {
         try {
@@ -1338,26 +1369,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
       if (document.visibilityState && document.visibilityState !== 'visible') return;
 
-      /* Broadcaster: push fresh seek on return so listeners stay tightly synced */
-      if (canManageRJ && player && ytIntendedStateRef.current === 'playing') {
-        try {
-          const cur = player.getCurrentTime?.() || 0;
-          player.seekTo?.(cur, true);
-          update(ref(rtdb, 'broadcasts/rj/youtube'), {
-            state: 'playing',
-            seekTo: cur,
-            updatedAt: Date.now(),
-          }).catch(() => {});
-        } catch {}
+      if (canManageRJ && ytIframeLoadedRef.current && ytIntendedStateRef.current === 'playing' && ytRealPlayingRef.current) {
+        const cur = ytCurrentTimeRef.current || 0;
+        update(ref(rtdb, 'broadcasts/rj/youtube'), {
+          state: 'playing',
+          seekTo: cur,
+          updatedAt: Date.now(),
+        }).catch(() => {});
       }
 
-      /* Listener: re-fetch RTDB YouTube state on return */
       if (!canManageRJ) {
         try {
           const snap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
           const yt = snap.val();
           if (yt) {
-            ytIntendedStateRef.current = yt.state || 'stopped';
             syncYouTubePlayer(yt);
           }
         } catch {}
@@ -1372,7 +1397,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       window.removeEventListener('focus', handleResume);
       window.removeEventListener('pageshow', handleResume);
     };
-  }, [canManageRJ, syncYouTubePlayer]);
+  }, [canManageRJ, syncYouTubePlayer, sendYtCommand]);
 
   /* ── Public broadcasts Firestore listener (always-on for badge count) ── */
   useEffect(() => {
@@ -2170,19 +2195,25 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     setSpeakerMap({});
     setYtUrl('');
     setYtCurrentSongName('');
+    setYtRemoteState('stopped');
     setYtPlayerState('stopped');
     setYtAudioBlocked(false);
+    setYtEmbedVideoId(null);
+    setYtCurrentTime(0);
+    setYtDuration(0);
     ytIntendedStateRef.current = 'stopped';
+    ytRealPlayingRef.current = false;
+    ytIframeLoadedRef.current = false;
     currentYtVideoIdRef.current = null;
+    ytCurrentTimeRef.current = 0;
+    ytDurationRef.current = 0;
     if (ytVerifyTimerRef.current) {
       clearTimeout(ytVerifyTimerRef.current);
       ytVerifyTimerRef.current = null;
     }
-
-    try { ytPlayerRef.current?.stopVideo?.(); ytPlayerRef.current?.destroy?.(); } catch {}
-    ytPlayerRef.current = null;
-    ytInitialized.current = false;
-    if (ytHostRef.current) ytHostRef.current.innerHTML = '';
+    ytHandshakeTimersRef.current.forEach(t => clearTimeout(t));
+    ytHandshakeTimersRef.current = [];
+    try { sendYtCommand('stopVideo', ''); } catch {}
     try { rjStopAllBroadcasterConnections(); } catch {}
     try { stopLocalMic(); } catch {}
     try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
@@ -2385,17 +2416,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const handleYtLoad = async () => {
     const vid = extractYtId(ytUrl);
-    if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube or YouTube Music link.'); return; }
+    if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a YouTube or YouTube Music link.'); return; }
     if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
       rjAudioCtx.current.resume().catch(() => {});
     }
-    let songName = `YouTube Track (${vid})`;
+    let songName = `YouTube Music (${vid})`;
     const nowMs = Date.now();
-    /* Unlock & start synchronously inside click gesture; actual PLAYING state is confirmed on playback start */
     ytIntendedStateRef.current = 'playing';
+    ytListenerUserPausedRef.current = false;
+    setYtRemoteState('playing');
     setYtAudioBlocked(false);
     setYtCurrentSongName(songName);
-    setYtPlayerState('ready');
     initYtPlayer(vid, 0);
     update(ref(rtdb, 'broadcasts/rj/youtube'), {
       videoId: vid,
@@ -2421,53 +2452,129 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
       rjAudioCtx.current.resume().catch(() => {});
     }
-    const player = ytPlayerRef.current;
-    let newState = ytPlayerState;
-    let seekTo = 0;
+    let newState = ytIntendedStateRef.current || 'stopped';
+    let seekTo = ytCurrentTimeRef.current || 0;
     const nowMs = Date.now();
 
     if (action === 'play') {
       newState = 'playing';
       ytIntendedStateRef.current = 'playing';
+      ytListenerUserPausedRef.current = false;
+      setYtRemoteState('playing');
       setYtAudioBlocked(false);
-      if (player && player.playVideo) {
-        try {
-          applyYtVolume(player);
-          player.playVideo();
-          seekTo = player.getCurrentTime?.() || 0;
-          verifyYtAudible(player, 1000);
-        } catch {}
-      } else if (rjBroadcast?.youtube?.videoId || extractYtId(ytUrl)) {
-        const vid = rjBroadcast?.youtube?.videoId || extractYtId(ytUrl);
-        initYtPlayer(vid, rjBroadcast?.youtube?.seekTo || 0);
+      if (ytIframeLoadedRef.current && ytIframeRef.current?.contentWindow) {
+        sendYtListeningHandshake();
+        applyYtVolume();
+        sendYtCommand('playVideo', '');
+        verifyYtAudible(1100);
+      } else {
+        const vid = ytEmbedVideoId || rjBroadcast?.youtube?.videoId || extractYtId(ytUrl);
+        if (vid) initYtPlayer(vid, seekTo);
       }
     } else if (action === 'pause') {
-      player?.pauseVideo?.();
+      sendYtCommand('pauseVideo', '');
+      ytRealPlayingRef.current = false;
       newState = 'paused';
-      seekTo = player?.getCurrentTime?.() || 0;
+      setYtRemoteState('paused');
+      setYtPlayerState('paused');
       setYtAudioBlocked(false);
     } else if (action === 'stop') {
-      player?.stopVideo?.();
+      sendYtCommand('stopVideo', '');
+      ytRealPlayingRef.current = false;
       newState = 'stopped';
       seekTo = 0;
+      ytCurrentTimeRef.current = 0;
+      setYtCurrentTime(0);
+      setYtRemoteState('stopped');
+      setYtPlayerState('stopped');
       setYtAudioBlocked(false);
-    } else if (action === 'skipnext') {
-      seekTo = (player?.getCurrentTime?.() || 0) + 30;
-      player?.seekTo?.(seekTo, true);
-      applyYtVolume(player);
-      player?.playVideo?.();
+    } else if (action === 'replay') {
+      seekTo = 0;
+      ytCurrentTimeRef.current = 0;
+      setYtCurrentTime(0);
       newState = 'playing';
-      verifyYtAudible(player, 1000);
+      ytIntendedStateRef.current = 'playing';
+      setYtRemoteState('playing');
+      setYtAudioBlocked(false);
+      sendYtListeningHandshake();
+      applyYtVolume();
+      sendYtCommand('seekTo', [0, true]);
+      sendYtCommand('playVideo', '');
+      verifyYtAudible(1100);
+    } else if (action === 'skipnext') {
+      const dur = ytDurationRef.current;
+      seekTo = dur ? Math.min(dur, (ytCurrentTimeRef.current || 0) + 30) : (ytCurrentTimeRef.current || 0) + 30;
+      ytCurrentTimeRef.current = seekTo;
+      setYtCurrentTime(seekTo);
+      newState = 'playing';
+      ytIntendedStateRef.current = 'playing';
+      setYtRemoteState('playing');
+      sendYtListeningHandshake();
+      applyYtVolume();
+      sendYtCommand('seekTo', [seekTo, true]);
+      sendYtCommand('playVideo', '');
+      verifyYtAudible(1100);
     } else if (action === 'skipprev') {
-      seekTo = Math.max(0, (player?.getCurrentTime?.() || 0) - 15);
-      player?.seekTo?.(seekTo, true);
-      newState = ytPlayerState;
+      seekTo = Math.max(0, (ytCurrentTimeRef.current || 0) - 15);
+      ytCurrentTimeRef.current = seekTo;
+      setYtCurrentTime(seekTo);
+      sendYtCommand('seekTo', [seekTo, true]);
+      newState = ytIntendedStateRef.current === 'playing' ? 'playing' : 'paused';
     }
 
-    /* Track intended state so auto-resume logic knows what to do */
     ytIntendedStateRef.current = newState;
-    setYtPlayerState(newState);
     update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs }).catch(() => {});
+  };
+
+  const handleYtSeek = (e) => {
+    if (!canManageRJ || !ytEmbedVideoId || !ytDuration) return;
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const nextTime = Math.floor(pct * ytDuration);
+    ytCurrentTimeRef.current = nextTime;
+    setYtCurrentTime(nextTime);
+    sendYtListeningHandshake();
+    sendYtCommand('seekTo', [nextTime, true]);
+    if (ytIntendedStateRef.current === 'playing') {
+      applyYtVolume();
+      sendYtCommand('playVideo', '');
+      verifyYtAudible(1000);
+    }
+    update(ref(rtdb, 'broadcasts/rj/youtube'), {
+      state: ytIntendedStateRef.current === 'playing' ? 'playing' : 'paused',
+      seekTo: nextTime,
+      updatedAt: Date.now(),
+    }).catch(() => {});
+  };
+
+  const handleListenerYtToggle = () => {
+    if (!ytEmbedVideoId) {
+      if (rjBroadcast?.youtube?.videoId) syncYouTubePlayer(rjBroadcast.youtube);
+      return;
+    }
+    if (ytPlayerState === 'playing') {
+      ytListenerUserPausedRef.current = true;
+      sendYtCommand('pauseVideo', '');
+      ytRealPlayingRef.current = false;
+      setYtPlayerState('paused');
+      setYtAudioBlocked(false);
+    } else {
+      ytListenerUserPausedRef.current = false;
+      ytIntendedStateRef.current = rjBroadcast?.youtube?.state || 'playing';
+      sendYtListeningHandshake();
+      applyYtVolume();
+      if (rjBroadcast?.youtube?.seekTo != null && rjBroadcast?.youtube?.state === 'playing') {
+        const drift = rjBroadcast.youtube.updatedAt ? Math.max(0, (Date.now() - rjBroadcast.youtube.updatedAt) / 1000) : 0;
+        const livePos = rjBroadcast.youtube.seekTo + drift;
+        sendYtCommand('seekTo', [livePos, true]);
+        ytCurrentTimeRef.current = livePos;
+        setYtCurrentTime(livePos);
+      }
+      sendYtCommand('playVideo', '');
+      setYtAudioBlocked(false);
+      verifyYtAudible(1100);
+    }
   };
 
   /* ── Speaker mic toggle (for users who are on stage) ── */
@@ -3255,104 +3362,43 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     } catch {}
   };
 
-  /* Persistent imperative YouTube dock — zero React children manipulation, zero floating bottom chip.
-     When Tab 0 is open and a track is loaded, aligns over ytSlotRef inside Music Sync / Now Playing;
-     otherwise stays safely mounted at 240x135 opacity 0.008 in background radio mode so audio never drops. */
-  const ytHasTrack = Boolean(rjIsLive && (ytCurrentSongName || rjBroadcast?.youtube?.videoId || currentYtVideoIdRef.current));
-  const isYtSlotVisible = isOpen && !isMinimized && ytHasTrack && activeTab === 0;
+  /* Hidden persistent YouTube Music-Only iframe (zero video screen, zero floating chip, stays alive in background) */
+  const ytOriginParam = typeof window !== 'undefined' && window.location?.origin
+    ? `&origin=${encodeURIComponent(window.location.origin)}`
+    : '';
+  const ytEmbedSrc = ytEmbedVideoId
+    ? `https://www.youtube.com/embed/${ytEmbedVideoId}?enablejsapi=1&autoplay=0&controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&iv_load_policy=3&cc_load_policy=0&loop=1&playlist=${ytEmbedVideoId}${ytOriginParam}`
+    : null;
 
-  useEffect(() => {
-    const dock = ytDockRef.current;
-    if (!dock) return;
+  const persistentYtElement = ytEmbedSrc ? (
+    <iframe
+      key={ytEmbedVideoId}
+      ref={ytIframeRef}
+      src={ytEmbedSrc}
+      className="bp-yt-hidden-frame"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerPolicy="strict-origin-when-cross-origin"
+      title="Broadcast YouTube Music Player"
+      onLoad={handleYtIframeLoad}
+      aria-hidden="true"
+      tabIndex={-1}
+    />
+  ) : null;
 
-    const resetToBackground = () => {
-      dock.style.position = 'fixed';
-      dock.style.left = '';
-      dock.style.top = '';
-      dock.style.right = '12px';
-      dock.style.bottom = '12px';
-      dock.style.width = '240px';
-      dock.style.height = '135px';
-      dock.style.opacity = '0.008';
-      dock.style.pointerEvents = 'none';
-      dock.style.zIndex = '1';
-      dock.style.clipPath = '';
-      dock.style.borderRadius = '12px';
-    };
-
-    if (!isYtSlotVisible) {
-      resetToBackground();
-      return;
-    }
-
-    let rafId = null;
-    const syncDockRect = () => {
-      const slot = ytSlotRef.current;
-      const contentEl = bpContentRef.current;
-      if (!slot || !dock) {
-        resetToBackground();
-        return;
-      }
-      const sr = slot.getBoundingClientRect();
-      if (sr.width < 40 || sr.height < 40) {
-        resetToBackground();
-        return;
-      }
-      const cr = contentEl ? contentEl.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
-      const topClip = Math.max(0, cr.top - sr.top);
-      const bottomClip = Math.max(0, sr.bottom - cr.bottom);
-      if (topClip + bottomClip >= sr.height - 8) {
-        resetToBackground();
-        return;
-      }
-      dock.style.position = 'fixed';
-      dock.style.right = '';
-      dock.style.bottom = '';
-      dock.style.left = `${sr.left}px`;
-      dock.style.top = `${sr.top}px`;
-      dock.style.width = `${sr.width}px`;
-      dock.style.height = `${sr.height}px`;
-      dock.style.opacity = '1';
-      dock.style.pointerEvents = 'auto';
-      dock.style.zIndex = '10002';
-      dock.style.borderRadius = '12px';
-      dock.style.clipPath = (topClip > 0 || bottomClip > 0)
-        ? `inset(${topClip}px 0px ${bottomClip}px 0px round 12px)`
-        : 'none';
-    };
-
-    const scheduleSync = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(syncDockRect);
-    };
-
-    scheduleSync();
-    const contentEl = bpContentRef.current;
-    contentEl?.addEventListener('scroll', scheduleSync, { passive: true });
-    window.addEventListener('resize', scheduleSync, { passive: true });
-    let ro = null;
-    if (typeof ResizeObserver !== 'undefined' && ytSlotRef.current) {
-      ro = new ResizeObserver(scheduleSync);
-      ro.observe(ytSlotRef.current);
-      if (contentEl) ro.observe(contentEl);
-    }
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      contentEl?.removeEventListener('scroll', scheduleSync);
-      window.removeEventListener('resize', scheduleSync);
-      ro?.disconnect?.();
-    };
-  }, [isYtSlotVisible, ytCurrentSongName, ytPlayerState, ytAudioBlocked, rjIsLive, canManageRJ]);
-
-  const persistentYtElement = (
-    <div
-      ref={ytDockRef}
-      className="bp-yt-dock"
-      aria-hidden={!isYtSlotVisible}
-    >
-      <div ref={ytHostRef} className="bp-yt-host" />
-    </div>
-  );
+  const ytProgressPct = ytDuration > 0 ? Math.min(100, Math.max(0, (ytCurrentTime / ytDuration) * 100)) : 0;
+  const ytStatusLabel = ytAudioBlocked
+    ? 'TAP PLAY'
+    : ytPlayerState === 'playing'
+      ? 'PLAYING'
+      : ytPlayerState === 'loading'
+        ? 'LOADING'
+        : ytPlayerState === 'paused'
+          ? 'PAUSED'
+          : ytPlayerState === 'ready'
+            ? 'READY'
+            : ytRemoteState === 'playing'
+              ? 'LIVE'
+              : 'STOPPED';
 
   /* ══════════════════════════════════════
      RENDER HELPERS
@@ -3472,7 +3518,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           </div>
 
           <div className="bp-yt-section">
-            <div className="bp-yt-label"><YoutubeIcon /> Music Sync</div>
+            <div className="bp-yt-label"><YoutubeIcon /> YouTube Music Player</div>
             <div className="bp-yt-url-row">
               <input
                 className="bp-input"
@@ -3483,43 +3529,80 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               />
               <button className="bp-yt-load-btn" onClick={handleYtLoad}>Load</button>
             </div>
-            {ytCurrentSongName && (
-              <>
-                <div ref={ytSlotRef} className="bp-yt-inline-stage" />
-                <div className="bp-yt-now-playing">
-                  <MusicNoteIcon />
-                  <span className="bp-yt-now-title">{ytCurrentSongName}</span>
+            {(ytEmbedVideoId || ytCurrentSongName) && (
+              <div className="bp-music-player">
+                <div className="bp-mp-header">
+                  <YouTubeRedBadge />
+                  <span className="bp-mp-title" title={ytCurrentSongName || 'YouTube Music'}>
+                    {ytCurrentSongName || 'YouTube Music'}
+                  </span>
                   {ytAudioBlocked ? (
                     <button
                       type="button"
-                      className="bp-yt-tap-sync"
-                      onClick={() => {
-                        try {
-                          applyYtVolume(ytPlayerRef.current);
-                          ytPlayerRef.current?.playVideo?.();
-                          setYtAudioBlocked(false);
-                          verifyYtAudible(ytPlayerRef.current, 700);
-                        } catch {}
-                      }}
+                      className="bp-mp-tap-pill"
+                      onClick={() => handleYtControl('play')}
                     >
                       Tap for Sound
                     </button>
                   ) : (
-                    <span className={`bp-yt-state-pill ${ytPlayerState === 'playing' ? 'playing' : ''}`}>
-                      {ytPlayerState === 'playing' ? 'PLAYING' : ytPlayerState === 'paused' ? 'PAUSED' : 'READY'}
+                    <span className={`bp-mp-status-pill is-${ytPlayerState === 'playing' ? 'playing' : ytPlayerState === 'loading' ? 'loading' : 'idle'}`}>
+                      {ytStatusLabel}
                     </span>
                   )}
                 </div>
-                <div className="bp-song-controls">
-                  <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}><SkipPrevIcon /></button>
-                  {ytPlayerState === 'playing'
-                    ? <button className="bp-song-btn play-main" onClick={() => handleYtControl('pause')}><PauseIcon /></button>
-                    : <button className="bp-song-btn play-main" onClick={() => handleYtControl('play')}><PlayIcon /></button>
-                  }
-                  <button className="bp-song-btn" onClick={() => handleYtControl('skipnext')}><SkipNextIcon /></button>
-                  <button className="bp-song-btn danger" onClick={() => handleYtControl('stop')}><StopIcon /></button>
+
+                <div className="bp-mp-viz" aria-hidden="true">
+                  {ytVizBars.map((h, i) => (
+                    <div
+                      key={i}
+                      className={`bp-mp-viz-bar${ytPlayerState === 'playing' ? ' active' : ''}`}
+                      style={{ height: `${ytPlayerState === 'playing' ? h : 18}%` }}
+                    />
+                  ))}
                 </div>
-              </>
+
+                <div
+                  className="bp-mp-progress is-seekable"
+                  onClick={handleYtSeek}
+                  title="Tap to seek"
+                >
+                  <div className="bp-mp-progress-fill" style={{ width: `${ytProgressPct}%` }} />
+                </div>
+
+                <div className="bp-mp-controls">
+                  <button type="button" className="bp-mp-btn" onClick={() => handleYtControl('replay')} title="Replay">
+                    <ReplayIcon />
+                  </button>
+                  <button type="button" className="bp-mp-btn" onClick={() => handleYtControl('skipprev')} title="-15s">
+                    <SkipPrevIcon />
+                  </button>
+                  {ytPlayerState === 'playing' ? (
+                    <button type="button" className="bp-mp-btn bp-mp-btn--main" onClick={() => handleYtControl('pause')} title="Pause">
+                      <PauseIcon />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`bp-mp-btn bp-mp-btn--main${ytAudioBlocked ? ' is-blocked' : ''}`}
+                      onClick={() => handleYtControl('play')}
+                      title={ytAudioBlocked ? 'Tap to Play Sound' : 'Play'}
+                    >
+                      <PlayIcon />
+                    </button>
+                  )}
+                  <button type="button" className="bp-mp-btn" onClick={() => handleYtControl('skipnext')} title="+30s">
+                    <SkipNextIcon />
+                  </button>
+                  <button type="button" className="bp-mp-btn bp-mp-btn--stop" onClick={() => handleYtControl('stop')} title="Stop">
+                    <StopIcon />
+                  </button>
+                  <div className="bp-mp-time">
+                    <span>{fmtTime(ytCurrentTime)}</span>
+                    <span className="bp-mp-time-sep">/</span>
+                    <span>{fmtTime(ytDuration)}</span>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -3726,38 +3809,72 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           <span style={{ opacity: 0.6, fontSize: 10, marginLeft: 4 }}>· {fmtTime(broadcastDuration)}</span>
         </div>
 
-        {ytCurrentSongName && (
-          <>
-            <div className="bp-song-info">
-              <div className="bp-song-icon"><MusicNoteIcon /></div>
-              <div className="bp-song-details">
-                <div className="bp-song-label">Now Playing</div>
-                <div className="bp-song-name">{ytCurrentSongName}</div>
-              </div>
-              {ytAudioBlocked && !canManageRJ && (
+        {(ytEmbedVideoId || ytCurrentSongName) && (
+          <div className="bp-music-player bp-music-player--listener">
+            <div className="bp-mp-header">
+              <YouTubeRedBadge />
+              <span className="bp-mp-title" title={ytCurrentSongName || 'Now Playing'}>
+                {ytCurrentSongName || 'YouTube Music'}
+              </span>
+              {ytAudioBlocked ? (
                 <button
                   type="button"
-                  className="bp-yt-tap-sync"
-                  style={{ marginLeft: 'auto' }}
-                  onClick={() => {
-                    try {
-                      if (ytPlayerRef.current) {
-                        applyYtVolume(ytPlayerRef.current);
-                        ytPlayerRef.current.playVideo?.();
-                        setYtAudioBlocked(false);
-                        verifyYtAudible(ytPlayerRef.current, 700);
-                      } else if (rjBroadcast?.youtube) {
-                        syncYouTubePlayer(rjBroadcast.youtube);
-                      }
-                    } catch {}
-                  }}
+                  className="bp-mp-tap-pill"
+                  onClick={handleListenerYtToggle}
                 >
-                  Tap to Sync Music
+                  Tap to Play
                 </button>
+              ) : (
+                <span className={`bp-mp-status-pill is-${ytPlayerState === 'playing' ? 'playing' : ytPlayerState === 'loading' ? 'loading' : 'idle'}`}>
+                  {ytStatusLabel}
+                </span>
               )}
             </div>
-            <div ref={ytSlotRef} className="bp-yt-inline-stage bp-yt-inline-stage--listener" />
-          </>
+
+            <div className="bp-mp-viz" aria-hidden="true">
+              {ytVizBars.map((h, i) => (
+                <div
+                  key={i}
+                  className={`bp-mp-viz-bar${ytPlayerState === 'playing' ? ' active' : ''}`}
+                  style={{ height: `${ytPlayerState === 'playing' ? h : 18}%` }}
+                />
+              ))}
+            </div>
+
+            <div className="bp-mp-progress">
+              <div className="bp-mp-progress-fill" style={{ width: `${ytProgressPct}%` }} />
+            </div>
+
+            <div className="bp-mp-controls">
+              <button
+                type="button"
+                className={`bp-mp-btn bp-mp-btn--main${ytAudioBlocked ? ' is-blocked' : ''}`}
+                onClick={handleListenerYtToggle}
+                title={ytPlayerState === 'playing' ? 'Pause Music' : 'Play Music'}
+              >
+                {ytPlayerState === 'playing' ? <PauseIcon /> : <PlayIcon />}
+              </button>
+              <button
+                type="button"
+                className="bp-mp-sync-btn"
+                onClick={() => {
+                  ytListenerUserPausedRef.current = false;
+                  if (rjBroadcast?.youtube) syncYouTubePlayer(rjBroadcast.youtube);
+                  sendYtListeningHandshake();
+                  applyYtVolume();
+                  sendYtCommand('playVideo', '');
+                  verifyYtAudible(1000);
+                }}
+              >
+                Sync Live
+              </button>
+              <div className="bp-mp-time">
+                <span>{fmtTime(ytCurrentTime)}</span>
+                <span className="bp-mp-time-sep">/</span>
+                <span>{fmtTime(ytDuration)}</span>
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="bp-listener-row">
@@ -3857,15 +3974,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                       if (rjAudioEl.current) {
                         rjAudioEl.current.play().then(() => setRjAudioBlocked(false)).catch(() => {});
                       }
-                      if (ytPlayerRef.current && ytIntendedStateRef.current === 'playing') {
-                        try {
-                          if (musicVolumeRef.current > 0) {
-                            ytPlayerRef.current.unMute?.();
-                            ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
-                          }
-                          ytPlayerRef.current.playVideo?.();
-                          setYtAudioBlocked(false);
-                        } catch {}
+                      if (ytIntendedStateRef.current === 'playing' && ytIframeRef.current?.contentWindow) {
+                        ytListenerUserPausedRef.current = false;
+                        sendYtListeningHandshake();
+                        applyYtVolume();
+                        sendYtCommand('playVideo', '');
+                        setYtAudioBlocked(false);
+                        verifyYtAudible(1000);
                       }
                     }}
                   >
@@ -3887,13 +4002,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 onClick={() => {
                   setRjConnState('connecting');
                   prewarmListenerAudio();
-                  if (ytPlayerRef.current && ytIntendedStateRef.current === 'playing') {
-                    try {
-                      applyYtVolume(ytPlayerRef.current);
-                      ytPlayerRef.current.playVideo?.();
-                      setYtAudioBlocked(false);
-                      verifyYtAudible(ytPlayerRef.current, 900);
-                    } catch {}
+                  ytListenerUserPausedRef.current = false;
+                  if (ytIframeRef.current?.contentWindow && ytIntendedStateRef.current === 'playing') {
+                    sendYtListeningHandshake();
+                    applyYtVolume();
+                    sendYtCommand('playVideo', '');
+                    setYtAudioBlocked(false);
+                    verifyYtAudible(1000);
                   } else if (rjBroadcast?.youtube?.videoId) {
                     syncYouTubePlayer(rjBroadcast.youtube);
                   }
@@ -4964,7 +5079,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         </div>
 
         {/* Content */}
-        <div className="bp-content" ref={bpContentRef}>
+        <div className="bp-content">
           {activeTab === 0 && renderRJTab()}
           {activeTab === 1 && renderJoinTab()}
           {activeTab === 2 && renderSongQueueTab()}

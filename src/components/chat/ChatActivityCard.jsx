@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  collection,
   doc,
   onSnapshot,
   runTransaction,
@@ -22,25 +23,29 @@ import {
   CheckTickIcon,
   CrossXIcon,
   ArrowChainIcon,
+  PlayersRosterIcon,
+  ChevronToggleIcon,
+  RankMedalIcon,
 } from '../icons/LuxuryModuleIcons';
 import './ChatActivityCard.css';
 
-const WHEEL_SLICE_COLORS = [
-  '#7c3aed',
-  '#db2777',
-  '#0891b2',
-  '#4f46e5',
-  '#d97706',
-  '#059669',
-  '#be185d',
-  '#2563eb',
-  '#9333ea',
-  '#ea580c',
-  '#0d9488',
-  '#6366f1',
+const WHEEL_SLICE_PAIRS = [
+  ['#7c3aed', '#5b21b6'],
+  ['#db2777', '#9d174d'],
+  ['#0891b2', '#155e75'],
+  ['#4f46e5', '#3730a3'],
+  ['#d97706', '#92400e'],
+  ['#059669', '#065f46'],
+  ['#be185d', '#831843'],
+  ['#2563eb', '#1e40af'],
+  ['#9333ea', '#6b21a8'],
+  ['#ea580c', '#9a3412'],
+  ['#0d9488', '#115e59'],
+  ['#6366f1', '#4338ca'],
 ];
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+const RIM_STUDS = Array.from({ length: 24 }, (_, i) => i * 15);
 
 const polarToCartesian = (cx, cy, r, angleDeg) => {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -67,6 +72,137 @@ const getCleanLastLetter = (str) => {
   return clean ? clean[clean.length - 1].toUpperCase() : 'A';
 };
 
+// Isolated memoized roulette SVG so 250ms timer ticks never disturb GPU wheel spin transitions
+const LuxuryRouletteRotor = React.memo(({ entries, targetAngle, isSpinning, uidSuffix }) => {
+  const sliceCount = Math.max(2, entries.length);
+  const sliceAngle = 360 / sliceCount;
+  const gradPrefix = `ttWheel-${uidSuffix}`;
+
+  return (
+    <div className="tt-wheel-wrap">
+      <svg
+        className={`tt-wheel-needle${isSpinning ? ' is-spinning' : ''}`}
+        width="26"
+        height="26"
+        viewBox="0 0 28 28"
+        fill="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={`${gradPrefix}-needle`} x1="14" y1="2" x2="14" y2="25" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="55%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M14 26L5.5 6.5C5.1 5.4 5.9 4 7.1 4h13.8c1.2 0 2 1.4 1.6 2.5L14 26Z"
+          fill={`url(#${gradPrefix}-needle)`}
+          stroke="#0f172a"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <circle cx="14" cy="9" r="2.1" fill="#0f172a" />
+      </svg>
+
+      <div
+        className="tt-wheel-rotor"
+        style={{ transform: `rotate(${targetAngle || 0}deg)` }}
+      >
+        <svg className="tt-wheel-svg" viewBox="0 0 220 220" aria-label="Spin the wheel">
+          <defs>
+            <linearGradient id={`${gradPrefix}-bezel`} x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="35%" stopColor="#d97706" />
+              <stop offset="70%" stopColor="#fde68a" />
+              <stop offset="100%" stopColor="#92400e" />
+            </linearGradient>
+            <radialGradient id={`${gradPrefix}-sheen`} cx="50%" cy="38%" r="60%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.18" />
+              <stop offset="65%" stopColor="#ffffff" stopOpacity="0.02" />
+              <stop offset="100%" stopColor="#020617" stopOpacity="0.34" />
+            </radialGradient>
+            <radialGradient id={`${gradPrefix}-hub`} cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#312e81" />
+              <stop offset="100%" stopColor="#090d1a" />
+            </radialGradient>
+            {WHEEL_SLICE_PAIRS.map(([c1, c2], idx) => (
+              <radialGradient key={idx} id={`${gradPrefix}-s${idx}`} cx="50%" cy="50%" r="55%">
+                <stop offset="15%" stopColor={c1} />
+                <stop offset="100%" stopColor={c2} />
+              </radialGradient>
+            ))}
+          </defs>
+
+          {/* Brushed Gold Outer Bezel */}
+          <circle cx="110" cy="110" r="108" fill="#090d1a" stroke={`url(#${gradPrefix}-bezel)`} strokeWidth="3.5" />
+          <circle cx="110" cy="110" r="102" fill="#0f172a" />
+
+          {/* Slices */}
+          {entries.map((entry, idx) => {
+            const startA = idx * sliceAngle;
+            const endA = startA + sliceAngle;
+            const midA = startA + sliceAngle / 2;
+            const labelRadius = sliceCount > 8 ? 64 : 66;
+            const textPos = polarToCartesian(110, 110, labelRadius, midA);
+            const cleanText = String(entry).slice(0, sliceCount > 8 ? 11 : 14);
+            const colorIdx = idx % WHEEL_SLICE_PAIRS.length;
+
+            return (
+              <g key={`${entry}-${idx}`}>
+                <path
+                  d={describeSlicePath(110, 110, 97, startA, endA)}
+                  fill={`url(#${gradPrefix}-s${colorIdx})`}
+                  stroke="rgba(255,255,255,0.34)"
+                  strokeWidth="1.15"
+                />
+                <text
+                  x={textPos.x}
+                  y={textPos.y}
+                  fill="#ffffff"
+                  fontSize={sliceCount > 8 ? '8.2' : sliceCount > 6 ? '9.2' : '10.2'}
+                  fontWeight="800"
+                  letterSpacing="0.02em"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.65)' }}
+                  transform={`rotate(${midA - 90}, ${textPos.x}, ${textPos.y})`}
+                >
+                  {cleanText}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* 3D Lighting Sheen Overlay */}
+          <circle cx="110" cy="110" r="97" fill={`url(#${gradPrefix}-sheen)`} pointerEvents="none" />
+          <circle cx="110" cy="110" r="97" fill="none" stroke="rgba(254,240,138,0.45)" strokeWidth="1.2" />
+
+          {/* Perimeter Metallic Studs */}
+          {RIM_STUDS.map((deg, i) => {
+            const pos = polarToCartesian(110, 110, 102.2, deg);
+            return (
+              <circle
+                key={deg}
+                cx={pos.x}
+                cy={pos.y}
+                r={i % 2 === 0 ? '2' : '1.4'}
+                fill={i % 2 === 0 ? '#fef08a' : '#f59e0b'}
+                opacity={i % 2 === 0 ? '0.96' : '0.78'}
+              />
+            );
+          })}
+
+          {/* Luxury Center Gemstone Hub */}
+          <circle cx="110" cy="110" r="20" fill={`url(#${gradPrefix}-hub)`} stroke={`url(#${gradPrefix}-bezel)`} strokeWidth="2.8" />
+          <circle cx="110" cy="110" r="13.5" fill="none" stroke="rgba(254,240,138,0.35)" strokeWidth="1" />
+          <path d="M110 101.5L114.5 110L110 118.5L105.5 110Z" fill="#fde68a" />
+        </svg>
+      </div>
+    </div>
+  );
+});
+
 const ChatActivityCard = ({
   roomId,
   activityId,
@@ -74,7 +210,8 @@ const ChatActivityCard = ({
   loggedInUserProfile,
 }) => {
   const [activity, setActivity] = useState(initialSnapshot || null);
-  const [myVote, setMyVote] = useState(null);
+  const [votesList, setVotesList] = useState([]);
+  const [rosterExpanded, setRosterExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [nowMs, setNowMs] = useState(Date.now());
   const [entryInput, setEntryInput] = useState('');
@@ -90,24 +227,36 @@ const ChatActivityCard = ({
     }
   }, [initialSnapshot]);
 
+  // Subscribe to ALL participants' votes / answers / wheel spins so everyone sees names, picks & points
   useEffect(() => {
-    if (!roomId || !activityId || !myUid) return;
-    if (activity?.type && activity.type !== 'poll' && activity.type !== 'trivia') return;
-    const voteRef = doc(db, 'rooms', roomId, 'activities', activityId, 'votes', myUid);
+    if (!roomId || !activityId) return;
+    if (activity?.type && !['poll', 'trivia', 'wheel'].includes(activity.type)) return;
+    const votesColRef = collection(db, 'rooms', roomId, 'activities', activityId, 'votes');
     const unsub = onSnapshot(
-      voteRef,
+      votesColRef,
       (snap) => {
-        setMyVote(snap.exists() ? snap.data() : null);
+        const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+        rows.sort((a, b) => {
+          const ptDiff = (b.pts || 0) - (a.pts || 0);
+          if (ptDiff !== 0) return ptDiff;
+          return (a.respondedAtMs || 0) - (b.respondedAtMs || 0);
+        });
+        setVotesList(rows);
       },
       () => {}
     );
     return () => unsub();
-  }, [roomId, activityId, myUid, activity?.type]);
+  }, [roomId, activityId, activity?.type]);
+
+  const myVote = useMemo(
+    () => (myUid ? votesList.find((v) => v.uid === myUid) || null : null),
+    [votesList, myUid]
+  );
 
   const needsTick = Boolean(
     activity &&
       ((activity.endsAtMs && nowMs < activity.endsAtMs + 1000) ||
-        (activity.type === 'wheel' && activity.spinStartedAtMs && nowMs - activity.spinStartedAtMs < 4400))
+        (activity.type === 'wheel' && activity.spinStartedAtMs && nowMs - activity.spinStartedAtMs < 4600))
   );
 
   useEffect(() => {
@@ -163,6 +312,7 @@ const ChatActivityCard = ({
           identity: myIdentity,
           optionIndex: optionIdx,
           isCorrect: false,
+          pts: 5,
           respondedAtMs: Date.now(),
           createdAt: serverTimestamp(),
         });
@@ -194,6 +344,8 @@ const ChatActivityCard = ({
         const data = actSnap.data();
         const isCorrect = optionIdx === data.correctIndex;
         const clickMs = Date.now();
+        const isFirstWinner = isCorrect && !data.winnerLocked && !data.firstCorrectUid;
+        const earnedPts = isFirstWinner ? 50 : isCorrect ? 25 : 0;
 
         tx.set(voteRef, {
           uid: myUid,
@@ -201,6 +353,7 @@ const ChatActivityCard = ({
           identity: myIdentity,
           optionIndex: optionIdx,
           isCorrect,
+          pts: earnedPts,
           respondedAtMs: clickMs,
           createdAt: serverTimestamp(),
         });
@@ -210,7 +363,7 @@ const ChatActivityCard = ({
           updatedAt: serverTimestamp(),
         };
 
-        if (isCorrect && !data.winnerLocked && !data.firstCorrectUid) {
+        if (isFirstWinner) {
           updates.firstCorrectUid = myUid;
           updates.firstCorrectName = myName;
           updates.firstCorrectIdentity = myIdentity;
@@ -230,13 +383,15 @@ const ChatActivityCard = ({
     if (!roomId || !activityId || !myUid || busy) return;
     const entries = Array.isArray(activity?.entries) ? activity.entries : [];
     if (entries.length < 2) return;
-    if (activity?.spinStartedAtMs && Date.now() - activity.spinStartedAtMs < 4000) return;
+    if (activity?.spinStartedAtMs && Date.now() - activity.spinStartedAtMs < 4250) return;
 
     setBusy(true);
     try {
       const actRef = doc(db, 'rooms', roomId, 'activities', activityId);
+      const voteRef = doc(db, 'rooms', roomId, 'activities', activityId, 'votes', myUid);
+
       await runTransaction(db, async (tx) => {
-        const snap = await tx.get(actRef);
+        const [snap, voteSnap] = await Promise.all([tx.get(actRef), tx.get(voteRef)]);
         if (!snap.exists()) return;
         const data = snap.data();
         const list = Array.isArray(data.entries) ? data.entries : [];
@@ -246,10 +401,10 @@ const ChatActivityCard = ({
         const nextSeq = (typeof data.spinSeq === 'number' ? data.spinSeq : 0) + 1;
         const sliceAngle = 360 / list.length;
         const targetSliceCenter = winnerIdx * sliceAngle + sliceAngle / 2;
-        const jitter = (Math.random() - 0.5) * sliceAngle * 0.45;
+        const jitter = (Math.random() - 0.5) * sliceAngle * 0.42;
         const desiredMod = (360 - targetSliceCenter + jitter + 360) % 360;
         const prevAngle = typeof data.targetAngle === 'number' ? data.targetAngle : 0;
-        const baseRotations = Math.floor(prevAngle / 360) * 360 + 6 * 360;
+        const baseRotations = Math.floor(prevAngle / 360) * 360 + 7 * 360;
         const nextAngle = baseRotations + desiredMod;
 
         tx.update(actRef, {
@@ -260,6 +415,19 @@ const ChatActivityCard = ({
           targetAngle: nextAngle,
           status: 'spinning',
           updatedAt: serverTimestamp(),
+        });
+
+        const prevData = voteSnap.exists() ? voteSnap.data() : {};
+        tx.set(voteRef, {
+          uid: myUid,
+          displayName: myName,
+          identity: myIdentity,
+          optionIndex: Math.max(0, Math.min(11, winnerIdx)),
+          lastResult: list[winnerIdx],
+          spinCount: (prevData.spinCount || 0) + 1,
+          pts: (prevData.pts || 0) + 15,
+          respondedAtMs: Date.now(),
+          createdAt: prevData.createdAt || serverTimestamp(),
         });
       });
     } catch (err) {
@@ -315,9 +483,16 @@ const ChatActivityCard = ({
         const prevEntries = Array.isArray(data.entries) ? data.entries : [];
         const nextEntries = [...prevEntries.slice(-24), { word: formattedPlace, uid: myUid, name: myName }];
         const nextUsed = [...usedKeys.slice(-80), normalizedKey];
+        const lengthBonus = alphaOnly.length >= 9 ? 5 : alphaOnly.length >= 6 ? 2 : 0;
         const prevScores = { ...(data.scores || {}) };
-        const prevEntry = prevScores[myUid] || { name: myName, pts: 0 };
-        prevScores[myUid] = { name: myName, pts: (prevEntry.pts || 0) + 10 };
+        const prevEntry = prevScores[myUid] || { name: myName, pts: 0, wordsCount: 0 };
+        prevScores[myUid] = {
+          name: myName,
+          identity: myIdentity,
+          pts: (prevEntry.pts || 0) + 10 + lengthBonus,
+          wordsCount: (prevEntry.wordsCount || 0) + 1,
+          lastWord: formattedPlace,
+        };
 
         const roundDurMs = (Number(data.durationSec) || 60) * 1000;
         const nextEndsAtMs = Math.max(Date.now() + Math.min(roundDurMs, 30000), data.endsAtMs || 0);
@@ -382,9 +557,16 @@ const ChatActivityCard = ({
           const upper = raw.toUpperCase().slice(0, 22);
           const nextReq = getCleanLastLetter(upper);
           const prevEntries = Array.isArray(data.entries) ? data.entries : [];
+          const lengthBonus = upper.length >= 8 ? 5 : upper.length >= 6 ? 2 : 0;
           const prevScores = { ...(data.scores || {}) };
-          const prevUser = prevScores[myUid] || { name: myName, pts: 0 };
-          prevScores[myUid] = { name: myName, pts: (prevUser.pts || 0) + 10 };
+          const prevUser = prevScores[myUid] || { name: myName, pts: 0, wordsCount: 0 };
+          prevScores[myUid] = {
+            name: myName,
+            identity: myIdentity,
+            pts: (prevUser.pts || 0) + 10 + lengthBonus,
+            wordsCount: (prevUser.wordsCount || 0) + 1,
+            lastWord: upper,
+          };
           const roundDurMs = (Number(data.durationSec) || 60) * 1000;
 
           tx.update(actRef, {
@@ -411,8 +593,15 @@ const ChatActivityCard = ({
           }
 
           const solvedBy = Array.isArray(data.solvedBy) ? [...data.solvedBy] : [];
+          const isFirst = !data.winnerLocked && !data.firstCorrectUid;
           if (!solvedBy.some((s) => s.uid === myUid)) {
-            solvedBy.push({ uid: myUid, name: myName, solvedAtMs: Date.now() });
+            solvedBy.push({
+              uid: myUid,
+              name: myName,
+              identity: myIdentity,
+              pts: isFirst ? 50 : 25,
+              solvedAtMs: Date.now(),
+            });
           }
 
           const updates = {
@@ -420,7 +609,7 @@ const ChatActivityCard = ({
             solvedBy,
             updatedAt: serverTimestamp(),
           };
-          if (!data.winnerLocked && !data.firstCorrectUid) {
+          if (isFirst) {
             updates.firstCorrectUid = myUid;
             updates.firstCorrectName = myName;
             updates.firstCorrectIdentity = myIdentity;
@@ -453,6 +642,8 @@ const ChatActivityCard = ({
   const timerPct = activity.endsAtMs ? Math.max(0, Math.min(100, (remainingMs / totalDurMs) * 100)) : 0;
   const isUrgent = Boolean(activity.endsAtMs && !isTimeUp && secondsLeft <= 8);
 
+  const visibleRosterCap = rosterExpanded ? 50 : 4;
+
   // ── 1. LIVE QUICK POLL ──────────────────────────────────────────────────
   if (activity.type === 'poll') {
     const options = Array.isArray(activity.options) ? activity.options : [];
@@ -460,6 +651,7 @@ const ChatActivityCard = ({
       ? activity.totalVotes
       : options.reduce((acc, o) => acc + (o.count || 0), 0);
     const closed = activity.status === 'ended' || isTimeUp;
+    const shownVoters = votesList.slice(0, visibleRosterCap);
 
     return (
       <div className="tt-act-card" data-activity-type="poll">
@@ -506,6 +698,7 @@ const ChatActivityCard = ({
                     <span className={`tt-poll-radio${isSelected ? ' is-checked' : ''}`}>
                       {isSelected && <CheckTickIcon size={10} color="#ffffff" />}
                     </span>
+                    <span className="tt-opt-keycap tt-opt-keycap--sm">{OPTION_LETTERS[idx] || idx + 1}</span>
                     <span className="tt-poll-opt-label">{opt.label}</span>
                   </span>
                   <span className="tt-poll-opt-pct">
@@ -517,12 +710,52 @@ const ChatActivityCard = ({
           })}
         </div>
 
+        {votesList.length > 0 && (
+          <div className="tt-roster-box">
+            <div className="tt-roster-hdr">
+              <span className="tt-roster-title">
+                <PlayersRosterIcon size={12} color="currentColor" />
+                <span>Voters ({votesList.length})</span>
+              </span>
+              {votesList.length > 4 && (
+                <button
+                  type="button"
+                  className="tt-roster-toggle"
+                  onClick={() => setRosterExpanded((v) => !v)}
+                >
+                  <span>{rosterExpanded ? 'Less' : `+${votesList.length - 4} more`}</span>
+                  <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+                </button>
+              )}
+            </div>
+            <div className="tt-roster-list">
+              {shownVoters.map((v) => {
+                const pickedOpt = options[v.optionIndex];
+                return (
+                  <div key={v.uid} className={`tt-roster-row${v.uid === myUid ? ' is-me' : ''}`}>
+                    <span className="tt-roster-player">
+                      <IdentityEmblem identity={v.identity} size={12} />
+                      <span className="tt-roster-name">{v.displayName || 'Member'}</span>
+                    </span>
+                    <span className="tt-roster-right">
+                      <span className="tt-roster-choice">
+                        {OPTION_LETTERS[v.optionIndex] || '?'} · {pickedOpt?.label || 'Vote'}
+                      </span>
+                      <span className="tt-roster-pts">+{v.pts || 5} pts</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="tt-act-foot">
           <span className="tt-foot-creator">
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
             <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span className="tt-foot-meta">{totalVotes} votes · {myVote ? 'Voted' : closed ? 'Closed' : 'Tap to vote'}</span>
+          <span className="tt-foot-meta">{totalVotes} votes · {myVote ? 'Voted (+5 pts)' : closed ? 'Closed' : 'Tap to vote'}</span>
         </div>
       </div>
     );
@@ -532,6 +765,7 @@ const ChatActivityCard = ({
   if (activity.type === 'trivia') {
     const options = Array.isArray(activity.options) ? activity.options : [];
     const showReveal = Boolean(myVote || isTimeUp || activity.firstCorrectUid);
+    const shownRespondents = votesList.slice(0, visibleRosterCap);
 
     return (
       <div className="tt-act-card" data-activity-type="trivia">
@@ -599,8 +833,52 @@ const ChatActivityCard = ({
           <div className="tt-winner-strip">
             <CrownRoyalIcon size={14} color="#fbbf24" />
             <span>
-              Fastest: <strong>{activity.firstCorrectName}</strong> · {getIdentityLabel(activity.firstCorrectIdentity)}
+              Fastest: <strong>{activity.firstCorrectName}</strong> · {getIdentityLabel(activity.firstCorrectIdentity)} · <strong>+50 pts</strong>
             </span>
+          </div>
+        )}
+
+        {votesList.length > 0 && (
+          <div className="tt-roster-box">
+            <div className="tt-roster-hdr">
+              <span className="tt-roster-title">
+                <TrophyCrestIcon size={12} color="#fbbf24" />
+                <span>Answers &amp; Points ({votesList.length})</span>
+              </span>
+              {votesList.length > 4 && (
+                <button
+                  type="button"
+                  className="tt-roster-toggle"
+                  onClick={() => setRosterExpanded((v) => !v)}
+                >
+                  <span>{rosterExpanded ? 'Less' : `+${votesList.length - 4} more`}</span>
+                  <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+                </button>
+              )}
+            </div>
+            <div className="tt-roster-list">
+              {shownRespondents.map((v, idx) => (
+                <div key={v.uid} className={`tt-roster-row${v.uid === myUid ? ' is-me' : ''}`}>
+                  <span className="tt-roster-player">
+                    {idx < 3 && (v.pts || 0) > 0 ? (
+                      <RankMedalIcon rank={idx + 1} size={12} />
+                    ) : (
+                      <IdentityEmblem identity={v.identity} size={12} />
+                    )}
+                    <span className="tt-roster-name">{v.displayName || 'Member'}</span>
+                  </span>
+                  <span className="tt-roster-right">
+                    <span className={`tt-roster-ans${v.isCorrect ? ' is-ok' : ' is-bad'}`}>
+                      {v.isCorrect ? <CheckTickIcon size={10} color="currentColor" /> : <CrossXIcon size={9} color="currentColor" />}
+                      <span>{OPTION_LETTERS[v.optionIndex] || '?'}</span>
+                    </span>
+                    <span className={`tt-roster-pts${(v.pts || 0) > 0 ? ' is-earned' : ''}`}>
+                      +{v.pts || 0} pts
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -610,7 +888,7 @@ const ChatActivityCard = ({
             <span>{activity.creatorName || 'Member'}</span>
           </span>
           <span className="tt-foot-meta">
-            {typeof activity.attemptCount === 'number' ? activity.attemptCount : 0} responses
+            {votesList.length || activity.attemptCount || 0} answers · +50/+25 pts
           </span>
         </div>
       </div>
@@ -621,10 +899,10 @@ const ChatActivityCard = ({
   if (activity.type === 'atlas') {
     const entries = Array.isArray(activity.entries) ? activity.entries : [];
     const trail = entries.slice(-5);
-    const scoreRows = Object.entries(activity.scores || {})
+    const allScoreRows = Object.entries(activity.scores || {})
       .map(([uid, info]) => ({ uid, ...(info || {}) }))
-      .sort((a, b) => (b.pts || 0) - (a.pts || 0))
-      .slice(0, 3);
+      .sort((a, b) => (b.pts || 0) - (a.pts || 0));
+    const shownScores = allScoreRows.slice(0, rosterExpanded ? 50 : 5);
 
     return (
       <div className="tt-act-card" data-activity-type="atlas">
@@ -650,7 +928,9 @@ const ChatActivityCard = ({
 
         <div className="tt-chain-arena">
           <div className="tt-chain-current">
-            <span className="tt-arena-label">Current Place</span>
+            <span className="tt-arena-label">
+              Current Place{activity.lastPlayerName ? ` · by ${activity.lastPlayerName}` : ''}
+            </span>
             <strong className="tt-arena-word">{activity.currentPlace || activity.seedPlace}</strong>
           </div>
           <div className="tt-chain-next">
@@ -664,23 +944,44 @@ const ChatActivityCard = ({
             {trail.map((item, idx) => (
               <React.Fragment key={`${item.word}-${idx}`}>
                 {idx > 0 && <ArrowChainIcon size={10} color="currentColor" />}
-                <span className="tt-trail-word">{item.word}</span>
+                <span className="tt-trail-word" title={item.name ? `Played by ${item.name}` : undefined}>
+                  {item.word}
+                </span>
               </React.Fragment>
             ))}
           </div>
         )}
 
-        {scoreRows.length > 0 && (
-          <div className="tt-board-row">
-            <TrophyCrestIcon size={12} color="#fbbf24" />
-            <div className="tt-board-entries">
-              {scoreRows.map((row, idx) => (
-                <React.Fragment key={row.uid}>
-                  {idx > 0 && <span className="tt-board-sep">·</span>}
-                  <span className="tt-board-entry">
-                    #{idx + 1} {row.name} <strong>{row.pts}</strong>
+        {allScoreRows.length > 0 && (
+          <div className="tt-roster-box">
+            <div className="tt-roster-hdr">
+              <span className="tt-roster-title">
+                <TrophyCrestIcon size={12} color="#fbbf24" />
+                <span>Players &amp; Points ({allScoreRows.length})</span>
+              </span>
+              {allScoreRows.length > 5 && (
+                <button
+                  type="button"
+                  className="tt-roster-toggle"
+                  onClick={() => setRosterExpanded((v) => !v)}
+                >
+                  <span>{rosterExpanded ? 'Less' : `+${allScoreRows.length - 5} more`}</span>
+                  <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+                </button>
+              )}
+            </div>
+            <div className="tt-roster-list">
+              {shownScores.map((row, idx) => (
+                <div key={row.uid} className={`tt-roster-row${row.uid === myUid ? ' is-me' : ''}`}>
+                  <span className="tt-roster-player">
+                    {idx < 3 ? <RankMedalIcon rank={idx + 1} size={12} /> : <span className="tt-roster-rank">#{idx + 1}</span>}
+                    <span className="tt-roster-name">{row.name}</span>
                   </span>
-                </React.Fragment>
+                  <span className="tt-roster-right">
+                    {row.lastWord && <span className="tt-roster-choice">{row.lastWord}</span>}
+                    <span className="tt-roster-pts is-earned">{row.pts || 0} pts</span>
+                  </span>
+                </div>
               ))}
             </div>
           </div>
@@ -708,7 +1009,7 @@ const ChatActivityCard = ({
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
             <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span className="tt-foot-meta">{entries.length} chained</span>
+          <span className="tt-foot-meta">{entries.length} places · +10/+15 pts</span>
         </div>
       </div>
     );
@@ -720,10 +1021,10 @@ const ChatActivityCard = ({
     if (isChain) {
       const entries = Array.isArray(activity.entries) ? activity.entries : [];
       const trail = entries.slice(-5);
-      const scoreRows = Object.entries(activity.scores || {})
+      const allScoreRows = Object.entries(activity.scores || {})
         .map(([uid, info]) => ({ uid, ...(info || {}) }))
-        .sort((a, b) => (b.pts || 0) - (a.pts || 0))
-        .slice(0, 3);
+        .sort((a, b) => (b.pts || 0) - (a.pts || 0));
+      const shownScores = allScoreRows.slice(0, rosterExpanded ? 50 : 5);
 
       return (
         <div className="tt-act-card" data-activity-type="word">
@@ -763,23 +1064,44 @@ const ChatActivityCard = ({
               {trail.map((item, idx) => (
                 <React.Fragment key={`${item.word}-${idx}`}>
                   {idx > 0 && <ArrowChainIcon size={10} color="currentColor" />}
-                  <span className="tt-trail-word">{item.word}</span>
+                  <span className="tt-trail-word" title={item.name ? `Played by ${item.name}` : undefined}>
+                    {item.word}
+                  </span>
                 </React.Fragment>
               ))}
             </div>
           )}
 
-          {scoreRows.length > 0 && (
-            <div className="tt-board-row">
-              <TrophyCrestIcon size={12} color="#fbbf24" />
-              <div className="tt-board-entries">
-                {scoreRows.map((row, idx) => (
-                  <React.Fragment key={row.uid}>
-                    {idx > 0 && <span className="tt-board-sep">·</span>}
-                    <span className="tt-board-entry">
-                      #{idx + 1} {row.name} <strong>{row.pts}</strong>
+          {allScoreRows.length > 0 && (
+            <div className="tt-roster-box">
+              <div className="tt-roster-hdr">
+                <span className="tt-roster-title">
+                  <TrophyCrestIcon size={12} color="#fbbf24" />
+                  <span>Players &amp; Points ({allScoreRows.length})</span>
+                </span>
+                {allScoreRows.length > 5 && (
+                  <button
+                    type="button"
+                    className="tt-roster-toggle"
+                    onClick={() => setRosterExpanded((v) => !v)}
+                  >
+                    <span>{rosterExpanded ? 'Less' : `+${allScoreRows.length - 5} more`}</span>
+                    <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+                  </button>
+                )}
+              </div>
+              <div className="tt-roster-list">
+                {shownScores.map((row, idx) => (
+                  <div key={row.uid} className={`tt-roster-row${row.uid === myUid ? ' is-me' : ''}`}>
+                    <span className="tt-roster-player">
+                      {idx < 3 ? <RankMedalIcon rank={idx + 1} size={12} /> : <span className="tt-roster-rank">#{idx + 1}</span>}
+                      <span className="tt-roster-name">{row.name}</span>
                     </span>
-                  </React.Fragment>
+                    <span className="tt-roster-right">
+                      {row.lastWord && <span className="tt-roster-choice">{row.lastWord}</span>}
+                      <span className="tt-roster-pts is-earned">{row.pts || 0} pts</span>
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -807,7 +1129,7 @@ const ChatActivityCard = ({
               <IdentityEmblem identity={activity.creatorIdentity} size={13} />
               <span>{activity.creatorName || 'Member'}</span>
             </span>
-            <span className="tt-foot-meta">{entries.length} linked</span>
+            <span className="tt-foot-meta">{entries.length} linked · +10/+15 pts</span>
           </div>
         </div>
       );
@@ -816,6 +1138,7 @@ const ChatActivityCard = ({
     const tiles = Array.isArray(activity.scrambledLetters) ? activity.scrambledLetters : [];
     const solvedBy = Array.isArray(activity.solvedBy) ? activity.solvedBy : [];
     const iSolved = Boolean(myUid && solvedBy.some((s) => s.uid === myUid));
+    const shownSolvers = solvedBy.slice(0, visibleRosterCap);
 
     return (
       <div className="tt-act-card" data-activity-type="word">
@@ -854,16 +1177,45 @@ const ChatActivityCard = ({
         {(isTimeUp || iSolved) && activity.answerWord && (
           <div className="tt-winner-strip">
             <CrownRoyalIcon size={14} color="#fbbf24" />
-            <span>Word: <strong>{activity.answerWord}</strong></span>
+            <span>Answer: <strong>{activity.answerWord}</strong></span>
           </div>
         )}
 
-        {activity.firstCorrectUid && (
-          <div className="tt-winner-strip" style={{ marginTop: 5 }}>
-            <TrophyCrestIcon size={14} color="#fbbf24" />
-            <span>
-              Fastest: <strong>{activity.firstCorrectName}</strong> · {solvedBy.length} solved
-            </span>
+        {solvedBy.length > 0 && (
+          <div className="tt-roster-box">
+            <div className="tt-roster-hdr">
+              <span className="tt-roster-title">
+                <TrophyCrestIcon size={12} color="#fbbf24" />
+                <span>Solvers &amp; Points ({solvedBy.length})</span>
+              </span>
+              {solvedBy.length > 4 && (
+                <button
+                  type="button"
+                  className="tt-roster-toggle"
+                  onClick={() => setRosterExpanded((v) => !v)}
+                >
+                  <span>{rosterExpanded ? 'Less' : `+${solvedBy.length - 4} more`}</span>
+                  <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+                </button>
+              )}
+            </div>
+            <div className="tt-roster-list">
+              {shownSolvers.map((s, idx) => (
+                <div key={s.uid} className={`tt-roster-row${s.uid === myUid ? ' is-me' : ''}`}>
+                  <span className="tt-roster-player">
+                    {idx < 3 ? <RankMedalIcon rank={idx + 1} size={12} /> : <span className="tt-roster-rank">#{idx + 1}</span>}
+                    <span className="tt-roster-name">{s.name}</span>
+                  </span>
+                  <span className="tt-roster-right">
+                    <span className="tt-roster-ans is-ok">
+                      <CheckTickIcon size={10} color="currentColor" />
+                      <span>Solved</span>
+                    </span>
+                    <span className="tt-roster-pts is-earned">+{s.pts || (idx === 0 ? 50 : 25)} pts</span>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -894,19 +1246,18 @@ const ChatActivityCard = ({
             <IdentityEmblem identity={activity.creatorIdentity} size={13} />
             <span>{activity.creatorName || 'Member'}</span>
           </span>
-          <span className="tt-foot-meta">{activity.attemptCount || 0} attempts</span>
+          <span className="tt-foot-meta">{activity.attemptCount || 0} tries · +50/+25 pts</span>
         </div>
       </div>
     );
   }
 
   // ── 5. SPIN-THE-WHEEL / LUCKY PICK ──────────────────────────────────────
-  const sliceCount = Math.max(2, wheelEntries.length);
-  const sliceAngle = 360 / sliceCount;
   const isSpinning = Boolean(
-    activity.spinStartedAtMs && nowMs - activity.spinStartedAtMs < 4050
+    activity.spinStartedAtMs && nowMs - activity.spinStartedAtMs < 4250
   );
   const showWinner = Boolean(activity.winnerLabel && !isSpinning);
+  const shownSpinners = votesList.slice(0, visibleRosterCap);
 
   return (
     <div className="tt-act-card" data-activity-type="wheel">
@@ -916,68 +1267,18 @@ const ChatActivityCard = ({
           <span>Lucky Wheel</span>
           {isSpinning && <span className="tt-live-pulse-dot" />}
         </span>
-        <span className="tt-act-meta-right">{wheelEntries.length} slices</span>
+        <span className="tt-act-meta-right">{wheelEntries.length} slices · Spin #{activity.spinSeq || 0}</span>
       </div>
 
       <h5 className="tt-act-title">{activity.title}</h5>
 
       <div className="tt-wheel-stage">
-        <div className="tt-wheel-wrap">
-          <svg
-            className="tt-wheel-needle"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path d="M12 22L5.5 5h13L12 22Z" fill="#fde68a" stroke="#1e1b4b" strokeWidth="1.9" strokeLinejoin="round" />
-            <circle cx="12" cy="7.5" r="1.6" fill="#1e1b4b" />
-          </svg>
-
-          <svg
-            className="tt-wheel-svg"
-            viewBox="0 0 200 200"
-            style={{ transform: `rotate(${activity.targetAngle || 0}deg)` }}
-            aria-label="Spin the wheel"
-          >
-            <circle cx="100" cy="100" r="97.5" fill="#0f172a" stroke="rgba(253,230,138,0.65)" strokeWidth="2.5" />
-            {wheelEntries.map((entry, idx) => {
-              const startA = idx * sliceAngle;
-              const endA = startA + sliceAngle;
-              const midA = startA + sliceAngle / 2;
-              const textPos = polarToCartesian(100, 100, 62, midA);
-              const fill = WHEEL_SLICE_COLORS[idx % WHEEL_SLICE_COLORS.length];
-              const cleanText = String(entry).slice(0, 10);
-              const pegPos = polarToCartesian(100, 100, 94.5, startA);
-              return (
-                <g key={`${entry}-${idx}`}>
-                  <path
-                    d={describeSlicePath(100, 100, 93, startA, endA)}
-                    fill={fill}
-                    stroke="rgba(255,255,255,0.28)"
-                    strokeWidth="1.1"
-                  />
-                  <text
-                    x={textPos.x}
-                    y={textPos.y}
-                    fill="#ffffff"
-                    fontSize={sliceCount > 8 ? '8' : '9.5'}
-                    fontWeight="700"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    transform={`rotate(${midA - 90}, ${textPos.x}, ${textPos.y})`}
-                  >
-                    {cleanText}
-                  </text>
-                  <circle cx={pegPos.x} cy={pegPos.y} r="1.7" fill="#fef3c7" opacity="0.9" />
-                </g>
-              );
-            })}
-            <circle cx="100" cy="100" r="15" fill="#0f172a" stroke="#fde68a" strokeWidth="2.4" />
-            <circle cx="100" cy="100" r="4.5" fill="#fde68a" />
-          </svg>
-        </div>
+        <LuxuryRouletteRotor
+          entries={wheelEntries}
+          targetAngle={activity.targetAngle || 0}
+          isSpinning={isSpinning}
+          uidSuffix={activityId}
+        />
 
         <button
           type="button"
@@ -986,23 +1287,58 @@ const ChatActivityCard = ({
           onClick={handleSpinWheel}
         >
           <SpinWheelIcon size={14} color="#ffffff" />
-          <span>{isSpinning ? 'Spinning...' : activity.spinSeq > 0 ? 'Spin Again' : 'Spin Wheel'}</span>
+          <span>{isSpinning ? 'Spinning...' : activity.spinSeq > 0 ? 'Spin Again (+15 pts)' : 'Spin Wheel (+15 pts)'}</span>
         </button>
 
         {showWinner && (
           <div className="tt-wheel-result">
             <CrownRoyalIcon size={14} color="#fbbf24" />
-            <span>Picked: <strong>{activity.winnerLabel}</strong></span>
+            <span>Landed: <strong>{activity.winnerLabel}</strong></span>
           </div>
         )}
       </div>
+
+      {votesList.length > 0 && (
+        <div className="tt-roster-box">
+          <div className="tt-roster-hdr">
+            <span className="tt-roster-title">
+              <PlayersRosterIcon size={12} color="currentColor" />
+              <span>Spinners &amp; Results ({votesList.length})</span>
+            </span>
+            {votesList.length > 4 && (
+              <button
+                type="button"
+                className="tt-roster-toggle"
+                onClick={() => setRosterExpanded((v) => !v)}
+              >
+                <span>{rosterExpanded ? 'Less' : `+${votesList.length - 4} more`}</span>
+                <ChevronToggleIcon size={11} rotated={rosterExpanded} />
+              </button>
+            )}
+          </div>
+          <div className="tt-roster-list">
+            {shownSpinners.map((s) => (
+              <div key={s.uid} className={`tt-roster-row${s.uid === myUid ? ' is-me' : ''}`}>
+                <span className="tt-roster-player">
+                  <IdentityEmblem identity={s.identity} size={12} />
+                  <span className="tt-roster-name">{s.displayName || 'Member'}</span>
+                </span>
+                <span className="tt-roster-right">
+                  <span className="tt-roster-choice">{s.lastResult || wheelEntries[s.optionIndex] || 'Spin'}</span>
+                  <span className="tt-roster-pts is-earned">+{s.pts || 15} pts</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="tt-act-foot">
         <span className="tt-foot-creator">
           <IdentityEmblem identity={activity.creatorIdentity} size={13} />
           <span>{activity.creatorName || 'Member'}</span>
         </span>
-        <span className="tt-foot-meta">Spin #{activity.spinSeq || 0}</span>
+        <span className="tt-foot-meta">{votesList.length} players · +15 pts/spin</span>
       </div>
     </div>
   );

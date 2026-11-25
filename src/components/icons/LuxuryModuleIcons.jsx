@@ -313,4 +313,56 @@ export const ArrowChainIcon = ({ size = 11, color = 'currentColor' }) => (
   </svg>
 );
 
+export const ShuffleSparkIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
+export const PlayersRosterIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="9" cy="8.5" r="3.2" stroke={color} strokeWidth="1.65" />
+    <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke={color} strokeWidth="1.65" strokeLinecap="round" />
+    <circle cx="16.8" cy="9.5" r="2.5" stroke={color} strokeWidth="1.5" />
+    <path d="M16 14.5c2.4.3 4.5 1.8 4.5 4.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+export const LibraryDeckIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="4" y="6" width="12" height="14" rx="2.2" stroke={color} strokeWidth="1.65" />
+    <path d="M8 3.5h10a2 2 0 0 1 2 2v12" stroke={color} strokeWidth="1.65" strokeLinecap="round" />
+    <path d="M7.5 11h5M7.5 14.5h3.5" stroke={color} strokeWidth="1.55" strokeLinecap="round" />
+  </svg>
+);
+
+export const ChevronToggleIcon = ({ size = 13, rotated = false, color = 'currentColor' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    style={{ transform: rotated ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.18s ease' }}
+    aria-hidden="true"
+  >
+    <path d="M6 9l6 6 6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const RankMedalIcon = ({ rank = 1, size = 13 }) => {
+  const fill = rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : '#d97706';
+  const rim = rank === 1 ? '#fef08a' : rank === 2 ? '#f1f5f9' : '#fdba74';
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7.5 3h9l-1.8 5.2h-5.4L7.5 3Z" stroke={rim} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="12" cy="14.5" r="6" fill={fill} fillOpacity="0.22" stroke={fill} strokeWidth="1.75" />
+      <circle cx="12" cy="14.5" r="2.2" fill={rim} />
+    </svg>
+  );
+};
+
+export const BackArrowIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H6M11.5 6.5L6 12l5.5 5.5" stroke={color} strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);

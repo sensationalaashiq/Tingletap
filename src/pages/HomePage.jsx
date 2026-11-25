@@ -4237,14 +4237,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
         }
 
-        // After initial entry scroll: never hijack user scroll if they are reading history
+        // After initial entry scroll: strictly manual scrolling — only update Latest jump button visibility
         const el = chatFeedRef.current;
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 90;
-        if (nearBottom && !hasUserScrolled) {
-            scrollToBottom(false, true);
-        } else {
-            setShowScrollToBottomBtn(true);
-        }
+        setIsAtBottom(nearBottom);
+        setShowScrollToBottomBtn(!nearBottom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages, roomId]);
 
@@ -4305,47 +4302,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [fontSize, fontColor, fontFamily, isBold, isItalic, isUnderline, isStrikethrough]);
 
-    // Stable resize / orientation handler — uses a ref to avoid stale closures
-    // while keeping the effect deps array empty (no re-subscription on renders).
     const scrollToBottomRef = useRef(null);
     scrollToBottomRef.current = scrollToBottom;
-    useEffect(() => {
-        const handleResize = () => {
-            if (!chatFeedRef.current) return;
-            const el = chatFeedRef.current;
-            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-            if (nearBottom) {
-                setTimeout(() => scrollToBottomRef.current?.(true), 100);
-                setTimeout(() => scrollToBottomRef.current?.(true), 300);
-            }
-        };
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleResize);
-        };
-    }, []);
-
-    // Removed global username styling - now handled per user in SettingsSidebar
-
-    // Handle textarea focus for mobile keyboards — zero scroll churn while typing
-    useEffect(() => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-        let keyboardTimer = null;
-        const handleFocus = () => {
-            if (isAtBottom) {
-                clearTimeout(keyboardTimer);
-                keyboardTimer = setTimeout(() => scrollToBottomRef.current?.(true), 220);
-            }
-        };
-        textarea.addEventListener('focus', handleFocus);
-        return () => {
-            clearTimeout(keyboardTimer);
-            textarea.removeEventListener('focus', handleFocus);
-        };
-    }, [isAtBottom]);
+    // Post-entry scroll is strictly manual — no automatic scroll hijack on resize, orientation, or textarea focus
 
     useEffect(() => {
         if (onlineUserIds.length === 0) {
@@ -5060,7 +5019,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     if (textareaRef.current) textareaRef.current.style.height = '';
                     const msgDoc = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
                     await handleAbuseViolation(uid, trimmedText, msgDoc, abuseResult, { role: role || userProfile?.role || 'guest', displayName: displayName || userProfile?.displayName });
-                    setTimeout(() => scrollToBottom(true), 60);
                     return;
                 }
 
@@ -5088,8 +5046,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                 _sentAt: sentAt,
                 createdAt: { toMillis: () => sentAt },
             }]);
-
-            scrollToBottom(true);
 
             const docRef = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             const resolvedId = docRef?.id;
@@ -5219,9 +5175,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             });
             setNewMessage('');
             completeSendProgress();
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
         } catch (error) {
             completeSendProgress();
             if (error.code === 'permission-denied') {
@@ -5305,9 +5258,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             setYoutubeUrl('');
             setNewMessage('');
             setYoutubePopupOpen(false);
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
         } catch (error) {
             if (error.code === 'permission-denied') {
                 pt.error("Permission denied. Please check your account status.");
@@ -6199,10 +6149,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             });
             setWhisperMessage('');
             setWhisperPopupOpen(false);
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
-            
         } catch (error) {
         }
     };
@@ -7264,9 +7210,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             setImageUrl('');
             if (fileInputRef.current) fileInputRef.current.value = '';
             completeSendProgress();
-            
-            setTimeout(() => scrollToBottom(true), 100);
-            
         } catch (error) {
             completeSendProgress();
             pt.error(`Image upload failed: ${error?.message || 'Please try again.'}`);
@@ -7358,9 +7301,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             setImagePopupOpen(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
             completeSendProgress();
-            
-            setTimeout(() => scrollToBottom(true), 100);
-            
         } catch (error) {
             completeSendProgress();
             pt.error(`Failed to send image URL: ${error?.message || 'Please try again.'}`);
@@ -7564,9 +7504,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             
             setNewMessage('');
             completeSendProgress();
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
         } catch (error) {
             completeSendProgress();
             pt.error(`Audio upload failed: ${error.message || 'Please try again later'}`);
@@ -7686,11 +7623,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             }
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
-            
             completeSendProgress();
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
         } catch (error) {
             pt.error(`Failed to send GIF: ${error.message || 'Please try again.'}`);
         }
@@ -7806,9 +7739,6 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             completeSendProgress();
-            
-            // Force auto-scroll to show the latest message
-            setTimeout(() => scrollToBottom(true), 100);
         } catch (error) {
             pt.error("Failed to send sticker. Please try again.");
         }

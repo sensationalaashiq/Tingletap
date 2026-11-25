@@ -111,10 +111,6 @@ const PremiumImageMessage = React.memo(({ imageUrl, imageFileName, compact = fal
     setIsEntering(true);
     setState('visible');
     setTimeout(() => setIsEntering(false), 600);
-    setTimeout(() => {
-      if (typeof window.scrollToBottom === 'function') window.scrollToBottom(true);
-      else if (rootRef.current) rootRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 120);
   }, []);
 
   const handleHide = useCallback((e) => {
