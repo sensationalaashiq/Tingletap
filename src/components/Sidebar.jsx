@@ -1015,7 +1015,7 @@ const Sidebar = ({
                   )}
                 </li>
               ) : filteredUsers.map(userItem => {
-                const isSelf       = user?.uid === userItem.uid;
+                const isSelf       = (user?.uid || loggedInUserProfile?.uid || auth.currentUser?.uid) === userItem.uid;
                 const statusEntry  = window.userOnlineStatuses?.[userItem.uid];
                 const isOnline     = (window.onlineUsers?.has(userItem.uid) || statusEntry?.state === 'online' || userItem.isOnline)
                                    && statusEntry?.showOnlineStatus !== false;

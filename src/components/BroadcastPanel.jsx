@@ -543,8 +543,25 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [pubAudioBlocked, setPubAudioBlocked] = useState(false);
   const [ytAudioBlocked, setYtAudioBlocked] = useState(false);
 
-  /* ── Go Live state ── */
+  /* ── Go Live / End state ── */
   const [goingLive, setGoingLive] = useState(false);
+  const [endingBroadcast, setEndingBroadcast] = useState(false);
+
+  /* ── Dual Independent Volume Controls (0-100%) ── */
+  const [rjVoiceVolume, setRjVoiceVolume] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem('tl_bp_voice_vol'));
+      return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 100;
+    } catch { return 100; }
+  });
+  const [musicVolume, setMusicVolume] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem('tl_bp_music_vol'));
+      return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 75;
+    } catch { return 75; }
+  });
+  const rjVoiceVolumeRef = useRef(rjVoiceVolume);
+  const musicVolumeRef = useRef(musicVolume);
 
   /* ── Public joining state ── */
   const [pubJoining, setPubJoining] = useState(false);
@@ -594,6 +611,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const rjAudioCtx = useRef(null);
   const rjMixDest = useRef(null);
   const rjLocalSourceNode = useRef(null);
+  const rjMicGainNode = useRef(null);
+  const rjKeepaliveOscRef = useRef(null);
+  const rjKeepaliveGainRef = useRef(null);
 
   /* ── WebRTC refs — RJ → Speaker connections (RJ receives each speaker's mic) ── */
   const rjSpeakerPCs = useRef({});
@@ -650,6 +670,40 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   useEffect(() => { rjConnectingRef.current = rjConnecting; }, [rjConnecting]);
   useEffect(() => { listeningToRef.current = listeningTo; }, [listeningTo]);
 
+  /* Sync RJ voice volume & Music volume in real time */
+  useEffect(() => {
+    rjVoiceVolumeRef.current = rjVoiceVolume;
+    try { localStorage.setItem('tl_bp_voice_vol', String(rjVoiceVolume)); } catch {}
+    const gainVal = Math.max(0, Math.min(1, rjVoiceVolume / 100));
+    if (rjMicGainNode.current && rjAudioCtx.current) {
+      try { rjMicGainNode.current.gain.setValueAtTime(gainVal, rjAudioCtx.current.currentTime); } catch {
+        rjMicGainNode.current.gain.value = gainVal;
+      }
+    }
+    if (rjAudioEl.current) {
+      try { rjAudioEl.current.volume = gainVal; } catch {}
+    }
+    if (pubAudioEl.current) {
+      try { pubAudioEl.current.volume = gainVal; } catch {}
+    }
+  }, [rjVoiceVolume]);
+
+  useEffect(() => {
+    musicVolumeRef.current = musicVolume;
+    try { localStorage.setItem('tl_bp_music_vol', String(musicVolume)); } catch {}
+    const player = ytPlayerRef.current;
+    if (player) {
+      try {
+        if (musicVolume === 0) {
+          player.mute?.();
+        } else {
+          player.unMute?.();
+          player.setVolume?.(musicVolume);
+        }
+      } catch {}
+    }
+  }, [musicVolume]);
+
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
   const pubOnDisconnectRef = useRef(null);
@@ -659,7 +713,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── Permission flags ── */
   const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
-  const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj' || loggedInUserProfile?.role?.toLowerCase() === 'owner';
+  const roleLower = (loggedInUserProfile?.role || '').toLowerCase();
+  const isRJ = loggedInUserProfile?.badge?.toLowerCase() === 'rj' || ['owner', 'superowner', 'godfather', 'the_olympians'].includes(roleLower);
   const canManageRJ = isRJ && (!rjIsLive || !rjBroadcast?.rjUid || rjBroadcast.rjUid === myUid);
   const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
   const myName = loggedInUserProfile?.username || loggedInUserProfile?.displayName || 'User';
@@ -682,23 +737,41 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
       const checkReady = setInterval(() => {
         if (window.YT && window.YT.Player) { clearInterval(checkReady); resolve(); }
-      }, 100);
+      }, 60);
     });
   }, []);
 
+  /* Preload YT API once so clicking Load starts synchronously inside user click gesture */
+  useEffect(() => {
+    ensureYtApiLoaded();
+  }, [ensureYtApiLoaded]);
+
   const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
     if (!videoId) return;
-    await ensureYtApiLoaded();
+    if (!(window.YT && window.YT.Player)) {
+      await ensureYtApiLoaded();
+    }
     currentYtVideoIdRef.current = videoId;
     if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
       ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
+      try {
+        if (musicVolumeRef.current === 0) {
+          ytPlayerRef.current.mute?.();
+        } else {
+          ytPlayerRef.current.unMute?.();
+          ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
+        }
+        if (ytIntendedStateRef.current === 'playing') {
+          ytPlayerRef.current.playVideo?.();
+        }
+      } catch {}
       return;
     }
     if (!ytContainerRef.current) return;
     ytInitialized.current = true;
     ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
-      height: '1',
-      width: '1',
+      height: '2',
+      width: '2',
       videoId,
       playerVars: {
         autoplay: ytIntendedStateRef.current === 'playing' ? 1 : 0,
@@ -706,14 +779,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         playsinline: 1,
         enablejsapi: 1,
         rel: 0,
-        origin: window.location.origin,
         start: Math.floor(startSeconds),
       },
       events: {
         onReady: (e) => {
           try {
-            e.target.unMute?.();
-            e.target.setVolume?.(80);
+            if (musicVolumeRef.current === 0) {
+              e.target.mute?.();
+            } else {
+              e.target.unMute?.();
+              e.target.setVolume?.(musicVolumeRef.current);
+            }
             if (startSeconds > 0) e.target.seekTo?.(startSeconds, true);
             if (ytIntendedStateRef.current === 'playing') {
               e.target.playVideo?.();
@@ -766,7 +842,17 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (videoId && currentYtVideoIdRef.current !== videoId) {
       currentYtVideoIdRef.current = videoId;
       player.loadVideoById({ videoId, startSeconds: Math.floor(adjustedSeek) });
-      if (state !== 'playing') {
+      try {
+        if (musicVolumeRef.current === 0) {
+          player.mute?.();
+        } else {
+          player.unMute?.();
+          player.setVolume?.(musicVolumeRef.current);
+        }
+      } catch {}
+      if (state === 'playing') {
+        try { player.playVideo?.(); } catch {}
+      } else {
         setTimeout(() => {
           try {
             if (state === 'paused') player.pauseVideo?.();
@@ -783,8 +869,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         player.seekTo?.(adjustedSeek, true);
       }
       if (player.getPlayerState?.() !== 1) {
-        player.unMute?.();
-        player.setVolume?.(80);
+        if (musicVolumeRef.current === 0) {
+          player.mute?.();
+        } else {
+          player.unMute?.();
+          player.setVolume?.(musicVolumeRef.current);
+        }
         player.playVideo?.();
         setTimeout(() => {
           try {
@@ -1015,8 +1105,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (rjAudioEl.current && rjIsListeningRef.current && rjAudioEl.current.paused) {
         rjAudioEl.current.play().catch(() => {});
       }
+      if (ytIntendedStateRef.current === 'playing' && ytPlayerRef.current) {
+        try {
+          if (ytPlayerRef.current.getPlayerState?.() !== 1) {
+            ytPlayerRef.current.playVideo?.();
+          }
+        } catch {}
+      }
     };
-    const iv = setInterval(ensureActive, 4000);
+    const iv = setInterval(ensureActive, 3000);
     window.addEventListener('pointerdown', ensureActive, { passive: true });
     window.addEventListener('keydown', ensureActive, { passive: true });
     return () => {
@@ -1057,37 +1154,40 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   }, [rjIsLive, ytCurrentSongName, rjBroadcast?.rjName]);
 
-  /* ── Visibility change: aggressive resume for BOTH YouTube and voice audio ──
-     Fires when: tab becomes visible again, user switches back from another app. */
+  /* ── Visibility / Focus / PageShow: uninterrupted background audio & quick resume ── */
   useEffect(() => {
-    const handleVisibility = async () => {
-      if (document.visibilityState !== 'visible') return;
+    const handleResume = async () => {
       if (!rjIsLiveRef.current) return;
 
-      /* Resume YouTube */
-      const player = ytPlayerRef.current;
-      if (player && ytIntendedStateRef.current === 'playing') {
-        try {
-          player.playVideo?.();
-        } catch {}
-      }
-
-      /* Resume RJ voice audio element */
-      const audio = rjAudioEl.current;
-      if (audio && !canManageRJ && rjIsListening) {
-        if (audio.paused) {
-          audio.play().catch(() => {});
-        }
-      }
-
-      /* Broadcaster: resume the mixer AudioContext — backgrounding a tab can
-         suspend it, which would silently kill RJ mic + speaker audio for
-         every listener even though nothing looks wrong on the RJ's screen. */
-      if (canManageRJ && rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
+      /* Keep AudioContext awake both on hide and on return */
+      if (rjAudioCtx.current && rjAudioCtx.current.state === 'suspended') {
         rjAudioCtx.current.resume().catch(() => {});
       }
 
-      /* Broadcaster: push fresh seek so listeners resync too */
+      /* Keep YouTube music alive */
+      const player = ytPlayerRef.current;
+      if (player && ytIntendedStateRef.current === 'playing') {
+        try {
+          if (player.getPlayerState?.() !== 1) {
+            player.playVideo?.();
+          }
+        } catch {}
+      }
+
+      /* Keep RJ voice element playing for listeners */
+      const audio = rjAudioEl.current;
+      if (audio && !canManageRJ && rjIsListeningRef.current) {
+        try {
+          audio.volume = Math.max(0, Math.min(1, rjVoiceVolumeRef.current / 100));
+          if (audio.paused) {
+            audio.play().catch(() => {});
+          }
+        } catch {}
+      }
+
+      if (document.visibilityState && document.visibilityState !== 'visible') return;
+
+      /* Broadcaster: push fresh seek on return so listeners stay tightly synced */
       if (canManageRJ && player && ytIntendedStateRef.current === 'playing') {
         try {
           const cur = player.getCurrentTime?.() || 0;
@@ -1100,7 +1200,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         } catch {}
       }
 
-      /* Listener: re-fetch RTDB state to resync YouTube */
+      /* Listener: re-fetch RTDB YouTube state on return */
       if (!canManageRJ) {
         try {
           const snap = await get(ref(rtdb, 'broadcasts/rj/youtube'));
@@ -1113,8 +1213,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    document.addEventListener('visibilitychange', handleResume);
+    window.addEventListener('focus', handleResume);
+    window.addEventListener('pageshow', handleResume);
+    return () => {
+      document.removeEventListener('visibilitychange', handleResume);
+      window.removeEventListener('focus', handleResume);
+      window.removeEventListener('pageshow', handleResume);
+    };
   }, [canManageRJ, syncYouTubePlayer]);
 
   /* ── Public broadcasts Firestore listener (always-on for badge count) ── */
@@ -1710,6 +1816,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           audio.playsInline = true;
           rjAudioEl.current = audio;
         }
+        rjAudioEl.current.volume = Math.max(0, Math.min(1, rjVoiceVolumeRef.current / 100));
         rjAudioEl.current.srcObject = e.streams?.[0] || new MediaStream([e.track]);
         rjAudioEl.current.play().then(() => {
           setRjAudioBlocked(false);
@@ -1831,7 +1938,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     } catch (err) {
       console.error('Mic error:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        bpToast.error('Microphone blocked. Allow mic access in your browser settings (🔒 icon in address bar), then try again.');
+        bpToast.error('Microphone blocked. Allow mic access in your browser settings (lock icon in address bar), then try again.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         bpToast.error('No microphone detected. Please connect a mic and try again.');
       } else if (err.name === 'NotReadableError') {
@@ -1886,39 +1993,59 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   const handleEndBroadcast = async () => {
+    if (endingBroadcast) return;
+    setEndingBroadcast(true);
     const endingName = myName;
-    try {
-      /* Cancel the onDisconnect handler so it doesn't double-remove */
-      if (rjOnDisconnectRef.current) {
-        try { rjOnDisconnectRef.current.cancel(); } catch {}
-        rjOnDisconnectRef.current = null;
-      }
 
-      rjStopAllBroadcasterConnections();
-      /* Clear song queue and announcements when broadcast ends */
-      await Promise.allSettled([
+    /* 1. Cancel onDisconnect synchronously & tear down all local audio/WebRTC/UI instantly */
+    if (rjOnDisconnectRef.current) {
+      try { rjOnDisconnectRef.current.cancel(); } catch {}
+      rjOnDisconnectRef.current = null;
+    }
+
+    rjIsLiveRef.current = false;
+    setRjIsLive(false);
+    setRjBroadcast(null);
+    setListenerCount(0);
+    setSpeakerMap({});
+    setYtUrl('');
+    setYtCurrentSongName('');
+    setYtPlayerState('stopped');
+    ytIntendedStateRef.current = 'stopped';
+    currentYtVideoIdRef.current = null;
+
+    try { if (ytPlayerRef.current?.stopVideo) ytPlayerRef.current.stopVideo(); } catch {}
+    try { rjStopAllBroadcasterConnections(); } catch {}
+    try { stopLocalMic(); } catch {}
+    try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
+
+    bpToast.success('Broadcast ended.');
+
+    /* 2. Persist shutdown to RTDB with timeout & fallback so UI never hangs */
+    try {
+      const cleanupOps = Promise.allSettled([
         remove(ref(rtdb, 'broadcasts/rj/songQueue')),
         remove(ref(rtdb, 'broadcasts/rj/announcements')),
+        remove(ref(rtdb, 'broadcasts/rj')).catch(async () => {
+          await update(ref(rtdb, 'broadcasts/rj'), {
+            isLive: false,
+            endedAt: Date.now(),
+            youtube: null,
+          });
+        }),
       ]);
-      await remove(ref(rtdb, 'broadcasts/rj'));
-
-      setYtUrl('');
-      setYtCurrentSongName('');
-      setYtPlayerState('stopped');
-      ytIntendedStateRef.current = 'stopped';
-      rjIsLiveRef.current = false;
-      if (ytPlayerRef.current?.stopVideo) ytPlayerRef.current.stopVideo();
-      stopLocalMic();
-      /* Clear listening flag for all users — broadcast is over */
-      try { localStorage.removeItem('tingle_rj_was_listening'); } catch {}
-      bpToast.success('Broadcast ended.');
+      await Promise.race([
+        cleanupOps,
+        new Promise((resolve) => setTimeout(resolve, 3500)),
+      ]);
 
       if (roomId) {
         _postSystemMessage(roomId, `${endingName}'s Broadcast has ended.`, 'broadcast_ended', 1 * 60 * 1000);
       }
     } catch (err) {
-      console.error('End broadcast error:', err);
-      bpToast.error('Failed to end broadcast. Please try again.');
+      console.error('End broadcast cleanup warning:', err);
+    } finally {
+      setEndingBroadcast(false);
     }
   };
 
@@ -1970,23 +2097,37 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     localStream.current = stream;
     startMicLevelMeter(stream); // eslint-disable-line no-use-before-define
 
-    /* Create Web Audio mixer — all audio sources (RJ mic + speakers) are routed
-       through this AudioContext and delivered to listeners as one mixed stream.    */
+    /* Create Web Audio mixer — routes RJ mic through controllable GainNode
+       plus a silent keepalive signal so backgrounding doesn't suspend audio. */
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      /* Some browsers create contexts in a 'suspended' state (autoplay
-         policy) even inside a user-gesture-triggered async flow. */
       if (ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
       }
       const dest = ctx.createMediaStreamDestination();
       const rjSrc = ctx.createMediaStreamSource(stream);
-      rjSrc.connect(dest);
+      const micGain = ctx.createGain();
+      micGain.gain.value = Math.max(0, Math.min(1, rjVoiceVolumeRef.current / 100));
+      rjSrc.connect(micGain);
+      micGain.connect(dest);
+
+      /* Silent keepalive oscillator keeps browser WebRTC stream active in background tabs */
+      try {
+        const osc = ctx.createOscillator();
+        const silentGain = ctx.createGain();
+        osc.frequency.value = 1;
+        silentGain.gain.value = 0.0001;
+        osc.connect(silentGain);
+        silentGain.connect(dest);
+        osc.start();
+        rjKeepaliveOscRef.current = osc;
+        rjKeepaliveGainRef.current = silentGain;
+      } catch {}
+
       rjAudioCtx.current = ctx;
       rjMixDest.current = dest;
-      /* Keep a strong reference to RJ's own source node too, for the same
-         garbage-collection reason as speaker source nodes below. */
       rjLocalSourceNode.current = rjSrc;
+      rjMicGainNode.current = micGain;
     } catch (e) {
       console.warn('RJ audio mixer init failed — falling back to direct stream:', e);
     }
@@ -2004,6 +2145,23 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (rjLocalSourceNode.current) {
       try { rjLocalSourceNode.current.disconnect(); } catch {}
       rjLocalSourceNode.current = null;
+    }
+    if (rjMicGainNode.current) {
+      try { rjMicGainNode.current.disconnect(); } catch {}
+      rjMicGainNode.current = null;
+    }
+    if (rjKeepaliveOscRef.current) {
+      try { rjKeepaliveOscRef.current.stop(); rjKeepaliveOscRef.current.disconnect(); } catch {}
+      rjKeepaliveOscRef.current = null;
+    }
+    if (rjKeepaliveGainRef.current) {
+      try { rjKeepaliveGainRef.current.disconnect(); } catch {}
+      rjKeepaliveGainRef.current = null;
+    }
+    if (rjAudioCtx.current) {
+      try { rjAudioCtx.current.close(); } catch {}
+      rjAudioCtx.current = null;
+      rjMixDest.current = null;
     }
   };
 
@@ -2059,20 +2217,21 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   const handleYtLoad = async () => {
     const vid = extractYtId(ytUrl);
-    if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube link.'); return; }
+    if (!vid) { bpToast.warning('Invalid YouTube URL. Paste a full YouTube or YouTube Music link.'); return; }
     let songName = `YouTube Track (${vid})`;
     const nowMs = Date.now();
-    ytIntendedStateRef.current = 'paused';
+    /* Set intended state to playing BEFORE initYtPlayer inside user click gesture so autoplay works cleanly */
+    ytIntendedStateRef.current = 'playing';
+    setYtCurrentSongName(songName);
+    setYtPlayerState('playing');
     initYtPlayer(vid, 0);
-    await update(ref(rtdb, 'broadcasts/rj/youtube'), {
+    update(ref(rtdb, 'broadcasts/rj/youtube'), {
       videoId: vid,
-      state: 'paused',
+      state: 'playing',
       seekTo: 0,
       songName,
       updatedAt: nowMs,
     }).catch(() => {});
-    setYtCurrentSongName(songName);
-    setYtPlayerState('paused');
     try {
       const resp = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${vid}`)}&format=json`);
       if (resp.ok) {
@@ -2556,7 +2715,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       });
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        bpToast.error('Microphone blocked. Click the 🔒 icon in your browser address bar to allow mic access.');
+        bpToast.error('Microphone blocked. Click the lock icon in your browser address bar to allow mic access.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         bpToast.error('No microphone found. Connect a mic and try again.');
       } else if (err.name === 'NotReadableError') {
@@ -2792,10 +2951,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             )}
           </div>
           {rjIsLive
-            ? <button className="bp-golive-btn end" onClick={handleEndBroadcast}><StopIcon color="white" /> End</button>
-            : <button className="bp-golive-btn start" onClick={handleGoLive} disabled={goingLive}>
+            ? (
+              <button className="bp-golive-btn end" onClick={handleEndBroadcast} disabled={endingBroadcast}>
+                <StopIcon color="white" /> {endingBroadcast ? 'Ending...' : 'End'}
+              </button>
+            )
+            : (
+              <button className="bp-golive-btn start" onClick={handleGoLive} disabled={goingLive}>
                 <RadioWaveIcon color="white" /> {goingLive ? 'Starting...' : 'Go Live'}
               </button>
+            )
           }
         </div>
       </div>
@@ -2870,7 +3035,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             <div className="bp-yt-url-row">
               <input
                 className="bp-input"
-                placeholder="YouTube URL..."
+                placeholder="YouTube or YT Music URL..."
                 value={ytUrl}
                 onChange={e => setYtUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleYtLoad()}
@@ -2878,16 +3043,61 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               <button className="bp-yt-load-btn" onClick={handleYtLoad}>Load</button>
             </div>
             {ytCurrentSongName && (
-              <div className="bp-song-controls">
-                <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}><SkipPrevIcon /></button>
-                {ytPlayerState === 'playing'
-                  ? <button className="bp-song-btn play-main" onClick={() => handleYtControl('pause')}><PauseIcon /></button>
-                  : <button className="bp-song-btn play-main" onClick={() => handleYtControl('play')}><PlayIcon /></button>
-                }
-                <button className="bp-song-btn" onClick={() => handleYtControl('skipnext')}><SkipNextIcon /></button>
-                <button className="bp-song-btn danger" onClick={() => handleYtControl('stop')}><StopIcon /></button>
-              </div>
+              <>
+                <div className="bp-yt-now-playing">
+                  <MusicNoteIcon />
+                  <span className="bp-yt-now-title">{ytCurrentSongName}</span>
+                  <span className={`bp-yt-state-pill ${ytPlayerState === 'playing' ? 'playing' : ''}`}>
+                    {ytPlayerState === 'playing' ? 'PLAYING' : ytPlayerState === 'paused' ? 'PAUSED' : 'READY'}
+                  </span>
+                </div>
+                <div className="bp-song-controls">
+                  <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}><SkipPrevIcon /></button>
+                  {ytPlayerState === 'playing'
+                    ? <button className="bp-song-btn play-main" onClick={() => handleYtControl('pause')}><PauseIcon /></button>
+                    : <button className="bp-song-btn play-main" onClick={() => handleYtControl('play')}><PlayIcon /></button>
+                  }
+                  <button className="bp-song-btn" onClick={() => handleYtControl('skipnext')}><SkipNextIcon /></button>
+                  <button className="bp-song-btn danger" onClick={() => handleYtControl('stop')}><StopIcon /></button>
+                </div>
+              </>
             )}
+          </div>
+
+          {/* Dual Independent Volume Mixer (RJ Voice + Music) */}
+          <div className="bp-vol-mixer">
+            <div className="bp-vol-row">
+              <span className="bp-vol-label">
+                <MicIcon muted={rjVoiceVolume === 0 || micMuted} />
+                RJ Voice
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={rjVoiceVolume}
+                onChange={e => setRjVoiceVolume(Number(e.target.value))}
+                className="bp-vol-slider"
+                aria-label="RJ Voice Volume"
+              />
+              <span className="bp-vol-val">{rjVoiceVolume}%</span>
+            </div>
+            <div className="bp-vol-row">
+              <span className="bp-vol-label">
+                <MusicNoteIcon />
+                Music
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={musicVolume}
+                onChange={e => setMusicVolume(Number(e.target.value))}
+                className="bp-vol-slider bp-vol-slider--music"
+                aria-label="Music Volume"
+              />
+              <span className="bp-vol-val">{musicVolume}%</span>
+            </div>
           </div>
 
           {Object.keys(speakerMap).length > 0 && (
@@ -3050,8 +3260,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 style={{ marginLeft: 'auto', padding: '5px 10px', fontSize: 11 }}
                 onClick={() => {
                   try {
-                    ytPlayerRef.current?.unMute?.();
-                    ytPlayerRef.current?.setVolume?.(80);
+                    if (musicVolumeRef.current === 0) {
+                      ytPlayerRef.current?.mute?.();
+                    } else {
+                      ytPlayerRef.current?.unMute?.();
+                      ytPlayerRef.current?.setVolume?.(musicVolumeRef.current);
+                    }
                     ytPlayerRef.current?.playVideo?.();
                     setYtAudioBlocked(false);
                   } catch {}
@@ -3074,6 +3288,42 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               {fmtTime(broadcastDuration)}
             </div>
           )}
+        </div>
+
+        {/* Listener Dual Volume Sliders (RJ Voice + Music) */}
+        <div className="bp-vol-mixer bp-vol-mixer--listener">
+          <div className="bp-vol-row">
+            <span className="bp-vol-label">
+              <MicIcon muted={rjVoiceVolume === 0} />
+              RJ Voice
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={rjVoiceVolume}
+              onChange={e => setRjVoiceVolume(Number(e.target.value))}
+              className="bp-vol-slider"
+              aria-label="RJ Voice Volume"
+            />
+            <span className="bp-vol-val">{rjVoiceVolume}%</span>
+          </div>
+          <div className="bp-vol-row">
+            <span className="bp-vol-label">
+              <MusicNoteIcon />
+              Music
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={musicVolume}
+              onChange={e => setMusicVolume(Number(e.target.value))}
+              className="bp-vol-slider bp-vol-slider--music"
+              aria-label="Music Volume"
+            />
+            <span className="bp-vol-val">{musicVolume}%</span>
+          </div>
         </div>
 
         {!isGuest && !canManageRJ && (
@@ -3210,8 +3460,10 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               boxShadow: '0 2px 12px rgba(109,40,217,0.13)',
             }}
           >
-            {/* Wave icon */}
-            <span style={{ fontSize: 16, flexShrink: 0 }}>👋</span>
+            {/* Join wave SVG icon */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: '#a78bfa' }}>
+              <RadioWaveIcon />
+            </span>
             {/* Text */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: '#a78bfa' }}>{f.name}</span>
@@ -3237,15 +3489,19 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             {/* Dismiss X */}
             <button
               onClick={() => onDismiss(f.id)}
+              aria-label="Dismiss"
               style={{
                 width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
                 border: '1px solid rgba(139,92,246,0.28)',
                 background: 'rgba(139,92,246,0.12)',
                 color: '#a78bfa', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, lineHeight: 1,
               }}
-            >✕</button>
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
         ))}
       </div>
@@ -3298,11 +3554,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           <div className="bp-speaker-status">
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
               <MicIcon muted={speakerMicMuted} />
-              {speakerConnecting ? 'Connecting to Stage…' : 'You are on Stage 🎙️'}
+              {speakerConnecting ? 'Connecting to Stage...' : 'You are on Stage'}
             </h3>
             <p style={{ marginBottom: 0 }}>
               {speakerConnecting
-                ? 'Setting up your microphone — please wait…'
+                ? 'Setting up your microphone — please wait...'
                 : speakerMicMuted
                   ? 'Your mic is muted. Tap below to unmute.'
                   : 'Your voice is live! Everyone on the broadcast can hear you.'}
@@ -3318,8 +3574,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               background: speakerMicMuted ? 'rgba(248,113,113,0.1)' : 'rgba(52,211,153,0.1)',
               border: `1px solid ${speakerMicMuted ? 'rgba(248,113,113,0.2)' : 'rgba(52,211,153,0.2)'}`,
             }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: speakerMicMuted ? '#f87171' : '#34d399' }}>
-                {speakerMicMuted ? '🔇 MIC OFF' : '🎙️ MIC LIVE'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: speakerMicMuted ? '#f87171' : '#34d399' }}>
+                <MicIcon muted={speakerMicMuted} />
+                {speakerMicMuted ? 'MIC OFF' : 'MIC LIVE'}
               </span>
             </div>
           )}
@@ -3329,10 +3586,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             {!speakerConnecting && (
               <button
                 className={`bp-request-btn ${speakerMicMuted ? 'join' : 'cancel'}`}
-                style={{ flex: 1 }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 onClick={handleSpeakerMicToggle}
               >
-                {speakerMicMuted ? '🎙️ Unmute Mic' : '🔇 Mute Mic'}
+                <MicIcon muted={!speakerMicMuted} />
+                {speakerMicMuted ? 'Unmute Mic' : 'Mute Mic'}
               </button>
             )}
             {/* Leave stage */}
@@ -3918,7 +4176,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                           color: pubConnState === 'connected' ? '#34d399' : pubConnState === 'failed' ? '#f87171' : '#fbbf24',
                         }}>
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', animation: pubConnState === 'connecting' ? 'bp-pulse 1s infinite' : 'none' }} />
-                          {pubConnState === 'connected' ? '● Live' : pubConnState === 'failed' ? '✕ Failed' : '○ Connecting'}
+                          {pubConnState === 'connected' ? 'Live' : pubConnState === 'failed' ? 'Failed' : 'Connecting'}
                         </span>
                       </div>
                     )}

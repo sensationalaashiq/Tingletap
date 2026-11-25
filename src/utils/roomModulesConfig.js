@@ -128,3 +128,114 @@ export const classifyShowStatus = (show, nowDate = new Date()) => {
 
 export const SILENT_WATCH_STORAGE_KEY = (uid) => `tl_silent_watch_${uid || 'anon'}`;
 export const SHOW_REMINDERS_STORAGE_KEY = 'tl_show_reminders_v1';
+
+// Curated emoji-free quick presets for Mini-Games & Polls
+export const GAME_EXAMPLES = {
+  poll: [
+    {
+      label: 'Late Night Vibe',
+      title: 'What music vibe fits the room tonight?',
+      options: ['Lo-Fi Acoustic', 'Retro Bollywood', 'Synthwave Pop', 'Sufi Lounge'],
+      durationSec: 60,
+    },
+    {
+      label: 'Weekend Watch',
+      title: 'Pick tonight’s group pick:',
+      options: ['Sci-Fi Thriller', 'Comedy Classic', 'Anime Premiere', 'Mystery Series'],
+      durationSec: 60,
+    },
+    {
+      label: 'Quick Icebreaker',
+      title: 'Coffee or Chai for late-night chats?',
+      options: ['Masala Chai', 'Iced Espresso', 'Hot Chocolate'],
+      durationSec: 45,
+    },
+  ],
+  trivia: [
+    {
+      label: 'World Capital',
+      title: 'Which city is the official capital of Australia?',
+      options: ['Sydney', 'Melbourne', 'Canberra', 'Perth'],
+      correctIndex: 2,
+      durationSec: 25,
+    },
+    {
+      label: 'Space Fact',
+      title: 'Which planet spins in the opposite direction to most planets?',
+      options: ['Mars', 'Venus', 'Neptune', 'Saturn'],
+      correctIndex: 1,
+      durationSec: 25,
+    },
+    {
+      label: 'Music Legend',
+      title: 'How many keys are on a standard full-size piano?',
+      options: ['76 Keys', '84 Keys', '88 Keys', '92 Keys'],
+      correctIndex: 2,
+      durationSec: 20,
+    },
+  ],
+  wheel: [
+    {
+      label: 'Lounge Prompts',
+      title: 'Spin the Lounge Wheel',
+      entries: ['Sing a Chorus', 'Share a Fact', 'Truth Prompt', 'Send a Song', 'Compliment Next', 'Wildcard Pick'],
+    },
+    {
+      label: 'Squad Rewards',
+      title: 'Room Spotlight Spin',
+      entries: ['Next RJ Song', 'Topic Host', 'Shoutout Star', 'Trivia Captain', 'Double Dare'],
+    },
+    {
+      label: 'Quick Icebreaker',
+      title: 'Icebreaker Roulette',
+      entries: ['Travel Dream', 'Favorite Movie', 'Hidden Talent', 'First Concert', 'Comfort Food'],
+    },
+  ],
+  atlas: [
+    {
+      label: 'World Cities',
+      title: 'World Cities & Countries Atlas',
+      seedPlace: 'Mumbai',
+      durationSec: 60,
+    },
+    {
+      label: 'Capitals Rush',
+      title: 'Global Capitals Atlas Chain',
+      seedPlace: 'Tokyo',
+      durationSec: 45,
+    },
+    {
+      label: 'India Tour',
+      title: 'Indian Cities & States Atlas',
+      seedPlace: 'Jaipur',
+      durationSec: 60,
+    },
+  ],
+  word: [
+    {
+      label: 'Scramble: Aurora',
+      mode: 'scramble',
+      title: 'Unscramble the Celestial Word',
+      targetWord: 'AURORA',
+      hint: 'Natural polar light display in the night sky',
+      durationSec: 45,
+    },
+    {
+      label: 'Scramble: Melody',
+      mode: 'scramble',
+      title: 'Decode the Musical Term',
+      targetWord: 'SYMPHONY',
+      hint: 'Elaborate composition for a full orchestra',
+      durationSec: 45,
+    },
+    {
+      label: 'Word Chain: Star',
+      mode: 'chain',
+      title: 'Fast English Word Chain',
+      targetWord: 'STARLIGHT',
+      hint: 'Next word must begin with the last letter',
+      durationSec: 60,
+    },
+  ],
+};
+

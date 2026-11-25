@@ -293,7 +293,7 @@ service cloud.firestore {
                       && !isKickedFrom(request.auth.uid, roomId)
                       && request.resource.data.creatorUid == request.auth.uid
                       && request.resource.data.roomId == roomId
-                      && request.resource.data.type in ['poll', 'trivia', 'wheel']
+                      && request.resource.data.type in ['poll', 'trivia', 'wheel', 'atlas', 'word']
                       && request.resource.data.title is string
                       && request.resource.data.title.size() > 0
                       && request.resource.data.title.size() <= 140;
@@ -337,6 +337,27 @@ service cloud.firestore {
                                .hasOnly([
                                  'spinSeq', 'winnerIndex', 'winnerLabel',
                                  'spinStartedAtMs', 'targetAngle', 'status', 'updatedAt'
+                               ])
+                        )
+                        || (
+                          resource.data.type == 'atlas'
+                          && resource.data.get('status', 'active') == 'active'
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                               .hasOnly([
+                                 'entries', 'usedKeys', 'currentPlace', 'requiredLetter',
+                                 'lastPlayerUid', 'lastPlayerName', 'scores', 'round',
+                                 'endsAtMs', 'updatedAt'
+                               ])
+                        )
+                        || (
+                          resource.data.type == 'word'
+                          && resource.data.get('status', 'active') == 'active'
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                               .hasOnly([
+                                 'attemptCount', 'solvedBy', 'winnerLocked',
+                                 'firstCorrectUid', 'firstCorrectName', 'firstCorrectIdentity',
+                                 'firstCorrectAtMs', 'entries', 'usedKeys', 'currentWord',
+                                 'requiredLetter', 'scores', 'round', 'endsAtMs', 'updatedAt'
                                ])
                         )
                       );
@@ -864,6 +885,14 @@ service cloud.firestore {
                             && request.resource.data.shows is list
                             && request.resource.data.shows.size() <= 40;
       allow delete: if isStaff();
+    }
+
+    // ================================================================
+    // GAMES & POLLS ACCESS CONTROL (Owner-managed)
+    // ================================================================
+    match /settings/gamesAccess {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isOwner();
     }
 
     // ================================================================

@@ -1363,6 +1363,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     });
     const silentWatchRef = useRef(silentWatchActive);
+    const reconcilePresencesRef = useRef(null);
+    const [gamesAllowedUids, setGamesAllowedUids] = useState([]);
     const [isGamesPickerOpen, setIsGamesPickerOpen] = useState(false);
     const silentBannerRef = useRef(null);
     const [blockedUsers, setBlockedUsers] = useState([]);
@@ -1699,6 +1701,29 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
     }, [roomId]);
 
+    // Games & Polls Owner-controlled access list
+    useEffect(() => {
+        const authUid = auth.currentUser?.uid || firebaseAuthUid;
+        if (!authUid) {
+            setGamesAllowedUids([]);
+            return;
+        }
+        const gaRef = doc(db, 'settings', 'gamesAccess');
+        const unsubGa = onSnapshot(
+            gaRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setGamesAllowedUids(Array.isArray(data?.allowedUids) ? data.allowedUids.filter(Boolean) : []);
+                } else {
+                    setGamesAllowedUids([]);
+                }
+            },
+            () => {}
+        );
+        return () => unsubGa();
+    }, [firebaseAuthUid]);
+
     // Owner-only Silent Watch Firestore sync (all other roles strictly forced off)
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
@@ -1724,6 +1749,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                     silentWatchRef.current = active;
                     setSilentWatchActive(active);
                     try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), active ? 'true' : 'false'); } catch {}
+                } else {
+                    silentWatchRef.current = false;
+                    setSilentWatchActive(false);
+                    try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), 'false'); } catch {}
                 }
             },
             () => {}
@@ -3308,12 +3337,13 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!authUid) return;
 
         const rtdbMinimal = { ...minimalStatus, uid: authUid, last_changed: rtdbServerTimestamp() };
+        window._currentStatusData = window._currentStatusData || { ...rtdbMinimal };
         const userStatusRef = ref(rtdb, `status/${authUid}`);
         set(userStatusRef, rtdbMinimal).catch(err => console.warn('[Presence] status PART 0 write failed:', err?.message));
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         set(roomPresenceRef, rtdbMinimal).catch(err => console.warn('[Presence] room_presence PART 0 write failed:', err?.message));
         set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
-    }, [roomId, user?.uid, firebaseAuthUid]);
+    }, [roomId, user?.uid, firebaseAuthUid, silentWatchActive, loggedInUserProfile?.uid]);
 
     // ── PRESENCE PART 1: Write full online status whenever profile + auth ready ─
     useEffect(() => {
@@ -3359,7 +3389,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
         set(roomPresenceRef, statusData).catch(err => console.warn('[Presence] room_presence PART 1 write failed:', err?.message));
         set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
-    }, [roomId, user?.uid, firebaseAuthUid,
+    }, [roomId, user?.uid, firebaseAuthUid, silentWatchActive,
+        loggedInUserProfile?.uid,
         loggedInUserProfile?.displayName,
         loggedInUserProfile?.role,
         loggedInUserProfile?.gender,
@@ -3386,28 +3417,33 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!authUid || (!user && !(isGuest && guestData)) || !roomId) return;
 
         const userStatusRef = ref(rtdb, `status/${authUid}`);
-        onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() });
-
         const roomPresenceRef = ref(rtdb, `room_presence/${roomId}/${authUid}`);
-        onDisconnect(roomPresenceRef).remove();
-
         const roomCountRef = ref(rtdb, `roomCounts/${roomId}/${authUid}`);
-        onDisconnect(roomCountRef).remove();
 
-        const heartbeatInterval = setInterval(() => {
+        const pushOnlineNow = () => {
             if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current)) return;
             const cached = window._currentStatusData;
             if (cached) {
-                const fresh = { ...cached, uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() };
+                const fresh = { ...cached, state: 'online', uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() };
                 window._currentStatusData = fresh;
                 update(userStatusRef, fresh).catch(() => {});
                 set(roomPresenceRef, fresh).catch(() => {});
             } else {
-                update(userStatusRef, { state: 'online', currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
-                update(roomPresenceRef, { state: 'online', currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
+                update(userStatusRef, { state: 'online', uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
+                update(roomPresenceRef, { state: 'online', uid: authUid, currentRoomId: roomId, last_changed: rtdbServerTimestamp() }).catch(() => {});
             }
             set(roomCountRef, { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
-        }, 20000);
+        };
+
+        const unsubConn = onValue(ref(rtdb, '.info/connected'), (snap) => {
+            if (snap.val() !== true) return;
+            onDisconnect(userStatusRef).update({ state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() });
+            onDisconnect(roomPresenceRef).remove();
+            onDisconnect(roomCountRef).remove();
+            pushOnlineNow();
+        });
+
+        const heartbeatInterval = setInterval(pushOnlineNow, 20000);
 
         const handleUnloadCleanup = () => {
             remove(roomPresenceRef).catch(() => {});
@@ -3418,6 +3454,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         window.addEventListener('beforeunload', handleUnloadCleanup);
 
         return () => {
+            unsubConn();
             clearInterval(heartbeatInterval);
             window.removeEventListener('pagehide', handleUnloadCleanup);
             window.removeEventListener('beforeunload', handleUnloadCleanup);
@@ -3430,7 +3467,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
             }, 60);
         };
-    }, [roomId, user?.uid, firebaseAuthUid]);
+    }, [roomId, user?.uid, firebaseAuthUid, silentWatchActive]);
 
     // Global offline cleanup runs ONLY when actually leaving HomePage completely (StrictMode-safe)
     useEffect(() => {
@@ -4474,7 +4511,7 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
 
         const STALE_MS = 70 * 1000;
-        const INITIAL_STALE_MS = 10 * 60 * 1000;
+        const INITIAL_STALE_MS = 90 * 1000;
         let hasServerOffset = false;
         let roomPresRaw = {};
         let globalStatusRaw = {};
@@ -4482,7 +4519,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const getServerNow = () => Date.now() + (serverTimeOffsetRef.current || 0);
 
-        // Strict freshness using server time once offset arrives; wider window before offset settles prevents false drops on skewed clocks
+        // Strict freshness using server time once offset arrives; 90s initial window prevents stale ghosts
         const isFreshOnline = (p, serverNow) => {
             if (!p || p.state !== 'online') return false;
             if (typeof p.last_changed !== 'number' || p.last_changed <= 0) return false;
@@ -4494,8 +4531,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             const serverNow = getServerNow();
             const merged = {};
 
-            // 1. room_presence/${roomId} is authoritative for who is actively in this room
-            // (prevents departed/disconnected guests in global status/ from lingering as ghosts)
+            // 1. Primary source: room_presence/${roomId}
             Object.entries(roomPresRaw || {}).forEach(([uid, p]) => {
                 if (!isFreshOnline(p, serverNow)) return;
                 const g = globalStatusRaw?.[uid];
@@ -4504,10 +4540,23 @@ const HomePage = ({ user, roomIdOverride }) => {
                     if (gTs > p.last_changed) return;
                 }
                 const mergedGlobal = (g && g.state === 'online' && g.currentRoomId === roomId && isFreshOnline(g, serverNow)) ? g : null;
-                merged[uid] = mergedGlobal ? { ...mergedGlobal, ...p } : { ...p };
+                merged[uid] = mergedGlobal ? { ...mergedGlobal, ...p, uid } : { ...p, uid };
             });
 
-            // 2. Keep self entry only if confirmed locally online (and NOT in Owner Silent Watch stealth)
+            // 2. Fallback / parallel source: global status/ scoped to currentRoomId === roomId
+            // Ensures mutual visibility even if room_presence/ writes/reads fail RTDB rules or lag
+            Object.entries(globalStatusRaw || {}).forEach(([uid, g]) => {
+                if (merged[uid]) return;
+                if (!g || g.currentRoomId !== roomId || !isFreshOnline(g, serverNow)) return;
+                const r = roomPresRaw?.[uid];
+                if (r && r.state !== 'online') {
+                    const rTs = typeof r.last_changed === 'number' ? r.last_changed : 0;
+                    if (rTs > g.last_changed) return;
+                }
+                merged[uid] = { ...g, uid };
+            });
+
+            // 3. Keep self entry only if confirmed locally online (and NOT in Owner Silent Watch stealth)
             if (silentWatchRef.current && isOwnerRole(loggedInUserProfileRef.current)) {
                 delete merged[authUid];
             } else if (!merged[authUid] && userOnlineStatusesRef.current?.[authUid]?.state === 'online') {
@@ -4546,6 +4595,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             });
             window.onlineUsers = onlineUsersSet;
         };
+        reconcilePresencesRef.current = reconcilePresences;
 
         const offsetRef = ref(rtdb, '.info/serverTimeOffset');
         const unsubOffset = onValue(offsetRef, (snap) => {
@@ -4611,6 +4661,7 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         return () => {
             disposed = true;
+            reconcilePresencesRef.current = null;
             clearInterval(evictInterval);
             clearTimeout(roomRetryTimer);
             clearTimeout(statusRetryTimer);
@@ -4619,6 +4670,11 @@ const HomePage = ({ user, roomIdOverride }) => {
             unsubStatus();
         };
     }, [roomId, firebaseAuthUid, user?.uid]);
+
+    // Re-reconcile immediately when Owner Silent Watch state or profile role settles
+    useEffect(() => {
+        reconcilePresencesRef.current?.();
+    }, [silentWatchActive, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
 
     
 
@@ -9306,21 +9362,44 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <span className="hp-attach-label">Tag</span>
                     </button>
 
-                    {/* ── 7. Games & Polls ── */}
-                    <button
-                        type="button"
-                        className="hp-attach-btn"
-                        title="Mini-Games & Polls"
-                        onClick={() => {
-                            setIsAttachmentDropdownOpen(false);
-                            setIsGamesPickerOpen(true);
-                        }}
-                    >
-                        <span className="hp-attach-icon-wrap">
-                            <ActivitySparkIcon size={20} color="#ec4899" />
-                        </span>
-                        <span className="hp-attach-label">Games</span>
-                    </button>
+                    {/* ── 7. Games & Polls (Owner unlocked by default; others require Owner grant) ── */}
+                    {(() => {
+                        const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
+                        const hasGamesAccess = isOwnerRole(loggedInUserProfile)
+                            || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
+                        if (!hasGamesAccess) {
+                            return (
+                                <button
+                                    type="button"
+                                    className="hp-attach-btn"
+                                    title="Mini-Games & Polls (Owner Permission Required)"
+                                    onClick={() => lockToast('Mini-Games & Polls is locked. Ask an Owner to grant you access!')}
+                                >
+                                    <span className="hp-attach-icon-wrap" style={{ opacity: 0.55, position: 'relative' }}>
+                                        <ActivitySparkIcon size={20} color="#ec4899" />
+                                        <LockBadge />
+                                    </span>
+                                    <span className="hp-attach-label" style={{ color: '#ef4444' }}>Games</span>
+                                </button>
+                            );
+                        }
+                        return (
+                            <button
+                                type="button"
+                                className="hp-attach-btn"
+                                title="Mini-Games & Polls"
+                                onClick={() => {
+                                    setIsAttachmentDropdownOpen(false);
+                                    setIsGamesPickerOpen(true);
+                                }}
+                            >
+                                <span className="hp-attach-icon-wrap">
+                                    <ActivitySparkIcon size={20} color="#ec4899" />
+                                </span>
+                                <span className="hp-attach-label">Games</span>
+                            </button>
+                        );
+                    })()}
                 </div>
                 );
             })()}

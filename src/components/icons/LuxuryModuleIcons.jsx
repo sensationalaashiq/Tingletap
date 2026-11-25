@@ -228,3 +228,76 @@ export const ExitWatchIcon = ({ size = 15, color = 'currentColor' }) => (
     <path d="M6 6l12 12M18 6L6 18" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+
+export const AtlasGlobeIcon = ({ size = 18, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.65" />
+    <ellipse cx="12" cy="12" rx="4" ry="9" stroke={color} strokeWidth="1.45" />
+    <path d="M3.5 9.5h17M3.5 14.5h17" stroke={color} strokeWidth="1.45" strokeLinecap="round" />
+  </svg>
+);
+
+export const WordTilesIcon = ({ size = 18, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="3" y="4" width="8.5" height="8.5" rx="2" stroke={color} strokeWidth="1.6" />
+    <rect x="12.5" y="11.5" width="8.5" height="8.5" rx="2" stroke={color} strokeWidth="1.6" />
+    <path d="M5.75 9.8L7.25 6.4l1.5 3.4M6.2 8.9h2.1" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M15.1 14.2h3.3l-3.3 3.6h3.3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const TimerClockIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="12" cy="13" r="8" stroke={color} strokeWidth="1.65" />
+    <path d="M12 9v4l2.5 1.8M9.5 3h5M12 3v2" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const LockShieldIcon = ({ size = 15, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 2.8l7.5 3.2v5.4c0 4.9-3.2 8.7-7.5 9.8-4.3-1.1-7.5-4.9-7.5-9.8V6L12 2.8Z" stroke={color} strokeWidth="1.65" strokeLinejoin="round" />
+    <rect x="9" y="11" width="6" height="4.8" rx="1.2" stroke={color} strokeWidth="1.5" />
+    <path d="M10.2 11V9.5a1.8 1.8 0 0 1 3.6 0V11" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+export const UnlockSparkIcon = ({ size = 15, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 2.8l7.5 3.2v5.4c0 4.9-3.2 8.7-7.5 9.8-4.3-1.1-7.5-4.9-7.5-9.8V6L12 2.8Z" stroke={color} strokeWidth="1.65" strokeLinejoin="round" />
+    <path d="M9 12.2l2.1 2.1 4-4.2" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const ExampleMagicIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    <path d="M18.5 15l.8 2 .8.3-.8.3-.8 2-.8-2-.8-.3.8-.3.8-2Z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
+  </svg>
+);
+
+export const CheckTickIcon = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 12.5l4.5 4.5L19 7.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const SearchLensIcon = ({ size = 15, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="11" cy="11" r="6.8" stroke={color} strokeWidth="1.7" />
+    <path d="M16.2 16.2L20.5 20.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+export const CrownRoyalIcon = ({ size = 15, color = '#fbbf24' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M3.5 17.5L5.5 7l4.8 4.2L12 5l1.7 6.2L18.5 7l2 10.5H3.5Z" stroke={color} strokeWidth="1.65" strokeLinejoin="round" />
+    <path d="M5 20h14" stroke={color} strokeWidth="1.65" strokeLinecap="round" />
+  </svg>
+);
+
+export const SendPaperPlaneIcon = ({ size = 15, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M21 3L10 14M21 3l-6.5 18-3.8-7.2L3.5 10 21 3Z" stroke={color} strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+

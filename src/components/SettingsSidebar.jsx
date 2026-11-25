@@ -16,7 +16,7 @@ import {
 import LiveAvatarImg from './LiveAvatar';
 import { auth, db, rtdb } from '../firebase/config';
 import { ref as rtdbRef, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
-import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, query, collection, where, writeBatch, getDoc, setDoc, onSnapshot, limit, serverTimestamp } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import StatusModal from './StatusModal';
@@ -43,6 +43,11 @@ import {
   LockPresetIcon,
   ShroudedEyeIcon,
   ScheduleCalendarIcon,
+  ActivitySparkIcon,
+  LockShieldIcon,
+  UnlockSparkIcon,
+  SearchLensIcon,
+  CrownRoyalIcon,
 } from './icons/LuxuryModuleIcons';
 
 // Resolves a uid's CURRENT username live so friend/blocked/team lists
@@ -103,6 +108,12 @@ const SettingsSidebar = ({
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false });
     const [teamMembers, setTeamMembers] = useState([]);
     const teamUnsubRef = useRef(null);
+    const [gamesAllowedUids, setGamesAllowedUids] = useState([]);
+    const [gamesAllowedMeta, setGamesAllowedMeta] = useState({});
+    const [gamesSearchTerm, setGamesSearchTerm] = useState('');
+    const [gamesDirectory, setGamesDirectory] = useState([]);
+    const [gamesDirLoading, setGamesDirLoading] = useState(false);
+    const [gamesUpdatingUid, setGamesUpdatingUid] = useState('');
 
     // TingleBot settings state
     // Style-tab inline colour picker open state
@@ -454,6 +465,106 @@ const SettingsSidebar = ({
         teamUnsubRef.current = stopAll;
         return stopAll;
     }, [loggedInUserProfile?.uid, loggedInUserProfile?.role]);
+
+    // Owner-only live subscription + user directory loader for Games & Polls Access Control
+    useEffect(() => {
+        if (!isOpen || !isOwnerRole(loggedInUserProfile)) return;
+        const gaRef = doc(db, 'settings', 'gamesAccess');
+        const unsub = onSnapshot(
+            gaRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data() || {};
+                    setGamesAllowedUids(Array.isArray(data.allowedUids) ? data.allowedUids.filter(Boolean) : []);
+                    setGamesAllowedMeta(data.allowedUsersMeta && typeof data.allowedUsersMeta === 'object' ? data.allowedUsersMeta : {});
+                } else {
+                    setGamesAllowedUids([]);
+                    setGamesAllowedMeta({});
+                }
+            },
+            () => {}
+        );
+        return () => unsub();
+    }, [isOpen, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
+
+    useEffect(() => {
+        if (!isOpen || activeTab !== 'general' || !isOwnerRole(loggedInUserProfile)) return;
+        if (gamesDirectory.length > 0) return;
+        let cancelled = false;
+        setGamesDirLoading(true);
+        getDocs(query(collection(db, 'users'), limit(400)))
+            .then((snap) => {
+                if (cancelled) return;
+                const list = [];
+                snap.forEach((d) => {
+                    const u = { ...d.data(), uid: d.id };
+                    if (isGuestUser(u)) return;
+                    if (isOwnerRole(u)) return; // Owners are always unlocked
+                    list.push(u);
+                });
+                list.sort((a, b) => (a.displayName || a.username || '').localeCompare(b.displayName || b.username || ''));
+                setGamesDirectory(list);
+            })
+            .catch(() => {
+                // Fallback to publicProfiles if users query fails
+                getDocs(query(collection(db, 'publicProfiles'), limit(400)))
+                    .then((snap) => {
+                        if (cancelled) return;
+                        const list = [];
+                        snap.forEach((d) => {
+                            const u = { ...d.data(), uid: d.id };
+                            if (isGuestUser(u) || isOwnerRole(u)) return;
+                            list.push(u);
+                        });
+                        list.sort((a, b) => (a.displayName || a.username || '').localeCompare(b.displayName || b.username || ''));
+                        setGamesDirectory(list);
+                    })
+                    .catch(() => {});
+            })
+            .finally(() => {
+                if (!cancelled) setGamesDirLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [isOpen, activeTab, loggedInUserProfile?.role, loggedInUserProfile?.badge, gamesDirectory.length]);
+
+    const handleToggleGamesUserAccess = async (targetUser) => {
+        const targetUid = targetUser?.uid;
+        if (!targetUid || !isOwnerRole(loggedInUserProfile)) return;
+        setGamesUpdatingUid(targetUid);
+        const currentlyAllowed = gamesAllowedUids.includes(targetUid);
+        const nextUids = currentlyAllowed
+            ? gamesAllowedUids.filter((id) => id !== targetUid)
+            : [...new Set([...gamesAllowedUids, targetUid])];
+        const nextMeta = { ...(gamesAllowedMeta || {}) };
+        if (currentlyAllowed) {
+            delete nextMeta[targetUid];
+        } else {
+            nextMeta[targetUid] = {
+                uid: targetUid,
+                displayName: targetUser.displayName || targetUser.username || 'User',
+                username: targetUser.username || '',
+                role: targetUser.role || 'user',
+                badge: targetUser.badge || null,
+                gender: targetUser.gender || 'male',
+                photoURL: targetUser.photoURL || '',
+            };
+        }
+        try {
+            await setDoc(doc(db, 'settings', 'gamesAccess'), {
+                allowedUids: nextUids,
+                allowedUsersMeta: nextMeta,
+                updatedBy: auth.currentUser?.uid || loggedInUserProfile?.uid || '',
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+            pt.success(currentlyAllowed
+                ? `Games access locked for ${targetUser.displayName || 'user'}.`
+                : `Games & Polls unlocked for ${targetUser.displayName || 'user'}.`);
+        } catch (err) {
+            pt.error(err?.message || 'Unable to update Games access.');
+        } finally {
+            setGamesUpdatingUid('');
+        }
+    };
 
     // Load friends profiles reactively whenever friend list changes
     useEffect(() => {
@@ -1020,6 +1131,121 @@ const SettingsSidebar = ({
                                 </div>
                             </div>
                         )}
+
+                        {/* ── MODULE 3B: OWNER / GODFATHER GAMES & POLLS ACCESS CONTROL ── */}
+                        {isOwnerRole(loggedInUserProfile) && (() => {
+                            const q = gamesSearchTerm.trim().toLowerCase();
+                            const allowedUsersList = gamesAllowedUids.map((id) => {
+                                const fromDir = gamesDirectory.find((u) => u.uid === id);
+                                const fromMeta = gamesAllowedMeta?.[id];
+                                return fromDir || fromMeta || { uid: id, displayName: 'Member', role: 'user' };
+                            });
+                            const matchingUsers = q
+                                ? gamesDirectory.filter((u) => {
+                                    const name = (u.displayName || '').toLowerCase();
+                                    const uname = (u.username || '').toLowerCase();
+                                    const email = (u.email || '').toLowerCase();
+                                    const roleLbl = getRoleDisplayLabel(u).toLowerCase();
+                                    return name.includes(q) || uname.includes(q) || email.includes(q) || roleLbl.includes(q);
+                                }).slice(0, 8)
+                                : allowedUsersList;
+
+                            return (
+                                <div className="setting-group tl-ga-card" style={{ marginBottom: '12px' }}>
+                                    <h4>
+                                        <ActivitySparkIcon size={16} color="currentColor" />
+                                        GAMES &amp; POLLS ACCESS
+                                        <span className="tl-ga-count">{gamesAllowedUids.length}</span>
+                                    </h4>
+
+                                    <div className="tl-ga-owner-pill">
+                                        <CrownRoyalIcon size={13} color="#fbbf24" />
+                                        <span>Owners unlocked by default · Search to allow members, Badges, Mods &amp; Admins</span>
+                                    </div>
+
+                                    <div className="tl-ga-search-wrap">
+                                        <span className="tl-ga-search-icon">
+                                            <SearchLensIcon size={14} color="currentColor" />
+                                        </span>
+                                        <input
+                                            type="text"
+                                            className="tl-ga-search-input"
+                                            placeholder="Search name, username, email or role..."
+                                            value={gamesSearchTerm}
+                                            onChange={(e) => setGamesSearchTerm(e.target.value)}
+                                        />
+                                        {gamesSearchTerm && (
+                                            <button
+                                                type="button"
+                                                className="tl-ga-search-clear"
+                                                onClick={() => setGamesSearchTerm('')}
+                                                aria-label="Clear search"
+                                            >
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="tl-ga-list">
+                                        {gamesDirLoading && q ? (
+                                            <div className="tl-ga-empty">Searching users...</div>
+                                        ) : matchingUsers.length === 0 ? (
+                                            <div className="tl-ga-empty">
+                                                {q
+                                                    ? 'No matching registered users found.'
+                                                    : 'No additional users unlocked yet. Search above to grant access.'}
+                                            </div>
+                                        ) : (
+                                            matchingUsers.map((u) => {
+                                                const isAllowed = gamesAllowedUids.includes(u.uid);
+                                                const roleLbl = getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: false, badge: u.badge });
+                                                const busy = gamesUpdatingUid === u.uid;
+                                                return (
+                                                    <div key={u.uid} className={`tl-ga-row ${isAllowed ? 'is-allowed' : ''}`}>
+                                                        <LiveAvatarImg
+                                                            uid={u.uid}
+                                                            gender={u.gender || 'male'}
+                                                            isGuest={false}
+                                                            fallbackPhotoURL={u.photoURL}
+                                                            className="tl-ga-avatar"
+                                                            alt={u.displayName || 'User'}
+                                                        />
+                                                        <div className="tl-ga-meta">
+                                                            <div className="tl-ga-name">{u.displayName || u.username || 'User'}</div>
+                                                            <div className="tl-ga-sub">
+                                                                <span>{roleLbl}</span>
+                                                                {u.username ? <span>· @{u.username}</span> : null}
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            className={`tl-ga-toggle-btn ${isAllowed ? 'unlocked' : 'locked'}`}
+                                                            disabled={busy}
+                                                            onClick={() => handleToggleGamesUserAccess(u)}
+                                                            title={isAllowed ? 'Revoke Games Access' : 'Grant Games Access'}
+                                                        >
+                                                            {isAllowed ? (
+                                                                <>
+                                                                    <UnlockSparkIcon size={13} color="currentColor" />
+                                                                    <span>{busy ? '...' : 'Allowed'}</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <LockShieldIcon size={13} color="currentColor" />
+                                                                    <span>{busy ? '...' : 'Allow'}</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* ── MODULE 4: LIVE LINEUP & SHOW SCHEDULE ── */}
                         <div className="setting-group" style={{ marginBottom: '14px' }}>
