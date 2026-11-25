@@ -1,0 +1,522 @@
+/* src/components/theatre/TheatreCinema.css */
+/* Tingletap Synchronized Theatre Cinema Experience — Responsive Desktop & Mobile */
+
+.tt-theatre-shell {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 365px;
+  background: radial-gradient(circle at 22% 18%, #161229 0%, #090812 68%, #05050a 100%);
+  color: #f8fafc;
+  overflow: hidden;
+  position: relative;
+}
+
+.tt-theatre-shell.tt-theatre-chat-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Stage (Left on Desktop, Top on Mobile) */
+.tt-theatre-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: linear-gradient(180deg, rgba(14, 12, 26, 0.96) 0%, rgba(7, 6, 15, 0.99) 100%);
+  border-right: 1px solid rgba(167, 139, 250, 0.14);
+  position: relative;
+}
+
+.tt-theatre-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  background: rgba(15, 13, 29, 0.85);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.14);
+  flex-shrink: 0;
+}
+
+.tt-theatre-now-playing {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tt-theatre-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.tt-theatre-live-pill.idle {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.tt-theatre-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+  animation: ttTheatrePulse 1.6s ease-in-out infinite;
+}
+
+.tt-theatre-live-pill.idle .tt-theatre-live-dot {
+  background: #64748b;
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes ttTheatrePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+.tt-theatre-title-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tt-theatre-video-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-theatre-host-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-theatre-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tt-theatre-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.24);
+  background: rgba(139, 92, 246, 0.12);
+  color: #e9d5ff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+
+.tt-theatre-icon-btn:hover {
+  background: rgba(139, 92, 246, 0.24);
+  border-color: rgba(167, 139, 250, 0.5);
+}
+
+.tt-theatre-icon-btn:active {
+  transform: scale(0.96);
+}
+
+.tt-theatre-icon-btn.danger {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+}
+
+.tt-theatre-icon-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.28);
+}
+
+/* Video Viewport */
+.tt-theatre-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #040308;
+  overflow: hidden;
+}
+
+.tt-theatre-aspect-frame {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+}
+
+.tt-theatre-player-host,
+.tt-theatre-player-host iframe,
+.tt-theatre-html-video {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  object-fit: contain;
+  background: #000000;
+}
+
+/* Prevent accidental click-desync on viewer YouTube iframe */
+.tt-theatre-viewer-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: transparent;
+}
+
+/* Autoplay Audio Recovery Pill */
+.tt-theatre-unmute-pill {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  background: rgba(15, 13, 29, 0.92);
+  color: #fde68a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+/* Idle Empty Screen */
+.tt-theatre-idle-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 20px;
+  max-width: 440px;
+  gap: 12px;
+}
+
+.tt-theatre-idle-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(59, 130, 246, 0.16));
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  box-shadow: 0 12px 32px rgba(91, 33, 182, 0.25);
+}
+
+.tt-theatre-idle-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.tt-theatre-idle-sub {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
+/* Transport Controls & Host Source Bar */
+.tt-theatre-controls {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(13, 11, 25, 0.96);
+  border-top: 1px solid rgba(167, 139, 250, 0.16);
+}
+
+.tt-theatre-scrubber-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tt-theatre-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #cbd5e1;
+  min-width: 42px;
+}
+
+.tt-theatre-range {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  accent-color: #8b5cf6;
+  cursor: pointer;
+}
+
+.tt-theatre-range:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.tt-theatre-transport-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tt-theatre-transport-left,
+.tt-theatre-transport-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tt-theatre-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.tt-theatre-play-btn:hover {
+  filter: brightness(1.08);
+}
+
+.tt-theatre-play-btn:active {
+  transform: scale(0.94);
+}
+
+.tt-theatre-vol-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tt-theatre-vol-slider {
+  width: 72px;
+  height: 4px;
+  accent-color: #a78bfa;
+  cursor: pointer;
+}
+
+.tt-theatre-source-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.tt-theatre-url-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(30, 27, 56, 0.75);
+  color: #f8fafc;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.tt-theatre-url-input:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.tt-theatre-load-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tt-theatre-load-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tt-theatre-error-bar {
+  font-size: 11.5px;
+  color: #fca5a5;
+  font-weight: 600;
+  padding: 2px 2px 0;
+}
+
+/* Integrated Live Chat Rail (Desktop Right / Mobile Bottom) */
+.tt-theatre-chat-rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--chat-bg, #ffffff);
+  color: var(--text-primary, #111827);
+  position: relative;
+  overflow: hidden;
+}
+
+html.dark-mode .tt-theatre-chat-rail,
+html.dark-theme-variant .tt-theatre-chat-rail {
+  background: #0f0d1c;
+  color: #f1f5f9;
+}
+
+.tt-theatre-chat-rail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.tt-theatre-chat-rail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure Tingletap MessageList + hp-composer-footer behave cleanly inside the Theatre rail */
+.tt-theatre-chat-rail-body .chat-messages-area,
+.tt-theatre-chat-rail-body .message-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.tt-theatre-chat-rail-body .hp-composer-footer {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  flex-shrink: 0;
+}
+
+/* Fullscreen Floating Chat Toggle */
+.tt-theatre-fs-chat-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 25;
+}
+
+/* Responsive Mobile Layout (< 960px) */
+@media (max-width: 959px) {
+  .tt-theatre-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .tt-theatre-stage {
+    border-right: none;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+  }
+
+  .tt-theatre-viewport {
+    aspect-ratio: 16 / 9;
+    max-height: 36dvh;
+    width: 100%;
+    flex: none;
+  }
+
+  .tt-theatre-shell.tt-theatre-chat-collapsed {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .tt-theatre-shell.tt-theatre-chat-collapsed .tt-theatre-viewport {
+    aspect-ratio: auto;
+    max-height: none;
+    flex: 1;
+  }
+
+  .tt-theatre-topbar {
+    padding: 7px 10px;
+  }
+
+  .tt-theatre-controls {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .tt-theatre-vol-slider {
+    width: 52px;
+  }
+
+  .tt-theatre-hide-sm {
+    display: none;
+  }
+}
+
+/* Landscape mobile cinema optimization */
+@media (max-width: 959px) and (orientation: landscape) {
+  .tt-theatre-shell {
+    grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .tt-theatre-viewport {
+    aspect-ratio: auto;
+    max-height: none;
+    flex: 1;
+  }
+}

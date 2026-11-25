@@ -116,6 +116,57 @@ service cloud.firestore {
                .get('blockedUsers', []).hasAny([blockedId]);
     }
 
+    function isBidirectionallyBlocked(uidA, uidB) {
+      return isBlocked(uidA, uidB) || isBlocked(uidB, uidA);
+    }
+
+    function getTargetSetting(targetUid, key, defVal) {
+      return exists(/databases/$(database)/documents/users/$(targetUid))
+        ? get(/databases/$(database)/documents/users/$(targetUid)).data.get('settings', {}).get(key, defVal)
+        : defVal;
+    }
+
+    function isTargetFriend(targetUid, actorUid) {
+      return exists(/databases/$(database)/documents/users/$(targetUid)) &&
+             get(/databases/$(database)/documents/users/$(targetUid)).data
+               .get('friends', []).hasAny([actorUid]);
+    }
+
+    function hasAcceptedMessageRequest(uidA, uidB) {
+      return (exists(/databases/$(database)/documents/messageRequests/$(uidA + '_' + uidB)) &&
+              get(/databases/$(database)/documents/messageRequests/$(uidA + '_' + uidB)).data.get('status', '') == 'accepted')
+          || (exists(/databases/$(database)/documents/messageRequests/$(uidB + '_' + uidA)) &&
+              get(/databases/$(database)/documents/messageRequests/$(uidB + '_' + uidA)).data.get('status', '') == 'accepted');
+    }
+
+    function canAcceptPmOrRequest(senderUid, receiverUid) {
+      return !isBidirectionallyBlocked(senderUid, receiverUid)
+          && getTargetSetting(receiverUid, 'allowPrivateMessagesLevel', 'all') != 'none';
+    }
+
+    function canDeliverDirectPm(senderUid, receiverUid) {
+      let level = getTargetSetting(receiverUid, 'allowPrivateMessagesLevel', 'all');
+      return !isBidirectionallyBlocked(senderUid, receiverUid) && (
+        level == 'all'
+        || (level == 'friends' && (isTargetFriend(receiverUid, senderUid) || hasAcceptedMessageRequest(senderUid, receiverUid)))
+        || (level == 'requests' && (isTargetFriend(receiverUid, senderUid) || hasAcceptedMessageRequest(senderUid, receiverUid)))
+      );
+    }
+
+    function canAddUserToGroupDm(actorUid, targetUid) {
+      let level = getTargetSetting(targetUid, 'whoCanGroupDm', 'all');
+      return !isBidirectionallyBlocked(actorUid, targetUid) && (
+        level == 'all' || (level == 'friends' && isTargetFriend(targetUid, actorUid))
+      );
+    }
+
+    function canInviteUserToRoom(actorUid, targetUid) {
+      let level = getTargetSetting(targetUid, 'whoCanInviteRooms', 'all');
+      return !isBidirectionallyBlocked(actorUid, targetUid) && (
+        level == 'all' || (level == 'friends' && isTargetFriend(targetUid, actorUid))
+      );
+    }
+
     // ================================================================
     // USERNAMES COLLECTION
     // ================================================================
@@ -391,11 +442,103 @@ service cloud.firestore {
                               && request.resource.data.active is bool;
         allow delete: if isOwner() && request.auth.uid == watchUid;
       }
+
+      // Synchronized Theatre Cinema Watch Session (hosted inside existing Theatre room)
+      match /theatre/{sessionId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+                      && notBanned()
+                      && isStaff()
+                      && request.resource.data.hostUid is string
+                      && request.resource.data.updatedBy == request.auth.uid
+                      && request.resource.data.isPlaying is bool
+                      && request.resource.data.anchorTimeSec is number
+                      && request.resource.data.anchorTimeSec >= 0
+                      && request.resource.data.anchorMs is number
+                      && request.resource.data.sourceType in ['youtube', 'mp4']
+                      && request.resource.data.status in ['idle', 'active']
+                      && request.resource.data.get('coHostUids', []) is list
+                      && request.resource.data.get('coHostUids', []).size() <= 10
+                      && (
+                        request.resource.data.status == 'idle'
+                        || (request.resource.data.videoUrl is string
+                            && request.resource.data.videoUrl.size() <= 1000
+                            && request.resource.data.videoUrl.matches('^https?://.*'))
+                      );
+        allow update: if request.auth != null
+                      && notBanned()
+                      && (
+                        isStaff()
+                        || request.auth.uid == resource.data.get('hostUid', '')
+                        || request.auth.uid in resource.data.get('coHostUids', [])
+                      )
+                      && request.resource.data.updatedBy == request.auth.uid
+                      && request.resource.data.isPlaying is bool
+                      && request.resource.data.anchorTimeSec is number
+                      && request.resource.data.anchorTimeSec >= 0
+                      && request.resource.data.anchorMs is number
+                      && request.resource.data.sourceType in ['youtube', 'mp4']
+                      && request.resource.data.status in ['idle', 'active']
+                      && request.resource.data.get('coHostUids', []) is list
+                      && request.resource.data.get('coHostUids', []).size() <= 10
+                      && (
+                        isStaff()
+                        || request.resource.data.get('coHostUids', []) == resource.data.get('coHostUids', [])
+                      )
+                      && (
+                        request.resource.data.status == 'idle'
+                        || (request.resource.data.videoUrl is string
+                            && request.resource.data.videoUrl.size() <= 1000
+                            && request.resource.data.videoUrl.matches('^https?://.*'))
+                      );
+        allow delete: if isStaff();
+      }
     }
 
     // ================================================================
-    // PRIVATE MESSAGES
+    // PRIVATE MESSAGES & MESSAGE REQUESTS
     // ================================================================
+    match /messageRequests/{requestId} {
+      allow read: if request.auth != null
+                  && (resource.data.senderId == request.auth.uid
+                      || resource.data.receiverId == request.auth.uid
+                      || isStaff());
+
+      allow create: if request.auth != null
+                    && notBanned()
+                    && notMuted()
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.receiverId is string
+                    && request.resource.data.receiverId != request.auth.uid
+                    && request.auth.uid in request.resource.data.get('participants', [])
+                    && request.resource.data.receiverId in request.resource.data.get('participants', [])
+                    && request.resource.data.status == 'pending'
+                    && canAcceptPmOrRequest(request.auth.uid, request.resource.data.receiverId);
+
+      allow update: if request.auth != null
+                    && notBanned()
+                    && (
+                      isStaff()
+                      || (
+                        resource.data.receiverId == request.auth.uid
+                        && request.resource.data.senderId == resource.data.senderId
+                        && request.resource.data.receiverId == resource.data.receiverId
+                        && request.resource.data.status in ['pending', 'accepted', 'declined']
+                      )
+                      || (
+                        resource.data.senderId == request.auth.uid
+                        && resource.data.status in ['pending', 'accepted']
+                        && request.resource.data.status == resource.data.status
+                        && !request.resource.data.diff(resource.data).affectedKeys()
+                             .hasAny(['status', 'senderId', 'receiverId', 'acceptedAt', 'declinedAt'])
+                        && canAcceptPmOrRequest(request.auth.uid, resource.data.receiverId)
+                      )
+                    );
+
+      allow delete: if isStaff()
+                    || (request.auth != null && resource.data.receiverId == request.auth.uid);
+    }
+
     match /privateMessages/{messageId} {
       allow read: if isStaff()
                   || (request.auth != null
@@ -412,7 +555,12 @@ service cloud.firestore {
             request.auth.uid in request.resource.data.get('participants', [])
             || request.resource.data.senderId == request.auth.uid
           )
-          && !isBlocked(request.resource.data.get('receiverId', '_'), request.auth.uid)
+          && !isBidirectionallyBlocked(request.auth.uid, request.resource.data.get('receiverId', '_'))
+          && canAcceptPmOrRequest(request.auth.uid, request.resource.data.get('receiverId', '_'))
+          && (
+            canDeliverDirectPm(request.auth.uid, request.resource.data.get('receiverId', '_'))
+            || request.resource.data.get('isMessageRequest', false) == true
+          )
         )
       );
 
@@ -901,6 +1049,165 @@ service cloud.firestore {
     match /settings/gamesAccess {
       allow read: if request.auth != null;
       allow create, update, delete: if isOwner();
+    }
+
+    // ================================================================
+    // PRIVATE GROUP DIRECT MESSAGES (Group DMs)
+    // ================================================================
+    match /groupDms/{groupId} {
+      function isGroupMember() {
+        return request.auth != null && request.auth.uid in resource.data.get('memberUids', []);
+      }
+
+      function myGroupRole() {
+        return resource.data.get('memberRoles', {}).get(request.auth.uid, 'member');
+      }
+
+      function isGroupAdmin() {
+        return isGroupMember() && (myGroupRole() in ['owner', 'admin'] || resource.data.get('ownerUid', '') == request.auth.uid);
+      }
+
+      function isGroupOwner() {
+        return isGroupMember() && (myGroupRole() == 'owner' || resource.data.get('ownerUid', '') == request.auth.uid);
+      }
+
+      allow read: if request.auth != null && (isGroupMember() || isStaff());
+
+      allow create: if request.auth != null
+                    && isRegistered()
+                    && notBanned()
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 60
+                    && request.resource.data.memberUids is list
+                    && request.auth.uid in request.resource.data.memberUids
+                    && request.resource.data.memberUids.size() >= 1
+                    && request.resource.data.memberUids.size() <= 50
+                    && request.resource.data.memberRoles.get(request.auth.uid, '') == 'owner'
+                    && request.resource.data.get('invitePolicy', 'admins_only') in ['admins_only', 'all_members'];
+
+      allow update: if request.auth != null && notBanned() && (
+        isStaff()
+        || (
+          isGroupMember()
+          && request.resource.data.memberUids is list
+          && request.resource.data.memberUids.size() <= 50
+          && (
+            // Group Owner & Admins: edit info, pin, invitePolicy, manage members & roles
+            (
+              isGroupAdmin()
+              && request.resource.data.createdBy == resource.data.createdBy
+              && (
+                isGroupOwner()
+                || (
+                  request.resource.data.ownerUid == resource.data.ownerUid
+                  && request.resource.data.memberRoles.get(resource.data.ownerUid, '') == 'owner'
+                )
+              )
+              && request.resource.data.name is string
+              && request.resource.data.name.size() > 0
+              && request.resource.data.name.size() <= 60
+              && request.resource.data.get('invitePolicy', 'admins_only') in ['admins_only', 'all_members']
+            )
+            // Any member: update typing/unread/lastMessage preview on send/read
+            || (
+              request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['typing', 'unreadBy', 'lastMessage', 'lastMessageSenderName', 'lastMessageAt', 'updatedAt'])
+            )
+            // Any member: add members if invitePolicy == 'all_members' (cannot alter roles or existing members)
+            || (
+              resource.data.get('invitePolicy', 'admins_only') == 'all_members'
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['memberUids', 'memberRoles', 'updatedAt'])
+              && request.resource.data.memberUids.hasAll(resource.data.memberUids)
+              && request.resource.data.ownerUid == resource.data.ownerUid
+            )
+            // Any member: cleanly leave group (only removes self from memberUids/memberRoles)
+            || (
+              !(request.auth.uid in request.resource.data.memberUids)
+              && resource.data.memberUids.hasAll(request.resource.data.memberUids)
+              && request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['memberUids', 'memberRoles', 'ownerUid', 'updatedAt'])
+              && (
+                request.resource.data.ownerUid == resource.data.ownerUid
+                || (
+                  resource.data.ownerUid == request.auth.uid
+                  && request.resource.data.ownerUid in request.resource.data.memberUids
+                )
+              )
+            )
+          )
+        )
+      );
+
+      allow delete: if isStaff()
+                    || (request.auth != null && resource.data.get('ownerUid', '') == request.auth.uid);
+
+      match /messages/{messageId} {
+        function parentGroup() {
+          return get(/databases/$(database)/documents/groupDms/$(groupId)).data;
+        }
+        function isMemberOfParent() {
+          return request.auth != null && request.auth.uid in parentGroup().get('memberUids', []);
+        }
+        function isAdminOfParent() {
+          return isMemberOfParent() && (
+            parentGroup().get('ownerUid', '') == request.auth.uid
+            || parentGroup().get('memberRoles', {}).get(request.auth.uid, 'member') in ['owner', 'admin']
+          );
+        }
+
+        allow read: if request.auth != null && (isMemberOfParent() || isStaff());
+
+        allow create: if request.auth != null
+                      && notBanned()
+                      && notMuted()
+                      && isMemberOfParent()
+                      && request.resource.data.senderId == request.auth.uid;
+
+        allow update: if request.auth != null
+                      && notBanned()
+                      && isMemberOfParent()
+                      && (
+                        isAdminOfParent()
+                        || resource.data.senderId == request.auth.uid
+                        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedFor'])
+                      );
+
+        allow delete: if request.auth != null
+                      && (
+                        isStaff()
+                        || isAdminOfParent()
+                        || (isMemberOfParent() && resource.data.senderId == request.auth.uid)
+                      );
+      }
+    }
+
+    // ================================================================
+    // ROOM INVITES (respecting whoCanInviteRooms + blocks)
+    // ================================================================
+    match /roomInvites/{inviteId} {
+      allow read: if request.auth != null
+                  && (resource.data.senderId == request.auth.uid
+                      || resource.data.receiverId == request.auth.uid
+                      || isStaff());
+
+      allow create: if request.auth != null
+                    && isRegistered()
+                    && notBanned()
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.receiverId is string
+                    && request.resource.data.receiverId != request.auth.uid
+                    && request.resource.data.roomId is string
+                    && canInviteUserToRoom(request.auth.uid, request.resource.data.receiverId);
+
+      allow update, delete: if request.auth != null
+                            && (resource.data.receiverId == request.auth.uid
+                                || resource.data.senderId == request.auth.uid
+                                || isStaff());
     }
 
     // ================================================================

@@ -167,15 +167,20 @@ const SettingsSidebar = ({
 
         // Privacy Settings
         showOnlineStatus: true,
+        onlineStatusLevel: 'all',
         allowPrivateMessages: true,
         allowPrivateMessagesLevel: 'all',
         allowWhisperMessages: true,
         showLastSeen: false,
+        lastSeenLevel: 'none',
         showInSearch: true,
         allowFriendRequests: true,
+        whoCanGroupDm: 'all',
+        whoCanInviteRooms: 'all',
         allowVoiceCalls: true,
         allowVideoCalls: true,
         readReceipts: true,
+        typingIndicator: true,
         saveChatHistory: true,
         anonymizeAnalytics: false,
         twoFactorAuth: false,
@@ -259,15 +264,20 @@ const SettingsSidebar = ({
 
                         // Privacy Settings
                         showOnlineStatus: userSettings.showOnlineStatus !== undefined ? userSettings.showOnlineStatus : (localStorage.getItem('showOnlineStatus') !== 'false'),
+                        onlineStatusLevel: userSettings.onlineStatusLevel || localStorage.getItem('onlineStatusLevel') || ((userSettings.showOnlineStatus !== undefined ? userSettings.showOnlineStatus : (localStorage.getItem('showOnlineStatus') !== 'false')) ? 'all' : 'none'),
                         allowPrivateMessages: userSettings.allowPrivateMessages !== undefined ? userSettings.allowPrivateMessages : (localStorage.getItem('allowPrivateMessages') !== 'false'),
                         allowPrivateMessagesLevel: userSettings.allowPrivateMessagesLevel || localStorage.getItem('allowPrivateMessagesLevel') || 'all',
                         allowWhisperMessages: userSettings.allowWhisperMessages !== undefined ? userSettings.allowWhisperMessages : (localStorage.getItem('allowWhisperMessages') !== 'false'),
                         showLastSeen: userSettings.showLastSeen !== undefined ? userSettings.showLastSeen : (localStorage.getItem('showLastSeen') === 'true'),
+                        lastSeenLevel: userSettings.lastSeenLevel || localStorage.getItem('lastSeenLevel') || ((userSettings.showLastSeen !== undefined ? userSettings.showLastSeen : (localStorage.getItem('showLastSeen') === 'true')) ? 'all' : 'none'),
                         showInSearch: userSettings.showInSearch !== undefined ? userSettings.showInSearch : (localStorage.getItem('showInSearch') !== 'false'),
                         allowFriendRequests: userSettings.allowFriendRequests !== undefined ? userSettings.allowFriendRequests : (localStorage.getItem('allowFriendRequests') !== 'false'),
+                        whoCanGroupDm: userSettings.whoCanGroupDm || localStorage.getItem('whoCanGroupDm') || 'all',
+                        whoCanInviteRooms: userSettings.whoCanInviteRooms || localStorage.getItem('whoCanInviteRooms') || 'all',
                         allowVoiceCalls: userSettings.allowVoiceCalls !== undefined ? userSettings.allowVoiceCalls : (localStorage.getItem('allowVoiceCalls') !== 'false'),
                         allowVideoCalls: userSettings.allowVideoCalls !== undefined ? userSettings.allowVideoCalls : (localStorage.getItem('allowVideoCalls') !== 'false'),
                         readReceipts: userSettings.readReceipts !== undefined ? userSettings.readReceipts : (localStorage.getItem('readReceipts') !== 'false'),
+                        typingIndicator: userSettings.typingIndicator !== undefined ? userSettings.typingIndicator : (localStorage.getItem('typingIndicator') !== 'false'),
                         saveChatHistory: userSettings.saveChatHistory !== undefined ? userSettings.saveChatHistory : (localStorage.getItem('saveChatHistory') !== 'false'),
                         anonymizeAnalytics: userSettings.anonymizeAnalytics !== undefined ? userSettings.anonymizeAnalytics : (localStorage.getItem('anonymizeAnalytics') === 'true'),
                         twoFactorAuth: userSettings.twoFactorAuth !== undefined ? userSettings.twoFactorAuth : (localStorage.getItem('twoFactorAuth') === 'true'),
@@ -696,9 +706,43 @@ const SettingsSidebar = ({
                 // nothing extra needed
             }
 
-            // Immediately propagate Online Status change to RTDB so other users see it right away
-            if (key === 'showOnlineStatus') {
-                window.updateOnlineStatusVisibility?.(value);
+            // Immediately propagate Online Status & Last Seen changes to RTDB & linked legacy keys
+            const extraSettingFields = {};
+            if (key === 'onlineStatusLevel') {
+                const boolOnline = value !== 'none';
+                extraSettingFields.showOnlineStatus = boolOnline;
+                localStorage.setItem('showOnlineStatus', boolOnline.toString());
+                setSettings(prev => ({ ...prev, showOnlineStatus: boolOnline }));
+                window.updateOnlineStatusVisibility?.(boolOnline, value);
+            } else if (key === 'showOnlineStatus') {
+                const lvl = value ? 'all' : 'none';
+                extraSettingFields.onlineStatusLevel = lvl;
+                localStorage.setItem('onlineStatusLevel', lvl);
+                setSettings(prev => ({ ...prev, onlineStatusLevel: lvl }));
+                window.updateOnlineStatusVisibility?.(value, lvl);
+            } else if (key === 'lastSeenLevel') {
+                const boolSeen = value !== 'none';
+                extraSettingFields.showLastSeen = boolSeen;
+                localStorage.setItem('showLastSeen', boolSeen.toString());
+                setSettings(prev => ({ ...prev, showLastSeen: boolSeen }));
+                if (auth.currentUser?.uid) {
+                    rtdbSet(rtdbRef(rtdb, `status/${auth.currentUser.uid}/showLastSeen`), boolSeen).catch(() => {});
+                    rtdbSet(rtdbRef(rtdb, `status/${auth.currentUser.uid}/lastSeenLevel`), value).catch(() => {});
+                }
+            } else if (key === 'showLastSeen') {
+                const lvl = value ? 'all' : 'none';
+                extraSettingFields.lastSeenLevel = lvl;
+                localStorage.setItem('lastSeenLevel', lvl);
+                setSettings(prev => ({ ...prev, lastSeenLevel: lvl }));
+                if (auth.currentUser?.uid) {
+                    rtdbSet(rtdbRef(rtdb, `status/${auth.currentUser.uid}/showLastSeen`), Boolean(value)).catch(() => {});
+                    rtdbSet(rtdbRef(rtdb, `status/${auth.currentUser.uid}/lastSeenLevel`), lvl).catch(() => {});
+                }
+            } else if (key === 'allowPrivateMessagesLevel') {
+                const boolPm = value !== 'none';
+                extraSettingFields.allowPrivateMessages = boolPm;
+                localStorage.setItem('allowPrivateMessages', boolPm.toString());
+                setSettings(prev => ({ ...prev, allowPrivateMessages: boolPm }));
             }
 
             if (key === 'micVolume') {
@@ -712,13 +756,29 @@ const SettingsSidebar = ({
             // For non-guest users, save to Firebase asynchronously (don't block UI)
             if (auth.currentUser && !auth.currentUser.isAnonymous) {
                 const userRef = doc(db, 'users', auth.currentUser.uid);
+                const firestoreUpdates = { [`settings.${key}`]: value };
+                Object.entries(extraSettingFields).forEach(([k2, v2]) => {
+                    firestoreUpdates[`settings.${k2}`] = v2;
+                });
 
                 // Update settings in Firebase asynchronously
-                updateDoc(userRef, {
-                    [`settings.${key}`]: value
-                }).catch(error => {
+                updateDoc(userRef, firestoreUpdates).catch(error => {
                     console.error('Error updating setting in Firebase:', error);
                 });
+
+                const privacyKeys = new Set([
+                    'allowPrivateMessagesLevel', 'allowPrivateMessages', 'allowFriendRequests', 'allowWhisperMessages',
+                    'whoCanGroupDm', 'whoCanInviteRooms', 'readReceipts', 'typingIndicator',
+                    'onlineStatusLevel', 'lastSeenLevel', 'showOnlineStatus', 'showLastSeen', 'showInSearch'
+                ]);
+                if (privacyKeys.has(key)) {
+                    const mergedPublicSettings = {
+                        ...settings,
+                        [key]: value,
+                        ...extraSettingFields,
+                    };
+                    syncPublicProfile(auth.currentUser.uid, { settings: mergedPublicSettings }).catch(() => {});
+                }
 
                 // Also update top-level theme property for compatibility
                 if (key === 'selectedTheme') {
@@ -2055,46 +2115,48 @@ const SettingsSidebar = ({
                                 </svg>
                                 VISIBILITY SETTINGS
                             </h4>
-                            <label className="setting-item">
-                                <div className="setting-info">
-                                    <span>Show Online Status</span>
-                                    <small>Let others see when you're online</small>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.showOnlineStatus}
-                                        onChange={(e) => handleSettingChange('showOnlineStatus', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
 
-
-                            <label className="setting-item">
+                            <div className="setting-item">
                                 <div className="setting-info">
-                                    <span>Show Last Seen</span>
-                                    <small>Let others see when you were last active</small>
+                                    <span>Online Status Visibility</span>
+                                    <small>Choose who can see when you are active online</small>
                                 </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.showLastSeen || false}
-                                        onChange={(e) => handleSettingChange('showLastSeen', e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </label>
+                                <select
+                                    className="privacy-select"
+                                    value={settings.onlineStatusLevel || (settings.showOnlineStatus === false ? 'none' : 'all')}
+                                    onChange={(e) => handleSettingChange('onlineStatusLevel', e.target.value)}
+                                >
+                                    <option value="all">Everyone</option>
+                                    <option value="friends">Friends Only</option>
+                                    <option value="none">Nobody</option>
+                                </select>
+                            </div>
+
+                            <div className="setting-item">
+                                <div className="setting-info">
+                                    <span>Last Seen Visibility</span>
+                                    <small>Control who can view your last seen timestamp</small>
+                                </div>
+                                <select
+                                    className="privacy-select"
+                                    value={settings.lastSeenLevel || (settings.showLastSeen ? 'all' : 'none')}
+                                    onChange={(e) => handleSettingChange('lastSeenLevel', e.target.value)}
+                                >
+                                    <option value="all">Everyone</option>
+                                    <option value="friends">Friends Only</option>
+                                    <option value="none">Nobody</option>
+                                </select>
+                            </div>
 
                             <label className="setting-item">
                                 <div className="setting-info">
                                     <span>Show Profile in Search</span>
-                                    <small>Allow others to find you in user search</small>
+                                    <small>Allow others to find you in user search and invite lists</small>
                                 </div>
                                 <label className="toggle-switch">
                                     <input
                                         type="checkbox"
-                                        checked={settings.showInSearch || true}
+                                        checked={settings.showInSearch !== false}
                                         onChange={(e) => handleSettingChange('showInSearch', e.target.checked)}
                                     />
                                     <span className="toggle-slider"></span>
@@ -2108,11 +2170,11 @@ const SettingsSidebar = ({
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                                     <path d="M8 10h8M8 14h5"/>
                                 </svg>
-                                COMMUNICATION SETTINGS
+                                CHAT PRIVACY &amp; MESSAGING
                             </h4>
 
                             {auth.currentUser?.isAnonymous ? (
-                                /* Guest: only simple On/Off private message toggle */
+                                /* Guest: simple On/Off private message toggle */
                                 <label className="setting-item">
                                     <div className="setting-info">
                                         <span>Allow Private Messages</span>
@@ -2128,12 +2190,12 @@ const SettingsSidebar = ({
                                     </label>
                                 </label>
                             ) : (
-                                /* Registered users: full options */
+                                /* Registered users: full chat privacy controls */
                                 <>
                                     <div className="setting-item">
                                         <div className="setting-info">
-                                            <span>Allow Private Messages</span>
-                                            <small>Control who can send you private messages</small>
+                                            <span>Who Can Message Me</span>
+                                            <small>Non-friends go to Message Requests when set to Friends Only</small>
                                         </div>
                                         <select
                                             className="privacy-select"
@@ -2141,15 +2203,77 @@ const SettingsSidebar = ({
                                             onChange={(e) => handleSettingChange('allowPrivateMessagesLevel', e.target.value)}
                                         >
                                             <option value="all">Everyone</option>
+                                            <option value="friends">Friends Only (Requests)</option>
+                                            <option value="none">Nobody</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Who Can Add Me to Group DMs</span>
+                                            <small>Restrict who can add you into private group chats</small>
+                                        </div>
+                                        <select
+                                            className="privacy-select"
+                                            value={settings.whoCanGroupDm || 'all'}
+                                            onChange={(e) => handleSettingChange('whoCanGroupDm', e.target.value)}
+                                        >
+                                            <option value="all">Everyone</option>
                                             <option value="friends">Friends Only</option>
-                                            <option value="none">No One</option>
+                                            <option value="none">Nobody</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Who Can Invite Me to Rooms</span>
+                                            <small>Control who can send you room invitations</small>
+                                        </div>
+                                        <select
+                                            className="privacy-select"
+                                            value={settings.whoCanInviteRooms || 'all'}
+                                            onChange={(e) => handleSettingChange('whoCanInviteRooms', e.target.value)}
+                                        >
+                                            <option value="all">Everyone</option>
+                                            <option value="friends">Friends Only</option>
+                                            <option value="none">Nobody</option>
                                         </select>
                                     </div>
 
                                     <label className="setting-item">
                                         <div className="setting-info">
+                                            <span>Read Receipts</span>
+                                            <small>Show Seen status on private messages when both users enable it</small>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={settings.readReceipts !== false}
+                                                onChange={(e) => handleSettingChange('readReceipts', e.target.checked)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </label>
+
+                                    <label className="setting-item">
+                                        <div className="setting-info">
+                                            <span>Typing Indicator</span>
+                                            <small>Share when you are typing in private and group chats</small>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={settings.typingIndicator !== false}
+                                                onChange={(e) => handleSettingChange('typingIndicator', e.target.checked)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </label>
+
+                                    <label className="setting-item">
+                                        <div className="setting-info">
                                             <span>Allow Whisper Messages</span>
-                                            <small>Let users send you whisper messages</small>
+                                            <small>Let users send you whisper messages in rooms</small>
                                         </div>
                                         <label className="toggle-switch">
                                             <input

@@ -1,19 +1,135 @@
 {
   "project": "Tingletap",
-  "description": "Firebase Firestore and Realtime Database data architecture for Tingletap real-time social chat, mood atmospheres, interactive mini-games/polls, staff silent watch, broadcast schedules, and sync watch-parties.",
+  "description": "Firebase Firestore and Realtime Database data architecture for Tingletap real-time social chat, Message Requests, Theatre synchronized cinema, Group DMs, Room Invites, and Chat Privacy Controls.",
   "entities": {
     "UserProfile": {
       "collection": "users/{uid}",
-      "description": "Authoritative user profile, role, verified badge, moderation state, and settings.",
+      "description": "Authoritative user profile, role, verified badge, moderation state, friends, blockedUsers, and privacy settings.",
       "fields": {
         "uid": { "type": "string", "required": true },
         "displayName": { "type": "string", "required": true },
+        "username": { "type": "string" },
         "gender": { "type": "string", "enum": ["male", "female", "other"] },
         "role": { "type": "string", "enum": ["owner", "admin", "moderator", "rj", "user", "guest"] },
         "badge": { "type": "string", "nullable": true },
         "isGuest": { "type": "boolean" },
         "isBanned": { "type": "boolean" },
-        "mutedInfo": { "type": "map" }
+        "friends": { "type": "array" },
+        "blockedUsers": { "type": "array" },
+        "settings": {
+          "type": "map",
+          "description": "Includes allowPrivateMessagesLevel (all|friends|none), whoCanGroupDm (all|friends|none), whoCanInviteRooms (all|friends|none), readReceipts (bool), typingIndicator (bool), onlineStatusLevel (all|friends|none), lastSeenLevel (all|friends|none), showOnlineStatus (bool), showLastSeen (bool), showInSearch (bool)."
+        }
+      }
+    },
+    "MessageRequest": {
+      "collection": "messageRequests/{requestId}",
+      "description": "Pending, accepted, or silently declined direct-message request from non-connected users when recipient requires message requests.",
+      "fields": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string", "required": true },
+        "senderId": { "type": "string", "required": true },
+        "senderName": { "type": "string" },
+        "senderUsername": { "type": "string" },
+        "senderPhoto": { "type": "string", "nullable": true },
+        "senderGender": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "senderBadge": { "type": "string", "nullable": true },
+        "senderIsVerified": { "type": "boolean" },
+        "senderFriends": { "type": "array" },
+        "receiverId": { "type": "string", "required": true },
+        "receiverName": { "type": "string" },
+        "participants": { "type": "array", "required": true },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"], "required": true },
+        "lastMessagePreview": { "type": "string" },
+        "messageCount": { "type": "number" },
+        "createdAt": { "type": "timestamp", "required": true },
+        "updatedAt": { "type": "timestamp" },
+        "acceptedAt": { "type": "timestamp", "nullable": true },
+        "declinedAt": { "type": "timestamp", "nullable": true }
+      }
+    },
+    "GroupDM": {
+      "collection": "groupDms/{groupId}",
+      "description": "Private Group Direct Message conversation with role-based administration (owner, admin, member).",
+      "fields": {
+        "name": { "type": "string", "maxLength": 60, "required": true },
+        "photoURL": { "type": "string", "nullable": true },
+        "photoKey": { "type": "string", "nullable": true },
+        "createdBy": { "type": "string", "required": true },
+        "ownerUid": { "type": "string", "required": true },
+        "memberUids": { "type": "array", "maxItems": 50, "required": true },
+        "memberRoles": { "type": "map", "description": "Map of uid -> owner | admin | member" },
+        "invitePolicy": { "type": "string", "enum": ["admins_only", "all_members"] },
+        "pinnedMessage": { "type": "map", "nullable": true },
+        "typing": { "type": "map" },
+        "unreadBy": { "type": "map" },
+        "lastMessage": { "type": "string" },
+        "lastMessageSenderName": { "type": "string" },
+        "lastMessageAt": { "type": "timestamp" },
+        "createdAt": { "type": "timestamp", "required": true },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "GroupDMMessage": {
+      "collection": "groupDms/{groupId}/messages/{messageId}",
+      "description": "Messages inside a private Group DM.",
+      "fields": {
+        "senderId": { "type": "string", "required": true },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string", "nullable": true },
+        "senderGender": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "senderBadge": { "type": "string", "nullable": true },
+        "text": { "type": "string" },
+        "imageUrl": { "type": "string", "nullable": true },
+        "imageKey": { "type": "string", "nullable": true },
+        "audioUrl": { "type": "string", "nullable": true },
+        "audioKey": { "type": "string", "nullable": true },
+        "audioFileName": { "type": "string", "nullable": true },
+        "fileUrl": { "type": "string", "nullable": true },
+        "fileName": { "type": "string", "nullable": true },
+        "replyTo": { "type": "map", "nullable": true },
+        "mentions": { "type": "array" },
+        "deletedFor": { "type": "array" },
+        "isDeleted": { "type": "boolean" },
+        "createdAt": { "type": "timestamp", "required": true }
+      }
+    },
+    "RoomInvite": {
+      "collection": "roomInvites/{inviteId}",
+      "description": "Direct invitation to join a Tingletap chat room honoring whoCanInviteRooms privacy settings.",
+      "fields": {
+        "roomId": { "type": "string", "required": true },
+        "roomName": { "type": "string", "required": true },
+        "roomSlug": { "type": "string", "required": true },
+        "senderId": { "type": "string", "required": true },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string", "nullable": true },
+        "receiverId": { "type": "string", "required": true },
+        "status": { "type": "string", "enum": ["pending", "accepted", "dismissed"] },
+        "createdAt": { "type": "timestamp", "required": true }
+      }
+    },
+    "TheatreSession": {
+      "collection": "rooms/{roomId}/theatre/{sessionId}",
+      "canonicalDocId": "current",
+      "description": "Synchronized watch-party state for the existing Theatre room.",
+      "fields": {
+        "videoUrl": { "type": "string" },
+        "sourceType": { "type": "string", "enum": ["youtube", "mp4"] },
+        "videoId": { "type": "string", "nullable": true },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["idle", "active"] },
+        "isPlaying": { "type": "boolean", "required": true },
+        "anchorTimeSec": { "type": "number", "required": true },
+        "anchorMs": { "type": "number", "required": true },
+        "playbackRate": { "type": "number" },
+        "hostUid": { "type": "string", "required": true },
+        "hostName": { "type": "string" },
+        "coHostUids": { "type": "array", "maxItems": 10 },
+        "updatedBy": { "type": "string", "required": true },
+        "updatedAt": { "type": "timestamp", "required": true }
       }
     },
     "RoomMood": {
@@ -34,47 +150,14 @@
     },
     "RoomActivity": {
       "collection": "rooms/{roomId}/activities/{activityId}",
-      "description": "Inline interactive mini-game or poll card in chat (poll, trivia, or spin wheel).",
+      "description": "Inline interactive mini-game or poll card in chat (poll, trivia, wheel, atlas, word).",
       "fields": {
         "id": { "type": "string" },
         "roomId": { "type": "string", "required": true },
-        "type": { "type": "string", "enum": ["poll", "trivia", "wheel"], "required": true },
+        "type": { "type": "string", "enum": ["poll", "trivia", "wheel", "atlas", "word"], "required": true },
         "title": { "type": "string", "maxLength": 140, "required": true },
         "creatorUid": { "type": "string", "required": true },
-        "creatorName": { "type": "string" },
-        "creatorIdentity": { "type": "string", "enum": ["purush", "stree", "navrang"] },
         "status": { "type": "string", "enum": ["active", "ended", "spinning"] },
-        "options": { "type": "array", "description": "Poll options [{id, label, count}] or Trivia options [string]" },
-        "totalVotes": { "type": "number" },
-        "correctIndex": { "type": "number" },
-        "durationSec": { "type": "number" },
-        "endsAtMs": { "type": "number", "nullable": true },
-        "firstCorrectUid": { "type": "string", "nullable": true },
-        "firstCorrectName": { "type": "string", "nullable": true },
-        "firstCorrectIdentity": { "type": "string", "nullable": true },
-        "firstCorrectAtMs": { "type": "number", "nullable": true },
-        "winnerLocked": { "type": "boolean" },
-        "attemptCount": { "type": "number" },
-        "entries": { "type": "array", "description": "Spin wheel slices (2-12 strings)" },
-        "spinSeq": { "type": "number" },
-        "winnerIndex": { "type": "number", "nullable": true },
-        "winnerLabel": { "type": "string", "nullable": true },
-        "spinStartedAtMs": { "type": "number", "nullable": true },
-        "targetAngle": { "type": "number" },
-        "createdAt": { "type": "timestamp", "required": true },
-        "updatedAt": { "type": "timestamp" }
-      }
-    },
-    "ActivityVote": {
-      "collection": "rooms/{roomId}/activities/{activityId}/votes/{uid}",
-      "description": "Per-user atomic vote or trivia buzzer lock document preventing concurrent double-votes.",
-      "fields": {
-        "uid": { "type": "string", "required": true },
-        "displayName": { "type": "string" },
-        "identity": { "type": "string", "enum": ["purush", "stree", "navrang"] },
-        "optionIndex": { "type": "number", "required": true },
-        "isCorrect": { "type": "boolean" },
-        "respondedAtMs": { "type": "number" },
         "createdAt": { "type": "timestamp", "required": true }
       }
     },
@@ -93,24 +176,7 @@
       "canonicalDocId": "dailyLineup",
       "description": "Single lightweight document storing today's scheduled broadcasts and RJ hosts.",
       "fields": {
-        "shows": {
-          "type": "array",
-          "maxItems": 40,
-          "items": {
-            "id": "string",
-            "title": "string",
-            "hostName": "string",
-            "hostUid": "string",
-            "hostIdentity": "purush|stree|navrang",
-            "roomId": "string",
-            "roomName": "string",
-            "startTime": "string (HH:MM)",
-            "startMinutes": "number (0-1439)",
-            "durationMinutes": "number (15-480)",
-            "statusOverride": "auto|live|ended",
-            "order": "number"
-          }
-        },
+        "shows": { "type": "array", "maxItems": 40 },
         "updatedBy": { "type": "string" },
         "updatedAt": { "type": "timestamp" }
       }

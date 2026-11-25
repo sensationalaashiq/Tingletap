@@ -6,8 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useDraggable from '../hooks/useDraggable';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import PremiumImageMessage from './PremiumImageMessage';
-import { auth, db } from '../firebase/config';
+import { auth, db, rtdb } from '../firebase/config';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { onDisconnect, onValue, ref as rtdbRef, remove as rtdbRemove, set as rtdbSet } from 'firebase/database';
+import { shouldSendReadReceipts, shouldShowTypingIndicator } from '../services/privacyService';
 import { pt } from '../utils/premiumToast';
 import { useLiveDisplayName } from '../utils/liveUsernames';
 import LiveAvatarImg from './LiveAvatar';
@@ -278,6 +280,7 @@ const PMMessageRow = React.memo(function PMMessageRow({
   targetPhotoURL,
   confirmDeletePmId,
   deletingPmId,
+  canShowReadReceipts,
   onDeleteRequest,
   onDeleteConfirm,
   onDeleteCancel,
@@ -313,6 +316,25 @@ const PMMessageRow = React.memo(function PMMessageRow({
               ? msg.createdAt.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
               : new Date(msg.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
           </span>
+          {isSent && canShowReadReceipts && msg.isRead && (
+            <span
+              title="Seen"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px',
+                fontSize: '9.5px',
+                fontWeight: 700,
+                color: '#6366f1',
+                marginLeft: '3px',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12l5 5L18 6" />
+                <path d="M9 12l5 5L22 6" />
+              </svg>
+            </span>
+          )}
           {isSent && (
             confirmDeletePmId === msg.id ? (
               <span className="ultra-pm-delete-confirm">
@@ -408,6 +430,60 @@ const LuxuryPrivateMessageWindow = ({
   const [audioStream, setAudioStream] = useState(null);
   const audioInputRef = useRef(null);
   const recordingTimerRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const [targetIsTyping, setTargetIsTyping] = useState(false);
+
+  const myUid = auth.currentUser?.uid || loggedInUserProfile?.uid || '';
+  const targetUid = privateMessageTarget?.uid || '';
+  const conversationId = myUid && targetUid ? [myUid, targetUid].sort().join('_') : '';
+  const canShowTyping = React.useMemo(
+    () => shouldShowTypingIndicator(loggedInUserProfile, privateMessageTarget),
+    [loggedInUserProfile, privateMessageTarget]
+  );
+  const canShowReadReceipts = React.useMemo(
+    () => shouldSendReadReceipts(loggedInUserProfile, privateMessageTarget),
+    [loggedInUserProfile, privateMessageTarget]
+  );
+
+  // Listen for target typing status (only when both users enable typing indicators)
+  useEffect(() => {
+    setTargetIsTyping(false);
+    if (!isOpen || !conversationId || !targetUid || !canShowTyping) return;
+    const tRef = rtdbRef(rtdb, `typing/dm/${conversationId}/${targetUid}`);
+    const unsub = onValue(tRef, (snap) => {
+      setTargetIsTyping(Boolean(snap.val()));
+    });
+    return () => {
+      try { unsub(); } catch (_) {}
+      setTargetIsTyping(false);
+    };
+  }, [isOpen, conversationId, targetUid, canShowTyping]);
+
+  // Clear own typing state on close / conversation change
+  useEffect(() => {
+    if (!isOpen || !conversationId || !myUid || !canShowTyping) return;
+    const myTypingRef = rtdbRef(rtdb, `typing/dm/${conversationId}/${myUid}`);
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      rtdbRemove(myTypingRef).catch(() => {});
+    };
+  }, [isOpen, conversationId, myUid, canShowTyping]);
+
+  const emitTypingSignal = useCallback((nextText) => {
+    if (!conversationId || !myUid || !canShowTyping) return;
+    const myTypingRef = rtdbRef(rtdb, `typing/dm/${conversationId}/${myUid}`);
+    if (!nextText || !nextText.trim()) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      rtdbRemove(myTypingRef).catch(() => {});
+      return;
+    }
+    rtdbSet(myTypingRef, true).catch(() => {});
+    try { onDisconnect(myTypingRef).remove(); } catch (_) {}
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      rtdbRemove(myTypingRef).catch(() => {});
+    }, 2600);
+  }, [conversationId, myUid, canShowTyping]);
 
   // Per-participant soft delete: hide any message the current user has deleted
   // for themselves, without affecting what the other participant sees.
@@ -642,6 +718,7 @@ const LuxuryPrivateMessageWindow = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (privateMessage.trim()) {
+        emitTypingSignal('');
         onSendMessage();
       }
     }
@@ -769,8 +846,8 @@ const LuxuryPrivateMessageWindow = ({
                       fallback={privateMessageTarget?.displayName || privateMessageTarget?.name || 'Chat'}
                     />
                   </h4>
-                  <span className={`ultra-pm-status-text ${getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`}>
-                    {getUserStatus(privateMessageTarget?.uid).status}
+                  <span className={`ultra-pm-status-text ${targetIsTyping || getUserStatus(privateMessageTarget?.uid).isOnline ? 'online' : 'offline'}`}>
+                    {targetIsTyping ? 'Typing...' : getUserStatus(privateMessageTarget?.uid).status}
                   </span>
                 </div>
               </div>
@@ -842,6 +919,7 @@ const LuxuryPrivateMessageWindow = ({
                         targetPhotoURL={privateMessageTarget?.photoURL}
                         confirmDeletePmId={confirmDeletePmId}
                         deletingPmId={deletingPmId}
+                        canShowReadReceipts={canShowReadReceipts}
                         onDeleteRequest={handleDeleteRequest}
                         onDeleteConfirm={handleDeletePM}
                         onDeleteCancel={handleDeleteCancel}
@@ -850,6 +928,18 @@ const LuxuryPrivateMessageWindow = ({
                   </div>
                 )}
               </AnimatePresence>
+
+              {targetIsTyping && (
+                <div style={{
+                  padding: '3px 12px 6px',
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  color: '#8b5cf6',
+                  letterSpacing: '0.01em',
+                }}>
+                  {privateMessageTarget?.displayName || 'User'} is typing...
+                </div>
+              )}
 
               {/* DM-off notice — TingleBot style */}
               <AnimatePresence>
@@ -1354,9 +1444,13 @@ const LuxuryPrivateMessageWindow = ({
 
                 <textarea
                   value={privateMessage}
-                  onChange={(e) => !loggedInUserProfile?.mutedInfo?.isMuted && setPrivateMessage(e.target.value)}
+                  onChange={(e) => {
+                    if (loggedInUserProfile?.mutedInfo?.isMuted) return;
+                    setPrivateMessage(e.target.value);
+                    emitTypingSignal(e.target.value);
+                  }}
                   onKeyDown={handleKeyDown}
-                  placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? '🔇 You are muted...' : 'Type message...'}
+                  placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : 'Type message...'}
                   className="ultra-pm-input"
                   rows="1"
                   disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
@@ -1366,7 +1460,7 @@ const LuxuryPrivateMessageWindow = ({
 
                 <motion.button
                   className="ultra-pm-send-btn"
-                  onClick={loggedInUserProfile?.mutedInfo?.isMuted ? undefined : onSendMessage}
+                  onClick={loggedInUserProfile?.mutedInfo?.isMuted ? undefined : () => { emitTypingSignal(''); onSendMessage(); }}
                   disabled={!privateMessage.trim() || !!loggedInUserProfile?.mutedInfo?.isMuted}
                   whileHover={loggedInUserProfile?.mutedInfo?.isMuted ? {} : { scale: 1.1 }}
                   whileTap={loggedInUserProfile?.mutedInfo?.isMuted ? {} : { scale: 0.9 }}
