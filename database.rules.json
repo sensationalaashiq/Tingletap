@@ -111,7 +111,6 @@
       "public": {
         "$broadcastId": {
           ".read": "auth != null",
-          // Root write (create/update/end) restricted to the session owner once it exists.
           ".write": "auth != null && (!data.exists() || auth.uid === data.child('session/hostUid').val())",
           "connections": {
             "$uid": {
@@ -123,6 +122,18 @@
             ".read": "auth != null",
             "$uid": {
               ".write": "auth != null && auth.uid === $uid"
+            }
+          },
+          "participants": {
+            ".read": "auth != null",
+            "$uid": {
+              ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('broadcasts/public/' + $broadcastId + '/session/hostUid').val())"
+            }
+          },
+          "mesh": {
+            "$pairId": {
+              ".read": "auth != null && ($pairId.beginsWith(auth.uid + '__') || $pairId.endsWith('__' + auth.uid))",
+              ".write": "auth != null && ($pairId.beginsWith(auth.uid + '__') || $pairId.endsWith('__' + auth.uid))"
             }
           }
         }

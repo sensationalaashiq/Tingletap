@@ -701,14 +701,22 @@ service cloud.firestore {
     }
 
     // ================================================================
-    // PUBLIC BROADCASTS
+    // PUBLIC BROADCASTS & GROUP VOICE CALLS
     // ================================================================
     match /publicBroadcasts/{docId} {
       allow read: if true;
       allow create: if request.auth != null && isRegistered()
                     && request.resource.data.hostUid == request.auth.uid;
-      allow update, delete: if request.auth != null && (
-        isStaff() || (resource.data.hostUid == request.auth.uid)
+      allow update: if request.auth != null && (
+        isStaff()
+        || resource.data.hostUid == request.auth.uid
+        || (
+          isRegistered()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['listenerCount', 'participantCount'])
+        )
+      );
+      allow delete: if request.auth != null && (
+        isStaff() || resource.data.hostUid == request.auth.uid
       );
     }
 

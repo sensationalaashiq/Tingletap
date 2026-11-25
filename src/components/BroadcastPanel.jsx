@@ -183,7 +183,7 @@ const FloatingPodcastIcon = () => (
 );
 
 /* ── Floating Minimized Bubble (draggable) ── */
-const FloatingMinimizedBubble = ({ onExpand, onClose, isLive, pubIsLive }) => {
+const FloatingMinimizedBubble = ({ onExpand, onClose, isLive, pubIsLive, pubCount = 0 }) => {
   const posRef = useRef({ x: window.innerWidth - 96, y: window.innerHeight - 128 });
   const [pos, setPos] = useState(() => ({ x: window.innerWidth - 96, y: window.innerHeight - 128 }));
   const isDraggingRef = useRef(false);
@@ -271,7 +271,7 @@ const FloatingMinimizedBubble = ({ onExpand, onClose, isLive, pubIsLive }) => {
           <line x1="12" y1="17" x2="12" y2="20" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
           <line x1="9" y1="20" x2="15" y2="20" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round"/>
         </svg>
-        <span>{isLive ? 'RJ Live' : pubIsLive ? 'On Air' : 'Studio'}</span>
+        <span>{isLive ? 'RJ Live' : pubIsLive ? `Group (${pubCount}/20)` : 'Studio'}</span>
         {(isLive || pubIsLive) && (
           <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isLive ? '#ef4444' : '#22c55e', marginLeft: 4, verticalAlign: 'middle', animation: 'bp-pulse 1s infinite', flexShrink: 0 }} />
         )}
@@ -526,9 +526,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [speakerConnecting, setSpeakerConnecting] = useState(false);
   useEffect(() => { speakerMicMutedRef.current = speakerMicMuted; }, [speakerMicMuted]);
 
-  /* ── Public Broadcasts state ── */
+  /* ── Public Group Voice Calls state (supports up to 20 participants per call, unlimited concurrent calls) ── */
+  const MAX_PUB_PARTICIPANTS = 20;
   const [publicBroadcasts, setPublicBroadcasts] = useState([]);
   const [myActiveBroadcast, setMyActiveBroadcast] = useState(null);
+  const [activePubCall, setActivePubCall] = useState(null);
+  const [pubParticipants, setPubParticipants] = useState([]);
+  const [pubSpeakingMap, setPubSpeakingMap] = useState({});
+  const [pubPeerStates, setPubPeerStates] = useState({});
+  const [pubCallDuration, setPubCallDuration] = useState(0);
   const [pubTitle, setPubTitle] = useState('');
   const [pubPassword, setPubPassword] = useState('');
   const [pubIsProtected, setPubIsProtected] = useState(false);
@@ -547,7 +553,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const [goingLive, setGoingLive] = useState(false);
   const [endingBroadcast, setEndingBroadcast] = useState(false);
 
-  /* ── Dual Independent Volume Controls (0-100%) ── */
+  /* ── Independent Volume Controls (0-100%) ── */
   const [rjVoiceVolume, setRjVoiceVolume] = useState(() => {
     try {
       const v = Number(localStorage.getItem('tl_bp_voice_vol'));
@@ -560,8 +566,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 75;
     } catch { return 75; }
   });
+  const [pubCallVolume, setPubCallVolume] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem('tl_bp_group_vol'));
+      return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 100;
+    } catch { return 100; }
+  });
   const rjVoiceVolumeRef = useRef(rjVoiceVolume);
   const musicVolumeRef = useRef(musicVolume);
+  const pubCallVolumeRef = useRef(pubCallVolume);
+  const prevVoiceVolRef = useRef(100);
+  const prevMusicVolRef = useRef(75);
+  const prevPubVolRef = useRef(100);
 
   /* ── Public joining state ── */
   const [pubJoining, setPubJoining] = useState(false);
@@ -617,13 +633,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── WebRTC refs — RJ → Speaker connections (RJ receives each speaker's mic) ── */
   const rjSpeakerPCs = useRef({});
-  /* Per-speaker unsub map: { [speakerUid]: [unsubFn, ...] }
-     Keeps RTDB listeners isolated so removing one speaker doesn't leak others. */
   const rjSpeakerUnsubs = useRef({});
-  /* Per-speaker MediaStreamAudioSourceNode — MUST be kept referenced or some
-     browsers garbage-collect the node shortly after creation, silently
-     killing the speaker's audio in the mix even though the connection stays
-     "connected". Also lets us cleanly .disconnect() on teardown. */
   const rjSpeakerSourceNodes = useRef({});
 
   /* ── WebRTC refs — Speaker side (speaker sends their mic to RJ) ── */
@@ -636,13 +646,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const rjAudioEl = useRef(null);
   const rjListenerRtdbUnsubs = useRef([]);
 
-  /* ── WebRTC refs — Public broadcaster ── */
+  /* ── WebRTC refs — Public Group Voice Mesh (up to 20 peers per call) ── */
   const pubHostStream = useRef(null);
-  const pubHostPCs = useRef({});
+  const pubHostPCs = useRef({});          /* { [peerUid]: RTCPeerConnection } */
+  const pubPeerAudioEls = useRef({});     /* { [peerUid]: HTMLAudioElement } */
+  const pubPeerUnsubs = useRef({});       /* { [peerUid]: [unsubFn, ...] } */
+  const pubPeerSpeakingCleanups = useRef({}); /* { [peerUid]: () => void } */
+  const pubCallRtdbUnsubs = useRef([]);
+  const pubPartOdRef = useRef(null);
   const pubListenersUnsub = useRef(null);
   const pubHostRtdbUnsubs = useRef([]);
-
-  /* ── WebRTC refs — Public listener ── */
   const pubListenerPC = useRef(null);
   const pubAudioEl = useRef(null);
   const pubListenerRtdbUnsubs = useRef([]);
@@ -656,23 +669,25 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const ytContainerRef = useRef(null);
   const ytInitialized = useRef(false);
   const currentYtVideoIdRef = useRef(null);
-  /* Tracks the RJ's intended playback state so we can auto-resume after browser throttling */
   const ytIntendedStateRef = useRef('stopped');
-  /* Mirrors live states for timeouts/listeners without stale closures */
   const rjIsLiveRef = useRef(false);
   const speakerMapRef = useRef({});
   const rjIsListeningRef = useRef(false);
   const rjConnectingRef = useRef(false);
   const listeningToRef = useRef(null);
+  const activePubCallRef = useRef(null);
+  const pubParticipantsMapRef = useRef({});
 
   useEffect(() => { speakerMapRef.current = speakerMap; }, [speakerMap]);
   useEffect(() => { rjIsListeningRef.current = rjIsListening; }, [rjIsListening]);
   useEffect(() => { rjConnectingRef.current = rjConnecting; }, [rjConnecting]);
   useEffect(() => { listeningToRef.current = listeningTo; }, [listeningTo]);
+  useEffect(() => { activePubCallRef.current = activePubCall; }, [activePubCall]);
 
   /* Sync RJ voice volume & Music volume in real time */
   useEffect(() => {
     rjVoiceVolumeRef.current = rjVoiceVolume;
+    if (rjVoiceVolume > 0) prevVoiceVolRef.current = rjVoiceVolume;
     try { localStorage.setItem('tl_bp_voice_vol', String(rjVoiceVolume)); } catch {}
     const gainVal = Math.max(0, Math.min(1, rjVoiceVolume / 100));
     if (rjMicGainNode.current && rjAudioCtx.current) {
@@ -683,13 +698,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     if (rjAudioEl.current) {
       try { rjAudioEl.current.volume = gainVal; } catch {}
     }
-    if (pubAudioEl.current) {
-      try { pubAudioEl.current.volume = gainVal; } catch {}
-    }
   }, [rjVoiceVolume]);
 
   useEffect(() => {
     musicVolumeRef.current = musicVolume;
+    if (musicVolume > 0) prevMusicVolRef.current = musicVolume;
     try { localStorage.setItem('tl_bp_music_vol', String(musicVolume)); } catch {}
     const player = ytPlayerRef.current;
     if (player) {
@@ -703,6 +716,28 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       } catch {}
     }
   }, [musicVolume]);
+
+  useEffect(() => {
+    pubCallVolumeRef.current = pubCallVolume;
+    if (pubCallVolume > 0) prevPubVolRef.current = pubCallVolume;
+    try { localStorage.setItem('tl_bp_group_vol', String(pubCallVolume)); } catch {}
+    const vol = Math.max(0, Math.min(1, pubCallVolume / 100));
+    Object.values(pubPeerAudioEls.current).forEach(el => {
+      try { if (el) el.volume = vol; } catch {}
+    });
+    if (pubAudioEl.current) {
+      try { pubAudioEl.current.volume = vol; } catch {}
+    }
+  }, [pubCallVolume]);
+
+  /* Duration timer for active public group call */
+  useEffect(() => {
+    if (!activePubCall?.startedAt) { setPubCallDuration(0); return; }
+    const tick = () => setPubCallDuration(Math.max(0, Math.floor((Date.now() - activePubCall.startedAt) / 1000)));
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [activePubCall?.id, activePubCall?.startedAt]);
 
   /* ── onDisconnect refs (keep handle to cancel if needed) ── */
   const rjOnDisconnectRef = useRef(null);
@@ -746,79 +781,95 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     ensureYtApiLoaded();
   }, [ensureYtApiLoaded]);
 
-  const initYtPlayer = useCallback(async (videoId, startSeconds = 0) => {
+  const initYtPlayer = useCallback((videoId, startSeconds = 0) => {
     if (!videoId) return;
-    if (!(window.YT && window.YT.Player)) {
-      await ensureYtApiLoaded();
-    }
     currentYtVideoIdRef.current = videoId;
-    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-      ytPlayerRef.current.loadVideoById({ videoId, startSeconds });
-      try {
-        if (musicVolumeRef.current === 0) {
-          ytPlayerRef.current.mute?.();
-        } else {
-          ytPlayerRef.current.unMute?.();
-          ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
-        }
-        if (ytIntendedStateRef.current === 'playing') {
-          ytPlayerRef.current.playVideo?.();
-        }
-      } catch {}
-      return;
-    }
-    if (!ytContainerRef.current) return;
-    ytInitialized.current = true;
-    ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
-      height: '2',
-      width: '2',
-      videoId,
-      playerVars: {
-        autoplay: ytIntendedStateRef.current === 'playing' ? 1 : 0,
-        controls: 0,
-        playsinline: 1,
-        enablejsapi: 1,
-        rel: 0,
-        start: Math.floor(startSeconds),
-      },
-      events: {
-        onReady: (e) => {
-          try {
-            if (musicVolumeRef.current === 0) {
-              e.target.mute?.();
-            } else {
-              e.target.unMute?.();
-              e.target.setVolume?.(musicVolumeRef.current);
-            }
-            if (startSeconds > 0) e.target.seekTo?.(startSeconds, true);
-            if (ytIntendedStateRef.current === 'playing') {
-              e.target.playVideo?.();
+
+    const createPlayer = () => {
+      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+        try {
+          ytPlayerRef.current.loadVideoById({ videoId, startSeconds: Math.floor(startSeconds) });
+          if (musicVolumeRef.current === 0) {
+            ytPlayerRef.current.mute?.();
+          } else {
+            ytPlayerRef.current.unMute?.();
+            ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
+          }
+          if (ytIntendedStateRef.current === 'playing') {
+            ytPlayerRef.current.playVideo?.();
+          }
+        } catch {}
+        return;
+      }
+      if (!ytContainerRef.current || !window.YT?.Player) return;
+      ytInitialized.current = true;
+      ytPlayerRef.current = new window.YT.Player(ytContainerRef.current, {
+        height: '126',
+        width: '224',
+        videoId,
+        playerVars: {
+          autoplay: ytIntendedStateRef.current === 'playing' ? 1 : 0,
+          controls: 1,
+          modestbranding: 1,
+          playsinline: 1,
+          enablejsapi: 1,
+          rel: 0,
+          start: Math.floor(startSeconds),
+        },
+        events: {
+          onReady: (e) => {
+            try {
+              if (musicVolumeRef.current === 0) {
+                e.target.mute?.();
+              } else {
+                e.target.unMute?.();
+                e.target.setVolume?.(musicVolumeRef.current);
+              }
+              if (startSeconds > 0) e.target.seekTo?.(startSeconds, true);
+              if (ytIntendedStateRef.current === 'playing') {
+                e.target.playVideo?.();
+                setTimeout(() => {
+                  try {
+                    const st = e.target.getPlayerState?.();
+                    if (ytIntendedStateRef.current === 'playing' && st !== 1 && st !== 3) {
+                      setYtAudioBlocked(true);
+                    }
+                  } catch {}
+                }, 1300);
+              }
+            } catch {}
+          },
+          onStateChange: (e) => {
+            const YT_PLAYING = 1;
+            const YT_PAUSED = 2;
+            if (e.data === YT_PLAYING) {
+              setYtAudioBlocked(false);
+            } else if (e.data === YT_PAUSED && ytIntendedStateRef.current === 'playing') {
               setTimeout(() => {
                 try {
-                  if (ytIntendedStateRef.current === 'playing' && e.target.getPlayerState?.() !== 1) {
-                    setYtAudioBlocked(true);
+                  if (ytIntendedStateRef.current === 'playing') {
+                    if (musicVolumeRef.current > 0) {
+                      e.target.unMute?.();
+                      e.target.setVolume?.(musicVolumeRef.current);
+                    }
+                    e.target.playVideo?.();
                   }
                 } catch {}
-              }, 1600);
+              }, 350);
             }
-          } catch {}
-        },
-        onStateChange: (e) => {
-          const YT_PLAYING = 1;
-          const YT_PAUSED = 2;
-          if (e.data === YT_PLAYING) {
-            setYtAudioBlocked(false);
-          } else if (e.data === YT_PAUSED && ytIntendedStateRef.current === 'playing') {
-            setTimeout(() => {
-              try { e.target.playVideo?.(); } catch {}
-            }, 300);
+          },
+          onError: () => {
+            bpToast.warning('Could not load YouTube track (embed may be restricted by owner).');
           }
-        },
-        onError: () => {
-          bpToast.warning('Could not load YouTube track (embed may be restricted by owner).');
         }
-      }
-    });
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      ensureYtApiLoaded().then(createPlayer);
+    }
   }, [ensureYtApiLoaded]);
 
   const syncYouTubePlayer = useCallback((ytData) => {
@@ -1056,7 +1107,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
   /* ── visibilitychange for YouTube + voice: handled by the unified effect below ── */
 
-  /* ── Broadcaster: periodic seek position push every 10 s so listeners stay in sync ── */
+  /* ── Broadcaster: periodic seek position push every 5 s so listeners stay tightly synced ── */
   useEffect(() => {
     if (!canManageRJ || !rjIsLive) return;
     const interval = setInterval(() => {
@@ -1071,7 +1122,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           updatedAt: Date.now(),
         }).catch(() => {});
       } catch {}
-    }, 10000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [canManageRJ, rjIsLive]);
 
@@ -2252,20 +2303,48 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const nowMs = Date.now();
 
     if (action === 'play') {
-      player?.playVideo?.();
       newState = 'playing';
-      seekTo = player?.getCurrentTime?.() || 0;
+      ytIntendedStateRef.current = 'playing';
+      if (player && player.playVideo) {
+        try {
+          if (musicVolumeRef.current === 0) {
+            player.mute?.();
+          } else {
+            player.unMute?.();
+            player.setVolume?.(musicVolumeRef.current);
+          }
+          player.playVideo();
+          seekTo = player.getCurrentTime?.() || 0;
+        } catch {}
+      } else if (rjBroadcast?.youtube?.videoId || extractYtId(ytUrl)) {
+        const vid = rjBroadcast?.youtube?.videoId || extractYtId(ytUrl);
+        initYtPlayer(vid, rjBroadcast?.youtube?.seekTo || 0);
+      }
+      setTimeout(() => {
+        try {
+          const st = ytPlayerRef.current?.getPlayerState?.();
+          if (ytIntendedStateRef.current === 'playing' && st !== 1 && st !== 3) {
+            setYtAudioBlocked(true);
+          }
+        } catch {}
+      }, 1200);
     } else if (action === 'pause') {
       player?.pauseVideo?.();
       newState = 'paused';
       seekTo = player?.getCurrentTime?.() || 0;
+      setYtAudioBlocked(false);
     } else if (action === 'stop') {
       player?.stopVideo?.();
       newState = 'stopped';
       seekTo = 0;
+      setYtAudioBlocked(false);
     } else if (action === 'skipnext') {
       seekTo = (player?.getCurrentTime?.() || 0) + 30;
       player?.seekTo?.(seekTo, true);
+      if (musicVolumeRef.current > 0) {
+        player?.unMute?.();
+        player?.setVolume?.(musicVolumeRef.current);
+      }
       player?.playVideo?.();
       newState = 'playing';
     } else if (action === 'skipprev') {
@@ -2277,7 +2356,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     /* Track intended state so auto-resume logic knows what to do */
     ytIntendedStateRef.current = newState;
     setYtPlayerState(newState);
-    update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs });
+    update(ref(rtdb, 'broadcasts/rj/youtube'), { state: newState, seekTo, updatedAt: nowMs }).catch(() => {});
   };
 
   /* ── Speaker mic toggle (for users who are on stage) ── */
@@ -2454,263 +2533,391 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     await remove(ref(rtdb, `broadcasts/rj/announcements/${id}`)).catch(() => {});
   };
 
-  /* ══════════════════════════════════════
-     PUBLIC BROADCASTS — BROADCASTER SIDE
-  ══════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════════════
+     PUBLIC GROUP VOICE CALLS — MULTI-ROOM FULL-DUPLEX MESH (UP TO 20)
+  ══════════════════════════════════════════════════════════════════ */
 
-  const pubCreateOfferForListener = async (broadcastId, listenerUid) => {
-    const existing = pubHostPCs.current[listenerUid];
-    if (existing) {
-      if (existing.connectionState !== 'failed' && existing.connectionState !== 'disconnected' && existing.signalingState !== 'closed') return;
-      try { existing.close(); } catch {}
-      delete pubHostPCs.current[listenerUid];
+  const _attachPeerSpeakingDetector = (peerUid, stream) => {
+    if (pubPeerSpeakingCleanups.current[peerUid]) {
+      try { pubPeerSpeakingCleanups.current[peerUid](); } catch {}
+      delete pubPeerSpeakingCleanups.current[peerUid];
+    }
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 128;
+      src.connect(analyser);
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      const iv = setInterval(() => {
+        analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+        const isSpk = avg > 10;
+        setPubSpeakingMap(prev => (prev[peerUid] === isSpk ? prev : { ...prev, [peerUid]: isSpk }));
+      }, 160);
+      pubPeerSpeakingCleanups.current[peerUid] = () => {
+        clearInterval(iv);
+        try { src.disconnect(); ctx.close(); } catch {}
+      };
+    } catch {}
+  };
+
+  const _pubDisconnectPeer = (peerUid) => {
+    (pubPeerUnsubs.current[peerUid] || []).forEach(u => { try { u(); } catch {} });
+    delete pubPeerUnsubs.current[peerUid];
+
+    const pc = pubHostPCs.current[peerUid];
+    if (pc) { try { pc.close(); } catch {} }
+    delete pubHostPCs.current[peerUid];
+
+    const audioEl = pubPeerAudioEls.current[peerUid];
+    if (audioEl) {
+      try { audioEl.pause(); audioEl.srcObject = null; } catch {}
+      delete pubPeerAudioEls.current[peerUid];
     }
 
+    if (pubPeerSpeakingCleanups.current[peerUid]) {
+      try { pubPeerSpeakingCleanups.current[peerUid](); } catch {}
+      delete pubPeerSpeakingCleanups.current[peerUid];
+    }
+
+    setPubPeerStates(prev => {
+      if (!(peerUid in prev)) return prev;
+      const next = { ...prev };
+      delete next[peerUid];
+      return next;
+    });
+    setPubSpeakingMap(prev => {
+      if (!(peerUid in prev)) return prev;
+      const next = { ...prev };
+      delete next[peerUid];
+      return next;
+    });
+  };
+
+  const _pubConnectGroupPeer = async (callId, peerUid) => {
+    if (!myUid || !peerUid || peerUid === myUid) return;
+    if (!activePubCallRef.current || activePubCallRef.current.id !== callId) return;
+
+    const existing = pubHostPCs.current[peerUid];
+    if (existing) {
+      if (existing.connectionState !== 'failed' && existing.signalingState !== 'closed') return;
+      _pubDisconnectPeer(peerUid);
+    }
+
+    const iAmOfferer = myUid < peerUid;
+    const pairId = iAmOfferer ? `${myUid}__${peerUid}` : `${peerUid}__${myUid}`;
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    pubHostPCs.current[listenerUid] = pc;
+    pubHostPCs.current[peerUid] = pc;
+    pubPeerUnsubs.current[peerUid] = [];
+    setPubPeerStates(prev => ({ ...prev, [peerUid]: 'connecting' }));
 
     if (pubHostStream.current) {
       pubHostStream.current.getTracks().forEach(t => pc.addTrack(t, pubHostStream.current));
     }
 
-    pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        push(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/hostCandidates`), e.candidate.toJSON()).catch(() => {});
+    pc.ontrack = (e) => {
+      const remoteStream = e.streams?.[0] || new MediaStream([e.track]);
+      let audio = pubPeerAudioEls.current[peerUid];
+      if (!audio) {
+        audio = new Audio();
+        audio.autoplay = true;
+        audio.playsInline = true;
+        pubPeerAudioEls.current[peerUid] = audio;
       }
-    };
-
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        setTimeout(() => {
-          if (pubHostPCs.current[listenerUid] === pc) {
-            try { pc.close(); } catch {}
-            delete pubHostPCs.current[listenerUid];
-            pubCreateOfferForListener(broadcastId, listenerUid).catch(() => {});
-          }
-        }, 2000);
-      }
-    };
-
-    let remoteDescReady = false;
-    const pendingCandidates = [];
-    const drainPending = async () => {
-      for (const c of pendingCandidates) {
-        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
-      }
-      pendingCandidates.length = 0;
-    };
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    await update(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}`), {
-      offer: { type: offer.type, sdp: offer.sdp },
-      answer: null,
-      hostCandidates: null,
-      listenerCandidates: null,
-    }).catch(() => {});
-
-    const unsubAns = onValue(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/answer`), async snap => {
-      const ans = snap.val();
-      if (ans && pc === pubHostPCs.current[listenerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(ans));
-          remoteDescReady = true;
-          await drainPending();
-        } catch {}
-      }
-    });
-    pubHostRtdbUnsubs.current.push(unsubAns);
-
-    /* Buffer early listener ICE candidates until remoteDescription is set */
-    const unsubLC = onChildAdded(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${listenerUid}/listenerCandidates`), snap => {
-      const c = snap.val();
-      if (!c || pc !== pubHostPCs.current[listenerUid]) return;
-      if (remoteDescReady) {
-        pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-      } else {
-        pendingCandidates.push(c);
-      }
-    });
-    pubHostRtdbUnsubs.current.push(unsubLC);
-  };
-
-  const pubStartListenerWatcher = (broadcastId) => {
-    let prevUIDs = new Set();
-    const lisRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners`);
-    const unsub = onValue(lisRef, snap => {
-      const listeners = snap.val() || {};
-      const currentUIDs = new Set(Object.keys(listeners));
-
-      currentUIDs.forEach(uid => {
-        if (uid !== myUid && !prevUIDs.has(uid)) {
-          pubCreateOfferForListener(broadcastId, uid).catch(() => {});
-        }
-      });
-
-      prevUIDs.forEach(uid => {
-        if (!currentUIDs.has(uid) && pubHostPCs.current[uid]) {
-          try { pubHostPCs.current[uid].close(); } catch {}
-          delete pubHostPCs.current[uid];
-          remove(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${uid}`)).catch(() => {});
-        }
-      });
-
-      prevUIDs = currentUIDs;
-
-      /* Update listener count in Firestore */
-      updateDoc(doc(db, 'publicBroadcasts', broadcastId), { listenerCount: currentUIDs.size }).catch(() => {});
-    });
-    pubListenersUnsub.current = unsub;
-  };
-
-  const pubStopHostAudio = (broadcastId) => {
-    /* Cancel onDisconnect so it doesn't double-fire */
-    if (pubOnDisconnectRef.current) {
-      try { pubOnDisconnectRef.current.cancel(); } catch {}
-      pubOnDisconnectRef.current = null;
-    }
-
-    pubHostRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
-    pubHostRtdbUnsubs.current = [];
-
-    if (pubListenersUnsub.current) { try { pubListenersUnsub.current(); } catch {} pubListenersUnsub.current = null; }
-
-    Object.values(pubHostPCs.current).forEach(pc => { try { pc.close(); } catch {} });
-    pubHostPCs.current = {};
-
-    if (pubHostStream.current) {
-      pubHostStream.current.getTracks().forEach(t => t.stop());
-      pubHostStream.current = null;
-    }
-
-    if (broadcastId) {
-      remove(ref(rtdb, `broadcasts/public/${broadcastId}`)).catch(() => {});
-    }
-  };
-
-  /* ══════════════════════════════════════
-     PUBLIC BROADCASTS — LISTENER SIDE
-  ══════════════════════════════════════ */
-
-  const _pubCleanupListenerSide = () => {
-    pubListenerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
-    pubListenerRtdbUnsubs.current = [];
-
-    if (pubListenerPC.current) { try { pubListenerPC.current.close(); } catch {} pubListenerPC.current = null; }
-
-    if (pubAudioEl.current) {
-      try { pubAudioEl.current.pause(); pubAudioEl.current.srcObject = null; } catch {}
-      pubAudioEl.current = null;
-    }
-  };
-
-  const pubJoinAudio = async (bc) => {
-    if (!myUid) return;
-    const { id: broadcastId } = bc;
-    setPubAudioBlocked(false);
-
-    /* Register presence so broadcaster creates offer for us */
-    const lRef = ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`);
-    await set(lRef, { uid: myUid, name: myName, joinedAt: Date.now() }).catch(() => {});
-    onDisconnect(lRef).remove();
-
-    /* Create peer connection BEFORE watching for the offer */
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    pubListenerPC.current = pc;
-
-    /* Buffer ICE candidates that arrive before remote description is set */
-    let remoteDescReady = false;
-    const pendingCandidates = [];
-    const drainPending = async () => {
-      for (const c of pendingCandidates) {
-        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
-      }
-      pendingCandidates.length = 0;
-    };
-
-    pc.ontrack = e => {
-      if (!pubAudioEl.current) {
-        pubAudioEl.current = new Audio();
-        pubAudioEl.current.autoplay = true;
-        pubAudioEl.current.playsInline = true;
-      }
-      pubAudioEl.current.srcObject = e.streams?.[0] || new MediaStream([e.track]);
-      pubAudioEl.current.play().then(() => {
+      audio.volume = Math.max(0, Math.min(1, pubCallVolumeRef.current / 100));
+      audio.srcObject = remoteStream;
+      audio.play().then(() => {
         setPubAudioBlocked(false);
-        setPubConnState('connected');
+        setPubPeerStates(prev => ({ ...prev, [peerUid]: 'connected' }));
       }).catch(() => {
         setPubAudioBlocked(true);
-        setPubConnState('connected');
       });
+      _attachPeerSpeakingDetector(peerUid, remoteStream);
     };
 
-    pc.onicecandidate = evt => {
+    const myIcePath = iAmOfferer ? 'offerIce' : 'answerIce';
+    const remoteIcePath = iAmOfferer ? 'answerIce' : 'offerIce';
+
+    pc.onicecandidate = (evt) => {
       if (evt.candidate) {
-        push(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/listenerCandidates`), evt.candidate.toJSON()).catch(() => {});
+        push(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/${myIcePath}`), evt.candidate.toJSON()).catch(() => {});
       }
     };
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
-      if (s === 'connected') setPubConnState('connected');
-      else if (s === 'connecting' || s === 'new') setPubConnState('connecting');
-      else if (s === 'disconnected') setPubConnState('connecting');
-      else if (s === 'failed') {
-        setPubConnState('failed');
-        _pubCleanupListenerSide();
-        pubListenerPC.current = null;
-        setListeningTo(null);
-        bpToast.error('Connection lost. Try joining again.');
+      if (s === 'connected') {
+        setPubPeerStates(prev => ({ ...prev, [peerUid]: 'connected' }));
+      } else if (s === 'connecting' || s === 'new' || s === 'disconnected') {
+        setPubPeerStates(prev => ({ ...prev, [peerUid]: 'connecting' }));
+      } else if (s === 'failed') {
+        setPubPeerStates(prev => ({ ...prev, [peerUid]: 'failed' }));
+        setTimeout(() => {
+          if (
+            pubHostPCs.current[peerUid] === pc &&
+            activePubCallRef.current?.id === callId &&
+            pubParticipantsMapRef.current[peerUid]
+          ) {
+            _pubDisconnectPeer(peerUid);
+            _pubConnectGroupPeer(callId, peerUid).catch(() => {});
+          }
+        }, 2500);
       }
     };
 
-    /* Watch for broadcaster's offer (fires immediately if already present) */
-    const offerRef = ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/offer`);
-    const unsubOffer = onValue(offerRef, async snap => {
-      const offer = snap.val();
-      if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        remoteDescReady = true;
-        await drainPending();                              /* apply buffered candidates */
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await set(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
-      } catch (err) { console.warn('Pub offer handling error:', err); }
-    });
-    pubListenerRtdbUnsubs.current.push(unsubOffer);
+    let remoteDescReady = false;
+    const pendingCandidates = [];
+    const drainPending = async () => {
+      for (const c of pendingCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
+      pendingCandidates.length = 0;
+    };
 
-    /* onChildAdded: each host ICE candidate fires exactly once, buffered if needed */
-    const unsubHC = onChildAdded(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}/hostCandidates`), snap => {
+    const unsubRemoteIce = onChildAdded(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/${remoteIcePath}`), snap => {
       const c = snap.val();
-      if (!c) return;
+      if (!c || pc !== pubHostPCs.current[peerUid]) return;
       if (remoteDescReady) {
         pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
       } else {
         pendingCandidates.push(c);
       }
     });
-    pubListenerRtdbUnsubs.current.push(unsubHC);
-  };
+    pubPeerUnsubs.current[peerUid].push(unsubRemoteIce);
 
-  const pubLeaveAudio = (broadcastId) => {
-    _pubCleanupListenerSide();
-    setPubConnState('idle');
-    setPubAudioBlocked(false);
-    if (broadcastId && myUid) {
-      remove(ref(rtdb, `broadcasts/public/${broadcastId}/listeners/${myUid}`)).catch(() => {});
-      remove(ref(rtdb, `broadcasts/public/${broadcastId}/connections/${myUid}`)).catch(() => {});
+    if (iAmOfferer) {
+      try {
+        const offer = await pc.createOffer();
+        if (pc !== pubHostPCs.current[peerUid] || pc.signalingState === 'closed') return;
+        await pc.setLocalDescription(offer);
+        await update(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}`), {
+          offer: { type: offer.type, sdp: offer.sdp },
+          answer: null,
+          offerIce: null,
+          answerIce: null,
+        }).catch(() => {});
+
+        const unsubAns = onValue(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/answer`), async snap => {
+          const ans = snap.val();
+          if (ans && pc === pubHostPCs.current[peerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(ans));
+              remoteDescReady = true;
+              await drainPending();
+            } catch {}
+          }
+        });
+        pubPeerUnsubs.current[peerUid].push(unsubAns);
+      } catch {}
+    } else {
+      const unsubOffer = onValue(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/offer`), async snap => {
+        const offer = snap.val();
+        if (!offer || pc !== pubHostPCs.current[peerUid] || pc.signalingState === 'closed' || pc.remoteDescription) return;
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          remoteDescReady = true;
+          await drainPending();
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await set(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/answer`), {
+            type: answer.type,
+            sdp: answer.sdp,
+          }).catch(() => {});
+        } catch {}
+      });
+      pubPeerUnsubs.current[peerUid].push(unsubOffer);
     }
   };
 
-  /* ── Public Broadcast Handlers ── */
-  const handleCreatePublicBroadcast = async () => {
-    if (!myUid || !pubTitle.trim()) return;
+  const _cleanupPublicGroupCallLocal = () => {
+    if (pubPartOdRef.current) {
+      try { pubPartOdRef.current.cancel(); } catch {}
+      pubPartOdRef.current = null;
+    }
+    if (pubOnDisconnectRef.current) {
+      try { pubOnDisconnectRef.current.cancel(); } catch {}
+      pubOnDisconnectRef.current = null;
+    }
+    pubCallRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    pubCallRtdbUnsubs.current = [];
+    pubHostRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    pubHostRtdbUnsubs.current = [];
+    pubListenerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
+    pubListenerRtdbUnsubs.current = [];
+    if (pubListenersUnsub.current) { try { pubListenersUnsub.current(); } catch {} pubListenersUnsub.current = null; }
+    if (pubListenerPC.current) { try { pubListenerPC.current.close(); } catch {} pubListenerPC.current = null; }
+    if (pubAudioEl.current) {
+      try { pubAudioEl.current.pause(); pubAudioEl.current.srcObject = null; } catch {}
+      pubAudioEl.current = null;
+    }
+
+    Object.keys(pubHostPCs.current).forEach(uid => _pubDisconnectPeer(uid));
+    pubHostPCs.current = {};
+    pubPeerAudioEls.current = {};
+    pubPeerUnsubs.current = {};
+    pubPeerSpeakingCleanups.current = {};
+    pubParticipantsMapRef.current = {};
+
+    stopPubMicLevelMeter();
+    if (pubHostStream.current) {
+      pubHostStream.current.getTracks().forEach(t => t.stop());
+      pubHostStream.current = null;
+    }
+    setPubParticipants([]);
+    setPubSpeakingMap({});
+    setPubPeerStates({});
+    setPubMicMuted(false);
+    setPubAudioBlocked(false);
+    setPubConnState('idle');
+  };
+
+  const _pubStartGroupWatcher = (callId, isHostUser) => {
+    let seenBefore = false;
+    const partRef = ref(rtdb, `broadcasts/public/${callId}/participants`);
+    const unsubParts = onValue(partRef, snap => {
+      const raw = snap.val() || {};
+      pubParticipantsMapRef.current = raw;
+      const list = Object.values(raw).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+      setPubParticipants(list);
+
+      /* Detect if host removed us from the call */
+      if (seenBefore && myUid && !raw[myUid] && activePubCallRef.current?.id === callId) {
+        _cleanupPublicGroupCallLocal();
+        setActivePubCall(null);
+        setListeningTo(null);
+        bpToast.info('You left or were removed from the group voice call.');
+        return;
+      }
+      if (raw[myUid]) seenBefore = true;
+
+      /* Connect any new peer in the room (mesh up to 20) */
+      list.forEach(p => {
+        if (p.uid && p.uid !== myUid && !pubHostPCs.current[p.uid]) {
+          _pubConnectGroupPeer(callId, p.uid).catch(() => {});
+        }
+      });
+
+      /* Disconnect peers who left */
+      Object.keys(pubHostPCs.current).forEach(uid => {
+        if (!raw[uid]) {
+          _pubDisconnectPeer(uid);
+        }
+      });
+
+      /* Sync participant count to Firestore */
+      updateDoc(doc(db, 'publicBroadcasts', callId), {
+        listenerCount: list.length,
+        participantCount: list.length,
+      }).catch(() => {});
+    });
+    pubCallRtdbUnsubs.current.push(unsubParts);
+
+    if (!isHostUser) {
+      const sessRef = ref(rtdb, `broadcasts/public/${callId}/session`);
+      const unsubSess = onValue(sessRef, snap => {
+        if (!snap.exists() && activePubCallRef.current?.id === callId) {
+          _cleanupPublicGroupCallLocal();
+          setActivePubCall(null);
+          setListeningTo(null);
+          bpToast.info('The host has ended this group voice call.');
+        }
+      });
+      pubCallRtdbUnsubs.current.push(unsubSess);
+    }
+  };
+
+  const leavePublicGroupCall = async (broadcastIdArg) => {
+    const callId = broadcastIdArg || activePubCallRef.current?.id;
+    const oldMap = { ...pubParticipantsMapRef.current };
+    _cleanupPublicGroupCallLocal();
+    setActivePubCall(null);
+    setListeningTo(null);
+    if (callId && myUid) {
+      remove(ref(rtdb, `broadcasts/public/${callId}/participants/${myUid}`)).catch(() => {});
+      Object.keys(oldMap).forEach(peerUid => {
+        if (peerUid !== myUid) {
+          const pairId = myUid < peerUid ? `${myUid}__${peerUid}` : `${peerUid}__${myUid}`;
+          remove(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}`)).catch(() => {});
+        }
+      });
+    }
+  };
+
+  const joinPublicGroupCall = async (bc) => {
+    if (!myUid || !bc?.id) return;
+    const callId = bc.id;
+
+    /* Capacity guard: max 20 participants */
+    try {
+      const partSnap = await get(ref(rtdb, `broadcasts/public/${callId}/participants`));
+      const currentParts = partSnap.val() || {};
+      if (Object.keys(currentParts).length >= MAX_PUB_PARTICIPANTS && !currentParts[myUid]) {
+        bpToast.warning(`This group call is full (${MAX_PUB_PARTICIPANTS}/${MAX_PUB_PARTICIPANTS}). Try another call or start a new one.`);
+        return;
+      }
+    } catch {}
+
+    /* Cleanly leave any other call first */
+    if (activePubCallRef.current && activePubCallRef.current.id !== callId) {
+      await leavePublicGroupCall(activePubCallRef.current.id);
+    }
 
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 44100 },
+        video: false
+      });
+    } catch (err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        bpToast.error('Microphone blocked. Allow mic permission in your browser settings to talk in the group call.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        bpToast.error('No microphone detected. Please connect a mic to join the voice call.');
+      } else {
+        bpToast.error('Could not access microphone: ' + (err.message || 'Unknown error'));
+      }
+      return;
+    }
+
+    pubHostStream.current = stream;
+    startPubMicLevelMeter(stream);
+    setPubMicMuted(false);
+    setActivePubCall(bc);
+    activePubCallRef.current = bc;
+    setListeningTo(bc);
+
+    const myPartRef = ref(rtdb, `broadcasts/public/${callId}/participants/${myUid}`);
+    await set(myPartRef, {
+      uid: myUid,
+      name: myName,
+      avatar: myPhoto,
+      gender: loggedInUserProfile?.gender || 'male',
+      isHost: bc.hostUid === myUid,
+      muted: false,
+      joinedAt: Date.now(),
+    }).catch(() => {});
+    const od = onDisconnect(myPartRef);
+    od.remove();
+    pubPartOdRef.current = od;
+
+    _pubStartGroupWatcher(callId, bc.hostUid === myUid);
+    bpToast.live(`Joined "${bc.title}" group voice call!`);
+  };
+
+  /* ── Public Broadcast / Group Call Handlers ── */
+  const handleCreatePublicBroadcast = async () => {
+    if (!myUid || !pubTitle.trim()) return;
+
+    if (activePubCallRef.current) {
+      await leavePublicGroupCall(activePubCallRef.current.id);
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 44100 },
         video: false
       });
     } catch (err) {
@@ -2739,53 +2946,87 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         hostAvatar: myPhoto,
         title: pubTitle.trim(),
         isLive: true,
+        isGroupCall: true,
+        maxParticipants: MAX_PUB_PARTICIPANTS,
         isPasswordProtected: pubIsProtected,
         passwordHash,
-        listenerCount: 0,
+        listenerCount: 1,
+        participantCount: 1,
         createdAt: new Date().toISOString(),
         startedAt: Date.now()
       };
 
       const docRef = await addDoc(collection(db, 'publicBroadcasts'), data);
       const broadcastId = docRef.id;
-      setMyActiveBroadcast({ id: broadcastId, ...data });
+      const createdBc = { id: broadcastId, ...data };
+      setMyActiveBroadcast(createdBc);
+      setActivePubCall(createdBc);
+      activePubCallRef.current = createdBc;
       setPubTitle('');
       setPubPassword('');
       setPubIsProtected(false);
 
-      /* Create RTDB session node with onDisconnect cleanup */
+      /* Create RTDB session + host participant with onDisconnect cleanup */
       const sessionRef = ref(rtdb, `broadcasts/public/${broadcastId}/session`);
-      await set(sessionRef, { hostUid: myUid, startedAt: Date.now() });
+      await set(sessionRef, { hostUid: myUid, hostName: myName, title: createdBc.title, startedAt: data.startedAt, maxParticipants: MAX_PUB_PARTICIPANTS });
       const odHandle = onDisconnect(sessionRef);
       odHandle.remove();
       pubOnDisconnectRef.current = odHandle;
 
-      pubStartListenerWatcher(broadcastId);
-      bpToast.live('Your public broadcast is LIVE! Others can now tune in.');
+      const myPartRef = ref(rtdb, `broadcasts/public/${broadcastId}/participants/${myUid}`);
+      await set(myPartRef, {
+        uid: myUid,
+        name: myName,
+        avatar: myPhoto,
+        gender: loggedInUserProfile?.gender || 'male',
+        isHost: true,
+        muted: false,
+        joinedAt: Date.now(),
+      });
+      const partOd = onDisconnect(myPartRef);
+      partOd.remove();
+      pubPartOdRef.current = partOd;
+
+      _pubStartGroupWatcher(broadcastId, true);
+      bpToast.live('Group voice call is LIVE! Up to 20 people can join and talk.');
     } catch (err) {
-      console.error('Create broadcast error:', err);
+      console.error('Create group call error:', err);
       stream.getTracks().forEach(t => t.stop());
       pubHostStream.current = null;
       stopPubMicLevelMeter();
       const reason = err?.code === 'permission-denied' ? 'Permission denied — make sure you are logged in as a registered user.' : (err?.message || 'Unknown error');
-      bpToast.error('Failed to start broadcast: ' + reason);
+      bpToast.error('Failed to start group call: ' + reason);
     }
   };
 
   const handleStopPublicBroadcast = async () => {
-    if (!myActiveBroadcast?.id) return;
+    const callId = myActiveBroadcast?.id || activePubCallRef.current?.id;
+    if (!callId) return;
+    _cleanupPublicGroupCallLocal();
+    setMyActiveBroadcast(null);
+    setActivePubCall(null);
+    setListeningTo(null);
+    bpToast.success('Group voice call ended.');
     try {
-      stopPubMicLevelMeter();
-      setPubMicMuted(false);
-      pubStopHostAudio(myActiveBroadcast.id);
-      await updateDoc(doc(db, 'publicBroadcasts', myActiveBroadcast.id), { isLive: false });
-      setMyActiveBroadcast(null);
-      bpToast.success('Broadcast ended. Thanks for going live!');
+      await Promise.race([
+        Promise.allSettled([
+          remove(ref(rtdb, `broadcasts/public/${callId}`)),
+          updateDoc(doc(db, 'publicBroadcasts', callId), { isLive: false, participantCount: 0, listenerCount: 0 }),
+        ]),
+        new Promise(resolve => setTimeout(resolve, 3500)),
+      ]);
     } catch (err) {
-      console.error('Stop broadcast error:', err);
-      stopPubMicLevelMeter();
-      bpToast.error('Failed to stop broadcast.');
+      console.error('Stop group call cleanup warning:', err);
     }
+  };
+
+  const handleKickPubParticipant = async (targetUid) => {
+    const callId = activePubCallRef.current?.id;
+    if (!callId || activePubCallRef.current?.hostUid !== myUid || targetUid === myUid) return;
+    try {
+      await remove(ref(rtdb, `broadcasts/public/${callId}/participants/${targetUid}`));
+      bpToast.info('Participant removed from the call.');
+    } catch {}
   };
 
   const handlePubMicToggle = () => {
@@ -2793,22 +3034,18 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     const nowMuted = !pubMicMuted;
     pubHostStream.current.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
     setPubMicMuted(nowMuted);
+    const callId = activePubCallRef.current?.id;
+    if (callId && myUid) {
+      update(ref(rtdb, `broadcasts/public/${callId}/participants/${myUid}`), { muted: nowMuted }).catch(() => {});
+    }
   };
 
   const handleJoinPublicBroadcast = async (bc) => {
     if (pubJoining) return;
 
-    /* If already listening to this one, toggle off */
-    if (listeningTo?.id === bc.id) {
-      pubLeaveAudio(bc.id);
-      setListeningTo(null);
+    if (activePubCallRef.current?.id === bc.id) {
+      await leavePublicGroupCall(bc.id);
       return;
-    }
-
-    /* Leave current if switching */
-    if (listeningTo) {
-      pubLeaveAudio(listeningTo.id);
-      setListeningTo(null);
     }
 
     if (bc.isPasswordProtected) {
@@ -2818,8 +3055,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     setPubJoining(true);
     try {
-      setListeningTo(bc);
-      await pubJoinAudio(bc);
+      await joinPublicGroupCall(bc);
     } finally {
       setPubJoining(false);
     }
@@ -2836,8 +3072,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         setPwInput('');
         setPubJoining(true);
         try {
-          setListeningTo(bc);
-          await pubJoinAudio(bc);
+          await joinPublicGroupCall(bc);
         } finally {
           setPubJoining(false);
         }
@@ -2851,9 +3086,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   };
 
-  /* ── Stale public broadcast cleanup on panel open ──
-       If a previous session ended via page reload, the Firestore doc may still say isLive:true
-       but the RTDB session will be gone. We clean those up so the broadcaster can start fresh. ── */
+  /* ── Stale public broadcast cleanup on panel open ── */
   useEffect(() => {
     if (!isOpen) return;
     const cleanStale = async () => {
@@ -2866,9 +3099,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         for (const d of snap.docs) {
           const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${d.id}/session`));
           if (!rtdbSnap.exists()) {
-            /* RTDB session gone → stale — mark as ended */
             await updateDoc(doc(db, 'publicBroadcasts', d.id), { isLive: false }).catch(() => {});
-            /* Also clean up any leftover RTDB data */
             await remove(ref(rtdb, `broadcasts/public/${d.id}`)).catch(() => {});
           }
         }
@@ -2877,19 +3108,27 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     cleanStale();
   }, [isOpen]);
 
-  /* ── Cleanup when panel closes ── */
+  /* ── Cleanup when panel closes (X button, NOT when minimized) ── */
   useEffect(() => {
     if (!isOpen) {
-      if (listeningToRef.current) { pubLeaveAudio(listeningToRef.current.id); setListeningTo(null); }
+      if (activePubCallRef.current && activePubCallRef.current.hostUid !== myUid) {
+        leavePublicGroupCall(activePubCallRef.current.id);
+      }
     }
-  }, [isOpen]);
-
-  /* ── visibilitychange for RJ voice audio: handled by the unified effect above ── */
+  }, [isOpen, myUid]);
 
   /* ── Global cleanup on unmount ── */
   useEffect(() => {
     return () => {
-      if (listeningToRef.current) pubLeaveAudio(listeningToRef.current.id);
+      if (activePubCallRef.current) {
+        if (activePubCallRef.current.hostUid === myUid) {
+          remove(ref(rtdb, `broadcasts/public/${activePubCallRef.current.id}`)).catch(() => {});
+          updateDoc(doc(db, 'publicBroadcasts', activePubCallRef.current.id), { isLive: false }).catch(() => {});
+        } else {
+          leavePublicGroupCall(activePubCallRef.current.id);
+        }
+      }
+      _cleanupPublicGroupCallLocal();
       if (rjIsListeningRef.current) rjLeaveAudio();
       stopMicLevelMeter();
       stopPubMicLevelMeter();
@@ -2906,9 +3145,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   };
 
   /* Persistent YouTube player wrapper rendered once unconditionally at top level
-     so toggling open / minimized / closed NEVER unmounts the iframe. */
+     with >= 220x124 dimensions so Chrome/Safari/Android NEVER silence it. */
+  const isYtMiniVisible = isOpen && !isMinimized && rjIsLive && !!ytCurrentSongName && activeTab === 0;
+  const isYtAliveBackground = rjIsLive && !!ytCurrentSongName && !isYtMiniVisible;
   const persistentYtElement = (
-    <div className="bp-yt-hidden-player" aria-hidden="true">
+    <div
+      className={`bp-yt-hidden-player${isYtMiniVisible ? ' bp-yt-hidden-player--live' : isYtAliveBackground ? ' bp-yt-hidden-player--bg' : ''}`}
+      aria-hidden={!isYtMiniVisible}
+    >
+      {isYtMiniVisible && (
+        <div className="bp-yt-mini-chrome">
+          <span className="bp-yt-mini-dot" />
+          <span className="bp-yt-mini-title">{ytCurrentSongName}</span>
+        </div>
+      )}
       <div ref={ytContainerRef} id="bp-yt-player" />
     </div>
   );
@@ -3047,9 +3297,26 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                 <div className="bp-yt-now-playing">
                   <MusicNoteIcon />
                   <span className="bp-yt-now-title">{ytCurrentSongName}</span>
-                  <span className={`bp-yt-state-pill ${ytPlayerState === 'playing' ? 'playing' : ''}`}>
-                    {ytPlayerState === 'playing' ? 'PLAYING' : ytPlayerState === 'paused' ? 'PAUSED' : 'READY'}
-                  </span>
+                  {ytAudioBlocked ? (
+                    <button
+                      type="button"
+                      className="bp-yt-tap-sync"
+                      onClick={() => {
+                        try {
+                          if (musicVolumeRef.current === 0) ytPlayerRef.current?.mute?.();
+                          else { ytPlayerRef.current?.unMute?.(); ytPlayerRef.current?.setVolume?.(musicVolumeRef.current); }
+                          ytPlayerRef.current?.playVideo?.();
+                          setYtAudioBlocked(false);
+                        } catch {}
+                      }}
+                    >
+                      Tap for Sound
+                    </button>
+                  ) : (
+                    <span className={`bp-yt-state-pill ${ytPlayerState === 'playing' ? 'playing' : ''}`}>
+                      {ytPlayerState === 'playing' ? 'PLAYING' : ytPlayerState === 'paused' ? 'PAUSED' : 'READY'}
+                    </span>
+                  )}
                 </div>
                 <div className="bp-song-controls">
                   <button className="bp-song-btn" onClick={() => handleYtControl('skipprev')}><SkipPrevIcon /></button>
@@ -3064,39 +3331,60 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             )}
           </div>
 
-          {/* Dual Independent Volume Mixer (RJ Voice + Music) */}
+          {/* Premium Dual Independent Volume Mixer (RJ Voice + Music) */}
           <div className="bp-vol-mixer">
+            <div className="bp-vol-mixer-hdr">Audio Mix</div>
             <div className="bp-vol-row">
-              <span className="bp-vol-label">
+              <button
+                type="button"
+                className={`bp-vol-icon-btn${rjVoiceVolume === 0 || micMuted ? ' is-muted' : ''}`}
+                onClick={() => setRjVoiceVolume(v => (v === 0 ? prevVoiceVolRef.current || 100 : 0))}
+                title={rjVoiceVolume === 0 ? 'Unmute Voice' : 'Mute Voice'}
+                aria-label="Toggle RJ Voice Mute"
+              >
                 <MicIcon muted={rjVoiceVolume === 0 || micMuted} />
-                RJ Voice
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={rjVoiceVolume}
-                onChange={e => setRjVoiceVolume(Number(e.target.value))}
-                className="bp-vol-slider"
-                aria-label="RJ Voice Volume"
-              />
+              </button>
+              <span className="bp-vol-label">RJ Voice</span>
+              <div className="bp-vol-track-wrap" style={{ '--vol-pct': `${rjVoiceVolume}%` }}>
+                <div className="bp-vol-track-bg" />
+                <div className="bp-vol-track-fill bp-vol-track-fill--voice" />
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={rjVoiceVolume}
+                  onChange={e => setRjVoiceVolume(Number(e.target.value))}
+                  className="bp-vol-range bp-vol-range--voice"
+                  aria-label="RJ Voice Volume"
+                />
+              </div>
               <span className="bp-vol-val">{rjVoiceVolume}%</span>
             </div>
             <div className="bp-vol-row">
-              <span className="bp-vol-label">
+              <button
+                type="button"
+                className={`bp-vol-icon-btn bp-vol-icon-btn--music${musicVolume === 0 ? ' is-muted' : ''}`}
+                onClick={() => setMusicVolume(v => (v === 0 ? prevMusicVolRef.current || 75 : 0))}
+                title={musicVolume === 0 ? 'Unmute Music' : 'Mute Music'}
+                aria-label="Toggle Music Mute"
+              >
                 <MusicNoteIcon />
-                Music
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={musicVolume}
-                onChange={e => setMusicVolume(Number(e.target.value))}
-                className="bp-vol-slider bp-vol-slider--music"
-                aria-label="Music Volume"
-              />
-              <span className="bp-vol-val">{musicVolume}%</span>
+              </button>
+              <span className="bp-vol-label">Music</span>
+              <div className="bp-vol-track-wrap" style={{ '--vol-pct': `${musicVolume}%` }}>
+                <div className="bp-vol-track-bg" />
+                <div className="bp-vol-track-fill bp-vol-track-fill--music" />
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={musicVolume}
+                  onChange={e => setMusicVolume(Number(e.target.value))}
+                  className="bp-vol-range bp-vol-range--music"
+                  aria-label="Music Volume"
+                />
+              </div>
+              <span className="bp-vol-val bp-vol-val--music">{musicVolume}%</span>
             </div>
           </div>
 
@@ -3290,39 +3578,60 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           )}
         </div>
 
-        {/* Listener Dual Volume Sliders (RJ Voice + Music) */}
+        {/* Listener Premium Dual Volume Mixer (RJ Voice + Music) */}
         <div className="bp-vol-mixer bp-vol-mixer--listener">
+          <div className="bp-vol-mixer-hdr">Audio Controls</div>
           <div className="bp-vol-row">
-            <span className="bp-vol-label">
+            <button
+              type="button"
+              className={`bp-vol-icon-btn${rjVoiceVolume === 0 ? ' is-muted' : ''}`}
+              onClick={() => setRjVoiceVolume(v => (v === 0 ? prevVoiceVolRef.current || 100 : 0))}
+              title={rjVoiceVolume === 0 ? 'Unmute Voice' : 'Mute Voice'}
+              aria-label="Toggle RJ Voice Mute"
+            >
               <MicIcon muted={rjVoiceVolume === 0} />
-              RJ Voice
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={rjVoiceVolume}
-              onChange={e => setRjVoiceVolume(Number(e.target.value))}
-              className="bp-vol-slider"
-              aria-label="RJ Voice Volume"
-            />
+            </button>
+            <span className="bp-vol-label">RJ Voice</span>
+            <div className="bp-vol-track-wrap" style={{ '--vol-pct': `${rjVoiceVolume}%` }}>
+              <div className="bp-vol-track-bg" />
+              <div className="bp-vol-track-fill bp-vol-track-fill--voice" />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={rjVoiceVolume}
+                onChange={e => setRjVoiceVolume(Number(e.target.value))}
+                className="bp-vol-range bp-vol-range--voice"
+                aria-label="RJ Voice Volume"
+              />
+            </div>
             <span className="bp-vol-val">{rjVoiceVolume}%</span>
           </div>
           <div className="bp-vol-row">
-            <span className="bp-vol-label">
+            <button
+              type="button"
+              className={`bp-vol-icon-btn bp-vol-icon-btn--music${musicVolume === 0 ? ' is-muted' : ''}`}
+              onClick={() => setMusicVolume(v => (v === 0 ? prevMusicVolRef.current || 75 : 0))}
+              title={musicVolume === 0 ? 'Unmute Music' : 'Mute Music'}
+              aria-label="Toggle Music Mute"
+            >
               <MusicNoteIcon />
-              Music
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={musicVolume}
-              onChange={e => setMusicVolume(Number(e.target.value))}
-              className="bp-vol-slider bp-vol-slider--music"
-              aria-label="Music Volume"
-            />
-            <span className="bp-vol-val">{musicVolume}%</span>
+            </button>
+            <span className="bp-vol-label">Music</span>
+            <div className="bp-vol-track-wrap" style={{ '--vol-pct': `${musicVolume}%` }}>
+              <div className="bp-vol-track-bg" />
+              <div className="bp-vol-track-fill bp-vol-track-fill--music" />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={musicVolume}
+                onChange={e => setMusicVolume(Number(e.target.value))}
+                className="bp-vol-range bp-vol-range--music"
+                aria-label="Music Volume"
+              />
+            </div>
+            <span className="bp-vol-val bp-vol-val--music">{musicVolume}%</span>
           </div>
         </div>
 
@@ -3339,7 +3648,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                   border: `1px solid ${rjConnState === 'connected' ? 'rgba(52,211,153,0.3)' : rjConnState === 'failed' ? 'rgba(239,68,68,0.3)' : 'rgba(251,191,36,0.3)'}`,
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', animation: rjConnState === 'connecting' ? 'bp-pulse 1s infinite' : 'none' }} />
-                  {rjConnState === 'connected' ? 'Connected' : rjConnState === 'failed' ? 'Failed' : 'Connecting…'}
+                  {rjConnState === 'connected' ? 'Connected' : rjConnState === 'failed' ? 'Failed' : 'Connecting...'}
                 </span>
               </div>
             )}
@@ -3352,6 +3661,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     onClick={() => {
                       if (rjAudioEl.current) {
                         rjAudioEl.current.play().then(() => setRjAudioBlocked(false)).catch(() => {});
+                      }
+                      if (ytPlayerRef.current && ytIntendedStateRef.current === 'playing') {
+                        try {
+                          if (musicVolumeRef.current > 0) {
+                            ytPlayerRef.current.unMute?.();
+                            ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
+                          }
+                          ytPlayerRef.current.playVideo?.();
+                          setYtAudioBlocked(false);
+                        } catch {}
                       }
                     }}
                   >
@@ -3370,7 +3689,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             ) : (
               <button
                 className="bp-listen-btn bp-listen-btn--join"
-                onClick={() => { setRjConnState('connecting'); rjJoinAudio(); }}
+                onClick={() => {
+                  setRjConnState('connecting');
+                  if (ytPlayerRef.current && ytIntendedStateRef.current === 'playing') {
+                    try {
+                      if (musicVolumeRef.current > 0) {
+                        ytPlayerRef.current.unMute?.();
+                        ytPlayerRef.current.setVolume?.(musicVolumeRef.current);
+                      }
+                      ytPlayerRef.current.playVideo?.();
+                      setYtAudioBlocked(false);
+                    } catch {}
+                  }
+                  rjJoinAudio();
+                }}
                 disabled={rjConnecting}
               >
                 <BroadcastIcon size={16} color="white" />
@@ -4027,74 +4359,173 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     );
   };
 
-  /* ── TAB 4: Public Broadcasts ── */
+  /* ── TAB 4: Public Group Voice Calls (up to 20 people per call, multiple concurrent calls) ── */
   const renderPublicTab = () => {
-    const others = publicBroadcasts.filter(b => b.hostUid !== myUid);
-    const myPubListenerCount = myActiveBroadcast?.listenerCount || 0;
+    const others = publicBroadcasts.filter(b => b.id !== activePubCall?.id);
+    const isHostOfActive = activePubCall?.hostUid === myUid;
+    const partCount = pubParticipants.length;
 
     return (
       <div>
-        {/* Join flash notifications for public broadcast host */}
-        {myActiveBroadcast && (
-          <JoinFlashArea flashes={pubJoinFlashes} onDismiss={dismissPubFlash} count={myPubListenerCount} />
-        )}
-
-        {myActiveBroadcast && (
-          <>
-            <div className="bp-my-broadcast-banner">
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <RadioWaveIcon />
+        {/* Active Group Voice Room Stage */}
+        {activePubCall && (
+          <div className="bp-grp-stage">
+            <div className="bp-grp-stage-hdr">
+              <div className="bp-grp-live-badge">
+                <span className="bp-live-dot" />
+                GROUP VOICE
               </div>
-              <div className="bp-my-broadcast-info">
-                <h4>You are live — {myActiveBroadcast.title}</h4>
-                <p>
-                  <ListenerCountBadge count={myPubListenerCount} />
-                </p>
-              </div>
-              <button className="bp-stop-broadcast-btn" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={handleStopPublicBroadcast}>Stop</button>
-            </div>
-            {/* Pub broadcaster mic level meter */}
-            <div style={{ margin: '0 0 10px', padding: '8px 12px', background: 'rgba(34,197,94,0.08)', borderRadius: 10, border: '1px solid rgba(34,197,94,0.18)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <MicIcon muted={pubMicMuted} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: pubMicMuted ? '#f87171' : '#34d399' }}>
-                  {pubMicMuted ? 'MIC MUTED' : 'MIC LIVE'}
-                </span>
-                <span style={{ marginLeft: 'auto', fontSize: 10, color: pubMicLevel > 60 ? '#34d399' : pubMicLevel > 20 ? '#fbbf24' : '#a78bfa' }}>
-                  {pubMicMuted ? '—' : pubMicLevel > 60 ? 'Strong' : pubMicLevel > 20 ? 'Good' : 'Low'}
-                </span>
-                <button
-                  onClick={handlePubMicToggle}
-                  style={{
-                    padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none',
-                    background: pubMicMuted ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
-                    color: pubMicMuted ? '#f87171' : '#34d399',
-                  }}
-                >
-                  {pubMicMuted ? 'Unmute' : 'Mute'}
+              <span className="bp-grp-cap-pill">
+                <UsersIcon /> {partCount} / {MAX_PUB_PARTICIPANTS}
+              </span>
+              <span className="bp-grp-timer">{fmtTime(pubCallDuration)}</span>
+              {isHostOfActive ? (
+                <button className="bp-stop-broadcast-btn bp-grp-exit-btn" onClick={handleStopPublicBroadcast}>
+                  End Call
                 </button>
+              ) : (
+                <button className="bp-stop-broadcast-btn bp-grp-exit-btn" onClick={() => leavePublicGroupCall(activePubCall.id)}>
+                  Leave
+                </button>
+              )}
+            </div>
+
+            <div className="bp-grp-title-bar">
+              <span className="bp-grp-title">{activePubCall.title}</span>
+              <span className="bp-grp-host-sub">Host: {activePubCall.hostName}</span>
+            </div>
+
+            {pubAudioBlocked && (
+              <button
+                type="button"
+                className="bp-listen-btn bp-listen-btn--join"
+                style={{ marginBottom: 10, padding: '9px 14px', fontSize: 12, background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
+                onClick={() => {
+                  Object.values(pubPeerAudioEls.current).forEach(el => {
+                    try { el?.play?.(); } catch {}
+                  });
+                  setPubAudioBlocked(false);
+                }}
+              >
+                Tap to Enable Group Call Audio
+              </button>
+            )}
+
+            {/* Live Self Mic Meter & Quick Mute */}
+            <div className="bp-grp-mic-bar">
+              <button
+                type="button"
+                className={`bp-grp-mute-btn${pubMicMuted ? ' is-muted' : ''}`}
+                onClick={handlePubMicToggle}
+              >
+                <MicIcon muted={pubMicMuted} />
+                {pubMicMuted ? 'Unmute Mic' : 'Mic Live'}
+              </button>
+              <div className="bp-grp-level-track">
+                <div
+                  className="bp-grp-level-fill"
+                  style={{
+                    width: pubMicMuted ? '0%' : `${pubMicLevel}%`,
+                    background: pubMicLevel > 60 ? '#34d399' : pubMicLevel > 20 ? '#fbbf24' : '#a78bfa',
+                  }}
+                />
               </div>
-              <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  width: pubMicMuted ? '0%' : `${pubMicLevel}%`,
-                  background: pubMicLevel > 60 ? '#34d399' : pubMicLevel > 20 ? '#fbbf24' : '#a78bfa',
-                  borderRadius: 4,
-                  transition: 'width 80ms linear',
-                }} />
+              <button
+                type="button"
+                className="bp-grp-min-pill"
+                onClick={() => setIsMinimized(true)}
+                title="Minimize and keep talking while chatting"
+              >
+                Minimize
+              </button>
+            </div>
+
+            {/* Luxury Group Call Output Volume Slider */}
+            <div className="bp-vol-mixer bp-vol-mixer--group">
+              <div className="bp-vol-row">
+                <button
+                  type="button"
+                  className={`bp-vol-icon-btn bp-vol-icon-btn--group${pubCallVolume === 0 ? ' is-muted' : ''}`}
+                  onClick={() => setPubCallVolume(v => (v === 0 ? prevPubVolRef.current || 100 : 0))}
+                  title={pubCallVolume === 0 ? 'Unmute Call Audio' : 'Mute Call Audio'}
+                  aria-label="Toggle Group Call Audio Mute"
+                >
+                  <UsersIcon />
+                </button>
+                <span className="bp-vol-label">Call Audio</span>
+                <div className="bp-vol-track-wrap" style={{ '--vol-pct': `${pubCallVolume}%` }}>
+                  <div className="bp-vol-track-bg" />
+                  <div className="bp-vol-track-fill bp-vol-track-fill--group" />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={pubCallVolume}
+                    onChange={e => setPubCallVolume(Number(e.target.value))}
+                    className="bp-vol-range bp-vol-range--group"
+                    aria-label="Group Call Volume"
+                  />
+                </div>
+                <span className="bp-vol-val bp-vol-val--group">{pubCallVolume}%</span>
               </div>
             </div>
-          </>
+
+            {/* 20-Participant Live Voice Grid */}
+            <div className="bp-grp-grid">
+              {pubParticipants.map(p => {
+                const isSelf = p.uid === myUid;
+                const speaking = isSelf ? (!pubMicMuted && pubMicLevel > 14) : (!p.muted && !!pubSpeakingMap[p.uid]);
+                const pState = isSelf ? 'connected' : (pubPeerStates[p.uid] || 'connecting');
+                return (
+                  <div key={p.uid} className={`bp-grp-tile${speaking ? ' is-speaking' : ''}${p.muted ? ' is-muted' : ''}`}>
+                    <div className="bp-grp-av-wrap">
+                      <LiveAvatarImg
+                        uid={p.uid}
+                        gender={p.gender || 'male'}
+                        fallbackPhotoURL={p.avatar}
+                        className="bp-grp-avatar"
+                        alt={p.name}
+                      />
+                      <span className={`bp-grp-mic-badge${p.muted ? ' muted' : ''}`}>
+                        <MicIcon muted={!!p.muted} />
+                      </span>
+                      {!isSelf && (
+                        <span className={`bp-grp-conn-dot ${pState}`} title={pState} />
+                      )}
+                    </div>
+                    <div className="bp-grp-name" title={p.name}>
+                      {isSelf ? `${p.name} (You)` : p.name}
+                    </div>
+                    <div className="bp-grp-role-row">
+                      {p.isHost && <span className="bp-grp-host-tag">HOST</span>}
+                      {isHostOfActive && !isSelf && (
+                        <button
+                          type="button"
+                          className="bp-grp-kick-btn"
+                          onClick={() => handleKickPubParticipant(p.uid)}
+                          title="Remove from call"
+                        >
+                          Kick
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
+        {/* Create New Concurrent Group Voice Call */}
         {!isGuest && !myActiveBroadcast && (
           <div className="bp-create-section">
             <div className="bp-create-card">
-              <h3><BroadcastIcon size={16} /> Start Your Broadcast</h3>
+              <h3><BroadcastIcon size={16} /> Start Group Voice Call</h3>
+              <p className="bp-grp-subnote">Create a multi-speaker voice room for up to {MAX_PUB_PARTICIPANTS} participants at once.</p>
               <div className="bp-create-form">
                 <input
                   className="bp-input"
-                  placeholder="Broadcast title (required)..."
+                  placeholder="Call room title (required)..."
                   value={pubTitle}
                   onChange={e => setPubTitle(e.target.value)}
                 />
@@ -4105,12 +4536,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                     onChange={e => setPubIsProtected(e.target.checked)}
                   />
                   <LockGoldIcon size={15} />
-                  <span style={{ marginLeft: 4 }}>Password protect this broadcast</span>
+                  <span style={{ marginLeft: 4 }}>Password protect this call</span>
                 </label>
                 {pubIsProtected && (
                   <input
                     className="bp-input"
-                    placeholder="Set a password for listeners..."
+                    placeholder="Set a password for participants..."
                     value={pubPassword}
                     onChange={e => setPubPassword(e.target.value)}
                     type="text"
@@ -4123,7 +4554,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
                   disabled={!pubTitle.trim() || (pubIsProtected && !pubPassword.trim())}
                 >
                   <BroadcastIcon size={15} color="white" />
-                  Go Live Now
+                  Start Group Call (Up to {MAX_PUB_PARTICIPANTS})
                 </button>
                 {!pubTitle.trim() && (
                   <p style={{ fontSize: 11, color: 'var(--bp-text-muted)', margin: 0, textAlign: 'center' }}>
@@ -4137,83 +4568,58 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
         {isGuest && (
           <div className="bp-guest-lock" style={{ paddingTop: 16, paddingBottom: 16 }}>
-            <h3>Register to Broadcast</h3>
-            <p>Create a free account to start your own live broadcasts.</p>
+            <h3>Register to Join Group Calls</h3>
+            <p>Create a free account to start or join group voice calls.</p>
           </div>
         )}
 
         {others.length > 0 ? (
           <>
-            <div className="bp-broadcasts-list-label">Live Broadcasts ({others.length})</div>
+            <div className="bp-broadcasts-list-label">Active Group Calls ({others.length})</div>
             <div className="bp-broadcast-items">
-              {others.map(bc => (
-                <div key={bc.id} className="bp-broadcast-item">
-                  <div className="bp-bc-avatar-wrap">
-                    <LiveAvatarImg
-                      className="bp-bc-avatar"
-                      uid={bc.hostUid}
-                      fallbackPhotoURL={isRealAvatarUpload(bc.hostAvatar) ? bc.hostAvatar : getDefaultAvatarUrl(bc.hostUid, 'male', false)}
-                      alt={bc.hostName}
-                    />
-                    <span className="bp-bc-live-dot" />
-                  </div>
-                  <div className="bp-bc-info">
-                    <div className="bp-bc-title">{bc.title}</div>
-                    <div className="bp-bc-host">{bc.hostName}</div>
-                    <div className="bp-bc-meta">
-                      <span className="bp-bc-chip"><UsersIcon /> {bc.listenerCount || 0}</span>
-                      {bc.isPasswordProtected && <span className="bp-bc-chip bp-bc-locked"><LockIcon /> Private</span>}
+              {others.map(bc => {
+                const count = bc.participantCount || bc.listenerCount || 1;
+                const isFull = count >= (bc.maxParticipants || MAX_PUB_PARTICIPANTS);
+                return (
+                  <div key={bc.id} className="bp-broadcast-item">
+                    <div className="bp-bc-avatar-wrap">
+                      <LiveAvatarImg
+                        className="bp-bc-avatar"
+                        uid={bc.hostUid}
+                        fallbackPhotoURL={isRealAvatarUpload(bc.hostAvatar) ? bc.hostAvatar : getDefaultAvatarUrl(bc.hostUid, 'male', false)}
+                        alt={bc.hostName}
+                      />
+                      <span className="bp-bc-live-dot" />
+                    </div>
+                    <div className="bp-bc-info">
+                      <div className="bp-bc-title">{bc.title}</div>
+                      <div className="bp-bc-host">Host: {bc.hostName}</div>
+                      <div className="bp-bc-meta">
+                        <span className="bp-bc-chip"><UsersIcon /> {count} / {bc.maxParticipants || MAX_PUB_PARTICIPANTS}</span>
+                        {bc.isPasswordProtected && <span className="bp-bc-chip bp-bc-locked"><LockIcon /> Private</span>}
+                      </div>
+                    </div>
+                    <div className="bp-bc-actions">
+                      <button
+                        className={`bp-bc-join-btn${activePubCall?.id === bc.id ? ' listening' : ''}`}
+                        onClick={() => handleJoinPublicBroadcast(bc)}
+                        disabled={(pubJoining && activePubCall?.id !== bc.id) || (isFull && activePubCall?.id !== bc.id) || isGuest}
+                      >
+                        {isFull ? 'Full (20/20)' : pubJoining ? 'Joining...' : (
+                          <><BroadcastIcon size={12} color="white" /> Join Call</>
+                        )}
+                      </button>
                     </div>
                   </div>
-                  <div className="bp-bc-actions">
-                    {/* Connection quality badge for listener */}
-                    {listeningTo?.id === bc.id && pubConnState !== 'idle' && (
-                      <div style={{ marginBottom: 4, textAlign: 'center' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '1px 8px', borderRadius: 20, fontSize: 9, fontWeight: 700,
-                          background: pubConnState === 'connected' ? 'rgba(52,211,153,0.15)' : pubConnState === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(251,191,36,0.15)',
-                          color: pubConnState === 'connected' ? '#34d399' : pubConnState === 'failed' ? '#f87171' : '#fbbf24',
-                        }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', animation: pubConnState === 'connecting' ? 'bp-pulse 1s infinite' : 'none' }} />
-                          {pubConnState === 'connected' ? 'Live' : pubConnState === 'failed' ? 'Failed' : 'Connecting'}
-                        </span>
-                      </div>
-                    )}
-                    {listeningTo?.id === bc.id && pubAudioBlocked && (
-                      <button
-                        className="bp-bc-join-btn"
-                        style={{ marginBottom: 4, background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontSize: 10 }}
-                        onClick={() => {
-                          if (pubAudioEl.current) {
-                            pubAudioEl.current.play().then(() => setPubAudioBlocked(false)).catch(() => {});
-                          }
-                        }}
-                      >
-                        Tap to Hear
-                      </button>
-                    )}
-                    <button
-                      className={`bp-bc-join-btn${listeningTo?.id === bc.id ? ' listening' : ''}`}
-                      onClick={() => handleJoinPublicBroadcast(bc)}
-                      disabled={pubJoining && listeningTo?.id !== bc.id}
-                    >
-                      {listeningTo?.id === bc.id ? (
-                        <><StopIcon color="currentColor" /> Leave</>
-                      ) : pubJoining ? 'Joining...' : (
-                        <><BroadcastIcon size={12} color="white" /> Join</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
-        ) : !myActiveBroadcast ? (
+        ) : !activePubCall ? (
           <div className="bp-empty">
             <div><BroadcastIcon size={36} /></div>
-            No public broadcasts live right now.
-            <br />Be the first to go live!
+            No group calls active right now.
+            <br />Start a group voice room for up to {MAX_PUB_PARTICIPANTS} people!
           </div>
         ) : null}
 
@@ -4232,7 +4638,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
               />
               <div className="bp-password-actions">
                 <button className="bp-pw-btn cancel-pw" onClick={() => { setPasswordPrompt(null); setPwInput(''); }}>Cancel</button>
-                <button className="bp-pw-btn confirm" onClick={handlePasswordSubmit}>Join</button>
+                <button className="bp-pw-btn confirm" onClick={handlePasswordSubmit}>Join Call</button>
               </div>
             </div>
           </div>
@@ -4250,7 +4656,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       {isOpen && isMinimized && (
         <FloatingMinimizedBubble
           isLive={rjIsLive && canManageRJ}
-          pubIsLive={!!myActiveBroadcast}
+          pubIsLive={!!activePubCall}
+          pubCount={pubParticipants.length}
           onExpand={() => setIsMinimized(false)}
           onClose={() => { setIsMinimized(false); onClose(); }}
         />
