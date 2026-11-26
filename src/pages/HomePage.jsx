@@ -8991,7 +8991,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 roomName={roomName}
                                 loggedInUserProfile={loggedInUserProfile}
                                 viewerCount={onlineUserIds.length}
-                                onOpenMembers={() => setSidebarOpen(true)}
+                                connectedUsers={liveUsers}
+                                onViewUser={stableHandleViewProfile}
                                 chatPanel={
                                     <>
                                         {renderMessageList()}
