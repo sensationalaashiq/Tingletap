@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import 'react-toastify/dist/ReactToastify.css';
 import { pt } from '../utils/premiumToast';
 import PremiumCopyright from '../components/PremiumCopyright';
 import './LandingPage.css';

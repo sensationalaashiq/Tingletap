@@ -11,7 +11,7 @@ import { ref, onValue, set, remove } from 'firebase/database';
 import useRoomsListener from '../hooks/useRoomsListener';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { PRESENCE_STALE_MS } from '../utils/presenceStatus';
 import './Sidebar.css';
 import { Badges as badges } from '../data/Badges';
 import { renderUserBadge } from '../utils/badgeRenderHelper';
@@ -43,6 +43,7 @@ import StatusModal from './StatusModal';
 import GenderBadge from './GenderBadge';
 import { getLatestAchievement } from '../utils/achievementSystem';
 import AdultRoomModal from './AdultRoomModal';
+import { canSeeOnlineStatus, isDiscoverableInSearch } from '../services/privacyService';
 
 /* ─── Room icons ─────────────────────────────────────────────────────────── */
 const getRoomIcon = (roomName) => {
@@ -178,7 +179,9 @@ const Sidebar = ({
   onKick,
   onMute,
   onBan,
-  onCall
+  onCall,
+  blockedUsers = [],
+  usersWhoBlockedMe = []
 }) => {
   const [activeTab, setActiveTab]             = useState('users');
   const [genderFilter, setGenderFilter]       = useState('all');
@@ -305,7 +308,7 @@ const Sidebar = ({
 
     const recomputeCounts = () => {
       const serverNow = Date.now() + serverOffset;
-      const STALE_COUNT_MS = 70 * 1000;
+      const STALE_COUNT_MS = PRESENCE_STALE_MS;
       const counts = {};
       Object.entries(latestData || {}).forEach(([rid, members]) => {
         if (members && typeof members === 'object') {
@@ -546,8 +549,12 @@ const Sidebar = ({
 
     return Array.from(uniqueUsers.values()).filter(u => {
       if (!u?.uid) return false;
-      // Search filter
+      // Search filter (respects Profile Discovery / showInSearch setting)
       if (searchQuery.trim()) {
+        const viewerUid = user?.uid || loggedInUserProfile?.uid || auth.currentUser?.uid;
+        if (u.uid !== viewerUid && !isStaffRole(loggedInUserProfile) && !isDiscoverableInSearch(loggedInUserProfile, u, { blockedUsers, usersWhoBlockedMe })) {
+          return false;
+        }
         if (!(u.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase().trim())) return false;
       }
       // Gender filter
@@ -1018,7 +1025,7 @@ const Sidebar = ({
                 const isSelf       = (user?.uid || loggedInUserProfile?.uid || auth.currentUser?.uid) === userItem.uid;
                 const statusEntry  = window.userOnlineStatuses?.[userItem.uid];
                 const isOnline     = (window.onlineUsers?.has(userItem.uid) || statusEntry?.state === 'online' || userItem.isOnline)
-                                   && statusEntry?.showOnlineStatus !== false;
+                                   && canSeeOnlineStatus(loggedInUserProfile, userItem, statusEntry, { blockedUsers, usersWhoBlockedMe });
                 const hasRealAuth = !!(auth.currentUser && !auth.currentUser.isAnonymous);
                 const isGuest   = !hasRealAuth && (loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role?.toLowerCase() === 'guest' || localStorage.getItem('isGuest') === 'true' || auth.currentUser?.isAnonymous);
                 const tIsGuest  = isGuestUser(userItem);
@@ -1271,6 +1278,18 @@ const Sidebar = ({
                             <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleWhisperFromSidebar) window.handleWhisperFromSidebar(userItem); setDropdownUser(null); }}>
                               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="#06b6d4" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M13 11h-2V9h2v2m0 4h-2v-2h2v2z"/></svg>
                               Whisper
+                            </button>
+                          )}
+
+                          {!limited && (
+                            <button className="sb-apd-btn" onClick={(e) => { e.stopPropagation(); if (window.handleInviteUserToRoom) window.handleInviteUserToRoom(userItem); setDropdownUser(null); }}>
+                              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="8.5" cy="7" r="4"/>
+                                <line x1="20" y1="8" x2="20" y2="14"/>
+                                <line x1="23" y1="11" x2="17" y2="11"/>
+                              </svg>
+                              Invite to Room
                             </button>
                           )}
 

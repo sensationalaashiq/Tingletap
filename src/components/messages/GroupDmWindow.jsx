@@ -22,8 +22,7 @@ import { auth, db, rtdb } from '../../firebase/config';
 import LiveAvatarImg from '../LiveAvatar';
 import CustomAudioPlayer from '../CustomAudioPlayer';
 import PremiumImageMessage from '../PremiumImageMessage';
-import { compressImageToWebP } from '../../utils/imageCompression';
-import { uploadMediaFile } from '../../services/r2StorageService';
+import { compressImageToWebP, uploadMediaFile } from '../../services/r2StorageService';
 import {
   areUsersFriends,
   canAddToGroupDm,

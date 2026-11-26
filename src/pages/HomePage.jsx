@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import DOMPurify from 'dompurify';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -47,6 +47,18 @@ import AchievementsSection from '../components/AchievementsSection';
 import PremiumRelationshipCard, { FULL_RELATIONSHIP_CONFIG } from '../components/PremiumRelationshipCard';
 import PrivateAudioMiniPopup from '../components/PrivateAudioMiniPopup';
 import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow';
+import MessageRequestsPanel from '../components/messages/MessageRequestsPanel';
+import GroupDmCreateModal from '../components/messages/GroupDmCreateModal';
+import GroupDmWindow from '../components/messages/GroupDmWindow';
+import RoomInviteModal from '../components/rooms/RoomInviteModal';
+import { nameToSlug } from '../utils/roomSlug';
+import {
+    evaluatePrivateMessageAccess,
+    canInviteToRoom,
+    canSeeOnlineStatus,
+    canSeeLastSeen,
+    shouldSendReadReceipts,
+} from '../services/privacyService';
 import TingleBotNotification from '../components/TingleBotNotification';
 import TranslatedMessage from '../components/TranslatedMessage';
 import { useTranslation } from '../hooks/useTranslation';
@@ -80,9 +92,12 @@ import {
     SILENT_WATCH_STORAGE_KEY,
     SHOW_REMINDERS_STORAGE_KEY,
     classifyShowStatus,
+    isGamingRoom,
 } from '../utils/roomModulesConfig';
-import 'react-toastify/dist/ReactToastify.css';
+import { PRESENCE_STALE_MS } from '../utils/presenceStatus';
 import './HomePage.css';
+
+const TheatreCinema = React.lazy(() => import('../components/theatre/TheatreCinema'));
 
 // --- SVG Icons (No changes here) ---
 
@@ -1366,6 +1381,7 @@ const HomePage = ({ user, roomIdOverride }) => {
     const reconcilePresencesRef = useRef(null);
     const [gamesAllowedUids, setGamesAllowedUids] = useState([]);
     const [isGamesPickerOpen, setIsGamesPickerOpen] = useState(false);
+    const [currentRoomData, setCurrentRoomData] = useState(null);
     const silentBannerRef = useRef(null);
     const [blockedUsers, setBlockedUsers] = useState([]);
     const [usersWhoBlockedMe, setUsersWhoBlockedMe] = useState([]);
@@ -1388,6 +1404,26 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [pmHeaderBoxOpen, setPmHeaderBoxOpen] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({});
+    const [pmHubTab, setPmHubTab] = useState('inbox'); // 'inbox' | 'requests' | 'groups'
+    const [messageRequests, setMessageRequests] = useState([]);
+    const [groupDms, setGroupDms] = useState([]);
+    const [isGroupDmCreateOpen, setIsGroupDmCreateOpen] = useState(false);
+    const [activeGroupDm, setActiveGroupDm] = useState(null);
+    const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
+    const [incomingRoomInvites, setIncomingRoomInvites] = useState([]);
+    const isTheatreRoom = useMemo(
+        () => nameToSlug(roomName || '') === 'theatre' || String(roomId || '').toLowerCase() === 'theatre',
+        [roomName, roomId]
+    );
+    const canShowGamesInRoom = useMemo(
+        () => isGamingRoom(currentRoomData, roomName || roomId),
+        [currentRoomData, roomName, roomId]
+    );
+    useEffect(() => {
+        if (!canShowGamesInRoom && isGamesPickerOpen) {
+            setIsGamesPickerOpen(false);
+        }
+    }, [canShowGamesInRoom, isGamesPickerOpen]);
     const pmHeaderBoxRef = useRef(null);
     const [isPrivateAttachOpen, setIsPrivateAttachOpen] = useState(false);
     const [pmAttachmentType, setPmAttachmentType] = useState(null); // 'image' or 'audio'
@@ -3445,17 +3481,29 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const heartbeatInterval = setInterval(pushOnlineNow, 20000);
 
+        const handleWakeUpPresence = () => {
+            if (document.visibilityState === 'visible') {
+                pushOnlineNow();
+            }
+        };
+
         const handleUnloadCleanup = () => {
             remove(roomPresenceRef).catch(() => {});
             remove(roomCountRef).catch(() => {});
             update(userStatusRef, { state: 'offline', currentRoomId: null, last_changed: rtdbServerTimestamp() }).catch(() => {});
         };
+        document.addEventListener('visibilitychange', handleWakeUpPresence);
+        window.addEventListener('focus', pushOnlineNow);
+        window.addEventListener('online', pushOnlineNow);
         window.addEventListener('pagehide', handleUnloadCleanup);
         window.addEventListener('beforeunload', handleUnloadCleanup);
 
         return () => {
             unsubConn();
             clearInterval(heartbeatInterval);
+            document.removeEventListener('visibilitychange', handleWakeUpPresence);
+            window.removeEventListener('focus', pushOnlineNow);
+            window.removeEventListener('online', pushOnlineNow);
             window.removeEventListener('pagehide', handleUnloadCleanup);
             window.removeEventListener('beforeunload', handleUnloadCleanup);
             // Remove this room's presence only if actually switching to a different room
@@ -3748,9 +3796,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                         }
                     });
 
-                    // Process conversations
+                    // Process conversations (exclude unaccepted incoming Message Requests & soft-deleted items)
                     messages.forEach(message => {
                         try {
+                            if (message.deletedFor?.includes(currentUserId)) return;
+                            if (message.isMessageRequest === true && message.receiverId === currentUserId) return;
+
                             const otherUserId = message.participants?.find(id => id !== currentUserId);
                             
                             if (!otherUserId) return;
@@ -3843,6 +3894,65 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
     }, [auth.currentUser?.uid, user?.uid]);
 
+    // Real-time listeners for Message Requests, Group DMs, and Room Invitations
+    useEffect(() => {
+        const currentUserId = auth.currentUser?.uid || user?.uid;
+        if (!currentUserId || auth.currentUser?.isAnonymous) {
+            setMessageRequests([]);
+            setGroupDms([]);
+            setIncomingRoomInvites([]);
+            return;
+        }
+
+        const reqQuery = query(
+            collection(db, 'messageRequests'),
+            where('receiverId', '==', currentUserId),
+            where('status', '==', 'pending'),
+            limit(60)
+        );
+        const unsubRequests = onSnapshot(reqQuery, (snap) => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .filter(r => !blockedUsers.includes(r.senderId) && !usersWhoBlockedMe.includes(r.senderId));
+            list.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
+            setMessageRequests(list);
+            list.forEach(r => {
+                if (r.senderId && !window.userProfilesCache?.has(r.senderId) && typeof window.fetchUserProfile === 'function') {
+                    window.fetchUserProfile(r.senderId).catch(() => {});
+                }
+            });
+        }, () => setMessageRequests([]));
+
+        const gdmQuery = query(
+            collection(db, 'groupDms'),
+            where('memberUids', 'array-contains', currentUserId),
+            limit(60)
+        );
+        const unsubGroupDms = onSnapshot(gdmQuery, (snap) => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            list.sort((a, b) => (b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0));
+            setGroupDms(list);
+        }, () => setGroupDms([]));
+
+        const inviteQuery = query(
+            collection(db, 'roomInvites'),
+            where('receiverId', '==', currentUserId),
+            where('status', '==', 'pending'),
+            limit(25)
+        );
+        const unsubInvites = onSnapshot(inviteQuery, (snap) => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .filter(inv => !blockedUsers.includes(inv.senderId) && !usersWhoBlockedMe.includes(inv.senderId));
+            list.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+            setIncomingRoomInvites(list);
+        }, () => setIncomingRoomInvites([]));
+
+        return () => {
+            try { unsubRequests(); } catch (_) {}
+            try { unsubGroupDms(); } catch (_) {}
+            try { unsubInvites(); } catch (_) {}
+        };
+    }, [auth.currentUser?.uid, user?.uid, blockedUsers, usersWhoBlockedMe]);
+
     useEffect(() => {
         if (roomId) {
             // Reset scroll states when entering new room
@@ -3850,11 +3960,13 @@ const HomePage = ({ user, roomIdOverride }) => {
             setHasUserScrolled(false);
             setIsAtBottom(true);
             setShowScrollToBottomBtn(false);
+            setCurrentRoomData(null);
             
             const roomDocRef = doc(db, 'rooms', roomId);
             getDoc(roomDocRef).then(docSnap => {
                 if (docSnap.exists()) {
                     const roomData = docSnap.data();
+                    setCurrentRoomData({ id: docSnap.id, ...roomData });
                     setRoomName(roomData.name);
                     
                     // Play room entry sound once
@@ -4083,19 +4195,22 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
 
-    // Smart scroll state: auto-scroll ONCE upon room entry, then strictly manual
+    // Smart scroll state: pins to bottom reliably on room entry (even while media/cards settle),
+    // aborts immediately on manual scroll up, and smoothly follows only when already near bottom or sending own message
     const [hasUserScrolled, setHasUserScrolled] = useState(false);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
+    const isAtBottomRef = useRef(true);
     const userInitiatedScrollRef = useRef(false);
     const userTouchWheelTimerRef = useRef(null);
     const isProgrammaticScrollRef = useRef(false);
     const programmaticScrollTimerRef = useRef(null);
     const entryScrollDoneRef = useRef(false);
     const userScrolledDuringLoadRef = useRef(false);
+    const justSentOwnMessageRef = useRef(false);
 
-    // Jump to latest message when explicitly requested or on entry
+    // Jump to latest message when explicitly requested or when already near bottom
     const scrollToBottom = useCallback((force = false, smooth = false) => {
         if (!chatFeedRef.current) return;
         const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
@@ -4105,14 +4220,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 95;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 110;
 
         if (force || (isNearBottom && !hasUserScrolled)) {
             isProgrammaticScrollRef.current = true;
             if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
             programmaticScrollTimerRef.current = setTimeout(() => {
                 isProgrammaticScrollRef.current = false;
-            }, 160);
+            }, 220);
 
             if (smooth && hasInitialScrolled) {
                 element.scrollTo({
@@ -4123,6 +4238,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 element.scrollTop = scrollHeight;
             }
 
+            isAtBottomRef.current = true;
             setIsAtBottom(true);
             setShowScrollToBottomBtn(false);
             if (force) {
@@ -4130,11 +4246,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                 userInitiatedScrollRef.current = false;
             }
         } else if (!isNearBottom) {
+            isAtBottomRef.current = false;
             setShowScrollToBottomBtn(true);
         }
     }, [hasInitialScrolled, hasUserScrolled]);
 
-    // Track real user interaction (wheel, touch, pointer) so manual scrolling is never interrupted
+    // Track real user interaction (wheel, touch, pointer) so manual scrolling is never hijacked
     const handleUserInteractionStart = useCallback(() => {
         userInitiatedScrollRef.current = true;
         userScrolledDuringLoadRef.current = true;
@@ -4152,7 +4269,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         const scrollHeight = element.scrollHeight;
         const clientHeight = element.clientHeight;
         const scrollTop = element.scrollTop;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 95;
+        isAtBottomRef.current = isNearBottom;
         setIsAtBottom(isNearBottom);
 
         if (isNearBottom) {
@@ -4196,6 +4314,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     useEffect(() => {
         entryScrollDoneRef.current = false;
         userScrolledDuringLoadRef.current = false;
+        justSentOwnMessageRef.current = false;
+        isAtBottomRef.current = true;
         setHasInitialScrolled(false);
         setHasUserScrolled(false);
         setIsAtBottom(true);
@@ -4203,9 +4323,10 @@ const HomePage = ({ user, roomIdOverride }) => {
         userInitiatedScrollRef.current = false;
     }, [roomId]);
 
-    // Single entry auto-scroll when room messages arrive; afterward strictly manual
+    // Smart entry settle (tracks async image/card height changes until ~850ms or first manual scroll)
     useEffect(() => {
         if (!messages.length || !chatFeedRef.current) return;
+        const el = chatFeedRef.current;
 
         if (!entryScrollDoneRef.current) {
             if (userScrolledDuringLoadRef.current) {
@@ -4214,34 +4335,64 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return;
             }
 
-            const pinToLatestOnce = () => {
-                const el = chatFeedRef.current;
-                if (!el || userScrolledDuringLoadRef.current) return;
+            const pinToLatest = () => {
+                if (!chatFeedRef.current || userScrolledDuringLoadRef.current) return;
                 isProgrammaticScrollRef.current = true;
-                el.scrollTop = el.scrollHeight;
+                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+                isAtBottomRef.current = true;
                 setIsAtBottom(true);
                 setShowScrollToBottomBtn(false);
-                setTimeout(() => { isProgrammaticScrollRef.current = false; }, 100);
+                if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+                programmaticScrollTimerRef.current = setTimeout(() => {
+                    isProgrammaticScrollRef.current = false;
+                }, 140);
             };
 
-            const rafId = requestAnimationFrame(pinToLatestOnce);
+            const rafId = requestAnimationFrame(pinToLatest);
+            let ro = null;
+            if (typeof ResizeObserver !== 'undefined') {
+                try {
+                    ro = new ResizeObserver(() => {
+                        if (!entryScrollDoneRef.current && !userScrolledDuringLoadRef.current) {
+                            pinToLatest();
+                        }
+                    });
+                    ro.observe(el);
+                } catch {}
+            }
+
+            const t1 = setTimeout(pinToLatest, 160);
+            const t2 = setTimeout(pinToLatest, 450);
             const settleTimer = setTimeout(() => {
-                pinToLatestOnce();
+                pinToLatest();
                 entryScrollDoneRef.current = true;
                 setHasInitialScrolled(true);
-            }, 140);
+                if (ro) { try { ro.disconnect(); } catch {} }
+            }, 850);
 
             return () => {
                 cancelAnimationFrame(rafId);
+                clearTimeout(t1);
+                clearTimeout(t2);
                 clearTimeout(settleTimer);
+                if (ro) { try { ro.disconnect(); } catch {} }
             };
         }
 
-        // After initial entry scroll: strictly manual scrolling — only update Latest jump button visibility
-        const el = chatFeedRef.current;
-        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 90;
-        setIsAtBottom(nearBottom);
-        setShowScrollToBottomBtn(!nearBottom);
+        // After initial settle: auto-scroll smoothly ONLY if user just sent a message OR was already near bottom
+        const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
+        const shouldFollow = justSentOwnMessageRef.current || (autoScrollEnabled && isAtBottomRef.current && !userInitiatedScrollRef.current && !hasUserScrolled);
+
+        if (shouldFollow) {
+            justSentOwnMessageRef.current = false;
+            requestAnimationFrame(() => scrollToBottom(true, true));
+        } else {
+            justSentOwnMessageRef.current = false;
+            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 95;
+            isAtBottomRef.current = nearBottom;
+            setIsAtBottom(nearBottom);
+            setShowScrollToBottomBtn(!nearBottom);
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [messages, roomId]);
 
@@ -4469,8 +4620,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        const STALE_MS = 70 * 1000;
-        const INITIAL_STALE_MS = 90 * 1000;
+        const STALE_MS = PRESENCE_STALE_MS;
+        const INITIAL_STALE_MS = PRESENCE_STALE_MS;
         let hasServerOffset = false;
         let roomPresRaw = {};
         let globalStatusRaw = {};
@@ -4986,13 +5137,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -5047,6 +5202,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: { toMillis: () => sentAt },
             }]);
 
+            justSentOwnMessageRef.current = true;
             const docRef = await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             const resolvedId = docRef?.id;
             const targetClientId = _pendingMsgClientId;
@@ -5463,17 +5619,23 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleWhisperUser = async (message) => {
+        if (!message?.uid) return;
         if (blockedUsers.includes(message.uid) || usersWhoBlockedMe.includes(message.uid)) {
             pt.error("You cannot whisper to a blocked user");
             return;
         }
-        // Block whisper if target is not currently in the room
-        if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(message.uid)) {
+        // Check active room membership across liveUsers, RTDB map, and onlineUsers set
+        const targetInRoom = Boolean(
+            window.onlineUsers?.has?.(message.uid)
+            || userOnlineStatusesRef.current?.[message.uid]?.state === 'online'
+            || liveUsers.some(u => u?.uid === message.uid && u?.state !== 'offline')
+        );
+        if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
             pt.whisperOff(
-                <div>
-                    <div style={{ fontWeight: 800, fontSize: '13px' }}>Can't Whisper Offline User</div>
-                    <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                        <span style={{ fontWeight: 700 }}>{message.displayName}</span> is not in the room right now
+                <div className="tt-toast-msg">
+                    <div className="tt-toast-title">Can&apos;t Whisper Offline User</div>
+                    <div className="tt-toast-sub">
+                        <strong>{message.displayName || 'User'}</strong> is not in the room right now
                     </div>
                 </div>
             );
@@ -5487,10 +5649,10 @@ const HomePage = ({ user, roomIdOverride }) => {
                     const targetSettings = targetDoc.data()?.settings || {};
                     if (targetSettings.allowWhisperMessages === false) {
                         pt.whisperOff(
-                            <div>
-                                <div style={{fontWeight:800,fontSize:'13px'}}>Whispers Disabled</div>
-                                <div style={{fontSize:'11px',marginTop:'3px',opacity:0.85}}>
-                                    <span style={{fontWeight:700}}>{message.displayName}</span> has turned off whisper messages
+                            <div className="tt-toast-msg">
+                                <div className="tt-toast-title">Whispers Disabled</div>
+                                <div className="tt-toast-sub">
+                                    <strong>{message.displayName || 'User'}</strong> has turned off whisper messages
                                 </div>
                             </div>
                         );
@@ -5686,41 +5848,16 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     }, [addFriendConfirmTarget, auth.currentUser, loggedInUserProfile]);
 
-    // Helper function to check private message permissions
+    // Helper function to check private message & Message Request permissions
+    const getPmAccess = (currentUser, targetUser) => {
+        return evaluatePrivateMessageAccess(currentUser, targetUser, {
+            blockedUsers,
+            usersWhoBlockedMe,
+        });
+    };
+
     const canSendPrivateMessage = (currentUser, targetUser) => {
-        if (!currentUser || !targetUser) return false;
-        
-        const currentIsGuest = currentUser.isGuest === true || currentUser.role?.toLowerCase() === 'guest';
-        const targetIsGuest = targetUser.isGuest === true || targetUser.role?.toLowerCase() === 'guest';
-
-        // Guests can only initiate PMs with other Guests
-        if (currentIsGuest && !targetIsGuest) {
-            return false;
-        }
-        
-        // Non-guests CAN initiate PMs with Guests (and with other non-guests)
-        // No additional restriction needed here
-
-        // Check if target user is blocked (bidirectional)
-        if (currentUser.blockedUsers?.includes(targetUser.uid)) return false;
-        if (targetUser.blockedUsers?.includes(currentUser.uid)) return false;
-        if (targetUser.blockedBy?.includes(currentUser.uid)) return false;
-        
-        // Check target user's private message settings (only applies to non-guest targets)
-        if (!targetIsGuest) {
-            const allowLevel = targetUser.settings?.allowPrivateMessagesLevel || 'all';
-            switch (allowLevel) {
-                case 'none':
-                    return false;
-                case 'friends':
-                    return currentUser.friends?.includes(targetUser.uid) || false;
-                case 'all':
-                default:
-                    return true;
-            }
-        }
-
-        return true;
+        return getPmAccess(currentUser, targetUser).allowed;
     };
 
     // Expose profile modal functions globally for Sidebar access
@@ -5744,19 +5881,20 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
         
         window.handleAddFriendFromSidebar = handleAddFriend;
-        
-        window.handleWhisperFromSidebar = (user) => {
-            handleWhisperUser({ uid: user.uid, displayName: user.displayName });
-        };
 
-        // Allow SettingsSidebar to instantly update RTDB showOnlineStatus
-        window.updateOnlineStatusVisibility = async (show) => {
+        // Allow SettingsSidebar to instantly update RTDB online status visibility
+        window.updateOnlineStatusVisibility = async (show, levelOpt) => {
             const uid = auth.currentUser?.uid;
             if (!uid) return;
+            const resolvedLevel = levelOpt || (show ? 'all' : 'none');
             try {
-                await update(ref(rtdb, `status/${uid}`), { showOnlineStatus: show });
+                await update(ref(rtdb, `status/${uid}`), {
+                    showOnlineStatus: Boolean(show),
+                    onlineStatusLevel: resolvedLevel,
+                });
                 if (window._currentStatusData) {
-                    window._currentStatusData.showOnlineStatus = show;
+                    window._currentStatusData.showOnlineStatus = Boolean(show);
+                    window._currentStatusData.onlineStatusLevel = resolvedLevel;
                 }
             } catch (_) {}
         };
@@ -5768,7 +5906,6 @@ const HomePage = ({ user, roomIdOverride }) => {
             delete window.handlePrivateMessageFromSidebar;
             delete window.handleBlockUserFromSidebar;
             delete window.handleAddFriendFromSidebar;
-            delete window.handleWhisperFromSidebar;
             delete window.updateUserAvatarInHomePage;
             delete window.getPrivateMessageAvatarUrl;
             delete window.updateOnlineStatusVisibility;
@@ -5919,9 +6056,6 @@ const HomePage = ({ user, roomIdOverride }) => {
         window.textareaRef = textareaRef;
         window.setPmHeaderBoxOpen = setPmHeaderBoxOpen;
         window.pmHeaderBoxOpen = pmHeaderBoxOpen;
-        window.handleWhisperFromSidebar = (user) => {
-            handleWhisperUser({ uid: user.uid, displayName: user.displayName });
-        };
         
         return () => {
             delete window.handleAddFriendFromSidebar;
@@ -5936,24 +6070,32 @@ const HomePage = ({ user, roomIdOverride }) => {
             delete window.textareaRef;
             delete window.setPmHeaderBoxOpen;
             delete window.pmHeaderBoxOpen;
-            delete window.handleWhisperFromSidebar;
         };
     }, [handleAddFriend, friendsProfiles, scrollToBottom, pmHeaderBoxOpen]);
 
     
 
     const handlePrivateMessage = async (user) => {
-        // Check if the target user allows private messages from current user
-        if (!canSendPrivateMessage(loggedInUserProfile, user)) {
-            const userSetting = user.settings?.allowPrivateMessagesLevel || 'all';
-            if (userSetting === 'none') {
+        // Check if the target user allows private messages or requires Message Requests
+        const access = getPmAccess(loggedInUserProfile, user);
+        if (!access.allowed) {
+            if (access.mode === 'none') {
                 pt.whisperOff(`${user.displayName} has turned off private messages`);
-            } else if (userSetting === 'friends') {
-                pt.warn(`${user.displayName} only accepts messages from friends`);
+            } else if (access.mode === 'guest_restricted') {
+                pt.error('Guests can only message other guests');
             } else {
-                pt.error(`${user.displayName} cannot receive private messages right now`);
+                pt.error(`${user.displayName || 'This user'} cannot receive private messages right now`);
             }
             return;
+        }
+
+        if (access.mode === 'request') {
+            setPmDmNotice({
+                text: 'Message Request — Delivered to their Requests folder until accepted',
+                level: 'friends',
+            });
+        } else {
+            setPmDmNotice(null);
         }
 
         // Set private message target with cache-busted avatar
@@ -5994,20 +6136,23 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
                 setPrivateMessages(msgs);
 
-                try {
-                    const unreadQuery = query(
-                        collection(db, 'privateMessages'),
-                        where('conversationId', '==', conversationId),
-                        where('receiverId', '==', currentUserId),
-                        where('isRead', '==', false)
-                    );
-                    const unreadSnapshot = await getDocs(unreadQuery);
-                    if (!unreadSnapshot.empty) {
-                        const batch = writeBatch(db);
-                        unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
-                        await batch.commit();
-                    }
-                } catch (_) {}
+                // Only emit read receipts when both users enable readReceipts
+                if (shouldSendReadReceipts(loggedInUserProfile, user)) {
+                    try {
+                        const unreadQuery = query(
+                            collection(db, 'privateMessages'),
+                            where('conversationId', '==', conversationId),
+                            where('receiverId', '==', currentUserId),
+                            where('isRead', '==', false)
+                        );
+                        const unreadSnapshot = await getDocs(unreadQuery);
+                        if (!unreadSnapshot.empty) {
+                            const batch = writeBatch(db);
+                            unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
+                            await batch.commit();
+                        }
+                    } catch (_) {}
+                }
 
                 const scrollPmBottom = () => {
                     const messagesContainer = document.querySelector('.pm-messages');
@@ -6153,6 +6298,257 @@ const HomePage = ({ user, roomIdOverride }) => {
         }
     };
 
+    const preparePmDeliveryMetadata = async (previewLabel) => {
+        if (!auth.currentUser || !privateMessageTarget?.uid) {
+            return { blocked: true, extraFields: {} };
+        }
+        const myUid = auth.currentUser.uid;
+        const targetUid = privateMessageTarget.uid;
+        const conversationId = [myUid, targetUid].sort().join('_');
+
+        let freshTarget = privateMessageTarget;
+        try {
+            let targetDocSnap = await getDoc(doc(db, 'publicProfiles', targetUid));
+            if (!targetDocSnap.exists()) {
+                targetDocSnap = await getDoc(doc(db, 'users', targetUid));
+            }
+            if (targetDocSnap.exists()) {
+                freshTarget = { ...targetDocSnap.data(), uid: targetUid };
+            }
+        } catch (_) {}
+
+        const access = getPmAccess(loggedInUserProfile, freshTarget);
+        if (!access.allowed) {
+            let noticeText;
+            if (access.mode === 'none') {
+                noticeText = `${freshTarget?.displayName || 'This user'} has turned off private messages`;
+            } else if (access.mode === 'guest_restricted') {
+                noticeText = 'Guests can only message other guests';
+            } else {
+                noticeText = `${freshTarget?.displayName || 'This user'} cannot receive private messages right now`;
+            }
+            setPmDmNotice({ text: noticeText, level: access.mode });
+            setTimeout(() => setPmDmNotice(null), 5000);
+            return { blocked: true, extraFields: {}, freshTarget };
+        }
+
+        if (access.mode === 'request') {
+            const requestId = `${myUid}_${targetUid}`;
+            const reqRef = doc(db, 'messageRequests', requestId);
+            let existingStatus = null;
+            let existsDoc = false;
+            try {
+                const reqSnap = await getDoc(reqRef);
+                if (reqSnap.exists()) {
+                    existsDoc = true;
+                    existingStatus = reqSnap.data()?.status || null;
+                }
+            } catch (_) {}
+
+            if (existingStatus === 'declined') {
+                // Silent decline — sender never sees rejection and receiver does not see new clutter
+                return {
+                    blocked: false,
+                    freshTarget,
+                    extraFields: {
+                        isMessageRequest: true,
+                        requestId,
+                        deletedFor: [targetUid],
+                    },
+                };
+            }
+
+            if (existingStatus !== 'accepted') {
+                try {
+                    const reqPayload = {
+                        senderId: myUid,
+                        receiverId: targetUid,
+                        conversationId,
+                        status: 'pending',
+                        senderName: loggedInUserProfile?.displayName || auth.currentUser.displayName || 'User',
+                        senderUsername: loggedInUserProfile?.username || '',
+                        senderPhoto: loggedInUserProfile?.photoURL || auth.currentUser.photoURL || null,
+                        senderGender: loggedInUserProfile?.gender || 'male',
+                        senderBadge: loggedInUserProfile?.badge || null,
+                        senderIsVerified: Boolean(loggedInUserProfile?.isVerified || loggedInUserProfile?.badge),
+                        senderFriends: loggedInUserProfile?.friends || [],
+                        lastMessagePreview: String(previewLabel || 'Sent a message').slice(0, 140),
+                        updatedAt: serverTimestamp(),
+                    };
+                    if (!existsDoc) reqPayload.createdAt = serverTimestamp();
+                    await setDoc(reqRef, reqPayload, { merge: true });
+                } catch (_) {}
+
+                setPmDmNotice({
+                    text: 'Message Request — Delivered to their Requests folder until accepted',
+                    level: 'friends',
+                });
+                return {
+                    blocked: false,
+                    freshTarget,
+                    extraFields: {
+                        isMessageRequest: true,
+                        requestId,
+                    },
+                };
+            }
+        }
+
+        return { blocked: false, freshTarget, extraFields: { isMessageRequest: false } };
+    };
+
+    const handleAcceptMessageRequest = async (req) => {
+        if (!auth.currentUser || !req?.id) return;
+        const myUid = auth.currentUser.uid;
+        try {
+            await updateDoc(doc(db, 'messageRequests', req.id), {
+                status: 'accepted',
+                respondedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            const convId = req.conversationId || [myUid, req.senderId].sort().join('_');
+            try {
+                const msgSnap = await getDocs(
+                    query(collection(db, 'privateMessages'), where('conversationId', '==', convId), limit(200))
+                );
+                const batch = writeBatch(db);
+                let dirty = false;
+                msgSnap.forEach((d) => {
+                    if (d.data()?.isMessageRequest === true) {
+                        batch.update(d.ref, { isMessageRequest: false });
+                        dirty = true;
+                    }
+                });
+                if (dirty) await batch.commit();
+            } catch (_) {}
+
+            setMessageRequests(prev => prev.filter(r => r.id !== req.id));
+            pt.success('Message request accepted');
+
+            const cached = window.userProfilesCache?.get?.(req.senderId);
+            handleOpenConversation({
+                conversationId: convId,
+                otherUserId: req.senderId,
+                otherUserName: cached?.displayName || req.senderName || 'User',
+                otherUser: cached || {
+                    uid: req.senderId,
+                    displayName: req.senderName || 'User',
+                    username: req.senderUsername || '',
+                    photoURL: req.senderPhoto || null,
+                    gender: req.senderGender || 'male',
+                },
+            });
+        } catch (_) {
+            pt.error('Unable to accept message request right now.');
+        }
+    };
+
+    const handleDeclineMessageRequest = async (req) => {
+        if (!auth.currentUser || !req?.id) return;
+        const myUid = auth.currentUser.uid;
+        try {
+            await updateDoc(doc(db, 'messageRequests', req.id), {
+                status: 'declined',
+                respondedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            const convId = req.conversationId || [myUid, req.senderId].sort().join('_');
+            try {
+                const msgSnap = await getDocs(
+                    query(collection(db, 'privateMessages'), where('conversationId', '==', convId), limit(200))
+                );
+                const batch = writeBatch(db);
+                let dirty = false;
+                msgSnap.forEach((d) => {
+                    if (d.data()?.isMessageRequest === true) {
+                        batch.update(d.ref, { deletedFor: arrayUnion(myUid) });
+                        dirty = true;
+                    }
+                });
+                if (dirty) await batch.commit();
+            } catch (_) {}
+            setMessageRequests(prev => prev.filter(r => r.id !== req.id));
+            pt.info('Request removed');
+        } catch (_) {
+            pt.error('Could not decline request right now.');
+        }
+    };
+
+    const handleBlockMessageRequest = async (req, liveSender) => {
+        if (!req?.senderId) return;
+        try {
+            await updateDoc(doc(db, 'messageRequests', req.id), {
+                status: 'declined',
+                respondedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+        } catch (_) {}
+        setMessageRequests(prev => prev.filter(r => r.id !== req.id));
+        handleBlockUser({
+            uid: req.senderId,
+            displayName: liveSender?.displayName || req.senderName || 'User',
+            photoURL: liveSender?.photoURL || req.senderPhoto || null,
+            gender: liveSender?.gender || req.senderGender || 'male',
+        });
+    };
+
+    const handleReportMessageRequest = (req, liveSender) => {
+        if (!auth.currentUser || !req?.senderId) return;
+        setMessageToReport({
+            uid: req.senderId,
+            displayName: liveSender?.displayName || req.senderName || 'User',
+            id: req.id,
+            text: req.lastMessagePreview || '',
+            role: liveSender?.role || 'user',
+            isGuest: false,
+        });
+        setReportType('User');
+        setReportPopupOpen(true);
+    };
+
+    const handleInviteUserToRoom = async (targetUser) => {
+        if (!auth.currentUser || !targetUser?.uid || isGuestUser(loggedInUserProfile)) {
+            pt.error('Register to send room invitations.');
+            return;
+        }
+        let freshTarget = targetUser;
+        try {
+            const pSnap = await getDoc(doc(db, 'publicProfiles', targetUser.uid));
+            if (pSnap.exists()) freshTarget = { ...pSnap.data(), uid: targetUser.uid };
+        } catch (_) {}
+
+        const check = canInviteToRoom(loggedInUserProfile, freshTarget, { blockedUsers, usersWhoBlockedMe });
+        if (!check.allowed) {
+            if (check.reason === 'friends_only') {
+                pt.warn(`${freshTarget.displayName || 'This user'} only accepts room invites from friends`);
+            } else if (check.reason === 'none') {
+                pt.whisperOff(`${freshTarget.displayName || 'This user'} has turned off room invitations`);
+            } else {
+                pt.error('Unable to send room invitation.');
+            }
+            return;
+        }
+
+        try {
+            const slug = nameToSlug(roomName || '') || roomId;
+            await addDoc(collection(db, 'roomInvites'), {
+                roomId,
+                roomSlug: slug,
+                roomName: roomName || roomId,
+                senderId: auth.currentUser.uid,
+                senderName: loggedInUserProfile?.displayName || auth.currentUser.displayName || 'User',
+                senderPhoto: loggedInUserProfile?.photoURL || auth.currentUser.photoURL || null,
+                receiverId: targetUser.uid,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+            });
+            pt.success(`Room invitation sent to ${freshTarget.displayName || 'user'}`);
+        } catch (_) {
+            pt.error('Unable to send room invitation.');
+        }
+    };
+
     const handlePrivateImageSelect = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -6173,7 +6569,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!auth.currentUser || !privateMessageTarget) return;
 
         try {
-
+            const delivery = await preparePmDeliveryMetadata('[Image attachment]');
+            if (delivery.blocked) return;
 
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
             const compressedFile = await compressImageToWebP(file, { maxDim: 1080, quality: 0.8 });
@@ -6193,7 +6590,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
                 lastMessageTime: serverTimestamp(),
                 isRead: false,
-                roomId: roomId
+                roomId: roomId,
+                ...delivery.extraFields
             });
 
             
@@ -6210,6 +6608,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!privateSelectedImage || !auth.currentUser || !privateMessageTarget) return;
 
         try {
+            const delivery = await preparePmDeliveryMetadata(privateMessage || '[Image attachment]');
+            if (delivery.blocked) return;
+
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
             const compressedPm = await compressImageToWebP(privateSelectedImage, { maxDim: 1080, quality: 0.8 });
             const { key: pmImgKey2, url: imageUrl } = await uploadMediaFile(compressedPm, 'private-chat-image', { roomId: conversationId });
@@ -6228,7 +6629,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
                 lastMessageTime: serverTimestamp(),
                 isRead: false,
-                roomId: roomId
+                roomId: roomId,
+                ...delivery.extraFields
             });
 
             setPrivateSelectedImage(null);
@@ -6262,6 +6664,8 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!auth.currentUser || !privateMessageTarget) return;
 
         try {
+            const delivery = await preparePmDeliveryMetadata('[Audio message]');
+            if (delivery.blocked) return;
 
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
             const { key: pmAudioKey1, url: audioUrl } = await uploadMediaFile(file, 'private-chat-audio', { roomId: conversationId });
@@ -6280,7 +6684,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
                 lastMessageTime: serverTimestamp(),
                 isRead: false,
-                roomId: roomId
+                roomId: roomId,
+                ...delivery.extraFields
             });
 
             // Reset file input
@@ -6335,6 +6740,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         if (!audioToUpload || !auth.currentUser || !privateMessageTarget) return;
 
         try {
+            const delivery = await preparePmDeliveryMetadata(privateMessage || '[Voice note]');
+            if (delivery.blocked) return;
+
             const filename = privateSelectedAudio ? privateSelectedAudio.name : `voice-note-${Date.now()}.wav`;
             
 
@@ -6355,7 +6763,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
                 lastMessageTime: serverTimestamp(),
                 isRead: false,
-                roomId: roomId
+                roomId: roomId,
+                ...delivery.extraFields
             });
 
             setPrivateSelectedAudio(null);
@@ -6417,6 +6826,9 @@ const HomePage = ({ user, roomIdOverride }) => {
                 }
 
                 try {
+                    const delivery = await preparePmDeliveryMetadata('[Voice note]');
+                    if (delivery.blocked) return;
+
                     // Determine filename based on blob type
                     let filename;
                     if (audioBlob.type) {
@@ -6447,7 +6859,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                         createdAt: serverTimestamp(),
                         lastMessageTime: serverTimestamp(),
                         isRead: false,
-                        roomId: roomId
+                        roomId: roomId,
+                        ...delivery.extraFields
                     });
 
                     setShowPrivateAudioMiniPopup(false);
@@ -6468,30 +6881,8 @@ const HomePage = ({ user, roomIdOverride }) => {
             return;
         }
 
-        // DM permission check — always fetch fresh target profile from Firestore
-        // (privateMessageTarget may only have { uid, displayName } when opened from header box)
-        try {
-            let targetDocSnap = await getDoc(doc(db, 'publicProfiles', privateMessageTarget.uid));
-            if (!targetDocSnap.exists()) {
-                targetDocSnap = await getDoc(doc(db, 'users', privateMessageTarget.uid));
-            }
-            const freshTarget = targetDocSnap.exists()
-                ? { ...targetDocSnap.data(), uid: privateMessageTarget.uid }
-                : privateMessageTarget;
-
-            if (!canSendPrivateMessage(loggedInUserProfile, freshTarget)) {
-                const allowLevel = freshTarget?.settings?.allowPrivateMessagesLevel || 'all';
-                let noticeText;
-                if (allowLevel === 'friends') {
-                    noticeText = `${freshTarget?.displayName || 'This user'} only accepts messages from friends`;
-                } else {
-                    noticeText = `${freshTarget?.displayName || 'This user'} has turned off private messages`;
-                }
-                setPmDmNotice({ text: noticeText, level: allowLevel });
-                setTimeout(() => setPmDmNotice(null), 5000);
-                return;
-            }
-        } catch (_) { /* network error — allow send to proceed */ }
+        const delivery = await preparePmDeliveryMetadata(privateMessage.trim());
+        if (delivery.blocked) return;
 
         try {
             const conversationId = [auth.currentUser.uid, privateMessageTarget.uid].sort().join('_');
@@ -6507,7 +6898,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 createdAt: serverTimestamp(),
                 lastMessageTime: serverTimestamp(),
                 isRead: false,
-                roomId: roomId
+                roomId: roomId,
+                ...delivery.extraFields
             });
 
             setPrivateMessage('');
@@ -6599,21 +6991,23 @@ const HomePage = ({ user, roomIdOverride }) => {
                 };
                 pmListenerRef.current = cancelAndUnsubConv;
 
-                try {
-                    const unreadQuery = query(
-                        collection(db, 'privateMessages'),
-                        where('conversationId', '==', conversation.conversationId),
-                        where('receiverId', '==', currentUserId),
-                        where('isRead', '==', false)
-                    );
-                    const unreadSnapshot = await getDocs(unreadQuery);
-                    if (!unreadSnapshot.empty) {
-                        const batch = writeBatch(db);
-                        unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
-                        await batch.commit();
+                if (shouldSendReadReceipts(loggedInUserProfile, conversation.otherUser || { uid: conversation.otherUserId })) {
+                    try {
+                        const unreadQuery = query(
+                            collection(db, 'privateMessages'),
+                            where('conversationId', '==', conversation.conversationId),
+                            where('receiverId', '==', currentUserId),
+                            where('isRead', '==', false)
+                        );
+                        const unreadSnapshot = await getDocs(unreadQuery);
+                        if (!unreadSnapshot.empty) {
+                            const batch = writeBatch(db);
+                            unreadSnapshot.docs.forEach(d => batch.update(d.ref, { isRead: true }));
+                            await batch.commit();
+                        }
+                    } catch (error) {
+                        console.error('Error marking messages as read:', error);
                     }
-                } catch (error) {
-                    console.error('Error marking messages as read:', error);
                 }
             } catch (error) {
                 console.error('Error loading conversation messages:', error);
@@ -6852,6 +7246,9 @@ const HomePage = ({ user, roomIdOverride }) => {
         window.handleWhisperFromSidebar = (user) => {
             handleWhisperUser({ uid: user.uid, displayName: user.displayName });
         };
+        window.handleInviteUserToRoom = (userObj) => {
+            handleInviteUserToRoom(userObj);
+        };
         window.friendRequestCount = friendRequests.length;
         window.friendsProfiles = friendsProfiles;
         window.loadFriends = loadFriends;
@@ -7037,35 +7434,43 @@ const HomePage = ({ user, roomIdOverride }) => {
 
     const getUserStatus = (userId) => {
         const userStatus = userOnlineStatusesRef.current[userId];
-        if (!userStatus) return { status: 'Last seen recently', isOnline: false };
-        
-        if (userStatus.state === 'online') {
+        const targetProfile = window.userProfilesCache?.get?.(userId) || { uid: userId };
+        const privacyCtx = { blockedUsers, usersWhoBlockedMe };
+
+        const allowOnline = canSeeOnlineStatus(loggedInUserProfile, targetProfile, userStatus, privacyCtx);
+        if (allowOnline && userStatus?.state === 'online') {
             return { status: 'Online', isOnline: true };
-        } else {
-            const lastSeen = userStatus.last_changed;
-            if (lastSeen) {
-                const now = Date.now();
-                const timeDiff = now - lastSeen;
-                const minutes = Math.floor(timeDiff / (1000 * 60));
-                const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-                const days = Math.floor(hours / 24);
-                
-                if (timeDiff < 60000) { // Less than 1 minute
-                    return { status: 'Just now', isOnline: false };
-                } else if (minutes < 60) {
-                    return { status: `Last seen ${minutes} minute${minutes > 1 ? 's' : ''} ago`, isOnline: false };
-                } else if (hours < 24) {
-                    return { status: `Last seen ${hours} hour${hours > 1 ? 's' : ''} ago`, isOnline: false };
-                } else if (days < 7) {
-                    return { status: `Last seen ${days} day${days > 1 ? 's' : ''} ago`, isOnline: false };
-                } else {
-                    // For longer periods, show actual date
-                    const lastSeenDate = new Date(lastSeen);
-                    return { status: `Last seen ${lastSeenDate.toLocaleDateString()}`, isOnline: false };
-                }
-            }
-            return { status: 'Last seen recently', isOnline: false };
         }
+
+        const allowLastSeen = canSeeLastSeen(loggedInUserProfile, targetProfile, userStatus, privacyCtx);
+        if (!allowLastSeen) {
+            return { status: 'Offline', isOnline: false };
+        }
+
+        if (!userStatus) return { status: 'Last seen recently', isOnline: false };
+
+        const lastSeen = userStatus.last_changed;
+        if (lastSeen) {
+            const now = Date.now();
+            const timeDiff = now - lastSeen;
+            const minutes = Math.floor(timeDiff / (1000 * 60));
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const days = Math.floor(hours / 24);
+            
+            if (timeDiff < 60000) {
+                return { status: 'Just now', isOnline: false };
+            } else if (minutes < 60) {
+                return { status: `Last seen ${minutes} minute${minutes > 1 ? 's' : ''} ago`, isOnline: false };
+            } else if (hours < 24) {
+                return { status: `Last seen ${hours} hour${hours > 1 ? 's' : ''} ago`, isOnline: false };
+            } else if (days < 7) {
+                return { status: `Last seen ${days} day${days > 1 ? 's' : ''} ago`, isOnline: false };
+            } else {
+                const lastSeenDate = new Date(lastSeen);
+                return { status: `Last seen ${lastSeenDate.toLocaleDateString()}`, isOnline: false };
+            }
+        }
+        return { status: 'Last seen recently', isOnline: false };
     };
 
     
@@ -7185,13 +7590,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -7203,6 +7612,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
+            justSentOwnMessageRef.current = true;
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
             setSelectedImage(null);
@@ -7274,13 +7684,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -7292,6 +7706,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
+            justSentOwnMessageRef.current = true;
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
             setSelectedImage(null);
@@ -7481,13 +7896,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -7500,6 +7919,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
+            justSentOwnMessageRef.current = true;
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             
             setNewMessage('');
@@ -7604,13 +8024,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -7622,6 +8046,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
+            justSentOwnMessageRef.current = true;
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             completeSendProgress();
         } catch (error) {
@@ -7719,13 +8144,17 @@ const HomePage = ({ user, roomIdOverride }) => {
 
             // Add whisper data if whisper target is set
             if (whisperTarget) {
-                // Guard: target may have left the room after whisper was initiated
-                if (window.onlineUsers && window.onlineUsers.size > 0 && !window.onlineUsers.has(whisperTarget.uid)) {
+                const targetInRoom = Boolean(
+                    window.onlineUsers?.has?.(whisperTarget.uid)
+                    || userOnlineStatusesRef.current?.[whisperTarget.uid]?.state === 'online'
+                    || liveUsers.some(u => u?.uid === whisperTarget.uid && u?.state !== 'offline')
+                );
+                if (!targetInRoom && (window.onlineUsers?.size > 0 || liveUsers.length > 0)) {
                     pt.whisperOff(
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '13px' }}>User Went Offline</div>
-                            <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.82 }}>
-                                <span style={{ fontWeight: 700 }}>{whisperTarget.displayName}</span> left the room
+                        <div className="tt-toast-msg">
+                            <div className="tt-toast-title">User Went Offline</div>
+                            <div className="tt-toast-sub">
+                                <strong>{whisperTarget.displayName}</strong> left the room
                             </div>
                         </div>
                     );
@@ -7737,6 +8166,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 messageData.whisperToName = whisperTarget.displayName;
             }
 
+            justSentOwnMessageRef.current = true;
             await addDoc(collection(db, 'rooms', roomId, 'messages'), messageData);
             completeSendProgress();
         } catch (error) {
@@ -7801,6 +8231,554 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
     
+
+    const renderMessageList = () => (
+        <MessageList
+            messages={(() => {
+                // While a local self-notice is active (instant, 0ms feedback),
+                // suppress the matching Firestore-persisted copy so the violator
+                // doesn't see two identical notices.
+                const activeLocalTypes = localAutoModNotices.length > 0
+                    ? new Set(localAutoModNotices.map(n => n.tinglebotType).filter(Boolean))
+                    : null;
+                const base = activeLocalTypes?.size > 0
+                    ? messages.filter(m =>
+                        !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
+                      )
+                    : messages;
+                const sorted = localAutoModNotices.length
+                    ? [...base, ...localAutoModNotices].sort(
+                        (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
+                      )
+                    : base;
+                // C2: Append only unconfirmed pending/failed optimistic bubbles.
+                if (!pendingMessages.length) return sorted;
+                const confirmedIds = new Set(sorted.map(m => m.id));
+                const unconfirmed = pendingMessages.filter(p =>
+                    p._isFailed || !(p._firestoreId && confirmedIds.has(p._firestoreId))
+                );
+                return unconfirmed.length ? [...sorted, ...unconfirmed] : sorted;
+            })()}
+            blockedUsers={blockedUsers}
+            usersWhoBlockedMe={usersWhoBlockedMe}
+            loggedInUserProfile={loggedInUserProfile}
+            openDropdownId={openDropdownId}
+            roomKickedUserIds={roomKickedUserIds}
+            roomId={roomId}
+            chatFeedRef={chatFeedRef}
+            onDelete={stableHandleDeleteMessage}
+            onKick={stableHandleKickUser}
+            onUnkick={stableHandleUnkickUser}
+            onReport={stableHandleReportUser}
+            onWhisper={stableHandleWhisperUser}
+            onTag={insertTag}
+            onViewProfile={stableHandleViewProfile}
+            onAddFriend={stableHandleAddFriend}
+            onPrivateMessage={stableHandlePrivateMessage}
+            onBlock={stableHandleBlockUser}
+            closeAllDropdowns={stableCloseAllDropdowns}
+            toggleDropdown={stableToggleDropdown}
+            setOpenDropdownId={stableHandleSetOpenDropdownId}
+            onRetryPending={retryPendingMessage}
+            allUsersMap={userLookupMap}
+            activitiesMap={activitiesMap}
+        />
+    );
+
+    const renderComposerCluster = () => (
+        <>
+            {isAttachmentDropdownOpen && (() => {
+                const _isGuest = isGuestUser(loggedInUserProfile);
+                const _tier = getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, _isGuest);
+                const lockToast = (msg) => {
+                    pt.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000 });
+                    setIsAttachmentDropdownOpen(false);
+                };
+                const LockBadge = () => (
+                    <span style={{position:'absolute',bottom:'-2px',right:'-2px',width:'12px',height:'12px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid white',zIndex:2}}>
+                        <svg width="7" height="7" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                    </span>
+                );
+                const canPhoto   = _tier !== 'guest' && _tier !== 'member';
+                const canYouTube = _tier === 'tier2' || _tier === 'tier3' || _tier === 'staff';
+                const canGif     = _tier !== 'guest' && _tier !== 'member';
+                const canStyle   = _tier !== 'guest';
+                return (
+                <div className="hp-attach-popup">
+                    <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                        <span className="hp-attach-icon-wrap">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                        <span className="hp-attach-label">Audio</span>
+                    </button>
+
+                    {!canPhoto ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock photo sharing!')}>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Photo</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            <span className="hp-attach-label">Photo</span>
+                        </button>
+                    )}
+
+                    {!canYouTube ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Upgrade to Platinum Lord or higher to share YouTube videos!')}>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
+                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
+                                </svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>YouTube</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" title="Share YouTube Video" onClick={() => { setIsYouTubeSearchModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
+                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
+                                </svg>
+                            </span>
+                            <span className="hp-attach-label">YouTube</span>
+                        </button>
+                    )}
+
+                    {!canStyle ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Register to use text styles!')}>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Style</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            <span className="hp-attach-label">Style</span>
+                        </button>
+                    )}
+
+                    {!canGif ? (
+                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock GIF sharing!')}>
+                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
+                                <LockBadge />
+                            </span>
+                            <span className="hp-attach-label" style={{color:'#ef4444'}}>GIF</span>
+                        </button>
+                    ) : (
+                        <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
+                            <span className="hp-attach-icon-wrap">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
+                            </span>
+                            <span className="hp-attach-label">GIF</span>
+                        </button>
+                    )}
+
+                    <button className="hp-attach-btn" title="Mention / Tag User" onClick={() => {
+                        setIsAttachmentDropdownOpen(false);
+                        setShowTagPicker(true);
+                        textareaRef.current?.focus();
+                    }}>
+                        <span className="hp-attach-icon-wrap">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="#8b5cf6"/>
+                            </svg>
+                        </span>
+                        <span className="hp-attach-label">Tag</span>
+                    </button>
+
+                    {canShowGamesInRoom && (() => {
+                        const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
+                        const hasGamesAccess = isOwnerRole(loggedInUserProfile)
+                            || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
+                        if (!hasGamesAccess) {
+                            return (
+                                <button
+                                    type="button"
+                                    className="hp-attach-btn"
+                                    title="Mini-Games & Polls (Owner Permission Required)"
+                                    onClick={() => lockToast('Mini-Games & Polls is locked. Ask an Owner to grant you access!')}
+                                >
+                                    <span className="hp-attach-icon-wrap" style={{ opacity: 0.55, position: 'relative' }}>
+                                        <ActivitySparkIcon size={20} color="#ec4899" />
+                                        <LockBadge />
+                                    </span>
+                                    <span className="hp-attach-label" style={{ color: '#ef4444' }}>Games</span>
+                                </button>
+                            );
+                        }
+                        return (
+                            <button
+                                type="button"
+                                className="hp-attach-btn"
+                                title="Mini-Games & Polls"
+                                onClick={() => {
+                                    setIsAttachmentDropdownOpen(false);
+                                    setIsGamesPickerOpen(true);
+                                }}
+                            >
+                                <span className="hp-attach-icon-wrap">
+                                    <ActivitySparkIcon size={20} color="#ec4899" />
+                                </span>
+                                <span className="hp-attach-label">Games</span>
+                            </button>
+                        );
+                    })()}
+                </div>
+                );
+            })()}
+            {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (() => {
+                const isDarkMuteBanner = isDarkMode || document.documentElement.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-theme-variant');
+                return (
+                <div style={{
+                    position: isTheatreRoom ? 'relative' : 'fixed', bottom: isTheatreRoom ? 'auto' : '44px', left: 0, right: 0,
+                    zIndex: 1999,
+                    background: isDarkMuteBanner
+                        ? 'linear-gradient(135deg, rgba(24, 18, 43, 0.97) 0%, rgba(36, 26, 66, 0.99) 50%, rgba(24, 18, 43, 0.97) 100%)'
+                        : 'linear-gradient(135deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    borderTop: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
+                    padding: '8px 16px',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    boxShadow: isDarkMuteBanner
+                        ? '0 -8px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(167,139,250,0.15)'
+                        : '0 -8px 36px rgba(109,40,217,0.1), 0 -2px 8px rgba(139,92,246,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
+                    fontFamily: 'Inter, sans-serif',
+                    animation: 'muteBannerSlide 0.32s cubic-bezier(0.34,1.56,0.64,1)',
+                }}>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
+                        background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(167,139,250,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.14), rgba(167,139,250,0.08))',
+                        border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.38)' : '1.5px solid rgba(139,92,246,0.28)',
+                        boxShadow: isDarkMuteBanner ? '0 4px 14px rgba(109,40,217,0.35)' : '0 4px 14px rgba(109,40,217,0.14), inset 0 1px 0 rgba(255,255,255,0.75)',
+                        animation: 'mutePulse 2.4s ease-in-out infinite',
+                    }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zM15 11.16L9 5.18V5a3 3 0 0 1 6 0v6.16zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill={isDarkMuteBanner ? '#c4b5fd' : '#7c3aed'}/>
+                        </svg>
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: isDarkMuteBanner ? '#ede9fe' : '#3b0764', letterSpacing: '-0.01em' }}>
+                                Muted
+                            </span>
+                            {(() => {
+                                const mutedByRole = (loggedInUserProfile?.mutedInfo?.mutedByRole || '').toLowerCase();
+                                const isBot = mutedByRole.includes('automod') || mutedByRole.includes('tinglebot') || mutedByRole.includes('system');
+                                const roleLabel = isBot ? 'TingleBot'
+                                    : ['owner', 'superowner', 'godfather'].includes(mutedByRole) ? 'Godfather'
+                                    : ['admin', 'high_council', 'high council'].includes(mutedByRole) ? 'Administrator'
+                                    : ['moderator', 'mod', 'guardian'].includes(mutedByRole) ? 'Moderator'
+                                    : 'Staff';
+                                return (
+                                    <span style={{
+                                        fontSize: '10.5px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px',
+                                        background: isBot ? 'rgba(245,158,11,0.16)' : (isDarkMuteBanner ? 'rgba(139,92,246,0.22)' : 'rgba(109,40,217,0.09)'),
+                                        color: isBot ? (isDarkMuteBanner ? '#fcd34d' : '#92400e') : (isDarkMuteBanner ? '#ddd6fe' : '#5b21b6'),
+                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.35)' : (isDarkMuteBanner ? 'rgba(167,139,250,0.3)' : 'rgba(109,40,217,0.18)')}`,
+                                        whiteSpace: 'nowrap', letterSpacing: '0.01em',
+                                    }}>
+                                        {isBot ? `Muted by ${roleLabel}` : `by ${roleLabel}`}
+                                    </span>
+                                );
+                            })()}
+                        </div>
+                        {loggedInUserProfile?.mutedInfo?.reason && (
+                            <div style={{
+                                fontSize: '11px', color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.7)', marginTop: '2px',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px',
+                            }}>
+                                {loggedInUserProfile.mutedInfo.reason}
+                            </div>
+                        )}
+                    </div>
+
+                    {muteTimeLeft && muteTimeLeft !== '__expired__' ? (
+                        <div style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
+                            background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(109,40,217,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.06))',
+                            border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.35)' : '1.5px solid rgba(139,92,246,0.22)',
+                            borderRadius: '12px', padding: '5px 14px', minWidth: '80px',
+                            boxShadow: isDarkMuteBanner ? 'inset 0 1px 0 rgba(255,255,255,0.12)' : 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                        }}>
+                            <span style={{ fontSize: '9px', fontWeight: 700, color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.55)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '1px' }}>
+                                Unmute in
+                            </span>
+                            <span style={{
+                                fontWeight: 900, fontSize: '16px', color: isDarkMuteBanner ? '#ede9fe' : '#5b21b6',
+                                fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
+                                fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                                lineHeight: 1,
+                            }}>
+                                {muteTimeLeft}
+                            </span>
+                        </div>
+                    ) : (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            background: 'rgba(239,68,68,0.14)', border: '1px solid rgba(239,68,68,0.28)',
+                            borderRadius: '10px', padding: '5px 12px', flexShrink: 0,
+                            fontSize: '11px', color: isDarkMuteBanner ? '#fca5a5' : '#b91c1c', fontWeight: 700,
+                        }}>
+                            Permanent
+                        </div>
+                    )}
+                </div>
+                );
+            })()}
+
+            <SendProgressBar progress={sendProgress} />
+
+            {showScrollToBottomBtn && (
+                <button
+                    className="scroll-to-bottom-chip"
+                    onClick={handleScrollToBottomClick}
+                    title="Jump to latest message"
+                    aria-label="Scroll to bottom"
+                >
+                    <span className="scroll-to-bottom-chip-icon">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 2.5L6 6.5L10 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M2 6L6 10L10 6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </span>
+                    <span className="scroll-to-bottom-chip-label">Latest</span>
+                </button>
+            )}
+
+            {canShowGamesInRoom && (
+                <FloatingActivityLauncher
+                    roomId={roomId}
+                    loggedInUserProfile={loggedInUserProfile}
+                    isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
+                    pickerOpen={isGamesPickerOpen}
+                    onClosePicker={() => setIsGamesPickerOpen(false)}
+                />
+            )}
+
+            <div
+                className="chat-footer hp-composer-footer"
+                ref={footerRef}
+                style={{
+                    opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.48 : 1,
+                    pointerEvents: loggedInUserProfile?.mutedInfo?.isMuted ? 'none' : 'auto',
+                }}
+            >
+                <form onSubmit={handleSendMessage} className="message-form hp-composer-dock">
+                    <button
+                        type="button"
+                        className="premium-footer-btn attachment-btn hp-composer-attach"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsAttachmentDropdownOpen(prev => !prev);
+                        }}
+                        title="Add attachment"
+                        aria-label="Add attachment"
+                        disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                    >
+                        <AttachmentIconSVG />
+                    </button>
+                    {whisperTarget && (
+                        <div className="whisper-chip" title={`Whispering privately to ${whisperTarget.displayName}`}>
+                            <span className="whisper-chip-badge" aria-hidden="true">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
+                                    <rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" strokeWidth="2.2"/>
+                                    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+                                </svg>
+                            </span>
+                            <span className="whisper-chip-label">
+                                <span className="whisper-chip-to">Whisper</span>
+                                <span className="whisper-chip-name">{whisperTarget.displayName}</span>
+                            </span>
+                            <button
+                                type="button"
+                                className="whisper-chip-close"
+                                onClick={() => setWhisperTarget(null)}
+                                title="Cancel whisper"
+                                aria-label="Cancel whisper"
+                            >
+                                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    )}
+                    <div className="hp-composer-input-wrap">
+                        {(showTagPicker || (activeTagQuery && matchingTagUsers.length > 0)) && (
+                            <div className="tag-autocomplete-popup" style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 10px)',
+                                left: 0,
+                                zIndex: 2300,
+                                background: isDarkMode ? 'rgba(19, 15, 38, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                border: isDarkMode ? '1.5px solid rgba(139, 92, 246, 0.35)' : '1.5px solid rgba(196, 181, 253, 0.6)',
+                                borderRadius: '14px',
+                                padding: '6px',
+                                boxShadow: '0 8px 32px rgba(109, 40, 217, 0.28), 0 2px 8px rgba(0,0,0,0.15)',
+                                minWidth: '220px',
+                                maxWidth: '300px',
+                                maxHeight: '220px',
+                                overflowY: 'auto'
+                            }}>
+                                <div style={{
+                                    fontSize: '10px',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    padding: '4px 8px 6px',
+                                    color: isDarkMode ? '#a78bfa' : '#7c3aed',
+                                    borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(124,58,237,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span>Mention User</span>
+                                    <button
+                                        type="button"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '11px', padding: 0 }}
+                                        onClick={() => { setShowTagPicker(false); setActiveTagQuery(null); }}
+                                        aria-label="Close mention list"
+                                    >
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                                    {matchingTagUsers.length === 0 ? (
+                                        <div style={{ padding: '8px', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>No users found</div>
+                                    ) : (
+                                        matchingTagUsers.map((u) => {
+                                            const uAvatar = isRealAvatarUpload(u.photoURL) ? u.photoURL : getDefaultAvatarUrl(u.uid, u.gender || 'male', isGuestUser(u));
+                                            return (
+                                                <button
+                                                    key={u.uid}
+                                                    type="button"
+                                                    className="tag-autocomplete-item"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleSelectTagUser(u);
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        padding: '6px 8px',
+                                                        borderRadius: '8px',
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        textAlign: 'left',
+                                                        width: '100%',
+                                                        transition: 'background 0.15s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(139,92,246,0.2)' : 'rgba(237,233,254,0.7)'; }}
+                                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                                >
+                                                    <img src={uAvatar} alt={u.displayName || 'User'} referrerPolicy="no-referrer" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{
+                                                            fontSize: '12px',
+                                                            fontWeight: 700,
+                                                            color: isDarkMode ? '#f3e8ff' : '#2e1065',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}>
+                                                            @{u.displayName}
+                                                        </div>
+                                                        <div style={{ fontSize: '9px', color: isDarkMode ? '#94a3b8' : '#6b7280' }}>
+                                                            {getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge })}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        <textarea
+                            ref={textareaRef}
+                            className="premium-input-field premium-textarea"
+                            rows={1}
+                            maxLength={MAX_CHAT_CHARS}
+                            placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Message this room...')}
+                            value={newMessage}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val.length <= MAX_CHAT_CHARS) {
+                                    setNewMessage(val);
+                                    checkTagTrigger(val, e.target.selectionStart);
+                                }
+                                e.target.style.height = '36px';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`;
+                            }}
+                            onKeyUp={(e) => {
+                                checkTagTrigger(e.target.value, e.target.selectionStart);
+                            }}
+                            onKeyDown={(e) => {
+                                if (activeTagQuery && (e.key === 'Tab' || (e.key === 'Enter' && matchingTagUsers.length > 0))) {
+                                    e.preventDefault();
+                                    handleSelectTagUser(matchingTagUsers[0]);
+                                    return;
+                                }
+                                if (activeTagQuery && e.key === 'Escape') {
+                                    setActiveTagQuery(null);
+                                    setShowTagPicker(false);
+                                    return;
+                                }
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    if (!('ontouchstart' in window) || window.innerWidth > 768) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }
+                            }}
+                            onPaste={(e) => {
+                                const text = e.clipboardData?.getData('text') || '';
+                                const combined = newMessage + text;
+                                if (combined.length > MAX_CHAT_CHARS) {
+                                    e.preventDefault();
+                                    setNewMessage(combined.slice(0, MAX_CHAT_CHARS));
+                                }
+                            }}
+                            disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                            readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="premium-footer-btn send-btn hp-composer-send"
+                        disabled={!newMessage.trim() || !!loggedInUserProfile?.mutedInfo?.isMuted}
+                        aria-label="Send message"
+                        title="Send message"
+                    >
+                        <SendIconSVG />
+                    </button>
+                </form>
+            </div>
+        </>
+    );
 
     return (
         <>
@@ -7888,6 +8866,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     onKick={handleKickUser}
                     onMute={handleMuteUser}
                     onBan={handleBanUser}
+                    blockedUsers={blockedUsers}
+                    usersWhoBlockedMe={usersWhoBlockedMe}
                 />
 
                 {/* Mute banner moved inline above message input — see below */}
@@ -8007,20 +8987,42 @@ const HomePage = ({ user, roomIdOverride }) => {
                                       <path d="m415.5 172.944h-245.4v-23.819c0-.336-.01-.671-.029-1.008l200.035-113.262a18.635 18.635 0 1 0 -18.363-32.433l-226.187 128.067h-16.086a18.657 18.657 0 0 0 -18.636 18.636v24.015c-46.667 2.949-83.855 42.045-83.855 89.33v160.005a89.627 89.627 0 0 0 89.526 89.525h318.995a89.627 89.627 0 0 0 89.526-89.525v-160a89.627 89.627 0 0 0 -89.526-89.531zm-247.724 268.277a98.749 98.749 0 1 1 98.748-98.748 98.861 98.861 0 0 1 -98.748 98.748zm129.855-177.709h-24.22a8.828 8.828 0 1 1 0-17.655h24.22a8.828 8.828 0 1 1 0 17.655zm85.7 168.315a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm0-102.987a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm-215.555-67.462a81.095 81.095 0 1 0 81.093 81.1 81.187 81.187 0 0 0 -81.093-81.1zm0 133.846a52.752 52.752 0 1 1 52.75-52.751 52.811 52.811 0 0 1 -52.75 52.751zm235.758-1.258a20.206 20.206 0 1 1 -20.206-20.2 20.23 20.23 0 0 1 20.206 20.2zm-200.662-51.493a35.1 35.1 0 1 1 -35.1-35.1 35.136 35.136 0 0 1 35.1 35.1zm200.662-51.494a20.206 20.206 0 1 1 -20.206-20.206 20.229 20.229 0 0 1 20.206 20.206z" fill="url(#radioIconGradNew)"/>
                                   </svg>
                               </button>
+                              {!isGuestUser(loggedInUserProfile) && (
+                                  <button
+                                      type="button"
+                                      className="header-action-btn"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRoomInviteModalOpen(true); }}
+                                      title="Invite to Room"
+                                      aria-label="Invite to Room"
+                                  >
+                                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                          <circle cx="8.5" cy="7" r="4"/>
+                                          <line x1="20" y1="8" x2="20" y2="14"/>
+                                          <line x1="23" y1="11" x2="17" y2="11"/>
+                                      </svg>
+                                  </button>
+                              )}
                               <button 
                                   className="header-action-btn pm-header-btn" 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPmHeaderBoxOpen(prev => !prev); }}
-                                  title="Private Messages"
+                                  title="Messages"
                                   style={{ position: 'relative' }}
                               >
                                   <PremiumPrivateBoxIcon />
                                   {(() => {
-                                      const total = Object.entries(unreadCounts).reduce((sum, [uid, count]) => {
+                                      const inboxUnread = Object.entries(unreadCounts).reduce((sum, [uid, count]) => {
                                           if (isPrivateMessageOpen && privateMessageTarget?.uid === uid) return sum;
                                           return sum + count;
                                       }, 0);
+                                      const myUidForBadge = auth.currentUser?.uid || loggedInUserProfile?.uid || '';
+                                      const groupUnread = groupDms.reduce((sum, g) => {
+                                          if (activeGroupDm?.id === g.id) return sum;
+                                          return sum + (Number(g.unreadBy?.[myUidForBadge]) || 0);
+                                      }, 0);
+                                      const total = inboxUnread + messageRequests.length + groupUnread;
                                       return total > 0 ? (
-                                          <span className="pm-notification-badge">{total}</span>
+                                          <span className="pm-notification-badge">{total > 99 ? '99+' : total}</span>
                                       ) : null;
                                   })()}
                               </button>
@@ -8051,62 +9053,30 @@ const HomePage = ({ user, roomIdOverride }) => {
                         </div>
                     )}
 
-                    {(() => {
-                        const messageListNode = (
-                            <MessageList
-                                messages={(() => {
-                                    // While a local self-notice is active (instant, 0ms feedback),
-                                    // suppress the matching Firestore-persisted copy so the violator
-                                    // doesn't see two identical notices.
-                                    const activeLocalTypes = localAutoModNotices.length > 0
-                                        ? new Set(localAutoModNotices.map(n => n.tinglebotType).filter(Boolean))
-                                        : null;
-                                    const base = activeLocalTypes?.size > 0
-                                        ? messages.filter(m =>
-                                            !(m.targetUid && !m._localEphemeral && m.tinglebotType && activeLocalTypes.has(m.tinglebotType))
-                                          )
-                                        : messages;
-                                    const sorted = localAutoModNotices.length
-                                        ? [...base, ...localAutoModNotices].sort(
-                                            (a, b) => (a.createdAt?.toMillis?.() || Date.now()) - (b.createdAt?.toMillis?.() || Date.now())
-                                          )
-                                        : base;
-                                    // C2: Append only unconfirmed pending/failed optimistic bubbles.
-                                    if (!pendingMessages.length) return sorted;
-                                    const confirmedIds = new Set(sorted.map(m => m.id));
-                                    const unconfirmed = pendingMessages.filter(p =>
-                                        p._isFailed || !(p._firestoreId && confirmedIds.has(p._firestoreId))
-                                    );
-                                    return unconfirmed.length ? [...sorted, ...unconfirmed] : sorted;
-                                })()}
-                                blockedUsers={blockedUsers}
-                                usersWhoBlockedMe={usersWhoBlockedMe}
-                                loggedInUserProfile={loggedInUserProfile}
-                                openDropdownId={openDropdownId}
-                                roomKickedUserIds={roomKickedUserIds}
+                    {isTheatreRoom ? (
+                        <Suspense
+                            fallback={
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+                                    Loading Theatre Cinema...
+                                </div>
+                            }
+                        >
+                            <TheatreCinema
                                 roomId={roomId}
-                                chatFeedRef={chatFeedRef}
-                                onDelete={stableHandleDeleteMessage}
-                                onKick={stableHandleKickUser}
-                                onUnkick={stableHandleUnkickUser}
-                                onReport={stableHandleReportUser}
-                                onWhisper={stableHandleWhisperUser}
-                                onTag={insertTag}
-                                onViewProfile={stableHandleViewProfile}
-                                onAddFriend={stableHandleAddFriend}
-                                onPrivateMessage={stableHandlePrivateMessage}
-                                onBlock={stableHandleBlockUser}
-                                closeAllDropdowns={stableCloseAllDropdowns}
-                                toggleDropdown={stableToggleDropdown}
-                                setOpenDropdownId={stableHandleSetOpenDropdownId}
-                                onRetryPending={retryPendingMessage}
-                                allUsersMap={userLookupMap}
-                                activitiesMap={activitiesMap}
+                                roomName={roomName}
+                                loggedInUserProfile={loggedInUserProfile}
+                                viewerCount={onlineUserIds.length}
+                                chatPanel={
+                                    <>
+                                        {renderMessageList()}
+                                        {renderComposerCluster()}
+                                    </>
+                                }
                             />
-                        );
-
-                        return messageListNode;
-                    })()}
+                        </Suspense>
+                    ) : (
+                        renderMessageList()
+                    )}
                     
 
                 {/* StylishImageUploadModal */}
@@ -8286,15 +9256,18 @@ const HomePage = ({ user, roomIdOverride }) => {
                     </div>
                 )}
 
-                {/* Private Message Header Box */}
-                {pmHeaderBoxOpen && (
+                {/* Private Messages, Message Requests & Group DM Hub */}
+                {pmHeaderBoxOpen && (() => {
+                    const myUidForHub = auth.currentUser?.uid || loggedInUserProfile?.uid || '';
+                    const inboxUnreadTotal = Object.entries(unreadCounts).reduce((sum, [uid, c]) => sum + (c || 0), 0);
+                    const groupUnreadTotal = groupDms.reduce((sum, g) => sum + (Number(g.unreadBy?.[myUidForHub]) || 0), 0);
+                    return (
                     <div className="pm-header-popup-overlay" onClick={(e) => {
                         if (e.target === e.currentTarget) {
                             setPmHeaderBoxOpen(false);
                         }
                     }}>
                         <div className="pm-header-popup-container" onClick={(e) => e.stopPropagation()}>
-                            {/* Premium Header */}
                             <div className="pm-popup-header">
                                 <div className="pm-popup-title">
                                     <span className="pm-popup-title-icon">
@@ -8308,25 +9281,33 @@ const HomePage = ({ user, roomIdOverride }) => {
                                             <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmTitleGrad)"/>
                                         </svg>
                                     </span>
-                                    Private Messages
-                                    {conversations.length > 0 && (
+                                    Messages
+                                    {pmHubTab === 'inbox' && conversations.length > 0 && (
                                         <span className="pm-popup-count">{conversations.length}</span>
+                                    )}
+                                    {pmHubTab === 'requests' && messageRequests.length > 0 && (
+                                        <span className="pm-popup-count">{messageRequests.length}</span>
+                                    )}
+                                    {pmHubTab === 'groups' && groupDms.length > 0 && (
+                                        <span className="pm-popup-count">{groupDms.length}</span>
                                     )}
                                 </div>
                                 <div className="pm-popup-actions">
-                                    <button 
-                                        className="pm-popup-clear-btn"
-                                        onClick={handleClearAllConversations}
-                                        title="Delete All Conversations"
-                                    >
-                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="3 6 5 6 21 6"/>
-                                            <path d="M19 6l-1 14H6L5 6"/>
-                                            <path d="M10 11v6"/>
-                                            <path d="M14 11v6"/>
-                                            <path d="M9 6V4h6v2"/>
-                                        </svg>
-                                    </button>
+                                    {pmHubTab === 'inbox' && (
+                                        <button 
+                                            className="pm-popup-clear-btn"
+                                            onClick={handleClearAllConversations}
+                                            title="Delete All Conversations"
+                                        >
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6l-1 14H6L5 6"/>
+                                                <path d="M10 11v6"/>
+                                                <path d="M14 11v6"/>
+                                                <path d="M9 6V4h6v2"/>
+                                            </svg>
+                                        </button>
+                                    )}
                                     <button 
                                         className="pm-popup-close-btn"
                                         onClick={() => setPmHeaderBoxOpen(false)}
@@ -8338,90 +9319,227 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     </button>
                                 </div>
                             </div>
+
+                            <div className="tt-hub-tabs" role="tablist">
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={pmHubTab === 'inbox'}
+                                    className={`tt-hub-tab-btn${pmHubTab === 'inbox' ? ' active' : ''}`}
+                                    onClick={() => setPmHubTab('inbox')}
+                                >
+                                    <span>Inbox</span>
+                                    {inboxUnreadTotal > 0 && (
+                                        <span className="tt-hub-badge">{inboxUnreadTotal > 99 ? '99+' : inboxUnreadTotal}</span>
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={pmHubTab === 'requests'}
+                                    className={`tt-hub-tab-btn${pmHubTab === 'requests' ? ' active' : ''}`}
+                                    onClick={() => setPmHubTab('requests')}
+                                >
+                                    <span>Requests</span>
+                                    {messageRequests.length > 0 && (
+                                        <span className="tt-hub-badge">{messageRequests.length > 99 ? '99+' : messageRequests.length}</span>
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={pmHubTab === 'groups'}
+                                    className={`tt-hub-tab-btn${pmHubTab === 'groups' ? ' active' : ''}`}
+                                    onClick={() => setPmHubTab('groups')}
+                                >
+                                    <span>Groups</span>
+                                    {groupUnreadTotal > 0 && (
+                                        <span className="tt-hub-badge">{groupUnreadTotal > 99 ? '99+' : groupUnreadTotal}</span>
+                                    )}
+                                </button>
+                            </div>
                             
                             <div className="pm-popup-content">
-                                {conversations.length === 0 ? (
-                                    <div className="pm-popup-empty">
-                                        <svg viewBox="0 0 24 24" width="44" height="44" fill="none">
-                                            <defs>
-                                                <linearGradient id="pmEmptyGrad" x1="0" y1="0" x2="1" y2="1">
-                                                    <stop offset="0%" stopColor="#a78bfa"/>
-                                                    <stop offset="100%" stopColor="#6d28d9"/>
-                                                </linearGradient>
-                                            </defs>
-                                            <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmEmptyGrad)" opacity="0.35"/>
-                                            <path d="M7 8h10M7 12h7" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
-                                        </svg>
-                                        <p>No conversations yet</p>
-                                        <small>Start chatting with users to see messages here</small>
-                                    </div>
-                                ) : (
-                                    <div className="pm-conversations-list">
-                                        {conversations.map((conversation) => (
-                                            <div 
-                                                key={conversation.otherUserId}
-                                                className="pm-conversation-item"
-                                                onClick={() => handleOpenConversation(conversation)}
-                                                data-conversation-user={conversation.otherUserId}
-                                            >
-                                                <div className={`pm-conversation-avatar ${getGenderBorderClass({ gender: conversation.otherUserGender || 'male' })}`}>
-                                                    <LiveAvatarImg
-                                                        uid={conversation.otherUserId}
-                                                        gender={conversation.otherUserGender || 'male'}
-                                                        fallbackPhotoURL={(() => {
-                                                            const cachedUser = window.userProfilesCache?.get(conversation.otherUserId);
-                                                            return cachedUser?.photoURL || conversation.otherUserPhoto || null;
-                                                        })()}
-                                                        alt="avatar"
-                                                        className="conversation-avatar"
-                                                        data-user-id={conversation.otherUserId}
-                                                    />
-                                                </div>
-                                                <div className="pm-conversation-details">
-                                                    <div className="pm-conversation-name">
-                                                        {window.userProfilesCache?.get(conversation.otherUserId)?.displayName || conversation.otherUserName}
+                                {pmHubTab === 'inbox' && (
+                                    conversations.length === 0 ? (
+                                        <div className="pm-popup-empty">
+                                            <svg viewBox="0 0 24 24" width="44" height="44" fill="none">
+                                                <defs>
+                                                    <linearGradient id="pmEmptyGrad" x1="0" y1="0" x2="1" y2="1">
+                                                        <stop offset="0%" stopColor="#a78bfa"/>
+                                                        <stop offset="100%" stopColor="#6d28d9"/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" fill="url(#pmEmptyGrad)" opacity="0.35"/>
+                                                <path d="M7 8h10M7 12h7" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
+                                            </svg>
+                                            <p>No conversations yet</p>
+                                            <small>Start chatting with users to see messages here</small>
+                                        </div>
+                                    ) : (
+                                        <div className="pm-conversations-list">
+                                            {conversations.map((conversation) => (
+                                                <div 
+                                                    key={conversation.otherUserId}
+                                                    className="pm-conversation-item"
+                                                    onClick={() => handleOpenConversation(conversation)}
+                                                    data-conversation-user={conversation.otherUserId}
+                                                >
+                                                    <div className={`pm-conversation-avatar ${getGenderBorderClass({ gender: conversation.otherUserGender || 'male' })}`}>
+                                                        <LiveAvatarImg
+                                                            uid={conversation.otherUserId}
+                                                            gender={conversation.otherUserGender || 'male'}
+                                                            fallbackPhotoURL={(() => {
+                                                                const cachedUser = window.userProfilesCache?.get(conversation.otherUserId);
+                                                                return cachedUser?.photoURL || conversation.otherUserPhoto || null;
+                                                            })()}
+                                                            alt="avatar"
+                                                            className="conversation-avatar"
+                                                            data-user-id={conversation.otherUserId}
+                                                        />
                                                     </div>
-                                                    <div className="pm-conversation-preview">
-                                                        {conversation.lastMessage?.length > 35 
-                                                            ? conversation.lastMessage.substring(0, 35) + '...'
-                                                            : conversation.lastMessage || 'Start conversation'
-                                                        }
-                                                    </div>
-                                                </div>
-                                                <div className="pm-conversation-meta">
-                                                    {unreadCounts[conversation.otherUserId] > 0 && (
-                                                        <div className="pm-unread-badge">
-                                                            {unreadCounts[conversation.otherUserId]}
+                                                    <div className="pm-conversation-details">
+                                                        <div className="pm-conversation-name">
+                                                            {window.userProfilesCache?.get(conversation.otherUserId)?.displayName || conversation.otherUserName}
                                                         </div>
-                                                    )}
-                                                    <div className="pm-conversation-time">
-                                                        {conversation.lastMessageTime?.toDate ? 
-                                                            conversation.lastMessageTime.toDate().toLocaleTimeString('en-US', { 
-                                                                hour: '2-digit', 
-                                                                minute: '2-digit',
-                                                                hour12: true 
-                                                            }) : 
-                                                            'Now'
-                                                        }
+                                                        <div className="pm-conversation-preview">
+                                                            {conversation.lastMessage?.length > 35 
+                                                                ? conversation.lastMessage.substring(0, 35) + '...'
+                                                                : conversation.lastMessage || 'Start conversation'
+                                                            }
+                                                        </div>
                                                     </div>
-                                                    <button
-                                                        className="pm-conversation-delete-btn"
-                                                        onClick={(e) => handleDeleteConversation(e, conversation)}
-                                                        title="Delete conversation"
-                                                    >
-                                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                                                        </svg>
-                                                    </button>
+                                                    <div className="pm-conversation-meta">
+                                                        {unreadCounts[conversation.otherUserId] > 0 && (
+                                                            <div className="pm-unread-badge">
+                                                                {unreadCounts[conversation.otherUserId]}
+                                                            </div>
+                                                        )}
+                                                        <div className="pm-conversation-time">
+                                                            {conversation.lastMessageTime?.toDate ? 
+                                                                conversation.lastMessageTime.toDate().toLocaleTimeString('en-US', { 
+                                                                    hour: '2-digit', 
+                                                                    minute: '2-digit', 
+                                                                    hour12: true 
+                                                                }) : 
+                                                                'Now'
+                                                            }
+                                                        </div>
+                                                        <button
+                                                            className="pm-conversation-delete-btn"
+                                                            onClick={(e) => handleDeleteConversation(e, conversation)}
+                                                            title="Delete conversation"
+                                                        >
+                                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
+
+                                {pmHubTab === 'requests' && (
+                                    <MessageRequestsPanel
+                                        requests={messageRequests}
+                                        loggedInUserProfile={loggedInUserProfile}
+                                        userProfilesMap={window.userProfilesCache}
+                                        onAccept={handleAcceptMessageRequest}
+                                        onDecline={handleDeclineMessageRequest}
+                                        onBlock={handleBlockMessageRequest}
+                                        onReport={handleReportMessageRequest}
+                                    />
+                                )}
+
+                                {pmHubTab === 'groups' && (
+                                    <>
+                                        {!isGuestUser(loggedInUserProfile) && (
+                                            <div className="tt-gdm-hub-bar">
+                                                <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.72 }}>
+                                                    Private Groups ({groupDms.length})
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="tt-gdm-new-btn"
+                                                    onClick={() => {
+                                                        setPmHeaderBoxOpen(false);
+                                                        setIsGroupDmCreateOpen(true);
+                                                    }}
+                                                >
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+                                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                                    </svg>
+                                                    <span>New Group</span>
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+                                        {groupDms.length === 0 ? (
+                                            <div className="pm-popup-empty">
+                                                <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#8b5cf6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity="0.65">
+                                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="9" cy="7" r="4"/>
+                                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                </svg>
+                                                <p>No Group DMs yet</p>
+                                                <small>{isGuestUser(loggedInUserProfile) ? 'Register to create or join private Group DMs.' : 'Create a private group chat with friends.'}</small>
+                                            </div>
+                                        ) : (
+                                            <div className="pm-conversations-list">
+                                                {groupDms.map((g) => {
+                                                    const gUnread = Number(g.unreadBy?.[myUidForHub]) || 0;
+                                                    return (
+                                                        <div
+                                                            key={g.id}
+                                                            className="pm-conversation-item"
+                                                            onClick={() => {
+                                                                setActiveGroupDm(g);
+                                                                setPmHeaderBoxOpen(false);
+                                                            }}
+                                                        >
+                                                            <div className="pm-conversation-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(124,58,237,0.14)', borderRadius: '50%' }}>
+                                                                {g.photoURL ? (
+                                                                    <img src={g.photoURL} alt={g.name} className="conversation-avatar" />
+                                                                ) : (
+                                                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                                        <circle cx="9" cy="7" r="4"/>
+                                                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <div className="pm-conversation-details">
+                                                                <div className="pm-conversation-name">{g.name || 'Group Chat'}</div>
+                                                                <div className="pm-conversation-preview">
+                                                                    {g.lastMessage
+                                                                        ? `${g.lastMessageSenderName ? `${g.lastMessageSenderName}: ` : ''}${g.lastMessage}`.slice(0, 40)
+                                                                        : `${g.memberUids?.length || 1} members`}
+                                                                </div>
+                                                            </div>
+                                                            <div className="pm-conversation-meta">
+                                                                {gUnread > 0 && (
+                                                                    <div className="pm-unread-badge">{gUnread}</div>
+                                                                )}
+                                                                <div className="pm-conversation-time">
+                                                                    {g.memberUids?.length || 1} mem
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
                     </div>
-                )}
+                    );
+                })()}
 
                 
 
@@ -9172,512 +10290,107 @@ const HomePage = ({ user, roomIdOverride }) => {
                 />
             </div>
 
-            {/* ===== ULTRA PREMIUM FLOATING INPUT BAR ===== */}
-            {isAttachmentDropdownOpen && (() => {
-                const _isGuest = isGuestUser(loggedInUserProfile);
-                const _tier = getBadgeTier(loggedInUserProfile?.badge, loggedInUserProfile?.role, _isGuest);
-                const lockToast = (msg) => {
-                    pt.info(msg || 'Upgrade your badge to unlock this feature!', { position: 'top-center', autoClose: 3000 });
-                    setIsAttachmentDropdownOpen(false);
-                };
-                const LockBadge = () => (
-                    <span style={{position:'absolute',bottom:'-2px',right:'-2px',width:'12px',height:'12px',background:'#ef4444',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid white',zIndex:2}}>
-                        <svg width="7" height="7" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                    </span>
-                );
-                // Access flags
-                const canPhoto   = _tier !== 'guest' && _tier !== 'member';  // tier1+
-                const canYouTube = _tier === 'tier2' || _tier === 'tier3' || _tier === 'staff'; // tier2+
-                const canGif     = _tier !== 'guest' && _tier !== 'member';  // tier1+
-                const canStyle   = _tier !== 'guest';                        // member+
-                return (
-                <div className="hp-attach-popup">
-                    {/* ── 1. Audio ── */}
-                    <button className="hp-attach-btn" onClick={() => { setAudioPopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                        <span className="hp-attach-icon-wrap">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </span>
-                        <span className="hp-attach-label">Audio</span>
-                    </button>
+            {!isTheatreRoom && renderComposerCluster()}
 
-                    {/* ── 2. Photo ── */}
-                    {!canPhoto ? (
-                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock photo sharing!')}>
-                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Photo</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" onClick={() => { setImagePopupOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3.5" stroke="#6366f1" strokeWidth="1.9"/><circle cx="8.5" cy="8.5" r="1.8" fill="#6366f1"/><path d="M21 15.5l-5.5-5.5L5 21" stroke="#6366f1" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
-                            <span className="hp-attach-label">Photo</span>
-                        </button>
-                    )}
-
-                    {/* ── 3. YouTube ── */}
-                    {!canYouTube ? (
-                        <button className="hp-attach-btn" onClick={() => lockToast('Upgrade to Platinum Lord or higher to share YouTube videos!')}>
-                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
-                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
-                                </svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>YouTube</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" title="Share YouTube Video" onClick={() => { setIsYouTubeSearchModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="4" width="20" height="16" rx="3.5" stroke="#ef4444" strokeWidth="1.9" fill="none"/>
-                                    <path d="M10 8.5l6 3.5-6 3.5V8.5z" fill="#ef4444"/>
-                                </svg>
-                            </span>
-                            <span className="hp-attach-label">YouTube</span>
-                        </button>
-                    )}
-
-                    {/* ── 4. Style/Font ── */}
-                    {!canStyle ? (
-                        <button className="hp-attach-btn" onClick={() => lockToast('Register to use text styles!')}>
-                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>Style</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" title="Text Style" onClick={() => { setShowFontPopup(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V5h16v2M9 5v14m6-14v14M6 19h6m0 0h6" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
-                            <span className="hp-attach-label">Style</span>
-                        </button>
-                    )}
-
-                    {/* ── 5. GIF ── */}
-                    {!canGif ? (
-                        <button className="hp-attach-btn" onClick={() => lockToast('Get a badge to unlock GIF sharing!')}>
-                            <span className="hp-attach-icon-wrap" style={{opacity:0.55,position:'relative'}}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
-                                <LockBadge />
-                            </span>
-                            <span className="hp-attach-label" style={{color:'#ef4444'}}>GIF</span>
-                        </button>
-                    ) : (
-                        <button className="hp-attach-btn" onClick={() => { setGiphyStickersModalOpen(true); setIsAttachmentDropdownOpen(false); }}>
-                            <span className="hp-attach-icon-wrap">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="2.5" width="19" height="19" rx="4.5" stroke="#06b6d4" strokeWidth="1.9"/><path d="M7.5 12h5m0 0v-3m0 3v3M16.5 9v6" stroke="#06b6d4" strokeWidth="2" strokeLinecap="round"/></svg>
-                            </span>
-                            <span className="hp-attach-label">GIF</span>
-                        </button>
-                    )}
-
-                    {/* ── 6. Tag @User ── */}
-                    <button className="hp-attach-btn" title="Mention / Tag User" onClick={() => {
-                        setIsAttachmentDropdownOpen(false);
-                        setShowTagPicker(true);
-                        textareaRef.current?.focus();
-                    }}>
-                        <span className="hp-attach-icon-wrap">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.25 0 4.33-.74 6-2l-1.42-1.42C15.19 19.34 13.66 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8v1.5c0 .83-.67 1.5-1.5 1.5S17 14.33 17 13.5V8h-2v1.17C14.36 8.44 13.25 8 12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.25 0 2.36-.44 3-1.17V15c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V12c0-5.52-4.48-10-10-10zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="#8b5cf6"/>
-                            </svg>
-                        </span>
-                        <span className="hp-attach-label">Tag</span>
-                    </button>
-
-                    {/* ── 7. Games & Polls (Owner unlocked by default; others require Owner grant) ── */}
-                    {(() => {
-                        const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
-                        const hasGamesAccess = isOwnerRole(loggedInUserProfile)
-                            || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
-                        if (!hasGamesAccess) {
-                            return (
-                                <button
-                                    type="button"
-                                    className="hp-attach-btn"
-                                    title="Mini-Games & Polls (Owner Permission Required)"
-                                    onClick={() => lockToast('Mini-Games & Polls is locked. Ask an Owner to grant you access!')}
-                                >
-                                    <span className="hp-attach-icon-wrap" style={{ opacity: 0.55, position: 'relative' }}>
-                                        <ActivitySparkIcon size={20} color="#ec4899" />
-                                        <LockBadge />
-                                    </span>
-                                    <span className="hp-attach-label" style={{ color: '#ef4444' }}>Games</span>
-                                </button>
-                            );
-                        }
-                        return (
-                            <button
-                                type="button"
-                                className="hp-attach-btn"
-                                title="Mini-Games & Polls"
-                                onClick={() => {
-                                    setIsAttachmentDropdownOpen(false);
-                                    setIsGamesPickerOpen(true);
-                                }}
-                            >
-                                <span className="hp-attach-icon-wrap">
-                                    <ActivitySparkIcon size={20} color="#ec4899" />
-                                </span>
-                                <span className="hp-attach-label">Games</span>
-                            </button>
-                        );
-                    })()}
-                </div>
-                );
-            })()}
-            {/* ── Premium Luxury Muted Banner — Theme & Dark Mode Adaptive ── */}
-            {loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__' && (() => {
-                const isDarkMuteBanner = isDarkMode || document.documentElement.classList.contains('dark-mode') || document.documentElement.classList.contains('dark-theme-variant');
-                return (
-                <div style={{
-                    position: 'fixed', bottom: '44px', left: 0, right: 0,
-                    zIndex: 1999,
-                    background: isDarkMuteBanner
-                        ? 'linear-gradient(135deg, rgba(24, 18, 43, 0.97) 0%, rgba(36, 26, 66, 0.99) 50%, rgba(24, 18, 43, 0.97) 100%)'
-                        : 'linear-gradient(135deg, rgba(245,243,255,0.97) 0%, rgba(237,233,254,0.99) 50%, rgba(245,243,255,0.97) 100%)',
-                    backdropFilter: 'blur(24px)',
-                    WebkitBackdropFilter: 'blur(24px)',
-                    borderTop: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.3)' : '1.5px solid rgba(139,92,246,0.2)',
-                    padding: '8px 16px',
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    boxShadow: isDarkMuteBanner
-                        ? '0 -8px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(167,139,250,0.15)'
-                        : '0 -8px 36px rgba(109,40,217,0.1), 0 -2px 8px rgba(139,92,246,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
-                    fontFamily: 'Inter, sans-serif',
-                    animation: 'muteBannerSlide 0.32s cubic-bezier(0.34,1.56,0.64,1)',
-                }}>
-                    {/* Premium SVG mute icon */}
-                    <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
-                        background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.28), rgba(167,139,250,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.14), rgba(167,139,250,0.08))',
-                        border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.38)' : '1.5px solid rgba(139,92,246,0.28)',
-                        boxShadow: isDarkMuteBanner ? '0 4px 14px rgba(109,40,217,0.35)' : '0 4px 14px rgba(109,40,217,0.14), inset 0 1px 0 rgba(255,255,255,0.75)',
-                        animation: 'mutePulse 2.4s ease-in-out infinite',
-                    }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zM15 11.16L9 5.18V5a3 3 0 0 1 6 0v6.16zM4.27 3 3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z" fill={isDarkMuteBanner ? '#c4b5fd' : '#7c3aed'}/>
-                        </svg>
-                    </div>
-
-                    {/* Left: Muted label + moderator role + reason */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 800, fontSize: '13px', color: isDarkMuteBanner ? '#ede9fe' : '#3b0764', letterSpacing: '-0.01em' }}>
-                                Muted
-                            </span>
-                            {/* Role badge — never shows username, only role */}
-                            {(() => {
-                                const mutedByRole = (loggedInUserProfile?.mutedInfo?.mutedByRole || '').toLowerCase();
-                                const isBot = mutedByRole.includes('automod') || mutedByRole.includes('tinglebot') || mutedByRole.includes('system');
-                                const roleLabel = isBot ? 'TingleBot'
-                                    : ['owner', 'superowner', 'godfather'].includes(mutedByRole) ? 'Godfather'
-                                    : ['admin', 'high_council', 'high council'].includes(mutedByRole) ? 'Administrator'
-                                    : ['moderator', 'mod', 'guardian'].includes(mutedByRole) ? 'Moderator'
-                                    : 'Staff';
-                                return (
-                                    <span style={{
-                                        fontSize: '10.5px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px',
-                                        background: isBot ? 'rgba(245,158,11,0.16)' : (isDarkMuteBanner ? 'rgba(139,92,246,0.22)' : 'rgba(109,40,217,0.09)'),
-                                        color: isBot ? (isDarkMuteBanner ? '#fcd34d' : '#92400e') : (isDarkMuteBanner ? '#ddd6fe' : '#5b21b6'),
-                                        border: `1px solid ${isBot ? 'rgba(245,158,11,0.35)' : (isDarkMuteBanner ? 'rgba(167,139,250,0.3)' : 'rgba(109,40,217,0.18)')}`,
-                                        whiteSpace: 'nowrap', letterSpacing: '0.01em',
-                                    }}>
-                                        {isBot ? `Muted by ${roleLabel}` : `by ${roleLabel}`}
-                                    </span>
-                                );
-                            })()}
-                        </div>
-                        {loggedInUserProfile?.mutedInfo?.reason && (
-                            <div style={{
-                                fontSize: '11px', color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.7)', marginTop: '2px',
-                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px',
-                            }}>
-                                {loggedInUserProfile.mutedInfo.reason}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right: Live countdown timer */}
-                    {muteTimeLeft && muteTimeLeft !== '__expired__' ? (
-                        <div style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0,
-                            background: isDarkMuteBanner ? 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(109,40,217,0.16))' : 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.06))',
-                            border: isDarkMuteBanner ? '1.5px solid rgba(167,139,250,0.35)' : '1.5px solid rgba(139,92,246,0.22)',
-                            borderRadius: '12px', padding: '5px 14px', minWidth: '80px',
-                            boxShadow: isDarkMuteBanner ? 'inset 0 1px 0 rgba(255,255,255,0.12)' : 'inset 0 1px 0 rgba(255,255,255,0.8)',
-                        }}>
-                            <span style={{ fontSize: '9px', fontWeight: 700, color: isDarkMuteBanner ? '#c4b5fd' : 'rgba(91,33,182,0.55)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '1px' }}>
-                                Unmute in
-                            </span>
-                            <span style={{
-                                fontWeight: 900, fontSize: '16px', color: isDarkMuteBanner ? '#ede9fe' : '#5b21b6',
-                                fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
-                                fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-                                lineHeight: 1,
-                            }}>
-                                {muteTimeLeft}
-                            </span>
-                        </div>
-                    ) : (
-                        <div style={{
-                            display: 'flex', alignItems: 'center', gap: '5px',
-                            background: 'rgba(239,68,68,0.14)', border: '1px solid rgba(239,68,68,0.28)',
-                            borderRadius: '10px', padding: '5px 12px', flexShrink: 0,
-                            fontSize: '11px', color: isDarkMuteBanner ? '#fca5a5' : '#b91c1c', fontWeight: 700,
-                        }}>
-                            ∞ Permanent
-                        </div>
-                    )}
-                </div>
-                );
-            })()}
-
-            <SendProgressBar progress={sendProgress} />
-
-            {/* ── Premium Scroll-to-Bottom Chip ── */}
-            {showScrollToBottomBtn && (
-                <button
-                    className="scroll-to-bottom-chip"
-                    onClick={handleScrollToBottomClick}
-                    title="Jump to latest message"
-                    aria-label="Scroll to bottom"
-                >
-                    <span className="scroll-to-bottom-chip-icon">
-                        {/* Premium double-chevron down SVG */}
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 2.5L6 6.5L10 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M2 6L6 10L10 6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    </span>
-                    <span className="scroll-to-bottom-chip-label">Latest</span>
-                </button>
-            )}
-
-            {/* Module 2: Mini-Games & Polls Picker + Creator Modal (triggered from Attach Popup) */}
-            <FloatingActivityLauncher
-                roomId={roomId}
+            <GroupDmCreateModal
+                isOpen={isGroupDmCreateOpen}
+                onClose={() => setIsGroupDmCreateOpen(false)}
                 loggedInUserProfile={loggedInUserProfile}
-                isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
-                pickerOpen={isGamesPickerOpen}
-                onClosePicker={() => setIsGamesPickerOpen(false)}
+                friendsProfiles={friendsProfiles}
+                blockedUsers={blockedUsers}
+                usersWhoBlockedMe={usersWhoBlockedMe}
+                onCreated={(newGroup) => setActiveGroupDm(newGroup)}
             />
 
-            <div
-                className="chat-footer hp-composer-footer"
-                ref={footerRef}
-                style={{
-                    opacity: loggedInUserProfile?.mutedInfo?.isMuted ? 0.48 : 1,
-                    pointerEvents: loggedInUserProfile?.mutedInfo?.isMuted ? 'none' : 'auto',
+            <GroupDmWindow
+                group={activeGroupDm}
+                isOpen={Boolean(activeGroupDm)}
+                onClose={() => setActiveGroupDm(null)}
+                loggedInUserProfile={loggedInUserProfile}
+                userProfilesMap={window.userProfilesCache}
+                friendsProfiles={friendsProfiles}
+                blockedUsers={blockedUsers}
+                usersWhoBlockedMe={usersWhoBlockedMe}
+                onBlockUser={handleBlockUser}
+                onReportUser={(target) => {
+                    if (!auth.currentUser || !target?.uid) return;
+                    setMessageToReport({
+                        uid: target.uid,
+                        displayName: target.displayName || 'User',
+                        id: target.id || null,
+                        text: target.text || null,
+                        role: target.role || 'user',
+                        isGuest: false,
+                    });
+                    setReportType('User');
+                    setReportPopupOpen(true);
                 }}
-            >
-                <form onSubmit={handleSendMessage} className="message-form hp-composer-dock">
-                    <button
-                        type="button"
-                        className="premium-footer-btn attachment-btn hp-composer-attach"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setIsAttachmentDropdownOpen(prev => !prev);
-                        }}
-                        title="Add attachment"
-                        aria-label="Add attachment"
-                        disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
-                    >
-                        <AttachmentIconSVG />
-                    </button>
-                    {/* Whisper Chip */}
-                    {whisperTarget && (
-                        <div className="whisper-chip" title={`Whispering privately to ${whisperTarget.displayName}`}>
-                            <span className="whisper-chip-badge" aria-hidden="true">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="whisper-chip-icon">
-                                    <rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" strokeWidth="2.2"/>
-                                    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-                                </svg>
-                            </span>
-                            <span className="whisper-chip-label">
-                                <span className="whisper-chip-to">Whisper</span>
-                                <span className="whisper-chip-name">{whisperTarget.displayName}</span>
-                            </span>
-                            <button
-                                type="button"
-                                className="whisper-chip-close"
-                                onClick={() => setWhisperTarget(null)}
-                                title="Cancel whisper"
-                                aria-label="Cancel whisper"
-                            >
-                                <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-                                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                    )}
-                    {/* ── Clean Multiline Composer (zero counters / typing clutter) ── */}
-                    <div className="hp-composer-input-wrap">
-                        {/* ── Floating @Tag Autocomplete Popup ── */}
-                        {(showTagPicker || (activeTagQuery && matchingTagUsers.length > 0)) && (
-                            <div className="tag-autocomplete-popup" style={{
-                                position: 'absolute',
-                                bottom: 'calc(100% + 10px)',
-                                left: 0,
-                                zIndex: 2300,
-                                background: isDarkMode ? 'rgba(19, 15, 38, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-                                backdropFilter: 'blur(20px)',
-                                WebkitBackdropFilter: 'blur(20px)',
-                                border: isDarkMode ? '1.5px solid rgba(139, 92, 246, 0.35)' : '1.5px solid rgba(196, 181, 253, 0.6)',
-                                borderRadius: '14px',
-                                padding: '6px',
-                                boxShadow: '0 8px 32px rgba(109, 40, 217, 0.28), 0 2px 8px rgba(0,0,0,0.15)',
-                                minWidth: '220px',
-                                maxWidth: '300px',
-                                maxHeight: '220px',
-                                overflowY: 'auto'
-                            }}>
-                                <div style={{
-                                    fontSize: '10px',
-                                    fontWeight: 800,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em',
-                                    padding: '4px 8px 6px',
-                                    color: isDarkMode ? '#a78bfa' : '#7c3aed',
-                                    borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(124,58,237,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                }}>
-                                    <span>Mention User</span>
-                                    <button
-                                        type="button"
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '11px', padding: 0 }}
-                                        onClick={() => { setShowTagPicker(false); setActiveTagQuery(null); }}
-                                    >
-                                        ✕
-                                    </button>
+            />
+
+            <RoomInviteModal
+                isOpen={isRoomInviteModalOpen}
+                onClose={() => setIsRoomInviteModalOpen(false)}
+                roomId={roomId}
+                roomName={roomName}
+                loggedInUserProfile={loggedInUserProfile}
+                friendsProfiles={friendsProfiles}
+                blockedUsers={blockedUsers}
+                usersWhoBlockedMe={usersWhoBlockedMe}
+            />
+
+            {incomingRoomInvites.length > 0 && (() => {
+                const inv = incomingRoomInvites[0];
+                return (
+                    <div className="tt-room-invite-toast" role="alert">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <LiveAvatarImg
+                                uid={inv.senderId}
+                                fallbackPhotoURL={inv.senderPhoto}
+                                alt={inv.senderName}
+                                style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {inv.senderName || 'Someone'} invited you
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
-                                    {matchingTagUsers.length === 0 ? (
-                                        <div style={{ padding: '8px', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>No users found</div>
-                                    ) : (
-                                        matchingTagUsers.map((u) => {
-                                            const uAvatar = isRealAvatarUpload(u.photoURL) ? u.photoURL : getDefaultAvatarUrl(u.uid, u.gender || 'male', isGuestUser(u));
-                                            return (
-                                                <button
-                                                    key={u.uid}
-                                                    type="button"
-                                                    className="tag-autocomplete-item"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleSelectTagUser(u);
-                                                    }}
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '8px',
-                                                        padding: '6px 8px',
-                                                        borderRadius: '8px',
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        cursor: 'pointer',
-                                                        textAlign: 'left',
-                                                        width: '100%',
-                                                        transition: 'background 0.15s ease'
-                                                    }}
-                                                    onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(139,92,246,0.2)' : 'rgba(237,233,254,0.7)'; }}
-                                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                                >
-                                                    <img src={uAvatar} alt={u.displayName || 'User'} referrerPolicy="no-referrer" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{
-                                                            fontSize: '12px',
-                                                            fontWeight: 700,
-                                                            color: isDarkMode ? '#f3e8ff' : '#2e1065',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap'
-                                                        }}>
-                                                            @{u.displayName}
-                                                        </div>
-                                                        <div style={{ fontSize: '9px', color: isDarkMode ? '#94a3b8' : '#6b7280' }}>
-                                                            {getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: u.isGuest, badge: u.badge })}
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })
-                                    )}
+                                <div style={{ fontSize: 11.5, opacity: 0.78 }}>
+                                    Join room: <strong>{inv.roomName || 'Chat Room'}</strong>
                                 </div>
                             </div>
-                        )}
-                        <textarea
-                            ref={textareaRef}
-                            className="premium-input-field premium-textarea"
-                            rows={1}
-                            maxLength={MAX_CHAT_CHARS}
-                            placeholder={loggedInUserProfile?.mutedInfo?.isMuted ? 'You are muted...' : (whisperTarget ? `Whisper to ${whisperTarget.displayName}...` : 'Message this room...')}
-                            value={newMessage}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val.length <= MAX_CHAT_CHARS) {
-                                    setNewMessage(val);
-                                    checkTagTrigger(val, e.target.selectionStart);
-                                }
-                                e.target.style.height = '36px';
-                                e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`;
-                            }}
-                            onKeyUp={(e) => {
-                                checkTagTrigger(e.target.value, e.target.selectionStart);
-                            }}
-                            onKeyDown={(e) => {
-                                if (activeTagQuery && (e.key === 'Tab' || (e.key === 'Enter' && matchingTagUsers.length > 0))) {
-                                    e.preventDefault();
-                                    handleSelectTagUser(matchingTagUsers[0]);
-                                    return;
-                                }
-                                if (activeTagQuery && e.key === 'Escape') {
-                                    setActiveTagQuery(null);
-                                    setShowTagPicker(false);
-                                    return;
-                                }
-                                // Enter sends message on desktop / physical keyboard; Shift+Enter inserts newline
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    if (!('ontouchstart' in window) || window.innerWidth > 768) {
-                                        e.preventDefault();
-                                        handleSendMessage(e);
-                                    }
-                                }
-                            }}
-                            onPaste={(e) => {
-                                const text = e.clipboardData?.getData('text') || '';
-                                const combined = newMessage + text;
-                                if (combined.length > MAX_CHAT_CHARS) {
-                                    e.preventDefault();
-                                    setNewMessage(combined.slice(0, MAX_CHAT_CHARS));
-                                }
-                            }}
-                            disabled={!!loggedInUserProfile?.mutedInfo?.isMuted}
-                            readOnly={!!loggedInUserProfile?.mutedInfo?.isMuted}
-                        />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                className="tt-btn-secondary"
+                                style={{ height: 30, padding: '0 11px', fontSize: 11.5 }}
+                                onClick={async () => {
+                                    setIncomingRoomInvites(prev => prev.filter(item => item.id !== inv.id));
+                                    try {
+                                        await updateDoc(doc(db, 'roomInvites', inv.id), { status: 'dismissed' });
+                                    } catch (_) {}
+                                }}
+                            >
+                                Dismiss
+                            </button>
+                            <button
+                                type="button"
+                                className="tt-btn-primary"
+                                style={{ height: 30, padding: '0 12px', fontSize: 11.5 }}
+                                onClick={async () => {
+                                    setIncomingRoomInvites(prev => prev.filter(item => item.id !== inv.id));
+                                    try {
+                                        await updateDoc(doc(db, 'roomInvites', inv.id), { status: 'accepted' });
+                                    } catch (_) {}
+                                    if (inv.roomId) navigate(`/room/${inv.roomId}`);
+                                    else if (inv.roomSlug) navigate(`/r/${inv.roomSlug}`);
+                                }}
+                            >
+                                Join Room
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        type="submit"
-                        className="premium-footer-btn send-btn hp-composer-send"
-                        disabled={!newMessage.trim() || !!loggedInUserProfile?.mutedInfo?.isMuted}
-                        aria-label="Send message"
-                        title="Send message"
-                    >
-                        <SendIconSVG />
-                    </button>
-                </form>
-            </div>
+                );
+            })()}
 
             </div>{/* end homepage-container */}
 

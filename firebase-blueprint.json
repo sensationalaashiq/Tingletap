@@ -150,7 +150,7 @@
     },
     "RoomActivity": {
       "collection": "rooms/{roomId}/activities/{activityId}",
-      "description": "Inline interactive mini-game or poll card in chat (poll, trivia, wheel, atlas, word).",
+      "description": "Inline interactive mini-game or poll card in chat (poll, trivia, wheel, atlas, word). Restricted exclusively to Gaming rooms for Owners and Owner-authorized registered users.",
       "fields": {
         "id": { "type": "string" },
         "roomId": { "type": "string", "required": true },

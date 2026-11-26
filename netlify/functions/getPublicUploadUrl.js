@@ -17,7 +17,7 @@
 //   homepage/audio/ — homepage background audio
 
 import { createPublicPresignedPutUrl, getPublicMediaUrl } from './shared/r2Client.js';
-import { verifyToken } from './shared/firestoreAdmin.js';
+import { verifyToken, decodeJwt } from './shared/firestoreAdmin.js';
 import { firestoreRateLimitCheck } from './shared/validation.js';
 import { randomUUID } from 'crypto';
 
@@ -55,8 +55,18 @@ export const handler = async (event) => {
   if (!token) return resp({ error: 'Authorization required' }, 401);
 
   const user = await verifyToken(token);
-  if (!user.ok) return resp({ error: user.err }, 401);
-  if (user.role === 'guest') return resp({ error: 'Registered accounts only' }, 403);
+  let resolvedUid = user?.uid || '';
+  if (!user.ok) {
+    const isNewUserRace = user.err && /Firestore error 4/.test(user.err);
+    const payload = isNewUserRace ? decodeJwt(token) : null;
+    if (!payload || payload?.firebase?.sign_in_provider === 'anonymous') {
+      return resp({ error: payload ? 'Registered accounts only' : user.err }, payload ? 403 : 401);
+    }
+    resolvedUid = payload.user_id || payload.sub || '';
+    if (!resolvedUid) return resp({ error: 'Authentication failed' }, 401);
+  } else if (user.role === 'guest') {
+    return resp({ error: 'Registered accounts only' }, 403);
+  }
 
   let body;
   try { body = JSON.parse(event.body || '{}'); }
@@ -97,7 +107,7 @@ export const handler = async (event) => {
              : contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg'
              : 'bin';
 
-  const key = `${config.prefix}/${user.uid}/${uuid}.${ext}`;
+  const key = `${config.prefix}/${resolvedUid}/${uuid}.${ext}`;
 
   let uploadUrl, publicUrl;
   try {

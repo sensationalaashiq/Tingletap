@@ -1220,7 +1220,7 @@ const SettingsSidebar = ({
 
                                     <div className="tl-ga-owner-pill">
                                         <CrownRoyalIcon size={13} color="#fbbf24" />
-                                        <span>Owners unlocked by default · Search to allow members, Badges, Mods &amp; Admins</span>
+                                        <span>Owners unlocked by default · Gaming rooms only · Search to allow members, Badges, Mods &amp; Admins</span>
                                     </div>
 
                                     <div className="tl-ga-search-wrap">
@@ -2629,7 +2629,7 @@ const SettingsSidebar = ({
                                     marginTop: '8px',
                                     textAlign: 'left'
                                 }}>
-                                    <p style={{ margin: '0 0 4px 0', fontSize: '10px', fontWeight: '700' }}>🎨 Includes:</p>
+                                    <p style={{ margin: '0 0 4px 0', fontSize: '10px', fontWeight: '700' }}>Includes:</p>
                                     <ul style={{ 
                                         margin: '0', 
                                         padding: '0 0 0 14px',

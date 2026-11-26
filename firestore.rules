@@ -61,6 +61,36 @@ service cloud.firestore {
       ];
     }
 
+    function normalizeBadgeCanonical(raw) {
+      let bl = (raw is string) ? raw.lower() : '';
+      return bl in ['the_olympian', 'godfather'] ? 'the_olympian'
+           : bl in ['titans', 'high_council', 'high council'] ? 'titans'
+           : bl in ['spartans', 'guardian'] ? 'spartans'
+           : bl in ['rj', 'verified_rj', 'radio_jockey'] ? 'rj'
+           : bl;
+    }
+
+    function isGamingRoomDoc(roomId) {
+      let roomExists = exists(/databases/$(database)/documents/rooms/$(roomId));
+      let rData = roomExists ? get(/databases/$(database)/documents/rooms/$(roomId)).data : {};
+      let rType = (rData.get('type', '') is string) ? rData.get('type', '').lower() : '';
+      let rCat  = (rData.get('category', '') is string) ? rData.get('category', '').lower() : '';
+      let rSlug = (rData.get('slug', '') is string) ? rData.get('slug', '').lower() : '';
+      let rName = (rData.get('name', '') is string) ? rData.get('name', '').lower() : '';
+      let idLow = roomId.lower();
+      let isTheatre = rSlug == 'theatre' || rName.matches('.*theatre.*') || idLow == 'theatre';
+      return !isTheatre && (
+        (roomExists && (
+          rData.get('isGamingRoom', false) == true
+          || rType in ['gaming', 'games', 'game']
+          || rCat in ['gaming', 'games', 'game']
+          || rSlug.matches('.*gam(e|es|ing).*')
+          || rName.matches('.*gam(e|es|ing).*')
+        ))
+        || idLow.matches('.*gam(e|es|ing).*')
+      );
+    }
+
     function myRole() {
       return request.auth != null ? getRole(request.auth.uid) : 'guest';
     }
@@ -193,7 +223,7 @@ service cloud.firestore {
                     ))
                     && (isStaff() || !request.resource.data.keys().hasAny(['isBanned', 'bannedBy', 'bannedAt']));
 
-      // User updating own profile
+      // User updating own profile (Owner, Admin, Mod, RJ, Badge Holders, Registered Users)
       allow update: if request.auth != null
                     && request.auth.uid == userId
                     && (
@@ -203,7 +233,8 @@ service cloud.firestore {
                              .hasAny(['role', 'isBanned', 'bannedBy', 'bannedAt', 'mutedInfo'])
                         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['badge'])
                             || request.resource.data.get('badge', null) == null
-                            || !isReservedBadge(request.resource.data.get('badge', '')))
+                            || !isReservedBadge(request.resource.data.get('badge', ''))
+                            || normalizeBadgeCanonical(request.resource.data.get('badge', '')) == normalizeBadgeCanonical(resource.data.get('badge', '')))
                       )
                     );
 
@@ -235,14 +266,18 @@ service cloud.firestore {
                                   !('role' in request.resource.data)
                                   || normalizeRoleStr(request.resource.data.get('role', 'user')) in ['user', 'guest']
                                   || (exists(/databases/$(database)/documents/users/$(userId))
-                                      && normalizeRoleStr(request.resource.data.get('role', 'user')) == getRole(userId))
+                                      && (
+                                        normalizeRoleStr(request.resource.data.get('role', 'user')) == getRole(userId)
+                                        || normalizeRoleStr(request.resource.data.get('role', 'user')) == normalizeRoleStr(get(/databases/$(database)/documents/users/$(userId)).data.get('role', 'user'))
+                                      ))
                                 )
                                 && (
                                   !('badge' in request.resource.data)
                                   || request.resource.data.get('badge', null) == null
+                                  || request.resource.data.get('badge', '') == ''
                                   || !isReservedBadge(request.resource.data.get('badge', ''))
                                   || (exists(/databases/$(database)/documents/users/$(userId))
-                                      && request.resource.data.get('badge', null) == get(/databases/$(database)/documents/users/$(userId)).data.get('badge', null))
+                                      && normalizeBadgeCanonical(request.resource.data.get('badge', '')) == normalizeBadgeCanonical(get(/databases/$(database)/documents/users/$(userId)).data.get('badge', '')))
                                 )
                               )
                               || (
@@ -342,6 +377,15 @@ service cloud.firestore {
                       && notBanned()
                       && notMuted()
                       && !isKickedFrom(request.auth.uid, roomId)
+                      && isGamingRoomDoc(roomId)
+                      && (
+                        isOwner()
+                        || (
+                          isRegistered()
+                          && exists(/databases/$(database)/documents/settings/gamesAccess)
+                          && request.auth.uid in get(/databases/$(database)/documents/settings/gamesAccess).data.get('allowedUids', [])
+                        )
+                      )
                       && request.resource.data.creatorUid == request.auth.uid
                       && request.resource.data.roomId == roomId
                       && request.resource.data.type in ['poll', 'trivia', 'wheel', 'atlas', 'word']
@@ -658,13 +702,17 @@ service cloud.firestore {
     // ================================================================
     match /reports/{reportId} {
       allow create: if request.auth != null && notBanned();
-      allow read: if request.auth != null && (resource.data.reportedBy.uid == request.auth.uid || isStaff());
+      allow read: if request.auth != null
+                  && (resource.data.get('reportedBy', {}).get('uid', '') == request.auth.uid
+                      || resource.data.get('reporterUid', '') == request.auth.uid
+                      || isStaff());
       allow update, delete: if isStaff();
     }
 
     match /feedback/{feedbackId} {
       allow create: if request.auth != null && notBanned();
-      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isStaff());
+      allow read: if request.auth != null
+                  && (resource.data.get('uid', '') == request.auth.uid || isStaff());
       allow update, delete: if isStaff();
     }
 
@@ -746,7 +794,8 @@ service cloud.firestore {
 
     match /achievements/{achievementId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null
+                   && (isStaff() || request.resource.data.get('uid', request.auth.uid) == request.auth.uid);
     }
 
     // ================================================================
@@ -761,18 +810,21 @@ service cloud.firestore {
     // SYSTEM AND MODERATION LOGS
     // ================================================================
     match /modLogs/{document=**} {
-      allow read:  if isStaff();
-      allow write: if request.auth != null;
+      allow read:           if isStaff();
+      allow create:         if request.auth != null;
+      allow update, delete: if isStaff();
     }
 
     match /moderationLogs/{document=**} {
-      allow read:  if isStaff();
-      allow write: if request.auth != null;
+      allow read:           if isStaff();
+      allow create:         if request.auth != null;
+      allow update, delete: if isStaff();
     }
 
     match /systemLogs/{document=**} {
-      allow read:  if isStaff();
-      allow write: if request.auth != null;
+      allow read:           if isStaff();
+      allow create:         if request.auth != null;
+      allow update, delete: if isStaff();
     }
 
     // ================================================================

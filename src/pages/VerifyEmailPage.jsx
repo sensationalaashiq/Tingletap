@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { applyActionCode } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { pt } from '../utils/premiumToast';
 import PremiumCopyright from '../components/PremiumCopyright';
 

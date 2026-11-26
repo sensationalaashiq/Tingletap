@@ -15,7 +15,7 @@
 // Matches the STALE_MS threshold already used by App.jsx's cleanup sweep and
 // is comfortably larger than the 5-minute client heartbeat interval.
 
-export const PRESENCE_STALE_MS = 150 * 1000; // 2.5 minutes
+export const PRESENCE_STALE_MS = 180 * 1000; // 3 minutes — tolerates throttled background intervals; real leaves still clear via onDisconnect/pagehide
 
 /**
  * @param {{state?: string, last_changed?: number} | undefined | null} status

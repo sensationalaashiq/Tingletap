@@ -607,10 +607,21 @@ html.dark-mode .Toastify__toast:not([style*="background"]) {
   color: #e8eaf0 !important;
   border-color: #2d2d4a !important;
 }
+html.dark-mode .Toastify__toast.tt-premium-toast,
+html.dark-mode .Toastify__toast.tt-premium-toast .tt-toast-title,
+html.dark-mode .Toastify__toast.tt-premium-toast .Toastify__toast-body * {
+  color: #ffffff !important;
+}
+html.dark-mode .Toastify__toast.tt-premium-toast .tt-toast-sub {
+  color: rgba(255, 255, 255, 0.94) !important;
+}
 /* Premium toasts (have inline gradient) — just fix close button + progress */
-html.dark-mode .Toastify__close-button { color: rgba(255,255,255,0.85) !important; opacity: 1 !important; }
+html.dark-mode .Toastify__close-button { color: rgba(255,255,255,0.9) !important; opacity: 1 !important; }
 html.dark-mode .Toastify__progress-bar--default,
 html.dark-mode .Toastify__progress-bar:not([style]) { background: #6366f1 !important; }
+html.dark-mode .Toastify__toast.tt-premium-toast .Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
 
 /* ── Toast icon SVG protection: preserve TI icon colors in dark mode ── */
 html.dark-mode .Toastify__toast-icon svg,

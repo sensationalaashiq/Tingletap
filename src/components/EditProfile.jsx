@@ -1,9 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getDefaultAvatarUrl, isRealAvatarUpload, isGuestUser } from '../utils/roleUtils';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import {
+  getDefaultAvatarUrl,
+  isRealAvatarUpload,
+  isGuestUser,
+  getRoleDisplayLabel,
+} from '../utils/roleUtils';
 import { auth, db } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -13,38 +15,19 @@ import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageServi
 import { syncPublicProfile } from '../utils/syncPublicProfile';
 
 const COUNTRIES = [
-  { name: 'Afghanistan', flag: '🇦🇫' }, { name: 'Algeria', flag: '🇩🇿' },
-  { name: 'Argentina', flag: '🇦🇷' }, { name: 'Australia', flag: '🇦🇺' },
-  { name: 'Austria', flag: '🇦🇹' }, { name: 'Bangladesh', flag: '🇧🇩' },
-  { name: 'Belgium', flag: '🇧🇪' }, { name: 'Brazil', flag: '🇧🇷' },
-  { name: 'Canada', flag: '🇨🇦' }, { name: 'Chile', flag: '🇨🇱' },
-  { name: 'China', flag: '🇨🇳' }, { name: 'Colombia', flag: '🇨🇴' },
-  { name: 'Egypt', flag: '🇪🇬' }, { name: 'Ethiopia', flag: '🇪🇹' },
-  { name: 'France', flag: '🇫🇷' }, { name: 'Germany', flag: '🇩🇪' },
-  { name: 'Ghana', flag: '🇬🇭' }, { name: 'Greece', flag: '🇬🇷' },
-  { name: 'India', flag: '🇮🇳' }, { name: 'Indonesia', flag: '🇮🇩' },
-  { name: 'Iran', flag: '🇮🇷' }, { name: 'Iraq', flag: '🇮🇶' },
-  { name: 'Ireland', flag: '🇮🇪' }, { name: 'Israel', flag: '🇮🇱' },
-  { name: 'Italy', flag: '🇮🇹' }, { name: 'Japan', flag: '🇯🇵' },
-  { name: 'Jordan', flag: '🇯🇴' }, { name: 'Kenya', flag: '🇰🇪' },
-  { name: 'Malaysia', flag: '🇲🇾' }, { name: 'Mexico', flag: '🇲🇽' },
-  { name: 'Morocco', flag: '🇲🇦' }, { name: 'Myanmar', flag: '🇲🇲' },
-  { name: 'Nepal', flag: '🇳🇵' }, { name: 'Netherlands', flag: '🇳🇱' },
-  { name: 'New Zealand', flag: '🇳🇿' }, { name: 'Nigeria', flag: '🇳🇬' },
-  { name: 'Norway', flag: '🇳🇴' }, { name: 'Pakistan', flag: '🇵🇰' },
-  { name: 'Philippines', flag: '🇵🇭' }, { name: 'Poland', flag: '🇵🇱' },
-  { name: 'Portugal', flag: '🇵🇹' }, { name: 'Qatar', flag: '🇶🇦' },
-  { name: 'Romania', flag: '🇷🇴' }, { name: 'Russia', flag: '🇷🇺' },
-  { name: 'Saudi Arabia', flag: '🇸🇦' }, { name: 'Singapore', flag: '🇸🇬' },
-  { name: 'South Africa', flag: '🇿🇦' }, { name: 'South Korea', flag: '🇰🇷' },
-  { name: 'Spain', flag: '🇪🇸' }, { name: 'Sri Lanka', flag: '🇱🇰' },
-  { name: 'Sweden', flag: '🇸🇪' }, { name: 'Switzerland', flag: '🇨🇭' },
-  { name: 'Syria', flag: '🇸🇾' }, { name: 'Taiwan', flag: '🇹🇼' },
-  { name: 'Thailand', flag: '🇹🇭' }, { name: 'Turkey', flag: '🇹🇷' },
-  { name: 'Ukraine', flag: '🇺🇦' }, { name: 'United Arab Emirates', flag: '🇦🇪' },
-  { name: 'United Kingdom', flag: '🇬🇧' }, { name: 'United States', flag: '🇺🇸' },
-  { name: 'Venezuela', flag: '🇻🇪' }, { name: 'Vietnam', flag: '🇻🇳' },
-  { name: 'Other', flag: '🌍' },
+  'Afghanistan', 'Algeria', 'Argentina', 'Australia', 'Austria',
+  'Bangladesh', 'Belgium', 'Brazil', 'Canada', 'Chile',
+  'China', 'Colombia', 'Egypt', 'Ethiopia', 'France',
+  'Germany', 'Ghana', 'Greece', 'India', 'Indonesia',
+  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy',
+  'Japan', 'Jordan', 'Kenya', 'Malaysia', 'Mexico',
+  'Morocco', 'Myanmar', 'Nepal', 'Netherlands', 'New Zealand',
+  'Nigeria', 'Norway', 'Pakistan', 'Philippines', 'Poland',
+  'Portugal', 'Qatar', 'Romania', 'Russia', 'Saudi Arabia',
+  'Singapore', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka',
+  'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Thailand',
+  'Turkey', 'Ukraine', 'United Arab Emirates', 'United Kingdom',
+  'United States', 'Venezuela', 'Vietnam', 'Other',
 ];
 
 const EditProfile = ({ onClose, onSuccess }) => {
@@ -58,24 +41,25 @@ const EditProfile = ({ onClose, onSuccess }) => {
     profession: '',
     age: '',
     relationship: '',
-    languages: ''
+    languages: '',
   });
   const [profilePic, setProfilePic] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  
-  // Cropping states
+  const [savedPhotoPreview, setSavedPhotoPreview] = useState('');
+  const [accountMeta, setAccountMeta] = useState({
+    roleLabel: 'Member',
+    username: '',
+    email: '',
+    isVerified: false,
+  });
+
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [savingState, setSavingState] = useState('idle'); // 'idle' | 'uploading' | 'saving' | 'saved' | 'error'
+  const [feedbackBanner, setFeedbackBanner] = useState(null); // { type: 'error' | 'saved', text: string }
+
+  // Photo Cropper states
   const [showCropper, setShowCropper] = useState(false);
   const [originalImage, setOriginalImage] = useState(null);
-  const [crop, setCrop] = useState({
-    unit: '%',
-    width: 90,
-    height: 90,
-    x: 5,
-    y: 5
-  });
-  const [completedCrop, setCompletedCrop] = useState(null);
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
   const [flipH, setFlipH] = useState(false);
@@ -85,17 +69,41 @@ const EditProfile = ({ onClose, onSuccess }) => {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
-  const cropContainerRef = useRef(null);
+  const cropCircleRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const previewUrlRef = useRef('');
 
   useEffect(() => {
+    previewUrlRef.current = profilePicPreview;
+  }, [profilePicPreview]);
+
+  useEffect(() => {
+    let cancelled = false;
     const user = auth.currentUser;
-    if (user) {
-      const docRef = doc(db, 'users', user.uid);
-      getDoc(docRef).then(docSnap => {
+    if (!user) {
+      setInitialLoading(false);
+      setFeedbackBanner({ type: 'error', text: 'Please sign in to edit your profile.' });
+      return undefined;
+    }
+
+    const docRef = doc(db, 'users', user.uid);
+    getDoc(docRef)
+      .then((docSnap) => {
+        if (cancelled) return;
         if (docSnap.exists()) {
-          const data = docSnap.data();
+          const data = docSnap.data() || {};
+          const resolvedGuest = isGuestUser({
+            isGuest: data.isGuest || user.isAnonymous,
+            role: data.role,
+          });
+          const defaultAvatar = getDefaultAvatarUrl(user.uid, data.gender || 'male', resolvedGuest);
+          const resolvedAvatar = isRealAvatarUpload(data.photoURL)
+            ? data.photoURL
+            : (isRealAvatarUpload(user.photoURL) ? user.photoURL : defaultAvatar);
+
           setFormData({
             displayName: data.displayName || user.displayName || '',
             gender: data.gender || '',
@@ -104,30 +112,84 @@ const EditProfile = ({ onClose, onSuccess }) => {
             bio: data.bio || '',
             interests: data.interests || '',
             profession: data.profession || '',
-            age: data.age || '',
+            age: data.age !== undefined && data.age !== null ? String(data.age) : '',
             relationship: data.relationship || '',
-            languages: data.languages || ''
+            languages: data.languages || '',
           });
-          const resolvedGuest = isGuestUser({ isGuest: data.isGuest || user.isAnonymous, role: data.role });
-          const defaultAvatar = getDefaultAvatarUrl(user.uid, data.gender || 'male', resolvedGuest);
-          setProfilePicPreview(isRealAvatarUpload(data.photoURL) ? data.photoURL : defaultAvatar);
+          setProfilePicPreview(resolvedAvatar);
+          setSavedPhotoPreview(resolvedAvatar);
+          setAccountMeta({
+            roleLabel: getRoleDisplayLabel({
+              role: data.role || 'user',
+              gender: data.gender,
+              isGuest: resolvedGuest,
+              badge: data.badge,
+            }),
+            username: data.username || '',
+            email: data.email || user.email || '',
+            isVerified: Boolean(data.isVerified),
+          });
         } else {
-          setFormData(prev => ({ ...prev, displayName: user.displayName || '' }));
-          setProfilePicPreview(getDefaultAvatarUrl(user.uid, 'male', Boolean(user.isAnonymous)));
+          const defaultAvatar = getDefaultAvatarUrl(user.uid, 'male', Boolean(user.isAnonymous));
+          const resolvedAvatar = isRealAvatarUpload(user.photoURL) ? user.photoURL : defaultAvatar;
+          setFormData((prev) => ({ ...prev, displayName: user.displayName || '' }));
+          setProfilePicPreview(resolvedAvatar);
+          setSavedPhotoPreview(resolvedAvatar);
+          setAccountMeta({
+            roleLabel: user.isAnonymous ? 'Guest' : 'Member',
+            username: '',
+            email: user.email || '',
+            isVerified: Boolean(user.emailVerified),
+          });
         }
-        setLoading(false);
+        setInitialLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('[EditProfile] Initial load failed, using Auth fallback:', err?.message || err);
+        const fallbackAvatar = isRealAvatarUpload(user.photoURL)
+          ? user.photoURL
+          : getDefaultAvatarUrl(user.uid, 'male', Boolean(user.isAnonymous));
+        setFormData((prev) => ({ ...prev, displayName: user.displayName || '' }));
+        setProfilePicPreview(fallbackAvatar);
+        setSavedPhotoPreview(fallbackAvatar);
+        setAccountMeta({
+          roleLabel: user.isAnonymous ? 'Guest' : 'Member',
+          username: '',
+          email: user.email || '',
+          isVerified: Boolean(user.emailVerified),
+        });
+        setFeedbackBanner({
+          type: 'error',
+          text: 'Could not refresh saved profile details. You can still edit and save.',
+        });
+        setInitialLoading(false);
       });
-    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const current = previewUrlRef.current;
+      if (typeof current === 'string' && current.startsWith('blob:')) {
+        URL.revokeObjectURL(current);
+      }
+    };
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (savingState === 'saved' || savingState === 'error') {
+      setSavingState('idle');
+      setFeedbackBanner(null);
+    }
   };
 
-  // FIX L-18: Validate file magic bytes (first 12 bytes) before accepting the file.
-  // MIME type reported by the browser can be spoofed by renaming a .exe to .jpg.
-  // Magic-byte check reads the actual file header to confirm it's a real image.
+  // Validate file magic bytes (first 12 bytes) before accepting upload
   const checkImageMagicBytes = (file) =>
     new Promise((resolve) => {
       const reader = new FileReader();
@@ -144,257 +206,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
       reader.readAsArrayBuffer(file.slice(0, 12));
     });
 
-  const handleProfilePicChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        pt.error('Profile picture must be less than 5MB');
-        e.target.value = '';
-        return;
-      }
-
-      const isValidImage = await checkImageMagicBytes(file);
-      if (!isValidImage) {
-        pt.error('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
-        e.target.value = '';
-        return;
-      }
-      
-      setScale(1);
-      setRotate(0);
-      setFlipH(false);
-      setFlipV(false);
-      setBrightness(100);
-      setContrast(100);
-      setImagePosition({ x: 0, y: 0 });
-      setIsDragging(false);
-      setCrop({
-        unit: '%',
-        width: 90,
-        height: 90,
-        x: 5,
-        y: 5
-      });
-      setCompletedCrop(null);
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setOriginalImage(e.target.result);
-        setShowCropper(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const onImageLoad = (e) => {
-    imgRef.current = e.currentTarget;
-    const { naturalWidth, naturalHeight } = e.currentTarget;
-    
-    const size = Math.min(naturalWidth, naturalHeight);
-    const x = (naturalWidth - size) / 2;
-    const y = (naturalHeight - size) / 2;
-    
-    const newCrop = {
-      unit: 'px',
-      width: size * 0.8,
-      height: size * 0.8,
-      x: x + (size * 0.1),
-      y: y + (size * 0.1)
-    };
-    
-    setCrop(newCrop);
-    setCompletedCrop(newCrop);
-    setImagePosition({ x: 0, y: 0 });
-  };
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - imagePosition.x,
-      y: e.clientY - imagePosition.y
-    });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    
-    const newX = e.clientX - dragStart.x;
-    const newY = e.clientY - dragStart.y;
-    
-    setImagePosition({ x: newX, y: newY });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    setIsDragging(true);
-    setDragStart({
-      x: touch.clientX - imagePosition.x,
-      y: touch.clientY - imagePosition.y
-    });
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    
-    const touch = e.touches[0];
-    const newX = touch.clientX - dragStart.x;
-    const newY = touch.clientY - dragStart.y;
-    
-    setImagePosition({ x: newX, y: newY });
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-  };
-
-  const getCroppedImg = (image, crop) => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx || !image) {
-      return null;
-    }
-
-    const outputSize = 300;
-    canvas.width = outputSize;
-    canvas.height = outputSize;
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    ctx.clearRect(0, 0, outputSize, outputSize);
-    
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, 2 * Math.PI);
-    ctx.clip();
-    
-    const containerSize = 240;
-    const containerRadius = containerSize / 2;
-    
-    const imageAspect = image.naturalWidth / image.naturalHeight;
-    let displayWidth, displayHeight;
-    
-    if (imageAspect > 1) {
-      displayHeight = containerSize;
-      displayWidth = containerSize * imageAspect;
-    } else {
-      displayWidth = containerSize;
-      displayHeight = containerSize / imageAspect;
-    }
-    
-    displayWidth *= scale;
-    displayHeight *= scale;
-    
-    const imageCenterX = containerRadius + imagePosition.x;
-    const imageCenterY = containerRadius + imagePosition.y;
-    
-    const sourceX = ((containerRadius - imageCenterX) / displayWidth) * image.naturalWidth + (image.naturalWidth / 2);
-    const sourceY = ((containerRadius - imageCenterY) / displayHeight) * image.naturalHeight + (image.naturalHeight / 2);
-    const sourceSize = (containerSize / Math.min(displayWidth, displayHeight)) * Math.min(image.naturalWidth, image.naturalHeight);
-    
-    const clampedSourceX = Math.max(0, Math.min(sourceX - sourceSize/2, image.naturalWidth - sourceSize));
-    const clampedSourceY = Math.max(0, Math.min(sourceY - sourceSize/2, image.naturalHeight - sourceSize));
-    const clampedSourceSize = Math.min(sourceSize, 
-      Math.min(image.naturalWidth - clampedSourceX, image.naturalHeight - clampedSourceY));
-    
-    if (rotate !== 0) {
-      ctx.translate(outputSize / 2, outputSize / 2);
-      ctx.rotate((rotate * Math.PI) / 180);
-      ctx.translate(-outputSize / 2, -outputSize / 2);
-    }
-    
-    ctx.drawImage(
-      image,
-      clampedSourceX,
-      clampedSourceY,
-      clampedSourceSize,
-      clampedSourceSize,
-      0,
-      0,
-      outputSize,
-      outputSize
-    );
-    
-    ctx.restore();
-
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob);
-      }, 'image/jpeg', 0.95);
-    });
-  };
-
-  const handleCropComplete = async () => {
-    if (!imgRef.current) {
-      pt.error('Please select an image first');
-      return;
-    }
-
-    try {
-      const cropToUse = completedCrop || crop;
-      const croppedImageBlob = await getCroppedImg(imgRef.current, cropToUse);
-      if (croppedImageBlob) {
-        setProfilePic(croppedImageBlob);
-        const previewUrl = URL.createObjectURL(croppedImageBlob);
-        
-        if (profilePicPreview && profilePicPreview.startsWith('blob:')) {
-          URL.revokeObjectURL(profilePicPreview);
-        }
-        
-        setProfilePicPreview(previewUrl);
-        
-        const fileInput = document.getElementById('ep-photo-input');
-        if (fileInput) {
-          fileInput.value = '';
-        }
-        
-        setShowCropper(false);
-        
-        setOriginalImage(null);
-        setCrop({
-          unit: '%',
-          width: 90,
-          height: 90,
-          x: 5,
-          y: 5
-        });
-        setCompletedCrop(null);
-        setScale(1);
-        setRotate(0);
-        setFlipH(false);
-        setFlipV(false);
-        setBrightness(100);
-        setContrast(100);
-        setImagePosition({ x: 0, y: 0 });
-        setIsDragging(false);
-        
-        setTimeout(() => {
-          setProfilePicPreview(previewUrl);
-        }, 50);
-      }
-    } catch (error) {
-      pt.error('Failed to crop image');
-      console.error('Crop error:', error);
-    }
-  };
-
-  // C5: Revoke any blob URL stored as the preview when the crop is cancelled,
-  // so the browser can free the underlying memory. Only revoke if no crop has
-  // been applied yet (i.e. the preview IS the blob URL for the current session).
-  const handleCropCancel = () => {
-    setShowCropper(false);
-    setOriginalImage(null);
-    // If a profilePic (File) is selected but no crop has been applied, the
-    // preview will stay as-is (user can still save without cropping). If the
-    // user wants to discard the selection entirely they can close the whole modal.
-    setCrop({ unit: '%', width: 90, height: 90, x: 5, y: 5 });
-    setCompletedCrop(null);
+  const resetCropControls = () => {
     setScale(1);
     setRotate(0);
     setFlipH(false);
@@ -405,54 +217,221 @@ const EditProfile = ({ onClose, onSuccess }) => {
     setIsDragging(false);
   };
 
-  // C5: Revoke the blob URL when the component unmounts to prevent memory leaks.
-  useEffect(() => {
-    return () => {
+  const handleProfilePicChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      pt.error('Profile picture must be less than 5MB');
+      e.target.value = '';
+      return;
+    }
+
+    const isValidImage = await checkImageMagicBytes(file);
+    if (!isValidImage) {
+      pt.error('Invalid image file. Please select JPEG, PNG, WebP, or GIF.');
+      e.target.value = '';
+      return;
+    }
+
+    resetCropControls();
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setOriginalImage(ev.target.result);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDiscardPendingPhoto = () => {
+    if (typeof profilePicPreview === 'string' && profilePicPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(profilePicPreview);
+    }
+    setProfilePic(null);
+    setProfilePicPreview(savedPhotoPreview);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+  };
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setImagePosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches?.[0];
+    if (!touch) return;
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX - imagePosition.x, y: touch.clientY - imagePosition.y });
+  };
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    const touch = e.touches?.[0];
+    if (!touch) return;
+    setImagePosition({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+  };
+  const handleTouchEnd = () => setIsDragging(false);
+
+  const getCroppedImg = (image) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !image || !image.naturalWidth || !image.naturalHeight) {
+      return Promise.resolve(null);
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return Promise.resolve(null);
+
+    const outputSize = 400;
+    const previewElSize = cropCircleRef.current?.clientWidth || 220;
+    const ratio = outputSize / previewElSize;
+
+    canvas.width = outputSize;
+    canvas.height = outputSize;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, outputSize, outputSize);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, 2 * Math.PI);
+    ctx.clip();
+
+    // Match CSS filter & transform matrix identically
+    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+    ctx.translate(
+      outputSize / 2 + imagePosition.x * ratio,
+      outputSize / 2 + imagePosition.y * ratio,
+    );
+    ctx.scale(scale * (flipH ? -1 : 1), scale * (flipV ? -1 : 1));
+    ctx.rotate((rotate * Math.PI) / 180);
+
+    const aspect = image.naturalWidth / image.naturalHeight;
+    const baseW = aspect >= 1 ? outputSize : outputSize * aspect;
+    const baseH = aspect >= 1 ? outputSize / aspect : outputSize;
+
+    ctx.drawImage(image, -baseW / 2, -baseH / 2, baseW, baseH);
+    ctx.restore();
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            canvas.toBlob((fallbackBlob) => resolve(fallbackBlob), 'image/jpeg', 0.92);
+          }
+        },
+        'image/webp',
+        0.9,
+      );
+    });
+  };
+
+  const handleCropComplete = async () => {
+    if (!imgRef.current) {
+      pt.error('Please select an image first');
+      return;
+    }
+
+    try {
+      const croppedImageBlob = await getCroppedImg(imgRef.current);
+      if (!croppedImageBlob) {
+        pt.error('Could not process cropped photo. Try another image.');
+        return;
+      }
+
       if (typeof profilePicPreview === 'string' && profilePicPreview.startsWith('blob:')) {
         URL.revokeObjectURL(profilePicPreview);
       }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+      const previewUrl = URL.createObjectURL(croppedImageBlob);
+      setProfilePic(croppedImageBlob);
+      setProfilePicPreview(previewUrl);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setShowCropper(false);
+      setOriginalImage(null);
+      resetCropControls();
+      setFeedbackBanner(null);
+    } catch (error) {
+      pt.error('Failed to crop image');
+      console.error('[EditProfile] Crop error:', error);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setOriginalImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    resetCropControls();
+  };
 
   const uploadProfilePic = async () => {
     if (!profilePic) return null;
-    setUploading(true);
-    try {
-      const compressed = await compressImageToWebP(profilePic, { maxDim: 1080, quality: 0.8 });
-      const { key, url } = await uploadMediaFile(compressed, 'profile');
-      setUploading(false);
-      return { key, url };
-    } catch (error) {
-      setUploading(false);
-      throw error;
-    }
+    const compressed = await compressImageToWebP(profilePic, { maxDim: 1080, quality: 0.85 });
+    const { key, url } = await uploadMediaFile(compressed, 'profile');
+    if (!url) throw new Error('Photo upload did not return an image URL.');
+    return { key, url };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const user = auth.currentUser;
+    if (!user) {
+      const msg = 'Session expired. Please sign in again to save your profile.';
+      setSavingState('error');
+      setFeedbackBanner({ type: 'error', text: msg });
+      pt.error(msg);
+      return;
+    }
+
+    const cleanDisplayName = (formData.displayName || '').trim();
+    if (!cleanDisplayName) {
+      const msg = 'Display Name cannot be empty.';
+      setSavingState('error');
+      setFeedbackBanner({ type: 'error', text: msg });
+      pt.error(msg);
+      return;
+    }
+
+    setFeedbackBanner(null);
+
     try {
-      let photoURL = profilePicPreview;
-      let photoKey = null;
+      let uploadedPhotoUrl = null;
+      let uploadedPhotoKey = null;
+
       if (profilePic) {
+        setSavingState('uploading');
         const uploaded = await uploadProfilePic();
-        photoURL = uploaded.url;
-        photoKey = uploaded.key;
-        setProfilePicPreview(photoURL);
+        uploadedPhotoUrl = uploaded.url;
+        uploadedPhotoKey = uploaded.key;
       }
+
+      setSavingState('saving');
       const userDocRef = doc(db, 'users', user.uid);
       const currentUserDoc = await getDoc(userDocRef);
-      const currentUserData = currentUserDoc.exists() ? currentUserDoc.data() : {};
-      const resolvedGuest = isGuestUser({ isGuest: currentUserData.isGuest || user.isAnonymous, role: currentUserData.role });
-      const fallbackDefault = getDefaultAvatarUrl(user.uid, formData.gender || currentUserData.gender || 'male', resolvedGuest);
-      const finalPhotoURL = profilePic
-        ? photoURL
-        : (isRealAvatarUpload(currentUserData.photoURL)
-            ? currentUserData.photoURL
-            : (isRealAvatarUpload(profilePicPreview) ? profilePicPreview : fallbackDefault));
-      const finalPhotoKey = profilePic ? photoKey : (currentUserData.photoKey || null);
+      const docExists = currentUserDoc.exists();
+      const currentUserData = docExists ? (currentUserDoc.data() || {}) : {};
+
+      const resolvedGuest = isGuestUser({
+        isGuest: currentUserData.isGuest || user.isAnonymous,
+        role: currentUserData.role,
+      });
+      const fallbackDefault = getDefaultAvatarUrl(
+        user.uid,
+        formData.gender || currentUserData.gender || 'male',
+        resolvedGuest,
+      );
+
+      const finalPhotoURL = uploadedPhotoUrl
+        || (isRealAvatarUpload(currentUserData.photoURL)
+          ? currentUserData.photoURL
+          : (isRealAvatarUpload(profilePicPreview) ? profilePicPreview : fallbackDefault));
+      const finalPhotoKey = uploadedPhotoUrl
+        ? uploadedPhotoKey
+        : (currentUserData.photoKey || null);
 
       const getCurrentFontPreferences = () => {
         if (window.chatFontPreferences) {
@@ -465,510 +444,668 @@ const EditProfile = ({ onClose, onSuccess }) => {
           isBold: false,
           isItalic: false,
           isUnderline: false,
-          isStrikethrough: false
+          isStrikethrough: false,
         };
       };
 
-      const profileData = {
-        ...formData,
-        email: user.email,
-        uid: user.uid,
+      // Strictly whitelist editable fields; never mutate protected role, badge, or moderation fields.
+      const editableProfilePayload = {
+        displayName: cleanDisplayName,
+        gender: formData.gender || '',
+        country: formData.country || '',
+        status: (formData.status || '').trim(),
+        bio: (formData.bio || '').trim(),
+        interests: (formData.interests || '').trim(),
+        profession: (formData.profession || '').trim(),
+        age: formData.age === '' ? '' : String(formData.age).trim(),
+        relationship: formData.relationship || '',
+        languages: (formData.languages || '').trim(),
         photoURL: finalPhotoURL,
-        // R2 object key — stored so clients can refresh expired signed URLs
         ...(finalPhotoKey ? { photoKey: finalPhotoKey } : {}),
         updatedAt: new Date().toISOString(),
         settings: currentUserData.settings || {},
-        fontPreferences: getCurrentFontPreferences()
+        fontPreferences: getCurrentFontPreferences(),
       };
 
-      // FIX H-02: Write to Firestore FIRST, await it, then update Firebase Auth.
-      // Previously the order was reversed: Auth.updateProfile fired first, causing
-      // Auth-subscribed components to re-render with the new photoURL while Firestore
-      // was still holding the old value — visible as a 200–500ms avatar flicker.
-      await setDoc(userDocRef, profileData, { merge: true });
-      // B1: Keep publicProfile in sync with updated display fields.
-      syncPublicProfile(user.uid, profileData).catch(() => {});
-      // Auth displayName + photoURL updated AFTER Firestore is consistent.
-      await updateProfile(user, { 
-        displayName: formData.displayName, 
-        photoURL: finalPhotoURL 
-      });
-      
+      const firestoreWritePayload = docExists
+        ? editableProfilePayload
+        : {
+            ...editableProfilePayload,
+            uid: user.uid,
+            email: user.email || '',
+            role: 'user',
+            isGuest: Boolean(user.isAnonymous),
+            createdAt: new Date().toISOString(),
+          };
+
+      await setDoc(userDocRef, firestoreWritePayload, { merge: true });
+
+      // Mirror public profile subset while preserving server-assigned roles/badges
+      await syncPublicProfile(
+        user.uid,
+        { ...currentUserData, ...firestoreWritePayload },
+        { preserveExisting: true },
+      );
+
+      // Auth photoURL only supports short HTTPS URLs (< 2048 chars), never base64 data: URLs
+      const canSetAuthPhoto =
+        Boolean(finalPhotoURL)
+        && !String(finalPhotoURL).startsWith('data:')
+        && String(finalPhotoURL).length < 1800;
+
+      try {
+        await updateProfile(
+          user,
+          canSetAuthPhoto
+            ? { displayName: cleanDisplayName, photoURL: finalPhotoURL }
+            : { displayName: cleanDisplayName },
+        );
+      } catch (authErr) {
+        console.warn('[EditProfile] Auth profile mirror skipped:', authErr?.message || authErr);
+      }
+
       if (profilePic) {
+        if (typeof profilePicPreview === 'string' && profilePicPreview.startsWith('blob:')) {
+          URL.revokeObjectURL(profilePicPreview);
+        }
         setProfilePic(null);
         setProfilePicPreview(finalPhotoURL);
+        setSavedPhotoPreview(finalPhotoURL);
       }
-      
-      // FIX H-09: Properly invalidate the shared in-memory profile cache so
-      // chat avatars / sidebar names refresh immediately without a 60-second TTL wait.
-      // (The old call window._profileCacheTTL.delete() pointed to a stale API.)
+
       invalidateCachedUserProfile(user.uid);
-      onSuccess && onSuccess();
-      onClose && onClose();
+      setSavingState('saved');
+      setFeedbackBanner({ type: 'saved', text: 'Profile updated successfully' });
+      pt.profile('Profile updated successfully');
+
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
     } catch (error) {
-      pt.error("Update failed: " + error.message);
-      setLoading(false);
+      console.error('[EditProfile] Save failed:', error);
+      const rawMsg = String(error?.message || 'Unable to save profile changes.');
+      const friendlyMsg = rawMsg.toLowerCase().includes('permission')
+        ? 'Permission denied while saving profile. Please refresh your session and retry.'
+        : rawMsg;
+      setSavingState('error');
+      setFeedbackBanner({ type: 'error', text: friendlyMsg });
+      pt.error(friendlyMsg);
     }
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
-      <div className="ep-wd-loading">
+      <div className="ep-wd-loading" role="status" aria-live="polite">
         <div className="ep-wd-spin" />
-        <p>Loading profile…</p>
+        <p>Loading profile details...</p>
       </div>
     );
   }
 
-  const cropModalJSX = showCropper ? createPortal(
-    <div className="modern-crop-modal">
-        <div className="crop-modal-content">
-          <div className="crop-header">
-            <div className="crop-title">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-                <defs>
-                  <linearGradient id="camGradNew" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#f472b6"/>
-                    <stop offset="35%" stopColor="#a855f7"/>
-                    <stop offset="70%" stopColor="#6366f1"/>
-                    <stop offset="100%" stopColor="#06b6d4"/>
-                  </linearGradient>
-                  <filter id="camGlow"><feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#a855f7" floodOpacity="0.5"/></filter>
-                </defs>
-                <rect x="1" y="5" width="22" height="16" rx="3.5" fill="url(#camGradNew)" filter="url(#camGlow)"/>
-                <circle cx="12" cy="13" r="4.2" fill="white" opacity="0.95"/>
-                <circle cx="12" cy="13" r="2.5" fill="url(#camGradNew)"/>
-                <rect x="8" y="3" width="8" height="4" rx="1.5" fill="url(#camGradNew)"/>
-                <circle cx="19" cy="8" r="1.2" fill="white" opacity="0.8"/>
-              </svg>
-              <span>Edit Profile Photo</span>
+  const isBusy = savingState === 'uploading' || savingState === 'saving';
+
+  const cropModalJSX = showCropper
+    ? createPortal(
+        <div className="modern-crop-modal" role="dialog" aria-modal="true" aria-label="Edit Profile Photo">
+          <div className="crop-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="crop-header">
+              <div className="crop-header-text">
+                <div className="crop-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="15" rx="3.5" stroke="currentColor" strokeWidth="2" />
+                    <circle cx="12" cy="12.5" r="3.5" stroke="currentColor" strokeWidth="2" />
+                    <path d="M8.5 5l1.2-2h4.6l1.2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>Adjust Profile Photo</span>
+                </div>
+                <p className="crop-subtitle">Drag to frame, then fine-tune zoom, angle, or tone</p>
+              </div>
+              <button type="button" className="crop-icon-close" onClick={handleCropCancel} aria-label="Close photo editor">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
-            <div className="crop-subtitle">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f59e0b"/>
-              </svg>
-              Drag · Zoom · Rotate · Flip — then Apply
+
+            <div className="crop-content">
+              <div
+                className="crop-preview-area"
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div className="circular-preview" ref={cropCircleRef}>
+                  <img
+                    ref={imgRef}
+                    src={originalImage}
+                    alt="Crop preview"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale * (flipH ? -1 : 1)}, ${scale * (flipV ? -1 : 1)}) rotate(${rotate}deg)`,
+                      transformOrigin: 'center',
+                      filter: `brightness(${brightness}%) contrast(${contrast}%)`,
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                      userSelect: 'none',
+                      touchAction: 'none',
+                      transition: isDragging ? 'none' : 'transform 0.08s ease-out',
+                    }}
+                    onMouseDown={handleMouseDown}
+                    onTouchStart={handleTouchStart}
+                    draggable={false}
+                  />
+                  <div className="crop-overlay" />
+                </div>
+              </div>
+
+              <div className="crop-controls">
+                <div className="crop-slider-grid">
+                  <div className="control-group">
+                    <div className="crop-control-head">
+                      <span>Zoom</span>
+                      <span className="crop-control-val">{Math.round(scale * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.6"
+                      max="3"
+                      step="0.05"
+                      value={scale}
+                      onChange={(e) => setScale(parseFloat(e.target.value))}
+                      className="crop-slider"
+                    />
+                  </div>
+
+                  <div className="control-group">
+                    <div className="crop-control-head">
+                      <span>Rotate</span>
+                      <span className="crop-control-val">{rotate}deg</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      step="5"
+                      value={rotate}
+                      onChange={(e) => setRotate(parseFloat(e.target.value))}
+                      className="crop-slider"
+                    />
+                  </div>
+
+                  <div className="control-group">
+                    <div className="crop-control-head">
+                      <span>Brightness</span>
+                      <span className="crop-control-val">{brightness}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="40"
+                      max="170"
+                      step="5"
+                      value={brightness}
+                      onChange={(e) => setBrightness(parseInt(e.target.value, 10))}
+                      className="crop-slider"
+                    />
+                  </div>
+
+                  <div className="control-group">
+                    <div className="crop-control-head">
+                      <span>Contrast</span>
+                      <span className="crop-control-val">{contrast}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="50"
+                      max="180"
+                      step="5"
+                      value={contrast}
+                      onChange={(e) => setContrast(parseInt(e.target.value, 10))}
+                      className="crop-slider"
+                    />
+                  </div>
+                </div>
+
+                <div className="crop-flip-row">
+                  <button
+                    type="button"
+                    className={`crop-flip-btn ${flipH ? 'active' : ''}`}
+                    onClick={() => setFlipH((h) => !h)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <path d="M8 7L3 12l5 5M16 7l5 5-5 5M12 4v16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>Flip H</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`crop-flip-btn ${flipV ? 'active' : ''}`}
+                    onClick={() => setFlipV((v) => !v)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <path d="M7 8l5-5 5 5M7 16l5 5 5-5M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>Flip V</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="crop-flip-btn reset-btn"
+                    onClick={resetCropControls}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 4v5h5M20 20v-5h-5M4.5 9A8.5 8.5 0 0 1 20 12.5M19.5 15A8.5 8.5 0 0 1 4 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>Reset</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+            <div className="crop-actions">
+              <button type="button" className="crop-btn cancel-btn" onClick={handleCropCancel}>
+                Cancel
+              </button>
+              <button type="button" className="crop-btn save-btn" onClick={handleCropComplete}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Apply Photo</span>
+              </button>
             </div>
           </div>
-
-          <div className="crop-content">
-            <div 
-              className="crop-preview-area"
-              ref={cropContainerRef}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="circular-preview">
-                <img
-                  ref={imgRef}
-                  src={originalImage}
-                  onLoad={onImageLoad}
-                  alt="Crop preview"
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'contain',
-                    transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${scale * (flipH ? -1 : 1)}, ${scale * (flipV ? -1 : 1)}) rotate(${rotate}deg)`,
-                    transformOrigin: 'center',
-                    filter: `brightness(${brightness}%) contrast(${contrast}%)`,
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    userSelect: 'none',
-                    touchAction: 'none',
-                    transition: isDragging ? 'none' : 'transform 0.1s ease'
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onTouchStart={handleTouchStart}
-                  draggable={false}
-                />
-                <div className="crop-overlay"></div>
-              </div>
-            </div>
-
-            <div className="crop-controls">
-              <div className="control-group">
-                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <defs><linearGradient id="scaleGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#6366f1"/></linearGradient></defs>
-                    <path fill="url(#scaleGrad)" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                  </svg>
-                  Zoom — {Math.round(scale * 100)}%
-                </label>
-                <input type="range" min="0.5" max="3" step="0.05" value={scale}
-                  onChange={(e) => setScale(parseFloat(e.target.value))} className="crop-slider" />
-              </div>
-
-              <div className="control-group">
-                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <defs><linearGradient id="rotGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#0ea5e9"/></linearGradient></defs>
-                    <path fill="url(#rotGrad)" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                  </svg>
-                  Rotate — {rotate}°
-                </label>
-                <input type="range" min="0" max="360" step="5" value={rotate}
-                  onChange={(e) => setRotate(parseFloat(e.target.value))} className="crop-slider" />
-              </div>
-
-              <div className="control-group">
-                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <defs><linearGradient id="briGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#fbbf24"/></linearGradient></defs>
-                    <circle cx="12" cy="12" r="5" fill="url(#briGrad)"/>
-                    <path stroke="url(#briGrad)" strokeWidth="2" strokeLinecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                  </svg>
-                  Brightness — {brightness}%
-                </label>
-                <input type="range" min="30" max="180" step="5" value={brightness}
-                  onChange={(e) => setBrightness(parseInt(e.target.value))} className="crop-slider" />
-              </div>
-
-              <div className="control-group">
-                <label style={{color:'#3b0764',fontWeight:700,fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.06em',display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px'}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <defs><linearGradient id="conGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#f43f5e"/></linearGradient></defs>
-                    <circle cx="12" cy="12" r="10" stroke="url(#conGrad)" strokeWidth="1.5" fill="none"/>
-                    <path d="M12 2a10 10 0 000 20V2z" fill="url(#conGrad)"/>
-                  </svg>
-                  Contrast — {contrast}%
-                </label>
-                <input type="range" min="50" max="200" step="5" value={contrast}
-                  onChange={(e) => setContrast(parseInt(e.target.value))} className="crop-slider" />
-              </div>
-
-              <div className="crop-flip-row">
-                <button
-                  type="button"
-                  className={`crop-flip-btn ${flipH ? 'active' : ''}`}
-                  onClick={() => setFlipH(h => !h)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 12h18M3 12L7 8M3 12l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M21 12l-4-4M21 12l-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Flip H
-                </button>
-                <button
-                  type="button"
-                  className={`crop-flip-btn ${flipV ? 'active' : ''}`}
-                  onClick={() => setFlipV(v => !v)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3v18M12 3L8 7M12 3l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 21l-4-4M12 21l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Flip V
-                </button>
-                <button
-                  type="button"
-                  className="crop-flip-btn reset-btn"
-                  onClick={() => { setScale(1); setRotate(0); setFlipH(false); setFlipV(false); setBrightness(100); setContrast(100); setImagePosition({x:0,y:0}); }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 4v5h5M20 20v-5h-5M4.05 9A9 9 0 0 1 20 12.95M19.95 15A9 9 0 0 1 4 11.05" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-                  </svg>
-                  Reset
-                </button>
-              </div>
-            </div>
-
-            <div className="crop-help">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#6d28d9" strokeWidth="1.8"/>
-                <path d="M12 16v-4M12 8h.01" stroke="#6d28d9" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Drag image to reposition inside the circle
-            </div>
-          </div>
-
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-          <div className="crop-actions">
-            <button className="crop-btn save-btn" onClick={handleCropComplete}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                <path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Apply Photo
-            </button>
-            <button className="crop-btn cancel-btn" onClick={handleCropCancel}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"/>
-              </svg>
-              Cancel
-            </button>
-          </div>
-        </div>
-    </div>,
-    document.body
-  ) : null;
+        </div>,
+        document.body,
+      )
+    : null;
 
   return (
     <>
-    {cropModalJSX}
-    <div className="ep-wd-container">
+      {cropModalJSX}
+      <div className="ep-wd-container">
+        {/* Profile Photo Hero Row */}
+        <div className="wd-avatar-card">
+          <button
+            type="button"
+            className="wd-avatar-circle"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Change profile photo"
+          >
+            {profilePicPreview ? (
+              <img src={profilePicPreview} alt="Profile" className="wd-avatar-img" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="wd-avatar-init">
+                {(formData.displayName || 'U').slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <span className="wd-avatar-overlay" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="5" width="20" height="15" rx="3.5" stroke="white" strokeWidth="2" />
+                <circle cx="12" cy="12.5" r="3.4" stroke="white" strokeWidth="2" />
+                <path d="M8.5 5l1.2-2h4.6l1.2 2" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </span>
+          </button>
 
-      {/* ── Avatar ── */}
-      <div className="wd-avatar-row">
-        <div
-          className="wd-avatar-circle"
-          onClick={() => document.getElementById('ep-photo-input').click()}
-        >
-          {profilePicPreview
-            ? <img src={profilePicPreview} alt="Profile" className="wd-avatar-img" />
-            : <span className="wd-avatar-init">{(formData.displayName || 'U').slice(0, 2).toUpperCase()}</span>
-          }
-          <div className="wd-avatar-overlay">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-              <rect x="1" y="4.5" width="22" height="16" rx="4" fill="white" opacity="0.9"/>
-              <circle cx="12" cy="12.5" r="4.2" fill="#7c3aed" opacity="0.9"/>
-              <circle cx="12" cy="12.5" r="2.2" fill="white"/>
-              <rect x="8.5" y="2.5" width="7" height="3.5" rx="1.5" fill="white" opacity="0.75"/>
-              <circle cx="19.5" cy="7.5" r="1.1" fill="#a855f7" opacity="0.8"/>
-            </svg>
+          <div className="wd-avatar-meta">
+            <div className="wd-avatar-identity">
+              <span className="wd-avatar-name">{formData.displayName || 'Your Profile'}</span>
+              <span className="wd-avatar-sub">
+                {accountMeta.username ? `@${accountMeta.username} · ` : ''}
+                {accountMeta.roleLabel}
+                {accountMeta.isVerified ? ' · Verified' : ''}
+              </span>
+            </div>
+
+            <div className="wd-avatar-actions">
+              <button
+                type="button"
+                className="wd-photo-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isBusy}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="2" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                </svg>
+                <span>{profilePic ? 'Choose Another' : 'Change Photo'}</span>
+              </button>
+
+              {profilePic && (
+                <button
+                  type="button"
+                  className="wd-photo-reset-btn"
+                  onClick={handleDiscardPendingPhoto}
+                  disabled={isBusy}
+                >
+                  Undo
+                </button>
+              )}
+            </div>
+
+            {profilePic && (
+              <p className="ep-photo-pending-note">New photo cropped and ready — save to apply</p>
+            )}
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/*"
+            onChange={handleProfilePicChange}
+            id="ep-photo-input"
+            style={{ display: 'none' }}
+          />
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleProfilePicChange}
-          id="ep-photo-input"
-          style={{ display: 'none' }}
-        />
-        <span className="wd-avatar-hint">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <rect x="1" y="3.5" width="22" height="16" rx="4" fill="#a855f7"/>
-            <circle cx="12" cy="11.5" r="3.8" fill="white" opacity="0.9"/>
-            <circle cx="12" cy="11.5" r="2.2" fill="#a855f7"/>
-          </svg>
-          Tap photo to change
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b">
-            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
-          </svg>
-        </span>
-        {profilePic && (
-          <span className="ep-photo-pending">
-            Photo ready — save to apply
-          </span>
-        )}
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="ep-form-wrap" noValidate>
+          <div className="ep-section">
+            <div className="ep-section-head">Identity</div>
+            <div className="wd-fields">
+              <div className="wd-field-group">
+                <label className="wd-label" htmlFor="ep-display-name">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+                    <path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <span>Display Name *</span>
+                </label>
+                <input
+                  id="ep-display-name"
+                  className="wd-input"
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  placeholder="Your display name"
+                  maxLength={40}
+                  required
+                />
+              </div>
+
+              <div className="wd-field-row">
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-age">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" strokeWidth="2" />
+                      <path d="M8 2v4M16 2v4M3 9h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Age</span>
+                  </label>
+                  <input
+                    id="ep-age"
+                    className="wd-input"
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 24"
+                    min="13"
+                    max="120"
+                  />
+                </div>
+
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-gender">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <circle cx="10" cy="14" r="5" stroke="currentColor" strokeWidth="2" />
+                      <path d="M14 10l6-6M15 4h5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>Gender</span>
+                  </label>
+                  <select
+                    id="ep-gender"
+                    className="wd-input"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select</option>
+                    <option value="male">Male (Purush)</option>
+                    <option value="female">Female (Stree)</option>
+                    <option value="other">Other (Navrang)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="ep-section">
+            <div className="ep-section-head">Details</div>
+            <div className="wd-fields">
+              <div className="wd-field-row">
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-country">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" stroke="currentColor" strokeWidth="1.7" />
+                    </svg>
+                    <span>Country</span>
+                  </label>
+                  <select
+                    id="ep-country"
+                    className="wd-input"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select country</option>
+                    {COUNTRIES.map((countryName) => (
+                      <option key={countryName} value={countryName}>
+                        {countryName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-profession">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="7" width="18" height="13" rx="2.5" stroke="currentColor" strokeWidth="2" />
+                      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                    <span>Profession</span>
+                  </label>
+                  <input
+                    id="ep-profession"
+                    className="wd-input"
+                    type="text"
+                    name="profession"
+                    value={formData.profession}
+                    onChange={handleInputChange}
+                    placeholder="Designer, Student..."
+                    maxLength={60}
+                  />
+                </div>
+              </div>
+
+              <div className="wd-field-row">
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-relationship">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 20.5s-7.5-4.7-9.2-9.2C1.6 8 3.8 4.5 7.4 4.5c2 0 3.7 1.1 4.6 2.6.9-1.5 2.6-2.6 4.6-2.6 3.6 0 5.8 3.5 4.6 6.8-1.7 4.5-9.2 9.2-9.2 9.2z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                    </svg>
+                    <span>Relationship</span>
+                  </label>
+                  <select
+                    id="ep-relationship"
+                    className="wd-input"
+                    name="relationship"
+                    value={formData.relationship}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select</option>
+                    <option value="single">Single</option>
+                    <option value="taken">Taken</option>
+                    <option value="married">Married</option>
+                    <option value="complicated">Complicated</option>
+                    <option value="not_saying">Prefer not to say</option>
+                  </select>
+                </div>
+
+                <div className="wd-field-group">
+                  <label className="wd-label" htmlFor="ep-languages">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                    </svg>
+                    <span>Languages</span>
+                  </label>
+                  <input
+                    id="ep-languages"
+                    className="wd-input"
+                    type="text"
+                    name="languages"
+                    value={formData.languages}
+                    onChange={handleInputChange}
+                    placeholder="English, Hindi..."
+                    maxLength={80}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="ep-section">
+            <div className="ep-section-head">Bio &amp; Presence</div>
+            <div className="wd-fields">
+              <div className="wd-field-group">
+                <div className="wd-label-row">
+                  <label className="wd-label" htmlFor="ep-status">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                      <path d="M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Status Line</span>
+                  </label>
+                  <span className="wd-char-count">{formData.status.length}/80</span>
+                </div>
+                <input
+                  id="ep-status"
+                  className="wd-input"
+                  type="text"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  placeholder="Share a quick mood or note"
+                  maxLength={80}
+                />
+              </div>
+
+              <div className="wd-field-group">
+                <label className="wd-label" htmlFor="ep-interests">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3l2.6 5.4L20.5 9l-4.2 4.1 1 5.9L12 16.2 6.7 19l1-5.9L3.5 9l5.9-.6L12 3z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                  </svg>
+                  <span>Interests</span>
+                </label>
+                <input
+                  id="ep-interests"
+                  className="wd-input"
+                  type="text"
+                  name="interests"
+                  value={formData.interests}
+                  onChange={handleInputChange}
+                  placeholder="Music, Cinema, Gaming..."
+                  maxLength={120}
+                />
+              </div>
+
+              <div className="wd-field-group">
+                <div className="wd-label-row">
+                  <label className="wd-label" htmlFor="ep-bio">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Bio</span>
+                  </label>
+                  <span className="wd-char-count">{formData.bio.length}/200</span>
+                </div>
+                <textarea
+                  id="ep-bio"
+                  className="wd-input wd-textarea"
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  placeholder="Tell people a little about yourself"
+                  rows={3}
+                  maxLength={200}
+                />
+              </div>
+            </div>
+          </div>
+
+          {feedbackBanner && (
+            <div
+              className={`ep-feedback-banner ${feedbackBanner.type === 'error' ? 'is-error' : 'is-success'}`}
+              role="alert"
+            >
+              {feedbackBanner.type === 'error' ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2" />
+                  <path d="M12 7.5v5.5M12 16.5v.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2" />
+                  <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+              <span>{feedbackBanner.text}</span>
+            </div>
+          )}
+
+          <div className="ep-submit-bar">
+            {onClose && (
+              <button
+                type="button"
+                className="wd-cancel-btn"
+                onClick={onClose}
+                disabled={isBusy}
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              className={`wd-save-btn ${savingState === 'saved' ? 'is-saved' : ''}`}
+              disabled={isBusy}
+            >
+              {savingState === 'uploading' && (
+                <>
+                  <span className="wd-spin" />
+                  <span>Uploading Photo...</span>
+                </>
+              )}
+              {savingState === 'saving' && (
+                <>
+                  <span className="wd-spin" />
+                  <span>Saving Profile...</span>
+                </>
+              )}
+              {savingState === 'saved' && (
+                <>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>Saved</span>
+                </>
+              )}
+              {(savingState === 'idle' || savingState === 'error') && (
+                <>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                    <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>Save Profile</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
-
-      {/* ── Form ── */}
-      <form onSubmit={handleSubmit}>
-        <div className="ep-form-wrap">
-        <div className="wd-fields">
-
-          {/* Display Name */}
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#6366f1">
-                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-              </svg>
-              Display Name *
-            </label>
-            <input
-              className="wd-input"
-              type="text"
-              name="displayName"
-              value={formData.displayName}
-              onChange={handleInputChange}
-              placeholder="Your name"
-              required
-            />
-          </div>
-
-          {/* Age + Gender */}
-          <div className="wd-field-row">
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b">
-                  <path d="M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V9H19V19M5,7V5H19V7H5M7,11H12V16H7V11Z"/>
-                </svg>
-                Age
-              </label>
-              <input
-                className="wd-input"
-                type="number"
-                name="age"
-                value={formData.age}
-                onChange={handleInputChange}
-                placeholder="Age"
-                min="13"
-                max="120"
-              />
-            </div>
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ec4899">
-                  <path d="M9,9H7V7H9V9M17,7H15V9H17V7M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2Z"/>
-                </svg>
-                Gender
-              </label>
-              <select className="wd-input" name="gender" value={formData.gender} onChange={handleInputChange}>
-                <option value="">Select</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Country + Profession */}
-          <div className="wd-field-row">
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#10b981">
-                  <path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-                </svg>
-                Country
-              </label>
-              <select className="wd-input" name="country" value={formData.country} onChange={handleInputChange}>
-                <option value="">Select country…</option>
-                {COUNTRIES.map(c => (
-                  <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#3b82f6">
-                  <path d="M20,6H16V4A2,2 0 0,0 14,2H10A2,2 0 0,0 8,4V6H4A2,2 0 0,0 2,8V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V8A2,2 0 0,0 20,6M10,4H14V6H10V4M20,20H4V8H20V20Z"/>
-                </svg>
-                Profession
-              </label>
-              <input
-                className="wd-input"
-                type="text"
-                name="profession"
-                value={formData.profession}
-                onChange={handleInputChange}
-                placeholder="Profession"
-              />
-            </div>
-          </div>
-
-          {/* Relationship + Languages */}
-          <div className="wd-field-row">
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ef4444">
-                  <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
-                </svg>
-                Relationship
-              </label>
-              <select className="wd-input" name="relationship" value={formData.relationship} onChange={handleInputChange}>
-                <option value="">Select</option>
-                <option value="single">Single</option>
-                <option value="taken">Taken</option>
-                <option value="married">Married</option>
-                <option value="complicated">Complicated</option>
-                <option value="not_saying">Prefer not to say</option>
-              </select>
-            </div>
-            <div className="wd-field-group">
-              <label className="wd-label">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#06b6d4">
-                  <path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/>
-                </svg>
-                Languages
-              </label>
-              <input
-                className="wd-input"
-                type="text"
-                name="languages"
-                value={formData.languages}
-                onChange={handleInputChange}
-                placeholder="English, Hindi…"
-              />
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#8b5cf6">
-                <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22V22H9Z"/>
-              </svg>
-              Status
-            </label>
-            <input
-              className="wd-input"
-              type="text"
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              placeholder="e.g. Feeling great today"
-              maxLength={80}
-            />
-          </div>
-
-          {/* Interests */}
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#f97316">
-                <path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/>
-              </svg>
-              Interests
-            </label>
-            <input
-              className="wd-input"
-              type="text"
-              name="interests"
-              value={formData.interests}
-              onChange={handleInputChange}
-              placeholder="Music, Travel, Sports…"
-            />
-          </div>
-
-          {/* Bio */}
-          <div className="wd-field-group">
-            <label className="wd-label">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#84cc16">
-                <path d="M19,2L14,6.5V17.5L19,13V2M6.5,5C4.55,5 2.45,5.4 1,6.5V21.16C1,21.41 1.25,21.66 1.5,21.66C1.6,21.66 1.65,21.59 1.75,21.59C3.1,20.94 5.05,20.5 6.5,20.5C8.45,20.5 10.55,20.9 12,22C13.35,21.15 15.8,20.5 17.5,20.5C19.15,20.5 20.85,20.81 22.25,21.56C22.35,21.61 22.4,21.59 22.5,21.59C22.75,21.59 23,21.34 23,21.09V6.5C22.4,6.05 21.75,5.75 21,5.5V19C19.9,18.65 18.7,18.5 17.5,18.5C15.8,18.5 13.35,19.15 12,20V6.5C10.55,5.4 8.45,5 6.5,5Z"/>
-              </svg>
-              Bio
-            </label>
-            <textarea
-              className="wd-input wd-textarea"
-              name="bio"
-              value={formData.bio}
-              onChange={handleInputChange}
-              placeholder="Tell us about yourself…"
-              rows={3}
-              maxLength={200}
-            />
-          </div>
-
-        </div>
-
-        {/* ── Save Button ── */}
-        <button
-          type="submit"
-          className="wd-save-btn ep-save-btn"
-          disabled={loading || uploading}
-        >
-          {(loading || uploading)
-            ? <>
-                <span className="wd-spin" />
-                <span>{uploading ? 'Uploading…' : 'Saving…'}</span>
-              </>
-            : <>
-                {/* Floppy disk — universal save icon */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#e0d4ff">
-                  <path d="M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3M19,19H5V5H16.17L19,7.83V19M12,12C10.34,12 9,13.34 9,15C9,16.66 10.34,18 12,18C13.66,18 15,16.66 15,15C15,13.34 13.66,12 12,12M6,6H15V10H6V6Z"/>
-                </svg>
-                <span>Save Changes</span>
-                {/* Paper-plane accent */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#c4b5fd">
-                  <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
-                </svg>
-              </>
-          }
-        </button>
-        </div>{/* ep-form-wrap */}
-      </form>
-    </div>
     </>
   );
 };

@@ -9,7 +9,6 @@ import {
 } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import './OwnerEmailCenter.css';
 
 // ── Constants ──────────────────────────────────────────────────────────────────

@@ -126,6 +126,21 @@ export const classifyShowStatus = (show, nowDate = new Date()) => {
   return 'later';
 };
 
+export const isGamingRoom = (roomDocOrObj, roomNameOrId = '') => {
+  const r = roomDocOrObj && typeof roomDocOrObj === 'object' ? roomDocOrObj : {};
+  const rType = String(r.type || '').toLowerCase().trim();
+  const rCat = String(r.category || '').toLowerCase().trim();
+  const rSlug = String(r.slug || '').toLowerCase().trim();
+  const rName = String(r.name || roomNameOrId || '').toLowerCase().trim();
+  const rId = String(r.id || roomNameOrId || '').toLowerCase().trim();
+  const isTheatre = rSlug === 'theatre' || rId === 'theatre' || /\btheatre\b/i.test(rName);
+  if (isTheatre) return false;
+  if (r.isGamingRoom === true) return true;
+  if (['gaming', 'games', 'game'].includes(rType) || ['gaming', 'games', 'game'].includes(rCat)) return true;
+  const rx = /\b(gaming|games|game)\b|gam(e|es|ing)/i;
+  return rx.test(rSlug) || rx.test(rName) || rx.test(rId);
+};
+
 export const SILENT_WATCH_STORAGE_KEY = (uid) => `tl_silent_watch_${uid || 'anon'}`;
 export const SHOW_REMINDERS_STORAGE_KEY = 'tl_show_reminders_v1';
 

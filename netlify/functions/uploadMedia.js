@@ -164,11 +164,20 @@ export const handler = async (event) => {
   let resolvedUid;
 
   if (!user.ok) {
-    // New-user race: profile upload happens before Firestore doc is created.
+    // New-user race: profile/cover/audio upload happens before Firestore user doc exists.
     const isNewUserRace = user.err && /Firestore error 4/.test(user.err);
-    if ((uploadType === 'profile' || uploadType === 'homepage-audio' || uploadType === 'private-chat-audio') && isNewUserRace) {
-      const payload = decodeJwt(token);
-      resolvedUid = payload?.user_id || payload?.sub;
+    const payload = isNewUserRace ? decodeJwt(token) : null;
+    const isAnon = payload?.firebase?.sign_in_provider === 'anonymous';
+    const allowedRaceType =
+      uploadType === 'profile'
+      || uploadType === 'cover'
+      || uploadType === 'homepage-audio'
+      || uploadType === 'private-chat-audio';
+    if (allowedRaceType && isNewUserRace && payload) {
+      if (isAnon && (uploadType === 'profile' || uploadType === 'cover')) {
+        return resp({ error: 'Registered accounts only' }, 403);
+      }
+      resolvedUid = payload.user_id || payload.sub;
       if (!resolvedUid) return resp({ error: 'Authentication failed' }, 401);
     } else {
       return resp({ error: user.err }, 401);

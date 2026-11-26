@@ -437,19 +437,36 @@ html.dark-theme-variant .tt-theatre-chat-rail {
 }
 
 /* Ensure Tingletap MessageList + hp-composer-footer behave cleanly inside the Theatre rail */
-.tt-theatre-chat-rail-body .chat-messages-area,
-.tt-theatre-chat-rail-body .message-list {
-  flex: 1;
-  min-height: 0;
+body .homepage-container .tt-theatre-chat-rail-body .chat-feed,
+body .homepage-container .tt-theatre-chat-rail-body .chat-messages-area,
+body .homepage-container .tt-theatre-chat-rail-body .message-list {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1 1 0 !important;
+  overflow-y: auto !important;
 }
 
-.tt-theatre-chat-rail-body .hp-composer-footer {
+body .homepage-container .tt-theatre-chat-rail-body .chat-footer.hp-composer-footer {
   position: relative !important;
   bottom: auto !important;
   left: auto !important;
   right: auto !important;
   width: 100% !important;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
+  z-index: 20 !important;
+}
+
+body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
+  position: absolute !important;
+  bottom: 58px !important;
+  right: 12px !important;
 }
 
 /* Fullscreen Floating Chat Toggle */

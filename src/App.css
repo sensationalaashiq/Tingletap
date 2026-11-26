@@ -1272,11 +1272,49 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 
 /* Toast Container Styling — NO background/color !important so premium inline styles win */
 .Toastify__toast {
-  border-radius: 8px !important;
+  border-radius: 12px !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  font-family: 'Lato', sans-serif !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
+  font-family: 'Plus Jakarta Sans', 'Lato', sans-serif !important;
   position: relative !important;
+  min-height: unset !important;
+  max-width: 100% !important;
+  margin-bottom: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.Toastify__toast.tt-premium-toast,
+.Toastify__toast.tt-premium-toast .Toastify__toast-body,
+.Toastify__toast.tt-premium-toast .Toastify__toast-body *,
+.Toastify__toast.tt-premium-toast .tt-toast-msg,
+.Toastify__toast.tt-premium-toast .tt-toast-title {
+  color: #ffffff !important;
+}
+.Toastify__toast.tt-premium-toast .tt-toast-sub {
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+.Toastify__toast.tt-premium-toast .Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.tt-toast-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.tt-toast-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+}
+.tt-toast-sub {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.94);
 }
 
 /* Only apply default theme colours when no inline style is set (non-premium toasts) */
@@ -1288,32 +1326,40 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 
 .modern-toast {
   border: 1px solid var(--border-color) !important;
-  border-radius: 8px !important;
+  border-radius: 12px !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
 }
 .modern-toast:not([style*="background"]) {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.modern-toast-body {
-  font-family: 'Lato', sans-serif !important;
-  font-weight: 500 !important;
+.modern-toast-body,
+.Toastify__toast.tt-premium-toast .Toastify__toast-body {
+  font-family: 'Plus Jakarta Sans', 'Lato', sans-serif !important;
+  font-weight: 600 !important;
   padding: 0 !important;
   margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+}
+.Toastify__toast.tt-premium-toast .Toastify__toast-icon {
+  margin-inline-end: 0 !important;
+  width: 24px !important;
+  flex-shrink: 0 !important;
 }
 
-/* Toast close button — always visible, always clickable, decent contrast on
-   any background (colourful premium gradients included). Sits inside its own
-   translucent circle so it never blends into the toast behind it. */
+/* Fallback close button for non-pt toasts */
 .Toastify__close-button {
   opacity: 0.9 !important;
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
   color: #fff !important;
-  background: rgba(0, 0, 0, 0.18) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
   width: 20px !important;
   height: 20px !important;
   min-width: 20px !important;
@@ -1324,11 +1370,9 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
   z-index: 3 !important;
   pointer-events: auto !important;
 }
-.Toastify__close-button:hover { opacity: 1 !important; background: rgba(0, 0, 0, 0.3) !important; }
+.Toastify__close-button:hover { opacity: 1 !important; background: rgba(0, 0, 0, 0.34) !important; }
 .Toastify__close-button > svg { fill: #fff !important; width: 10px !important; height: 10px !important; }
 
-/* Non-premium toasts (no inline gradient) get a subtler close button so the
-   circle doesn't look out of place on the plain theme background. */
 .Toastify__toast:not([style*="background"]) .Toastify__close-button {
   background: rgba(128, 128, 128, 0.18) !important;
   color: inherit !important;
@@ -1338,33 +1382,24 @@ body.theme-dark .message-content-container p:not([style]):not(.user-font-styled)
 /* Toast progress bar */
 .Toastify__progress-bar { background: var(--accent-color) !important; }
 
-/* Toast container — compact floating card, never a full-screen banner.
-   react-toastify v10 ships --toastify-toast-width:320px and forces 100vw
-   on ≤480px viewports. We override BOTH the container AND the CSS variable
-   so toasts always render as small pills regardless of screen size. */
+/* Toast container — compact floating card, never full-screen width */
 :root {
-  --toastify-toast-width: 320px;
+  --toastify-toast-width: 340px;
   --toastify-toast-min-height: unset;
 }
 .Toastify__toast-container {
-  font-family: 'Lato', sans-serif !important;
-  width: 320px !important;
-  max-width: 320px !important;
+  font-family: 'Plus Jakarta Sans', 'Lato', sans-serif !important;
+  width: 340px !important;
+  max-width: calc(100vw - 24px) !important;
   padding: 0 !important;
-}
-.Toastify__toast {
-  min-height: unset !important;
-  max-width: 100% !important;
-  margin-bottom: 10px !important;
-  width: 100% !important;
 }
 @media only screen and (max-width: 480px) {
   :root {
-    --toastify-toast-width: min(320px, calc(100vw - 32px));
+    --toastify-toast-width: min(336px, calc(100vw - 24px));
   }
   .Toastify__toast-container {
-    width: min(320px, calc(100vw - 32px)) !important;
-    max-width: min(320px, calc(100vw - 32px)) !important;
+    width: min(336px, calc(100vw - 24px)) !important;
+    max-width: min(336px, calc(100vw - 24px)) !important;
     right: 12px !important;
     left: auto !important;
     margin: 0 !important;
