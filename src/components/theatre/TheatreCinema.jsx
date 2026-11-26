@@ -1,42 +1,87 @@
 // src/components/theatre/TheatreCinema.jsx
 // Tingletap Synchronized Watch Cinema inside the existing Theatre room.
-// Zero emoji icons (pure SVG icons only), real server-clock drift sync, YouTube + direct MP4 adapters.
+// Strictly Owner / Admin / Moderator host controls, pure SVG icons (zero emojis),
+// reliable YouTube / YouTube Music / MP4 playback + audio recovery + sub-second drift sync.
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { onValue, ref } from 'firebase/database';
 import { auth, db, rtdb } from '../../firebase/config';
 import { isStaffRole } from '../../utils/roleUtils';
-import { formatTheatreClock, parseTheatreMediaUrl } from '../../utils/theatreMediaParser';
+import { fetchYouTubeVideoTitle, formatTheatreClock, parseTheatreMediaUrl } from '../../utils/theatreMediaParser';
 import './TheatreCinema.css';
 
-// Singleton YouTube IFrame API loader
+// Singleton YouTube IFrame API loader with poll safety so route transitions never hang
 let ytApiLoadPromise = null;
 function loadYouTubeIframeApi() {
   if (typeof window === 'undefined') return Promise.reject(new Error('No window'));
   if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
   if (ytApiLoadPromise) return ytApiLoadPromise;
 
-  ytApiLoadPromise = new Promise((resolve) => {
-    const existing = document.getElementById('tingletap-yt-iframe-api');
+  ytApiLoadPromise = new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      if (window.YT && window.YT.Player) {
+        settled = true;
+        clearInterval(pollTimer);
+        clearTimeout(timeoutTimer);
+        resolve(window.YT);
+      }
+    };
+
+    const pollTimer = setInterval(finish, 180);
+    const timeoutTimer = setTimeout(() => {
+      if (!settled) {
+        clearInterval(pollTimer);
+        ytApiLoadPromise = null;
+        reject(new Error('YouTube Player API load timed out'));
+      }
+    }, 10000);
+
     const prevReady = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       if (typeof prevReady === 'function') {
         try { prevReady(); } catch (_) {}
       }
-      resolve(window.YT);
+      finish();
     };
-    if (!existing) {
+
+    if (!document.getElementById('tingletap-yt-iframe-api')) {
       const script = document.createElement('script');
       script.id = 'tingletap-yt-iframe-api';
       script.src = 'https://www.youtube.com/iframe_api';
       script.async = true;
+      script.onerror = () => {
+        if (!settled) {
+          clearInterval(pollTimer);
+          clearTimeout(timeoutTimer);
+          ytApiLoadPromise = null;
+          reject(new Error('Failed to load YouTube Player script'));
+        }
+      };
       document.head.appendChild(script);
-    } else if (window.YT && window.YT.Player) {
-      resolve(window.YT);
+    } else {
+      finish();
     }
   });
   return ytApiLoadPromise;
+}
+
+function mapYouTubeErrorMessage(code) {
+  switch (Number(code)) {
+    case 2:
+      return 'Invalid YouTube video ID. Check the link and try again.';
+    case 5:
+      return 'Playback failed inside the embedded player. Click Sync or try another video.';
+    case 100:
+      return 'This YouTube video was removed or marked private.';
+    case 101:
+    case 150:
+      return 'The video owner blocked external embedding (Error 150). Try another YouTube link or direct .mp4 URL.';
+    default:
+      return 'Unable to play this video right now. Try another YouTube link or direct .mp4 stream.';
+  }
 }
 
 // Memoized Video Surface — NEVER re-renders when live chat messages update
@@ -50,13 +95,41 @@ const TheatrePlayerSurface = memo(({
   onCurrentTimeSample,
   onHostTransportEvent,
   onNeedsUnmutePrompt,
+  onPlayerError,
   playerControlRef,
 }) => {
   const ytContainerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const videoRef = useRef(null);
   const suppressBroadcastRef = useRef(false);
+  const autoplayTimerRef = useRef(null);
   const [ytReady, setYtReady] = useState(false);
+
+  // Keep latest props in refs so YT.Player never tears down when staff profile/volume updates
+  const latestRef = useRef({
+    session,
+    canControl,
+    localMuted,
+    localVolume,
+    getExpectedTimeSec,
+    onDurationChange,
+    onCurrentTimeSample,
+    onHostTransportEvent,
+    onNeedsUnmutePrompt,
+    onPlayerError,
+  });
+  latestRef.current = {
+    session,
+    canControl,
+    localMuted,
+    localVolume,
+    getExpectedTimeSec,
+    onDurationChange,
+    onCurrentTimeSample,
+    onHostTransportEvent,
+    onNeedsUnmutePrompt,
+    onPlayerError,
+  };
 
   const sourceType = session?.sourceType || 'youtube';
   const videoId = session?.videoId || '';
@@ -77,10 +150,14 @@ const TheatrePlayerSurface = memo(({
     }
   }, [localMuted, localVolume, sourceType, ytReady]);
 
-  // YouTube Player lifecycle (keyed strictly by videoId / active state)
+  // YouTube Player lifecycle (strictly keyed on active + videoId — never rebuilt on permission or chat updates)
   useEffect(() => {
     if (!isActive || sourceType !== 'youtube' || !videoId) {
       setYtReady(false);
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+        autoplayTimerRef.current = null;
+      }
       if (ytPlayerRef.current) {
         try { ytPlayerRef.current.destroy(); } catch (_) {}
         ytPlayerRef.current = null;
@@ -89,106 +166,153 @@ const TheatrePlayerSurface = memo(({
     }
 
     let cancelled = false;
-    loadYouTubeIframeApi().then((YT) => {
-      if (cancelled || !ytContainerRef.current) return;
-      if (ytPlayerRef.current) {
-        try { ytPlayerRef.current.destroy(); } catch (_) {}
-        ytPlayerRef.current = null;
-      }
+    latestRef.current.onPlayerError?.('');
 
-      const mountEl = document.createElement('div');
-      ytContainerRef.current.innerHTML = '';
-      ytContainerRef.current.appendChild(mountEl);
+    loadYouTubeIframeApi()
+      .then((YT) => {
+        if (cancelled || !ytContainerRef.current) return;
+        if (ytPlayerRef.current) {
+          try { ytPlayerRef.current.destroy(); } catch (_) {}
+          ytPlayerRef.current = null;
+        }
 
-      const startSec = Math.max(0, Math.floor(getExpectedTimeSec()));
-      ytPlayerRef.current = new YT.Player(mountEl, {
-        videoId,
-        width: '100%',
-        height: '100%',
-        playerVars: {
-          autoplay: session?.isPlaying ? 1 : 0,
-          controls: canControl ? 1 : 0,
-          disablekb: canControl ? 0 : 1,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          enablejsapi: 1,
-          origin: window.location.origin,
-          start: startSec,
-        },
-        events: {
-          onReady: (ev) => {
-            if (cancelled) return;
-            setYtReady(true);
-            try {
-              const dur = Number(ev.target.getDuration?.() || 0);
-              if (dur > 0) onDurationChange(dur);
+        const mountEl = document.createElement('div');
+        ytContainerRef.current.innerHTML = '';
+        ytContainerRef.current.appendChild(mountEl);
 
-              const targetSec = getExpectedTimeSec();
-              suppressBroadcastRef.current = true;
-              ev.target.seekTo(targetSec, true);
+        const initialSession = latestRef.current.session;
+        const staffControls = Boolean(latestRef.current.canControl);
 
-              if (localMuted) ev.target.mute();
-              else {
-                ev.target.unMute();
-                ev.target.setVolume(localVolume);
-              }
-
-              if (session?.isPlaying) {
-                ev.target.playVideo();
-                // Verify playback wasn't blocked by browser unmuted autoplay policy
-                setTimeout(() => {
-                  if (cancelled || !ytPlayerRef.current) return;
-                  try {
-                    const st = ytPlayerRef.current.getPlayerState?.();
-                    if (st !== window.YT?.PlayerState?.PLAYING && st !== window.YT?.PlayerState?.BUFFERING) {
-                      ytPlayerRef.current.mute();
-                      ytPlayerRef.current.playVideo();
-                      onNeedsUnmutePrompt(true);
-                    }
-                  } catch (_) {}
-                }, 700);
-              } else {
-                ev.target.pauseVideo();
-              }
-              setTimeout(() => { suppressBroadcastRef.current = false; }, 450);
-            } catch (_) {
-              suppressBroadcastRef.current = false;
-            }
+        ytPlayerRef.current = new YT.Player(mountEl, {
+          videoId,
+          width: '100%',
+          height: '100%',
+          host: 'https://www.youtube.com',
+          playerVars: {
+            autoplay: initialSession?.isPlaying ? 1 : 0,
+            controls: staffControls ? 1 : 0,
+            disablekb: staffControls ? 0 : 1,
+            fs: 0,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            enablejsapi: 1,
+            origin: window.location.origin,
           },
-          onStateChange: (ev) => {
-            if (cancelled || suppressBroadcastRef.current) return;
-            if (!canControl) return;
-            const YTState = window.YT?.PlayerState;
-            if (!YTState) return;
-            try {
-              const cur = Number(ev.target.getCurrentTime?.() || 0);
-              const dur = Number(ev.target.getDuration?.() || 0);
-              if (dur > 0) onDurationChange(dur);
-              if (ev.data === YTState.PLAYING) {
-                onHostTransportEvent(true, cur);
-              } else if (ev.data === YTState.PAUSED) {
-                onHostTransportEvent(false, cur);
-              } else if (ev.data === YTState.ENDED) {
-                onHostTransportEvent(false, dur || cur);
+          events: {
+            onReady: (ev) => {
+              if (cancelled) return;
+              setYtReady(true);
+              try {
+                const {
+                  session: curSession,
+                  localMuted: curMuted,
+                  localVolume: curVol,
+                  getExpectedTimeSec: getExp,
+                  onDurationChange: onDur,
+                  onNeedsUnmutePrompt: onPrompt,
+                } = latestRef.current;
+
+                const dur = Number(ev.target.getDuration?.() || 0);
+                if (dur > 0) onDur?.(dur);
+
+                const targetSec = getExp();
+                suppressBroadcastRef.current = true;
+                if (targetSec > 1.2) {
+                  ev.target.seekTo(targetSec, true);
+                }
+
+                if (curMuted) {
+                  ev.target.mute();
+                } else {
+                  ev.target.unMute();
+                  ev.target.setVolume(Math.max(0, Math.min(100, curVol)));
+                }
+
+                if (curSession?.isPlaying) {
+                  ev.target.playVideo();
+                  autoplayTimerRef.current = setTimeout(() => {
+                    if (cancelled || !ytPlayerRef.current) return;
+                    try {
+                      const st = ytPlayerRef.current.getPlayerState?.();
+                      const YTState = window.YT?.PlayerState;
+                      if (st !== YTState?.PLAYING && st !== YTState?.BUFFERING) {
+                        // Browser blocked unmuted autoplay -> start muted immediately so video plays, then show tap-for-sound
+                        ytPlayerRef.current.mute();
+                        ytPlayerRef.current.playVideo();
+                        onPrompt?.(true);
+                      } else if (ytPlayerRef.current.isMuted?.() && !latestRef.current.localMuted) {
+                        ytPlayerRef.current.unMute();
+                        ytPlayerRef.current.setVolume(latestRef.current.localVolume);
+                      }
+                    } catch (_) {}
+                  }, 750);
+                } else {
+                  ev.target.pauseVideo();
+                }
+
+                setTimeout(() => { suppressBroadcastRef.current = false; }, 550);
+              } catch (_) {
+                suppressBroadcastRef.current = false;
               }
-            } catch (_) {}
+            },
+            onStateChange: (ev) => {
+              if (cancelled) return;
+              const YTState = window.YT?.PlayerState;
+              if (!YTState) return;
+              try {
+                const cur = Number(ev.target.getCurrentTime?.() || 0);
+                const dur = Number(ev.target.getDuration?.() || 0);
+                if (dur > 0) latestRef.current.onDurationChange?.(dur);
+
+                if (ev.data === YTState.PLAYING) {
+                  latestRef.current.onPlayerError?.('');
+                  if (!latestRef.current.localMuted && ev.target.isMuted?.()) {
+                    latestRef.current.onNeedsUnmutePrompt?.(true);
+                  } else {
+                    latestRef.current.onNeedsUnmutePrompt?.(false);
+                  }
+                }
+
+                if (suppressBroadcastRef.current || !latestRef.current.canControl) return;
+
+                if (ev.data === YTState.PLAYING) {
+                  latestRef.current.onHostTransportEvent?.(true, cur);
+                } else if (ev.data === YTState.PAUSED) {
+                  latestRef.current.onHostTransportEvent?.(false, cur);
+                } else if (ev.data === YTState.ENDED) {
+                  latestRef.current.onHostTransportEvent?.(false, dur || cur);
+                }
+              } catch (_) {}
+            },
+            onError: (ev) => {
+              if (cancelled) return;
+              latestRef.current.onPlayerError?.(mapYouTubeErrorMessage(ev?.data));
+            },
           },
-        },
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          latestRef.current.onPlayerError?.('Could not initialize YouTube player. Check connection or disable script blockers.');
+        }
       });
-    }).catch(() => {});
 
     return () => {
       cancelled = true;
       setYtReady(false);
+      if (autoplayTimerRef.current) {
+        clearTimeout(autoplayTimerRef.current);
+        autoplayTimerRef.current = null;
+      }
       if (ytPlayerRef.current) {
         try { ytPlayerRef.current.destroy(); } catch (_) {}
         ytPlayerRef.current = null;
       }
     };
-  }, [isActive, sourceType, videoId, canControl]);
+  }, [isActive, sourceType, videoId]);
 
-  // Expose imperative resync/seek handle to parent TheatreCinema
+  // Expose imperative resync/seek/unmute handle to parent TheatreCinema
   useEffect(() => {
     playerControlRef.current = {
       getCurrentTime: () => {
@@ -203,14 +327,14 @@ const TheatrePlayerSurface = memo(({
         if (sourceType === 'mp4' && videoRef.current) {
           const el = videoRef.current;
           const diff = Math.abs((el.currentTime || 0) - targetSec);
-          if (forceSeek || diff > 1.75) {
+          if (forceSeek || diff > 1.8) {
             try { el.currentTime = Math.max(0, targetSec); } catch (_) {}
           }
           if (targetPlaying && el.paused) {
             el.play().catch(() => {
               el.muted = true;
               el.play().catch(() => {});
-              onNeedsUnmutePrompt(true);
+              latestRef.current.onNeedsUnmutePrompt?.(true);
             });
           } else if (!targetPlaying && !el.paused) {
             el.pause();
@@ -222,16 +346,33 @@ const TheatrePlayerSurface = memo(({
             const cur = Number(yt.getCurrentTime?.() || 0);
             const st = yt.getPlayerState?.();
             const YTState = window.YT?.PlayerState;
-            if (forceSeek || Math.abs(cur - targetSec) > 1.85) {
+
+            if (forceSeek || Math.abs(cur - targetSec) > 2.2) {
               yt.seekTo(Math.max(0, targetSec), true);
             }
+
             if (targetPlaying && st !== YTState?.PLAYING && st !== YTState?.BUFFERING) {
+              if (!latestRef.current.localMuted) {
+                yt.unMute();
+                yt.setVolume(Math.max(0, Math.min(100, latestRef.current.localVolume)));
+              }
               yt.playVideo();
-            } else if (!targetPlaying && st === YTState?.PLAYING) {
+              setTimeout(() => {
+                if (!ytPlayerRef.current) return;
+                try {
+                  const nextSt = ytPlayerRef.current.getPlayerState?.();
+                  if (nextSt !== YTState?.PLAYING && nextSt !== YTState?.BUFFERING) {
+                    ytPlayerRef.current.mute();
+                    ytPlayerRef.current.playVideo();
+                    latestRef.current.onNeedsUnmutePrompt?.(true);
+                  }
+                } catch (_) {}
+              }, 650);
+            } else if (!targetPlaying && (st === YTState?.PLAYING || st === YTState?.BUFFERING)) {
               yt.pauseVideo();
             }
           } catch (_) {}
-          setTimeout(() => { suppressBroadcastRef.current = false; }, 350);
+          setTimeout(() => { suppressBroadcastRef.current = false; }, 450);
         } else {
           suppressBroadcastRef.current = false;
         }
@@ -239,18 +380,20 @@ const TheatrePlayerSurface = memo(({
       unmuteAndPlay: () => {
         if (sourceType === 'mp4' && videoRef.current) {
           videoRef.current.muted = false;
-          videoRef.current.volume = Math.max(0, Math.min(1, localVolume / 100));
+          videoRef.current.volume = Math.max(0, Math.min(1, latestRef.current.localVolume / 100));
           videoRef.current.play().catch(() => {});
-        } else if (sourceType === 'youtube' && ytPlayerRef.current && ytReady) {
+        } else if (sourceType === 'youtube' && ytPlayerRef.current) {
           try {
             ytPlayerRef.current.unMute();
-            ytPlayerRef.current.setVolume(localVolume);
-            if (session?.isPlaying) ytPlayerRef.current.playVideo();
+            ytPlayerRef.current.setVolume(Math.max(0, Math.min(100, latestRef.current.localVolume)));
+            if (latestRef.current.session?.isPlaying !== false) {
+              ytPlayerRef.current.playVideo();
+            }
           } catch (_) {}
         }
       },
     };
-  }, [sourceType, ytReady, localVolume, session?.isPlaying, playerControlRef, onNeedsUnmutePrompt]);
+  }, [sourceType, ytReady, playerControlRef]);
 
   // Sample duration & current time for UI scrubber
   useEffect(() => {
@@ -258,24 +401,24 @@ const TheatrePlayerSurface = memo(({
     const timer = setInterval(() => {
       if (sourceType === 'mp4' && videoRef.current) {
         const el = videoRef.current;
-        if (Number.isFinite(el.duration) && el.duration > 0) onDurationChange(el.duration);
-        onCurrentTimeSample(el.currentTime || 0);
+        if (Number.isFinite(el.duration) && el.duration > 0) latestRef.current.onDurationChange?.(el.duration);
+        latestRef.current.onCurrentTimeSample?.(el.currentTime || 0);
       } else if (sourceType === 'youtube' && ytPlayerRef.current && ytReady) {
         try {
           const dur = Number(ytPlayerRef.current.getDuration?.() || 0);
-          if (dur > 0) onDurationChange(dur);
-          onCurrentTimeSample(Number(ytPlayerRef.current.getCurrentTime?.() || 0));
+          if (dur > 0) latestRef.current.onDurationChange?.(dur);
+          latestRef.current.onCurrentTimeSample?.(Number(ytPlayerRef.current.getCurrentTime?.() || 0));
         } catch (_) {}
       }
     }, 500);
     return () => clearInterval(timer);
-  }, [isActive, sourceType, ytReady, onDurationChange, onCurrentTimeSample]);
+  }, [isActive, sourceType, ytReady]);
 
   if (!isActive) {
     return (
       <div className="tt-theatre-idle-screen">
         <div className="tt-theatre-idle-badge" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="4" width="20" height="14" rx="2.5" />
             <path d="M8 21h8M12 18v3" />
             <polygon points="10,8.5 15.5,11 10,13.5" fill="#c4b5fd" stroke="none" />
@@ -284,8 +427,8 @@ const TheatrePlayerSurface = memo(({
         <h3 className="tt-theatre-idle-title">Tingletap Cinema Stage</h3>
         <p className="tt-theatre-idle-sub">
           {canControl
-            ? 'Paste a YouTube link or direct .mp4 stream below to start a synchronized watch session for everyone in Theatre.'
-            : 'Waiting for the Theatre host or staff to start the next feature film or stream.'}
+            ? 'Paste any YouTube, Shorts, YouTube Music, or .mp4 link below and tap Start Theatre to begin synced playback.'
+            : 'Waiting for an Owner, Admin, or Moderator to start the next Theatre watch session.'}
         </p>
       </div>
     );
@@ -317,6 +460,7 @@ const TheatrePlayerSurface = memo(({
               });
             }
           }}
+          onError={() => onPlayerError?.('Could not play this MP4 stream. Check that the link is publicly reachable.')}
           onEnded={() => {
             if (canControl && videoRef.current) {
               onHostTransportEvent(false, videoRef.current.duration || 0);
@@ -340,6 +484,7 @@ const TheatreCinema = ({
   roomName,
   loggedInUserProfile,
   viewerCount = 0,
+  onOpenMembers,
   chatPanel,
 }) => {
   const stageRef = useRef(null);
@@ -349,6 +494,7 @@ const TheatreCinema = ({
   const [session, setSession] = useState(null);
   const [urlInput, setUrlInput] = useState('');
   const [urlError, setUrlError] = useState('');
+  const [playerError, setPlayerError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const [durationSec, setDurationSec] = useState(0);
@@ -363,12 +509,8 @@ const TheatreCinema = ({
   const [chatCollapsed, setChatCollapsed] = useState(false);
 
   const currentUid = auth.currentUser?.uid || loggedInUserProfile?.uid || '';
-  const isStaff = isStaffRole(loggedInUserProfile);
-  const canControl = useMemo(() => {
-    if (isStaff) return true;
-    if (!currentUid || !session) return false;
-    return session.hostUid === currentUid || (Array.isArray(session.coHostUids) && session.coHostUids.includes(currentUid));
-  }, [isStaff, currentUid, session]);
+  // Theatre Host Controls belong exclusively to Owner, Admin, and Moderator
+  const canControl = isStaffRole(loggedInUserProfile);
 
   const getServerNowMs = useCallback(() => Date.now() + (serverOffsetRef.current || 0), []);
 
@@ -400,6 +542,7 @@ const TheatreCinema = ({
     const unsub = onSnapshot(theatreRef, (snap) => {
       if (!snap.exists()) {
         setSession(null);
+        setPlayerError('');
         return;
       }
       const data = snap.data();
@@ -418,7 +561,7 @@ const TheatreCinema = ({
     return () => unsub();
   }, [roomId, getServerNowMs]);
 
-  // Continuous drift guard for viewers (and controllers if another staff seeks)
+  // Continuous drift guard for viewers and staff
   useEffect(() => {
     if (!session || session.status !== 'active') return;
     const interval = setInterval(() => {
@@ -427,7 +570,7 @@ const TheatreCinema = ({
       if (playerControlRef.current?.applyRemoteSync) {
         playerControlRef.current.applyRemoteSync(Boolean(session.isPlaying), expected, false);
       }
-    }, 1400);
+    }, 1500);
     return () => clearInterval(interval);
   }, [session, isDraggingSeek, getExpectedTimeSec]);
 
@@ -441,7 +584,7 @@ const TheatreCinema = ({
   }, []);
 
   const writeTheatreState = useCallback(async (patch) => {
-    if (!roomId || !currentUid) return;
+    if (!roomId || !currentUid) return false;
     setIsSaving(true);
     try {
       const theatreRef = doc(db, 'rooms', roomId, 'theatre', 'current');
@@ -451,8 +594,10 @@ const TheatreCinema = ({
         updatedAt: serverTimestamp(),
       }, { merge: true });
       setUrlError('');
+      return true;
     } catch (_) {
-      setUrlError('You do not have permission to control playback.');
+      setUrlError('Only Owners, Admins, and Moderators can control Theatre playback.');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -467,29 +612,45 @@ const TheatreCinema = ({
       return;
     }
     setUrlError('');
+    setPlayerError('');
+    setNeedsUnmutePrompt(false);
     setDurationSec(0);
-    setDisplayTimeSec(0);
-    await writeTheatreState({
+    setDisplayTimeSec(parsed.startSec || 0);
+
+    const saved = await writeTheatreState({
       videoUrl: parsed.normalizedUrl,
       sourceType: parsed.sourceType,
       videoId: parsed.videoId || '',
       title: parsed.title,
       status: 'active',
       isPlaying: true,
-      anchorTimeSec: 0,
+      anchorTimeSec: parsed.startSec || 0,
       anchorMs: getServerNowMs(),
       playbackRate: 1,
-      hostUid: session?.hostUid || currentUid,
-      hostName: loggedInUserProfile?.displayName || session?.hostName || 'Host',
-      coHostUids: Array.isArray(session?.coHostUids) ? session.coHostUids : [],
+      hostUid: currentUid,
+      hostName: loggedInUserProfile?.displayName || 'Host',
+      coHostUids: [],
     });
-    setUrlInput('');
+
+    if (saved) {
+      setUrlInput('');
+      if (parsed.sourceType === 'youtube' && parsed.videoId) {
+        fetchYouTubeVideoTitle(parsed.videoId).then((realTitle) => {
+          if (realTitle) {
+            setDoc(doc(db, 'rooms', roomId, 'theatre', 'current'), { title: realTitle }, { merge: true }).catch(() => {});
+          }
+        });
+      }
+    }
   };
 
   const handleTogglePlayPause = async () => {
     if (!canControl || !session || session.status !== 'active') return;
     const curSec = playerControlRef.current?.getCurrentTime?.() ?? getExpectedTimeSec();
     const nextPlaying = !session.isPlaying;
+    if (nextPlaying && !localMuted) {
+      playerControlRef.current?.unmuteAndPlay?.();
+    }
     await writeTheatreState({
       isPlaying: nextPlaying,
       anchorTimeSec: Math.max(0, curSec),
@@ -518,6 +679,8 @@ const TheatreCinema = ({
 
   const handleEndSession = async () => {
     if (!canControl) return;
+    setPlayerError('');
+    setNeedsUnmutePrompt(false);
     await writeTheatreState({
       status: 'idle',
       isPlaying: false,
@@ -536,6 +699,9 @@ const TheatreCinema = ({
     const expected = getExpectedTimeSec();
     if (playerControlRef.current?.applyRemoteSync) {
       playerControlRef.current.applyRemoteSync(Boolean(session?.isPlaying), expected, true);
+    }
+    if (!localMuted && session?.isPlaying) {
+      playerControlRef.current?.unmuteAndPlay?.();
     }
     setDisplayTimeSec(expected);
   };
@@ -556,7 +722,10 @@ const TheatreCinema = ({
   const isActive = session?.status === 'active' && Boolean(session?.videoUrl);
 
   return (
-    <div ref={stageRef} className={`tt-theatre-shell${chatCollapsed ? ' tt-theatre-chat-collapsed' : ''}`}>
+    <div
+      ref={stageRef}
+      className={`tt-theatre-shell${chatCollapsed ? ' tt-theatre-chat-collapsed' : ''}${isFullscreen ? ' tt-theatre-fullscreen' : ''}`}
+    >
       {/* Left/Top Cinema Stage */}
       <section className="tt-theatre-stage" aria-label={`${roomName || 'Theatre'} Watch Stage`}>
         <div className="tt-theatre-topbar">
@@ -572,12 +741,38 @@ const TheatreCinema = ({
               <div className="tt-theatre-host-sub">
                 {isActive
                   ? `Hosted by ${session?.hostName || 'Staff'} • ${viewerCount} watching`
-                  : `${viewerCount} in Theatre`}
+                  : `${viewerCount} in Theatre${canControl ? ' • Host Controls Ready' : ''}`}
               </div>
             </div>
           </div>
 
           <div className="tt-theatre-topbar-actions">
+            {canControl && (
+              <span className="tt-theatre-staff-badge" title="Exclusive Theatre Host Controls (Owner / Admin / Moderator)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                </svg>
+                <span>Host</span>
+              </span>
+            )}
+
+            {canControl && typeof onOpenMembers === 'function' && (
+              <button
+                type="button"
+                className="tt-theatre-icon-btn"
+                onClick={onOpenMembers}
+                title="Room Members & Kick / Moderation Controls"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span className="tt-theatre-hide-sm">Members & Kick</span>
+              </button>
+            )}
+
             {isActive && (
               <button
                 type="button"
@@ -602,7 +797,7 @@ const TheatreCinema = ({
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              <span className="tt-theatre-hide-sm">{chatCollapsed ? 'Show Chat' : 'Cinema Mode'}</span>
+              <span className="tt-theatre-hide-sm">{chatCollapsed ? 'Show Chat' : 'Cinema'}</span>
             </button>
 
             <button
@@ -656,10 +851,34 @@ const TheatreCinema = ({
             onCurrentTimeSample={setDisplayTimeSec}
             onHostTransportEvent={handleHostTransportEvent}
             onNeedsUnmutePrompt={setNeedsUnmutePrompt}
+            onPlayerError={setPlayerError}
             playerControlRef={playerControlRef}
           />
 
-          {needsUnmutePrompt && isActive && (
+          {playerError && isActive && (
+            <div className="tt-theatre-player-error-overlay" role="alert">
+              <div className="tt-theatre-player-error-card">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <p>{playerError}</p>
+                {session?.videoUrl && (
+                  <a
+                    href={session.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tt-theatre-icon-btn"
+                  >
+                    Open Source Link
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {needsUnmutePrompt && isActive && !playerError && (
             <button
               type="button"
               className="tt-theatre-unmute-pill"
@@ -679,7 +898,7 @@ const TheatreCinema = ({
           )}
         </div>
 
-        {/* Synchronized Controls & Host Loader Bar */}
+        {/* Synchronized Controls & Host Start Theatre Bar */}
         {(isActive || canControl) && (
           <div className="tt-theatre-controls">
             {isActive && (
@@ -774,8 +993,12 @@ const TheatreCinema = ({
                         className="tt-theatre-icon-btn"
                         style={{ padding: '0 8px' }}
                         onClick={() => {
-                          setLocalMuted((m) => !m);
+                          const nextMuted = !localMuted;
+                          setLocalMuted(nextMuted);
                           setNeedsUnmutePrompt(false);
+                          if (!nextMuted) {
+                            playerControlRef.current?.unmuteAndPlay?.();
+                          }
                         }}
                         title={localMuted ? 'Unmute local audio' : 'Mute local audio'}
                       >
@@ -815,18 +1038,19 @@ const TheatreCinema = ({
             {canControl && (
               <form className="tt-theatre-source-form" onSubmit={handleLoadUrl}>
                 <input
-                  type="url"
+                  type="text"
+                  inputMode="url"
                   className="tt-theatre-url-input"
                   value={urlInput}
                   onChange={(e) => {
                     setUrlInput(e.target.value);
                     if (urlError) setUrlError('');
                   }}
-                  placeholder="Paste YouTube link or direct .mp4 video URL..."
+                  placeholder="Paste YouTube, YouTube Music, Shorts or .mp4 URL..."
                   aria-label="Theatre media URL"
                 />
                 <button type="submit" className="tt-theatre-load-btn" disabled={isSaving || !urlInput.trim()}>
-                  {isSaving ? 'Loading...' : (isActive ? 'Switch Video' : 'Start Watch')}
+                  {isSaving ? 'Starting...' : (isActive ? 'Switch Video' : 'Start Theatre')}
                 </button>
               </form>
             )}

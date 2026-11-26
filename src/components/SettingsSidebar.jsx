@@ -176,7 +176,6 @@ const SettingsSidebar = ({
         showInSearch: true,
         allowFriendRequests: true,
         whoCanGroupDm: 'all',
-        whoCanInviteRooms: 'all',
         allowVoiceCalls: true,
         allowVideoCalls: true,
         readReceipts: true,
@@ -273,7 +272,6 @@ const SettingsSidebar = ({
                         showInSearch: userSettings.showInSearch !== undefined ? userSettings.showInSearch : (localStorage.getItem('showInSearch') !== 'false'),
                         allowFriendRequests: userSettings.allowFriendRequests !== undefined ? userSettings.allowFriendRequests : (localStorage.getItem('allowFriendRequests') !== 'false'),
                         whoCanGroupDm: userSettings.whoCanGroupDm || localStorage.getItem('whoCanGroupDm') || 'all',
-                        whoCanInviteRooms: userSettings.whoCanInviteRooms || localStorage.getItem('whoCanInviteRooms') || 'all',
                         allowVoiceCalls: userSettings.allowVoiceCalls !== undefined ? userSettings.allowVoiceCalls : (localStorage.getItem('allowVoiceCalls') !== 'false'),
                         allowVideoCalls: userSettings.allowVideoCalls !== undefined ? userSettings.allowVideoCalls : (localStorage.getItem('allowVideoCalls') !== 'false'),
                         readReceipts: userSettings.readReceipts !== undefined ? userSettings.readReceipts : (localStorage.getItem('readReceipts') !== 'false'),
@@ -768,7 +766,7 @@ const SettingsSidebar = ({
 
                 const privacyKeys = new Set([
                     'allowPrivateMessagesLevel', 'allowPrivateMessages', 'allowFriendRequests', 'allowWhisperMessages',
-                    'whoCanGroupDm', 'whoCanInviteRooms', 'readReceipts', 'typingIndicator',
+                    'whoCanGroupDm', 'readReceipts', 'typingIndicator',
                     'onlineStatusLevel', 'lastSeenLevel', 'showOnlineStatus', 'showLastSeen', 'showInSearch'
                 ]);
                 if (privacyKeys.has(key)) {
@@ -2217,22 +2215,6 @@ const SettingsSidebar = ({
                                             className="privacy-select"
                                             value={settings.whoCanGroupDm || 'all'}
                                             onChange={(e) => handleSettingChange('whoCanGroupDm', e.target.value)}
-                                        >
-                                            <option value="all">Everyone</option>
-                                            <option value="friends">Friends Only</option>
-                                            <option value="none">Nobody</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="setting-item">
-                                        <div className="setting-info">
-                                            <span>Who Can Invite Me to Rooms</span>
-                                            <small>Control who can send you room invitations</small>
-                                        </div>
-                                        <select
-                                            className="privacy-select"
-                                            value={settings.whoCanInviteRooms || 'all'}
-                                            onChange={(e) => handleSettingChange('whoCanInviteRooms', e.target.value)}
                                         >
                                             <option value="all">Everyone</option>
                                             <option value="friends">Friends Only</option>

@@ -190,13 +190,6 @@ service cloud.firestore {
       );
     }
 
-    function canInviteUserToRoom(actorUid, targetUid) {
-      let level = getTargetSetting(targetUid, 'whoCanInviteRooms', 'all');
-      return !isBidirectionallyBlocked(actorUid, targetUid) && (
-        level == 'all' || (level == 'friends' && isTargetFriend(targetUid, actorUid))
-      );
-    }
-
     // ================================================================
     // USERNAMES COLLECTION
     // ================================================================
@@ -487,10 +480,10 @@ service cloud.firestore {
         allow delete: if isOwner() && request.auth.uid == watchUid;
       }
 
-      // Synchronized Theatre Cinema Watch Session (hosted inside existing Theatre room)
+      // Synchronized Theatre Cinema Watch Session (Owner, Admin, and Moderator only)
       match /theatre/{sessionId} {
         allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow create, update: if request.auth != null
                       && notBanned()
                       && isStaff()
                       && request.resource.data.hostUid is string
@@ -503,32 +496,6 @@ service cloud.firestore {
                       && request.resource.data.status in ['idle', 'active']
                       && request.resource.data.get('coHostUids', []) is list
                       && request.resource.data.get('coHostUids', []).size() <= 10
-                      && (
-                        request.resource.data.status == 'idle'
-                        || (request.resource.data.videoUrl is string
-                            && request.resource.data.videoUrl.size() <= 1000
-                            && request.resource.data.videoUrl.matches('^https?://.*'))
-                      );
-        allow update: if request.auth != null
-                      && notBanned()
-                      && (
-                        isStaff()
-                        || request.auth.uid == resource.data.get('hostUid', '')
-                        || request.auth.uid in resource.data.get('coHostUids', [])
-                      )
-                      && request.resource.data.updatedBy == request.auth.uid
-                      && request.resource.data.isPlaying is bool
-                      && request.resource.data.anchorTimeSec is number
-                      && request.resource.data.anchorTimeSec >= 0
-                      && request.resource.data.anchorMs is number
-                      && request.resource.data.sourceType in ['youtube', 'mp4']
-                      && request.resource.data.status in ['idle', 'active']
-                      && request.resource.data.get('coHostUids', []) is list
-                      && request.resource.data.get('coHostUids', []).size() <= 10
-                      && (
-                        isStaff()
-                        || request.resource.data.get('coHostUids', []) == resource.data.get('coHostUids', [])
-                      )
                       && (
                         request.resource.data.status == 'idle'
                         || (request.resource.data.videoUrl is string
@@ -1236,30 +1203,6 @@ service cloud.firestore {
                         || (isMemberOfParent() && resource.data.senderId == request.auth.uid)
                       );
       }
-    }
-
-    // ================================================================
-    // ROOM INVITES (respecting whoCanInviteRooms + blocks)
-    // ================================================================
-    match /roomInvites/{inviteId} {
-      allow read: if request.auth != null
-                  && (resource.data.senderId == request.auth.uid
-                      || resource.data.receiverId == request.auth.uid
-                      || isStaff());
-
-      allow create: if request.auth != null
-                    && isRegistered()
-                    && notBanned()
-                    && request.resource.data.senderId == request.auth.uid
-                    && request.resource.data.receiverId is string
-                    && request.resource.data.receiverId != request.auth.uid
-                    && request.resource.data.roomId is string
-                    && canInviteUserToRoom(request.auth.uid, request.resource.data.receiverId);
-
-      allow update, delete: if request.auth != null
-                            && (resource.data.receiverId == request.auth.uid
-                                || resource.data.senderId == request.auth.uid
-                                || isStaff());
     }
 
     // ================================================================

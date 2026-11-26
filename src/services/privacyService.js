@@ -132,26 +132,6 @@ export const canAddToGroupDm = (actorProfile, targetProfile, ctx = {}) => {
   return { allowed: true };
 };
 
-export const canInviteToRoom = (actorProfile, targetProfile, ctx = {}) => {
-  if (!actorProfile?.uid || !targetProfile?.uid) return { allowed: false, reason: 'User unavailable' };
-  if (actorProfile.uid === targetProfile.uid) return { allowed: false, reason: 'Cannot invite yourself' };
-  if (isGuestProfile(targetProfile)) {
-    return { allowed: false, reason: 'Only registered accounts can receive room invites' };
-  }
-  if (isBidirectionallyBlocked(actorProfile, targetProfile, ctx.blockedUsers, ctx.usersWhoBlockedMe)) {
-    return { allowed: false, reason: 'Cannot invite this user right now' };
-  }
-
-  const level = normalizePrivacyLevel(targetProfile?.settings?.whoCanInviteRooms, 'all');
-  if (level === 'none') {
-    return { allowed: false, reason: 'User has disabled room invitations' };
-  }
-  if (level === 'friends' && !areUsersFriends(actorProfile, targetProfile)) {
-    return { allowed: false, reason: 'Only friends can invite this user to rooms' };
-  }
-  return { allowed: true };
-};
-
 export const resolveEffectiveOnlineLevel = (profile, rtdbStatusEntry) => {
   const explicit = profile?.settings?.onlineStatusLevel;
   if (explicit) return normalizePrivacyLevel(explicit, 'all');

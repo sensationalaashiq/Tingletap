@@ -1,6 +1,6 @@
 {
   "project": "Tingletap",
-  "description": "Firebase Firestore and Realtime Database data architecture for Tingletap real-time social chat, Message Requests, Theatre synchronized cinema, Group DMs, Room Invites, and Chat Privacy Controls.",
+  "description": "Firebase Firestore and Realtime Database data architecture for Tingletap real-time social chat, Message Requests, Theatre synchronized cinema, Group DMs, and Chat Privacy Controls.",
   "entities": {
     "UserProfile": {
       "collection": "users/{uid}",
@@ -18,7 +18,7 @@
         "blockedUsers": { "type": "array" },
         "settings": {
           "type": "map",
-          "description": "Includes allowPrivateMessagesLevel (all|friends|none), whoCanGroupDm (all|friends|none), whoCanInviteRooms (all|friends|none), readReceipts (bool), typingIndicator (bool), onlineStatusLevel (all|friends|none), lastSeenLevel (all|friends|none), showOnlineStatus (bool), showLastSeen (bool), showInSearch (bool)."
+          "description": "Includes allowPrivateMessagesLevel (all|friends|none), whoCanGroupDm (all|friends|none), readReceipts (bool), typingIndicator (bool), onlineStatusLevel (all|friends|none), lastSeenLevel (all|friends|none), showOnlineStatus (bool), showLastSeen (bool), showInSearch (bool)."
         }
       }
     },
@@ -96,25 +96,10 @@
         "createdAt": { "type": "timestamp", "required": true }
       }
     },
-    "RoomInvite": {
-      "collection": "roomInvites/{inviteId}",
-      "description": "Direct invitation to join a Tingletap chat room honoring whoCanInviteRooms privacy settings.",
-      "fields": {
-        "roomId": { "type": "string", "required": true },
-        "roomName": { "type": "string", "required": true },
-        "roomSlug": { "type": "string", "required": true },
-        "senderId": { "type": "string", "required": true },
-        "senderName": { "type": "string" },
-        "senderPhoto": { "type": "string", "nullable": true },
-        "receiverId": { "type": "string", "required": true },
-        "status": { "type": "string", "enum": ["pending", "accepted", "dismissed"] },
-        "createdAt": { "type": "timestamp", "required": true }
-      }
-    },
     "TheatreSession": {
       "collection": "rooms/{roomId}/theatre/{sessionId}",
       "canonicalDocId": "current",
-      "description": "Synchronized watch-party state for the existing Theatre room.",
+      "description": "Synchronized watch-party state for the existing Theatre room (Owner, Admin, and Moderator exclusive host controls).",
       "fields": {
         "videoUrl": { "type": "string" },
         "sourceType": { "type": "string", "enum": ["youtube", "mp4"] },

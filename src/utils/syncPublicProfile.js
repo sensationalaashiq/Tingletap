@@ -42,10 +42,10 @@ const PUBLIC_FIELDS = [
   'spotifyTrackURL', 'spotifyTrackData',
 ];
 
-// Sub-fields from settings that other users legitimately need (for PM / request / group / invite / visibility checks).
+// Sub-fields from settings that other users legitimately need (for PM / request / group / visibility checks).
 const PUBLIC_SETTINGS_FIELDS = [
   'allowPrivateMessagesLevel', 'allowPrivateMessages', 'allowFriendRequests', 'allowWhisperMessages',
-  'whoCanGroupDm', 'whoCanInviteRooms', 'readReceipts', 'typingIndicator',
+  'whoCanGroupDm', 'readReceipts', 'typingIndicator',
   'onlineStatusLevel', 'lastSeenLevel', 'showOnlineStatus', 'showLastSeen', 'showInSearch',
 ];
 

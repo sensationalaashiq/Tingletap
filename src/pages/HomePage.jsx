@@ -50,11 +50,9 @@ import LuxuryPrivateMessageWindow from '../components/LuxuryPrivateMessageWindow
 import MessageRequestsPanel from '../components/messages/MessageRequestsPanel';
 import GroupDmCreateModal from '../components/messages/GroupDmCreateModal';
 import GroupDmWindow from '../components/messages/GroupDmWindow';
-import RoomInviteModal from '../components/rooms/RoomInviteModal';
 import { nameToSlug } from '../utils/roomSlug';
 import {
     evaluatePrivateMessageAccess,
-    canInviteToRoom,
     canSeeOnlineStatus,
     canSeeLastSeen,
     shouldSendReadReceipts,
@@ -1409,10 +1407,8 @@ const HomePage = ({ user, roomIdOverride }) => {
     const [groupDms, setGroupDms] = useState([]);
     const [isGroupDmCreateOpen, setIsGroupDmCreateOpen] = useState(false);
     const [activeGroupDm, setActiveGroupDm] = useState(null);
-    const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
-    const [incomingRoomInvites, setIncomingRoomInvites] = useState([]);
     const isTheatreRoom = useMemo(
-        () => nameToSlug(roomName || '') === 'theatre' || String(roomId || '').toLowerCase() === 'theatre',
+        () => nameToSlug(roomName || '') === 'theatre' || String(roomId || '').toLowerCase() === 'theatre' || /\btheatre\b/i.test(roomName || ''),
         [roomName, roomId]
     );
     const canShowGamesInRoom = useMemo(
@@ -3933,23 +3929,9 @@ const HomePage = ({ user, roomIdOverride }) => {
             setGroupDms(list);
         }, () => setGroupDms([]));
 
-        const inviteQuery = query(
-            collection(db, 'roomInvites'),
-            where('receiverId', '==', currentUserId),
-            where('status', '==', 'pending'),
-            limit(25)
-        );
-        const unsubInvites = onSnapshot(inviteQuery, (snap) => {
-            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                .filter(inv => !blockedUsers.includes(inv.senderId) && !usersWhoBlockedMe.includes(inv.senderId));
-            list.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-            setIncomingRoomInvites(list);
-        }, () => setIncomingRoomInvites([]));
-
         return () => {
             try { unsubRequests(); } catch (_) {}
             try { unsubGroupDms(); } catch (_) {}
-            try { unsubInvites(); } catch (_) {}
         };
     }, [auth.currentUser?.uid, user?.uid, blockedUsers, usersWhoBlockedMe]);
 
@@ -6507,48 +6489,6 @@ const HomePage = ({ user, roomIdOverride }) => {
         setReportPopupOpen(true);
     };
 
-    const handleInviteUserToRoom = async (targetUser) => {
-        if (!auth.currentUser || !targetUser?.uid || isGuestUser(loggedInUserProfile)) {
-            pt.error('Register to send room invitations.');
-            return;
-        }
-        let freshTarget = targetUser;
-        try {
-            const pSnap = await getDoc(doc(db, 'publicProfiles', targetUser.uid));
-            if (pSnap.exists()) freshTarget = { ...pSnap.data(), uid: targetUser.uid };
-        } catch (_) {}
-
-        const check = canInviteToRoom(loggedInUserProfile, freshTarget, { blockedUsers, usersWhoBlockedMe });
-        if (!check.allowed) {
-            if (check.reason === 'friends_only') {
-                pt.warn(`${freshTarget.displayName || 'This user'} only accepts room invites from friends`);
-            } else if (check.reason === 'none') {
-                pt.whisperOff(`${freshTarget.displayName || 'This user'} has turned off room invitations`);
-            } else {
-                pt.error('Unable to send room invitation.');
-            }
-            return;
-        }
-
-        try {
-            const slug = nameToSlug(roomName || '') || roomId;
-            await addDoc(collection(db, 'roomInvites'), {
-                roomId,
-                roomSlug: slug,
-                roomName: roomName || roomId,
-                senderId: auth.currentUser.uid,
-                senderName: loggedInUserProfile?.displayName || auth.currentUser.displayName || 'User',
-                senderPhoto: loggedInUserProfile?.photoURL || auth.currentUser.photoURL || null,
-                receiverId: targetUser.uid,
-                status: 'pending',
-                createdAt: serverTimestamp(),
-            });
-            pt.success(`Room invitation sent to ${freshTarget.displayName || 'user'}`);
-        } catch (_) {
-            pt.error('Unable to send room invitation.');
-        }
-    };
-
     const handlePrivateImageSelect = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -7245,9 +7185,6 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
         window.handleWhisperFromSidebar = (user) => {
             handleWhisperUser({ uid: user.uid, displayName: user.displayName });
-        };
-        window.handleInviteUserToRoom = (userObj) => {
-            handleInviteUserToRoom(userObj);
         };
         window.friendRequestCount = friendRequests.length;
         window.friendsProfiles = friendsProfiles;
@@ -8399,17 +8336,21 @@ const HomePage = ({ user, roomIdOverride }) => {
                         <span className="hp-attach-label">Tag</span>
                     </button>
 
-                    {canShowGamesInRoom && (() => {
+                    {(() => {
                         const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
-                        const hasGamesAccess = isOwnerRole(loggedInUserProfile)
+                        const hasGamesPermission = isOwnerRole(loggedInUserProfile)
                             || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
-                        if (!hasGamesAccess) {
+                        const isGamesUnlocked = canShowGamesInRoom && hasGamesPermission;
+                        if (!isGamesUnlocked) {
+                            const lockReason = !canShowGamesInRoom
+                                ? 'Games & Interactives are locked here. Join a Gaming room to play!'
+                                : 'Mini-Games & Polls is locked. Ask an Owner to grant you access!';
                             return (
                                 <button
                                     type="button"
                                     className="hp-attach-btn"
-                                    title="Mini-Games & Polls (Owner Permission Required)"
-                                    onClick={() => lockToast('Mini-Games & Polls is locked. Ask an Owner to grant you access!')}
+                                    title={lockReason}
+                                    onClick={() => lockToast(lockReason)}
                                 >
                                     <span className="hp-attach-icon-wrap" style={{ opacity: 0.55, position: 'relative' }}>
                                         <ActivitySparkIcon size={20} color="#ec4899" />
@@ -8987,22 +8928,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                                       <path d="m415.5 172.944h-245.4v-23.819c0-.336-.01-.671-.029-1.008l200.035-113.262a18.635 18.635 0 1 0 -18.363-32.433l-226.187 128.067h-16.086a18.657 18.657 0 0 0 -18.636 18.636v24.015c-46.667 2.949-83.855 42.045-83.855 89.33v160.005a89.627 89.627 0 0 0 89.526 89.525h318.995a89.627 89.627 0 0 0 89.526-89.525v-160a89.627 89.627 0 0 0 -89.526-89.531zm-247.724 268.277a98.749 98.749 0 1 1 98.748-98.748 98.861 98.861 0 0 1 -98.748 98.748zm129.855-177.709h-24.22a8.828 8.828 0 1 1 0-17.655h24.22a8.828 8.828 0 1 1 0 17.655zm85.7 168.315a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm0-102.987a37.861 37.861 0 1 1 37.861-37.861 37.9 37.9 0 0 1 -37.864 37.861zm-215.555-67.462a81.095 81.095 0 1 0 81.093 81.1 81.187 81.187 0 0 0 -81.093-81.1zm0 133.846a52.752 52.752 0 1 1 52.75-52.751 52.811 52.811 0 0 1 -52.75 52.751zm235.758-1.258a20.206 20.206 0 1 1 -20.206-20.2 20.23 20.23 0 0 1 20.206 20.2zm-200.662-51.493a35.1 35.1 0 1 1 -35.1-35.1 35.136 35.136 0 0 1 35.1 35.1zm200.662-51.494a20.206 20.206 0 1 1 -20.206-20.206 20.229 20.229 0 0 1 20.206 20.206z" fill="url(#radioIconGradNew)"/>
                                   </svg>
                               </button>
-                              {!isGuestUser(loggedInUserProfile) && (
-                                  <button
-                                      type="button"
-                                      className="header-action-btn"
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsRoomInviteModalOpen(true); }}
-                                      title="Invite to Room"
-                                      aria-label="Invite to Room"
-                                  >
-                                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                          <circle cx="8.5" cy="7" r="4"/>
-                                          <line x1="20" y1="8" x2="20" y2="14"/>
-                                          <line x1="23" y1="11" x2="17" y2="11"/>
-                                      </svg>
-                                  </button>
-                              )}
                               <button 
                                   className="header-action-btn pm-header-btn" 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPmHeaderBoxOpen(prev => !prev); }}
@@ -9066,6 +8991,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 roomName={roomName}
                                 loggedInUserProfile={loggedInUserProfile}
                                 viewerCount={onlineUserIds.length}
+                                onOpenMembers={() => setSidebarOpen(true)}
                                 chatPanel={
                                     <>
                                         {renderMessageList()}
@@ -10326,71 +10252,6 @@ const HomePage = ({ user, roomIdOverride }) => {
                     setReportPopupOpen(true);
                 }}
             />
-
-            <RoomInviteModal
-                isOpen={isRoomInviteModalOpen}
-                onClose={() => setIsRoomInviteModalOpen(false)}
-                roomId={roomId}
-                roomName={roomName}
-                loggedInUserProfile={loggedInUserProfile}
-                friendsProfiles={friendsProfiles}
-                blockedUsers={blockedUsers}
-                usersWhoBlockedMe={usersWhoBlockedMe}
-            />
-
-            {incomingRoomInvites.length > 0 && (() => {
-                const inv = incomingRoomInvites[0];
-                return (
-                    <div className="tt-room-invite-toast" role="alert">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <LiveAvatarImg
-                                uid={inv.senderId}
-                                fallbackPhotoURL={inv.senderPhoto}
-                                alt={inv.senderName}
-                                style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {inv.senderName || 'Someone'} invited you
-                                </div>
-                                <div style={{ fontSize: 11.5, opacity: 0.78 }}>
-                                    Join room: <strong>{inv.roomName || 'Chat Room'}</strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                            <button
-                                type="button"
-                                className="tt-btn-secondary"
-                                style={{ height: 30, padding: '0 11px', fontSize: 11.5 }}
-                                onClick={async () => {
-                                    setIncomingRoomInvites(prev => prev.filter(item => item.id !== inv.id));
-                                    try {
-                                        await updateDoc(doc(db, 'roomInvites', inv.id), { status: 'dismissed' });
-                                    } catch (_) {}
-                                }}
-                            >
-                                Dismiss
-                            </button>
-                            <button
-                                type="button"
-                                className="tt-btn-primary"
-                                style={{ height: 30, padding: '0 12px', fontSize: 11.5 }}
-                                onClick={async () => {
-                                    setIncomingRoomInvites(prev => prev.filter(item => item.id !== inv.id));
-                                    try {
-                                        await updateDoc(doc(db, 'roomInvites', inv.id), { status: 'accepted' });
-                                    } catch (_) {}
-                                    if (inv.roomId) navigate(`/room/${inv.roomId}`);
-                                    else if (inv.roomSlug) navigate(`/r/${inv.roomSlug}`);
-                                }}
-                            >
-                                Join Room
-                            </button>
-                        </div>
-                    </div>
-                );
-            })()}
 
             </div>{/* end homepage-container */}
 

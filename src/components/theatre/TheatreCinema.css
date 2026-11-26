@@ -2,8 +2,11 @@
 /* Tingletap Synchronized Theatre Cinema Experience — Responsive Desktop & Mobile */
 
 .tt-theatre-shell {
-  flex: 1;
-  min-height: 0;
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   max-width: 100%;
   display: grid;
@@ -11,7 +14,12 @@
   background: radial-gradient(circle at 22% 18%, #161229 0%, #090812 68%, #05050a 100%);
   color: #f8fafc;
   overflow: hidden;
-  position: relative;
+  z-index: 5;
+}
+
+.tt-theatre-shell.tt-theatre-fullscreen {
+  top: 0;
+  z-index: 1200;
 }
 
 .tt-theatre-shell.tt-theatre-chat-collapsed {
@@ -33,9 +41,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 9px 14px;
-  background: rgba(15, 13, 29, 0.85);
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(15, 13, 29, 0.9);
   border-bottom: 1px solid rgba(167, 139, 250, 0.14);
   flex-shrink: 0;
 }
@@ -43,7 +51,7 @@
 .tt-theatre-now-playing {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
   flex: 1;
 }
@@ -52,11 +60,11 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   flex-shrink: 0;
   background: rgba(239, 68, 68, 0.16);
@@ -90,6 +98,21 @@
   50% { opacity: 0.45; transform: scale(0.82); }
 }
 
+.tt-theatre-staff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ddd6fe;
+  background: rgba(124, 58, 237, 0.24);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  flex-shrink: 0;
+}
+
 .tt-theatre-title-meta {
   min-width: 0;
   display: flex;
@@ -97,7 +120,7 @@
 }
 
 .tt-theatre-video-title {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #f8fafc;
   white-space: nowrap;
@@ -106,7 +129,7 @@
 }
 
 .tt-theatre-host-sub {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #94a3b8;
   white-space: nowrap;
   overflow: hidden;
@@ -116,7 +139,7 @@
 .tt-theatre-topbar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -125,21 +148,22 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 30px;
-  padding: 0 10px;
+  height: 28px;
+  padding: 0 9px;
   border-radius: 8px;
-  border: 1px solid rgba(167, 139, 250, 0.24);
-  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.26);
+  background: rgba(139, 92, 246, 0.14);
   color: #e9d5ff;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
 }
 
 .tt-theatre-icon-btn:hover {
-  background: rgba(139, 92, 246, 0.24);
-  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(139, 92, 246, 0.26);
+  border-color: rgba(167, 139, 250, 0.55);
 }
 
 .tt-theatre-icon-btn:active {
@@ -148,7 +172,7 @@
 
 .tt-theatre-icon-btn.danger {
   border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
 }
 
@@ -159,7 +183,7 @@
 /* Video Viewport */
 .tt-theatre-viewport {
   flex: 1;
-  min-height: 0;
+  min-height: 200px;
   position: relative;
   display: flex;
   align-items: center;
@@ -171,6 +195,7 @@
 .tt-theatre-aspect-frame {
   width: 100%;
   height: 100%;
+  min-height: 180px;
   max-height: 100%;
   position: relative;
   display: flex;
@@ -184,6 +209,7 @@
 .tt-theatre-html-video {
   width: 100%;
   height: 100%;
+  min-height: 180px;
   border: none;
   display: block;
   object-fit: contain;
@@ -198,24 +224,58 @@
   background: transparent;
 }
 
+/* YouTube / MP4 Error Overlay */
+.tt-theatre-player-error-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(7, 6, 15, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.tt-theatre-player-error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  max-width: 340px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(24, 19, 44, 0.92);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.tt-theatre-player-error-card p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #fecaca;
+  font-weight: 600;
+}
+
 /* Autoplay Audio Recovery Pill */
 .tt-theatre-unmute-pill {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  z-index: 12;
+  bottom: 14px;
+  left: 14px;
+  z-index: 22;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(251, 191, 36, 0.55);
-  background: rgba(15, 13, 29, 0.92);
+  border: 1px solid rgba(251, 191, 36, 0.65);
+  background: rgba(15, 13, 29, 0.94);
   color: #fde68a;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.58);
 }
 
 /* Idle Empty Screen */
@@ -225,15 +285,15 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px 20px;
+  padding: 16px 18px;
   max-width: 440px;
-  gap: 12px;
+  gap: 10px;
 }
 
 .tt-theatre-idle-badge {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,7 +304,7 @@
 
 .tt-theatre-idle-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 15.5px;
   font-weight: 800;
   color: #f8fafc;
   letter-spacing: -0.02em;
@@ -252,8 +312,8 @@
 
 .tt-theatre-idle-sub {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
   color: #94a3b8;
 }
 
@@ -262,8 +322,8 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: 7px;
+  padding: 8px 12px;
   background: rgba(13, 11, 25, 0.96);
   border-top: 1px solid rgba(167, 139, 250, 0.16);
 }
@@ -279,7 +339,7 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #cbd5e1;
-  min-width: 42px;
+  min-width: 40px;
 }
 
 .tt-theatre-range {
@@ -299,7 +359,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -307,16 +367,16 @@
 .tt-theatre-transport-right {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
 .tt-theatre-play-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   border: none;
   background: linear-gradient(135deg, #7c3aed, #6366f1);
   color: #ffffff;
@@ -340,7 +400,7 @@
 }
 
 .tt-theatre-vol-slider {
-  width: 72px;
+  width: 70px;
   height: 4px;
   accent-color: #a78bfa;
   cursor: pointer;
@@ -349,7 +409,7 @@
 .tt-theatre-source-form {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   padding-top: 4px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
@@ -358,13 +418,17 @@
   flex: 1;
   min-width: 0;
   height: 34px;
-  padding: 0 11px;
+  padding: 0 10px;
   border-radius: 9px;
-  border: 1px solid rgba(167, 139, 250, 0.28);
-  background: rgba(30, 27, 56, 0.75);
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  background: rgba(30, 27, 56, 0.85);
   color: #f8fafc;
   font-size: 12.5px;
   outline: none;
+}
+
+.tt-theatre-url-input::placeholder {
+  color: #94a3b8;
 }
 
 .tt-theatre-url-input:focus {
@@ -383,6 +447,7 @@
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .tt-theatre-load-btn:disabled {
@@ -419,7 +484,7 @@ html.dark-theme-variant .tt-theatre-chat-rail {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 9px 13px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(139, 92, 246, 0.14);
   font-size: 12px;
   font-weight: 800;
@@ -428,7 +493,7 @@ html.dark-theme-variant .tt-theatre-chat-rail {
 }
 
 .tt-theatre-chat-rail-body {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -436,7 +501,7 @@ html.dark-theme-variant .tt-theatre-chat-rail {
   overflow: hidden;
 }
 
-/* Ensure Tingletap MessageList + hp-composer-footer behave cleanly inside the Theatre rail */
+/* Ensure Tingletap MessageList + hp-composer-footer render cleanly inside the Theatre rail */
 body .homepage-container .tt-theatre-chat-rail-body .chat-feed,
 body .homepage-container .tt-theatre-chat-rail-body .chat-messages-area,
 body .homepage-container .tt-theatre-chat-rail-body .message-list {
@@ -451,30 +516,36 @@ body .homepage-container .tt-theatre-chat-rail-body .message-list {
   max-height: none !important;
   flex: 1 1 0 !important;
   overflow-y: auto !important;
+  padding-bottom: 8px !important;
 }
 
 body .homepage-container .tt-theatre-chat-rail-body .chat-footer.hp-composer-footer {
   position: relative !important;
+  top: auto !important;
   bottom: auto !important;
   left: auto !important;
   right: auto !important;
   width: 100% !important;
-  flex-shrink: 0 !important;
-  z-index: 20 !important;
+  flex: 0 0 auto !important;
+  z-index: 30 !important;
+  display: flex !important;
+  min-height: 48px !important;
+  padding: 5px 6px calc(5px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body .homepage-container .tt-theatre-chat-rail-body .hp-attach-popup {
+  position: absolute !important;
+  bottom: 58px !important;
+  left: 8px !important;
+  right: 8px !important;
+  z-index: 60 !important;
 }
 
 body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
   position: absolute !important;
-  bottom: 58px !important;
+  bottom: 62px !important;
   right: 12px !important;
-}
-
-/* Fullscreen Floating Chat Toggle */
-.tt-theatre-fs-chat-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 25;
+  z-index: 25 !important;
 }
 
 /* Responsive Mobile Layout (< 960px) */
@@ -486,14 +557,41 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
 
   .tt-theatre-stage {
     border-right: none;
-    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.22);
   }
 
   .tt-theatre-viewport {
     aspect-ratio: 16 / 9;
-    max-height: 36dvh;
+    min-height: 155px;
+    max-height: 28dvh;
     width: 100%;
     flex: none;
+  }
+
+  .tt-theatre-aspect-frame,
+  .tt-theatre-player-host,
+  .tt-theatre-player-host iframe,
+  .tt-theatre-html-video {
+    min-height: 155px;
+  }
+
+  .tt-theatre-idle-screen {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+
+  .tt-theatre-idle-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .tt-theatre-idle-title {
+    font-size: 13.5px;
+  }
+
+  .tt-theatre-idle-sub {
+    font-size: 11px;
   }
 
   .tt-theatre-shell.tt-theatre-chat-collapsed {
@@ -507,20 +605,30 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
   }
 
   .tt-theatre-topbar {
-    padding: 7px 10px;
+    padding: 6px 8px;
   }
 
   .tt-theatre-controls {
-    padding: 8px 10px;
-    gap: 6px;
+    padding: 6px 8px;
+    gap: 5px;
+  }
+
+  .tt-theatre-url-input,
+  .tt-theatre-load-btn {
+    height: 31px;
+    font-size: 11.5px;
   }
 
   .tt-theatre-vol-slider {
-    width: 52px;
+    width: 48px;
   }
 
   .tt-theatre-hide-sm {
     display: none;
+  }
+
+  .tt-theatre-chat-rail-header {
+    padding: 6px 10px;
   }
 }
 
