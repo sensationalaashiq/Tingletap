@@ -27,10 +27,11 @@ const ROLE_TIER_ORDER = {
   guest: 6,
 };
 
-function getTheatreRoleMeta(userItem, activeHostUid, isActiveSession) {
+function getTheatreRoleMeta(userItem, activeHostUid, isActiveSession, theatreAllowedUids = []) {
   const normRole = normalizeRole(userItem);
   const isGuest = isGuestUser(userItem) || normRole === 'guest';
-  const isHost = Boolean(isActiveSession && activeHostUid && userItem?.uid === activeHostUid);
+  const isAppointedHost = Boolean(!isGuest && userItem?.uid && Array.isArray(theatreAllowedUids) && theatreAllowedUids.includes(userItem.uid));
+  const isHost = Boolean((isActiveSession && activeHostUid && userItem?.uid === activeHostUid) || isAppointedHost);
 
   let roleLabel = 'Member';
   let roleTone = 'member';
@@ -464,7 +465,7 @@ const TheatrePlayerSurface = memo(({
     return (
       <div className="tt-theatre-idle-screen">
         <div className="tt-theatre-idle-badge" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="4" width="20" height="14" rx="2.5" stroke="currentColor" fill="none" />
             <path d="M8 21h8M12 18v3" stroke="currentColor" fill="none" />
             <polygon points="10,8.5 15.5,11 10,13.5" fill="currentColor" stroke="none" />
@@ -473,9 +474,16 @@ const TheatrePlayerSurface = memo(({
         <h3 className="tt-theatre-idle-title">Tingletap Cinema Stage</h3>
         <p className="tt-theatre-idle-sub">
           {canControl
-            ? 'Paste any YouTube, YouTube Music, Shorts, Live, or .mp4 link below and tap Start Theatre to begin synced watch party playback.'
-            : 'Waiting for an Owner, Admin, or Moderator to start the next Theatre watch session.'}
+            ? 'Paste a media link below and press Start to launch synchronized watch-party playback.'
+            : 'Waiting for the Theatre Host, Owner, Admin, or Moderator to start playback.'}
         </p>
+        <div className="tt-theatre-idle-formats" aria-hidden="true">
+          <span>YouTube</span>
+          <span>Music</span>
+          <span>Shorts</span>
+          <span>Live</span>
+          <span>MP4</span>
+        </div>
       </div>
     );
   }
@@ -547,6 +555,8 @@ const TheatreCinema = ({
   loggedInUserProfile,
   viewerCount = 0,
   connectedUsers = [],
+  theatreAllowedUids = [],
+  isAppointedTheatreHost = false,
   onViewUser,
   chatPanel,
 }) => {
@@ -576,10 +586,20 @@ const TheatreCinema = ({
     typeof window !== 'undefined' ? window.innerWidth >= 1200 : false
   ));
   const [usersSearchQuery, setUsersSearchQuery] = useState('');
+  const [keyboardMetrics, setKeyboardMetrics] = useState({
+    open: false,
+    inChat: false,
+    shellHeightPx: null,
+  });
+  const baseViewportHeightRef = useRef(
+    typeof window !== 'undefined' ? Math.max(window.innerHeight || 0, window.visualViewport?.height || 0) : 800
+  );
 
   const currentUid = auth.currentUser?.uid || loggedInUserProfile?.uid || '';
-  // Theatre Host Controls belong exclusively to Owner, Admin, and Moderator
-  const canControl = isStaffRole(loggedInUserProfile);
+  const myNormRole = normalizeRole(loggedInUserProfile);
+  // Theatre Host Controls belong to Owner, Admin, Moderator, and Owner-appointed Theatre Hosts
+  const canControl = isStaffRole(loggedInUserProfile)
+    || (Boolean(currentUid) && !isGuestUser(loggedInUserProfile) && (isAppointedTheatreHost || (Array.isArray(theatreAllowedUids) && theatreAllowedUids.includes(currentUid))));
 
   const isActive = session?.status === 'active' && Boolean(session?.videoUrl);
   const activeHostUid = isActive ? (session?.hostUid || '') : '';
@@ -594,7 +614,7 @@ const TheatreCinema = ({
 
     const list = Array.from(map.values()).map((u) => ({
       user: u,
-      meta: getTheatreRoleMeta(u, activeHostUid, isActive),
+      meta: getTheatreRoleMeta(u, activeHostUid, isActive, theatreAllowedUids),
       isSelf: Boolean(currentUid && u.uid === currentUid),
     }));
 
@@ -605,7 +625,7 @@ const TheatreCinema = ({
     });
 
     return list;
-  }, [connectedUsers, activeHostUid, isActive, currentUid]);
+  }, [connectedUsers, activeHostUid, isActive, currentUid, theatreAllowedUids]);
 
   const roleSummary = useMemo(() => {
     let hasHost = false;
@@ -705,6 +725,97 @@ const TheatreCinema = ({
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
+  const [topOffsetPx, setTopOffsetPx] = useState(50);
+
+  // Mobile soft-keyboard & top-header/Silent-Watch offset awareness so nothing clips or overlaps
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    let rafTimer = null;
+
+    const measureTopOffset = () => {
+      if (isFullscreen) return 0;
+      const hpEl = document.querySelector('.homepage-container');
+      const hdrH = hpEl?.querySelector('.chat-header')?.offsetHeight || 50;
+      const dockH = hpEl?.querySelector('.tt-top-dock-stack')?.offsetHeight || 0;
+      return Math.max(44, hdrH + dockH);
+    };
+
+    const syncViewportLayout = () => {
+      const measuredTop = measureTopOffset();
+      setTopOffsetPx((prev) => (prev !== measuredTop ? measuredTop : prev));
+
+      const vv = window.visualViewport;
+      const curH = vv ? vv.height : window.innerHeight;
+      const curW = window.innerWidth;
+      const activeEl = document.activeElement;
+      const focusedInsideStage = Boolean(
+        activeEl
+        && stageRef.current?.contains(activeEl)
+        && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')
+        && activeEl.type !== 'range'
+      );
+      const focusedInChat = Boolean(focusedInsideStage && activeEl.closest?.('.tt-theatre-chat-rail'));
+
+      if (!focusedInsideStage && curH > baseViewportHeightRef.current - 40) {
+        baseViewportHeightRef.current = Math.max(baseViewportHeightRef.current, curH);
+      }
+      if (curW >= 960) {
+        setKeyboardMetrics((prev) => (prev.open || prev.inChat || prev.shellHeightPx !== null)
+          ? { open: false, inChat: false, shellHeightPx: null }
+          : prev);
+        return;
+      }
+
+      const shrunkBy = baseViewportHeightRef.current - curH;
+      const isKbOpen = shrunkBy > 115 || focusedInsideStage;
+      const availPx = Math.max(220, Math.round(curH + (vv?.offsetTop || 0) - measuredTop));
+
+      setKeyboardMetrics({
+        open: isKbOpen,
+        inChat: focusedInChat,
+        shellHeightPx: isKbOpen ? availPx : null,
+      });
+
+      if (isKbOpen && focusedInChat && stageRef.current) {
+        if (rafTimer) cancelAnimationFrame(rafTimer);
+        rafTimer = requestAnimationFrame(() => {
+          const feed = stageRef.current?.querySelector('.tt-theatre-chat-rail-body .chat-feed');
+          if (feed) {
+            const distFromBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight;
+            if (distFromBottom < 180) {
+              feed.scrollTop = feed.scrollHeight;
+            }
+          }
+        });
+      }
+    };
+
+    syncViewportLayout();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', syncViewportLayout);
+    vv?.addEventListener('scroll', syncViewportLayout);
+    window.addEventListener('resize', syncViewportLayout);
+    document.addEventListener('focusin', syncViewportLayout);
+    document.addEventListener('focusout', syncViewportLayout);
+
+    const hpEl = document.querySelector('.homepage-container');
+    let mo = null;
+    if (hpEl && typeof MutationObserver !== 'undefined') {
+      mo = new MutationObserver(() => syncViewportLayout());
+      mo.observe(hpEl, { childList: true, subtree: false });
+    }
+
+    return () => {
+      if (rafTimer) cancelAnimationFrame(rafTimer);
+      mo?.disconnect();
+      vv?.removeEventListener('resize', syncViewportLayout);
+      vv?.removeEventListener('scroll', syncViewportLayout);
+      window.removeEventListener('resize', syncViewportLayout);
+      document.removeEventListener('focusin', syncViewportLayout);
+      document.removeEventListener('focusout', syncViewportLayout);
+    };
+  }, [isFullscreen]);
+
   const writeTheatreState = useCallback(async (patch) => {
     if (!roomId || !currentUid) return false;
     setIsSaving(true);
@@ -718,7 +829,7 @@ const TheatreCinema = ({
       setUrlError('');
       return true;
     } catch (_) {
-      setUrlError('Only Owners, Admins, and Moderators can control Theatre playback.');
+      setUrlError('Only Theatre Hosts, Owners, Admins, and Moderators can control Theatre playback.');
       return false;
     } finally {
       setIsSaving(false);
@@ -847,10 +958,17 @@ const TheatreCinema = ({
     chatCollapsed ? 'tt-theatre-chat-collapsed' : '',
     showUsersPanel ? 'tt-theatre-users-open' : '',
     isFullscreen ? 'tt-theatre-fullscreen' : '',
+    keyboardMetrics.open ? 'tt-theatre-keyboard-open' : '',
+    keyboardMetrics.inChat ? 'tt-theatre-kb-in-chat' : '',
   ].filter(Boolean).join(' ');
 
+  const shellInlineStyle = {
+    '--tt-theatre-top': `${isFullscreen ? 0 : topOffsetPx}px`,
+    ...(keyboardMetrics.shellHeightPx ? { '--tt-kb-height': `${keyboardMetrics.shellHeightPx}px` } : {}),
+  };
+
   return (
-    <div ref={stageRef} className={shellClasses}>
+    <div ref={stageRef} className={shellClasses} style={shellInlineStyle}>
       {/* Overlay backdrop on mobile / tablet / fullscreen when Connected Users is open */}
       {showUsersPanel && (
         <div
@@ -1010,33 +1128,38 @@ const TheatreCinema = ({
       {/* Main Cinema Stage */}
       <section className="tt-theatre-stage" aria-label={`${roomName || 'Theatre'} Watch Stage`}>
         <div className="tt-theatre-topbar">
-          <div className="tt-theatre-now-playing">
-            <span className={`tt-theatre-live-pill${isActive ? (session?.isPlaying ? '' : ' paused') : ' idle'}`}>
-              <span className="tt-theatre-live-dot" />
-              {isActive ? (session?.isPlaying ? 'Synced Live' : 'Paused') : 'Standby'}
-            </span>
-            <div className="tt-theatre-title-meta">
-              <div className="tt-theatre-video-title">
-                {isActive ? (session?.title || 'Theatre Feature') : 'Theatre Cinema Room'}
-              </div>
-              <div className="tt-theatre-host-sub">
-                {isActive
-                  ? `Hosted by ${session?.hostName || 'Staff'} • ${effectiveViewerCount} watching`
-                  : `${effectiveViewerCount} in Theatre${canControl ? ' • Host Controls Ready' : ''}`}
+          <div className="tt-theatre-topbar-primary">
+            <div className="tt-theatre-now-playing">
+              <span className={`tt-theatre-live-pill${isActive ? (session?.isPlaying ? '' : ' paused') : ' idle'}`}>
+                <span className="tt-theatre-live-dot" />
+                <span>{isActive ? (session?.isPlaying ? 'Live' : 'Paused') : 'Standby'}</span>
+              </span>
+              <div className="tt-theatre-title-meta">
+                <div className="tt-theatre-video-title" title={isActive ? (session?.title || 'Theatre Feature') : 'Theatre Cinema Room'}>
+                  {isActive ? (session?.title || 'Theatre Feature') : 'Theatre Cinema Room'}
+                </div>
+                <div className="tt-theatre-host-sub">
+                  {isActive
+                    ? `Host: ${session?.hostName || 'Staff'} • ${effectiveViewerCount} watching`
+                    : `${effectiveViewerCount} in Theatre${canControl ? ' • Host Controls Active' : ''}`}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="tt-theatre-topbar-actions">
             {canControl && (
-              <span className="tt-theatre-staff-badge" title="Exclusive Theatre Host Controls (Owner / Admin / Moderator)">
+              <span
+                className={`tt-theatre-staff-badge is-${isStaffRole(loggedInUserProfile) ? (myNormRole || 'host') : 'host'}`}
+                title="Theatre Host Controls (Theatre Host / Owner / Admin / Moderator)"
+              >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor" />
                 </svg>
                 <span>Host</span>
               </span>
             )}
+          </div>
 
+          <div className="tt-theatre-topbar-actions">
             <button
               type="button"
               className={`tt-theatre-icon-btn tt-theatre-audience-btn${showUsersPanel ? ' is-active' : ''}`}
@@ -1078,7 +1201,7 @@ const TheatreCinema = ({
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" fill="none" />
               </svg>
-              <span className="tt-theatre-hide-sm">{chatCollapsed ? 'Show Chat' : 'Cinema'}</span>
+              <span className="tt-theatre-hide-sm">{chatCollapsed ? 'Chat' : 'Cinema'}</span>
             </button>
 
             <button
@@ -1086,6 +1209,7 @@ const TheatreCinema = ({
               className="tt-theatre-icon-btn"
               onClick={handleToggleFullscreen}
               title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Cinema'}
+              aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Cinema'}
             >
               {isFullscreen ? (
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1114,7 +1238,7 @@ const TheatreCinema = ({
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor" />
                 </svg>
-                <span className="tt-theatre-hide-sm">End</span>
+                <span>End</span>
               </button>
             )}
           </div>
@@ -1145,16 +1269,28 @@ const TheatreCinema = ({
                   <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" />
                 </svg>
                 <p>{playerError}</p>
-                {session?.videoUrl && (
-                  <a
-                    href={session.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <div className="tt-theatre-player-error-actions">
+                  <button
+                    type="button"
                     className="tt-theatre-icon-btn"
+                    onClick={() => {
+                      setPlayerError('');
+                      handleResyncNow();
+                    }}
                   >
-                    Open Source Link
-                  </a>
-                )}
+                    Retry Sync
+                  </button>
+                  {session?.videoUrl && (
+                    <a
+                      href={session.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tt-theatre-icon-btn"
+                    >
+                      Open Source
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1318,20 +1454,36 @@ const TheatreCinema = ({
 
             {canControl && (
               <form className="tt-theatre-source-form" onSubmit={handleLoadUrl}>
-                <input
-                  type="text"
-                  inputMode="url"
-                  className="tt-theatre-url-input"
-                  value={urlInput}
-                  onChange={(e) => {
-                    setUrlInput(e.target.value);
-                    if (urlError) setUrlError('');
-                  }}
-                  placeholder="Paste YouTube, YouTube Music, Shorts or .mp4 URL..."
-                  aria-label="Theatre media URL"
-                />
+                <div className="tt-theatre-url-field">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" fill="none" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" fill="none" />
+                  </svg>
+                  <input
+                    type="text"
+                    inputMode="url"
+                    className="tt-theatre-url-input"
+                    value={urlInput}
+                    onChange={(e) => {
+                      setUrlInput(e.target.value);
+                      if (urlError) setUrlError('');
+                    }}
+                    placeholder="Paste YouTube, Music, Shorts or .mp4 URL..."
+                    aria-label="Theatre media URL"
+                  />
+                </div>
                 <button type="submit" className="tt-theatre-load-btn" disabled={isSaving || !urlInput.trim()}>
-                  {isSaving ? 'Starting...' : (isActive ? 'Switch Video' : 'Start Theatre')}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <polygon points="6,4 20,12 6,20" fill="currentColor" />
+                  </svg>
+                  <span>
+                    {isSaving ? 'Starting...' : (
+                      <>
+                        {isActive ? 'Switch' : 'Start'}
+                        <span className="tt-theatre-hide-xs">{isActive ? ' Video' : ' Theatre'}</span>
+                      </>
+                    )}
+                  </span>
                 </button>
               </form>
             )}

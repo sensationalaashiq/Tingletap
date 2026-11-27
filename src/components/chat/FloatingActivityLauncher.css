@@ -875,3 +875,27 @@ html.dark-theme-variant .hp-act-btn-primary {
     align-items: stretch;
   }
 }
+
+.hp-activity-card-btn.is-locked-card {
+  opacity: 0.72;
+}
+
+.hp-activity-card-btn.is-live-scribble {
+  border-color: rgba(236, 72, 153, 0.58) !important;
+  box-shadow: 0 6px 18px rgba(236, 72, 153, 0.16);
+}
+
+.hp-activity-count-meta.is-live {
+  color: #ec4899 !important;
+  font-weight: 800;
+}
+
+.hp-activity-lock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #ef4444;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+

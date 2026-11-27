@@ -368,7 +368,16 @@ export async function uploadMediaFile(blob, uploadType, opts = {}, onProgress) {
 
   // 1. Primary: Cloudflare R2 via Netlify Functions
   try {
-    return await _tryR2Upload(blob, uploadType, contentType, token, opts, onProgress);
+    const res = await _tryR2Upload(blob, uploadType, contentType, token, opts, onProgress);
+    if (
+      res?.url &&
+      (uploadType === 'profile' || uploadType === 'cover') &&
+      !res.url.startsWith('data:') &&
+      !/[?&]v=/.test(res.url)
+    ) {
+      res.url = `${res.url}${res.url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+    }
+    return res;
   } catch (r2Err) {
     console.warn('[uploadMediaFile] R2 unavailable, trying free media host:', r2Err.message);
   }

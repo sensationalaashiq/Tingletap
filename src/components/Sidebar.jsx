@@ -576,7 +576,7 @@ const Sidebar = ({
       // same rank → alphabetical by displayName
       return (a.displayName || '').toLowerCase().localeCompare((b.displayName || '').toLowerCase());
     });
-  }, [liveUsers, searchQuery, genderFilter]);
+  }, [liveUsers, searchQuery, genderFilter, user?.uid, loggedInUserProfile, blockedUsers, usersWhoBlockedMe]);
 
   /* -- role-based mod permissions (for viewer) -- */
   const viewerNormRole = normalizeRole(loggedInUserProfile);
@@ -952,19 +952,26 @@ const Sidebar = ({
                   alignItems: 'center',
                   gap: '8px',
                 }}>
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.72, color: 'var(--accent-color, #a78bfa)' }}>
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <defs>
+                      <linearGradient id="sbEmptyStateG" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#a78bfa"/>
+                        <stop offset="50%" stopColor="#ec4899"/>
+                        <stop offset="100%" stopColor="#38bdf8"/>
+                      </linearGradient>
+                    </defs>
                     {silentWatchActive ? (
                       <>
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
+                        <path stroke="url(#sbEmptyStateG)" strokeWidth="1.9" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <path stroke="url(#sbEmptyStateG)" strokeWidth="1.9" d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <line stroke="url(#sbEmptyStateG)" strokeWidth="1.9" x1="1" y1="1" x2="23" y2="23" />
                       </>
                     ) : (
                       <>
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        <path stroke="url(#sbEmptyStateG)" strokeWidth="1.9" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle stroke="url(#sbEmptyStateG)" strokeWidth="1.9" cx="9" cy="7" r="4" />
+                        <path stroke="url(#sbEmptyStateG)" strokeWidth="1.9" d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path stroke="url(#sbEmptyStateG)" strokeWidth="1.9" d="M16 3.13a4 4 0 0 1 0 7.75" />
                       </>
                     )}
                   </svg>

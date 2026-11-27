@@ -14,6 +14,8 @@ const MinimizedConversations = ({
   onRemoveConversation,
   unreadCounts = {},
   onlineUserIds = [],
+  groupDms = [],
+  currentUid = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef(null);
@@ -46,7 +48,21 @@ const MinimizedConversations = ({
 
   if (minimizedConversations.length === 0) return null;
 
-  const totalUnread = Object.values(unreadCounts).reduce((s, c) => s + (c || 0), 0);
+  const groupDmMap = {};
+  (groupDms || []).forEach((g) => {
+    if (g?.id) groupDmMap[g.id] = g;
+  });
+
+  const getUnreadCount = (conv) => {
+    if (conv?.isGroup && conv.group?.id) {
+      const liveG = groupDmMap[conv.group.id] || conv.group;
+      return Number(liveG?.unreadBy?.[currentUid]) || 0;
+    }
+    return unreadCounts[conv.conversationId] || unreadCounts[conv.otherUserId] || 0;
+  };
+
+  const totalUnread = Object.values(unreadCounts).reduce((s, c) => s + (c || 0), 0)
+    + minimizedConversations.filter((c) => c.isGroup).reduce((s, c) => s + getUnreadCount(c), 0);
 
   // Sort by latest activity
   const sorted = [...minimizedConversations].sort((a, b) => {
@@ -57,10 +73,8 @@ const MinimizedConversations = ({
 
   const getIsOnline = (uid) => onlineUserIds.includes(uid);
 
-  const getUnreadCount = (conv) =>
-    unreadCounts[conv.conversationId] || unreadCounts[conv.otherUserId] || 0;
-
   const getRoleBorderClass = (conv) => {
+    if (conv?.isGroup) return 'mc-role-admin';
     const role = conv.otherUser?.role;
     if (role === 'owner') return 'mc-role-owner';
     if (role === 'admin') return 'mc-role-admin';
@@ -102,43 +116,81 @@ const MinimizedConversations = ({
           <div className="mc-list">
             {sorted.map((conv) => {
               const unread = getUnreadCount(conv);
-              const isOnline = getIsOnline(conv.otherUserId);
-              const preview = truncate(conv.lastMessage || '', 38);
+              const isGroup = Boolean(conv.isGroup && conv.group);
+              const liveGroup = isGroup ? (groupDmMap[conv.group.id] || conv.group) : null;
+              const isOnline = !isGroup && getIsOnline(conv.otherUserId);
+              const preview = truncate(
+                isGroup ? (liveGroup?.lastMessage || conv.lastMessage || '') : (conv.lastMessage || ''),
+                38
+              );
               const hasDraft = !!conv.draftMessage;
+              const groupPhoto = isGroup ? (liveGroup?.photoURL || conv.otherUserPhoto) : null;
+              const groupTitle = isGroup ? (liveGroup?.name || conv.otherUserName || 'Group Chat') : '';
 
               return (
                 <div
                   key={conv.conversationId}
                   className={`mc-card ${getRoleBorderClass(conv)}`}
                   onClick={() => {
-                    onOpenConversation(conv);
+                    onOpenConversation(isGroup ? { ...conv, group: liveGroup || conv.group } : conv);
                     setIsOpen(false);
                   }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      onOpenConversation(conv);
+                      onOpenConversation(isGroup ? { ...conv, group: liveGroup || conv.group } : conv);
                       setIsOpen(false);
                     }
                   }}
                 >
                   {/* Avatar + online dot */}
                   <div className="mc-avatar-wrap">
-                    <LiveAvatarImg
-                      uid={conv.otherUserId}
-                      gender={conv.otherUser?.gender || 'male'}
-                      fallbackPhotoURL={conv.otherUser?.photoURL || conv.otherUserPhoto}
-                      alt={conv.otherUserName || 'User'}
-                      className="mc-avatar"
-                    />
-                    <span className={`mc-online-dot ${isOnline ? 'mc-online' : 'mc-offline'}`} />
+                    {isGroup ? (
+                      groupPhoto ? (
+                        <img src={groupPhoto} alt={groupTitle} className="mc-avatar" />
+                      ) : (
+                        <div
+                          className="mc-avatar"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+                          }}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <circle cx="9.5" cy="8.5" r="3.2" fill="#ffffff" />
+                            <path d="M3 19c0-2.9 2.9-5 6.5-5s6.5 2.1 6.5 5" fill="#ffffff" />
+                            <circle cx="17" cy="9.5" r="2.4" fill="#fde047" />
+                            <path d="M16.5 14.5c2.5.4 4.5 2 4.5 4.5" stroke="#fde047" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </div>
+                      )
+                    ) : (
+                      <>
+                        <LiveAvatarImg
+                          uid={conv.otherUserId}
+                          gender={conv.otherUser?.gender || 'male'}
+                          fallbackPhotoURL={conv.otherUser?.photoURL || conv.otherUserPhoto}
+                          alt={conv.otherUserName || 'User'}
+                          className="mc-avatar"
+                        />
+                        <span className={`mc-online-dot ${isOnline ? 'mc-online' : 'mc-offline'}`} />
+                      </>
+                    )}
                   </div>
 
                   {/* Text block */}
                   <div className="mc-card-body">
                     <div className="mc-card-top">
-                      <span className="mc-name"><LiveConvName uid={conv.otherUserId} fallback={conv.otherUserName} render={(n) => truncate(n, 18)} /></span>
+                      <span className="mc-name">
+                        {isGroup ? (
+                          truncate(groupTitle, 18)
+                        ) : (
+                          <LiveConvName uid={conv.otherUserId} fallback={conv.otherUserName} render={(n) => truncate(n, 18)} />
+                        )}
+                      </span>
                       {unread > 0 && (
                         <span className="mc-unread-badge">{unread > 99 ? '99+' : unread}</span>
                       )}

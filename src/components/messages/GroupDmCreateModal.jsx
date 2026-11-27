@@ -186,38 +186,64 @@ const GroupDmCreateModal = ({
   };
 
   return (
-    <div className="tt-modal-backdrop" onClick={onClose}>
-      <div className="tt-modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="tt-modal-backdrop tt-gdm-create-backdrop" onClick={onClose}>
+      <div className="tt-modal-card tt-gdm-create-card" onClick={(e) => e.stopPropagation()}>
         <div className="tt-modal-head">
           <div className="tt-modal-title">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <span
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 9,
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(236, 72, 153, 0.16))',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="gdmCreateTitleG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="55%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+                <circle cx="9.5" cy="8.5" r="3.4" fill="url(#gdmCreateTitleG)" />
+                <path d="M2.5 19.5c0-3 3-5.2 7-5.2s7 2.2 7 5.2" fill="url(#gdmCreateTitleG)" />
+                <circle cx="17.2" cy="9.2" r="2.6" fill="#06b6d4" />
+                <path d="M16.5 14.5c2.7.3 5 2 5 4.8" stroke="#10b981" strokeWidth="2.1" strokeLinecap="round" />
+              </svg>
+            </span>
             <span>New Private Group DM</span>
           </div>
           <button type="button" className="tt-modal-close" onClick={onClose} aria-label="Close">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="gdmCreateCloseG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#f43f5e" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+              <line x1="18" y1="6" x2="6" y2="18" stroke="url(#gdmCreateCloseG)" strokeWidth="2.6" strokeLinecap="round" />
+              <line x1="6" y1="6" x2="18" y2="18" stroke="url(#gdmCreateCloseG)" strokeWidth="2.6" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleCreate}>
           <div className="tt-modal-body">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 14,
-                  border: '1.5px dashed rgba(124, 58, 237, 0.45)',
-                  background: 'rgba(139, 92, 246, 0.08)',
+                  width: 50,
+                  height: 50,
+                  borderRadius: 15,
+                  border: '1.5px solid rgba(139, 92, 246, 0.35)',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(236, 72, 153, 0.12))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -231,10 +257,18 @@ const GroupDmCreateModal = ({
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Group avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="3" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                      <linearGradient id="gdmCreateCamG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="50%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="2.5" y="5.5" width="19" height="14" rx="3.5" fill="url(#gdmCreateCamG)" />
+                    <path d="M8.5 5.5l1.3-2.2h4.4l1.3 2.2" fill="#8b5cf6" />
+                    <circle cx="12" cy="12.5" r="3.4" fill="#ffffff" />
+                    <circle cx="12" cy="12.5" r="1.7" fill="#6366f1" />
                   </svg>
                 )}
               </button>
@@ -255,21 +289,41 @@ const GroupDmCreateModal = ({
             </div>
 
             <div>
-              <label className="tt-modal-field-label">
-                Add Members ({selectedUids.length} selected)
+              <label className="tt-modal-field-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Add Members</span>
+                <span style={{ color: '#ec4899', fontWeight: 800 }}>{selectedUids.length} selected</span>
               </label>
-              <input
-                type="search"
-                className="tt-modal-input"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search friends or users..."
-                style={{ marginBottom: 8 }}
-              />
+
+              <div style={{ position: 'relative', marginBottom: 7 }}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                >
+                  <defs>
+                    <linearGradient id="gdmCreateSearchG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="11" cy="11" r="7" stroke="url(#gdmCreateSearchG)" strokeWidth="2.4" />
+                  <path d="M16.5 16.5L21 21" stroke="#ec4899" strokeWidth="2.4" strokeLinecap="round" />
+                </svg>
+                <input
+                  type="search"
+                  className="tt-modal-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search friends or users..."
+                  style={{ paddingLeft: 32 }}
+                />
+              </div>
 
               <div className="tt-user-picker-list">
                 {filteredCandidates.length === 0 ? (
-                  <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: '16px 8px' }}>
+                  <div style={{ fontSize: 12, color: '#64748b', textAlign: 'center', padding: '16px 8px' }}>
                     No eligible users found.
                   </div>
                 ) : (
@@ -288,23 +342,23 @@ const GroupDmCreateModal = ({
                           gender={u.gender}
                           fallbackPhotoURL={u.photoURL}
                           alt={u.displayName}
-                          style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                          style={{ width: 31, height: 31, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 12.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.displayName || 'User'}
                           </div>
-                          <div style={{ fontSize: 10.5, color: check.allowed ? '#6b7280' : '#ef4444' }}>
+                          <div style={{ fontSize: 10.5, fontWeight: 600, color: check.allowed ? '#6366f1' : '#ef4444' }}>
                             {check.allowed ? (u.username ? `@${u.username}` : 'Eligible') : check.reason}
                           </div>
                         </div>
                         <span
                           style={{
-                            width: 18,
-                            height: 18,
+                            width: 19,
+                            height: 19,
                             borderRadius: 6,
-                            border: isSelected ? 'none' : '1.5px solid rgba(139, 92, 246, 0.4)',
-                            background: isSelected ? '#7c3aed' : 'transparent',
+                            border: isSelected ? 'none' : '1.5px solid rgba(139, 92, 246, 0.45)',
+                            background: isSelected ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -312,7 +366,7 @@ const GroupDmCreateModal = ({
                           }}
                         >
                           {isSelected && (
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           )}

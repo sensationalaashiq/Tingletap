@@ -366,3 +366,105 @@ export const BackArrowIcon = ({ size = 14, color = 'currentColor' }) => (
     <path d="M19 12H6M11.5 6.5L6 12l5.5 5.5" stroke={color} strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+
+export const TheatreHostCrownIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="ttTheatreFrameGrad" x1="2" y1="4" x2="22" y2="21" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#f59e0b" />
+        <stop offset="52%" stopColor="#ec4899" />
+        <stop offset="100%" stopColor="#8b5cf6" />
+      </linearGradient>
+      <linearGradient id="ttTheatreGoldGrad" x1="6" y1="6" x2="18" y2="15" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#fef08a" />
+        <stop offset="100%" stopColor="#f59e0b" />
+      </linearGradient>
+    </defs>
+    <rect x="2.5" y="4.5" width="19" height="14" rx="3.2" fill="url(#ttTheatreFrameGrad)" fillOpacity="0.18" stroke="url(#ttTheatreFrameGrad)" strokeWidth="1.65" />
+    <path d="M7 14.5L8.2 9l2.4 2.2L12 8.2l1.4 3L15.8 9 17 14.5H7Z" fill="url(#ttTheatreGoldGrad)" stroke="#d97706" strokeWidth="1" strokeLinejoin="round" />
+    <path d="M7.5 21h9" stroke="url(#ttTheatreFrameGrad)" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+export const PaletteCanvasIcon = ({ size = 17 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="ttPaletteBodyGrad" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#ec4899" />
+        <stop offset="50%" stopColor="#8b5cf6" />
+        <stop offset="100%" stopColor="#06b6d4" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M12 3C7.03 3 3 6.86 3 11.62c0 3.74 2.86 6.4 6.1 6.4 1.02 0 1.72.73 1.54 1.65-.18.88.51 1.66 1.46 1.66 5.04 0 8.9-4.18 8.9-9.43C21 6.86 16.97 3 12 3Z"
+      fill="url(#ttPaletteBodyGrad)"
+      fillOpacity="0.2"
+      stroke="url(#ttPaletteBodyGrad)"
+      strokeWidth="1.65"
+      strokeLinejoin="round"
+    />
+    <circle cx="8" cy="10.2" r="1.35" fill="#f43f5e" />
+    <circle cx="11.4" cy="7.5" r="1.35" fill="#fbbf24" />
+    <circle cx="15.3" cy="8.7" r="1.35" fill="#34d399" />
+    <circle cx="16.5" cy="12.6" r="1.35" fill="#38bdf8" />
+  </svg>
+);
+
+export const GamepadSparkIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="ttGamepadGrad" x1="2" y1="6" x2="22" y2="19" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#8b5cf6" />
+        <stop offset="55%" stopColor="#ec4899" />
+        <stop offset="100%" stopColor="#22d3ee" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M6.8 7.5h10.4a4.3 4.3 0 0 1 4.2 3.4l.6 3.2a3.1 3.1 0 0 1-5.3 2.7l-1.9-1.8H9.2l-1.9 1.8A3.1 3.1 0 0 1 2 14.1l.6-3.2A4.3 4.3 0 0 1 6.8 7.5Z"
+      fill="url(#ttGamepadGrad)"
+      fillOpacity="0.2"
+      stroke="url(#ttGamepadGrad)"
+      strokeWidth="1.65"
+      strokeLinejoin="round"
+    />
+    <path d="M6.5 11.5h3M8 10v3" stroke="#a855f7" strokeWidth="1.75" strokeLinecap="round" />
+    <circle cx="15.2" cy="10.8" r="1.05" fill="#ec4899" />
+    <circle cx="17.3" cy="12.5" r="1.05" fill="#22d3ee" />
+  </svg>
+);
+
+export const BrushNibIcon = ({ size = 15, color = '#8b5cf6' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M18.4 3.6a2.1 2.1 0 0 1 3 3L11.1 16.9l-4.2 1.2 1.2-4.2L18.4 3.6Z" fill={color} fillOpacity="0.18" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+    <path d="M7.8 14.6c-2.1.4-3.7 2-4.3 4.4 2.3.4 4.4-.5 5.6-2.2" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const EraserToolIcon = ({ size = 15, color = '#f43f5e' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M14.5 4.5l5 5-8.5 8.5H6l-2.5-2.5a2 2 0 0 1 0-2.8l8.2-8.2a2 2 0 0 1 2.8 0Z" fill={color} fillOpacity="0.16" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+    <path d="M8.5 10.5l5 5M11 18h9" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
+export const UndoStrokeIcon = ({ size = 15, color = '#06b6d4' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M9 14L4 9l5-5" stroke={color} strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" stroke={color} strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const TrashClearIcon = ({ size = 15, color = '#ef4444' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 7h16M9.5 4h5M7 7l1 13h8l1-13" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 11v5M14 11v5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
+
+export const HintBulbIcon = ({ size = 15, color = '#f59e0b' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M9 18h6M10 21h4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M12 3a6 6 0 0 0-3.8 10.6c.7.6 1.2 1.4 1.3 2.4h5c.1-1 .6-1.8 1.3-2.4A6 6 0 0 0 12 3Z" fill={color} fillOpacity="0.2" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+  </svg>
+);
+

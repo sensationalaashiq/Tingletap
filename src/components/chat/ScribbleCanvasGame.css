@@ -1,0 +1,1005 @@
+/* Multiplayer Create & Draw (Scribble) Canvas Game — Smooth, Compact, Zero Blur, Theme-Adaptive */
+
+.tt-scribble-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99995;
+  background: rgba(9, 7, 22, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.tt-scribble-modal {
+  width: min(940px, 98vw);
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 24px 64px rgba(15, 10, 40, 0.38);
+  color: #1e1b4b;
+  font-family: inherit;
+  animation: ttScribbleIn 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ttScribbleIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tt-scribble-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  flex-shrink: 0;
+}
+
+.tt-scribble-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.tt-scribble-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tt-scribble-brand-text {
+  min-width: 0;
+}
+
+.tt-scribble-brand-text h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e1b4b;
+  line-height: 1.15;
+}
+
+.tt-scribble-sub {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-scribble-hdr-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tt-scribble-timer,
+.tt-scribble-players-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(6, 182, 212, 0.13);
+  border: 1px solid rgba(6, 182, 212, 0.34);
+  color: #0e7490;
+}
+
+.tt-scribble-timer.is-urgent {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.42);
+  color: #e11d48;
+}
+
+.tt-scribble-players-pill {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #6d28d9;
+}
+
+.tt-scribble-end-btn {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tt-scribble-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid rgba(139, 92, 246, 0.24);
+  background: rgba(255, 255, 255, 0.85);
+  color: #4c1d95;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Clue & Masked Letter-Tile Bar */
+.tt-scribble-clue-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 14px;
+  background: #faf8ff;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.18);
+  flex-shrink: 0;
+}
+
+.tt-scribble-clue-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.tt-scribble-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.36);
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.tt-scribble-hint-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.tt-scribble-tiles-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.tt-scribble-tile {
+  width: 20px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-bottom: 2px solid rgba(109, 40, 217, 0.45);
+  background: #ffffff;
+  color: #3b0764;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tt-scribble-tile.is-revealed {
+  background: linear-gradient(155deg, #f3e8ff, #e9d5ff);
+  border-color: rgba(124, 58, 237, 0.48);
+}
+
+.tt-scribble-tile.is-final {
+  background: linear-gradient(155deg, #d1fae5, #a7f3d0);
+  border-color: rgba(16, 185, 129, 0.52);
+  color: #065f46;
+}
+
+.tt-scribble-tile-gap {
+  width: 8px;
+}
+
+.tt-scribble-len-badge {
+  margin-left: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #6d28d9;
+}
+
+.tt-scribble-reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Main Split Layout */
+.tt-scribble-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(240px, 1fr);
+  gap: 10px;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.tt-scribble-stage-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Smooth High-DPI Canvas Frame */
+.tt-scribble-canvas-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 800 / 500;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid rgba(139, 92, 246, 0.28);
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 10, 40, 0.1);
+}
+
+.tt-scribble-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  background: #ffffff;
+}
+
+.tt-scribble-canvas.is-drawable {
+  cursor: crosshair;
+}
+
+.tt-scribble-solved-toast {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(6, 78, 59, 0.92);
+  color: #ecfdf5;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  pointer-events: none;
+}
+
+.tt-scribble-takeover-btn {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Drawing Toolbar */
+.tt-scribble-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 11px;
+  background: #f8f7ff;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+}
+
+.tt-scribble-swatches {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tt-scribble-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+
+.tt-scribble-swatch.is-white {
+  border-color: rgba(100, 116, 139, 0.5);
+}
+
+.tt-scribble-swatch.active {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #7c3aed;
+}
+
+.tt-scribble-tools-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tt-scribble-sizes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 3px;
+}
+
+.tt-scribble-size-btn,
+.tt-scribble-tool-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.24);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tt-scribble-size-dot {
+  border-radius: 50%;
+  background: #4c1d95;
+  display: block;
+}
+
+.tt-scribble-size-btn.active {
+  border-color: #7c3aed;
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.tt-scribble-tool-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  border-color: transparent;
+}
+
+.tt-scribble-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Setup / Word Picker Lobby */
+.tt-scribble-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #faf8ff;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+}
+
+.tt-scribble-round-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.tt-scribble-summary-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tt-scribble-summary-solvers {
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.tt-scribble-lobby-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tt-scribble-lobby-head h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+
+.tt-scribble-lobby-head p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.tt-scribble-mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.tt-scribble-mode-pill {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #5b21b6;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tt-scribble-mode-pill.active {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #ffffff;
+}
+
+.tt-scribble-choices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.tt-scribble-choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(139, 92, 246, 0.22);
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.tt-scribble-choice-card.is-selected {
+  border-color: #7c3aed;
+  background: rgba(139, 92, 246, 0.08);
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.12);
+}
+
+.tt-scribble-choice-cat {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #7c3aed;
+}
+
+.tt-scribble-choice-word {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e1b4b;
+}
+
+.tt-scribble-choice-hint {
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.28;
+}
+
+.tt-scribble-shuffle-btn {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: #ffffff;
+  color: #5b21b6;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tt-scribble-custom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tt-scribble-custom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tt-scribble-custom-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #5b21b6;
+}
+
+.tt-scribble-custom-form input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(139, 92, 246, 0.26);
+  background: #ffffff;
+  color: #1e1b4b;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+}
+
+.tt-scribble-lobby-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(139, 92, 246, 0.16);
+}
+
+.tt-scribble-dur-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.tt-scribble-dur-btn {
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(139, 92, 246, 0.26);
+  background: #ffffff;
+  color: #4c1d95;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tt-scribble-dur-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.tt-scribble-start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.34);
+}
+
+/* Right Side Panel: Scores + Live Guesses */
+.tt-scribble-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tt-scribble-scores-box,
+.tt-scribble-guesses-box {
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: #faf8ff;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tt-scribble-scores-box {
+  max-height: 155px;
+}
+
+.tt-scribble-guesses-box {
+  flex: 1;
+  min-height: 210px;
+}
+
+.tt-scribble-side-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5b21b6;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.tt-scribble-scores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.tt-scribble-player-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.14);
+}
+
+.tt-scribble-player-row.is-me {
+  border-color: rgba(124, 58, 237, 0.42);
+}
+
+.tt-scribble-player-row.is-solved {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.tt-scribble-player-av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tt-scribble-player-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tt-scribble-player-name {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-scribble-role-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.tt-scribble-role-tag.is-drawer {
+  background: rgba(124, 58, 237, 0.14);
+  color: #6d28d9;
+}
+
+.tt-scribble-role-tag.is-solved {
+  background: rgba(16, 185, 129, 0.18);
+  color: #047857;
+}
+
+.tt-scribble-player-pts {
+  font-size: 11px;
+  font-weight: 800;
+  color: #b45309;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-scribble-guesses-feed {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 2px;
+  margin-bottom: 7px;
+  min-height: 110px;
+}
+
+.tt-scribble-side-empty {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  padding: 12px 6px;
+}
+
+.tt-scribble-guess-row {
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: #ffffff;
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.tt-scribble-guess-row.is-correct {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.42);
+  color: #065f46;
+  font-weight: 700;
+}
+
+.tt-scribble-guess-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tt-scribble-guess-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(139, 92, 246, 0.28);
+  background: #ffffff;
+  color: #1e1b4b;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+}
+
+.tt-scribble-guess-input:disabled {
+  opacity: 0.65;
+}
+
+.tt-scribble-guess-send {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tt-scribble-guess-send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Dark Mode & All 5 Theme Variants */
+html.dark-mode .tt-scribble-modal,
+body.dark-mode .tt-scribble-modal {
+  background: #120e24;
+  border-color: rgba(167, 139, 250, 0.34);
+  color: #f8fafc;
+}
+
+html.dark-mode .tt-scribble-hdr,
+body.dark-mode .tt-scribble-hdr {
+  background: linear-gradient(135deg, #1b1536, #23163b);
+  border-bottom-color: rgba(167, 139, 250, 0.22);
+}
+
+html.dark-mode .tt-scribble-brand-text h3,
+html.dark-mode .tt-scribble-lobby-head h4,
+html.dark-mode .tt-scribble-choice-word,
+body.dark-mode .tt-scribble-brand-text h3,
+body.dark-mode .tt-scribble-lobby-head h4,
+body.dark-mode .tt-scribble-choice-word {
+  color: #f8fafc;
+}
+
+html.dark-mode .tt-scribble-sub,
+html.dark-mode .tt-scribble-hint-text,
+html.dark-mode .tt-scribble-lobby-head p,
+html.dark-mode .tt-scribble-choice-hint,
+html.dark-mode .tt-scribble-side-empty,
+body.dark-mode .tt-scribble-sub,
+body.dark-mode .tt-scribble-hint-text,
+body.dark-mode .tt-scribble-lobby-head p,
+body.dark-mode .tt-scribble-choice-hint,
+body.dark-mode .tt-scribble-side-empty {
+  color: #94a3b8;
+}
+
+html.dark-mode .tt-scribble-clue-bar,
+html.dark-mode .tt-scribble-toolbar,
+html.dark-mode .tt-scribble-lobby,
+html.dark-mode .tt-scribble-scores-box,
+html.dark-mode .tt-scribble-guesses-box,
+body.dark-mode .tt-scribble-clue-bar,
+body.dark-mode .tt-scribble-toolbar,
+body.dark-mode .tt-scribble-lobby,
+body.dark-mode .tt-scribble-scores-box,
+body.dark-mode .tt-scribble-guesses-box {
+  background: #1a1434;
+  border-color: rgba(167, 139, 250, 0.24);
+}
+
+html.dark-mode .tt-scribble-choice-card,
+html.dark-mode .tt-scribble-player-row,
+html.dark-mode .tt-scribble-guess-row,
+html.dark-mode .tt-scribble-guess-input,
+html.dark-mode .tt-scribble-custom-form input,
+html.dark-mode .tt-scribble-shuffle-btn,
+html.dark-mode .tt-scribble-dur-btn,
+html.dark-mode .tt-scribble-size-btn,
+html.dark-mode .tt-scribble-tool-btn,
+html.dark-mode .tt-scribble-close-btn,
+body.dark-mode .tt-scribble-choice-card,
+body.dark-mode .tt-scribble-player-row,
+body.dark-mode .tt-scribble-guess-row,
+body.dark-mode .tt-scribble-guess-input,
+body.dark-mode .tt-scribble-custom-form input,
+body.dark-mode .tt-scribble-shuffle-btn,
+body.dark-mode .tt-scribble-dur-btn,
+body.dark-mode .tt-scribble-size-btn,
+body.dark-mode .tt-scribble-tool-btn,
+body.dark-mode .tt-scribble-close-btn {
+  background: #0d0a1c;
+  border-color: rgba(167, 139, 250, 0.28);
+  color: #f1f5f9;
+}
+
+html.dark-mode .tt-scribble-tile,
+body.dark-mode .tt-scribble-tile {
+  background: #0d0a1c;
+  border-color: rgba(167, 139, 250, 0.36);
+  color: #f5f3ff;
+}
+
+html.dark-mode .tt-scribble-tile.is-revealed,
+body.dark-mode .tt-scribble-tile.is-revealed {
+  background: rgba(139, 92, 246, 0.28);
+  color: #ffffff;
+}
+
+html.dark-mode .tt-scribble-side-title,
+html.dark-mode .tt-scribble-len-badge,
+html.dark-mode .tt-scribble-custom-form label,
+body.dark-mode .tt-scribble-side-title,
+body.dark-mode .tt-scribble-len-badge,
+body.dark-mode .tt-scribble-custom-form label {
+  color: #c4b5fd;
+}
+
+html.dark-mode .tt-scribble-guess-row.is-correct,
+body.dark-mode .tt-scribble-guess-row.is-correct {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+html.dark-theme-variant .tt-scribble-modal {
+  background: var(--modal-bg, var(--bg-card)) !important;
+  border-color: var(--modal-border, var(--border-accent)) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-scribble-hdr {
+  background: var(--bg-secondary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+html.dark-theme-variant .tt-scribble-clue-bar,
+html.dark-theme-variant .tt-scribble-toolbar,
+html.dark-theme-variant .tt-scribble-lobby,
+html.dark-theme-variant .tt-scribble-scores-box,
+html.dark-theme-variant .tt-scribble-guesses-box {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+}
+
+html.dark-theme-variant .tt-scribble-brand-text h3,
+html.dark-theme-variant .tt-scribble-lobby-head h4,
+html.dark-theme-variant .tt-scribble-choice-word {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-scribble-sub,
+html.dark-theme-variant .tt-scribble-hint-text,
+html.dark-theme-variant .tt-scribble-lobby-head p,
+html.dark-theme-variant .tt-scribble-choice-hint {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme-variant .tt-scribble-choice-card,
+html.dark-theme-variant .tt-scribble-player-row,
+html.dark-theme-variant .tt-scribble-guess-row,
+html.dark-theme-variant .tt-scribble-guess-input,
+html.dark-theme-variant .tt-scribble-custom-form input,
+html.dark-theme-variant .tt-scribble-shuffle-btn,
+html.dark-theme-variant .tt-scribble-dur-btn,
+html.dark-theme-variant .tt-scribble-close-btn {
+  background: var(--input-bg, var(--bg-secondary)) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme-variant .tt-scribble-start-btn,
+html.dark-theme-variant .tt-scribble-guess-send,
+html.dark-theme-variant .tt-scribble-dur-btn.active,
+html.dark-theme-variant .tt-scribble-mode-pill.active {
+  background: var(--button-primary-bg) !important;
+  color: var(--button-primary-text, #ffffff) !important;
+}
+
+@media (max-width: 760px) {
+  .tt-scribble-body {
+    grid-template-columns: 1fr;
+  }
+  .tt-scribble-choices-grid,
+  .tt-scribble-custom-row {
+    grid-template-columns: 1fr;
+  }
+  .tt-scribble-scores-box {
+    max-height: 112px;
+  }
+  .tt-scribble-guesses-box {
+    min-height: 165px;
+  }
+}

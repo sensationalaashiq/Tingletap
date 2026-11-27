@@ -6,7 +6,7 @@ import { translateText as _ttBP, getTranslationSettings as _tsBP, getLanguageNam
 import {
   ref, set, get, update, remove, onValue, onChildAdded, push, off, onDisconnect, increment, serverTimestamp
 } from 'firebase/database';
-import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { pt } from '../utils/premiumToast';
 import RJFollowButton from './RJFollowSystem';
 import GiftPanel from './coins/GiftPanel';
@@ -722,7 +722,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   const autoResumeAttempted = useRef(false);
 
   /* ── Permission flags ── */
-  const myUid = loggedInUserProfile?.uid || auth.currentUser?.uid;
+  const myUid = auth.currentUser?.uid || loggedInUserProfile?.uid;
   const isRJ = isOwnerRole(loggedInUserProfile) || isRjRole(loggedInUserProfile);
   const canManageRJ = isRJ && (!rjIsLive || !rjBroadcast?.rjUid || rjBroadcast.rjUid === myUid);
   const isGuest = loggedInUserProfile?.isGuest === true || loggedInUserProfile?.role === 'guest';
@@ -1030,7 +1030,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
      FIREBASE LISTENERS
   ══════════════════════════════════════ */
 
-  /* ── RJ Broadcast RTDB listener — always-on (no isOpen guard) ── */
+  const initYtPlayerRef = useRef(initYtPlayer);
+  const syncYouTubePlayerRef = useRef(syncYouTubePlayer);
+  const canManageRJRef = useRef(canManageRJ);
+  const iAmSpeakerRef = useRef(iAmSpeaker);
+  initYtPlayerRef.current = initYtPlayer;
+  syncYouTubePlayerRef.current = syncYouTubePlayer;
+  canManageRJRef.current = canManageRJ;
+  iAmSpeakerRef.current = iAmSpeaker;
+
+  /* ── RJ Broadcast RTDB listener — always-on (no isOpen guard, stable [myUid] deps) ── */
   useEffect(() => {
     const bcRef = ref(rtdb, 'broadcasts/rj');
     const unsub = onValue(bcRef, (snap) => {
@@ -1063,10 +1072,16 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         setYtRemoteState(ytRemote);
         setYtCurrentSongName(data.youtube?.songName || '');
         ytRemoteDataRef.current = data.youtube || null;
-        if (data.youtube?.videoId && !ytEmbedVideoId && currentYtVideoIdRef.current !== data.youtube.videoId) {
-          ytIntendedStateRef.current = ytRemote;
-          initYtPlayer(data.youtube.videoId, data.youtube.seekTo || 0);
-        } else if (!data.youtube?.videoId && currentYtVideoIdRef.current) {
+
+        const isHostActing = Boolean(isRJ && (!live || !data.rjUid || data.rjUid === myUid));
+        if (data.youtube?.videoId) {
+          if (!isHostActing && (rjIsListeningRef.current || iAmSpeakerRef.current)) {
+            syncYouTubePlayerRef.current?.(data.youtube);
+          } else if (currentYtVideoIdRef.current !== data.youtube.videoId) {
+            ytIntendedStateRef.current = ytRemote;
+            initYtPlayerRef.current?.(data.youtube.videoId, data.youtube.seekTo || 0);
+          }
+        } else if (currentYtVideoIdRef.current) {
           currentYtVideoIdRef.current = null;
           ytRealPlayingRef.current = false;
           setYtEmbedVideoId(null);
@@ -1095,7 +1110,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     });
     return () => unsub();
-  }, [myUid, ytEmbedVideoId, initYtPlayer]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myUid]);
 
   /* ── Join requests RTDB listener ── */
   useEffect(() => {
@@ -1332,7 +1348,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     };
   }, [canManageRJ, syncYouTubePlayer, sendYtCommand]);
 
-  /* ── Public broadcasts Firestore listener (always-on for badge count) ── */
+  /* ── Public broadcasts Firestore listener (always-on for badge count & Public tab visibility) ── */
   useEffect(() => {
     const q = query(collection(db, 'publicBroadcasts'), where('isLive', '==', true));
     const unsub = onSnapshot(q, async (snap) => {
@@ -1341,25 +1357,34 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       const verifiedList = [];
 
       for (const bc of list) {
-        // Auto-purge broadcasts older than 6 hours
-        if (bc.startedAt && (now - bc.startedAt > 6 * 3600 * 1000)) {
-          updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
-          remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
+        const isPastMaxAge = bc.startedAt && (now - bc.startedAt > 6 * 3600 * 1000);
+        const isHostOrStaff = Boolean(myUid && (bc.hostUid === myUid || isRJ));
+
+        // Auto-purge broadcasts older than 6 hours (only host or staff mutates shared doc)
+        if (isPastMaxAge) {
+          if (isHostOrStaff) {
+            updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
+            remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
+          }
           continue;
         }
 
-        // Cross-verify with RTDB session node
-        try {
-          const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${bc.id}/session`));
-          if (!rtdbSnap.exists()) {
-            // RTDB session is gone => host disconnected/crashed => clean up Firestore doc
-            updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
-            remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
-            continue;
+        // Cross-verify with RTDB session node ONLY after 30s grace window so new calls
+        // are immediately visible to everyone before RTDB settles, and non-hosts never kill live calls.
+        const isPastGrace = bc.startedAt && (now - bc.startedAt > 30000);
+        if (isPastGrace) {
+          try {
+            const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${bc.id}/session`));
+            if (!rtdbSnap.exists()) {
+              if (isHostOrStaff) {
+                updateDoc(doc(db, 'publicBroadcasts', bc.id), { isLive: false }).catch(() => {});
+                remove(ref(rtdb, `broadcasts/public/${bc.id}`)).catch(() => {});
+              }
+              continue;
+            }
+          } catch {
+            if (bc.startedAt && (now - bc.startedAt > 3600 * 1000)) continue;
           }
-        } catch {
-          // If RTDB read fails, verify age > 1 hour before dropping
-          if (bc.startedAt && (now - bc.startedAt > 3600 * 1000)) continue;
         }
 
         verifiedList.push(bc);
@@ -1376,7 +1401,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       }
     });
     return () => unsub();
-  }, [myUid]);
+  }, [myUid, isRJ]);
 
   /* ── Notify parent of live count for header badge ── */
   useEffect(() => {
@@ -1407,6 +1432,30 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speakerMap, canManageRJ, rjIsLive]);
 
+  /* ── RJ side: auto-recover broadcaster pipeline if RJ refreshed while still live ── */
+  const rjHostRecoveryRef = useRef(false);
+  useEffect(() => {
+    if (!canManageRJ || !rjIsLive || !myUid || rjBroadcast?.rjUid !== myUid) {
+      rjHostRecoveryRef.current = false;
+      return;
+    }
+    if (rjListenersUnsub.current && localStream.current) return;
+    if (rjHostRecoveryRef.current) return;
+    rjHostRecoveryRef.current = true;
+    (async () => {
+      try {
+        if (!localStream.current) {
+          await startLocalMic().catch(() => {});
+        }
+        ensureRjAudioMixer();
+        if (!rjListenersUnsub.current) {
+          rjStartListenerWatcher();
+        }
+      } catch {}
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManageRJ, rjIsLive, myUid, rjBroadcast?.rjUid]);
+
   /* ── Speaker side: when iAmSpeaker becomes true, grab mic and open two-way audio with RJ ── */
   useEffect(() => {
     if (!myUid || canManageRJ) return;
@@ -1417,7 +1466,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (speakerStream.current) { speakerStream.current.getTracks().forEach(t => t.stop()); speakerStream.current = null; }
       if (speakerAudioEl.current) {
         try { speakerAudioEl.current.pause(); speakerAudioEl.current.srcObject = null; } catch {}
-        speakerAudioEl.current = null;
       }
       speakerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
       speakerRtdbUnsubs.current = [];
@@ -1526,8 +1574,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
             }
           };
 
-          /* Watch for RJ's offer */
+          /* Watch for RJ's offer (track offerId nonce to ignore stale pre-reconnect offers) */
           let remoteDescReady = false;
+          let handledOfferId = null;
           const pendingCands = [];
           const drainPending = async () => {
             for (const c of pendingCands) {
@@ -1540,16 +1589,24 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           const unsubOffer = onValue(offerRef, async snap => {
             const offer = snap.val();
             if (!offer || pc !== speakerPC.current || pc.signalingState === 'closed' || pc.remoteDescription) return;
+            const oid = offer.offerId || offer.sdp;
+            if (handledOfferId === oid) return;
+            handledOfferId = oid;
             try {
-              await pc.setRemoteDescription(new RTCSessionDescription(offer));
+              await pc.setRemoteDescription(new RTCSessionDescription({ type: offer.type, sdp: offer.sdp }));
               remoteDescReady = true;
               await drainPending();
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
-              await set(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp });
+              await set(ref(rtdb, `broadcasts/rj/speakerConnections/${myUid}/answer`), {
+                type: answer.type,
+                sdp: answer.sdp,
+                offerId: offer.offerId || null,
+              });
               setSpeakerConnecting(false);
               bpToast.mic('You are now live on stage! Two-way audio is active.');
             } catch (err) {
+              handledOfferId = null;
               console.warn('Speaker answer error:', err);
             }
           });
@@ -1592,7 +1649,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       if (speakerStream.current) { speakerStream.current.getTracks().forEach(t => t.stop()); speakerStream.current = null; }
       if (speakerAudioEl.current) {
         try { speakerAudioEl.current.pause(); speakerAudioEl.current.srcObject = null; } catch {}
-        speakerAudioEl.current = null;
       }
       speakerRtdbUnsubs.current.forEach(u => { try { u(); } catch {} });
       speakerRtdbUnsubs.current = [];
@@ -1662,11 +1718,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       delete rjHostPCs.current[listenerUid];
     }
 
+    ensureRjAudioMixer();
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     rjHostPCs.current[listenerUid] = pc;
 
     /* Add mixed stream tracks (RJ mic + any accepted speakers) to this connection.
-       Fall back to raw localStream if AudioContext mixer wasn't initialised.      */
+       Fall back to raw localStream if AudioContext mixer wasn't initialised. */
     const mixedStream = rjMixDest.current?.stream || localStream.current;
     if (mixedStream) {
       mixedStream.getTracks().forEach(t => pc.addTrack(t, mixedStream));
@@ -1701,10 +1758,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       pendingCandidates.length = 0;
     };
 
+    const offerId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await update(ref(rtdb, `broadcasts/rj/connections/${listenerUid}`), {
-      offer: { type: offer.type, sdp: offer.sdp },
+      offer: { type: offer.type, sdp: offer.sdp, offerId },
       answer: null,
       hostCandidates: null,
       listenerCandidates: null,
@@ -1712,13 +1770,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     const unsubAns = onValue(ref(rtdb, `broadcasts/rj/connections/${listenerUid}/answer`), async snap => {
       const ans = snap.val();
-      if (ans && pc === rjHostPCs.current[listenerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(ans));
-          remoteDescReady = true;
-          await drainPending();
-        } catch {}
-      }
+      if (!ans || pc !== rjHostPCs.current[listenerUid] || pc.signalingState === 'closed' || pc.remoteDescription) return;
+      if (ans.offerId && ans.offerId !== offerId) return;
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: ans.type, sdp: ans.sdp }));
+        remoteDescReady = true;
+        await drainPending();
+      } catch {}
     });
     rjHostRtdbUnsubs.current.push(unsubAns);
 
@@ -2025,10 +2083,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     };
 
     /* RJ creates offer for two-way audio (sends RJ/co-speakers + receives speaker mic) */
+    const offerId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: false });
     await pc.setLocalDescription(offer);
     await update(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}`), {
-      offer: { type: offer.type, sdp: offer.sdp },
+      offer: { type: offer.type, sdp: offer.sdp, offerId },
       answer: null,
       rjCandidates: null,
       speakerCandidates: null,
@@ -2037,13 +2096,13 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     /* Watch for speaker's answer */
     const unsubAns = onValue(ref(rtdb, `broadcasts/rj/speakerConnections/${speakerUid}/answer`), async snap => {
       const ans = snap.val();
-      if (ans && pc === rjSpeakerPCs.current[speakerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(ans));
-          remoteDescReady = true;
-          await drainPending();
-        } catch {}
-      }
+      if (!ans || pc !== rjSpeakerPCs.current[speakerUid] || pc.signalingState === 'closed' || pc.remoteDescription) return;
+      if (ans.offerId && ans.offerId !== offerId) return;
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: ans.type, sdp: ans.sdp }));
+        remoteDescReady = true;
+        await drainPending();
+      } catch {}
     });
     rjSpeakerUnsubs.current[speakerUid].push(unsubAns);
 
@@ -2073,7 +2132,6 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     if (rjAudioEl.current) {
       try { rjAudioEl.current.pause(); rjAudioEl.current.srcObject = null; } catch {}
-      rjAudioEl.current = null;
     }
 
     if (removePresence && myUid) {
@@ -2106,6 +2164,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     try { localStorage.setItem('tingle_rj_was_listening', 'true'); } catch {}
 
     try {
+      /* Clear stale RTDB connection slot before re-subscribing so old offer isn't re-consumed */
+      await remove(ref(rtdb, `broadcasts/rj/connections/${myUid}`)).catch(() => {});
+
       /* Register presence — broadcaster will see this and create an offer */
       const lRef = ref(rtdb, `broadcasts/rj/listeners/${myUid}`);
       await set(lRef, { uid: myUid, name: myName, joinedAt: Date.now() });
@@ -2117,6 +2178,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
       /* Buffer ICE candidates that arrive before remote description is set */
       let remoteDescReady = false;
+      let handledOfferId = null;
       const pendingCandidates = [];
       const drainPending = async () => {
         for (const c of pendingCandidates) {
@@ -2159,19 +2221,29 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         }
       };
 
-      /* Watch for broadcaster's offer (fires immediately if already present) */
+      /* Watch for broadcaster's offer */
       const offerRef = ref(rtdb, `broadcasts/rj/connections/${myUid}/offer`);
       const unsubOffer = onValue(offerRef, async snap => {
         const offer = snap.val();
         if (!offer || pc.signalingState === 'closed' || pc.remoteDescription) return;
+        const oid = offer.offerId || offer.sdp;
+        if (handledOfferId === oid) return;
+        handledOfferId = oid;
         try {
-          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: offer.type, sdp: offer.sdp }));
           remoteDescReady = true;
           await drainPending();                              /* apply buffered candidates */
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          await set(ref(rtdb, `broadcasts/rj/connections/${myUid}/answer`), { type: answer.type, sdp: answer.sdp }).catch(() => {});
-        } catch (err) { console.warn('RJ offer handling error:', err); }
+          await set(ref(rtdb, `broadcasts/rj/connections/${myUid}/answer`), {
+            type: answer.type,
+            sdp: answer.sdp,
+            offerId: offer.offerId || null,
+          }).catch(() => {});
+        } catch (err) {
+          handledOfferId = null;
+          console.warn('RJ offer handling error:', err);
+        }
       });
       rjListenerRtdbUnsubs.current.push(unsubOffer);
 
@@ -2429,6 +2501,15 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           try { rjMicGainNode.current.connect(dest); } catch {}
         }
       });
+      /* If any listener/speaker PCs exist (e.g. after mic restart), swap in mixed/mic track */
+      const mixedTrack = rjMixDest.current?.stream?.getAudioTracks()?.[0] || stream.getAudioTracks()[0];
+      if (mixedTrack) {
+        Object.values(rjHostPCs.current).forEach(pc => {
+          pc?.getSenders?.().forEach(s => {
+            if (s.track?.kind === 'audio') s.replaceTrack(mixedTrack).catch(() => {});
+          });
+        });
+      }
     } catch (e) {
       console.warn('RJ audio mixer init failed — falling back to direct stream:', e);
     }
@@ -3015,11 +3096,12 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
     if (iAmOfferer) {
       try {
+        const offerId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const offer = await pc.createOffer();
         if (pc !== pubHostPCs.current[peerUid] || pc.signalingState === 'closed') return;
         await pc.setLocalDescription(offer);
         await update(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}`), {
-          offer: { type: offer.type, sdp: offer.sdp },
+          offer: { type: offer.type, sdp: offer.sdp, offerId },
           answer: null,
           offerIce: null,
           answerIce: null,
@@ -3027,9 +3109,9 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
 
         const unsubAns = onValue(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/answer`), async snap => {
           const ans = snap.val();
-          if (ans && pc === pubHostPCs.current[peerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
+          if (ans && (!ans.offerId || ans.offerId === offerId) && pc === pubHostPCs.current[peerUid] && pc.signalingState !== 'closed' && !pc.remoteDescription) {
             try {
-              await pc.setRemoteDescription(new RTCSessionDescription(ans));
+              await pc.setRemoteDescription(new RTCSessionDescription({ type: ans.type, sdp: ans.sdp }));
               remoteDescReady = true;
               await drainPending();
             } catch {}
@@ -3038,11 +3120,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         pubPeerUnsubs.current[peerUid].push(unsubAns);
       } catch {}
     } else {
+      let handledOfferId = null;
       const unsubOffer = onValue(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/offer`), async snap => {
         const offer = snap.val();
         if (!offer || pc !== pubHostPCs.current[peerUid] || pc.signalingState === 'closed' || pc.remoteDescription) return;
+        if (offer.offerId && handledOfferId === offer.offerId) return;
+        handledOfferId = offer.offerId || 'legacy';
         try {
-          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: offer.type, sdp: offer.sdp }));
           remoteDescReady = true;
           await drainPending();
           const answer = await pc.createAnswer();
@@ -3050,6 +3135,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           await set(ref(rtdb, `broadcasts/public/${callId}/mesh/${pairId}/answer`), {
             type: answer.type,
             sdp: answer.sdp,
+            ...(offer.offerId ? { offerId: offer.offerId } : {}),
           }).catch(() => {});
         } catch {}
       });
@@ -3282,19 +3368,20 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
         startedAt: Date.now()
       };
 
-      const docRef = await addDoc(collection(db, 'publicBroadcasts'), data);
-      const broadcastId = docRef.id;
+      /* Pre-allocate Firestore doc ID and establish RTDB session + host participant FIRST
+         so remote clients' Firestore snapshot never races ahead of RTDB session existence */
+      const bcRef = doc(collection(db, 'publicBroadcasts'));
+      const broadcastId = bcRef.id;
       const createdBc = { id: broadcastId, ...data };
-      setMyActiveBroadcast(createdBc);
-      setActivePubCall(createdBc);
-      activePubCallRef.current = createdBc;
-      setPubTitle('');
-      setPubPassword('');
-      setPubIsProtected(false);
 
-      /* Create RTDB session + host participant with onDisconnect cleanup */
       const sessionRef = ref(rtdb, `broadcasts/public/${broadcastId}/session`);
-      await set(sessionRef, { hostUid: myUid, hostName: myName, title: createdBc.title, startedAt: data.startedAt, maxParticipants: MAX_PUB_PARTICIPANTS });
+      await set(sessionRef, {
+        hostUid: myUid,
+        hostName: myName,
+        title: createdBc.title,
+        startedAt: data.startedAt,
+        maxParticipants: MAX_PUB_PARTICIPANTS,
+      });
       const odHandle = onDisconnect(sessionRef);
       odHandle.remove();
       pubOnDisconnectRef.current = odHandle;
@@ -3312,6 +3399,14 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       const partOd = onDisconnect(myPartRef);
       partOd.remove();
       pubPartOdRef.current = partOd;
+
+      await setDoc(bcRef, data);
+      setMyActiveBroadcast(createdBc);
+      setActivePubCall(createdBc);
+      activePubCallRef.current = createdBc;
+      setPubTitle('');
+      setPubPassword('');
+      setPubIsProtected(false);
 
       _pubStartGroupWatcher(broadcastId, true);
       bpToast.live('Group voice call is LIVE! Up to 20 people can join and talk.');
@@ -3412,7 +3507,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
     }
   };
 
-  /* ── Stale public broadcast cleanup on panel open ── */
+  /* ── Stale public broadcast cleanup on panel open (30s grace window, host/staff only) ── */
   useEffect(() => {
     if (!isOpen) return;
     const cleanStale = async () => {
@@ -3422,7 +3517,11 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
           where('isLive', '==', true)
         );
         const snap = await getDocs(q);
+        const now = Date.now();
         for (const d of snap.docs) {
+          const bc = d.data() || {};
+          if (bc.hostUid !== myUid && !isRJ) continue;
+          if (bc.startedAt && (now - bc.startedAt < 30000)) continue;
           const rtdbSnap = await get(ref(rtdb, `broadcasts/public/${d.id}/session`));
           if (!rtdbSnap.exists()) {
             await updateDoc(doc(db, 'publicBroadcasts', d.id), { isLive: false }).catch(() => {});
@@ -3432,7 +3531,7 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
       } catch {}
     };
     cleanStale();
-  }, [isOpen]);
+  }, [isOpen, myUid, isRJ]);
 
   /* ── Cleanup when panel closes (X button, NOT when minimized) ── */
   useEffect(() => {
@@ -5100,6 +5199,8 @@ const BroadcastPanel = ({ isOpen, onClose, loggedInUserProfile, allUsersProfiles
   ══════════════════════════════════════ */
   return (
     <>
+      <audio ref={rjAudioEl} autoPlay playsInline style={{ display: 'none' }} />
+      <audio ref={speakerAudioEl} autoPlay playsInline style={{ display: 'none' }} />
       {persistentYtElement}
       {isOpen && isMinimized && (
         <FloatingMinimizedBubble

@@ -483,7 +483,11 @@ function App() {
                   'usernameFontPreferences','allUsersUsernameStyles','allGlobalMessageStyles'
                 ]);
                 Object.entries(profile.settings).forEach(([key, value]) => {
-                  if (!styleKeys.has(key)) localStorage.setItem(key, value.toString());
+                  if (!styleKeys.has(key) && value !== null && value !== undefined) {
+                    try {
+                      localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+                    } catch {}
+                  }
                 });
               }
             }

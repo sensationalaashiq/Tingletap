@@ -48,6 +48,7 @@ import {
   UnlockSparkIcon,
   SearchLensIcon,
   CrownRoyalIcon,
+  TheatreHostCrownIcon,
 } from './icons/LuxuryModuleIcons';
 
 // Resolves a uid's CURRENT username live so friend/blocked/team lists
@@ -114,6 +115,10 @@ const SettingsSidebar = ({
     const [gamesDirectory, setGamesDirectory] = useState([]);
     const [gamesDirLoading, setGamesDirLoading] = useState(false);
     const [gamesUpdatingUid, setGamesUpdatingUid] = useState('');
+    const [theatreAllowedUids, setTheatreAllowedUids] = useState([]);
+    const [theatreAllowedMeta, setTheatreAllowedMeta] = useState({});
+    const [theatreSearchTerm, setTheatreSearchTerm] = useState('');
+    const [theatreUpdatingUid, setTheatreUpdatingUid] = useState('');
 
     // TingleBot settings state
     // Style-tab inline colour picker open state
@@ -474,11 +479,11 @@ const SettingsSidebar = ({
         return stopAll;
     }, [loggedInUserProfile?.uid, loggedInUserProfile?.role]);
 
-    // Owner-only live subscription + user directory loader for Games & Polls Access Control
+    // Owner-only live subscription for Games & Polls Access Control + Theatre Host Access Control
     useEffect(() => {
         if (!isOpen || !isOwnerRole(loggedInUserProfile)) return;
         const gaRef = doc(db, 'settings', 'gamesAccess');
-        const unsub = onSnapshot(
+        const unsubGa = onSnapshot(
             gaRef,
             (snap) => {
                 if (snap.exists()) {
@@ -492,7 +497,27 @@ const SettingsSidebar = ({
             },
             () => {}
         );
-        return () => unsub();
+
+        const taRef = doc(db, 'settings', 'theatreAccess');
+        const unsubTa = onSnapshot(
+            taRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data() || {};
+                    setTheatreAllowedUids(Array.isArray(data.allowedUids) ? data.allowedUids.filter(Boolean) : []);
+                    setTheatreAllowedMeta(data.allowedUsersMeta && typeof data.allowedUsersMeta === 'object' ? data.allowedUsersMeta : {});
+                } else {
+                    setTheatreAllowedUids([]);
+                    setTheatreAllowedMeta({});
+                }
+            },
+            () => {}
+        );
+
+        return () => {
+            unsubGa();
+            unsubTa();
+        };
     }, [isOpen, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
 
     useEffect(() => {
@@ -571,6 +596,45 @@ const SettingsSidebar = ({
             pt.error(err?.message || 'Unable to update Games access.');
         } finally {
             setGamesUpdatingUid('');
+        }
+    };
+
+    const handleToggleTheatreUserAccess = async (targetUser) => {
+        const targetUid = targetUser?.uid;
+        if (!targetUid || !isOwnerRole(loggedInUserProfile)) return;
+        setTheatreUpdatingUid(targetUid);
+        const currentlyAllowed = theatreAllowedUids.includes(targetUid);
+        const nextUids = currentlyAllowed
+            ? theatreAllowedUids.filter((id) => id !== targetUid)
+            : [...new Set([...theatreAllowedUids, targetUid])];
+        const nextMeta = { ...(theatreAllowedMeta || {}) };
+        if (currentlyAllowed) {
+            delete nextMeta[targetUid];
+        } else {
+            nextMeta[targetUid] = {
+                uid: targetUid,
+                displayName: targetUser.displayName || targetUser.username || 'User',
+                username: targetUser.username || '',
+                role: targetUser.role || 'user',
+                badge: targetUser.badge || null,
+                gender: targetUser.gender || 'male',
+                photoURL: targetUser.photoURL || '',
+            };
+        }
+        try {
+            await setDoc(doc(db, 'settings', 'theatreAccess'), {
+                allowedUids: nextUids,
+                allowedUsersMeta: nextMeta,
+                updatedBy: auth.currentUser?.uid || loggedInUserProfile?.uid || '',
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+            pt.success(currentlyAllowed
+                ? `Theatre Host removed for ${targetUser.displayName || 'user'}.`
+                : `${targetUser.displayName || 'User'} appointed as Theatre Host.`);
+        } catch (err) {
+            pt.error(err?.message || 'Unable to update Theatre Host access.');
+        } finally {
+            setTheatreUpdatingUid('');
         }
     };
 
@@ -1296,6 +1360,131 @@ const SettingsSidebar = ({
                                                                 </>
                                                             )}
                                                         </button>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* ── MODULE 3C: OWNER THEATRE HOST APPOINTMENT CONTROL ── */}
+                        {isOwnerRole(loggedInUserProfile) && (() => {
+                            const q = theatreSearchTerm.trim().toLowerCase();
+                            const appointedList = theatreAllowedUids.map((id) => {
+                                const fromDir = gamesDirectory.find((u) => u.uid === id);
+                                const fromMeta = theatreAllowedMeta?.[id];
+                                return fromDir || fromMeta || { uid: id, displayName: 'Member', role: 'user' };
+                            });
+                            const matchingUsers = q
+                                ? gamesDirectory.filter((u) => {
+                                    const name = (u.displayName || '').toLowerCase();
+                                    const uname = (u.username || '').toLowerCase();
+                                    const email = (u.email || '').toLowerCase();
+                                    const roleLbl = getRoleDisplayLabel(u).toLowerCase();
+                                    return name.includes(q) || uname.includes(q) || email.includes(q) || roleLbl.includes(q);
+                                }).slice(0, 8)
+                                : appointedList;
+
+                            return (
+                                <div className="setting-group tl-ga-card tl-tha-card" style={{ marginBottom: '12px' }}>
+                                    <h4>
+                                        <span className="tl-ga-title-icon">
+                                            <TheatreHostCrownIcon size={17} />
+                                        </span>
+                                        THEATRE HOST ACCESS
+                                        <span className="tl-ga-count">{theatreAllowedUids.length}</span>
+                                    </h4>
+
+                                    <div className="tl-ga-owner-pill">
+                                        <CrownRoyalIcon size={13} color="#f59e0b" />
+                                        <span>Owners, Admins &amp; Mods are default Theatre Hosts · Search to appoint additional Hosts</span>
+                                    </div>
+
+                                    <div className="tl-ga-search-wrap">
+                                        <span className="tl-ga-search-icon">
+                                            <SearchLensIcon size={14} color="currentColor" />
+                                        </span>
+                                        <input
+                                            type="text"
+                                            className="tl-ga-search-input"
+                                            placeholder="Search name, username, email or role..."
+                                            value={theatreSearchTerm}
+                                            onChange={(e) => setTheatreSearchTerm(e.target.value)}
+                                        />
+                                        {theatreSearchTerm && (
+                                            <button
+                                                type="button"
+                                                className="tl-ga-search-clear"
+                                                onClick={() => setTheatreSearchTerm('')}
+                                                aria-label="Clear search"
+                                            >
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="tl-ga-list">
+                                        {gamesDirLoading && q ? (
+                                            <div className="tl-ga-empty">Searching users...</div>
+                                        ) : matchingUsers.length === 0 ? (
+                                            <div className="tl-ga-empty">
+                                                {q
+                                                    ? 'No matching registered users found.'
+                                                    : 'No additional Theatre Hosts appointed yet. Search above to assign.'}
+                                            </div>
+                                        ) : (
+                                            matchingUsers.map((u) => {
+                                                const isDefaultStaff = isStaffRole(u);
+                                                const isAppointed = theatreAllowedUids.includes(u.uid);
+                                                const roleLbl = getRoleDisplayLabel({ role: u.role, gender: u.gender, isGuest: false, badge: u.badge });
+                                                const busy = theatreUpdatingUid === u.uid;
+                                                return (
+                                                    <div key={u.uid} className={`tl-ga-row ${(isAppointed || isDefaultStaff) ? 'is-allowed' : ''}`}>
+                                                        <LiveAvatarImg
+                                                            uid={u.uid}
+                                                            gender={u.gender || 'male'}
+                                                            isGuest={false}
+                                                            fallbackPhotoURL={u.photoURL}
+                                                            className="tl-ga-avatar"
+                                                            alt={u.displayName || 'User'}
+                                                        />
+                                                        <div className="tl-ga-meta">
+                                                            <div className="tl-ga-name">{u.displayName || u.username || 'User'}</div>
+                                                            <div className="tl-ga-sub">
+                                                                <span>{roleLbl}</span>
+                                                                {u.username ? <span>· @{u.username}</span> : null}
+                                                            </div>
+                                                        </div>
+                                                        {isDefaultStaff ? (
+                                                            <span className="tl-ga-staff-chip" title="Admins and Moderators automatically have Theatre Host control">
+                                                                <TheatreHostCrownIcon size={12} />
+                                                                <span>Staff Host</span>
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                className={`tl-ga-toggle-btn ${isAppointed ? 'unlocked' : 'locked'}`}
+                                                                disabled={busy}
+                                                                onClick={() => handleToggleTheatreUserAccess(u)}
+                                                                title={isAppointed ? 'Remove Theatre Host' : 'Make Theatre Host'}
+                                                            >
+                                                                {isAppointed ? (
+                                                                    <>
+                                                                        <UnlockSparkIcon size={13} color="currentColor" />
+                                                                        <span>{busy ? '...' : 'Host'}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <LockShieldIcon size={13} color="currentColor" />
+                                                                        <span>{busy ? '...' : 'Make Host'}</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
                                             })

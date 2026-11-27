@@ -206,6 +206,47 @@
           }
         }
       }
+    },
+
+    "games": {
+      "scribble": {
+        "$roomId": {
+          "round": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+          "strokes": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+          "liveStroke": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+          "guesses": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+          "scores": {
+            ".read": "auth != null",
+            "$uid": {
+              ".write": "auth != null && (auth.uid === $uid || auth.uid === root.child('games/scribble/' + $roomId + '/round/drawerUid').val())"
+            }
+          },
+          "players": {
+            ".read": "auth != null",
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          },
+          "drawerSecret": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          }
+        }
+      }
     }
   }
 }

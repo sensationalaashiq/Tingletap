@@ -27,6 +27,8 @@ import {
   SearchLensIcon,
   BackArrowIcon,
   SendPaperPlaneIcon,
+  PaletteCanvasIcon,
+  LockShieldIcon,
 } from '../icons/LuxuryModuleIcons';
 import './FloatingActivityLauncher.css';
 
@@ -84,6 +86,16 @@ const arcPath = (cx, cy, r, startA, endA) => {
 
 const PICKER_ITEMS = [
   {
+    id: 'scribble',
+    title: 'Create & Draw',
+    subtitle: 'Smooth live canvas, letter hints & exact word guess',
+    badge: 'All Players',
+    accent: '#ec4899',
+    Icon: PaletteCanvasIcon,
+    isFeatured: true,
+    alwaysUnlocked: true,
+  },
+  {
     id: 'poll',
     title: 'Live Quick Poll',
     subtitle: 'Real-time vote bars & voter names',
@@ -131,6 +143,9 @@ const FloatingActivityLauncher = ({
   isMuted = false,
   pickerOpen = false,
   onClosePicker,
+  canLaunchActivities = true,
+  onOpenScribble,
+  scribbleActive = false,
 }) => {
   const [activeCreator, setActiveCreator] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -212,6 +227,16 @@ const FloatingActivityLauncher = ({
 
   const openCreator = (type) => {
     if (onClosePicker) onClosePicker();
+    if (type === 'scribble') {
+      if (typeof onOpenScribble === 'function') {
+        onOpenScribble();
+      }
+      return;
+    }
+    if (!canLaunchActivities) {
+      pt.info('Ask an Owner to unlock Polls & Mini-Game creation — Create & Draw is open for everyone!');
+      return;
+    }
     if (isMuted) {
       pt.error('You are currently muted and cannot launch room activities.');
       return;
@@ -572,21 +597,32 @@ const FloatingActivityLauncher = ({
               <div className="hp-act-picker-grid">
                 {PICKER_ITEMS.map((item) => {
                   const IconComp = item.Icon;
+                  const isLockedItem = !item.alwaysUnlocked && !canLaunchActivities;
+                  const badgeLabel = item.id === 'scribble' && scribbleActive ? 'Live Now' : item.badge;
                   return (
                     <button
                       key={item.id}
                       type="button"
-                      className={`hp-activity-card-btn${item.id === 'word' ? ' is-featured' : ''}`}
+                      className={`hp-activity-card-btn${item.isFeatured ? ' is-featured' : ''}${isLockedItem ? ' is-locked-card' : ''}${item.id === 'scribble' && scribbleActive ? ' is-live-scribble' : ''}`}
                       style={{ '--item-accent': item.accent }}
                       onClick={() => openCreator(item.id)}
                     >
                       <span className="hp-activity-pop-icon">
-                        <IconComp size={17} color={item.accent} />
+                        <IconComp size={18} color={item.accent} />
                       </span>
                       <span className="hp-activity-pop-label">
                         <span className="hp-activity-title-row">
                           <strong>{item.title}</strong>
-                          <span className="hp-activity-count-meta">{item.badge}</span>
+                          <span className={`hp-activity-count-meta${item.id === 'scribble' && scribbleActive ? ' is-live' : ''}`}>
+                            {isLockedItem ? (
+                              <span className="hp-activity-lock-chip">
+                                <LockShieldIcon size={10} color="currentColor" />
+                                <span>Owner Lock</span>
+                              </span>
+                            ) : (
+                              badgeLabel
+                            )}
+                          </span>
                         </span>
                         <small>{item.subtitle}</small>
                       </span>

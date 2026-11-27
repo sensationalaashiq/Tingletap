@@ -103,6 +103,12 @@ service cloud.firestore {
     function isGuest()      { return request.auth != null && myRole() == 'guest'; }
     function isRegistered() { return request.auth != null && myRole() != 'guest'; }
 
+    function isAppointedTheatreHost(uid) {
+      let taPath = /databases/$(database)/documents/settings/theatreAccess;
+      return exists(taPath)
+             && (uid in get(taPath).data.get('allowedUids', []));
+    }
+
     // Hierarchy safeguard: lower staff cannot modify higher staff
     function canStaffModifyTarget(targetUid) {
       let tRole = getRole(targetUid);
@@ -480,12 +486,12 @@ service cloud.firestore {
         allow delete: if isOwner() && request.auth.uid == watchUid;
       }
 
-      // Synchronized Theatre Cinema Watch Session (Owner, Admin, and Moderator only)
+      // Synchronized Theatre Cinema Watch Session (Owner, Admin, Moderator, or Owner-appointed Theatre Host)
       match /theatre/{sessionId} {
         allow read: if request.auth != null;
         allow create, update: if request.auth != null
                       && notBanned()
-                      && isStaff()
+                      && (isStaff() || (isRegistered() && isAppointedTheatreHost(request.auth.uid)))
                       && request.resource.data.hostUid is string
                       && request.resource.data.updatedBy == request.auth.uid
                       && request.resource.data.isPlaying is bool
@@ -502,7 +508,7 @@ service cloud.firestore {
                             && request.resource.data.videoUrl.size() <= 1000
                             && request.resource.data.videoUrl.matches('^https?://.*'))
                       );
-        allow delete: if isStaff();
+        allow delete: if isStaff() || (isRegistered() && isAppointedTheatreHost(request.auth.uid));
       }
     }
 
@@ -1130,10 +1136,10 @@ service cloud.firestore {
               && request.resource.data.name.size() <= 60
               && request.resource.data.get('invitePolicy', 'admins_only') in ['admins_only', 'all_members']
             )
-            // Any member: update typing/unread/lastMessage preview on send/read
+            // Any member: update typing/unread/lastMessage preview or pinnedMessage
             || (
               request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['typing', 'unreadBy', 'lastMessage', 'lastMessageSenderName', 'lastMessageAt', 'updatedAt'])
+                .hasOnly(['typing', 'unreadBy', 'lastMessage', 'lastMessageSenderName', 'lastMessageAt', 'pinnedMessage', 'updatedAt'])
             )
             // Any member: add members if invitePolicy == 'all_members' (cannot alter roles or existing members)
             || (

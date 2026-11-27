@@ -43,8 +43,8 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
 
         .epm3-card {
           position: relative;
-          width: min(500px, calc(100vw - 24px));
-          max-height: min(90dvh, 760px);
+          width: min(488px, calc(100vw - 20px));
+          max-height: min(92dvh, 720px);
           display: flex;
           flex-direction: column;
           border-radius: 22px;
@@ -59,25 +59,25 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
 
         .epm3-header {
           flex-shrink: 0;
-          padding: 16px 18px;
+          padding: 13px 16px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+          gap: 11px;
+          background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 65%, #fce7f3 100%);
           border-bottom: 1px solid rgba(139, 92, 246, 0.2);
         }
 
         .epm3-icon {
-          width: 42px;
-          height: 42px;
+          width: 40px;
+          height: 40px;
           border-radius: 12px;
           flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #7c3aed, #6366f1);
-          color: #ffffff;
-          box-shadow: 0 6px 16px rgba(109, 40, 217, 0.32);
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid rgba(139, 92, 246, 0.22);
+          box-shadow: 0 6px 16px rgba(109, 40, 217, 0.16);
         }
 
         .epm3-titles {
@@ -86,7 +86,7 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
         }
         .epm3-titles h2 {
           font-family: 'Playfair Display', serif;
-          font-size: 1.15rem;
+          font-size: 1.12rem;
           font-weight: 700;
           color: #2e1065;
           margin: 0 0 2px;
@@ -95,7 +95,8 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
         .epm3-titles p {
           font-size: 11.5px;
           font-weight: 500;
-          color: #6b7280;
+          color: #5b21b6;
+          opacity: 0.78;
           margin: 0;
         }
 
@@ -185,9 +186,17 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
         >
           <div className="epm3-header">
             <div className="epm3-icon" aria-hidden="true">
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-                <path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="epmHdrUserG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="55%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+                <circle cx="12" cy="8" r="4" fill="url(#epmHdrUserG)" />
+                <path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="url(#epmHdrUserG)" />
+                <circle cx="19" cy="5" r="2.2" fill="#f59e0b" />
               </svg>
             </div>
 
@@ -197,9 +206,15 @@ const EditProfileModal = React.memo(({ isOpen, onClose, onSuccess }) => {
             </div>
 
             <button type="button" className="epm3-close" onClick={onClose} aria-label="Close">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="epmHdrCloseG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#f43f5e" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+                <line x1="18" y1="6" x2="6" y2="18" stroke="url(#epmHdrCloseG)" strokeWidth="2.6" strokeLinecap="round" />
+                <line x1="6" y1="6" x2="18" y2="18" stroke="url(#epmHdrCloseG)" strokeWidth="2.6" strokeLinecap="round" />
               </svg>
             </button>
           </div>

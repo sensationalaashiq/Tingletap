@@ -54,8 +54,8 @@ const UPLOAD_CONFIG = {
     allowed: Object.keys(EXT_IMAGE),
     maxMB: 2,
     pathFn: ({ uid }) => `profile/${uid}/profile.webp`,
-    cacheControl: 'public, max-age=31536000, immutable',
-    urlFn: key => getPublicMediaUrl(key),
+    cacheControl: 'public, max-age=60, must-revalidate',
+    urlFn: key => `${getPublicMediaUrl(key)}?v=${Date.now()}`,
   },
 
   'cover': {
@@ -63,8 +63,8 @@ const UPLOAD_CONFIG = {
     allowed: Object.keys(EXT_IMAGE),
     maxMB: 2,
     pathFn: ({ uid }) => `cover/${uid}/cover.webp`,
-    cacheControl: 'public, max-age=31536000, immutable',
-    urlFn: key => getPublicMediaUrl(key),
+    cacheControl: 'public, max-age=60, must-revalidate',
+    urlFn: key => `${getPublicMediaUrl(key)}?v=${Date.now()}`,
   },
 
   // Public room chat images
@@ -239,7 +239,9 @@ export const handler = async (event) => {
   } catch (e) {
     // R2_PUBLIC_BUCKET_URL not set — fall back to serveMedia proxy
     console.warn('[uploadMedia] Public URL not available, falling back to proxy:', e.message);
-    url = `/.netlify/functions/serveMedia?key=${encodeURIComponent(key)}`;
+    url = `/.netlify/functions/serveMedia?key=${encodeURIComponent(key)}${
+      uploadType === 'profile' || uploadType === 'cover' ? `&v=${Date.now()}` : ''
+    }`;
   }
 
   return resp({ key, url });

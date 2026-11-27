@@ -5,16 +5,16 @@
 .tt-hub-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  gap: 5px;
   padding: 6px 10px;
-  background: rgba(139, 92, 246, 0.06);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
+  background: rgba(139, 92, 246, 0.08);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16);
 }
 
 html.dark-mode .tt-hub-tabs,
 html.dark-theme-variant .tt-hub-tabs {
-  background: rgba(15, 13, 30, 0.72);
-  border-bottom-color: rgba(167, 139, 250, 0.18);
+  background: rgba(15, 13, 30, 0.78);
+  border-bottom-color: rgba(167, 139, 250, 0.2);
 }
 
 .tt-hub-tab-btn {
@@ -22,12 +22,12 @@ html.dark-theme-variant .tt-hub-tabs {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 32px;
-  padding: 0 8px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #6b7280;
+  height: 34px;
+  padding: 0 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+  color: #312e81;
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
@@ -35,25 +35,52 @@ html.dark-theme-variant .tt-hub-tabs {
   white-space: nowrap;
 }
 
+.tt-hub-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
 .tt-hub-tab-btn:hover {
-  background: rgba(139, 92, 246, 0.08);
-  color: #5b21b6;
+  background: rgba(237, 233, 254, 0.95);
+  color: #4c1d95;
+  border-color: rgba(124, 58, 237, 0.3);
 }
 
 .tt-hub-tab-btn.active {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #ec4899 100%);
   color: #ffffff;
-  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.34);
+}
+
+.tt-hub-tab-btn.active .tt-hub-tab-icon {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
 }
 
 html.dark-mode .tt-hub-tab-btn,
 html.dark-theme-variant .tt-hub-tab-btn {
-  color: #94a3b8;
+  background: rgba(30, 25, 58, 0.85);
+  border-color: rgba(167, 139, 250, 0.2);
+  color: #e2e8f0;
+}
+
+html.dark-mode .tt-hub-tab-btn .tt-hub-tab-icon,
+html.dark-theme-variant .tt-hub-tab-btn .tt-hub-tab-icon {
+  background: rgba(255, 255, 255, 0.95);
 }
 
 html.dark-mode .tt-hub-tab-btn.active,
 html.dark-theme-variant .tt-hub-tab-btn.active {
   color: #ffffff;
+  border-color: transparent;
 }
 
 .tt-hub-badge {
@@ -66,12 +93,12 @@ html.dark-theme-variant .tt-hub-tab-btn.active {
   border-radius: 999px;
   font-size: 10px;
   font-weight: 800;
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444, #f43f5e);
   color: #ffffff;
 }
 
 .tt-hub-tab-btn.active .tt-hub-badge {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* Message Request Cards */
@@ -248,108 +275,127 @@ html.dark-theme-variant .tt-req-btn.decline {
   box-shadow: 0 3px 10px rgba(124, 58, 237, 0.28);
 }
 
-/* Modal Backdrop & Dialog (Group DM Create + Room Invite) */
+/* Modal Backdrop & Dialog (Group DM Create — strictly ZERO backdrop blur) */
 .tt-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 12000;
-  background: rgba(9, 7, 20, 0.65);
-  backdrop-filter: blur(8px);
+  background: rgba(11, 8, 26, 0.56);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 12px;
 }
 
 .tt-modal-card {
   width: 100%;
-  max-width: 440px;
-  max-height: 88dvh;
+  max-width: 392px;
+  max-height: min(86dvh, 610px);
   display: flex;
   flex-direction: column;
-  border-radius: 18px;
-  background: #ffffff;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #faf8ff 100%);
   color: #111827;
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  box-shadow: 0 24px 60px rgba(15, 10, 40, 0.35);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  box-shadow: 0 24px 56px rgba(15, 10, 40, 0.34);
   overflow: hidden;
 }
 
 html.dark-mode .tt-modal-card,
 html.dark-theme-variant .tt-modal-card {
-  background: #141126;
+  background: linear-gradient(180deg, #16122c 0%, #110d22 100%);
   color: #f1f5f9;
-  border-color: rgba(167, 139, 250, 0.28);
+  border-color: rgba(167, 139, 250, 0.32);
 }
 
 .tt-modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 16px;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.14);
+  padding: 11px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.07));
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16);
 }
 
 .tt-modal-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .tt-modal-close {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: transparent;
-  color: inherit;
+  border-radius: 9px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+  color: #4f46e5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.tt-modal-close:hover {
+  transform: scale(1.05);
+}
+
+html.dark-mode .tt-modal-close,
+html.dark-theme-variant .tt-modal-close {
+  background: rgba(32, 26, 62, 0.92);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #e2e8f0;
 }
 
 .tt-modal-body {
-  padding: 14px 16px;
+  padding: 12px 14px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .tt-modal-field-label {
   display: block;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6b7280;
-  margin-bottom: 5px;
+  color: #5b21b6;
+  margin-bottom: 4px;
 }
 
 html.dark-mode .tt-modal-field-label,
 html.dark-theme-variant .tt-modal-field-label {
-  color: #94a3b8;
+  color: #c4b5fd;
 }
 
 .tt-modal-input {
   width: 100%;
-  height: 38px;
+  height: 36px;
   padding: 0 11px;
   border-radius: 10px;
-  border: 1px solid rgba(139, 92, 246, 0.24);
-  background: rgba(248, 247, 255, 0.85);
+  border: 1.5px solid rgba(139, 92, 246, 0.24);
+  background: rgba(255, 255, 255, 0.95);
   color: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   outline: none;
   box-sizing: border-box;
 }
 
+.tt-modal-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
 html.dark-mode .tt-modal-input,
 html.dark-theme-variant .tt-modal-input {
-  background: rgba(26, 22, 48, 0.85);
+  background: rgba(24, 20, 44, 0.92);
   border-color: rgba(167, 139, 250, 0.28);
 }
 
@@ -357,22 +403,23 @@ html.dark-theme-variant .tt-modal-input {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-height: 240px;
+  max-height: 210px;
   overflow-y: auto;
 }
 
 .tt-user-picker-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 9px;
-  border-radius: 10px;
-  border: 1px solid rgba(139, 92, 246, 0.12);
-  background: rgba(139, 92, 246, 0.03);
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 11px;
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  background: rgba(139, 92, 246, 0.04);
   cursor: pointer;
   text-align: left;
   width: 100%;
   color: inherit;
+  transition: background 0.14s ease, border-color 0.14s ease;
 }
 
 .tt-user-picker-row.selected {
@@ -390,20 +437,21 @@ html.dark-theme-variant .tt-modal-input {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding: 11px 16px;
+  padding: 10px 14px;
   border-top: 1px solid rgba(139, 92, 246, 0.14);
 }
 
 .tt-btn-primary {
-  height: 36px;
-  padding: 0 16px;
+  height: 35px;
+  padding: 0 15px;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #ec4899 100%);
   color: #ffffff;
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.28);
 }
 
 .tt-btn-primary:disabled {
@@ -412,10 +460,10 @@ html.dark-theme-variant .tt-modal-input {
 }
 
 .tt-btn-secondary {
-  height: 36px;
-  padding: 0 14px;
+  height: 35px;
+  padding: 0 13px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.28);
   background: transparent;
   color: inherit;
   font-size: 12.5px;
@@ -423,38 +471,35 @@ html.dark-theme-variant .tt-modal-input {
   cursor: pointer;
 }
 
-/* Floating Group DM Chat Window */
+/* Floating Draggable Group DM Window — compact luxury matching PM Window (slightly larger) */
 .tt-gdm-window {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: min(410px, calc(100vw - 24px));
-  height: min(560px, calc(100dvh - 36px));
+  width: min(338px, calc(100vw - 16px));
+  height: min(404px, calc(100dvh - 24px));
   z-index: 10500;
   display: flex;
   flex-direction: column;
   border-radius: 18px;
-  background: #ffffff;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 246, 255, 0.96) 100%);
   color: #111827;
-  border: 1px solid rgba(139, 92, 246, 0.28);
-  box-shadow: 0 22px 54px rgba(15, 10, 40, 0.32);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 18px 46px rgba(15, 10, 40, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.65) inset;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 html.dark-mode .tt-gdm-window,
 html.dark-theme-variant .tt-gdm-window {
-  background: #120f24;
+  background: linear-gradient(160deg, rgba(18, 15, 36, 0.97) 0%, rgba(12, 10, 26, 0.98) 100%);
   color: #f8fafc;
-  border-color: rgba(167, 139, 250, 0.32);
+  border-color: rgba(167, 139, 250, 0.34);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.55);
 }
 
 @media (max-width: 600px) {
   .tt-gdm-window {
-    right: 8px;
-    left: 8px;
-    bottom: 8px;
-    width: auto;
-    height: min(82dvh, 620px);
+    width: min(344px, calc(100vw - 14px));
+    height: min(74dvh, 450px);
   }
 }
 
@@ -463,10 +508,37 @@ html.dark-theme-variant .tt-gdm-window {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 12px;
-  background: linear-gradient(135deg, #6d28d9, #4f46e5);
+  padding: 9px 11px;
+  background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 58%, #9333ea 100%);
   color: #ffffff;
   flex-shrink: 0;
+  user-select: none;
+}
+
+.tt-gdm-drag-handle {
+  cursor: grab;
+}
+.tt-gdm-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tt-gdm-hdr-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(15, 10, 40, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tt-gdm-hdr-btn:hover {
+  transform: scale(1.06);
 }
 
 .tt-gdm-pinned {
@@ -475,9 +547,9 @@ html.dark-theme-variant .tt-gdm-window {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 11px;
-  background: rgba(139, 92, 246, 0.12);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.18);
-  font-size: 11.5px;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.14), rgba(236, 72, 153, 0.1));
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  font-size: 11px;
   flex-shrink: 0;
 }
 
@@ -485,7 +557,7 @@ html.dark-theme-variant .tt-gdm-window {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 10px 11px;
+  padding: 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -493,7 +565,7 @@ html.dark-theme-variant .tt-gdm-window {
 
 .tt-gdm-msg {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   align-items: flex-end;
   max-width: 92%;
 }
@@ -504,52 +576,107 @@ html.dark-theme-variant .tt-gdm-window {
 }
 
 .tt-gdm-bubble {
-  padding: 8px 11px;
+  padding: 7px 10px;
   border-radius: 13px;
-  background: rgba(139, 92, 246, 0.09);
-  border: 1px solid rgba(139, 92, 246, 0.14);
-  font-size: 12.5px;
-  line-height: 1.42;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  font-size: 12px;
+  line-height: 1.4;
   word-break: break-word;
   position: relative;
 }
 
 .tt-gdm-msg.own .tt-gdm-bubble {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: linear-gradient(135deg, #6d28d9, #4f46e5);
   color: #ffffff;
   border-color: transparent;
 }
 
 html.dark-mode .tt-gdm-msg:not(.own) .tt-gdm-bubble,
 html.dark-theme-variant .tt-gdm-msg:not(.own) .tt-gdm-bubble {
-  background: rgba(31, 26, 56, 0.92);
-  border-color: rgba(167, 139, 250, 0.22);
+  background: rgba(31, 26, 56, 0.94);
+  border-color: rgba(167, 139, 250, 0.24);
+}
+
+.tt-gdm-msg-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+  font-size: 10px;
+}
+
+.tt-gdm-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: none;
+  border-radius: 6px;
+  padding: 2px 5px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #312e81;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tt-gdm-msg.own .tt-gdm-action-chip {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+html.dark-mode .tt-gdm-msg:not(.own) .tt-gdm-action-chip,
+html.dark-theme-variant .tt-gdm-msg:not(.own) .tt-gdm-action-chip {
+  background: rgba(255, 255, 255, 0.09);
+  color: #e2e8f0;
 }
 
 .tt-gdm-composer {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 8px 10px;
-  border-top: 1px solid rgba(139, 92, 246, 0.16);
-  background: rgba(248, 247, 255, 0.7);
+  padding: 7px 9px;
+  border-top: 1px solid rgba(139, 92, 246, 0.18);
+  background: rgba(248, 247, 255, 0.92);
   flex-shrink: 0;
   position: relative;
 }
 
 html.dark-mode .tt-gdm-composer,
 html.dark-theme-variant .tt-gdm-composer {
-  background: rgba(18, 15, 36, 0.96);
+  background: rgba(18, 15, 36, 0.98);
+}
+
+.tt-gdm-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(139, 92, 246, 0.22);
+  background: rgba(255, 255, 255, 0.94);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.1);
+}
+
+html.dark-mode .tt-gdm-icon-btn,
+html.dark-theme-variant .tt-gdm-icon-btn {
+  background: rgba(32, 26, 58, 0.92);
+  border-color: rgba(167, 139, 250, 0.28);
 }
 
 .tt-gdm-drawer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px;
+  padding: 11px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* Room Invite Toast Banner */

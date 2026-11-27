@@ -84,7 +84,13 @@ import { extractYouTubeVideoId, getYouTubeEmbedUrl } from '../utils/youtubeUtils
 import { syncPublicProfile, recoverUserProfileFromPublic } from '../utils/syncPublicProfile';
 import ChatActivityCard from '../components/chat/ChatActivityCard';
 import FloatingActivityLauncher from '../components/chat/FloatingActivityLauncher';
-import { ShroudedEyeIcon, ActivitySparkIcon } from '../components/icons/LuxuryModuleIcons';
+import ScribbleCanvasGame from '../components/chat/ScribbleCanvasGame';
+import {
+    ShroudedEyeIcon,
+    ActivitySparkIcon,
+    PaletteCanvasIcon,
+    GamepadSparkIcon,
+} from '../components/icons/LuxuryModuleIcons';
 import {
     VALID_MOOD_IDS,
     SILENT_WATCH_STORAGE_KEY,
@@ -981,12 +987,14 @@ const ChatMessage = React.memo(({ message, isEven, onDelete, onKick, onUnkick, o
     if (prevProps.loggedInUserProfile?.uid !== nextProps.loggedInUserProfile?.uid) return false;
     if (prevProps.loggedInUserProfile?.role !== nextProps.loggedInUserProfile?.role) return false;
     if (prevProps.loggedInUserProfile?.badge !== nextProps.loggedInUserProfile?.badge) return false;
+    if (prevProps.loggedInUserProfile?.photoURL !== nextProps.loggedInUserProfile?.photoURL) return false;
     const senderUid = prevProps.message.uid;
     if (senderUid) {
         const prevSender = prevProps.allUsersMap?.[senderUid];
         const nextSender = nextProps.allUsersMap?.[senderUid];
         if (prevSender?.role !== nextSender?.role) return false;
         if (prevSender?.badge !== nextSender?.badge) return false;
+        if (prevSender?.photoURL !== nextSender?.photoURL) return false;
     }
     if (prevProps.roomId !== nextProps.roomId) return false;
     if (prevProps.isEven !== nextProps.isEven) return false;
@@ -1366,19 +1374,16 @@ const HomePage = ({ user, roomIdOverride }) => {
     // ── Module 2: Inline Interactive Activities Map ──
     const [activitiesMap, setActivitiesMap] = useState({});
     // ── Module 3: Staff-only Silent Watch Mode ──
-    const [silentWatchActive, setSilentWatchActive] = useState(() => {
-        try {
-            const curUid = auth.currentUser?.uid;
-            if (!curUid) return false;
-            return localStorage.getItem(SILENT_WATCH_STORAGE_KEY(curUid)) === 'true';
-        } catch {
-            return false;
-        }
-    });
-    const silentWatchRef = useRef(silentWatchActive);
+    // Default false until Firestore rooms/{roomId}/silentWatch/{authUid} confirms active,
+    // preventing stale localStorage flags from falsely marking Owner offline on boot.
+    const [silentWatchActive, setSilentWatchActive] = useState(false);
+    const silentWatchRef = useRef(false);
     const reconcilePresencesRef = useRef(null);
     const [gamesAllowedUids, setGamesAllowedUids] = useState([]);
+    const [theatreAllowedUids, setTheatreAllowedUids] = useState([]);
     const [isGamesPickerOpen, setIsGamesPickerOpen] = useState(false);
+    const [isScribbleOpen, setIsScribbleOpen] = useState(false);
+    const [scribbleLiveRound, setScribbleLiveRound] = useState(null);
     const [currentRoomData, setCurrentRoomData] = useState(null);
     const silentBannerRef = useRef(null);
     const [blockedUsers, setBlockedUsers] = useState([]);
@@ -1416,10 +1421,14 @@ const HomePage = ({ user, roomIdOverride }) => {
         [currentRoomData, roomName, roomId]
     );
     useEffect(() => {
-        if (!canShowGamesInRoom && isGamesPickerOpen) {
-            setIsGamesPickerOpen(false);
+        if (!canShowGamesInRoom) {
+            if (isGamesPickerOpen) setIsGamesPickerOpen(false);
+            if (isScribbleOpen) setIsScribbleOpen(false);
         }
-    }, [canShowGamesInRoom, isGamesPickerOpen]);
+    }, [canShowGamesInRoom, isGamesPickerOpen, isScribbleOpen]);
+    useEffect(() => {
+        setIsScribbleOpen(false);
+    }, [roomId]);
     const pmHeaderBoxRef = useRef(null);
     const [isPrivateAttachOpen, setIsPrivateAttachOpen] = useState(false);
     const [pmAttachmentType, setPmAttachmentType] = useState(null); // 'image' or 'audio'
@@ -1670,9 +1679,14 @@ const HomePage = ({ user, roomIdOverride }) => {
 
         const syncHeight = () => {
             const h = footerEl.offsetHeight || 50;
-            const hdrH = document.querySelector('.homepage-container .chat-header')?.offsetHeight || 50;
+            const hpEl = document.querySelector('.homepage-container');
+            const hdrH = hpEl?.querySelector('.chat-header')?.offsetHeight || 50;
             const bannerH = silentBannerRef.current?.offsetHeight || 0;
             const topOffset = hdrH + bannerH;
+
+            if (hpEl) {
+                hpEl.style.setProperty('--tt-theatre-top', `${topOffset}px`);
+            }
 
             const feedEl = chatFeedRef.current;
             if (!feedEl) return;
@@ -1694,7 +1708,7 @@ const HomePage = ({ user, roomIdOverride }) => {
             ro.disconnect();
             window.removeEventListener('resize', syncHeight);
         };
-    }, [silentWatchActive]);
+    }, [silentWatchActive, canShowGamesInRoom, isTheatreRoom]);
 
     // ── Module 1, 2, 3 & 4 Real-Time Subscriptions ──────────────────────────
     useEffect(() => {
@@ -1733,11 +1747,12 @@ const HomePage = ({ user, roomIdOverride }) => {
         };
     }, [roomId]);
 
-    // Games & Polls Owner-controlled access list
+    // Games & Polls + Theatre Host Owner-controlled access lists
     useEffect(() => {
         const authUid = auth.currentUser?.uid || firebaseAuthUid;
         if (!authUid) {
             setGamesAllowedUids([]);
+            setTheatreAllowedUids([]);
             return;
         }
         const gaRef = doc(db, 'settings', 'gamesAccess');
@@ -1753,8 +1768,37 @@ const HomePage = ({ user, roomIdOverride }) => {
             },
             () => {}
         );
-        return () => unsubGa();
+        const taRef = doc(db, 'settings', 'theatreAccess');
+        const unsubTa = onSnapshot(
+            taRef,
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setTheatreAllowedUids(Array.isArray(data?.allowedUids) ? data.allowedUids.filter(Boolean) : []);
+                } else {
+                    setTheatreAllowedUids([]);
+                }
+            },
+            () => {}
+        );
+        return () => {
+            unsubGa();
+            unsubTa();
+        };
     }, [firebaseAuthUid]);
+
+    // Lightweight live Scribble status badge for Gaming rooms (never auto-opens modal)
+    useEffect(() => {
+        if (!roomId || !canShowGamesInRoom || isTheatreRoom) {
+            setScribbleLiveRound(null);
+            return undefined;
+        }
+        const scribbleRoundRef = ref(rtdb, `games/scribble/${roomId}/round`);
+        const unsub = onValue(scribbleRoundRef, (snap) => {
+            setScribbleLiveRound(snap.exists() ? snap.val() : null);
+        }, () => setScribbleLiveRound(null));
+        return () => unsub();
+    }, [roomId, canShowGamesInRoom, isTheatreRoom]);
 
     // Owner-only Silent Watch Firestore sync (all other roles strictly forced off)
     useEffect(() => {
@@ -1765,29 +1809,47 @@ const HomePage = ({ user, roomIdOverride }) => {
             setSilentWatchActive(false);
             return;
         }
-        try {
-            if (localStorage.getItem(SILENT_WATCH_STORAGE_KEY(authUid)) === 'true') {
-                silentWatchRef.current = true;
-                setSilentWatchActive(true);
-            }
-        } catch {}
-
         const swRef = doc(db, 'rooms', roomId, 'silentWatch', authUid);
         const unsubSw = onSnapshot(
             swRef,
             (snap) => {
-                if (snap.exists()) {
-                    const active = Boolean(snap.data()?.active);
-                    silentWatchRef.current = active;
-                    setSilentWatchActive(active);
-                    try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), active ? 'true' : 'false'); } catch {}
-                } else {
-                    silentWatchRef.current = false;
-                    setSilentWatchActive(false);
-                    try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), 'false'); } catch {}
+                const active = snap.exists() ? Boolean(snap.data()?.active) : false;
+                const wasActive = silentWatchRef.current;
+                silentWatchRef.current = active;
+                setSilentWatchActive(active);
+                try { localStorage.setItem(SILENT_WATCH_STORAGE_KEY(authUid), active ? 'true' : 'false'); } catch {}
+
+                // If Owner exited Stealth (or stale localStorage cleared), immediately restore RTDB visibility
+                if (!active && wasActive) {
+                    const prof = loggedInUserProfileRef.current || loggedInUserProfile;
+                    const myGender = prof?.gender || getStoredGuestGender() || 'male';
+                    const restored = {
+                        ...(window._currentStatusData || {}),
+                        state: 'online',
+                        currentRoomId: roomId,
+                        last_changed: rtdbServerTimestamp(),
+                        uid: authUid,
+                        displayName: prof?.displayName || 'Staff',
+                        role: prof?.role || 'owner',
+                        badge: prof?.badge || null,
+                        gender: myGender,
+                        isGuest: false,
+                        photoURL: isRealAvatarUpload(prof?.photoURL)
+                            ? prof.photoURL
+                            : getDefaultAvatarUrl(authUid, myGender, false),
+                    };
+                    window._currentStatusData = restored;
+                    set(ref(rtdb, `status/${authUid}`), restored).catch(() => {});
+                    set(ref(rtdb, `room_presence/${roomId}/${authUid}`), restored).catch(() => {});
+                    set(ref(rtdb, `roomCounts/${roomId}/${authUid}`), { online: true, last_changed: rtdbServerTimestamp() }).catch(() => {});
                 }
+                reconcilePresencesRef.current?.();
             },
-            () => {}
+            () => {
+                silentWatchRef.current = false;
+                setSilentWatchActive(false);
+                reconcilePresencesRef.current?.();
+            }
         );
         return () => unsubSw();
     }, [roomId, firebaseAuthUid, loggedInUserProfile?.role, loggedInUserProfile?.badge]);
@@ -2828,10 +2890,15 @@ const HomePage = ({ user, roomIdOverride }) => {
                     setUsersWhoBlockedMe(userData.blockedBy);
                 }
 
-                // Load global settings from Firebase and sync with localStorage
+                // Load global settings from Firebase and sync with localStorage safely
                 if (userData.settings) {
                     Object.keys(userData.settings).forEach(key => {
-                        localStorage.setItem(key, userData.settings[key].toString());
+                        const val = userData.settings[key];
+                        if (val !== null && val !== undefined) {
+                            try {
+                                localStorage.setItem(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
+                            } catch {}
+                        }
                     });
                 }
 
@@ -4276,19 +4343,17 @@ const HomePage = ({ user, roomIdOverride }) => {
         scrollToBottom(true, true);
     };
 
-    // Attach passive scroll & interaction listeners
+    // Attach passive scroll & real scroll-gesture listeners only (no pointerdown, so tapping buttons/avatars never blocks scroll)
     useEffect(() => {
         const chatElement = chatFeedRef.current;
         if (!chatElement) return;
         chatElement.addEventListener('scroll', handleScroll, { passive: true });
         chatElement.addEventListener('wheel', handleUserInteractionStart, { passive: true });
         chatElement.addEventListener('touchmove', handleUserInteractionStart, { passive: true });
-        chatElement.addEventListener('pointerdown', handleUserInteractionStart, { passive: true });
         return () => {
             chatElement.removeEventListener('scroll', handleScroll);
             chatElement.removeEventListener('wheel', handleUserInteractionStart);
             chatElement.removeEventListener('touchmove', handleUserInteractionStart);
-            chatElement.removeEventListener('pointerdown', handleUserInteractionStart);
         };
     }, [handleScroll, handleUserInteractionStart]);
 
@@ -4317,36 +4382,43 @@ const HomePage = ({ user, roomIdOverride }) => {
                 return;
             }
 
-            const pinToLatest = () => {
+            let didSmoothEntry = false;
+            const pinToLatest = (preferSmooth = false) => {
                 if (!chatFeedRef.current || userScrolledDuringLoadRef.current) return;
                 isProgrammaticScrollRef.current = true;
-                chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+                const targetTop = chatFeedRef.current.scrollHeight;
+                if (preferSmooth && !didSmoothEntry) {
+                    didSmoothEntry = true;
+                    chatFeedRef.current.scrollTo({ top: targetTop, behavior: 'smooth' });
+                } else {
+                    chatFeedRef.current.scrollTop = targetTop;
+                }
                 isAtBottomRef.current = true;
                 setIsAtBottom(true);
                 setShowScrollToBottomBtn(false);
                 if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
                 programmaticScrollTimerRef.current = setTimeout(() => {
                     isProgrammaticScrollRef.current = false;
-                }, 140);
+                }, 260);
             };
 
-            const rafId = requestAnimationFrame(pinToLatest);
+            const rafId = requestAnimationFrame(() => pinToLatest(true));
             let ro = null;
             if (typeof ResizeObserver !== 'undefined') {
                 try {
                     ro = new ResizeObserver(() => {
                         if (!entryScrollDoneRef.current && !userScrolledDuringLoadRef.current) {
-                            pinToLatest();
+                            pinToLatest(false);
                         }
                     });
                     ro.observe(el);
                 } catch {}
             }
 
-            const t1 = setTimeout(pinToLatest, 160);
-            const t2 = setTimeout(pinToLatest, 450);
+            const t1 = setTimeout(() => pinToLatest(false), 180);
+            const t2 = setTimeout(() => pinToLatest(false), 450);
             const settleTimer = setTimeout(() => {
-                pinToLatest();
+                pinToLatest(false);
                 entryScrollDoneRef.current = true;
                 setHasInitialScrolled(true);
                 if (ro) { try { ro.disconnect(); } catch {} }
@@ -4361,22 +4433,22 @@ const HomePage = ({ user, roomIdOverride }) => {
             };
         }
 
-        // After initial settle: auto-scroll smoothly ONLY if user just sent a message OR was already near bottom
+        // After initial settle: check live DOM scroll position so manually scrolled-up users stay where they are
+        // even when sending a message; auto-scroll smoothly ONLY when already near/at the bottom.
         const autoScrollEnabled = localStorage.getItem('autoScrollChat') !== 'false';
-        const shouldFollow = justSentOwnMessageRef.current || (autoScrollEnabled && isAtBottomRef.current && !userInitiatedScrollRef.current && !hasUserScrolled);
+        const liveNearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 110;
+        justSentOwnMessageRef.current = false;
+        const shouldFollow = autoScrollEnabled && liveNearBottom;
 
         if (shouldFollow) {
-            justSentOwnMessageRef.current = false;
             requestAnimationFrame(() => scrollToBottom(true, true));
         } else {
-            justSentOwnMessageRef.current = false;
-            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 95;
-            isAtBottomRef.current = nearBottom;
-            setIsAtBottom(nearBottom);
-            setShowScrollToBottomBtn(!nearBottom);
+            isAtBottomRef.current = liveNearBottom;
+            setIsAtBottom(liveNearBottom);
+            setShowScrollToBottomBtn(!liveNearBottom);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [messages, roomId]);
+    }, [messages, pendingMessages, roomId]);
 
     // Apply font styles whenever preferences change — separate from scroll effect
     // to avoid triggering DOM manipulation on every new message.
@@ -4629,7 +4701,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const g = globalStatusRaw?.[uid];
                 if (g && (g.state === 'offline' || (g.currentRoomId && g.currentRoomId !== roomId))) {
                     const gTs = typeof g.last_changed === 'number' ? g.last_changed : 0;
-                    if (gTs > p.last_changed) return;
+                    if (gTs > p.last_changed + 4000) return;
                 }
                 const mergedGlobal = (g && g.state === 'online' && g.currentRoomId === roomId && isFreshOnline(g, serverNow)) ? g : null;
                 merged[uid] = mergedGlobal ? { ...mergedGlobal, ...p, uid } : { ...p, uid };
@@ -4643,7 +4715,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 const r = roomPresRaw?.[uid];
                 if (r && r.state !== 'online') {
                     const rTs = typeof r.last_changed === 'number' ? r.last_changed : 0;
-                    if (rTs > g.last_changed) return;
+                    if (rTs > g.last_changed + 4000) return;
                 }
                 merged[uid] = { ...g, uid };
             });
@@ -6856,6 +6928,14 @@ const HomePage = ({ user, roomIdOverride }) => {
     };
 
     const handleOpenConversation = async (conversation) => {
+        if (conversation?.isGroup && conversation.group) {
+            setActiveGroupDm({
+                ...conversation.group,
+                _restoredDraft: conversation.draftMessage || '',
+            });
+            setPmHeaderBoxOpen(false);
+            return;
+        }
         setPrivateMessageTarget(
             conversation.otherUser
                 ? { ...conversation.otherUser, uid: conversation.otherUserId, displayName: conversation.otherUserName }
@@ -7419,6 +7499,34 @@ const HomePage = ({ user, roomIdOverride }) => {
 
 
 
+
+    const handleMinimizeGroupDm = (groupObj, draftText = '') => {
+        if (!groupObj?.id) return;
+        const convId = `group_${groupObj.id}`;
+        const groupConv = {
+            conversationId: convId,
+            isGroup: true,
+            group: groupObj,
+            otherUserId: convId,
+            otherUserName: groupObj.name || 'Group Chat',
+            otherUserPhoto: groupObj.photoURL || null,
+            otherUser: {
+                uid: convId,
+                displayName: groupObj.name || 'Group Chat',
+                photoURL: groupObj.photoURL || null,
+                role: 'group',
+            },
+            lastMessage: groupObj.lastMessage || `${(groupObj.memberUids || []).length} members`,
+            draftMessage: draftText || '',
+            minimizedAt: Date.now(),
+        };
+        setMinimizedConversations((prev) => {
+            const exists = prev.some((c) => c.conversationId === convId);
+            if (!exists) return [...prev, groupConv];
+            return prev.map((c) => (c.conversationId === convId ? { ...c, ...groupConv } : c));
+        });
+        setActiveGroupDm(null);
+    };
 
     const handleMinimizeConversation = (conversation) => {
         if (!conversation) return;
@@ -8337,14 +8445,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                     </button>
 
                     {(() => {
-                        const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
-                        const hasGamesPermission = isOwnerRole(loggedInUserProfile)
-                            || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
-                        const isGamesUnlocked = canShowGamesInRoom && hasGamesPermission;
-                        if (!isGamesUnlocked) {
-                            const lockReason = !canShowGamesInRoom
-                                ? 'Games & Interactives are locked here. Join a Gaming room to play!'
-                                : 'Mini-Games & Polls is locked. Ask an Owner to grant you access!';
+                        if (!canShowGamesInRoom) {
+                            const lockReason = 'Games & Interactives are locked here. Join a Gaming room to play!';
                             return (
                                 <button
                                     type="button"
@@ -8364,7 +8466,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                             <button
                                 type="button"
                                 className="hp-attach-btn"
-                                title="Mini-Games & Polls"
+                                title="Games & Interactive"
                                 onClick={() => {
                                     setIsAttachmentDropdownOpen(false);
                                     setIsGamesPickerOpen(true);
@@ -8502,15 +8604,33 @@ const HomePage = ({ user, roomIdOverride }) => {
                 </button>
             )}
 
-            {canShowGamesInRoom && (
-                <FloatingActivityLauncher
-                    roomId={roomId}
-                    loggedInUserProfile={loggedInUserProfile}
-                    isMuted={Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__')}
-                    pickerOpen={isGamesPickerOpen}
-                    onClosePicker={() => setIsGamesPickerOpen(false)}
-                />
-            )}
+            {canShowGamesInRoom && (() => {
+                const myGamesCheckUid = uid || firebaseAuthUid || auth.currentUser?.uid;
+                const hasGamesPermission = isOwnerRole(loggedInUserProfile)
+                    || (Boolean(myGamesCheckUid) && !isGuestUser(loggedInUserProfile) && gamesAllowedUids.includes(myGamesCheckUid));
+                const isMuteBlocked = Boolean(loggedInUserProfile?.mutedInfo?.isMuted && muteTimeLeft !== '__expired__');
+                return (
+                    <>
+                        <FloatingActivityLauncher
+                            roomId={roomId}
+                            loggedInUserProfile={loggedInUserProfile}
+                            isMuted={isMuteBlocked}
+                            pickerOpen={isGamesPickerOpen}
+                            onClosePicker={() => setIsGamesPickerOpen(false)}
+                            canLaunchActivities={hasGamesPermission}
+                            onOpenScribble={() => setIsScribbleOpen(true)}
+                            scribbleActive={scribbleLiveRound?.status === 'drawing'}
+                        />
+                        <ScribbleCanvasGame
+                            roomId={roomId}
+                            isOpen={isScribbleOpen}
+                            onClose={() => setIsScribbleOpen(false)}
+                            loggedInUserProfile={loggedInUserProfile}
+                            isMuted={isMuteBlocked}
+                        />
+                    </>
+                );
+            })()}
 
             <div
                 className="chat-footer hp-composer-footer"
@@ -8961,20 +9081,63 @@ const HomePage = ({ user, roomIdOverride }) => {
                           </div>
                       </header>
 
-                    {/* Module 3: Local-Only Owner Silent Watch Status Bar */}
-                    {isOwnerRole(loggedInUserProfile) && silentWatchActive && (
-                        <div className="tt-silent-watch-banner" ref={silentBannerRef} role="status">
-                            <span className="tt-silent-watch-banner-left">
-                                <ShroudedEyeIcon size={15} active={true} color="#a5b4fc" />
-                                <span>Silent Watch Active — Hidden from room roster</span>
-                            </span>
-                            <button
-                                type="button"
-                                className="tt-silent-watch-exit-btn"
-                                onClick={() => handleToggleSilentWatch(false)}
-                            >
-                                Go Visible
-                            </button>
+                    {/* Top Fixed Status & Interactive Dock Stack (Silent Watch + Gaming Room Controls) */}
+                    {((isOwnerRole(loggedInUserProfile) && silentWatchActive) || (canShowGamesInRoom && !isTheatreRoom)) && (
+                        <div className="tt-top-dock-stack" ref={silentBannerRef}>
+                            {isOwnerRole(loggedInUserProfile) && silentWatchActive && (
+                                <div className="tt-silent-watch-banner" role="status">
+                                    <span className="tt-silent-watch-banner-left">
+                                        <ShroudedEyeIcon size={15} active={true} color="#a5b4fc" />
+                                        <span>Silent Watch Active — Hidden from room roster</span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="tt-silent-watch-exit-btn"
+                                        onClick={() => handleToggleSilentWatch(false)}
+                                    >
+                                        Go Visible
+                                    </button>
+                                </div>
+                            )}
+
+                            {canShowGamesInRoom && !isTheatreRoom && (
+                                <div className="hp-gaming-dock" role="region" aria-label="Gaming Room Interactive Dock">
+                                    <div className="hp-gaming-dock-left">
+                                        <span className="hp-gaming-dock-badge">
+                                            <GamepadSparkIcon size={15} />
+                                        </span>
+                                        <div className="hp-gaming-dock-meta">
+                                            <strong>Games &amp; Interactive</strong>
+                                            <span>
+                                                {scribbleLiveRound?.status === 'drawing'
+                                                    ? `Live: ${scribbleLiveRound.drawerName || 'Player'} is drawing`
+                                                    : 'Polls, Trivia, Wheel, Atlas & Draw'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="hp-gaming-dock-actions">
+                                        <button
+                                            type="button"
+                                            className={`hp-gaming-btn is-scribble${scribbleLiveRound?.status === 'drawing' ? ' is-live' : ''}`}
+                                            onClick={() => setIsScribbleOpen(true)}
+                                            title="Open Create & Draw Canvas Game"
+                                        >
+                                            <PaletteCanvasIcon size={15} />
+                                            <span>Create &amp; Draw</span>
+                                            {scribbleLiveRound?.status === 'drawing' && <span className="hp-gaming-live-dot" />}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="hp-gaming-btn is-all-games"
+                                            onClick={() => setIsGamesPickerOpen(true)}
+                                            title="Open Games & Interactive Menu"
+                                        >
+                                            <ActivitySparkIcon size={14} color="#c084fc" />
+                                            <span>All Games</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -8992,6 +9155,12 @@ const HomePage = ({ user, roomIdOverride }) => {
                                 loggedInUserProfile={loggedInUserProfile}
                                 viewerCount={onlineUserIds.length}
                                 connectedUsers={liveUsers}
+                                theatreAllowedUids={theatreAllowedUids}
+                                isAppointedTheatreHost={Boolean(
+                                    (uid || firebaseAuthUid || auth.currentUser?.uid)
+                                    && !isGuestUser(loggedInUserProfile)
+                                    && theatreAllowedUids.includes(uid || firebaseAuthUid || auth.currentUser?.uid)
+                                )}
                                 onViewUser={stableHandleViewProfile}
                                 chatPanel={
                                     <>
@@ -9255,6 +9424,19 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     className={`tt-hub-tab-btn${pmHubTab === 'inbox' ? ' active' : ''}`}
                                     onClick={() => setPmHubTab('inbox')}
                                 >
+                                    <span className="tt-hub-tab-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                            <defs>
+                                                <linearGradient id="hubTabInboxG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                                    <stop offset="0%" stopColor="#38bdf8" />
+                                                    <stop offset="55%" stopColor="#6366f1" />
+                                                    <stop offset="100%" stopColor="#a855f7" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v9A2.5 2.5 0 0 1 17.5 17H9l-4.5 3.6V17H6.5" fill="url(#hubTabInboxG)" />
+                                            <path d="M4.5 6.5l7.5 5 7.5-5" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </span>
                                     <span>Inbox</span>
                                     {inboxUnreadTotal > 0 && (
                                         <span className="tt-hub-badge">{inboxUnreadTotal > 99 ? '99+' : inboxUnreadTotal}</span>
@@ -9267,6 +9449,19 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     className={`tt-hub-tab-btn${pmHubTab === 'requests' ? ' active' : ''}`}
                                     onClick={() => setPmHubTab('requests')}
                                 >
+                                    <span className="tt-hub-tab-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                            <defs>
+                                                <linearGradient id="hubTabReqG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                                    <stop offset="0%" stopColor="#fbbf24" />
+                                                    <stop offset="55%" stopColor="#fb7185" />
+                                                    <stop offset="100%" stopColor="#ec4899" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M12 3l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.3l5-.7L12 3z" fill="url(#hubTabReqG)" />
+                                            <circle cx="19" cy="5" r="2.2" fill="#38bdf8" />
+                                        </svg>
+                                    </span>
                                     <span>Requests</span>
                                     {messageRequests.length > 0 && (
                                         <span className="tt-hub-badge">{messageRequests.length > 99 ? '99+' : messageRequests.length}</span>
@@ -9279,6 +9474,21 @@ const HomePage = ({ user, roomIdOverride }) => {
                                     className={`tt-hub-tab-btn${pmHubTab === 'groups' ? ' active' : ''}`}
                                     onClick={() => setPmHubTab('groups')}
                                 >
+                                    <span className="tt-hub-tab-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+                                            <defs>
+                                                <linearGradient id="hubTabGroupsG" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                                    <stop offset="0%" stopColor="#10b981" />
+                                                    <stop offset="55%" stopColor="#06b6d4" />
+                                                    <stop offset="100%" stopColor="#6366f1" />
+                                                </linearGradient>
+                                            </defs>
+                                            <circle cx="9" cy="8.5" r="3.4" fill="url(#hubTabGroupsG)" />
+                                            <path d="M2.5 19.5c0-3.1 2.9-5.3 6.5-5.3s6.5 2.2 6.5 5.3" fill="url(#hubTabGroupsG)" />
+                                            <circle cx="17" cy="9.5" r="2.6" fill="#a855f7" />
+                                            <path d="M16 14.5c2.7.3 5 2 5 4.8" stroke="#ec4899" strokeWidth="2.1" strokeLinecap="round" />
+                                        </svg>
+                                    </span>
                                     <span>Groups</span>
                                     {groupUnreadTotal > 0 && (
                                         <span className="tt-hub-badge">{groupUnreadTotal > 99 ? '99+' : groupUnreadTotal}</span>
@@ -9500,7 +9710,13 @@ const HomePage = ({ user, roomIdOverride }) => {
                         isOpen={isBroadcastOpen}
                         onClose={() => setIsBroadcastOpen(false)}
                         loggedInUserProfile={loggedInUserProfile}
-                        allUsersProfiles={friendsProfiles || []}
+                        allUsersProfiles={Array.from(
+                            new Map(
+                                [...(liveUsers || []), ...(friendsProfiles || [])]
+                                    .filter(u => u?.uid)
+                                    .map(u => [u.uid, u])
+                            ).values()
+                        )}
                         roomId={roomId}
                         onLiveStatus={setLiveBroadcastCount}
                     />
@@ -10233,6 +10449,7 @@ const HomePage = ({ user, roomIdOverride }) => {
                 group={activeGroupDm}
                 isOpen={Boolean(activeGroupDm)}
                 onClose={() => setActiveGroupDm(null)}
+                onMinimize={handleMinimizeGroupDm}
                 loggedInUserProfile={loggedInUserProfile}
                 userProfilesMap={window.userProfilesCache}
                 friendsProfiles={friendsProfiles}
@@ -10266,6 +10483,8 @@ const HomePage = ({ user, roomIdOverride }) => {
                 onRemoveConversation={handleRemoveConversation}
                 unreadCounts={unreadCounts}
                 onlineUserIds={onlineUserIds}
+                groupDms={groupDms}
+                currentUid={auth.currentUser?.uid || loggedInUserProfile?.uid || ''}
             />
 
             {/* Block Confirmation Modal */}

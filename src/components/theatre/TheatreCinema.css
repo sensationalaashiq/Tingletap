@@ -1,14 +1,13 @@
 /* src/components/theatre/TheatreCinema.css */
-/* Tingletap Synchronized Theatre Cinema — Theme-Variable Driven Across ALL Themes
-   (theme-light, dark-mode/theme-dark, rose-pink, burgundy-wine, aurora, royal-purple, sunset-orange)
-   Includes Connected Users Sidebar / Overlay + High-Contrast Controls */
+/* Tingletap Synchronized Theatre Cinema — Ultra-Premium, Theme-Adaptive, Zero-Clipping Architecture
+   Adapts cleanly across Light, Dark, Rose Pink, Burgundy Wine, Aurora, Royal Purple, Sunset Orange */
 
 .tt-theatre-shell {
-  /* ── Default / Light Theme Tokens (synced with App.css .theme-light) ── */
+  /* ── Light Theme Tokens (synced with App.css .theme-light) ── */
   --tt-bg-shell: var(--bg-secondary, #f8fafc);
   --tt-bg-stage: var(--bg-primary, #ffffff);
   --tt-bg-bar: var(--bg-primary, #ffffff);
-  --tt-bg-viewport: var(--bg-tertiary, #eef2ff);
+  --tt-bg-viewport: linear-gradient(180deg, var(--bg-tertiary, #eef2ff) 0%, var(--bg-secondary, #f8fafc) 100%);
   --tt-bg-card: var(--modal-bg, var(--bg-primary, #ffffff));
   --tt-bg-btn: var(--button-secondary-bg, #f1f5f9);
   --tt-bg-btn-hover: var(--button-secondary-hover, #e2e8f0);
@@ -31,11 +30,12 @@
   --tt-input-placeholder: var(--text-secondary, #64748b);
   --tt-sidebar-bg: var(--sidebar-bg, #ffffff);
   --tt-sidebar-hover: var(--sidebar-hover, #f1f5f9);
-  --tt-shadow: rgba(15, 23, 42, 0.14);
-  --tt-overlay-backdrop: rgba(15, 23, 42, 0.45);
-  --tt-video-frame-bg: #0b0a12;
+  --tt-shadow: rgba(15, 23, 42, 0.12);
+  --tt-shadow-strong: rgba(15, 23, 42, 0.22);
+  --tt-overlay-backdrop: rgba(15, 23, 42, 0.56);
+  --tt-video-frame-bg: #090910;
 
-  /* Semantic Status & Role Tokens (Light Mode High Contrast) */
+  /* Semantic Status & Role Tokens */
   --tt-danger-bg: #fef2f2;
   --tt-danger-border: #fca5a5;
   --tt-danger-text: #b91c1c;
@@ -47,27 +47,22 @@
   --tt-success-border: #6ee7b7;
   --tt-success-text: #065f46;
 
-  --tt-role-host-bg: linear-gradient(135deg, #f59e0b, #d97706);
-  --tt-role-host-text: #ffffff;
-  --tt-role-host-border: rgba(217, 119, 6, 0.55);
-  --tt-role-owner-bg: #fef3c7;
-  --tt-role-owner-text: #92400e;
-  --tt-role-owner-border: #f59e0b;
-  --tt-role-admin-bg: #fee2e2;
-  --tt-role-admin-text: #b91c1c;
-  --tt-role-admin-border: #f87171;
-  --tt-role-mod-bg: #d1fae5;
-  --tt-role-mod-text: #065f46;
-  --tt-role-mod-border: #34d399;
-  --tt-role-rj-bg: #f3e8ff;
-  --tt-role-rj-text: #6b21a8;
-  --tt-role-rj-border: #c084fc;
-  --tt-role-member-bg: #f1f5f9;
-  --tt-role-member-text: #334155;
-  --tt-role-member-border: #cbd5e1;
+  --tt-role-host-bg: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+  --tt-role-host-border: rgba(236, 72, 153, 0.65);
+  --tt-role-owner-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --tt-role-owner-border: rgba(217, 119, 6, 0.65);
+  --tt-role-admin-bg: linear-gradient(135deg, #ef4444 0%, #be123c 100%);
+  --tt-role-admin-border: rgba(220, 38, 38, 0.6);
+  --tt-role-mod-bg: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  --tt-role-mod-border: rgba(5, 150, 105, 0.6);
+  --tt-role-rj-bg: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%);
+  --tt-role-rj-border: rgba(109, 40, 217, 0.58);
+  --tt-role-member-bg: #475569;
+  --tt-role-member-text: #ffffff;
+  --tt-role-member-border: #334155;
 
   position: fixed;
-  top: 50px;
+  top: var(--tt-theatre-top, 50px);
   left: 0;
   right: 0;
   bottom: 0;
@@ -79,9 +74,16 @@
   color: var(--tt-text-primary);
   overflow: hidden;
   z-index: 5;
+  box-sizing: border-box;
 }
 
-/* Dark Mode & All 5 Dark Color Themes (DarkMode.css + Themes.css) */
+.tt-theatre-shell *,
+.tt-theatre-shell *::before,
+.tt-theatre-shell *::after {
+  box-sizing: border-box;
+}
+
+/* ── Dark Mode & All 5 Dark Color Themes (DarkMode.css + Themes.css) ── */
 html.dark-mode .tt-theatre-shell,
 html.theme-dark .tt-theatre-shell,
 body.theme-dark .tt-theatre-shell,
@@ -89,7 +91,7 @@ html.dark-theme-variant .tt-theatre-shell {
   --tt-bg-shell: var(--bg-primary, #0f0f1a);
   --tt-bg-stage: var(--bg-secondary, #161625);
   --tt-bg-bar: var(--bg-secondary, #161625);
-  --tt-bg-viewport: var(--bg-primary, #0a0a14);
+  --tt-bg-viewport: linear-gradient(180deg, var(--bg-primary, #0a0a14) 0%, var(--bg-secondary, #141424) 100%);
   --tt-bg-card: var(--bg-elevated, var(--bg-tertiary, #1e1e30));
   --tt-bg-btn: var(--bg-tertiary, #222238);
   --tt-bg-btn-hover: var(--bg-quaternary, #2b2b46);
@@ -112,43 +114,34 @@ html.dark-theme-variant .tt-theatre-shell {
   --tt-input-placeholder: var(--text-secondary, #9aa3b8);
   --tt-sidebar-bg: var(--sidebar-bg, var(--bg-secondary, #161625));
   --tt-sidebar-hover: var(--sidebar-hover, rgba(255, 255, 255, 0.08));
-  --tt-shadow: rgba(0, 0, 0, 0.58);
-  --tt-overlay-backdrop: rgba(0, 0, 0, 0.68);
-  --tt-video-frame-bg: #06060b;
+  --tt-shadow: rgba(0, 0, 0, 0.48);
+  --tt-shadow-strong: rgba(0, 0, 0, 0.7);
+  --tt-overlay-backdrop: rgba(4, 6, 14, 0.76);
+  --tt-video-frame-bg: #05050a;
 
-  --tt-danger-bg: rgba(239, 68, 68, 0.18);
-  --tt-danger-border: rgba(248, 113, 113, 0.5);
+  --tt-danger-bg: rgba(239, 68, 68, 0.2);
+  --tt-danger-border: rgba(248, 113, 113, 0.52);
   --tt-danger-text: #fecaca;
-  --tt-danger-hover: rgba(239, 68, 68, 0.3);
-  --tt-warn-bg: rgba(245, 158, 11, 0.2);
+  --tt-danger-hover: rgba(239, 68, 68, 0.32);
+  --tt-warn-bg: rgba(245, 158, 11, 0.22);
   --tt-warn-border: rgba(251, 191, 36, 0.52);
   --tt-warn-text: #fde68a;
-  --tt-success-bg: rgba(16, 185, 129, 0.2);
+  --tt-success-bg: rgba(16, 185, 129, 0.22);
   --tt-success-border: rgba(52, 211, 153, 0.5);
   --tt-success-text: #6ee7b7;
 
-  --tt-role-host-bg: linear-gradient(135deg, #f59e0b, #ea580c);
-  --tt-role-host-text: #ffffff;
-  --tt-role-host-border: rgba(251, 191, 36, 0.65);
-  --tt-role-owner-bg: rgba(245, 158, 11, 0.22);
-  --tt-role-owner-text: #fde68a;
-  --tt-role-owner-border: rgba(251, 191, 36, 0.5);
-  --tt-role-admin-bg: rgba(239, 68, 68, 0.22);
-  --tt-role-admin-text: #fecaca;
-  --tt-role-admin-border: rgba(248, 113, 113, 0.5);
-  --tt-role-mod-bg: rgba(16, 185, 129, 0.22);
-  --tt-role-mod-text: #a7f3d0;
-  --tt-role-mod-border: rgba(52, 211, 153, 0.5);
-  --tt-role-rj-bg: rgba(168, 85, 247, 0.24);
-  --tt-role-rj-text: #e9d5ff;
-  --tt-role-rj-border: rgba(192, 132, 252, 0.5);
-  --tt-role-member-bg: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
-  --tt-role-member-text: var(--text-secondary, #cbd5e1);
-  --tt-role-member-border: var(--border-secondary, rgba(255, 255, 255, 0.16));
+  --tt-role-host-border: rgba(244, 114, 182, 0.72);
+  --tt-role-owner-border: rgba(251, 191, 36, 0.75);
+  --tt-role-admin-border: rgba(252, 165, 165, 0.7);
+  --tt-role-mod-border: rgba(110, 231, 183, 0.7);
+  --tt-role-rj-border: rgba(196, 181, 253, 0.7);
+  --tt-role-member-bg: #334155;
+  --tt-role-member-text: #f8fafc;
+  --tt-role-member-border: rgba(148, 163, 184, 0.45);
 }
 
 .tt-theatre-shell.tt-theatre-fullscreen {
-  top: 0;
+  top: 0 !important;
   z-index: 1200;
 }
 
@@ -170,13 +163,28 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
   flex-shrink: 0;
 }
 
+@keyframes ttTheatreDrawerIn {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ttTheatrePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+
 /* ── Connected Users Sidebar / Overlay Drawer ── */
 .tt-theatre-users-backdrop {
   position: absolute;
   inset: 0;
   z-index: 48;
   background: var(--tt-overlay-backdrop);
-  backdrop-filter: blur(2px);
 }
 
 .tt-theatre-users-drawer {
@@ -184,7 +192,7 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(300px, 86vw);
+  width: min(304px, calc(100% - 12px));
   z-index: 55;
   display: flex;
   flex-direction: column;
@@ -193,17 +201,18 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
   background: var(--tt-sidebar-bg);
   color: var(--tt-text-primary);
   border-left: 1px solid var(--tt-border-strong);
-  box-shadow: -8px 0 32px var(--tt-shadow);
+  box-shadow: -8px 0 32px var(--tt-shadow-strong);
   overflow: hidden;
+  animation: ttTheatreDrawerIn 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (min-width: 1200px) {
   .tt-theatre-shell.tt-theatre-users-open:not(.tt-theatre-fullscreen) {
-    grid-template-columns: 256px minmax(0, 1fr) 360px;
+    grid-template-columns: 262px minmax(0, 1fr) 360px;
   }
 
   .tt-theatre-shell.tt-theatre-users-open.tt-theatre-chat-collapsed:not(.tt-theatre-fullscreen) {
-    grid-template-columns: 256px minmax(0, 1fr);
+    grid-template-columns: 262px minmax(0, 1fr);
   }
 
   .tt-theatre-shell:not(.tt-theatre-fullscreen) .tt-theatre-users-backdrop {
@@ -220,6 +229,7 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
     border-left: none;
     border-right: 1px solid var(--tt-border);
     box-shadow: none;
+    animation: none;
   }
 }
 
@@ -228,7 +238,7 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 11px;
+  padding: 10px 12px;
   background: var(--tt-bg-bar);
   border-bottom: 1px solid var(--tt-border);
   flex-shrink: 0;
@@ -260,17 +270,19 @@ body .homepage-container .tt-theatre-shell svg[fill="none"] line {
 .tt-theatre-users-count-pill {
   font-size: 11px;
   font-weight: 800;
-  padding: 1px 7px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: var(--tt-bg-pill);
   color: var(--tt-text-pill);
   border: 1px solid var(--tt-border-accent);
+  font-variant-numeric: tabular-nums;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-users-close {
-  width: 28px !important;
-  height: 28px !important;
+  width: 30px !important;
+  height: 30px !important;
   padding: 0 !important;
+  min-width: 30px !important;
 }
 
 .tt-theatre-users-summary {
@@ -292,35 +304,45 @@ body .homepage-container .tt-theatre-shell .tt-theatre-users-close {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
-.tt-theatre-summary-chip.is-host {
-  background: var(--tt-role-host-bg);
-  color: var(--tt-role-host-text);
-  border: 1px solid var(--tt-role-host-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip.is-host {
+  background: var(--tt-role-host-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-host-border) !important;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.28) !important;
 }
 
-.tt-theatre-summary-chip.is-owner {
-  background: var(--tt-role-owner-bg);
-  color: var(--tt-role-owner-text);
-  border: 1px solid var(--tt-role-owner-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip.is-owner {
+  background: var(--tt-role-owner-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-owner-border) !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.28) !important;
 }
 
-.tt-theatre-summary-chip.is-admin {
-  background: var(--tt-role-admin-bg);
-  color: var(--tt-role-admin-text);
-  border: 1px solid var(--tt-role-admin-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip.is-admin {
+  background: var(--tt-role-admin-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-admin-border) !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.28) !important;
 }
 
-.tt-theatre-summary-chip.is-mod {
-  background: var(--tt-role-mod-bg);
-  color: var(--tt-role-mod-text);
-  border: 1px solid var(--tt-role-mod-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip.is-mod {
+  background: var(--tt-role-mod-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-mod-border) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28) !important;
+}
+
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip span,
+html body .homepage-container .tt-theatre-shell .tt-theatre-summary-chip svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
 }
 
 .tt-theatre-users-search-wrap {
@@ -328,13 +350,17 @@ body .homepage-container .tt-theatre-shell .tt-theatre-users-close {
   align-items: center;
   gap: 7px;
   margin: 8px 10px 4px;
-  padding: 0 9px;
-  height: 32px;
-  border-radius: 9px;
+  padding: 0 10px;
+  height: 34px;
+  border-radius: 10px;
   background: var(--tt-input-bg);
   border: 1px solid var(--tt-input-border);
   color: var(--tt-text-secondary);
   flex-shrink: 0;
+}
+
+.tt-theatre-users-search-wrap:focus-within {
+  border-color: var(--tt-accent);
 }
 
 html body .homepage-container .tt-theatre-shell .tt-theatre-users-search {
@@ -359,7 +385,8 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px;
+  overflow-x: hidden;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -377,11 +404,12 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 7px 8px;
-  border-radius: 11px;
+  padding: 8px 9px;
+  border-radius: 12px;
   background: var(--tt-bg-card);
   border: 1px solid var(--tt-border);
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  min-width: 0;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
 }
 
 .tt-theatre-user-row.is-clickable {
@@ -395,7 +423,7 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
 
 .tt-theatre-user-row.is-host-row {
   border-color: var(--tt-role-host-border);
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.12);
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.12);
 }
 
 .tt-theatre-user-avatar-wrap {
@@ -452,7 +480,7 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
 .tt-theatre-you-tag {
   font-size: 9.5px;
   font-weight: 800;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 6px;
   background: var(--tt-bg-pill);
   color: var(--tt-text-pill);
@@ -471,52 +499,58 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 6px;
+  padding: 1px 7px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.tt-theatre-role-pill.role-host {
-  background: var(--tt-role-host-bg);
-  color: var(--tt-role-host-text);
-  border: 1px solid var(--tt-role-host-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-host {
+  background: var(--tt-role-host-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-host-border) !important;
 }
 
-.tt-theatre-role-pill.role-owner {
-  background: var(--tt-role-owner-bg);
-  color: var(--tt-role-owner-text);
-  border: 1px solid var(--tt-role-owner-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-owner {
+  background: var(--tt-role-owner-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-owner-border) !important;
 }
 
-.tt-theatre-role-pill.role-admin {
-  background: var(--tt-role-admin-bg);
-  color: var(--tt-role-admin-text);
-  border: 1px solid var(--tt-role-admin-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-admin {
+  background: var(--tt-role-admin-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-admin-border) !important;
 }
 
-.tt-theatre-role-pill.role-moderator {
-  background: var(--tt-role-mod-bg);
-  color: var(--tt-role-mod-text);
-  border: 1px solid var(--tt-role-mod-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-moderator {
+  background: var(--tt-role-mod-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-mod-border) !important;
 }
 
-.tt-theatre-role-pill.role-rj {
-  background: var(--tt-role-rj-bg);
-  color: var(--tt-role-rj-text);
-  border: 1px solid var(--tt-role-rj-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-rj {
+  background: var(--tt-role-rj-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--tt-role-rj-border) !important;
 }
 
-.tt-theatre-role-pill.role-member,
-.tt-theatre-role-pill.role-guest {
-  background: var(--tt-role-member-bg);
-  color: var(--tt-role-member-text);
-  border: 1px solid var(--tt-role-member-border);
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-member,
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill.role-guest {
+  background: var(--tt-role-member-bg) !important;
+  color: var(--tt-role-member-text) !important;
+  border: 1px solid var(--tt-role-member-border) !important;
 }
 
-/* ── Main Stage (Center on Desktop, Top on Mobile) ── */
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill span,
+html body .homepage-container .tt-theatre-shell .tt-theatre-role-pill svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* ── Main Cinema Stage ── */
 .tt-theatre-stage {
   display: flex;
   flex-direction: column;
@@ -525,17 +559,30 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   background: var(--tt-bg-stage);
   border-right: 1px solid var(--tt-border);
   position: relative;
+  overflow: hidden;
 }
 
+/* Topbar — wraps gracefully below 640px so title NEVER crushes to 1 character */
 .tt-theatre-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 7px 12px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 8px 12px;
   background: var(--tt-bg-bar);
   border-bottom: 1px solid var(--tt-border);
   flex-shrink: 0;
+  min-width: 0;
+}
+
+.tt-theatre-topbar-primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 1 1 240px;
+  min-width: 0;
 }
 
 .tt-theatre-now-playing {
@@ -543,7 +590,7 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 0;
 }
 
 .tt-theatre-live-pill {
@@ -589,35 +636,18 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   animation: none;
 }
 
-@keyframes ttTheatrePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(0.82); }
-}
-
-.tt-theatre-staff-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 9px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--tt-text-pill);
-  background: var(--tt-bg-pill);
-  border: 1px solid var(--tt-border-accent);
-  flex-shrink: 0;
-}
-
 .tt-theatre-title-meta {
   min-width: 0;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .tt-theatre-video-title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
+  line-height: 1.25;
   color: var(--tt-text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -627,10 +657,54 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
 .tt-theatre-host-sub {
   font-size: 10.5px;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--tt-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Host / Staff Badge — locked high-contrast colors in EVERY theme */
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 9px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  color: #ffffff !important;
+  background: var(--tt-role-host-bg) !important;
+  border: 1px solid var(--tt-role-host-border) !important;
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.3) !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge.is-owner {
+  background: var(--tt-role-owner-bg) !important;
+  border-color: var(--tt-role-owner-border) !important;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.34) !important;
+}
+
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge.is-admin {
+  background: var(--tt-role-admin-bg) !important;
+  border-color: var(--tt-role-admin-border) !important;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.32) !important;
+}
+
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge.is-moderator {
+  background: var(--tt-role-mod-bg) !important;
+  border-color: var(--tt-role-mod-border) !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.32) !important;
+}
+
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge svg,
+html body .homepage-container .tt-theatre-shell .tt-theatre-staff-badge span {
+  color: #ffffff !important;
+  fill: #ffffff !important;
 }
 
 .tt-theatre-topbar-actions {
@@ -638,27 +712,37 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-users-search::placeh
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-/* Override HomePage.css `.homepage-container button` reset explicitly with high specificity */
+.tt-theatre-topbar-actions::-webkit-scrollbar {
+  display: none;
+}
+
+/* Override HomePage.css `.homepage-container button` reset explicitly */
 body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn,
 .tt-theatre-shell .tt-theatre-icon-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 5px !important;
-  height: 30px !important;
+  height: 32px !important;
+  min-width: 32px !important;
   padding: 0 10px !important;
   border-radius: 9px !important;
   border: 1px solid var(--tt-border-strong) !important;
   background: var(--tt-bg-btn) !important;
   color: var(--tt-text-btn) !important;
-  font-size: 11px !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
   text-decoration: none !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   box-shadow: 0 1px 2px var(--tt-shadow) !important;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.12s ease !important;
+  transition: background-color 0.14s ease, border-color 0.14s ease, transform 0.12s ease !important;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn svg,
@@ -696,33 +780,33 @@ body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn.danger:hover,
   background: var(--tt-danger-hover) !important;
 }
 
-/* Video Viewport */
+/* ── Cinema Video Viewport ── */
 .tt-theatre-viewport {
-  flex: 1;
-  min-height: 200px;
+  flex: 1 1 0;
+  min-height: 180px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--tt-bg-viewport);
   overflow: hidden;
-  padding: 8px;
+  padding: 10px;
 }
 
 .tt-theatre-aspect-frame {
   width: 100%;
   height: 100%;
-  min-height: 180px;
+  min-height: 160px;
   max-height: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--tt-video-frame-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid var(--tt-border);
-  box-shadow: 0 8px 24px var(--tt-shadow);
+  border: 1px solid var(--tt-border-accent);
+  box-shadow: 0 10px 28px var(--tt-shadow-strong);
 }
 
 .tt-theatre-player-host,
@@ -730,14 +814,13 @@ body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn.danger:hover,
 .tt-theatre-html-video {
   width: 100%;
   height: 100%;
-  min-height: 180px;
+  min-height: 160px;
   border: none;
   display: block;
   object-fit: contain;
   background: var(--tt-video-frame-bg);
 }
 
-/* Prevent accidental click-desync on viewer YouTube iframe */
 .tt-theatre-viewer-shield {
   position: absolute;
   inset: 0;
@@ -745,33 +828,34 @@ body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn.danger:hover,
   background: transparent;
 }
 
-/* Theme-Aware High-Contrast Error Overlay */
+/* High-Contrast Error Overlay (Scroll-safe on compact viewports) */
 .tt-theatre-player-error-overlay {
   position: absolute;
-  inset: 8px;
-  border-radius: 12px;
+  inset: 10px;
+  border-radius: 14px;
   z-index: 18;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 12px;
   background: var(--tt-overlay-backdrop);
-  backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .tt-theatre-player-error-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   text-align: center;
+  width: 100%;
   max-width: 340px;
   padding: 14px 16px;
   border-radius: 14px;
   background: var(--tt-bg-card);
   border: 1.5px solid var(--tt-danger-border);
   color: var(--tt-danger-text);
-  box-shadow: 0 10px 28px var(--tt-shadow);
+  box-shadow: 0 12px 30px var(--tt-shadow-strong);
 }
 
 .tt-theatre-player-error-card p {
@@ -780,6 +864,14 @@ body .homepage-container .tt-theatre-shell .tt-theatre-icon-btn.danger:hover,
   line-height: 1.45;
   color: var(--tt-text-primary);
   font-weight: 700;
+}
+
+.tt-theatre-player-error-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Autoplay Audio Recovery Pill */
@@ -792,7 +884,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   display: inline-flex !important;
   align-items: center !important;
   gap: 7px !important;
-  padding: 8px 15px !important;
+  padding: 8px 14px !important;
   border-radius: 999px !important;
   border: 1.5px solid var(--tt-warn-border) !important;
   background: var(--tt-bg-card) !important;
@@ -800,41 +892,44 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   font-size: 12px !important;
   font-weight: 800 !important;
   cursor: pointer !important;
-  box-shadow: 0 8px 24px var(--tt-shadow) !important;
+  box-shadow: 0 8px 22px var(--tt-shadow-strong) !important;
 }
 
-/* Idle Empty Screen (Adapts to ALL themes) */
+/* Idle Empty Screen (Theme-matched, Scroll-safe, Zero-Clipping) */
 .tt-theatre-idle-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 18px 20px;
+  padding: 16px 20px;
+  width: 100%;
   max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
   border-radius: 16px;
   background: var(--tt-bg-card);
   border: 1px solid var(--tt-border-accent);
   box-shadow: 0 10px 28px var(--tt-shadow);
-  gap: 9px;
+  gap: 7px;
 }
 
 .tt-theatre-idle-badge {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--tt-bg-pill);
   color: var(--tt-accent);
   border: 1px solid var(--tt-border-accent);
-  box-shadow: 0 6px 16px var(--tt-shadow);
+  flex-shrink: 0;
 }
 
 .tt-theatre-idle-title {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--tt-text-primary);
   letter-spacing: -0.02em;
@@ -846,23 +941,43 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   line-height: 1.45;
   color: var(--tt-text-secondary);
   font-weight: 500;
+  max-width: 34ch;
 }
 
-/* Transport Controls & Host Source Bar */
+.tt-theatre-idle-formats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 2px;
+  padding-top: 7px;
+  width: 100%;
+  border-top: 1px solid var(--tt-border);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tt-text-muted);
+}
+
+/* ── Transport Controls & Source URL Deck ── */
 .tt-theatre-controls {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 9px 12px;
   background: var(--tt-bg-bar);
   border-top: 1px solid var(--tt-border);
+  min-width: 0;
 }
 
 .tt-theatre-scrubber-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .tt-theatre-time-label {
@@ -870,11 +985,13 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--tt-text-primary);
-  min-width: 40px;
+  min-width: 38px;
+  flex-shrink: 0;
 }
 
 .tt-theatre-range {
   flex: 1;
+  min-width: 0;
   height: 6px;
   border-radius: 999px;
   accent-color: var(--tt-accent);
@@ -893,6 +1010,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .tt-theatre-transport-left,
@@ -900,6 +1018,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .tt-theatre-viewer-sync-note {
@@ -907,9 +1026,13 @@ body .homepage-container .tt-theatre-shell .tt-theatre-unmute-pill,
   color: var(--tt-text-pill);
   background: var(--tt-bg-pill);
   border: 1px solid var(--tt-border-accent);
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-play-btn,
@@ -917,25 +1040,22 @@ body .homepage-container .tt-theatre-shell .tt-theatre-play-btn,
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 34px !important;
-  height: 34px !important;
+  width: 36px !important;
+  height: 36px !important;
   border-radius: 10px !important;
   border: none !important;
   background: var(--tt-btn-primary-bg) !important;
   color: var(--tt-btn-primary-text) !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 12px var(--tt-shadow) !important;
-  transition: transform 0.12s ease, filter 0.15s ease !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 3px 10px var(--tt-shadow) !important;
+  transition: transform 0.12s ease, opacity 0.14s ease !important;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-play-btn svg,
 .tt-theatre-shell .tt-theatre-play-btn svg {
   color: currentColor !important;
-}
-
-body .homepage-container .tt-theatre-shell .tt-theatre-play-btn:hover,
-.tt-theatre-shell .tt-theatre-play-btn:hover {
-  filter: brightness(1.08) !important;
+  fill: currentColor !important;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-play-btn:active,
@@ -950,7 +1070,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-play-btn:active,
 }
 
 .tt-theatre-vol-slider {
-  width: 70px;
+  width: 72px;
   height: 5px;
   accent-color: var(--tt-accent);
   background: var(--tt-bg-btn);
@@ -961,24 +1081,47 @@ body .homepage-container .tt-theatre-shell .tt-theatre-play-btn:active,
 .tt-theatre-source-form {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding-top: 5px;
+  gap: 8px;
+  padding-top: 7px;
   border-top: 1px solid var(--tt-border);
+  min-width: 0;
+}
+
+.tt-theatre-url-field {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--tt-input-border);
+  background: var(--tt-input-bg);
+  color: var(--tt-text-muted);
+  transition: border-color 0.14s ease;
+}
+
+.tt-theatre-url-field:focus-within {
+  border-color: var(--tt-accent);
+  color: var(--tt-accent);
 }
 
 html body .homepage-container .tt-theatre-shell .tt-theatre-url-input,
 .tt-theatre-url-input {
-  flex: 1 !important;
+  flex: 1 1 0 !important;
   min-width: 0 !important;
-  height: 35px !important;
-  padding: 0 11px !important;
-  border-radius: 10px !important;
-  border: 1.5px solid var(--tt-input-border) !important;
-  background: var(--tt-input-bg) !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
   color: var(--tt-input-text) !important;
   font-size: 12.5px !important;
   font-weight: 500 !important;
   outline: none !important;
+  box-shadow: none !important;
 }
 
 html body .homepage-container .tt-theatre-shell .tt-theatre-url-input::placeholder,
@@ -987,16 +1130,14 @@ html body .homepage-container .tt-theatre-shell .tt-theatre-url-input::placehold
   opacity: 0.88 !important;
 }
 
-html body .homepage-container .tt-theatre-shell .tt-theatre-url-input:focus,
-.tt-theatre-url-input:focus {
-  border-color: var(--tt-accent) !important;
-  box-shadow: 0 0 0 2px var(--tt-border-accent) !important;
-}
-
 body .homepage-container .tt-theatre-shell .tt-theatre-load-btn,
 .tt-theatre-shell .tt-theatre-load-btn {
-  height: 35px !important;
-  padding: 0 15px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  height: 36px !important;
+  padding: 0 14px !important;
   border-radius: 10px !important;
   border: none !important;
   background: var(--tt-btn-primary-bg) !important;
@@ -1007,11 +1148,18 @@ body .homepage-container .tt-theatre-shell .tt-theatre-load-btn,
   flex-shrink: 0 !important;
   white-space: nowrap !important;
   box-shadow: 0 3px 10px var(--tt-shadow) !important;
+  transition: transform 0.12s ease, opacity 0.14s ease !important;
+}
+
+body .homepage-container .tt-theatre-shell .tt-theatre-load-btn svg,
+.tt-theatre-shell .tt-theatre-load-btn svg {
+  color: currentColor !important;
+  fill: currentColor !important;
 }
 
 body .homepage-container .tt-theatre-shell .tt-theatre-load-btn:disabled,
 .tt-theatre-shell .tt-theatre-load-btn:disabled {
-  opacity: 0.52 !important;
+  opacity: 0.5 !important;
   cursor: not-allowed !important;
 }
 
@@ -1020,9 +1168,10 @@ body .homepage-container .tt-theatre-shell .tt-theatre-load-btn:disabled,
   color: var(--tt-danger-text);
   font-weight: 700;
   padding: 2px 2px 0;
+  line-height: 1.35;
 }
 
-/* Integrated Live Chat Rail (Desktop Right / Mobile Bottom) */
+/* ── Integrated Live Chat Rail (Desktop Right / Mobile Bottom) ── */
 .tt-theatre-chat-rail {
   display: flex;
   flex-direction: column;
@@ -1038,6 +1187,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-load-btn:disabled,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 12px;
   background: var(--tt-bg-bar);
   border-bottom: 1px solid var(--tt-border);
@@ -1053,6 +1203,7 @@ body .homepage-container .tt-theatre-shell .tt-theatre-load-btn:disabled,
   align-items: center;
   gap: 6px;
   color: var(--tt-text-primary);
+  min-width: 0;
 }
 
 .tt-theatre-chat-title svg {
@@ -1066,9 +1217,11 @@ body .homepage-container .tt-theatre-shell .tt-theatre-chat-active-pill,
   color: var(--tt-text-pill) !important;
   background: var(--tt-bg-pill) !important;
   border: 1px solid var(--tt-border-accent) !important;
-  padding: 2px 9px !important;
+  padding: 3px 10px !important;
   border-radius: 999px !important;
   cursor: pointer !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .tt-theatre-chat-rail-body {
@@ -1128,7 +1281,7 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
   z-index: 25 !important;
 }
 
-/* Responsive Mobile Layout (< 960px) */
+/* ── Tablet & Mobile Stacked Cinema (< 960px) ── */
 @media (max-width: 959px) {
   .tt-theatre-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -1142,30 +1295,31 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
 
   .tt-theatre-viewport {
     aspect-ratio: 16 / 9;
-    min-height: 155px;
-    max-height: 29dvh;
+    min-height: 152px;
+    max-height: 28dvh;
     width: 100%;
     flex: none;
-    padding: 5px;
+    padding: 6px 8px;
   }
 
   .tt-theatre-aspect-frame,
   .tt-theatre-player-host,
   .tt-theatre-player-host iframe,
   .tt-theatre-html-video {
-    min-height: 145px;
-    border-radius: 10px;
+    min-height: 140px;
+    border-radius: 11px;
   }
 
   .tt-theatre-idle-screen {
     padding: 10px 14px;
-    gap: 6px;
+    gap: 5px;
+    border-radius: 13px;
   }
 
   .tt-theatre-idle-badge {
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
   }
 
   .tt-theatre-idle-title {
@@ -1174,6 +1328,13 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
 
   .tt-theatre-idle-sub {
     font-size: 11px;
+    line-height: 1.38;
+  }
+
+  .tt-theatre-idle-formats {
+    padding-top: 5px;
+    font-size: 9.5px;
+    gap: 4px 8px;
   }
 
   .tt-theatre-shell.tt-theatre-chat-collapsed {
@@ -1183,28 +1344,39 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
   .tt-theatre-shell.tt-theatre-chat-collapsed .tt-theatre-viewport {
     aspect-ratio: auto;
     max-height: none;
-    flex: 1;
+    flex: 1 1 0;
   }
 
   .tt-theatre-topbar {
-    padding: 6px 8px;
+    padding: 7px 9px;
+    gap: 6px;
   }
 
   .tt-theatre-controls {
-    padding: 6px 8px;
-    gap: 5px;
+    padding: 7px 9px;
+    gap: 6px;
+  }
+
+  .tt-theatre-url-field {
+    height: 34px;
+    padding: 0 9px;
   }
 
   html body .homepage-container .tt-theatre-shell .tt-theatre-url-input,
   .tt-theatre-url-input,
   body .homepage-container .tt-theatre-shell .tt-theatre-load-btn,
   .tt-theatre-shell .tt-theatre-load-btn {
-    height: 32px !important;
+    height: 34px !important;
     font-size: 11.5px !important;
   }
 
+  body .homepage-container .tt-theatre-shell .tt-theatre-load-btn,
+  .tt-theatre-shell .tt-theatre-load-btn {
+    padding: 0 11px !important;
+  }
+
   .tt-theatre-vol-slider {
-    width: 52px;
+    width: 54px;
   }
 
   .tt-theatre-hide-sm {
@@ -1212,20 +1384,103 @@ body .homepage-container .tt-theatre-chat-rail-body .scroll-to-bottom-chip {
   }
 
   .tt-theatre-chat-rail-header {
-    padding: 6px 10px;
+    padding: 7px 10px;
   }
 }
 
-/* Landscape mobile cinema optimization */
+/* Narrow Mobile (< 640px): Two-row non-crushing topbar so Title is 100% readable */
+@media (max-width: 639px) {
+  .tt-theatre-topbar-primary {
+    flex: 1 1 100%;
+  }
+
+  .tt-theatre-topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 4px;
+    border-top: 1px solid var(--tt-border);
+  }
+}
+
+/* Compact Smartphones (< 420px): Zero URL / button clipping */
+@media (max-width: 419px) {
+  .tt-theatre-hide-xs {
+    display: none;
+  }
+
+  .tt-theatre-vol-slider {
+    width: 44px;
+  }
+}
+
+/* Mobile Keyboard Open Optimization — keeps sent & recent chat visible above composer */
+@media (max-width: 959px) {
+  .tt-theatre-shell.tt-theatre-keyboard-open {
+    height: var(--tt-kb-height, calc(100dvh - var(--tt-theatre-top, 50px))) !important;
+    bottom: auto !important;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-topbar {
+    padding: 5px 8px;
+    gap: 4px;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open.tt-theatre-kb-in-chat .tt-theatre-topbar-actions {
+    display: none;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-viewport {
+    aspect-ratio: auto;
+    min-height: 76px;
+    max-height: 104px;
+    padding: 4px 6px;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-aspect-frame,
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-player-host,
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-player-host iframe,
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-html-video {
+    min-height: 70px;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-idle-formats,
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-idle-sub {
+    display: none;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-controls {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open.tt-theatre-kb-in-chat .tt-theatre-source-form {
+    display: none;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-chat-rail-header {
+    padding: 5px 10px;
+  }
+
+  .tt-theatre-shell.tt-theatre-keyboard-open .tt-theatre-chat-rail {
+    min-height: 135px;
+  }
+}
+
+/* Landscape Mobile Cinema Optimization */
 @media (max-width: 959px) and (orientation: landscape) {
   .tt-theatre-shell {
     grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
 
+  .tt-theatre-stage {
+    border-bottom: none;
+    border-right: 1px solid var(--tt-border);
+  }
+
   .tt-theatre-viewport {
     aspect-ratio: auto;
     max-height: none;
-    flex: 1;
+    flex: 1 1 0;
   }
 }

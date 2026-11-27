@@ -2714,3 +2714,57 @@ html.dark-theme-variant .tl-ga-toggle-btn.locked {
   color: var(--button-primary-text, #ffffff) !important;
 }
 
+.tl-ga-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.setting-group .tl-ga-card h4 .tl-ga-title-icon svg,
+.tl-ga-card h4 .tl-ga-title-icon svg {
+  color: initial !important;
+  stroke: initial !important;
+}
+
+.tl-tha-card {
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.tl-tha-card .tl-ga-count {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.34);
+  color: #b45309;
+}
+
+.tl-ga-staff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 9.5px;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+html.dark-mode .tl-tha-card .tl-ga-count,
+body.dark-mode .tl-tha-card .tl-ga-count,
+html.dark-theme-variant .tl-tha-card .tl-ga-count {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.38) !important;
+  color: #fcd34d !important;
+}
+
+html.dark-mode .tl-ga-staff-chip,
+body.dark-mode .tl-ga-staff-chip,
+html.dark-theme-variant .tl-ga-staff-chip {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.38) !important;
+  color: #fcd34d !important;
+}
+
+

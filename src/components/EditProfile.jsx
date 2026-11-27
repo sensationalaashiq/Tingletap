@@ -6,9 +6,10 @@ import {
   isGuestUser,
   getRoleDisplayLabel,
 } from '../utils/roleUtils';
-import { auth, db } from '../firebase/config';
+import { auth, db, rtdb } from '../firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref as rtdbRef, update as rtdbUpdate } from 'firebase/database';
 import { invalidateCachedUserProfile } from '../utils/userProfileCache';
 import { pt } from '../utils/premiumToast';
 import { compressImageToWebP, uploadMediaFile } from '../services/r2StorageService';
@@ -514,6 +515,46 @@ const EditProfile = ({ onClose, onSuccess }) => {
       }
 
       invalidateCachedUserProfile(user.uid);
+
+      // Immediately propagate DP/name/gender to RTDB presence & local window caches
+      // so every user in every room, userlist, dropdown, PM, and profile sees it live.
+      const mergedUpdatedProfile = {
+        ...currentUserData,
+        ...firestoreWritePayload,
+        uid: user.uid,
+      };
+      try {
+        if (window.userProfilesCache) {
+          window.userProfilesCache[user.uid] = {
+            ...(window.userProfilesCache[user.uid] || {}),
+            ...mergedUpdatedProfile,
+          };
+        }
+        if (window._appUserProfile?.uid === user.uid) {
+          window._appUserProfile = { ...window._appUserProfile, ...mergedUpdatedProfile };
+          window.dispatchEvent(new CustomEvent('_appUserProfileChanged', { detail: window._appUserProfile }));
+        }
+        window.dispatchEvent(new CustomEvent('userProfileUpdated', {
+          detail: { uid: user.uid, ...editableProfilePayload },
+        }));
+
+        const rtdbPatch = {
+          photoURL: finalPhotoURL || null,
+          displayName: cleanDisplayName,
+          gender: formData.gender || currentUserData.gender || 'male',
+        };
+        if (window._currentStatusData) {
+          window._currentStatusData = { ...window._currentStatusData, ...rtdbPatch };
+        }
+        rtdbUpdate(rtdbRef(rtdb, `status/${user.uid}`), rtdbPatch).catch(() => {});
+        const activeRid = window._tingleBotRoomId
+          || window._currentStatusData?.currentRoomId
+          || window.location.pathname.match(/\/room\/([^/]+)/)?.[1];
+        if (activeRid) {
+          rtdbUpdate(rtdbRef(rtdb, `room_presence/${activeRid}/${user.uid}`), rtdbPatch).catch(() => {});
+        }
+      } catch {}
+
       setSavingState('saved');
       setFeedbackBanner({ type: 'saved', text: 'Profile updated successfully' });
       pt.profile('Profile updated successfully');
@@ -551,9 +592,17 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="crop-header-text">
                 <div className="crop-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="2" y="5" width="20" height="15" rx="3.5" stroke="currentColor" strokeWidth="2" />
-                    <circle cx="12" cy="12.5" r="3.5" stroke="currentColor" strokeWidth="2" />
-                    <path d="M8.5 5l1.2-2h4.6l1.2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <defs>
+                      <linearGradient id="epGradCrop" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="50%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="2" y="5.5" width="20" height="14.5" rx="3.5" fill="url(#epGradCrop)" />
+                    <path d="M8.5 5.5l1.2-2h4.6l1.2 2" fill="#8b5cf6" />
+                    <circle cx="12" cy="12.5" r="3.6" fill="#ffffff" />
+                    <circle cx="12" cy="12.5" r="1.8" fill="#6366f1" />
                   </svg>
                   <span>Adjust Profile Photo</span>
                 </div>
@@ -561,7 +610,13 @@ const EditProfile = ({ onClose, onSuccess }) => {
               </div>
               <button type="button" className="crop-icon-close" onClick={handleCropCancel} aria-label="Close photo editor">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                  <defs>
+                    <linearGradient id="epGradCropClose" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#f43f5e" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M18 6L6 18M6 6l12 12" stroke="url(#epGradCropClose)" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -674,7 +729,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
                     onClick={() => setFlipH((h) => !h)}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                      <path d="M8 7L3 12l5 5M16 7l5 5-5 5M12 4v16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 7L3 12l5 5M16 7l5 5-5 5" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M12 4v16" stroke="#ec4899" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <span>Flip H</span>
                   </button>
@@ -684,7 +740,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
                     onClick={() => setFlipV((v) => !v)}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                      <path d="M7 8l5-5 5 5M7 16l5 5 5-5M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M7 8l5-5 5 5M7 16l5 5 5-5" stroke="#06b6d4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M4 12h16" stroke="#a855f7" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <span>Flip V</span>
                   </button>
@@ -694,7 +751,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
                     onClick={resetCropControls}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 4v5h5M20 20v-5h-5M4.5 9A8.5 8.5 0 0 1 20 12.5M19.5 15A8.5 8.5 0 0 1 4 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M4 4v5h5M20 20v-5h-5M4.5 9A8.5 8.5 0 0 1 20 12.5M19.5 15A8.5 8.5 0 0 1 4 11.5" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Reset</span>
                   </button>
@@ -710,7 +767,7 @@ const EditProfile = ({ onClose, onSuccess }) => {
               </button>
               <button type="button" className="crop-btn save-btn" onClick={handleCropComplete}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M20 6L9 17l-5-5" stroke="#34d399" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span>Apply Photo</span>
               </button>
@@ -766,9 +823,17 @@ const EditProfile = ({ onClose, onSuccess }) => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isBusy}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="2" />
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <defs>
+                    <linearGradient id="epGradCamBtn" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#06b6d4" />
+                      <stop offset="55%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="2.5" y="5.5" width="19" height="14" rx="3.2" fill="url(#epGradCamBtn)" />
+                  <circle cx="12" cy="12.5" r="3.2" fill="#ffffff" />
+                  <circle cx="12" cy="12.5" r="1.5" fill="#6366f1" />
                 </svg>
                 <span>{profilePic ? 'Choose Another' : 'Change Photo'}</span>
               </button>
@@ -807,9 +872,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
             <div className="wd-fields">
               <div className="wd-field-group">
                 <label className="wd-label" htmlFor="ep-display-name">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
-                    <path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                      <linearGradient id="epGradUser" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="12" cy="8" r="4" fill="url(#epGradUser)" />
+                    <path d="M5 20a7 7 0 0 1 14 0" fill="url(#epGradUser)" />
                   </svg>
                   <span>Display Name *</span>
                 </label>
@@ -829,9 +900,16 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="wd-field-row">
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-age">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" strokeWidth="2" />
-                      <path d="M8 2v4M16 2v4M3 9h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradCal" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#f59e0b" />
+                          <stop offset="100%" stopColor="#ef4444" />
+                        </linearGradient>
+                      </defs>
+                      <rect x="3" y="4.5" width="18" height="16.5" rx="3" fill="url(#epGradCal)" />
+                      <path d="M3 9.5h18" stroke="#ffffff" strokeWidth="1.8" />
+                      <path d="M8 2.5v3.5M16 2.5v3.5" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <span>Age</span>
                   </label>
@@ -850,9 +928,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-gender">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <circle cx="10" cy="14" r="5" stroke="currentColor" strokeWidth="2" />
-                      <path d="M14 10l6-6M15 4h5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradGender" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#06b6d4" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                      </defs>
+                      <circle cx="10" cy="14" r="5" fill="url(#epGradGender)" />
+                      <path d="M14 10l6-6M15 4h5v5" stroke="#ec4899" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Gender</span>
                   </label>
@@ -879,9 +963,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="wd-field-row">
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-country">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" stroke="currentColor" strokeWidth="1.7" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradGlobe" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset="100%" stopColor="#0284c7" />
+                        </linearGradient>
+                      </defs>
+                      <circle cx="12" cy="12" r="9" fill="url(#epGradGlobe)" />
+                      <path d="M3.5 12h17M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18" stroke="#ffffff" strokeWidth="1.5" />
                     </svg>
                     <span>Country</span>
                   </label>
@@ -903,9 +993,16 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-profession">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="7" width="18" height="13" rx="2.5" stroke="currentColor" strokeWidth="2" />
-                      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradBrief" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#3b82f6" />
+                          <stop offset="100%" stopColor="#8b5cf6" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke="#6366f1" strokeWidth="2.1" />
+                      <rect x="3" y="7" width="18" height="13" rx="3" fill="url(#epGradBrief)" />
+                      <path d="M3 12h18" stroke="#ffffff" strokeWidth="1.5" opacity="0.85" />
                     </svg>
                     <span>Profession</span>
                   </label>
@@ -925,8 +1022,14 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="wd-field-row">
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-relationship">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 20.5s-7.5-4.7-9.2-9.2C1.6 8 3.8 4.5 7.4 4.5c2 0 3.7 1.1 4.6 2.6.9-1.5 2.6-2.6 4.6-2.6 3.6 0 5.8 3.5 4.6 6.8-1.7 4.5-9.2 9.2-9.2 9.2z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradHeart" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#f43f5e" />
+                          <stop offset="100%" stopColor="#ec4899" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M12 20.5s-7.5-4.7-9.2-9.2C1.6 8 3.8 4.5 7.4 4.5c2 0 3.7 1.1 4.6 2.6.9-1.5 2.6-2.6 4.6-2.6 3.6 0 5.8 3.5 4.6 6.8-1.7 4.5-9.2 9.2-9.2 9.2z" fill="url(#epGradHeart)" />
                     </svg>
                     <span>Relationship</span>
                   </label>
@@ -948,8 +1051,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
                 <div className="wd-field-group">
                   <label className="wd-label" htmlFor="ep-languages">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradLang" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#38bdf8" />
+                          <stop offset="100%" stopColor="#6366f1" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M4 5h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="url(#epGradLang)" />
+                      <path d="M7.5 10h9M7.5 13h5.5" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
                     </svg>
                     <span>Languages</span>
                   </label>
@@ -974,9 +1084,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="wd-field-group">
                 <div className="wd-label-row">
                   <label className="wd-label" htmlFor="ep-status">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                      <path d="M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradStatus" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#14b8a6" />
+                          <stop offset="100%" stopColor="#3b82f6" />
+                        </linearGradient>
+                      </defs>
+                      <circle cx="12" cy="12" r="9" fill="url(#epGradStatus)" />
+                      <path d="M8.5 12.2l2.3 2.3 4.8-5" stroke="#ffffff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Status Line</span>
                   </label>
@@ -996,8 +1112,14 @@ const EditProfile = ({ onClose, onSuccess }) => {
 
               <div className="wd-field-group">
                 <label className="wd-label" htmlFor="ep-interests">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3l2.6 5.4L20.5 9l-4.2 4.1 1 5.9L12 16.2 6.7 19l1-5.9L3.5 9l5.9-.6L12 3z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                      <linearGradient id="epGradStar" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#f97316" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 3l2.6 5.4L20.5 9l-4.2 4.1 1 5.9L12 16.2 6.7 19l1-5.9L3.5 9l5.9-.6L12 3z" fill="url(#epGradStar)" />
                   </svg>
                   <span>Interests</span>
                 </label>
@@ -1016,8 +1138,15 @@ const EditProfile = ({ onClose, onSuccess }) => {
               <div className="wd-field-group">
                 <div className="wd-label-row">
                   <label className="wd-label" htmlFor="ep-bio">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="epGradBio" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stopColor="#a855f7" />
+                          <stop offset="100%" stopColor="#ec4899" />
+                        </linearGradient>
+                      </defs>
+                      <rect x="3" y="3" width="18" height="18" rx="4" fill="url(#epGradBio)" />
+                      <path d="M7 8.5h10M7 12h10M7 15.5h6" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" />
                     </svg>
                     <span>Bio</span>
                   </label>
@@ -1043,14 +1172,14 @@ const EditProfile = ({ onClose, onSuccess }) => {
               role="alert"
             >
               {feedbackBanner.type === 'error' ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2" />
-                  <path d="M12 7.5v5.5M12 16.5v.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9.5" fill="#ef4444" />
+                  <path d="M12 7.5v5.5M12 16.5v.5" stroke="#ffffff" strokeWidth="2.3" strokeLinecap="round" />
                 </svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2" />
-                  <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9.5" fill="#10b981" />
+                  <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="#ffffff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
               <span>{feedbackBanner.text}</span>
@@ -1088,7 +1217,8 @@ const EditProfile = ({ onClose, onSuccess }) => {
               {savingState === 'saved' && (
                 <>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="12" r="9.5" fill="#34d399" />
+                    <path d="M8 12.5l2.8 2.8 5.2-5.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <span>Saved</span>
                 </>
@@ -1096,8 +1226,9 @@ const EditProfile = ({ onClose, onSuccess }) => {
               {(savingState === 'idle' || savingState === 'error') && (
                 <>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                    <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" fill="#c4b5fd" stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+                    <path d="M17 21v-7.5H7V21" fill="#ffffff" />
+                    <path d="M8 3.5v4h7v-4" fill="#6366f1" />
                   </svg>
                   <span>Save Profile</span>
                 </>
